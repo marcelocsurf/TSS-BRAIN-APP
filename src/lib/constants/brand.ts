@@ -46,14 +46,21 @@ export const SESSION_STATUS_OPTIONS: { value: SessionStatus; label: string }[] =
   { value: 'mastered', label: 'Mastered' },
 ];
 
-export type CoachRole = 'ayudante' | 'instructor' | 'coach' | 'head_coach' | 'holistic_coach';
+// System roles — Stage 1 (migrated March 14, 2026)
+export type CoachRole = 'admin' | 'coordinator' | 'coach' | 'assistant';
 
 export const COACH_ROLE_RANK: Record<CoachRole, number> = {
-  ayudante: 1,
-  instructor: 2,
-  coach: 3,
-  head_coach: 4,
-  holistic_coach: 5,
+  assistant: 1,
+  coach: 2,
+  coordinator: 3,
+  admin: 4,
+};
+
+export const COACH_ROLE_LABELS: Record<CoachRole, string> = {
+  admin: 'Admin',
+  coordinator: 'Coordinator',
+  coach: 'Coach',
+  assistant: 'Assistant',
 };
 
 export type OceanCondition = 'flat' | '1_2ft' | '3_4ft' | '4_6ft' | '6_plus';
