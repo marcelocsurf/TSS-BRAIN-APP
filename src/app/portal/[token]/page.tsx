@@ -28,6 +28,8 @@ export default async function StudentPortalPage({ params }: Props) {
     .limit(10);
 
   const latestResult = results?.[0];
+  
+  // Check if latest session has a survey
   let hasSurvey = false;
   if (latestResult) {
     const { data: survey } = await admin
@@ -38,14 +40,17 @@ export default async function StudentPortalPage({ params }: Props) {
     hasSurvey = !!survey;
   }
 
-  // Unlocked if student has completed ANY survey ever
-  const { count: totalSurveys } = await admin
+  // Check if student has EVER completed a survey
+  const { data: anySurvey } = await admin
     .from('survey_responses')
-    .select('*', { count: 'exact', head: true })
-    .eq('student_id', student.id);
+    .select('id')
+    .eq('student_id', student.id)
+    .limit(1)
+    .maybeSingle();
 
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
-  const surveyCompleted = hasSurvey || (totalSurveys !== null && totalSurveys > 0);
+  // Unlock if: latest session survey done OR any previous survey done
+  const surveyCompleted = hasSurvey || !!anySurvey;
 
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)]">
