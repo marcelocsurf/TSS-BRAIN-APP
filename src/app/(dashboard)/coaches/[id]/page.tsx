@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { CertificationManager } from './certification-manager';
+import { ToggleCoachStatus } from './toggle-coach-status';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -56,12 +57,19 @@ export default async function CoachProfilePage({ params }: Props) {
             <h2 className="text-xl font-bold text-[var(--tss-navy)]">{coach.display_name}</h2>
             <p className="text-sm text-gray-400">Max Belt: {coach.max_belt_permission?.replace('_', ' ')}</p>
           </div>
-          <Link
-            href={`/coaches/${id}/evaluate`}
-            className="px-3 py-2 bg-[var(--tss-navy)] text-white text-xs rounded-lg hover:opacity-90"
-          >
-            + Evaluate
-          </Link>
+          <div className="flex gap-2">
+            <ToggleCoachStatus
+              coachId={id}
+              isActive={coach.active_status}
+              currentUserRole={currentCoach.role}
+            />
+            <Link
+              href={`/coaches/${id}/evaluate`}
+              className="px-3 py-2 bg-[var(--tss-navy)] text-white text-xs rounded-lg hover:opacity-90"
+            >
+              + Evaluate
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-50">
