@@ -157,12 +157,44 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </Card>
 
-      {/* Coach Notes */}
-      {student.coach_notes_general && (
-        <Card title="Coach Notes">
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{student.coach_notes_general}</p>
-        </Card>
-      )}
+      {/* Internal Coach Notes — never visible to student */}
+      <InternalNotesCard studentId={student.id} notes={student.coach_notes_general} />
+    </div>
+  );
+}
+
+async function InternalNotesCard({ studentId, notes }: { studentId: string; notes: string | null }) {
+  async function saveNotes(formData: FormData) {
+    'use server';
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
+    await supabase.from('students').update({
+      coach_notes_general: formData.get('notes') as string || null
+    }).eq('id', studentId);
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath(`/students/${studentId}`);
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-red-100 overflow-hidden">
+      <div className="px-4 py-3 border-b border-red-50 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-red-500">🔒 Internal Coach Notes</h3>
+        <span className="text-[10px] text-red-300 bg-red-50 px-2 py-0.5 rounded-full">Never visible to student</span>
+      </div>
+      <div className="px-4 py-3">
+        <form action={saveNotes}>
+          <textarea
+            name="notes"
+            defaultValue={notes || ''}
+            rows={3}
+            placeholder="Private notes about this student — behavior, attitude, real assessment..."
+            className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-gray-700 focus:outline-none focus:ring-1 focus:ring-red-200"
+          />
+          <button type="submit" className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:opacity-90">
+            Save Notes
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
