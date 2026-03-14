@@ -11,8 +11,8 @@ export function ToggleCoachStatus({ coachId, isActive, currentUserRole }: {
   const [active, setActive] = useState(isActive);
   const [loading, setLoading] = useState(false);
 
-  // Only holistic_coach can toggle
-  if (currentUserRole !== 'holistic_coach') return null;
+  // Only admin can toggle
+  if (currentUserRole !== 'admin') return null;
 
   const handleToggle = async () => {
     if (!confirm(active
