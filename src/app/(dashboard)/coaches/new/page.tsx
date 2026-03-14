@@ -4,12 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const ROLES = [
-  { value: 'junior_coach', label: 'Junior Coach' },
-  { value: 'assistant_coach', label: 'Assistant Coach' },
-  { value: 'coach', label: 'Coach' },
-  { value: 'senior_coach', label: 'Senior Coach' },
-  { value: 'head_coach', label: 'Head Coach' },
-  { value: 'holistic_coach', label: 'Holistic Coach' },
+  { value: 'admin', label: 'Admin', desc: 'Full access. Can manage everything.' },
+  { value: 'coordinator', label: 'Coordinator', desc: 'Manages schedule, assigns coaches, creates students.' },
+  { value: 'coach', label: 'Coach', desc: 'Executes sessions, evaluates students.' },
+  { value: 'assistant', label: 'Assistant', desc: 'View-only for assigned sessions. No login in Stage 1.' },
 ];
 
 const BELT_PERMISSIONS = [
@@ -19,6 +17,14 @@ const BELT_PERMISSIONS = [
   { value: 'purple_belt', label: 'Purple Belt — Emerging', color: '#7B4FBE' },
   { value: 'brown_belt', label: 'Brown Belt — Pre-Elite', color: '#7D4E27' },
   { value: 'black_belt', label: 'Black Belt — Elite', color: '#111111' },
+];
+
+const CERT_LEVELS = [
+  { value: 'L1', label: 'L1 — Assistant' },
+  { value: 'L2', label: 'L2 — Instructor' },
+  { value: 'L3', label: 'L3 — Coach' },
+  { value: 'L4', label: 'L4 — Senior Coach' },
+  { value: 'L5', label: 'L5 — Master / Director' },
 ];
 
 export default function AddCoachPage() {
@@ -34,8 +40,10 @@ export default function AddCoachPage() {
     phone: '',
     role: 'coach',
     max_belt_permission: 'yellow_belt',
+    certification_level: 'L1',
     specialty_area: '',
     languages: '',
+    internal_notes: '',
   });
 
   const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
@@ -61,7 +69,7 @@ export default function AddCoachPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to invite coach');
+      if (!res.ok) throw new Error(data.error || 'Failed to create coach');
 
       setSuccess(true);
       setTimeout(() => router.push('/coaches'), 2000);
@@ -77,9 +85,9 @@ export default function AddCoachPage() {
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-2xl">✓</span>
         </div>
-        <h2 className="text-xl font-bold text-[var(--tss-navy)]">Invitation Sent</h2>
+        <h2 className="text-xl font-bold text-[var(--tss-navy)]">Coach Created</h2>
         <p className="text-sm text-gray-500 mt-2">
-          {form.first_name} will receive an email to set up their password and access TSS Brain.
+          {form.first_name} {form.last_name} has been added as {form.role}.
         </p>
         <p className="text-xs text-gray-400 mt-1">Redirecting to coaches...</p>
       </div>
@@ -89,15 +97,14 @@ export default function AddCoachPage() {
   return (
     <div className="max-w-lg mx-auto space-y-5">
       <div>
-        <p className="text-xs font-mono tracking-widest text-[var(--tss-gold)] uppercase mb-1">TSS Brain · Director</p>
+        <p className="text-xs font-mono tracking-widest text-[var(--tss-gold)] uppercase mb-1">TSS Brain · Admin</p>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Add Coach</h1>
-        <p className="text-sm text-gray-400 mt-0.5">An invitation email will be sent to set up their access.</p>
+        <p className="text-sm text-gray-400 mt-0.5">Create a new team member with their role and permissions.</p>
       </div>
 
       {/* Basic Info */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
         <p className="text-xs font-mono tracking-widest text-gray-400 uppercase">Basic Information</p>
-
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">First Name *</label>
@@ -112,14 +119,12 @@ export default function AddCoachPage() {
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
           </div>
         </div>
-
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Email *</label>
           <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
             placeholder="coach@purosurf.com"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
-
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
           <input type="text" value={form.phone} onChange={e => set('phone', e.target.value)}
@@ -130,19 +135,19 @@ export default function AddCoachPage() {
 
       {/* Role & Permissions */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-        <p className="text-xs font-mono tracking-widest text-gray-400 uppercase">Role & Permissions</p>
-
+        <p className="text-xs font-mono tracking-widest text-gray-400 uppercase">System Role</p>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-2">Role *</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             {ROLES.map(r => (
               <button key={r.value} type="button" onClick={() => set('role', r.value)}
-                className={`px-3 py-2 text-xs rounded-lg border text-left transition-all ${
+                className={`w-full flex flex-col items-start px-4 py-3 rounded-lg border text-left transition-all ${
                   form.role === r.value
                     ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
                     : 'border-gray-200 text-gray-600 hover:border-gray-400'
                 }`}>
-                {r.label}
+                <span className="text-sm font-semibold">{r.label}</span>
+                <span className={`text-xs mt-0.5 ${form.role === r.value ? 'text-white/70' : 'text-gray-400'}`}>{r.desc}</span>
               </button>
             ))}
           </div>
@@ -167,6 +172,22 @@ export default function AddCoachPage() {
             ))}
           </div>
         </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">TSS Certification Level</label>
+          <div className="grid grid-cols-2 gap-2">
+            {CERT_LEVELS.map(c => (
+              <button key={c.value} type="button" onClick={() => set('certification_level', c.value)}
+                className={`px-3 py-2 text-xs rounded-lg border text-left transition-all ${
+                  form.certification_level === c.value
+                    ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                }`}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Optional */}
@@ -184,6 +205,13 @@ export default function AddCoachPage() {
             placeholder="e.g. Spanish, English"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Internal Notes</label>
+          <textarea value={form.internal_notes} onChange={e => set('internal_notes', e.target.value)}
+            placeholder="Notes visible only to admin..."
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 resize-none" />
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>}
@@ -195,7 +223,7 @@ export default function AddCoachPage() {
         </button>
         <button onClick={handleSubmit} disabled={loading}
           className="flex-1 py-3 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-lg hover:opacity-90 disabled:opacity-50">
-          {loading ? 'Sending Invitation...' : 'Send Invitation'}
+          {loading ? 'Creating...' : 'Create Coach'}
         </button>
       </div>
     </div>
