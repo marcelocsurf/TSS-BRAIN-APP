@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         last_name,
         role: 'coach',
       },
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/login`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/`,
     });
 
     if (authErr) throw new Error(authErr.message);
