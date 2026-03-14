@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    // Verify current user is holistic_coach
+    // Verify current user is admin
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,15 +15,21 @@ export async function POST(req: NextRequest) {
       .eq('auth_user_id', user.id)
       .single();
 
-    if (currentCoach?.role !== 'holistic_coach') {
-      return NextResponse.json({ error: 'Only the director can invite coaches.' }, { status: 403 });
+    if (currentCoach?.role !== 'admin') {
+      return NextResponse.json({ error: 'Only admin can add coaches.' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { first_name, last_name, email, phone, role, max_belt_permission, specialty_area, languages } = body;
+    const { first_name, last_name, email, phone, role, max_belt_permission, certification_level, specialty_area, languages, internal_notes } = body;
 
     if (!first_name || !last_name || !email) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
+    }
+
+    // Validate role
+    const validRoles = ['admin', 'coordinator', 'coach', 'assistant'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` }, { status: 400 });
     }
 
     const admin = createAdminClient();
@@ -32,7 +38,7 @@ export async function POST(req: NextRequest) {
     const { data: existingCoach } = await admin
       .from('coaches')
       .select('id')
-      .eq('email', email)
+      .eq('email', email.trim().toLowerCase())
       .single();
 
     if (existingCoach) {
@@ -44,9 +50,9 @@ export async function POST(req: NextRequest) {
       data: {
         first_name,
         last_name,
-        role: 'coach',
+        role,
       },
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app'}/auth/callback?next=/`,
     });
 
     if (authErr) throw new Error(authErr.message);
@@ -61,11 +67,12 @@ export async function POST(req: NextRequest) {
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || null,
       role,
-      max_belt_permission,
+      max_belt_permission: max_belt_permission || 'yellow_belt',
       specialty_area: specialty_area?.trim() || null,
       languages: languages?.trim() || null,
+      internal_notes: internal_notes?.trim() || null,
       active_status: true,
-      certification_level: 'none',
+      certification_level: certification_level || 'L1',
     });
 
     if (coachErr) {
