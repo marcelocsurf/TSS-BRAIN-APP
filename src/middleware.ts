@@ -12,13 +12,13 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
           );
         },
       },
@@ -27,20 +27,17 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Portal routes are public (token-based)
   if (request.nextUrl.pathname.startsWith('/portal')) {
     return supabaseResponse;
   }
 
-  // Login page: redirect to dashboard if already logged in
   if (request.nextUrl.pathname === '/login') {
     if (user) {
       return NextResponse.redirect(new URL('/', request.url));
-    }
+GitHub    }
     return supabaseResponse;
   }
 
-  // All other routes require auth
   if (!user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
