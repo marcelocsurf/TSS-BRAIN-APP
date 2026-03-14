@@ -38,8 +38,14 @@ export default async function StudentPortalPage({ params }: Props) {
     hasSurvey = !!survey;
   }
 
+  // Unlocked if student has completed ANY survey ever
+  const { count: totalSurveys } = await admin
+    .from('survey_responses')
+    .select('*', { count: 'exact', head: true })
+    .eq('student_id', student.id);
+
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
-  const surveyCompleted = hasSurvey;
+  const surveyCompleted = hasSurvey || (totalSurveys !== null && totalSurveys > 0);
 
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)]">
