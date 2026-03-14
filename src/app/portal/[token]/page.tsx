@@ -12,7 +12,6 @@ export default async function StudentPortalPage({ params }: Props) {
   const { token } = await params;
   const admin = createAdminClient();
 
-  // Get student by portal token
   const { data: student, error: studentErr } = await admin
     .from('students')
     .select('*')
@@ -21,15 +20,13 @@ export default async function StudentPortalPage({ params }: Props) {
 
   if (studentErr || !student) notFound();
 
-  // Get latest session results
   const { data: results } = await admin
     .from('student_session_results')
     .select('*, standalone_sessions(*)')
     .eq('student_id', student.id)
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(10);
 
-  // Check if latest result has a survey
   const latestResult = results?.[0];
   let hasSurvey = false;
   if (latestResult) {
@@ -42,6 +39,7 @@ export default async function StudentPortalPage({ params }: Props) {
   }
 
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
+  const surveyCompleted = hasSurvey;
 
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)]">
@@ -52,17 +50,18 @@ export default async function StudentPortalPage({ params }: Props) {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-4">
+
         {/* Student card */}
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <div className="flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
               style={{ backgroundColor: belt?.color || '#999' }}
             >
               {student.photo_url ? (
                 <img src={student.photo_url} alt="" className="w-12 h-12 rounded-full object-cover" />
               ) : (
-                `${student.first_name[0]}${student.last_name[0]}`
+                `${student.first_name[0]}${student.last_name?.[0] || ''}`
               )}
             </div>
             <div>
@@ -73,16 +72,15 @@ export default async function StudentPortalPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Current homework */}
+        {/* Always visible: Homework */}
         {student.last_homework && (
-          <div className="bg-amber-50 border-l-3 border-[var(--tss-gold)] rounded-r-xl p-4"
-               style={{ borderLeft: `3px solid ${BRAND.colors.gold}` }}>
+          <div className="bg-amber-50 rounded-xl p-4" style={{ borderLeft: `3px solid ${BRAND.colors.gold}` }}>
             <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1">Your Homework</p>
             <p className="text-sm text-amber-900 font-medium">{student.last_homework}</p>
           </div>
         )}
 
-        {/* Next focus */}
+        {/* Always visible: Next Focus */}
         {student.next_recommended_focus && (
           <div className="bg-blue-50 rounded-xl p-4">
             <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide mb-1">Next Focus</p>
@@ -90,14 +88,106 @@ export default async function StudentPortalPage({ params }: Props) {
           </div>
         )}
 
-        {/* Session history */}
-        {results && results.length > 0 && (
+        {/* Latest session — basic info always visible */}
+        {latestResult && (
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50">
-              <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Recent Sessions</h3>
+              <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Latest Session</h3>
+            </div>
+            <div className="px-4 py-3 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-xs text-gray-400">Mission</span>
+                <span className="text-sm text-gray-700 text-right max-w-[65%]">
+                  {(latestResult as any).standalone_sessions?.mission || '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-gray-400">Date</span>
+                <span className="text-sm text-gray-700">
+                  {new Date(latestResult.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-gray-400">Status</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium ${
+                  latestResult.status === 'mastered' ? 'bg-green-50 text-green-700' :
+                  latestResult.status === 'competent' ? 'bg-blue-50 text-blue-700' :
+                  latestResult.status === 'partial' ? 'bg-amber-50 text-amber-700' :
+                  'bg-gray-50 text-gray-600'
+                }`}>
+                  {latestResult.status?.replace('_', ' ')}
+                </span>
+              </div>
+
+              {/* LOCKED: Coach feedback — unlocked after survey */}
+              {surveyCompleted ? (
+                <>
+                  {latestResult.coach_feedback && (
+                    <div className="pt-2 border-t border-gray-50">
+                      <p className="text-xs text-gray-400 mb-1">Coach Feedback</p>
+                      <p className="text-sm text-gray-700">{latestResult.coach_feedback}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-4 pt-1">
+                    {latestResult.focus_rating && (
+                      <div>
+                        <span className="text-xs text-gray-400">Focus </span>
+                        <span className="text-xs font-medium text-[var(--tss-navy)]">{latestResult.focus_rating}/5</span>
+                      </div>
+                    )}
+                    {latestResult.frustration_rating && (
+                      <div>
+                        <span className="text-xs text-gray-400">Frustration </span>
+                        <span className="text-xs font-medium text-[var(--tss-navy)]">{latestResult.frustration_rating}/10</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Video link — always shows when available */}
+                  {(latestResult as any).video_link && (
+                    <div className="pt-2 border-t border-gray-50">
+                      <a
+                        href={(latestResult as any).video_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white"
+                        style={{ background: BRAND.colors.navy }}
+                      >
+                        <span>▶</span>
+                        <span>Watch Session Video</span>
+                      </a>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="pt-2 border-t border-gray-50">
+                  <div className="bg-gray-50 rounded-lg px-3 py-3 text-center">
+                    <p className="text-xs text-gray-500">🔒 Complete the feedback below to unlock your full coach report{(latestResult as any).video_link ? ' and session video' : ''}.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Survey */}
+        {latestResult && latestResult.survey_unlocked && !hasSurvey && (
+          <SurveyForm resultId={latestResult.id} studentId={student.id} token={token} />
+        )}
+
+        {latestResult && hasSurvey && (
+          <div className="bg-green-50 rounded-xl p-4 text-center">
+            <p className="text-sm text-green-700 font-medium">✓ Feedback submitted — thank you!</p>
+          </div>
+        )}
+
+        {/* Previous sessions — unlocked after survey */}
+        {surveyCompleted && results && results.length > 1 && (
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-50">
+              <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Previous Sessions</h3>
             </div>
             <div className="divide-y divide-gray-50">
-              {results.map((r: any) => (
+              {results.slice(1).map((r: any) => (
                 <div key={r.id} className="px-4 py-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -110,17 +200,20 @@ export default async function StudentPortalPage({ params }: Props) {
                         <span className="capitalize">{r.status?.replace('_', ' ')}</span>
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400">Focus: {r.focus_rating}/5</p>
-                    </div>
+                    <span className="text-xs text-gray-400">Focus: {r.focus_rating}/5</span>
                   </div>
                   {r.coach_feedback && (
                     <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded p-2">{r.coach_feedback}</p>
                   )}
-                  {r.homework && (
-                    <p className="text-xs text-amber-700 mt-1">
-                      <span className="font-medium">Homework:</span> {r.homework}
-                    </p>
+                  {r.video_link && (
+                    <a
+                      href={r.video_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--tss-navy)]"
+                    >
+                      ▶ Watch Video
+                    </a>
                   )}
                 </div>
               ))}
@@ -128,19 +221,8 @@ export default async function StudentPortalPage({ params }: Props) {
           </div>
         )}
 
-        {/* Survey form */}
-        {latestResult && latestResult.survey_unlocked && !hasSurvey && (
-          <SurveyForm resultId={latestResult.id} studentId={student.id} token={token} />
-        )}
-
-        {latestResult && hasSurvey && (
-          <div className="bg-green-50 rounded-xl p-4 text-center">
-            <p className="text-sm text-green-700 font-medium">Thank you for your feedback!</p>
-          </div>
-        )}
       </div>
 
-      {/* Footer */}
       <div className="text-center py-8">
         <p className="text-xs text-gray-400">The Surf Sequence® · {BRAND.tagline}</p>
       </div>
