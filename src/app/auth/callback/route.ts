@@ -21,11 +21,16 @@ export async function GET(request: NextRequest) {
         .eq('email', data.user.email!)
         .single();
 
-      if (coach && !coach.auth_user_id) {
+      const isFirstLogin = coach && !coach.auth_user_id;
+
+      if (isFirstLogin) {
         await admin
           .from('coaches')
           .update({ auth_user_id: data.user.id })
           .eq('id', coach.id);
+
+        // First time — send to set password
+        return NextResponse.redirect(`${origin}/set-password`);
       }
 
       return NextResponse.redirect(`${origin}${next}`);

@@ -31,8 +31,8 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  if (request.nextUrl.pathname === '/login') {
-    if (user) {
+  if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/set-password') {
+    if (user && request.nextUrl.pathname === '/login') {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return supabaseResponse;
