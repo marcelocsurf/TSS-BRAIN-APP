@@ -5,6 +5,13 @@ import { ToggleCoachStatus } from './toggle-coach-status';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  coordinator: 'Coordinator',
+  coach: 'Coach',
+  assistant: 'Assistant',
+};
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -14,7 +21,7 @@ export default async function CoachProfilePage({ params }: Props) {
   const supabase = await createClient();
 
   const { data: coach } = await supabase
-    .from('coach_stats')
+    .from('coaches')
     .select('*')
     .eq('id', id)
     .single();
@@ -53,9 +60,20 @@ export default async function CoachProfilePage({ params }: Props) {
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-mono tracking-widest text-[var(--tss-gold)] uppercase mb-1">{coach.role?.replace('_', ' ')}</p>
+            <p className="text-xs font-mono tracking-widest text-[var(--tss-gold)] uppercase mb-1">
+              {ROLE_LABELS[coach.role] || coach.role}
+            </p>
             <h2 className="text-xl font-bold text-[var(--tss-navy)]">{coach.display_name}</h2>
-            <p className="text-sm text-gray-400">Max Belt: {coach.max_belt_permission?.replace('_', ' ')}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-gray-400">Max Belt: {coach.max_belt_permission?.replace('_', ' ')}</span>
+              {coach.certification_level && (
+                <>
+                  <span className="text-gray-200">·</span>
+                  <span className="text-sm text-gray-400">{coach.certification_level}</span>
+                </>
+              )}
+            </div>
+            {coach.email && <p className="text-xs text-gray-300 mt-1">{coach.email}</p>}
           </div>
           <div className="flex gap-2">
             <ToggleCoachStatus
@@ -71,27 +89,13 @@ export default async function CoachProfilePage({ params }: Props) {
             </Link>
           </div>
         </div>
-
-        <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-50">
-          {[
-            { label: 'Sessions', value: coach.total_sessions || 0 },
-            { label: 'Students', value: coach.unique_students || 0 },
-            { label: 'Student Rating', value: coach.avg_student_rating ? `${coach.avg_student_rating}/5` : '—' },
-            { label: 'Last Session', value: coach.last_session_date ? new Date(coach.last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' },
-          ].map(s => (
-            <div key={s.label}>
-              <p className="text-lg font-bold text-[var(--tss-navy)]">{s.value}</p>
-              <p className="text-xs text-gray-400">{s.label}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Certifications */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Certifications</h3>
-          <p className="text-xs text-gray-400 mt-0.5">Only you can grant or revoke certifications</p>
+          <p className="text-xs text-gray-400 mt-0.5">Only admin can grant or revoke certifications</p>
         </div>
         <div className="px-5 py-4">
           <CertificationManager
