@@ -33,7 +33,8 @@ export interface SessionEvalInput {
   status: SessionStatus;
   focus_rating: number;
   frustration_rating: number;
-  coach_feedback: string;
+  coach_feedback: string;       // PUBLIC — visible to student
+  internal_notes?: string;      // PRIVATE — coaches only, never sent to student
   whats_next: string;
   homework: string;
 }
@@ -58,7 +59,7 @@ export async function getCurrentCoach() {
 }
 
 // ═══════════════════════════════════════
-// GET OCEAN RULES (for client-side validation)
+// GET OCEAN RULES
 // ═══════════════════════════════════════
 
 export async function getOceanRules() {
@@ -95,7 +96,7 @@ export async function searchDrills(query: string, pilar?: string) {
 }
 
 // ═══════════════════════════════════════
-// CLOSE SESSION — THE critical function
+// CLOSE SESSION
 // ═══════════════════════════════════════
 
 export async function closeStandaloneSession(
@@ -114,15 +115,15 @@ export async function closeStandaloneSession(
   // 2. Get coach
   const coach = await getCurrentCoach();
 
-  // 3. Get student (for snapshot + portal_token)
+  // 3. Get student
   const { data: student, error: studentErr } = await supabase
     .from('students')
-    .select('id, belt_level, current_sequence_number, current_step_order, ocean_level, portal_token, email')
+    .select('id, first_name, last_name, belt_level, current_sequence_number, current_step_order, ocean_level, portal_token, email')
     .eq('id', draft.student_id)
     .single();
   if (studentErr || !student) throw new Error('Student not found');
 
-  // 4. Create standalone session (context only)
+  // 4. Create standalone session
   const { data: session, error: sessionErr } = await supabase
     .from('standalone_sessions')
     .insert({
@@ -152,7 +153,7 @@ export async function closeStandaloneSession(
 
   if (sessionErr) throw new Error(`Session creation failed: ${sessionErr.message}`);
 
-  // 5. Create student_session_results row (THE evaluation record)
+  // 5. Create student_session_results with internal_notes (never sent to student)
   const { data: result, error: resultErr } = await supabase
     .from('student_session_results')
     .insert({
@@ -161,7 +162,8 @@ export async function closeStandaloneSession(
       status: evaluation.status,
       focus_rating: evaluation.focus_rating,
       frustration_rating: evaluation.frustration_rating,
-      coach_feedback: evaluation.coach_feedback,
+      coach_feedback: evaluation.coach_feedback,       // PUBLIC
+      internal_notes: evaluation.internal_notes || null, // PRIVATE
       whats_next: evaluation.whats_next,
       homework: evaluation.homework,
       completion_state: 'closed',
@@ -173,7 +175,7 @@ export async function closeStandaloneSession(
 
   if (resultErr) throw new Error(`Result creation failed: ${resultErr.message}`);
 
-  // 6. Update student profile snapshots (via RPC)
+  // 6. Update student profile
   const { error: rpcErr } = await supabase.rpc('update_student_profile_on_close', {
     p_student_id: draft.student_id,
     p_session_result_id: result.id,
@@ -186,8 +188,6 @@ export async function closeStandaloneSession(
   });
 
   if (rpcErr) {
-    console.error('Profile update failed (non-blocking):', rpcErr.message);
-    // Fallback: direct update
     await supabase.from('students').update({
       last_session_id: result.id,
       last_session_date: draft.session_date || new Date().toISOString(),
@@ -199,7 +199,7 @@ export async function closeStandaloneSession(
     }).eq('id', draft.student_id);
   }
 
-  // 7. Audit log (service role — coach cannot write directly)
+  // 7. Audit log
   await admin.from('audit_log').insert({
     session_result_id: result.id,
     actor_type: 'coach',
@@ -211,19 +211,19 @@ export async function closeStandaloneSession(
     note: `Standalone session closed for ${draft.student_id}. Status: ${evaluation.status}.`,
   });
 
-  // 8. Email (async, non-blocking — don't fail the close)
+  // 8. Email — ONLY public feedback, never internal_notes
   if (student.email) {
     try {
       const { sendSessionEmail } = await import('@/lib/actions/email');
       const emailResult = await sendSessionEmail({
-        studentName: `${(await supabase.from('students').select('first_name, last_name').eq('id', draft.student_id).single()).data?.first_name || 'Student'}`,
+        studentName: student.first_name,
         studentEmail: student.email,
         portalToken: student.portal_token,
         coachName: coach.display_name,
         sessionDate: draft.session_date || new Date().toISOString(),
         mission: draft.mission,
         status: evaluation.status,
-        coachFeedback: evaluation.coach_feedback,
+        coachFeedback: evaluation.coach_feedback, // PUBLIC only
         homework: evaluation.homework,
         whatsNext: evaluation.whats_next,
         beltLevel: student.belt_level,
@@ -237,7 +237,6 @@ export async function closeStandaloneSession(
       }
     } catch (emailErr: any) {
       console.error('Email failed (non-blocking):', emailErr.message);
-      // Session is still closed. Email can be retried later.
     }
   }
 
