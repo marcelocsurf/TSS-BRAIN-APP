@@ -4,14 +4,14 @@ import { redirect } from 'next/navigation';
 export default async function AuditDashboardPage() {
   const supabase = await createClient();
 
-  // Check role — holistic_coach only
+  // Check role — admin only
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
   const { data: coach } = await supabase.from('coaches').select('role').eq('auth_user_id', user.id).single();
-  if (coach?.role !== 'holistic_coach') {
+  if (coach?.role !== 'admin') {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-400">Access restricted to Holistic Coach.</p>
+        <p className="text-gray-400">Access restricted to Admin.</p>
       </div>
     );
   }
