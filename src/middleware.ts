@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-if (request.nextUrl.pathname.startsWith('/portal') || request.nextUrl.pathname.startsWith('/intake')) {
+  if (request.nextUrl.pathname.startsWith('/portal') || request.nextUrl.pathname.startsWith('/intake')) {
     return supabaseResponse;
   }
 

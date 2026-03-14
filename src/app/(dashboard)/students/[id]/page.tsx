@@ -2,6 +2,7 @@ import { getStudent } from '@/lib/actions/students';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { InternalNotesCard } from './internal-notes';
+import { IntakeStatusCard } from './intake-status';
 import Link from 'next/link';
 import { PhotoUpload } from './photo-upload';
 import { notFound } from 'next/navigation';
@@ -21,9 +22,17 @@ export default async function StudentProfilePage({ params }: Props) {
 
   const belt = BELT_DISPLAY[student.belt_level];
   const hasLastSession = !!student.last_session_date;
+  const isArchived = student.status === 'archived';
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
+      {/* Archived banner */}
+      {isArchived && (
+        <div className="bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-center">
+          <p className="text-sm text-gray-500 font-medium">This student is archived</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <PhotoUpload
@@ -43,14 +52,20 @@ export default async function StudentProfilePage({ params }: Props) {
           <p className="text-xs text-gray-400">
             Sequence {student.current_sequence_number} / Step {student.current_step_order}
           </p>
-          {(student as any).instagram && (
-            <p className="text-xs text-[var(--tss-gold)]">@{(student as any).instagram}</p>
+          {student.instagram && (
+            <p className="text-xs text-[var(--tss-gold)]">@{student.instagram}</p>
           )}
         </div>
       </div>
 
       {/* Quick actions */}
       <div className="flex gap-2">
+        <Link
+          href={`/students/${student.id}/edit`}
+          className="flex-1 text-center py-2 border border-[var(--tss-navy)] text-[var(--tss-navy)] text-sm rounded-lg hover:bg-[var(--tss-navy)] hover:text-white transition-colors"
+        >
+          Edit
+        </Link>
         <Link
           href={`/sessions/new?student=${student.id}`}
           className="flex-1 text-center py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90"
@@ -70,6 +85,12 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </div>
 
+      {/* Intake status + link */}
+      <IntakeStatusCard
+        portalToken={student.portal_token}
+        intakeCompletedAt={student.intake_completed_at}
+      />
+
       {/* Last Session Card */}
       <Card title="Last Session">
         {hasLastSession ? (
@@ -87,13 +108,13 @@ export default async function StudentProfilePage({ params }: Props) {
       </Card>
 
       {/* Goals */}
-      {((student as any).goal_long_term || (student as any).goal_mid_term || (student as any).goal_short_term) && (
+      {(student.goal_long_term || student.goal_mid_term || student.goal_short_term) && (
         <Card title="Goals">
-          <Row label="Long Term (1-3 years)" value={(student as any).goal_long_term} />
-          <Row label="Mid Term (3-6 months)" value={(student as any).goal_mid_term} />
-          <Row label="Short Term (1 week - 1 month)" value={(student as any).goal_short_term} />
-          <Row label="Biggest Barrier" value={(student as any).biggest_barrier} />
-          <Row label="Fears / Phobias" value={(student as any).fears_phobias} />
+          <Row label="Long Term (1-3 years)" value={student.goal_long_term} />
+          <Row label="Mid Term (3-6 months)" value={student.goal_mid_term} />
+          <Row label="Short Term (1 week - 1 month)" value={student.goal_short_term} />
+          <Row label="Biggest Barrier" value={student.biggest_barrier} />
+          <Row label="Fears / Phobias" value={student.fears_phobias} />
         </Card>
       )}
 
@@ -104,21 +125,17 @@ export default async function StudentProfilePage({ params }: Props) {
         <Row label="Step" value={`${student.current_step_order}`} />
         <Row label="Ocean Level" value={student.ocean_level} />
         <Row label="Primary Goal" value={student.primary_goal} />
-        {(student as any).evaluation_score !== null && (student as any).evaluation_score !== undefined && (
-          <Row label="Initial Eval Score" value={`${(student as any).evaluation_score} pts`} />
-        )}
       </Card>
 
       {/* Surf Profile */}
-      {((student as any).surf_experience_years || (student as any).surf_frequency || (student as any).stance || (student as any).board_type || (student as any).favorite_wave_size) && (
+      {(student.surf_experience_years || student.surf_frequency || student.stance || student.board_type) && (
         <Card title="Surf Profile">
-          <Row label="Stance" value={(student as any).stance} />
-          <Row label="Experience" value={(student as any).surf_experience_years} />
-          <Row label="Frequency" value={(student as any).surf_frequency} />
-          <Row label="Board Type" value={(student as any).board_type} />
-          <Row label="Favorite Wave Size" value={(student as any).favorite_wave_size} />
-          <Row label="Other Sports" value={(student as any).other_sports} />
-          <Row label="Learning Style" value={(student as any).learning_style} />
+          <Row label="Stance" value={student.stance} />
+          <Row label="Experience" value={student.surf_experience_years} />
+          <Row label="Frequency" value={student.surf_frequency} />
+          <Row label="Board Type" value={student.board_type} />
+          <Row label="Other Sports" value={student.other_sports} />
+          <Row label="Learning Style" value={student.learning_style} />
         </Card>
       )}
 
@@ -133,25 +150,25 @@ export default async function StudentProfilePage({ params }: Props) {
         <Row label="Risk Notes" value={student.risk_notes} />
       </Card>
 
-      {/* Contact */}
-      <Card title="Contact">
+      {/* Contact & Personal */}
+      <Card title="Contact & Personal">
         <Row label="Email" value={student.email} />
         <Row label="Phone" value={student.phone} />
-        {(student as any).date_of_birth && (
-          <Row label="Date of Birth" value={new Date((student as any).date_of_birth).toLocaleDateString()} />
+        {student.date_of_birth && (
+          <Row label="Date of Birth" value={new Date(student.date_of_birth).toLocaleDateString()} />
         )}
         <Row label="Age" value={student.age?.toString()} />
         <Row label="Nationality" value={student.nationality} />
-        <Row label="Languages" value={(student as any).languages} />
-        <Row label="Instagram" value={(student as any).instagram ? `@${(student as any).instagram}` : null} />
-        <Row label="Height" value={(student as any).height} />
-        <Row label="Weight" value={(student as any).weight} />
-        <Row label="Shirt Size" value={(student as any).shirt_size} />
-        <Row label="How did they hear about us" value={(student as any).how_did_you_hear} />
-        {(student as any).returning_student && (
+        <Row label="Languages" value={student.languages} />
+        <Row label="Instagram" value={student.instagram ? `@${student.instagram}` : null} />
+        <Row label="Height" value={student.height} />
+        <Row label="Weight" value={student.weight} />
+        <Row label="Shirt Size" value={student.shirt_size} />
+        <Row label="How did they hear about us" value={student.how_did_you_hear} />
+        {student.returning_student && (
           <Row label="Returning Student" value="Yes" />
         )}
-        {(student as any).waiver_signed && (
+        {student.waiver_signed && (
           <Row label="Waiver Signed" value="Yes" />
         )}
       </Card>

@@ -91,7 +91,12 @@ export default async function StudentRosterPage({ searchParams }: Props) {
               </div>
 
               {/* Last session indicator */}
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                {!s.intake_completed_at && (
+                  <span className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">
+                    No profile
+                  </span>
+                )}
                 {s.last_session_date ? (
                   <p className="text-[10px] text-gray-400">
                     {new Date(s.last_session_date).toLocaleDateString()}
