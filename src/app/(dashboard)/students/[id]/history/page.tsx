@@ -4,6 +4,7 @@ import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { VideoLinkEditor } from './video-link-editor';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -21,7 +22,6 @@ export default async function StudentHistoryPage({ params }: Props) {
 
   const supabase = await createClient();
 
-  // Get all session results for this student
   const { data: sessions } = await supabase
     .from('student_session_results')
     .select(`
@@ -50,11 +50,10 @@ export default async function StudentHistoryPage({ params }: Props) {
 
   const totalSessions = sessions?.length || 0;
   const mastered = sessions?.filter(s => s.status === 'mastered').length || 0;
-  const competent = sessions?.filter(s => s.status === 'competent').length || 0;
-  const avgFocus = sessions && sessions.length > 0
+  const avgFocus = sessions && sessions.filter(s => s.focus_rating).length > 0
     ? (sessions.reduce((sum, s) => sum + (s.focus_rating || 0), 0) / sessions.filter(s => s.focus_rating).length).toFixed(1)
     : '—';
-  const avgFrustration = sessions && sessions.length > 0
+  const avgFrustration = sessions && sessions.filter(s => s.frustration_rating).length > 0
     ? (sessions.reduce((sum, s) => sum + (s.frustration_rating || 0), 0) / sessions.filter(s => s.frustration_rating).length).toFixed(1)
     : '—';
 
@@ -116,7 +115,7 @@ export default async function StudentHistoryPage({ params }: Props) {
                 <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-[var(--tss-navy)]">
-                      {date ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      {date ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : new Date(session.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                     <p className="text-xs text-gray-400">{venue}{duration ? ` · ${duration} min` : ''}</p>
                   </div>
@@ -147,6 +146,12 @@ export default async function StudentHistoryPage({ params }: Props) {
                       <p className="text-sm text-gray-700">{session.coach_feedback}</p>
                     </div>
                   )}
+                  {(session as any).internal_notes && (
+                    <div className="bg-red-50 rounded-lg px-3 py-2">
+                      <p className="text-xs text-red-500 font-medium mb-0.5">🔒 Internal Notes</p>
+                      <p className="text-sm text-gray-700">{(session as any).internal_notes}</p>
+                    </div>
+                  )}
                   {session.homework && (
                     <div className="bg-amber-50 rounded-lg px-3 py-2">
                       <p className="text-xs text-amber-600 font-medium mb-0.5">Homework</p>
@@ -156,6 +161,12 @@ export default async function StudentHistoryPage({ params }: Props) {
                   {session.whats_next && (
                     <Row label="Next Focus" value={session.whats_next} highlight />
                   )}
+
+                  {/* Video link editor */}
+                  <VideoLinkEditor
+                    sessionResultId={session.id}
+                    currentLink={(session as any).video_link || ''}
+                  />
                 </div>
               </div>
             );
