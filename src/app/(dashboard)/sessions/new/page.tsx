@@ -441,6 +441,13 @@ export default function CoachFlowPage() {
                 rows={2} placeholder="Task for the student before next session"
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
             </div>
+
+            <div className="border-t border-gray-100 pt-3">
+              <label className="block text-xs font-medium text-red-500 mb-1">🔒 Internal Notes <span className="text-gray-400">(coaches only — never sent to student)</span></label>
+              <textarea value={(evaluation as any).internal_notes || ''} onChange={e => setE('internal_notes' as any, e.target.value)}
+                rows={2} placeholder="Private observations, behavior notes, real assessment..."
+                className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-gray-700" />
+            </div>
           </div>
         )}
 
