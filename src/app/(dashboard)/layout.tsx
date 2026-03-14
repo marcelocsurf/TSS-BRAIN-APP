@@ -28,9 +28,9 @@ export default async function DashboardLayout({
     .single();
 
   return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0 md:pl-56">
+    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0" style={{ paddingLeft: '0' }}>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-56 bg-[var(--tss-navy)] text-white">
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-[var(--tss-navy)] text-white z-30" style={{ width: '224px' }}>
         <div className="p-4 border-b border-white/10">
           <h1 className="text-lg font-bold">TSS Brain</h1>
           <p className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</p>
@@ -58,10 +58,12 @@ export default async function DashboardLayout({
         <span className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</span>
       </header>
 
-      {/* Main content */}
-      <main className="p-4 md:p-6 max-w-5xl mx-auto">
-        {children}
-      </main>
+      {/* Main content — offset by sidebar width on desktop */}
+      <div className="md:flex md:flex-col" style={{ marginLeft: '0' }}>
+        <main className="p-4 md:p-6 max-w-5xl mx-auto w-full md:ml-56">
+          {children}
+        </main>
+      </div>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 flex justify-around py-2 z-40">
