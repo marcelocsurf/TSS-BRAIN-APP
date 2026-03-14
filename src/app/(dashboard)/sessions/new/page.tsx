@@ -97,7 +97,7 @@ export default function CoachFlowPage() {
         if (!draft.student_id) return false;
         if (!draft.training_venue) return false;
         if (oceanCheck.state === 'blocked') return false;
-        if (oceanCheck.state === 'alert' && coach?.role !== 'holistic_coach' && coach?.role !== 'head_coach') return false;
+        if (oceanCheck.state === 'alert' && coach?.role !== 'admin' && coach?.role !== 'coordinator') return false;
         // Coach permission check
         if (selectedStudent && coach) {
           const perm = canCoachStudent(coach.max_belt_permission, selectedStudent.belt_level as BeltLevel);
