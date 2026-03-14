@@ -1,7 +1,9 @@
 import { getStudent } from '@/lib/actions/students';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
+import { InternalNotesCard } from './internal-notes';
 import Link from 'next/link';
+import { PhotoUpload } from './photo-upload';
 import { notFound } from 'next/navigation';
 
 interface Props {
@@ -24,16 +26,13 @@ export default async function StudentProfilePage({ params }: Props) {
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0"
-          style={{ backgroundColor: belt?.color || '#999' }}
-        >
-          {student.photo_url ? (
-            <img src={student.photo_url} alt="" className="w-16 h-16 rounded-full object-cover" />
-          ) : (
-            `${student.first_name[0]}${student.last_name?.[0] || ''}`
-          )}
-        </div>
+        <PhotoUpload
+          entityId={student.id}
+          entityType="student"
+          currentPhotoUrl={student.photo_url}
+          displayName={`${student.first_name} ${student.last_name}`}
+          avatarColor={belt?.color || '#999'}
+        />
         <div>
           <h2 className="text-xl font-bold text-[var(--tss-navy)]">
             {student.first_name} {student.last_name}
@@ -157,44 +156,8 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </Card>
 
-      {/* Internal Coach Notes — never visible to student */}
+      {/* Internal Coach Notes — client component, never visible to student */}
       <InternalNotesCard studentId={student.id} notes={student.coach_notes_general} />
-    </div>
-  );
-}
-
-async function InternalNotesCard({ studentId, notes }: { studentId: string; notes: string | null }) {
-  async function saveNotes(formData: FormData) {
-    'use server';
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
-    await supabase.from('students').update({
-      coach_notes_general: formData.get('notes') as string || null
-    }).eq('id', studentId);
-    const { revalidatePath } = await import('next/cache');
-    revalidatePath(`/students/${studentId}`);
-  }
-
-  return (
-    <div className="bg-white rounded-xl border border-red-100 overflow-hidden">
-      <div className="px-4 py-3 border-b border-red-50 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-red-500">🔒 Internal Coach Notes</h3>
-        <span className="text-[10px] text-red-300 bg-red-50 px-2 py-0.5 rounded-full">Never visible to student</span>
-      </div>
-      <div className="px-4 py-3">
-        <form action={saveNotes}>
-          <textarea
-            name="notes"
-            defaultValue={notes || ''}
-            rows={3}
-            placeholder="Private notes about this student — behavior, attitude, real assessment..."
-            className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-gray-700 focus:outline-none focus:ring-1 focus:ring-red-200"
-          />
-          <button type="submit" className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:opacity-90">
-            Save Notes
-          </button>
-        </form>
-      </div>
     </div>
   );
 }
