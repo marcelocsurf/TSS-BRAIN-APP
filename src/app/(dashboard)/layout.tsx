@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: '/students', label: 'Students', icon: '◉' },
   { href: '/sessions/new', label: 'Session', icon: '▶' },
   { href: '/camps', label: 'Camps', icon: '⛺' },
+  { href: '/coaches', label: 'Coaches', icon: '★' },
   { href: '/audit', label: 'Audit', icon: '✓' },
 ];
 
@@ -27,9 +28,9 @@ export default async function DashboardLayout({
     .single();
 
   return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)]">
+    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0 md:pl-56">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:flex-col fixed inset-y-0 left-0 w-56 bg-[var(--tss-navy)] text-white z-40">
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-56 bg-[var(--tss-navy)] text-white">
         <div className="p-4 border-b border-white/10">
           <h1 className="text-lg font-bold">TSS Brain</h1>
           <p className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</p>
@@ -57,12 +58,10 @@ export default async function DashboardLayout({
         <span className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</span>
       </header>
 
-      {/* Main content — offset by sidebar width on desktop */}
-      <div className="md:ml-56">
-        <main className="p-4 md:p-6 max-w-5xl mx-auto pb-20 md:pb-6">
-          {children}
-        </main>
-      </div>
+      {/* Main content */}
+      <main className="p-4 md:p-6 max-w-5xl mx-auto">
+        {children}
+      </main>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 flex justify-around py-2 z-40">
