@@ -47,7 +47,10 @@ export default async function StudentProfilePage({ params }: Props) {
           {(student as any).instagram && (
             <p className="text-xs text-[var(--tss-gold)]">@{(student as any).instagram}</p>
           )}
-       {/* Quick actions */}
+        </div>
+      </div>
+
+      {/* Quick actions */}
       <div className="flex gap-2">
         <Link
           href={`/sessions/new?student=${student.id}`}
@@ -61,8 +64,6 @@ export default async function StudentProfilePage({ params }: Props) {
         >
           History
         </Link>
-        
-     
         {!student.email && (
           <span className="px-3 py-2 bg-amber-50 text-amber-600 text-xs rounded-lg flex items-center">
             No email
