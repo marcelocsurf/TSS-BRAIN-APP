@@ -1,8 +1,9 @@
 import { getStudent } from '@/lib/actions/students';
-import { getStudentLevelAccess, grantLevelAccess, revokeLevelAccess } from '@/lib/actions/access';
+import { getStudentLevelAccess } from '@/lib/actions/access';
 import { createClient } from '@/lib/supabase/server';
-import { BELT_DISPLAY, BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
+import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
+import { LevelAccessCard } from '@/components/student/LevelAccessCard';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -20,31 +21,30 @@ export default async function StudentProfilePage({ params }: Props) {
     notFound();
   }
 
-  // Load level access and session history in parallel
   const supabase = await createClient();
-  const [levelAccess, sessionHistory] = await Promise.all([
+  const [levelAccess, sessionResult] = await Promise.all([
     getStudentLevelAccess(id),
     supabase
       .from('student_session_results')
       .select(`
-        id, status, focus_rating, frustration_rating,
+        id, status, focus_rating,
         coach_feedback, homework, whats_next, created_at,
-        standalone_sessions(mission, training_venue, session_date, pilar)
+        standalone_sessions(mission, training_venue, session_date)
       `)
       .eq('student_id', id)
       .eq('completion_state', 'closed')
       .order('created_at', { ascending: false })
-      .limit(10)
-      .then(r => r.data ?? []),
+      .limit(10),
   ]);
 
+  const sessionHistory = sessionResult.data ?? [];
+  const unlockedKeys = levelAccess.map((a: any) => a.level_key);
   const belt = BELT_DISPLAY[student.belt_level];
-  const unlockedKeys = new Set(levelAccess.map((a: any) => a.level_key));
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
 
-      {/* ── HEADER ── */}
+      {/* Header */}
       <div className="flex items-center gap-4">
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0"
@@ -61,11 +61,13 @@ export default async function StudentProfilePage({ params }: Props) {
             {student.first_name} {student.last_name}
           </h2>
           <p className="text-sm text-gray-500">{belt?.en} — {belt?.levelName}</p>
-          <p className="text-xs text-gray-400">Seq {student.current_sequence_number} / Step {student.current_step_order}</p>
+          <p className="text-xs text-gray-400">
+            Seq {student.current_sequence_number} / Step {student.current_step_order}
+          </p>
         </div>
       </div>
 
-      {/* ── QUICK ACTIONS ── */}
+      {/* Quick actions */}
       <div className="flex gap-2">
         <Link
           href={`/sessions/new?student=${student.id}`}
@@ -87,44 +89,10 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </div>
 
-      {/* ── LEVEL ACCESS (Grant / Revoke) ── */}
-      <Card title="Level Access">
-        <div className="space-y-2">
-          {BELT_HIERARCHY.map((beltKey) => {
-            const display = BELT_DISPLAY[beltKey];
-            const isUnlocked = unlockedKeys.has(beltKey);
-            return (
-              <div
-                key={beltKey}
-                className="flex items-center justify-between py-1.5"
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: display.color }}
-                  />
-                  <span className="text-sm text-gray-700">
-                    {display.en}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {display.levelName}
-                  </span>
-                </div>
-                <GrantButton
-                  studentId={id}
-                  levelKey={beltKey}
-                  isUnlocked={isUnlocked}
-                />
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-50">
-          Unlocked levels appear in the student portal library.
-        </p>
-      </Card>
+      {/* Level Access */}
+      <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />
 
-      {/* ── LAST SESSION ── */}
+      {/* Last Session */}
       <Card title="Last Session">
         {student.last_session_date ? (
           <div className="space-y-2">
@@ -140,7 +108,7 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </Card>
 
-      {/* ── SESSION HISTORY ── */}
+      {/* Session History */}
       {sessionHistory.length > 0 && (
         <Card title={`Session History (${sessionHistory.length})`}>
           <div className="space-y-3">
@@ -155,16 +123,16 @@ export default async function StudentProfilePage({ params }: Props) {
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {session?.session_date
-                          ? new Date(session.session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          ? new Date(session.session_date).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric'
+                            })
                           : new Date(result.created_at).toLocaleDateString()}
                         {session?.training_venue && ` · ${session.training_venue}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusBadge status={result.status} />
-                      <span className="text-xs text-gray-400">
-                        Focus {result.focus_rating}/5
-                      </span>
+                      <span className="text-xs text-gray-400">Focus {result.focus_rating}/5</span>
                     </div>
                   </div>
                   {result.coach_feedback && (
@@ -184,7 +152,7 @@ export default async function StudentProfilePage({ params }: Props) {
         </Card>
       )}
 
-      {/* ── PROGRESSION ── */}
+      {/* Progression */}
       <Card title="Progression">
         <Row label="Belt" value={`${belt?.en} — ${belt?.levelName}`} />
         <Row label="Sequence" value={`#${student.current_sequence_number}`} />
@@ -193,7 +161,7 @@ export default async function StudentProfilePage({ params }: Props) {
         <Row label="Goal" value={student.primary_goal} />
       </Card>
 
-      {/* ── SAFETY ── */}
+      {/* Safety */}
       <Card title="Safety & Medical">
         <Row label="Emergency Contact" value={student.emergency_contact_name} />
         <Row label="Emergency Phone" value={student.emergency_contact_phone} />
@@ -204,7 +172,7 @@ export default async function StudentProfilePage({ params }: Props) {
         <Row label="Risk Notes" value={student.risk_notes} />
       </Card>
 
-      {/* ── CONTACT ── */}
+      {/* Contact */}
       <Card title="Contact">
         <Row label="Email" value={student.email} />
         <Row label="Phone" value={student.phone} />
@@ -213,7 +181,6 @@ export default async function StudentProfilePage({ params }: Props) {
         <Row label="Nationality" value={student.nationality} />
       </Card>
 
-      {/* ── COACH NOTES ── */}
       {student.coach_notes_general && (
         <Card title="Coach Notes">
           <p className="text-sm text-gray-700 whitespace-pre-wrap">{student.coach_notes_general}</p>
@@ -223,53 +190,6 @@ export default async function StudentProfilePage({ params }: Props) {
     </div>
   );
 }
-
-// ── GRANT BUTTON (Client Component) ──
-// Separate file would be cleaner but inline keeps the deploy simple
-import { useState } from 'react'; // needs 'use client' — see GrantButton below
-
-function GrantButton({
-  studentId,
-  levelKey,
-  isUnlocked,
-}: {
-  studentId: string;
-  levelKey: string;
-  isUnlocked: boolean;
-}) {
-  // Server Actions work directly from Server Components in Next.js 14
-  const grant = grantLevelAccess.bind(null, { student_id: studentId, level_key: levelKey });
-  const revoke = revokeLevelAccess.bind(null, { student_id: studentId, level_key: levelKey });
-
-  if (isUnlocked) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-green-600 font-medium">Unlocked</span>
-        <form action={revoke}>
-          <button
-            type="submit"
-            className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
-          >
-            Revoke
-          </button>
-        </form>
-      </div>
-    );
-  }
-
-  return (
-    <form action={grant}>
-      <button
-        type="submit"
-        className="text-xs px-3 py-1.5 bg-[var(--tss-navy)] text-white rounded-lg hover:opacity-90 transition-opacity"
-      >
-        Grant
-      </button>
-    </form>
-  );
-}
-
-// ── SHARED COMPONENTS ──
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
