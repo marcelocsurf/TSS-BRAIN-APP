@@ -3,32 +3,52 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { listStudents, type StudentRow } from '@/lib/actions/students';
-import { closeStandaloneSession, getCurrentCoach, getOceanRules, searchDrills, type SessionDraftInput, type SessionEvalInput } from '@/lib/actions/sessions';
+import {
+  closeStandaloneSession, getCurrentCoach, getOceanRules,
+  getPilarPartsForBelt, getDrillsFiltered,
+  type SessionDraftInput, type SessionEvalInput,
+} from '@/lib/actions/sessions';
 import { checkOceanRule, type OceanRule } from '@/lib/validations/ocean-rules';
 import { canCoachStudent } from '@/lib/validations/coach-permissions';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
-import { OCEAN_CONDITIONS, PILARS, PILAR_LABELS, SESSION_STATUS_OPTIONS, type OceanCondition, type Pilar, type SessionStatus } from '@/lib/constants/brand';
+import {
+  OCEAN_CONDITIONS, SESSION_STATUS_OPTIONS, TRAINING_VENUES,
+  WARMUP_OPTIONS, SIMULATION_OPTIONS, MENTAL_HACK_OPTIONS,
+  MISSION_TIME_OPTIONS, DURATION_OPTIONS, FRUSTRATION_DESCRIPTORS,
+  COACH_FEEDBACK_QUICK, HOMEWORK_CUES, INCIDENT_TYPES, SESSION_TYPES,
+  type OceanCondition, type SessionStatus,
+} from '@/lib/constants/brand';
 
-const STEPS = ['Context', 'Plan', 'Execute', 'Evaluate', 'Close', 'Confirm'];
+// ═══════════════════════════════════════
+// 3 MOMENTS
+// ═══════════════════════════════════════
 
-export default function CoachFlowPage() {
+const MOMENTS = [
+  { id: 'context', label: 'Context', color: 'bg-blue-400' },
+  { id: 'planning', label: 'Planning', color: 'bg-[var(--tss-gold)]' },
+  { id: 'close', label: 'Close', color: 'bg-green-500' },
+];
+
+export default function SessionCascadePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedStudent = searchParams.get('student');
 
-  const [step, setStep] = useState(0);
+  const [moment, setMoment] = useState(0); // 0=Context, 1=Planning, 2=Close
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Data
+  // Data from DB
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [oceanRules, setOceanRules] = useState<OceanRule[]>([]);
   const [coach, setCoach] = useState<any>(null);
-  const [drillResults, setDrillResults] = useState<any[]>([]);
+  const [pilarParts, setPilarParts] = useState<{ id: string; pilar: string; part_name: string }[]>([]);
+  const [drills, setDrills] = useState<any[]>([]);
+  const [drillSearch, setDrillSearch] = useState('');
 
-  // Form state: Draft
+  // Form: Draft (Context + Planning)
   const [draft, setDraft] = useState<SessionDraftInput>({
     student_id: preselectedStudent || '',
     session_date: new Date().toISOString().slice(0, 10),
@@ -36,7 +56,7 @@ export default function CoachFlowPage() {
     ocean_conditions: '3_4ft' as OceanCondition,
     risk_state: 'safe',
     is_safety_layer: false,
-    pilar: 'technical' as Pilar,
+    pilar: null,
     pilar_part: '',
     drill_id: '',
     mission: '',
@@ -45,9 +65,12 @@ export default function CoachFlowPage() {
     session_type: 'Training',
     mental_hack: '',
     warm_up_notes: '',
+    simulation: '',
+    mission_time: '',
+    repetitions: undefined,
   });
 
-  // Form state: Evaluation
+  // Form: Evaluation (Close)
   const [evaluation, setEvaluation] = useState<SessionEvalInput>({
     status: '' as SessionStatus,
     focus_rating: 0,
@@ -55,12 +78,19 @@ export default function CoachFlowPage() {
     coach_feedback: '',
     whats_next: '',
     homework: '',
+    internal_notes: '',
+    incident_type: '',
+    incident_description: '',
+    incident_action: '',
   });
 
-  // Ocean rule check result
+  const [showIncident, setShowIncident] = useState(false);
   const [oceanCheck, setOceanCheck] = useState<{ state: string; note: string | null }>({ state: 'safe', note: null });
 
-  // Load initial data
+  // ═══════════════════════════════════════
+  // LOAD DATA
+  // ═══════════════════════════════════════
+
   useEffect(() => {
     Promise.all([
       listStudents({ status: 'active' }),
@@ -73,7 +103,7 @@ export default function CoachFlowPage() {
     });
   }, []);
 
-  // Ocean check when student or conditions change
+  // Ocean check
   useEffect(() => {
     if (!draft.student_id || !draft.ocean_conditions) return;
     const student = students.find(s => s.id === draft.student_id);
@@ -83,42 +113,89 @@ export default function CoachFlowPage() {
     setDraft(d => ({ ...d, risk_state: result.state as any }));
   }, [draft.student_id, draft.ocean_conditions, students, oceanRules]);
 
+  // Load pilar parts when student changes
+  useEffect(() => {
+    const student = students.find(s => s.id === draft.student_id);
+    if (!student) return;
+    getPilarPartsForBelt(student.belt_level).then(setPilarParts).catch(() => {});
+  }, [draft.student_id, students]);
+
+  // Load drills when pilar_part changes
+  useEffect(() => {
+    if (!draft.pilar_part || !draft.student_id) {
+      setDrills([]);
+      return;
+    }
+    const student = students.find(s => s.id === draft.student_id);
+    if (!student) return;
+    const venue = TRAINING_VENUES.find(v => v.value === draft.training_venue);
+    getDrillsFiltered({
+      beltLevel: student.belt_level,
+      pilarPart: draft.pilar_part,
+      isWaterVenue: venue?.isWater,
+    }).then(setDrills).catch(() => {});
+  }, [draft.pilar_part, draft.student_id, draft.training_venue, students]);
+
   const selectedStudent = students.find(s => s.id === draft.student_id);
+  const selectedVenue = TRAINING_VENUES.find(v => v.value === draft.training_venue);
+  const isWaterVenue = selectedVenue?.isWater ?? true;
+  const selectedDrill = drills.find((d: any) => d.id === draft.drill_id);
+
+  // Filtered drills by search
+  const filteredDrills = drillSearch
+    ? drills.filter((d: any) =>
+        d.drill_name.toLowerCase().includes(drillSearch.toLowerCase()) ||
+        d.key_cue?.toLowerCase().includes(drillSearch.toLowerCase())
+      )
+    : drills;
 
   const setD = (field: keyof SessionDraftInput, value: any) =>
     setDraft(d => ({ ...d, [field]: value }));
   const setE = (field: keyof SessionEvalInput, value: any) =>
     setEvaluation(e => ({ ...e, [field]: value }));
 
-  // Validation per step
+  // When pilar_part is selected, auto-set the pilar based on the part's pilar
+  const handlePilarPartSelect = (partName: string) => {
+    const part = pilarParts.find(p => p.part_name === partName);
+    const pilarMap: Record<string, string> = {
+      'Technical': 'technical',
+      'Tactical': 'tactical',
+      'Mental': 'mental',
+      'Physical': 'physical',
+    };
+    setDraft(d => ({
+      ...d,
+      pilar_part: partName,
+      pilar: pilarMap[part?.pilar || ''] as any || null,
+      drill_id: '', // Reset drill when pilar_part changes
+    }));
+  };
+
+  // ═══════════════════════════════════════
+  // VALIDATION
+  // ═══════════════════════════════════════
+
   const canAdvance = (): boolean => {
-    switch (step) {
+    switch (moment) {
       case 0: // Context
-        if (!draft.student_id) return false;
-        if (!draft.training_venue) return false;
-        if (oceanCheck.state === 'blocked') return false;
-        if (oceanCheck.state === 'alert' && coach?.role !== 'admin' && coach?.role !== 'coordinator') return false;
-        // Coach permission check
+        if (!draft.student_id || !draft.training_venue) return false;
+        if (isWaterVenue && oceanCheck.state === 'blocked') return false;
         if (selectedStudent && coach) {
           const perm = canCoachStudent(coach.max_belt_permission, selectedStudent.belt_level as BeltLevel);
           if (!perm.allowed) return false;
         }
         return true;
-      case 1: // Plan
-        return draft.mission.trim().length >= 5;
-      case 2: // Execute
-        return (draft.duration_minutes || 0) > 0;
-      case 3: // Evaluate
-        return !!evaluation.status && evaluation.focus_rating >= 1 && evaluation.frustration_rating >= 1;
-      case 4: // Close
-        return evaluation.coach_feedback.trim().length >= 10 &&
-               evaluation.whats_next.trim().length >= 5 &&
-               evaluation.homework.trim().length >= 5;
-      case 5: // Confirm
+      case 1: // Planning
+        return !!draft.pilar_part && draft.mission.trim().length >= 5;
+      case 2: // Close
         return validateMandatoryFields(evaluation).valid;
       default: return false;
     }
   };
+
+  // ═══════════════════════════════════════
+  // SUBMIT
+  // ═══════════════════════════════════════
 
   const handleClose = async () => {
     setLoading(true);
@@ -145,31 +222,36 @@ export default function CoachFlowPage() {
     );
   }
 
+  // ═══════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════
+
   return (
     <div className="max-w-lg mx-auto">
-      {/* Step indicator */}
+      {/* Moment indicator */}
       <div className="flex items-center gap-1 mb-6">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex-1 flex flex-col items-center">
-            <div className={`w-full h-1 rounded-full mb-1 ${
-              i < step ? 'bg-green-400' : i === step ? 'bg-[var(--tss-gold)]' : 'bg-gray-200'
+        {MOMENTS.map((m, i) => (
+          <div key={m.id} className="flex-1 flex flex-col items-center">
+            <div className={`w-full h-1.5 rounded-full mb-1 ${
+              i < moment ? 'bg-green-400' : i === moment ? m.color : 'bg-gray-200'
             }`} />
-            <span className={`text-[10px] ${i === step ? 'text-[var(--tss-navy)] font-semibold' : 'text-gray-400'}`}>
-              {s}
+            <span className={`text-[10px] ${i === moment ? 'text-[var(--tss-navy)] font-semibold' : 'text-gray-400'}`}>
+              {m.label}
             </span>
           </div>
         ))}
       </div>
 
-      {/* Step content */}
       <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 min-h-[300px]">
 
-        {/* STEP 0: Context */}
-        {step === 0 && (
+        {/* ═══════════════════════════════════════ */}
+        {/* MOMENT 1: CONTEXT */}
+        {/* ═══════════════════════════════════════ */}
+        {moment === 0 && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--tss-navy)]">1. Context</h3>
+            <h3 className="font-semibold text-[var(--tss-navy)] text-sm">Moment 1 — Context</h3>
 
-            {/* Student picker */}
+            {/* Step 1: Student */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Student *</label>
               <select value={draft.student_id} onChange={e => setD('student_id', e.target.value)}
@@ -186,81 +268,77 @@ export default function CoachFlowPage() {
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Venue *</label>
-              <select value={draft.training_venue} onChange={e => setD('training_venue', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Select...</option>
-                <option value="Beachbreak">Beachbreak</option>
-                <option value="Pointbreak">Pointbreak</option>
-                <option value="Reefbreak">Reefbreak</option>
-              </select>
-            </div>
+            {/* Student info card */}
+            {selectedStudent && (
+              <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
+                <p className="font-medium">{selectedStudent.first_name} {selectedStudent.last_name} — {BELT_DISPLAY[selectedStudent.belt_level]?.en}</p>
+                <p>Seq {selectedStudent.current_sequence_number} / Step {selectedStudent.current_step_order}</p>
+                {selectedStudent.allergies && <p className="text-red-600">Allergies: {selectedStudent.allergies}</p>}
+                {selectedStudent.injuries && <p className="text-red-600">Injuries: {selectedStudent.injuries}</p>}
+                {selectedStudent.last_homework && <p>Last HW: {selectedStudent.last_homework}</p>}
+                {selectedStudent.next_recommended_focus && <p>Next focus: {selectedStudent.next_recommended_focus}</p>}
+              </div>
+            )}
 
+            {/* Step 2: Venue */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Ocean Conditions *</label>
-              <div className="grid grid-cols-5 gap-1">
-                {OCEAN_CONDITIONS.map(oc => (
-                  <button key={oc.value} type="button" onClick={() => setD('ocean_conditions', oc.value)}
+              <label className="block text-xs font-medium text-gray-600 mb-1">Training Venue *</label>
+              <div className="grid grid-cols-3 gap-1">
+                {TRAINING_VENUES.map(v => (
+                  <button key={v.value} type="button" onClick={() => setD('training_venue', v.value)}
                     className={`py-2 text-xs rounded-lg border transition-all ${
-                      draft.ocean_conditions === oc.value
+                      draft.training_venue === v.value
                         ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
                         : 'border-gray-200 text-gray-600 hover:border-gray-400'
                     }`}>
-                    {oc.label}
+                    {v.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Ocean rule alert */}
-            {oceanCheck.state === 'blocked' && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm font-medium text-red-700">BLOCKED — Cannot proceed</p>
-                <p className="text-xs text-red-600 mt-1">{oceanCheck.note}</p>
-              </div>
-            )}
-            {oceanCheck.state === 'alert' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p className="text-sm font-medium text-amber-700">ALERT — Override required</p>
-                <p className="text-xs text-amber-600 mt-1">{oceanCheck.note}</p>
-              </div>
-            )}
-
-            {/* Safety toggle */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={draft.is_safety_layer}
-                onChange={e => setD('is_safety_layer', e.target.checked)}
-                className="rounded" />
-              <span className="text-sm text-gray-700">Safety-focused session</span>
-            </label>
-
-            {/* Pilar (hidden if safety) */}
-            {!draft.is_safety_layer && (
+            {/* Step 3: Ocean Conditions (only for water venues) */}
+            {isWaterVenue && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Pilar *</label>
-                <div className="grid grid-cols-4 gap-1">
-                  {PILARS.map(pil => (
-                    <button key={pil} type="button" onClick={() => setD('pilar', pil)}
+                <label className="block text-xs font-medium text-gray-600 mb-1">Ocean Conditions *</label>
+                <div className="grid grid-cols-5 gap-1">
+                  {OCEAN_CONDITIONS.map(oc => (
+                    <button key={oc.value} type="button" onClick={() => setD('ocean_conditions', oc.value)}
                       className={`py-2 text-xs rounded-lg border transition-all ${
-                        draft.pilar === pil
+                        draft.ocean_conditions === oc.value
                           ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
                           : 'border-gray-200 text-gray-600 hover:border-gray-400'
                       }`}>
-                      {PILAR_LABELS[pil].split(' ')[0]}
+                      {oc.label}
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Safety override rule */}
+            {isWaterVenue && oceanCheck.state === 'blocked' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-sm font-medium text-amber-700">Safety Override — Dry land only</p>
+                <p className="text-xs text-amber-600 mt-1">Conditions exceed student level. Select a non-water venue to continue.</p>
+              </div>
+            )}
+            {isWaterVenue && oceanCheck.state === 'alert' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-sm font-medium text-amber-700">ALERT — Proceed with caution</p>
+                <p className="text-xs text-amber-600 mt-1">{oceanCheck.note}</p>
+              </div>
+            )}
+
+            {/* Step 4: Session Type + Step 5: Date */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Session Type</label>
                 <select value={draft.session_type} onChange={e => setD('session_type', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                  <option value="Training">Training</option>
-                  <option value="Competition">Competition</option>
+                  {SESSION_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -273,97 +351,171 @@ export default function CoachFlowPage() {
           </div>
         )}
 
-        {/* STEP 1: Plan */}
-        {step === 1 && (
+        {/* ═══════════════════════════════════════ */}
+        {/* MOMENT 2: PLANNING (The Cascade) */}
+        {/* ═══════════════════════════════════════ */}
+        {moment === 1 && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--tss-navy)]">2. Plan</h3>
-            {selectedStudent && (
-              <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
-                <p className="font-medium">{selectedStudent.first_name} — {BELT_DISPLAY[selectedStudent.belt_level]?.levelName}</p>
-                {selectedStudent.last_homework && (
-                  <p className="mt-1"><span className="font-medium">Last homework:</span> {selectedStudent.last_homework}</p>
-                )}
-                {selectedStudent.next_recommended_focus && (
-                  <p><span className="font-medium">Recommended focus:</span> {selectedStudent.next_recommended_focus}</p>
-                )}
-              </div>
-            )}
+            <h3 className="font-semibold text-[var(--tss-navy)] text-sm">Moment 2 — Planning</h3>
 
+            {/* Step 6: Pilar Part (filtered by belt) */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Mission * <span className="text-gray-400">(min 5 chars)</span></label>
-              <textarea value={draft.mission} onChange={e => setD('mission', e.target.value)}
-                rows={3} placeholder="What is the single objective of this session?"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Drill (optional)</label>
-              <input type="text" placeholder="Search drills..."
-                onChange={async (e) => {
-                  if (e.target.value.length >= 2) {
-                    const results = await searchDrills(e.target.value, draft.is_safety_layer ? undefined : draft.pilar || undefined);
-                    setDrillResults(results);
-                  } else setDrillResults([]);
-                }}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              {drillResults.length > 0 && (
-                <div className="mt-1 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
-                  {drillResults.map((d: any) => (
-                    <button key={d.id} type="button"
-                      onClick={() => { setD('drill_id', d.id); setDrillResults([]); }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-50 ${
-                        draft.drill_id === d.id ? 'bg-blue-50' : ''
-                      }`}>
-                      <span className="font-medium">{d.drill_name}</span>
-                      <span className="text-gray-400 ml-2">{d.key_cue}</span>
-                    </button>
-                  ))}
-                </div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                What to work on * <span className="text-gray-400">(filtered by {selectedStudent ? BELT_DISPLAY[selectedStudent.belt_level]?.en : 'belt'})</span>
+              </label>
+              {pilarParts.length > 0 ? (
+                <select value={draft.pilar_part} onChange={e => handlePilarPartSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select pilar part...</option>
+                  {/* Group by pilar */}
+                  {['Technical', 'Tactical'].map(pilar => {
+                    const parts = pilarParts.filter(p => p.pilar === pilar);
+                    if (parts.length === 0) return null;
+                    return (
+                      <optgroup key={pilar} label={pilar}>
+                        {parts.map(p => (
+                          <option key={p.id} value={p.part_name}>{p.part_name}</option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                </select>
+              ) : (
+                <p className="text-xs text-gray-400 py-2">Select a student first to load available parts.</p>
+              )}
+              {draft.pilar_part && (
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Pilar: {pilarParts.find(p => p.part_name === draft.pilar_part)?.pilar} — auto-assigned
+                </p>
               )}
             </div>
 
+            {/* Step 7: Mission */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Warm-up Notes</label>
-              <input type="text" value={draft.warm_up_notes || ''} onChange={e => setD('warm_up_notes', e.target.value)}
-                placeholder="e.g. Head to toe + Flow motion"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Mental Hack</label>
-              <input type="text" value={draft.mental_hack || ''} onChange={e => setD('mental_hack', e.target.value)}
-                placeholder="e.g. Process over outcome"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-            </div>
-          </div>
-        )}
-
-        {/* STEP 2: Execute */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--tss-navy)]">3. Execute</h3>
-            <p className="text-sm text-gray-500">Run the session. When done, record notes and duration.</p>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Duration (minutes) *</label>
-              <input type="number" value={draft.duration_minutes || ''} onChange={e => setD('duration_minutes', parseInt(e.target.value) || 0)}
-                min={1} max={180} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Execution Notes</label>
-              <textarea value={draft.execution_notes || ''} onChange={e => setD('execution_notes', e.target.value)}
-                rows={4} placeholder="What happened during the session? Key observations..."
+              <label className="block text-xs font-medium text-gray-600 mb-1">Mission * <span className="text-gray-400">(min 5 chars)</span></label>
+              <textarea value={draft.mission} onChange={e => setD('mission', e.target.value)}
+                rows={2} placeholder="What is the single objective of this session?"
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
             </div>
+
+            {/* Step 8: Drill (filtered by pilar_part + belt + venue) */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Drill {draft.pilar_part ? `(${filteredDrills.length} available)` : ''}
+              </label>
+              {draft.pilar_part ? (
+                <>
+                  <input type="text" placeholder="Search drills..." value={drillSearch}
+                    onChange={e => setDrillSearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-1" />
+                  <div className="border border-gray-200 rounded-lg max-h-36 overflow-y-auto">
+                    {filteredDrills.length > 0 ? filteredDrills.map((d: any) => (
+                      <button key={d.id} type="button"
+                        onClick={() => { setD('drill_id', d.id); setDrillSearch(''); }}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-50 ${
+                          draft.drill_id === d.id ? 'bg-blue-50 border-blue-200' : ''
+                        }`}>
+                        <span className="font-medium">{d.drill_name}</span>
+                        {d.key_cue && <span className="text-gray-400 ml-2">{d.key_cue}</span>}
+                        <span className="text-gray-300 ml-2">{d.drill_type}</span>
+                      </button>
+                    )) : (
+                      <p className="text-xs text-gray-400 p-3">No drills found for this combination.</p>
+                    )}
+                  </div>
+                  {selectedDrill && (
+                    <div className="mt-1 bg-blue-50 rounded-lg p-2 text-xs text-blue-800">
+                      Selected: <span className="font-medium">{selectedDrill.drill_name}</span>
+                      {selectedDrill.goal && <p className="text-blue-600 mt-0.5">{selectedDrill.goal}</p>}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 py-2">Select a pilar part first.</p>
+              )}
+            </div>
+
+            {/* Step 9: Warm-up */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Warm-up</label>
+              <div className="grid grid-cols-2 gap-1">
+                {WARMUP_OPTIONS.map(w => (
+                  <button key={w.value} type="button" onClick={() => setD('warm_up_notes', w.value)}
+                    className={`py-2 px-2 text-xs rounded-lg border transition-all text-left ${
+                      draft.warm_up_notes === w.value
+                        ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}>
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 10: Simulation */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Simulation</label>
+              <div className="grid grid-cols-2 gap-1">
+                {SIMULATION_OPTIONS.map(s => (
+                  <button key={s.value} type="button" onClick={() => setD('simulation', s.value)}
+                    className={`py-2 px-2 text-xs rounded-lg border transition-all text-left ${
+                      draft.simulation === s.value
+                        ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 11: Mental Hack */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Mental Hack</label>
+              <div className="grid grid-cols-2 gap-1">
+                {MENTAL_HACK_OPTIONS.map(m => (
+                  <button key={m.value} type="button" onClick={() => setD('mental_hack', m.value)}
+                    className={`py-2 px-2 text-xs rounded-lg border transition-all text-left ${
+                      draft.mental_hack === m.value
+                        ? 'border-[var(--tss-gold)] bg-[var(--tss-gold)] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 12: Mission Time + Step 13: Repetitions */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Mission Time</label>
+                <select value={draft.mission_time} onChange={e => setD('mission_time', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                  <option value="">Select...</option>
+                  {MISSION_TIME_OPTIONS.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Repetitions</label>
+                <input type="number" value={draft.repetitions || ''} onChange={e => setD('repetitions', parseInt(e.target.value) || undefined)}
+                  min={1} max={50} placeholder="#"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+            </div>
           </div>
         )}
 
-        {/* STEP 3: Evaluate */}
-        {step === 3 && (
+        {/* ═══════════════════════════════════════ */}
+        {/* MOMENT 3: CLOSE */}
+        {/* ═══════════════════════════════════════ */}
+        {moment === 2 && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--tss-navy)]">4. Evaluate</h3>
+            <h3 className="font-semibold text-[var(--tss-navy)] text-sm">Moment 3 — Close</h3>
 
+            {/* Step 14: Status */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-2">Status *</label>
               <div className="grid grid-cols-4 gap-1">
@@ -380,6 +532,7 @@ export default function CoachFlowPage() {
               </div>
             </div>
 
+            {/* Step 15: Focus Rating */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-2">Focus Rating * <span className="text-gray-400">(1-5)</span></label>
               <div className="flex gap-2">
@@ -397,8 +550,9 @@ export default function CoachFlowPage() {
               <p className="text-[10px] text-gray-400 mt-1">1 = not focused — 5 = fully focused</p>
             </div>
 
+            {/* Step 16: Frustration Rating with descriptors */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-2">Frustration Rating * <span className="text-gray-400">(1-10)</span></label>
+              <label className="block text-xs font-medium text-gray-600 mb-2">Frustration / Flow * <span className="text-gray-400">(1-10)</span></label>
               <div className="flex gap-1 flex-wrap">
                 {[1,2,3,4,5,6,7,8,9,10].map(n => (
                   <button key={n} type="button" onClick={() => setE('frustration_rating', n)}
@@ -411,70 +565,122 @@ export default function CoachFlowPage() {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">1 = no frustration — 10 = extremely frustrated</p>
+              {evaluation.frustration_rating > 0 && FRUSTRATION_DESCRIPTORS[evaluation.frustration_rating] && (
+                <p className="text-[10px] text-amber-600 mt-1">{FRUSTRATION_DESCRIPTORS[evaluation.frustration_rating]}</p>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* STEP 4: Close */}
-        {step === 4 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--tss-navy)]">5. Close</h3>
-
+            {/* Step 17: Coach Feedback (quick + free text) */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Coach Feedback * <span className="text-gray-400">(min 10 chars)</span></label>
+              <div className="flex gap-1 mb-1 flex-wrap">
+                {COACH_FEEDBACK_QUICK.map(cue => (
+                  <button key={cue} type="button"
+                    onClick={() => setE('coach_feedback', evaluation.coach_feedback ? `${evaluation.coach_feedback}. ${cue}` : cue)}
+                    className="px-2 py-1 text-[10px] rounded-full border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700">
+                    + {cue}
+                  </button>
+                ))}
+              </div>
               <textarea value={evaluation.coach_feedback} onChange={e => setE('coach_feedback', e.target.value)}
                 rows={3} placeholder="What went well? What needs work?"
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
             </div>
 
+            {/* Step 18: Achieved — merged into feedback */}
+
+            {/* Step 19: What's Next (dropdown of pilar parts) */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">What's Next * <span className="text-gray-400">(min 5 chars)</span></label>
+              {pilarParts.length > 0 && (
+                <div className="flex gap-1 mb-1 flex-wrap">
+                  {pilarParts.slice(0, 8).map(p => (
+                    <button key={p.id} type="button"
+                      onClick={() => setE('whats_next', evaluation.whats_next ? `${evaluation.whats_next}, ${p.part_name}` : p.part_name)}
+                      className="px-2 py-1 text-[10px] rounded-full border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700">
+                      + {p.part_name}
+                    </button>
+                  ))}
+                </div>
+              )}
               <textarea value={evaluation.whats_next} onChange={e => setE('whats_next', e.target.value)}
                 rows={2} placeholder="Recommended next focus for this student"
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
             </div>
 
+            {/* Step 20: Homework (cues + free text) */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Homework * <span className="text-gray-400">(min 5 chars)</span></label>
+              <div className="flex gap-1 mb-1 flex-wrap">
+                {HOMEWORK_CUES.map(cue => (
+                  <button key={cue} type="button"
+                    onClick={() => setE('homework', evaluation.homework ? `${evaluation.homework}, ${cue}` : cue)}
+                    className="px-2 py-1 text-[10px] rounded-full border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700">
+                    + {cue}
+                  </button>
+                ))}
+              </div>
               <textarea value={evaluation.homework} onChange={e => setE('homework', e.target.value)}
                 rows={2} placeholder="Task for the student before next session"
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
             </div>
 
+            {/* Step 21: Total Duration */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Total Duration *</label>
+              <div className="flex gap-1">
+                {DURATION_OPTIONS.map(d => (
+                  <button key={d.value} type="button" onClick={() => setD('duration_minutes', d.value)}
+                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
+                      draft.duration_minutes === d.value
+                        ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}>
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Internal Notes */}
             <div className="border-t border-gray-100 pt-3">
-              <label className="block text-xs font-medium text-red-500 mb-1">🔒 Internal Notes <span className="text-gray-400">(coaches only — never sent to student)</span></label>
-              <textarea value={(evaluation as any).internal_notes || ''} onChange={e => setE('internal_notes' as any, e.target.value)}
-                rows={2} placeholder="Private observations, behavior notes, real assessment..."
+              <label className="block text-xs font-medium text-red-500 mb-1">Internal Notes <span className="text-gray-400">(coaches only — never sent to student)</span></label>
+              <textarea value={evaluation.internal_notes || ''} onChange={e => setE('internal_notes', e.target.value)}
+                rows={2} placeholder="Private observations, behavior notes..."
                 className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-gray-700" />
             </div>
-          </div>
-        )}
 
-        {/* STEP 5: Confirm */}
-        {step === 5 && (
-          <div className="space-y-3">
-            <h3 className="font-semibold text-[var(--tss-navy)]">6. Confirm & Close</h3>
-            <p className="text-sm text-gray-500">Review all fields before closing. This action is permanent.</p>
-
-            <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-1.5">
-              <SummaryRow label="Student" value={selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : ''} />
-              <SummaryRow label="Venue" value={draft.training_venue} />
-              <SummaryRow label="Ocean" value={OCEAN_CONDITIONS.find(o => o.value === draft.ocean_conditions)?.label || ''} />
-              <SummaryRow label="Mission" value={draft.mission} />
-              <SummaryRow label="Duration" value={`${draft.duration_minutes} min`} />
-              <div className="border-t border-gray-200 my-2" />
-              <SummaryRow label="Status" value={evaluation.status} />
-              <SummaryRow label="Focus" value={`${evaluation.focus_rating}/5`} />
-              <SummaryRow label="Frustration" value={`${evaluation.frustration_rating}/10`} />
-              <SummaryRow label="Feedback" value={evaluation.coach_feedback.slice(0, 80) + (evaluation.coach_feedback.length > 80 ? '...' : '')} />
-              <SummaryRow label="What's Next" value={evaluation.whats_next} />
-              <SummaryRow label="Homework" value={evaluation.homework} />
+            {/* Step 22: Incident Report (optional toggle) */}
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={showIncident}
+                  onChange={e => setShowIncident(e.target.checked)}
+                  className="rounded" />
+                <span className="text-xs text-gray-600">Report incident</span>
+              </label>
+              {showIncident && (
+                <div className="mt-2 space-y-2 bg-red-50 rounded-lg p-3">
+                  <select value={evaluation.incident_type || ''} onChange={e => setE('incident_type', e.target.value)}
+                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white">
+                    <option value="">Incident type...</option>
+                    {INCIDENT_TYPES.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                  <textarea value={evaluation.incident_description || ''} onChange={e => setE('incident_description', e.target.value)}
+                    rows={2} placeholder="What happened?"
+                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm resize-none bg-white" />
+                  <textarea value={evaluation.incident_action || ''} onChange={e => setE('incident_action', e.target.value)}
+                    rows={2} placeholder="Action taken"
+                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm resize-none bg-white" />
+                </div>
+              )}
             </div>
 
-            {!validateMandatoryFields(evaluation).valid && (
+            {/* Validation summary */}
+            {!validateMandatoryFields(evaluation).valid && evaluation.status && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-xs text-red-600 font-medium">Missing required fields:</p>
+                <p className="text-xs text-red-600 font-medium">Missing:</p>
                 <ul className="text-xs text-red-500 mt-1">
                   {validateMandatoryFields(evaluation).missing.map(m => (
                     <li key={m}>• {m}</li>
@@ -491,14 +697,14 @@ export default function CoachFlowPage() {
 
       {/* Navigation */}
       <div className="flex gap-3">
-        {step > 0 && (
-          <button onClick={() => setStep(s => s - 1)}
+        {moment > 0 && (
+          <button onClick={() => setMoment(m => m - 1)}
             className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
             Back
           </button>
         )}
-        {step < 5 ? (
-          <button onClick={() => setStep(s => s + 1)} disabled={!canAdvance()}
+        {moment < 2 ? (
+          <button onClick={() => setMoment(m => m + 1)} disabled={!canAdvance()}
             className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-30 transition-opacity">
             Next
           </button>
@@ -509,15 +715,6 @@ export default function CoachFlowPage() {
           </button>
         )}
       </div>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
-      <span className="text-gray-800 font-medium text-right max-w-[65%]">{value}</span>
     </div>
   );
 }
