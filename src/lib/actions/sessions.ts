@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { validateMandatoryFields, type SessionCloseData } from '@/lib/validations/session-close';
+import { validateMandatoryFields } from '@/lib/validations/session-close';
 import { revalidatePath } from 'next/cache';
 import type { BeltLevel } from '@/lib/constants/belts';
 import type { OceanCondition, Pilar, SessionStatus } from '@/lib/constants/brand';
@@ -11,35 +11,42 @@ import type { OceanCondition, Pilar, SessionStatus } from '@/lib/constants/brand
 // TYPES
 // ═══════════════════════════════════════
 
+export interface MissionInput {
+  sort_order: number;
+  pilar_part: string;
+  pilar: string | null;
+  drill_id: string;
+  mission: string;
+  warm_up: string;
+  simulation: string;
+  mental_hack: string;
+  mission_time: string;
+  repetitions?: number;
+  // Evaluation (filled in Moment 3)
+  status: SessionStatus | '';
+  focus_rating: number;
+  coach_notes: string;
+}
+
 export interface SessionDraftInput {
   student_id: string;
   session_date: string;
+  session_time: string;
   training_venue: string;
   ocean_conditions: OceanCondition;
   risk_state: 'safe' | 'alert' | 'blocked';
   is_safety_layer: boolean;
-  pilar: Pilar | null;
-  pilar_part?: string;
-  drill_id?: string;
-  mission: string;
-  execution_notes?: string;
-  duration_minutes?: number;
   session_type: string;
-  mental_hack?: string;
-  warm_up_notes?: string;
-  simulation?: string;
-  mission_time?: string;
-  repetitions?: number;
+  duration_minutes?: number;
+  execution_notes?: string;
 }
 
 export interface SessionEvalInput {
-  status: SessionStatus;
-  focus_rating: number;
-  frustration_rating: number;
   coach_feedback: string;
   internal_notes?: string;
   whats_next: string;
   homework: string;
+  frustration_rating: number;
   incident_type?: string;
   incident_description?: string;
   incident_action?: string;
@@ -79,7 +86,6 @@ export async function getOceanRules() {
 
 // ═══════════════════════════════════════
 // GET PILAR PARTS FOR BELT (Cascade Step 6)
-// Uses the DB function we created in Phase 3
 // ═══════════════════════════════════════
 
 export async function getPilarPartsForBelt(beltLevel: string) {
@@ -93,7 +99,6 @@ export async function getPilarPartsForBelt(beltLevel: string) {
 
 // ═══════════════════════════════════════
 // GET DRILLS FILTERED (Cascade Step 8)
-// Filters by pilar_part + belt level + venue
 // ═══════════════════════════════════════
 
 export async function getDrillsFiltered(input: {
@@ -102,8 +107,6 @@ export async function getDrillsFiltered(input: {
   isWaterVenue?: boolean;
 }) {
   const supabase = await createClient();
-
-  // First get all drills for this belt using our DB function
   const { data: allDrills, error } = await supabase
     .rpc('get_drills_for_belt', { p_belt_key: input.beltLevel });
 
@@ -111,12 +114,10 @@ export async function getDrillsFiltered(input: {
 
   let filtered = allDrills || [];
 
-  // Filter by pilar_part if provided
   if (input.pilarPart) {
     filtered = filtered.filter((d: any) => d.pilar_part === input.pilarPart);
   }
 
-  // Filter by environment if not water venue (only land drills)
   if (input.isWaterVenue === false) {
     filtered = filtered.filter((d: any) =>
       d.environment === 'Beach' || d.environment === 'Land' || d.environment === 'Gym' || !d.environment
@@ -137,7 +138,7 @@ export async function getDrillsFiltered(input: {
 }
 
 // ═══════════════════════════════════════
-// SEARCH DRILLS (legacy — kept for compatibility)
+// SEARCH DRILLS (legacy)
 // ═══════════════════════════════════════
 
 export async function searchDrills(query: string, pilar?: string) {
@@ -161,26 +162,39 @@ export async function searchDrills(query: string, pilar?: string) {
 }
 
 // ═══════════════════════════════════════
-// CLOSE SESSION
+// CLOSE SESSION (Multi-mission)
 // ═══════════════════════════════════════
 
 export async function closeStandaloneSession(
   draft: SessionDraftInput,
+  missions: MissionInput[],
   evaluation: SessionEvalInput
 ) {
   const supabase = await createClient();
   const admin = createAdminClient();
 
-  // 1. Validate mandatory fields
-  const validation = validateMandatoryFields(evaluation);
-  if (!validation.valid) {
-    throw new Error(`Missing required fields: ${validation.missing.join(', ')}`);
+  if (missions.length === 0) throw new Error('At least one mission is required');
+
+  // Validate each mission has status + focus
+  for (const m of missions) {
+    if (!m.status) throw new Error(`Mission ${m.sort_order} is missing status`);
+    if (m.focus_rating < 1) throw new Error(`Mission ${m.sort_order} is missing focus rating`);
   }
 
-  // 2. Get coach
+  // Validate session-level fields
+  if (!evaluation.coach_feedback || evaluation.coach_feedback.trim().length < 10)
+    throw new Error('Coach feedback must be at least 10 characters');
+  if (!evaluation.whats_next || evaluation.whats_next.trim().length < 5)
+    throw new Error("What's next must be at least 5 characters");
+  if (!evaluation.homework || evaluation.homework.trim().length < 5)
+    throw new Error('Homework must be at least 5 characters');
+  if (evaluation.frustration_rating < 1)
+    throw new Error('Frustration rating is required');
+
+  // Get coach
   const coach = await getCurrentCoach();
 
-  // 3. Get student
+  // Get student
   const { data: student, error: studentErr } = await supabase
     .from('students')
     .select('id, first_name, last_name, belt_level, current_sequence_number, current_step_order, ocean_level, portal_token, email')
@@ -188,11 +202,19 @@ export async function closeStandaloneSession(
     .single();
   if (studentErr || !student) throw new Error('Student not found');
 
-  // 4. Create standalone session
+  // Use the first mission's pilar for the session-level pilar field (backward compat)
+  const primaryPilar = missions[0]?.pilar || null;
+  const primaryPilarPart = missions[0]?.pilar_part || null;
+  const primaryDrill = missions[0]?.drill_id || null;
+  const primaryMission = missions.map(m => m.mission).join(' | ');
+
+  // Create standalone session (context only)
   const { data: session, error: sessionErr } = await supabase
     .from('standalone_sessions')
     .insert({
-      session_date: draft.session_date || new Date().toISOString(),
+      session_date: draft.session_time
+        ? `${draft.session_date}T${draft.session_time}:00`
+        : draft.session_date || new Date().toISOString(),
       coach_id: coach.id,
       student_id: draft.student_id,
       belt_level_snapshot: student.belt_level,
@@ -203,32 +225,65 @@ export async function closeStandaloneSession(
       ocean_conditions: draft.ocean_conditions,
       risk_state: draft.risk_state,
       is_safety_layer: draft.is_safety_layer,
-      pilar: draft.pilar,
-      pilar_part: draft.pilar_part || null,
-      drill_id: draft.drill_id || null,
-      mission: draft.mission,
+      pilar: primaryPilar,
+      pilar_part: primaryPilarPart,
+      drill_id: primaryDrill,
+      mission: primaryMission,
       execution_notes: draft.execution_notes || null,
       duration_minutes: draft.duration_minutes || null,
       session_type: draft.session_type,
-      mental_hack: draft.mental_hack || null,
-      warm_up_notes: draft.warm_up_notes || null,
-      simulation: draft.simulation || null,
-      mission_time: draft.mission_time || null,
-      repetitions: draft.repetitions || null,
+      mental_hack: missions[0]?.mental_hack || null,
+      warm_up_notes: missions[0]?.warm_up || null,
+      simulation: missions[0]?.simulation || null,
+      mission_time: missions[0]?.mission_time || null,
+      repetitions: missions[0]?.repetitions || null,
     })
     .select()
     .single();
 
   if (sessionErr) throw new Error(`Session creation failed: ${sessionErr.message}`);
 
-  // 5. Create student_session_results
+  // Create session_missions
+  const missionInserts = missions.map(m => ({
+    standalone_session_id: session.id,
+    sort_order: m.sort_order,
+    pilar_part: m.pilar_part || null,
+    pilar: m.pilar || null,
+    drill_id: m.drill_id || null,
+    mission: m.mission,
+    warm_up: m.warm_up || null,
+    simulation: m.simulation || null,
+    mental_hack: m.mental_hack || null,
+    mission_time: m.mission_time || null,
+    repetitions: m.repetitions || null,
+    status: m.status || null,
+    focus_rating: m.focus_rating || null,
+    coach_notes: m.coach_notes || null,
+  }));
+
+  const { error: missionsErr } = await supabase
+    .from('session_missions')
+    .insert(missionInserts);
+
+  if (missionsErr) throw new Error(`Missions creation failed: ${missionsErr.message}`);
+
+  // Determine overall status (worst status among missions)
+  const statusRank: Record<string, number> = { not_yet: 1, partial: 2, competent: 3, mastered: 4 };
+  const overallStatus = missions.reduce((worst, m) => {
+    return (statusRank[m.status] || 99) < (statusRank[worst] || 99) ? m.status : worst;
+  }, missions[0].status);
+
+  // Average focus
+  const avgFocus = Math.round(missions.reduce((sum, m) => sum + m.focus_rating, 0) / missions.length);
+
+  // Create student_session_results
   const { data: result, error: resultErr } = await supabase
     .from('student_session_results')
     .insert({
       standalone_session_id: session.id,
       student_id: draft.student_id,
-      status: evaluation.status,
-      focus_rating: evaluation.focus_rating,
+      status: overallStatus,
+      focus_rating: avgFocus,
       frustration_rating: evaluation.frustration_rating,
       coach_feedback: evaluation.coach_feedback,
       internal_notes: evaluation.internal_notes || null,
@@ -246,14 +301,14 @@ export async function closeStandaloneSession(
 
   if (resultErr) throw new Error(`Result creation failed: ${resultErr.message}`);
 
-  // 6. Update student profile
+  // Update student profile
   const { error: rpcErr } = await supabase.rpc('update_student_profile_on_close', {
     p_student_id: draft.student_id,
     p_session_result_id: result.id,
     p_session_date: draft.session_date || new Date().toISOString(),
-    p_mission: draft.mission,
-    p_pilar: draft.pilar,
-    p_status: evaluation.status,
+    p_mission: primaryMission,
+    p_pilar: primaryPilar,
+    p_status: overallStatus,
     p_homework: evaluation.homework,
     p_whats_next: evaluation.whats_next,
   });
@@ -262,15 +317,15 @@ export async function closeStandaloneSession(
     await supabase.from('students').update({
       last_session_id: result.id,
       last_session_date: draft.session_date || new Date().toISOString(),
-      last_session_mission: draft.mission,
-      last_session_pilar: draft.pilar,
-      last_session_status: evaluation.status,
+      last_session_mission: primaryMission,
+      last_session_pilar: primaryPilar,
+      last_session_status: overallStatus,
       last_homework: evaluation.homework,
       next_recommended_focus: evaluation.whats_next,
     }).eq('id', draft.student_id);
   }
 
-  // 7. Audit log
+  // Audit log
   await admin.from('audit_log').insert({
     session_result_id: result.id,
     actor_type: 'coach',
@@ -279,10 +334,10 @@ export async function closeStandaloneSession(
     event_type: 'session_closed',
     status_before: 'draft',
     status_after: 'closed',
-    note: `Standalone session closed for ${draft.student_id}. Status: ${evaluation.status}.`,
+    note: `Session closed: ${missions.length} mission(s) for ${student.first_name}. Overall: ${overallStatus}.`,
   });
 
-  // 8. Email — ONLY public feedback, never internal_notes
+  // Email
   if (student.email) {
     try {
       const { sendSessionEmail } = await import('@/lib/actions/email');
@@ -292,8 +347,8 @@ export async function closeStandaloneSession(
         portalToken: student.portal_token,
         coachName: coach.display_name,
         sessionDate: draft.session_date || new Date().toISOString(),
-        mission: draft.mission,
-        status: evaluation.status,
+        mission: primaryMission,
+        status: overallStatus,
         coachFeedback: evaluation.coach_feedback,
         homework: evaluation.homework,
         whatsNext: evaluation.whats_next,
