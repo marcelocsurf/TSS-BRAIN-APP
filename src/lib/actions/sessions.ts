@@ -27,16 +27,22 @@ export interface SessionDraftInput {
   session_type: string;
   mental_hack?: string;
   warm_up_notes?: string;
+  simulation?: string;
+  mission_time?: string;
+  repetitions?: number;
 }
 
 export interface SessionEvalInput {
   status: SessionStatus;
   focus_rating: number;
   frustration_rating: number;
-  coach_feedback: string;       // PUBLIC — visible to student
-  internal_notes?: string;      // PRIVATE — coaches only, never sent to student
+  coach_feedback: string;
+  internal_notes?: string;
   whats_next: string;
   homework: string;
+  incident_type?: string;
+  incident_description?: string;
+  incident_action?: string;
 }
 
 // ═══════════════════════════════════════
@@ -72,7 +78,66 @@ export async function getOceanRules() {
 }
 
 // ═══════════════════════════════════════
-// SEARCH DRILLS
+// GET PILAR PARTS FOR BELT (Cascade Step 6)
+// Uses the DB function we created in Phase 3
+// ═══════════════════════════════════════
+
+export async function getPilarPartsForBelt(beltLevel: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .rpc('get_pilar_parts_for_belt', { p_belt_key: beltLevel });
+
+  if (error) throw new Error(error.message);
+  return data as { id: string; pilar: string; part_name: string }[];
+}
+
+// ═══════════════════════════════════════
+// GET DRILLS FILTERED (Cascade Step 8)
+// Filters by pilar_part + belt level + venue
+// ═══════════════════════════════════════
+
+export async function getDrillsFiltered(input: {
+  beltLevel: string;
+  pilarPart?: string;
+  isWaterVenue?: boolean;
+}) {
+  const supabase = await createClient();
+
+  // First get all drills for this belt using our DB function
+  const { data: allDrills, error } = await supabase
+    .rpc('get_drills_for_belt', { p_belt_key: input.beltLevel });
+
+  if (error) throw new Error(error.message);
+
+  let filtered = allDrills || [];
+
+  // Filter by pilar_part if provided
+  if (input.pilarPart) {
+    filtered = filtered.filter((d: any) => d.pilar_part === input.pilarPart);
+  }
+
+  // Filter by environment if not water venue (only land drills)
+  if (input.isWaterVenue === false) {
+    filtered = filtered.filter((d: any) =>
+      d.environment === 'Beach' || d.environment === 'Land' || d.environment === 'Gym' || !d.environment
+    );
+  }
+
+  return filtered.map((d: any) => ({
+    id: d.id,
+    drill_name: d.drill_name,
+    pilar_part: d.pilar_part,
+    drill_type: d.drill_type,
+    key_cue: d.key_cue,
+    goal: d.goal,
+    environment: d.environment,
+    related_pilar: d.related_pilar,
+    is_safety_layer: d.is_safety_layer,
+  }));
+}
+
+// ═══════════════════════════════════════
+// SEARCH DRILLS (legacy — kept for compatibility)
 // ═══════════════════════════════════════
 
 export async function searchDrills(query: string, pilar?: string) {
@@ -147,13 +212,16 @@ export async function closeStandaloneSession(
       session_type: draft.session_type,
       mental_hack: draft.mental_hack || null,
       warm_up_notes: draft.warm_up_notes || null,
+      simulation: draft.simulation || null,
+      mission_time: draft.mission_time || null,
+      repetitions: draft.repetitions || null,
     })
     .select()
     .single();
 
   if (sessionErr) throw new Error(`Session creation failed: ${sessionErr.message}`);
 
-  // 5. Create student_session_results with internal_notes (never sent to student)
+  // 5. Create student_session_results
   const { data: result, error: resultErr } = await supabase
     .from('student_session_results')
     .insert({
@@ -162,13 +230,16 @@ export async function closeStandaloneSession(
       status: evaluation.status,
       focus_rating: evaluation.focus_rating,
       frustration_rating: evaluation.frustration_rating,
-      coach_feedback: evaluation.coach_feedback,       // PUBLIC
-      internal_notes: evaluation.internal_notes || null, // PRIVATE
+      coach_feedback: evaluation.coach_feedback,
+      internal_notes: evaluation.internal_notes || null,
       whats_next: evaluation.whats_next,
       homework: evaluation.homework,
       completion_state: 'closed',
       survey_unlocked: true,
       portal_token: student.portal_token,
+      incident_type: evaluation.incident_type || null,
+      incident_description: evaluation.incident_description || null,
+      incident_action: evaluation.incident_action || null,
     })
     .select()
     .single();
@@ -223,7 +294,7 @@ export async function closeStandaloneSession(
         sessionDate: draft.session_date || new Date().toISOString(),
         mission: draft.mission,
         status: evaluation.status,
-        coachFeedback: evaluation.coach_feedback, // PUBLIC only
+        coachFeedback: evaluation.coach_feedback,
         homework: evaluation.homework,
         whatsNext: evaluation.whats_next,
         beltLevel: student.belt_level,
