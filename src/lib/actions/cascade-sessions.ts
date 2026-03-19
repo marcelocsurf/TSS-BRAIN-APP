@@ -395,28 +395,34 @@ export async function createCascadeSession(
       .eq('id', formState.student_id!)
       .single();
 
-    const { data: resultRow } = await supabase
-      .from('student_session_results')
-      .insert({
+    const insertPayload = {
         student_id: formState.student_id,
         coach_id: effectiveCoachId,
         standalone_session_id: null,
-        status: formState.status || 'partial',
+        status: formState.status || null,
         focus_rating: formState.focus_rating || null,
         frustration_rating: formState.frustration_rating || null,
         coach_feedback: coachFeedbackText || null,
         student_visible_summary: studentVisibleSummary,
         homework: homeworkText || null,
         whats_next: whatsNextText || null,
-        completion_state: 'pending_survey',
+        completion_state: 'closed',
         survey_unlocked: true,
         portal_token: student?.portal_token || null,
-      })
+      };
+
+    const { data: resultRow, error: resultError } = await supabase
+      .from('student_session_results')
+      .insert(insertPayload)
       .select()
       .single();
 
-    // Send email notification
-    if (student?.email && resultRow) {
+    if (resultError) {
+      console.error('student_session_results insert FAILED:', resultError.message, JSON.stringify(insertPayload));
+    }
+
+    // Send email notification (even if result row failed)
+    if (student?.email) {
       try {
         const { sendSessionEmail } = await import('@/lib/actions/email');
 
