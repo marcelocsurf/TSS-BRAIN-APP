@@ -81,6 +81,23 @@ export default function AddStudentPage() {
           />
         </Section>
 
+        {/* ── CONTACT INFO ── */}
+        <Section title="Contact Info">
+          <Field
+            label="Email"
+            value={form.email || ''}
+            onChange={(v) => set('email', v)}
+            type="email"
+            hint="Required for post-session emails and portal access"
+          />
+          <Field
+            label="Phone"
+            value={form.phone || ''}
+            onChange={(v) => set('phone', v)}
+            type="tel"
+          />
+        </Section>
+
         {/* ── EMERGENCY CONTACT ── */}
         <Section title="Emergency Contact">
           <Field
