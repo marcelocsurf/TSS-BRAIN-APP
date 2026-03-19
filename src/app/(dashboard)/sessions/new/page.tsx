@@ -645,7 +645,7 @@ function MissionForm({
         <select value={mission.pilar_part} onChange={e => onPilarPartSelect(index, e.target.value)}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
           <option value="">Select...</option>
-          {['Technical', 'Tactical'].map(pilar => {
+          {['Technical', 'Tactical', 'Mental', 'Physical'].map(pilar => {
             const parts = pilarParts.filter(p => p.pilar === pilar);
             if (!parts.length) return null;
             return (
