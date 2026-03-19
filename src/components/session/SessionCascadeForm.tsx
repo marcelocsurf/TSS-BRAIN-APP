@@ -22,6 +22,7 @@ import type {
   SessionStatus,
   StudentCascadeContext,
 } from '@/types/session';
+import type { CoachForAssignment } from '@/lib/actions/cascade-sessions';
 
 import { CascadeProgress } from './CascadeProgress';
 import { Step01Student } from './steps/Step01Student';
@@ -51,6 +52,12 @@ import { Step22IncidentClose } from './steps/Step22IncidentClose';
 
 function cascadeReducer(state: CascadeFormState, action: CascadeAction): CascadeFormState {
   switch (action.type) {
+    case 'SET_ASSIGNED_COACH':
+      return {
+        ...state,
+        assigned_coach_id: action.payload.id,
+        assigned_coach_name: action.payload.name,
+      };
     case 'SET_STUDENT':
       return {
         ...state,
@@ -153,18 +160,34 @@ interface Props {
   students: { id: string; first_name: string; last_name: string; belt_level: string; waiver_signed?: boolean }[];
   venues: DropdownOption[];
   sessionTypes: DropdownOption[];
-  coachName?: string;
+  coachId: string;
+  coachName: string;
+  coachRole: string;
+  coaches: CoachForAssignment[];
 }
 
 // ─── Component ───
 
-export function SessionCascadeForm({ initialStudent, students, venues, sessionTypes, coachName }: Props) {
+export function SessionCascadeForm({
+  initialStudent,
+  students,
+  venues,
+  sessionTypes,
+  coachId,
+  coachName,
+  coachRole,
+  coaches,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const canAssignCoach = coachRole === 'admin' || coachRole === 'coordinator';
 
   const initialState: CascadeFormState = {
     ...INITIAL_CASCADE_STATE,
     session_date: new Date().toISOString().split('T')[0],
+    assigned_coach_id: coachId,
+    assigned_coach_name: coachName,
     ...(initialStudent
       ? { student: initialStudent, student_id: initialStudent.id, currentStep: 2 }
       : {}),
@@ -301,6 +324,9 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
             formState={state}
             students={students}
             onStudentLoaded={(s) => dispatch({ type: 'SET_STUDENT', payload: s })}
+            canAssignCoach={canAssignCoach}
+            coaches={coaches}
+            onCoachAssigned={(id, name) => dispatch({ type: 'SET_ASSIGNED_COACH', payload: { id, name } })}
           />
         );
       case 2:
@@ -506,15 +532,34 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
     }
   }
 
+  // ─── Coach + Student header bar (persistent across steps) ───
+
+  const showHeaderBar = state.assigned_coach_name || state.student;
+  const studentDisplayName = state.student
+    ? `${state.student.first_name} ${state.student.last_name}`
+    : null;
+
   return (
     <div className="min-h-screen bg-white">
       {/* Progress */}
       <CascadeProgress currentStep={state.currentStep} isWaterVenue={state.isWaterVenue} />
 
-      {/* Coach info line */}
-      {coachName && (
-        <div className="px-4 pt-2">
-          <p className="text-xs text-gray-400">Session by: <span className="text-gray-600 font-medium">{coachName}</span></p>
+      {/* Persistent Coach + Student header bar */}
+      {showHeaderBar && (
+        <div className="px-4 pt-2 pb-1 flex items-center gap-3 text-xs text-gray-400 border-b border-gray-50">
+          {state.assigned_coach_name && (
+            <span>
+              Coach: <span className="text-gray-600 font-medium">{state.assigned_coach_name}</span>
+            </span>
+          )}
+          {state.assigned_coach_name && studentDisplayName && (
+            <span className="text-gray-200">|</span>
+          )}
+          {studentDisplayName && (
+            <span>
+              Student: <span className="text-gray-600 font-medium">{studentDisplayName}</span>
+            </span>
+          )}
         </div>
       )}
 

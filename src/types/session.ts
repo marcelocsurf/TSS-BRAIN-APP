@@ -100,6 +100,10 @@ export interface CascadeFormState {
   oceanRiskState: OceanRiskState | null;
   isWaterVenue: boolean;
 
+  // Coach assignment
+  assigned_coach_id: string | null;
+  assigned_coach_name: string | null;
+
   // Step 1: Student
   student_id: string | null;
 
@@ -187,6 +191,7 @@ export interface CascadeFormState {
 // ─── Reducer action types ───
 
 export type CascadeAction =
+  | { type: 'SET_ASSIGNED_COACH'; payload: { id: string; name: string } }
   | { type: 'SET_STUDENT'; payload: StudentCascadeContext }
   | { type: 'SET_VENUE'; payload: { venue: string; isWater: boolean } }
   | { type: 'SET_OCEAN'; payload: { conditions: string; riskState: OceanRiskState } }

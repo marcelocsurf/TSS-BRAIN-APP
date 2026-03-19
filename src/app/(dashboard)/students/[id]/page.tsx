@@ -31,8 +31,9 @@ export default async function StudentProfilePage({ params }: Props) {
       .from('student_session_results')
       .select(`
         id, status, focus_rating,
-        coach_feedback, homework, whats_next, created_at,
-        standalone_sessions(mission, training_venue, session_date, pilar)
+        coach_feedback, homework, whats_next, created_at, coach_id,
+        standalone_sessions(mission, training_venue, session_date, pilar),
+        coaches:coach_id(display_name)
       `)
       .eq('student_id', id)
       .eq('completion_state', 'closed')
@@ -204,6 +205,7 @@ export default async function StudentProfilePage({ params }: Props) {
           <div className="space-y-3">
             {sessionHistory.map((result: any) => {
               const session = result.standalone_sessions;
+              const coachDisplayName = result.coaches?.display_name;
               return (
                 <div key={result.id} className="border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                   <div className="flex justify-between items-start gap-2">
@@ -218,6 +220,7 @@ export default async function StudentProfilePage({ params }: Props) {
                             })
                           : new Date(result.created_at).toLocaleDateString()}
                         {session?.training_venue && ` \u00b7 ${session.training_venue}`}
+                        {coachDisplayName && ` \u00b7 Coach: ${coachDisplayName}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

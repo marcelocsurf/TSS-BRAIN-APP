@@ -15,6 +15,30 @@ import type {
 } from '@/types/session';
 
 // ═══════════════════════════════════════
+// GET COACHES FOR ASSIGNMENT (admin/coordinator dropdown)
+// ═══════════════════════════════════════
+
+export interface CoachForAssignment {
+  id: string;
+  display_name: string;
+  role: string;
+  max_belt_permission: string | null;
+}
+
+export async function getCoachesForAssignment(): Promise<CoachForAssignment[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('coaches')
+    .select('id, display_name, role, max_belt_permission')
+    .eq('active', true)
+    .order('display_name');
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CoachForAssignment[];
+}
+
+// ═══════════════════════════════════════
 // GET STUDENTS FOR COACH (Step 1 dropdown)
 // ═══════════════════════════════════════
 
@@ -261,9 +285,19 @@ export async function createCascadeSession(
     return { success: false, error: 'No student selected' };
   }
 
+  // Determine effective coach: use assigned_coach_id if set (admin/coordinator assigned),
+  // otherwise fall back to the logged-in coach
+  const effectiveCoachId = formState.assigned_coach_id || coach.id;
+
+  // Determine who assigned: if different from effective coach, record assigner
+  const assignedById = coach.id; // The person creating the session is always the assigner
+  const assignedByName = (effectiveCoachId !== coach.id)
+    ? (await supabase.from('coaches').select('display_name').eq('id', coach.id).single()).data?.display_name ?? null
+    : null;
+
   // Call the atomic RPC function
   const { data, error } = await supabase.rpc('save_cascade_session', {
-    p_coach_id: coach.id,
+    p_coach_id: effectiveCoachId,
     p_student_id: formState.student_id,
     p_belt_level_snapshot: formState.student.belt_level,
     p_ocean_level_snapshot: formState.student.ocean_level,
@@ -314,6 +348,19 @@ export async function createCascadeSession(
 
   const sessionId = data as string;
 
+  // ── Update assigned_by columns (post-save, non-blocking) ──
+  try {
+    await supabase
+      .from('cascade_sessions')
+      .update({
+        assigned_by: assignedById,
+        assigned_by_name: assignedByName || formState.assigned_coach_name || coach.id,
+      })
+      .eq('id', sessionId);
+  } catch (assignErr: any) {
+    console.error('assigned_by update failed (non-blocking):', assignErr.message);
+  }
+
   // ── Create student_session_results for cascade session ──
   try {
     const { buildStudentVisibleSummary } = await import('@/lib/actions/sessions');
@@ -350,7 +397,7 @@ export async function createCascadeSession(
       .from('student_session_results')
       .insert({
         student_id: formState.student_id,
-        coach_id: coach.id,
+        coach_id: effectiveCoachId,
         standalone_session_id: null,
         status: formState.status || 'partial',
         focus_rating: formState.focus_rating || null,
@@ -375,7 +422,7 @@ export async function createCascadeSession(
         const { data: coachFull } = await supabase
           .from('coaches')
           .select('display_name')
-          .eq('id', coach.id)
+          .eq('id', effectiveCoachId)
           .single();
 
         const emailResult = await sendSessionEmail({

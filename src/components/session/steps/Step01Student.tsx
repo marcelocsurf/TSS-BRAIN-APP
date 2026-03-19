@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { getStudentWithCascadeContext } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import type { CascadeFormState, StudentCascadeContext } from '@/types/session';
+import type { CoachForAssignment } from '@/lib/actions/cascade-sessions';
 
 const BELT_COLORS: Record<string, string> = {
   white_belt: '#E8E8E8',
@@ -21,9 +22,19 @@ interface Props {
   formState: CascadeFormState;
   students: { id: string; first_name: string; last_name: string; belt_level: string; waiver_signed?: boolean }[];
   onStudentLoaded: (student: StudentCascadeContext) => void;
+  canAssignCoach: boolean;
+  coaches: CoachForAssignment[];
+  onCoachAssigned: (coachId: string, coachName: string) => void;
 }
 
-export function Step01Student({ formState, students, onStudentLoaded }: Props) {
+export function Step01Student({
+  formState,
+  students,
+  onStudentLoaded,
+  canAssignCoach,
+  coaches,
+  onCoachAssigned,
+}: Props) {
   const [selected, setSelected] = useState(formState.student_id ?? '');
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState('');
@@ -60,6 +71,38 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Select Student</h3>
+
+      {/* ── Coach Assignment Section ── */}
+      {canAssignCoach ? (
+        <div className="bg-blue-50 rounded-xl p-3 space-y-1">
+          <label className="text-xs font-semibold text-blue-800 uppercase tracking-wide">
+            Assign Session Coach
+          </label>
+          <select
+            value={formState.assigned_coach_id ?? ''}
+            onChange={(e) => {
+              const coach = coaches.find(c => c.id === e.target.value);
+              if (coach) onCoachAssigned(coach.id, coach.display_name);
+            }}
+            className="w-full p-2 rounded-lg border border-blue-200 text-sm bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+          >
+            <option value="" disabled>Select a coach...</option>
+            {coaches.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.display_name} ({c.role})
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        formState.assigned_coach_name && (
+          <div className="bg-gray-50 rounded-xl p-3">
+            <p className="text-xs text-gray-500">
+              Session Coach: <span className="font-medium text-gray-700">{formState.assigned_coach_name}</span>
+            </p>
+          </div>
+        )
+      )}
 
       {/* Search */}
       <input

@@ -22,7 +22,7 @@ export default async function StudentPortalPage({ params }: Props) {
 
   const { data: results } = await admin
     .from('student_session_results')
-    .select('*, standalone_sessions(*)')
+    .select('*, standalone_sessions(*), coaches:coach_id(display_name)')
     .eq('student_id', student.id)
     .order('created_at', { ascending: false })
     .limit(10);
@@ -118,6 +118,15 @@ export default async function StudentPortalPage({ params }: Props) {
                   {new Date(latestResult.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
+              {/* Coach name */}
+              {(latestResult as any).coaches?.display_name && (
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-400">Coach</span>
+                  <span className="text-sm text-gray-700 font-medium">
+                    {(latestResult as any).coaches.display_name}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-xs text-gray-400">Status</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium ${
@@ -175,7 +184,7 @@ export default async function StudentPortalPage({ params }: Props) {
               ) : (
                 <div className="pt-2 border-t border-gray-50">
                   <div className="bg-gray-50 rounded-lg px-3 py-3 text-center">
-                    <p className="text-xs text-gray-500">🔒 Complete the feedback below to unlock your full coach report{(latestResult as any).video_link ? ' and session video' : ''}.</p>
+                    <p className="text-xs text-gray-500">Complete the feedback below to unlock your full coach report{(latestResult as any).video_link ? ' and session video' : ''}.</p>
                   </div>
                 </div>
               )}
@@ -190,7 +199,7 @@ export default async function StudentPortalPage({ params }: Props) {
 
         {latestResult && hasSurvey && (
           <div className="bg-green-50 rounded-xl p-4 text-center">
-            <p className="text-sm text-green-700 font-medium">✓ Feedback submitted — thank you!</p>
+            <p className="text-sm text-green-700 font-medium">Feedback submitted — thank you!</p>
           </div>
         )}
 
@@ -212,6 +221,7 @@ export default async function StudentPortalPage({ params }: Props) {
                         {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         {' · '}
                         <span className="capitalize">{r.status?.replace('_', ' ')}</span>
+                        {r.coaches?.display_name && ` · Coach: ${r.coaches.display_name}`}
                       </p>
                     </div>
                     <span className="text-xs text-gray-400">Focus: {r.focus_rating}/5</span>
@@ -229,7 +239,7 @@ export default async function StudentPortalPage({ params }: Props) {
                       rel="noopener noreferrer"
                       className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--tss-navy)]"
                     >
-                      ▶ Watch Video
+                      Watch Video
                     </a>
                   )}
                 </div>
@@ -241,7 +251,7 @@ export default async function StudentPortalPage({ params }: Props) {
       </div>
 
       <div className="text-center py-8">
-        <p className="text-xs text-gray-400">The Surf Sequence® · {BRAND.tagline}</p>
+        <p className="text-xs text-gray-400">The Surf Sequence -- {BRAND.tagline}</p>
       </div>
     </div>
   );

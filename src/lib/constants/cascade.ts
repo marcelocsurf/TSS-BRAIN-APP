@@ -135,6 +135,8 @@ export const INITIAL_CASCADE_STATE = {
   student: null,
   oceanRiskState: null,
   isWaterVenue: true,
+  assigned_coach_id: null,
+  assigned_coach_name: null,
   student_id: null,
   training_venue: null,
   ocean_conditions: null,
