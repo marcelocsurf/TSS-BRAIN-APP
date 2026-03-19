@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,52 +31,85 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--tss-navy)] px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">TSS Brain</h1>
-          <p className="text-[var(--tss-gold)] mt-2 text-sm">The Surf Sequence</p>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--tss-navy)] px-4 relative overflow-hidden">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--tss-navy)] via-[var(--tss-navy-light)] to-[var(--tss-navy)] opacity-60" />
+
+      <div className="w-full max-w-sm relative z-10">
+        {/* Logo + tagline */}
+        <div className="text-center mb-10">
+          <Image
+            src="/tss-logo-light.png"
+            alt="The Surf Sequence"
+            width={180}
+            height={180}
+            className="mx-auto mb-4"
+            priority
+          />
+          <p
+            className="text-[var(--tss-cyan)] text-sm tracking-widest uppercase"
+            style={{ fontFamily: 'var(--font-mono)' }}
+          >
+            Evolve through play
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-white rounded-xl p-6 shadow-lg space-y-4">
+        {/* Login card */}
+        <form
+          onSubmit={handleLogin}
+          className="bg-white rounded-2xl p-7 shadow-2xl shadow-black/20 space-y-5 border border-white/10"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label
+              className="block text-xs font-medium text-[var(--tss-gray-500)] mb-1.5 uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              Email
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-4 py-2.5 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent"
               placeholder="coach@thesurfsequence.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label
+              className="block text-xs font-medium text-[var(--tss-gray-500)] mb-1.5 uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              Password
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-4 py-2.5 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
+            <p className="text-sm text-[var(--tss-danger)] bg-red-50 p-3 rounded-xl">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full py-3 bg-[var(--tss-gold)] text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.98] shadow-lg shadow-[var(--tss-gold)]/20"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Evolve through play
+        <p
+          className="text-center text-xs text-white/30 mt-8 tracking-wide"
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          TSS Brain v0.1
         </p>
       </div>
     </div>

@@ -62,8 +62,8 @@ export default function AddStudentPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-xl font-bold text-[var(--tss-navy)] mb-1">Add Student</h2>
-      <p className="text-sm text-gray-500 mb-6">Complete all required fields to register a new student.</p>
+      <h2 className="text-2xl font-bold text-[var(--tss-navy)] mb-1">Add Student</h2>
+      <p className="text-sm text-[var(--tss-gray-500)] mb-6">Complete all required fields to register a new student.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ── IDENTITY ── */}
@@ -124,13 +124,13 @@ export default function AddStudentPage() {
             options={SWIM_LEVELS}
           />
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Allergies / Medical Notes</label>
+            <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Allergies / Medical Notes</label>
             <textarea
               value={form.allergies || ''}
               onChange={(e) => set('allergies', e.target.value)}
               placeholder="List any allergies, medical conditions, or notes..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent resize-none"
             />
           </div>
         </Section>
@@ -138,17 +138,17 @@ export default function AddStudentPage() {
         {/* ── PROGRESSION ── */}
         <Section title="Progression Level">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Belt Level *</label>
+            <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Belt Level *</label>
             <div className="grid grid-cols-3 gap-1.5">
               {BELT_HIERARCHY.map((belt) => (
                 <button
                   key={belt}
                   type="button"
                   onClick={() => set('belt_level', belt)}
-                  className={`px-2 py-2 text-xs rounded-lg border transition-all ${
+                  className={`px-2 py-2 text-xs rounded-xl border transition-all ${
                     form.belt_level === belt
-                      ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
+                      ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
+                      : 'border-[var(--tss-gray-200)] bg-white text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
                   }`}
                 >
                   <span
@@ -178,7 +178,7 @@ export default function AddStudentPage() {
 
         {/* ── WAIVER ── */}
         <Section title="Liability Waiver">
-          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 leading-relaxed">
+          <div className="bg-[var(--tss-gray-50)] rounded-xl p-3 text-xs text-[var(--tss-gray-700)] leading-relaxed">
             {WAIVER_TEXT}
           </div>
           <label className="flex items-start gap-3 cursor-pointer mt-2">
@@ -186,10 +186,10 @@ export default function AddStudentPage() {
               type="checkbox"
               checked={!!form.waiver_signed}
               onChange={(e) => set('waiver_signed', e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[var(--tss-navy)] focus:ring-[var(--tss-gold)]"
+              className="mt-0.5 w-4 h-4 rounded border-[var(--tss-gray-300)] text-[var(--tss-navy)] focus:ring-[var(--tss-cyan)]"
             />
-            <span className="text-sm text-gray-700 font-medium">
-              I have read and agree to the liability waiver above <span className="text-red-500">*</span>
+            <span className="text-sm text-[var(--tss-gray-700)] font-medium">
+              I have read and agree to the liability waiver above <span className="text-[var(--tss-danger)]">*</span>
             </span>
           </label>
           {!form.waiver_signed && (
@@ -200,21 +200,21 @@ export default function AddStudentPage() {
         </Section>
 
         {/* Error */}
-        {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>}
+        {error && <p className="text-sm text-[var(--tss-danger)] bg-red-50 p-3 rounded-xl">{error}</p>}
 
         {/* Submit */}
         <div className="flex gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+            className="flex-1 py-2.5 border border-[var(--tss-gray-200)] rounded-xl text-sm text-[var(--tss-gray-700)] hover:bg-[var(--tss-gray-50)] transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading || !form.waiver_signed}
-            className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
           >
             {loading ? 'Creating...' : 'Create Student'}
           </button>
@@ -230,11 +230,11 @@ function Section({ title, children }: {
   title: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="w-full px-4 py-3 text-left text-sm font-semibold text-[var(--tss-navy)]">
+    <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] overflow-hidden shadow-sm">
+      <div className="w-full px-4 py-3 text-left text-sm font-semibold text-[var(--tss-navy)] border-b border-[var(--tss-gray-50)]">
         {title}
       </div>
-      <div className="px-4 pb-4 space-y-3">{children}</div>
+      <div className="px-4 pb-4 pt-3 space-y-3">{children}</div>
     </div>
   );
 }
@@ -247,13 +247,13 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, h
   label: string; value: string; onChange: (v: string) => void;
   type?: string; required?: boolean; placeholder?: string; hint?: string;
 }) {
-  const cls = "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent";
+  const cls = "w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent";
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
         required={required} placeholder={placeholder} className={cls} />
-      {hint && <p className="text-[10px] text-gray-400 mt-0.5">{hint}</p>}
+      {hint && <p className="text-[10px] text-[var(--tss-gray-500)] mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -263,9 +263,9 @@ function Select({ label, value, onChange, options }: {
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>{label}</label>
       <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]">
+        className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent">
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>

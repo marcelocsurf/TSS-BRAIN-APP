@@ -44,12 +44,12 @@ export default async function StudentRosterPage({ searchParams }: Props) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--tss-navy)]">Students</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{total} student{total !== 1 ? 's' : ''} total</p>
+          <h2 className="text-2xl font-bold text-[var(--tss-navy)]">Students</h2>
+          <p className="text-xs text-[var(--tss-gray-500)] mt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>{total} student{total !== 1 ? 's' : ''} total</p>
         </div>
         <Link
           href="/students/new"
-          className="px-4 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90 transition-opacity"
+          className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
         >
           + Add Student
         </Link>
@@ -78,9 +78,9 @@ export default async function StudentRosterPage({ searchParams }: Props) {
 
       {/* Student list */}
       {students.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-[var(--tss-gray-500)]">
           <p className="text-lg">No students found</p>
-          <Link href="/students/new" className="text-sm text-[var(--tss-gold)] hover:underline mt-2 inline-block">
+          <Link href="/students/new" className="text-sm text-[var(--tss-cyan)] hover:underline mt-2 inline-block">
             Add your first student
           </Link>
         </div>
@@ -90,7 +90,8 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             <Link
               key={s.id}
               href={`/students/${s.id}`}
-              className="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100 hover:border-[var(--tss-gold)] transition-colors"
+              className="flex items-center gap-3 bg-white rounded-xl p-3 border border-[var(--tss-gray-100)] hover:border-[var(--tss-gray-300)] hover:shadow-sm transition-all"
+              style={{ borderLeftWidth: '3px', borderLeftColor: BELT_DISPLAY[s.belt_level]?.color || '#C8D0DC' }}
             >
               {/* Photo or initials */}
               <div
@@ -106,10 +107,10 @@ export default async function StudentRosterPage({ searchParams }: Props) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-[var(--tss-gray-900)] truncate">
                   {s.first_name} {s.last_name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[var(--tss-gray-500)]">
                   {BELT_DISPLAY[s.belt_level]?.en} — Seq {s.current_sequence_number} / Step {s.current_step_order}
                 </p>
               </div>
@@ -119,7 +120,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
                 <div className="flex items-center gap-1.5">
                   {/* Waiver status badge */}
                   {s.waiver_signed ? (
-                    <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full" title="Waiver signed">
+                    <span className="text-[10px] bg-green-50 text-[var(--tss-success)] px-1.5 py-0.5 rounded-full" title="Waiver signed">
                       &#10003;
                     </span>
                   ) : (
@@ -132,19 +133,19 @@ export default async function StudentRosterPage({ searchParams }: Props) {
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                       s.intake_tier === 'extended'
                         ? 'bg-blue-50 text-blue-600'
-                        : 'bg-gray-50 text-gray-500'
+                        : 'bg-[var(--tss-gray-50)] text-[var(--tss-gray-500)]'
                     }`}>
                       {s.intake_tier === 'extended' ? 'Full' : 'Basic'}
                     </span>
                   )}
                 </div>
                 {!s.intake_completed_at && !s.intake_tier && (
-                  <span className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-orange-50 text-[var(--tss-warm)] px-2 py-0.5 rounded-full">
                     No profile
                   </span>
                 )}
                 {s.last_session_date ? (
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[10px] text-[var(--tss-gray-500)]">
                     {new Date(s.last_session_date).toLocaleDateString()}
                   </p>
                 ) : (
@@ -160,15 +161,15 @@ export default async function StudentRosterPage({ searchParams }: Props) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400">
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--tss-gray-100)]">
+          <p className="text-xs text-[var(--tss-gray-500)]" style={{ fontFamily: 'var(--font-mono)' }}>
             Page {currentPage} of {totalPages} ({total} students)
           </p>
           <div className="flex gap-2">
             {currentPage > 1 && (
               <Link
                 href={buildPageUrl(currentPage - 1)}
-                className="px-4 py-2 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 hover:border-gray-400 transition-colors"
+                className="px-4 py-2 text-xs border border-[var(--tss-gray-200)] rounded-xl bg-white text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)] transition-all"
               >
                 Previous
               </Link>
@@ -176,7 +177,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             {currentPage < totalPages && (
               <Link
                 href={buildPageUrl(currentPage + 1)}
-                className="px-4 py-2 text-xs border border-[var(--tss-navy)] rounded-lg bg-[var(--tss-navy)] text-white hover:opacity-90 transition-opacity"
+                className="px-4 py-2 text-xs bg-[var(--tss-navy)] text-white rounded-xl hover:brightness-110 transition-all"
               >
                 Next
               </Link>
@@ -194,13 +195,14 @@ function FilterLink({ href, label, active, color }: {
   return (
     <Link
       href={href}
-      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+      className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
         active
-          ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+          ? 'text-white border-transparent shadow-sm'
+          : 'bg-white text-[var(--tss-gray-700)] border-[var(--tss-gray-200)] hover:border-[var(--tss-gray-300)]'
       }`}
+      style={active ? { backgroundColor: color || 'var(--tss-navy)', borderColor: color || 'var(--tss-navy)' } : undefined}
     >
-      {color && (
+      {color && !active && (
         <span
           className="inline-block w-2 h-2 rounded-full mr-1.5"
           style={{ backgroundColor: color }}

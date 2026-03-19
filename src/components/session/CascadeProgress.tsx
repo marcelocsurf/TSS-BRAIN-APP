@@ -25,7 +25,7 @@ export function CascadeProgress({ currentStep, isWaterVenue }: Props) {
   const progressPercent = Math.round((effectiveStep / totalSteps) * 100);
 
   return (
-    <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3">
+    <div className="sticky top-0 z-10 bg-white border-b border-[var(--tss-gray-100)] px-4 py-3 shadow-sm">
       {/* Moment tabs */}
       <div className="flex gap-1 mb-2">
         {moments.map((moment) => {
@@ -36,12 +36,12 @@ export function CascadeProgress({ currentStep, isWaterVenue }: Props) {
           return (
             <div
               key={moment}
-              className={`flex-1 text-center py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`flex-1 text-center py-1.5 rounded-md text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-[#1A1A2E] text-white'
+                  ? 'bg-[var(--tss-cyan)] text-white shadow-sm'
                   : isPast
-                  ? 'bg-[#D4A843] text-white'
-                  : 'bg-gray-100 text-gray-400'
+                  ? 'bg-[var(--tss-gold)] text-white'
+                  : 'bg-[var(--tss-gray-100)] text-[var(--tss-gray-500)]'
               }`}
             >
               {MOMENT_LABELS[moment]}
@@ -51,17 +51,17 @@ export function CascadeProgress({ currentStep, isWaterVenue }: Props) {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[var(--tss-gray-100)] rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#D4A843] rounded-full transition-all duration-300"
+          className="h-full bg-gradient-to-r from-[var(--tss-cyan)] to-[var(--tss-gold)] rounded-full transition-all duration-500 ease-out"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
 
       {/* Step label */}
-      <p className="text-xs text-gray-400 mt-1.5 text-center">
+      <p className="text-xs text-[var(--tss-gray-500)] mt-1.5 text-center" style={{ fontFamily: 'var(--font-mono)' }}>
         Step {currentStep} of {isWaterVenue ? 22 : 21}
-        {' — '}
+        {' \u2014 '}
         {CASCADE_STEPS.find((s) => s.id === currentStep)?.label}
       </p>
     </div>

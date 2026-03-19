@@ -546,18 +546,18 @@ export function SessionCascadeForm({
 
       {/* Persistent Coach + Student header bar */}
       {showHeaderBar && (
-        <div className="px-4 pt-2 pb-1 flex items-center gap-3 text-xs text-gray-400 border-b border-gray-50">
+        <div className="px-4 pt-2 pb-1 flex items-center gap-3 text-xs text-[var(--tss-gray-500)] border-b border-[var(--tss-gray-100)]" style={{ fontFamily: 'var(--font-mono)' }}>
           {state.assigned_coach_name && (
             <span>
-              Coach: <span className="text-gray-600 font-medium">{state.assigned_coach_name}</span>
+              Coach: <span className="text-[var(--tss-gray-700)] font-medium">{state.assigned_coach_name}</span>
             </span>
           )}
           {state.assigned_coach_name && studentDisplayName && (
-            <span className="text-gray-200">|</span>
+            <span className="text-[var(--tss-gray-300)]">|</span>
           )}
           {studentDisplayName && (
             <span>
-              Student: <span className="text-gray-600 font-medium">{studentDisplayName}</span>
+              Student: <span className="text-[var(--tss-gray-700)] font-medium">{studentDisplayName}</span>
             </span>
           )}
         </div>
@@ -571,18 +571,18 @@ export function SessionCascadeForm({
       {/* Error */}
       {saveError && (
         <div className="mx-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-sm text-red-700">{saveError}</p>
+          <p className="text-sm text-[var(--tss-danger)]">{saveError}</p>
         </div>
       )}
 
       {/* Navigation (not shown on step 22 — it has its own save button) */}
       {state.currentStep < 22 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-3 max-w-lg mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--tss-gray-100)] px-4 py-3 flex gap-3 max-w-lg mx-auto shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
           {state.currentStep > 1 && (
             <button
               type="button"
               onClick={goBack}
-              className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-1 py-3 rounded-xl border border-[var(--tss-gray-200)] text-sm font-medium text-[var(--tss-gray-700)] hover:bg-[var(--tss-gray-50)] transition-all"
             >
               Back
             </button>
@@ -593,8 +593,8 @@ export function SessionCascadeForm({
             disabled={!canAdvance() || isPending}
             className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
               canAdvance() && !isPending
-                ? 'bg-[#1A1A2E] text-white hover:opacity-90 active:scale-[0.98]'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                ? 'bg-[var(--tss-navy)] text-white hover:brightness-110 active:scale-[0.98] shadow-md'
+                : 'bg-[var(--tss-gray-200)] text-[var(--tss-gray-500)] cursor-not-allowed'
             }`}
           >
             {isPending ? 'Loading...' : 'Next'}

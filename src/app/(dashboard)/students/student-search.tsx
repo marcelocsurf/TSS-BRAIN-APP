@@ -39,7 +39,7 @@ export function StudentSearch({ defaultValue, belt, status }: Props) {
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Search by name..."
-        className="w-full md:w-64 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+        className="w-full md:w-64 px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent"
       />
     </div>
   );
