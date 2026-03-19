@@ -176,7 +176,7 @@ export async function checkOceanRules(
 
   const { data, error } = await supabase
     .from('ocean_rules')
-    .select('risk_state')
+    .select('rule_state')
     .eq('belt_level', beltLevel)
     .eq('ocean_condition', conditions)
     .single();
@@ -186,12 +186,18 @@ export async function checkOceanRules(
     return 'blocked';
   }
 
-  const riskState = data.risk_state as OceanRiskState;
+  // Map DB values (safe/alert/blocked) to app values (allowed/caution/blocked)
+  const stateMap: Record<string, OceanRiskState> = {
+    safe: 'allowed',
+    alert: 'caution',
+    blocked: 'blocked',
+  };
+  const riskState = stateMap[data.rule_state] ?? 'blocked';
 
   // Special case: Yellow at 3-4ft is "caution" — allowed only if
   // ocean_level (coach assessment) confirms the student can handle it.
   if (riskState === 'caution' && beltLevel === 'yellow_belt' && !oceanLevel) {
-    return 'blocked'; // No coach assessment on record → default to blocked
+    return 'blocked';
   }
 
   return riskState;
