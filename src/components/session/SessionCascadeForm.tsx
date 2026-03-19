@@ -194,7 +194,10 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
       getPilarParts(state.student.belt_level as BeltLevel).then(setPilarParts);
     }
     if (step === 8 && state.student) {
+      // Find the selected pilar part name to filter drills
+      const selectedPart = pilarParts.find(p => p.id === state.pilar_part_id);
       getDrillsForCascade({
+        pilarPartName: selectedPart?.name,
         beltLevel: state.student.belt_level as BeltLevel,
         isWaterVenue: state.isWaterVenue,
       }).then(setDrills);
@@ -216,6 +219,9 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
     }
     if (step === 17 && feedbackQuickOptions.length === 0) {
       getDropdownOptions('coach_feedback_quick').then(setFeedbackQuickOptions);
+    }
+    if (step === 19 && pilarParts.length === 0 && state.student) {
+      getPilarParts(state.student.belt_level as BeltLevel).then(setPilarParts);
     }
     if (step === 20 && homeworkCueOptions.length === 0) {
       getDropdownOptions('homework_cues').then(setHomeworkCueOptions);

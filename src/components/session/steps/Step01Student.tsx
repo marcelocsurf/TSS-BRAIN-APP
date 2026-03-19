@@ -14,6 +14,7 @@ interface Props {
 export function Step01Student({ formState, students, onStudentLoaded }: Props) {
   const [selected, setSelected] = useState(formState.student_id ?? '');
   const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState('');
 
   function handleSelect(studentId: string) {
     setSelected(studentId);
@@ -25,13 +26,30 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
 
   const loadedStudent = formState.student;
 
+  const filteredStudents = search
+    ? students.filter(
+        (s) =>
+          s.first_name.toLowerCase().includes(search.toLowerCase()) ||
+          s.last_name.toLowerCase().includes(search.toLowerCase())
+      )
+    : students;
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Select Student</h3>
 
+      {/* Search */}
+      <input
+        type="text"
+        placeholder="Search by name..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843]"
+      />
+
       {/* Student list */}
       <div className="space-y-2 max-h-64 overflow-y-auto">
-        {students.map((s) => {
+        {filteredStudents.map((s) => {
           const belt = BELT_DISPLAY[s.belt_level as keyof typeof BELT_DISPLAY];
           const isSelected = selected === s.id;
 
@@ -65,6 +83,9 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
             </button>
           );
         })}
+        {filteredStudents.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">No students match your search</p>
+        )}
       </div>
 
       {/* Auto-loaded context */}

@@ -145,22 +145,38 @@ export async function getDrillsForCascade(filters: {
 }): Promise<DrillOption[]> {
   const supabase = await createClient();
 
-  let query = supabase
-    .from('drills')
-    .select('id, name, description, goal, key_cue, pilar, belt_level_range')
-    .order('name');
+  // Use the existing RPC that filters drills by belt range
+  const { data: allDrills, error } = await supabase
+    .rpc('get_drills_for_belt', { p_belt_key: filters.beltLevel });
 
-  // Filter by pilar if provided
-  if (filters.pilarPartName) {
-    // Drills are indexed by pilar, not pilar_part
-    // The pilar_part name helps the coach but the drill filter uses pilar
-  }
-
-  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  // Additional filtering in app code for flexibility
-  return data ?? [];
+  let filtered = allDrills || [];
+
+  // Filter by pilar_part name if provided (matches the drill's pilar_part column)
+  if (filters.pilarPartName) {
+    filtered = filtered.filter((d: any) => d.pilar_part === filters.pilarPartName);
+  }
+
+  // Filter by environment for non-water venues (exclude water-only drills)
+  if (filters.isWaterVenue === false) {
+    filtered = filtered.filter((d: any) =>
+      d.environment === 'Beach' || d.environment === 'Land' || d.environment === 'Gym' || !d.environment
+    );
+  }
+
+  // Map RPC result columns to DrillOption type
+  // RPC returns: id, drill_name, pilar_part, drill_type, key_cue, goal, environment, related_pilar, etc.
+  // DrillOption expects: id, name, description, goal, key_cue, pilar, belt_level_range
+  return filtered.map((d: any) => ({
+    id: d.id,
+    name: d.drill_name,
+    description: d.drill_type || null,
+    goal: d.goal || null,
+    key_cue: d.key_cue || null,
+    pilar: d.related_pilar || d.pilar_part || '',
+    belt_level_range: d.belt_level_range || null,
+  }));
 }
 
 // ═══════════════════════════════════════
