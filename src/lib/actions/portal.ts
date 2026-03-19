@@ -107,32 +107,44 @@ export async function getStudentDrillsForSelfTraining(beltLevel: BeltLevel) {
 
   // Get the belt order index
   const beltIndex = BELT_HIERARCHY.indexOf(beltLevel);
-  const accessibleBelts = BELT_HIERARCHY.slice(0, beltIndex + 1);
 
-  // Try to get drills from the drills table, filtering by belt range
-  const { data: drills } = await admin
+  // 1. Try DB drills first (remove .eq('active') which may not exist)
+  const { data: dbDrills } = await admin
     .from('drills')
     .select('id, name, description, goal, key_cue, pilar, belt_level_range')
-    .eq('active', true)
     .order('name');
 
-  if (!drills || drills.length === 0) {
-    return [];
-  }
-
-  // Filter drills by belt level range
-  return drills.filter((drill: any) => {
-    if (!drill.belt_level_range) return true; // no restriction
-    // belt_level_range could be like "white_belt-blue_belt" or just a single belt
+  const filteredDbDrills = (dbDrills || []).filter((drill: any) => {
+    if (!drill.belt_level_range) return true;
     const range = drill.belt_level_range.split('-').map((b: string) => b.trim());
     if (range.length === 2) {
       const minIdx = BELT_HIERARCHY.indexOf(range[0] as BeltLevel);
       const maxIdx = BELT_HIERARCHY.indexOf(range[1] as BeltLevel);
       return beltIndex >= minIdx && beltIndex <= maxIdx;
     }
-    // Single belt
-    return accessibleBelts.includes(drill.belt_level_range as BeltLevel);
+    return BELT_HIERARCHY.slice(0, beltIndex + 1).includes(drill.belt_level_range as BeltLevel);
   });
+
+  // 2. Also get drills from belt materials (always available)
+  const { STUDENT_MATERIALS } = await import('@/lib/constants/student-materials');
+  const materialDrills = STUDENT_MATERIALS
+    .filter(m => m.category === 'drill' && BELT_HIERARCHY.indexOf(m.beltLevel as BeltLevel) <= beltIndex)
+    .map(m => ({
+      id: m.id,
+      name: m.title,
+      description: m.subtitle,
+      goal: m.subtitle,
+      key_cue: '',
+      pilar: 'technical',
+      belt_level_range: m.beltLevel,
+      source: 'material' as const,
+    }));
+
+  // 3. Combine: DB drills first, then material drills (avoiding duplicates by name)
+  const dbNames = new Set(filteredDbDrills.map((d: any) => d.name?.toLowerCase()));
+  const uniqueMaterialDrills = materialDrills.filter(d => !dbNames.has(d.name?.toLowerCase()));
+
+  return [...filteredDbDrills, ...uniqueMaterialDrills];
 }
 
 // ─── Create a self-training session ───
