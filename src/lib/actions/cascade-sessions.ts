@@ -31,10 +31,12 @@ export async function getCoachesForAssignment(): Promise<CoachForAssignment[]> {
   const { data, error } = await supabase
     .from('coaches')
     .select('id, display_name, role, max_belt_permission')
-    .eq('active', true)
     .order('display_name');
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('getCoachesForAssignment error:', error.message);
+    return [];
+  }
   return (data ?? []) as CoachForAssignment[];
 }
 
