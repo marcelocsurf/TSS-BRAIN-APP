@@ -2,6 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { CoachRole } from '@/lib/constants/brand';
+import { LogoutButton } from '@/components/shared/LogoutButton';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home', icon: '\u2302', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
@@ -26,11 +30,15 @@ export default async function DashboardLayout({
 
   if (!user) redirect('/login');
 
-  const { data: coach } = await supabase
+  const { data: coach, error: coachError } = await supabase
     .from('coaches')
     .select('display_name, role')
     .eq('auth_user_id', user.id)
     .single();
+
+  if (coachError) {
+    console.error('[DashboardLayout] Failed to fetch coach for user', user.id, coachError);
+  }
 
   const role = (coach?.role as CoachRole) || 'assistant';
   const visibleNav = getNavItemsForRole(role);
@@ -55,15 +63,19 @@ export default async function DashboardLayout({
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-white/10 flex items-center justify-between">
           <Link href="/settings" className="text-xs text-white/50 hover:text-white/80">Settings</Link>
+          <LogoutButton />
         </div>
       </aside>
 
       {/* Mobile top bar */}
       <header className="md:hidden sticky top-0 z-40 bg-[var(--tss-navy)] text-white px-4 py-3 flex items-center justify-between">
         <h1 className="text-lg font-bold">TSS Brain</h1>
-        <span className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</span>
+          <LogoutButton />
+        </div>
       </header>
 
       {/* Main content — offset by sidebar width on desktop */}
