@@ -79,12 +79,25 @@ export async function getStudentPortalData(token: string) {
 }
 
 // ─── Get materials filtered by student access ───
+// Access is determined by:
+// 1. The student's current belt_level (always accessible)
+// 2. Any admin-granted levels in student_level_access table
 
-export async function getStudentMaterials(
-  beltLevel: BeltLevel,
-  unlockedLevels: BeltLevel[]
-) {
-  return getMaterialsForStudent(beltLevel, unlockedLevels);
+export async function getStudentMaterials(studentId: string, beltLevel: BeltLevel) {
+  const admin = createAdminClient();
+
+  // Query admin-granted level access
+  const { data: accessRows } = await admin
+    .from('student_level_access')
+    .select('level_key')
+    .eq('student_id', studentId)
+    .eq('active', true);
+
+  const grantedLevels = (accessRows || [])
+    .map((r: any) => r.level_key as BeltLevel)
+    .filter((k: string) => BELT_HIERARCHY.includes(k as BeltLevel));
+
+  return getMaterialsForStudent(beltLevel, grantedLevels);
 }
 
 // ─── Get drills for self-training filtered by belt ───

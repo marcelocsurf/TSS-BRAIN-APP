@@ -7,9 +7,9 @@ import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { BELT_HIERARCHY, BELT_RANK } from '@/lib/constants/belts';
 import { WARMUP_OPTIONS, MENTAL_HACK_OPTIONS } from '@/lib/constants/brand';
 import {
-  STUDENT_MATERIALS,
   MATERIAL_CATEGORY_LABELS,
-  type StudentMaterial,
+  MATERIAL_CATEGORY_ICONS,
+  type BeltMaterial,
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
 import {
@@ -30,7 +30,7 @@ interface PortalData {
   drills: any[];
   pendingSurveys: any[];
   submittedSurveys: any[];
-  materials: { unlocked: StudentMaterial[]; locked: StudentMaterial[] };
+  materials: { unlocked: BeltMaterial[]; locked: BeltMaterial[] };
   token: string;
 }
 
@@ -419,6 +419,25 @@ function SessionsTab({ data }: { data: PortalData }) {
 // TAB 3: MATERIALS
 // ═══════════════════════════════════════
 
+// Belt background styles for section headers
+const BELT_BG_STYLES: Record<string, string> = {
+  white_belt: 'bg-gray-50 border-gray-200',
+  yellow_belt: 'bg-yellow-50 border-yellow-200',
+  blue_belt: 'bg-blue-50 border-blue-200',
+  purple_belt: 'bg-purple-50 border-purple-200',
+  brown_belt: 'bg-amber-50 border-amber-200',
+  black_belt: 'bg-gray-900 border-gray-700',
+};
+
+const BELT_TEXT_STYLES: Record<string, string> = {
+  white_belt: 'text-gray-800',
+  yellow_belt: 'text-yellow-900',
+  blue_belt: 'text-blue-900',
+  purple_belt: 'text-purple-900',
+  brown_belt: 'text-amber-900',
+  black_belt: 'text-white',
+};
+
 function MaterialsTab({
   data,
   belt,
@@ -427,71 +446,133 @@ function MaterialsTab({
   belt: any;
 }) {
   const { materials, student } = data;
-  const beltLevel = student.belt_level as BeltLevel;
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Group unlocked by belt
+  // Group materials by belt level
   const groupedUnlocked = groupByBelt(materials.unlocked);
   const groupedLocked = groupByBelt(materials.locked);
 
+  // Determine belt ordering for display
+  const beltOrder: BeltLevel[] = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
+
+  // Count materials
+  const totalUnlocked = materials.unlocked.length;
+  const totalLocked = materials.locked.length;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Your Materials</h2>
+        <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Training Manual</h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          Based on your {belt?.en} training level
+          {totalUnlocked} sections available &middot; Based on your {belt?.en} level
+          {totalLocked > 0 && ` &middot; ${totalLocked} locked`}
         </p>
       </div>
 
-      {/* Unlocked Materials */}
-      {Object.entries(groupedUnlocked).map(([bKey, mats]) => {
-        const beltInfo = BELT_DISPLAY[bKey as BeltLevel];
+      {/* Unlocked Belt Sections */}
+      {beltOrder.map((bKey) => {
+        const mats = groupedUnlocked[bKey];
+        if (!mats || mats.length === 0) return null;
+        const beltInfo = BELT_DISPLAY[bKey];
+
+        // Group by category within the belt
+        const byCategory = groupByCategory(mats);
+
         return (
-          <div key={bKey}>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: beltInfo?.color || '#999' }}
-              />
-              <h3 className="text-xs font-semibold text-gray-600">{beltInfo?.en}</h3>
+          <div key={bKey} className="space-y-2">
+            {/* Belt Section Header */}
+            <div
+              className={`rounded-xl border px-4 py-3 ${BELT_BG_STYLES[bKey] || 'bg-gray-50 border-gray-200'}`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="w-4 h-4 rounded-full shrink-0 ring-1 ring-white shadow-sm"
+                  style={{ backgroundColor: beltInfo?.color || '#999' }}
+                />
+                <div>
+                  <h3 className={`text-sm font-bold ${BELT_TEXT_STYLES[bKey] || 'text-gray-800'}`}>
+                    {beltInfo?.en}
+                  </h3>
+                  <p className={`text-[10px] ${BELT_TEXT_STYLES[bKey] || 'text-gray-800'} opacity-60`}>
+                    {beltInfo?.levelName} &middot; {mats.length} sections
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              {mats.map((mat) => (
-                <MaterialCard key={mat.id} material={mat} locked={false} />
-              ))}
-            </div>
+
+            {/* Category Groups */}
+            {(['theory', 'drill', 'mission', 'safety', 'mental'] as const).map((cat) => {
+              const catMats = byCategory[cat];
+              if (!catMats || catMats.length === 0) return null;
+              const catLabel = MATERIAL_CATEGORY_LABELS[cat];
+              const catIcon = MATERIAL_CATEGORY_ICONS[cat];
+
+              return (
+                <div key={cat} className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 px-1 pt-1">
+                    <span className="text-xs">{catIcon}</span>
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                      {catLabel}
+                    </span>
+                    <span className="text-[10px] text-gray-300">({catMats.length})</span>
+                  </div>
+                  {catMats.map((mat) => (
+                    <MaterialCard
+                      key={mat.id}
+                      material={mat}
+                      locked={false}
+                      expanded={expandedId === mat.id}
+                      onToggle={() => setExpandedId(expandedId === mat.id ? null : mat.id)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         );
       })}
 
-      {/* Locked Materials */}
-      {materials.locked.length > 0 && (
-        <div className="pt-2">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-            Locked
-          </h3>
-          {Object.entries(groupedLocked).map(([bKey, mats]) => {
-            const beltInfo = BELT_DISPLAY[bKey as BeltLevel];
-            return (
-              <div key={bKey} className="mb-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="w-3 h-3 rounded-full opacity-40"
-                    style={{ backgroundColor: beltInfo?.color || '#999' }}
-                  />
-                  <h4 className="text-[10px] font-semibold text-gray-400">
+      {/* Locked Belt Sections */}
+      {beltOrder.map((bKey) => {
+        const mats = groupedLocked[bKey];
+        if (!mats || mats.length === 0) return null;
+        const beltInfo = BELT_DISPLAY[bKey];
+
+        return (
+          <div key={`locked-${bKey}`} className="space-y-2">
+            {/* Locked Belt Header */}
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 opacity-60">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="w-4 h-4 rounded-full shrink-0 opacity-50"
+                  style={{ backgroundColor: beltInfo?.color || '#999' }}
+                />
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-gray-400">
                     {beltInfo?.en}
-                  </h4>
+                  </h3>
+                  <p className="text-[10px] text-gray-400">
+                    {mats.length} sections &middot; Locked
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  {mats.map((mat) => (
-                    <MaterialCard key={mat.id} material={mat} locked />
-                  ))}
-                </div>
+                <span className="text-base">🔒</span>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+
+            {/* Locked material cards (title only) */}
+            {mats.map((mat) => (
+              <MaterialCard
+                key={mat.id}
+                material={mat}
+                locked
+                expanded={false}
+                onToggle={() => {}}
+              />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -499,64 +580,162 @@ function MaterialsTab({
 function MaterialCard({
   material,
   locked,
+  expanded,
+  onToggle,
 }: {
-  material: StudentMaterial;
+  material: BeltMaterial;
   locked: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const beltInfo = BELT_DISPLAY[material.beltLevel];
-  const catLabel = MATERIAL_CATEGORY_LABELS[material.category];
+  const catIcon = MATERIAL_CATEGORY_ICONS[material.category];
 
-  return (
-    <a
-      href={locked ? undefined : material.url}
-      className={`block bg-white rounded-xl border p-4 transition-all ${
-        locked
-          ? 'border-gray-100 opacity-60 cursor-not-allowed'
-          : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${
-            locked ? 'bg-gray-100' : 'bg-gray-50'
-          }`}
-        >
-          {locked ? '🔒' : material.category === 'video' ? '▶' : material.category === 'guide' ? '📖' : '🏋️'}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p
-              className={`text-sm font-medium ${
-                locked ? 'text-gray-400' : 'text-gray-900'
-              }`}
-            >
-              {material.title}
-            </p>
-            <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium shrink-0">
-              {catLabel}
-            </span>
+  if (locked) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-100 p-3.5 opacity-50 cursor-not-allowed">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-base shrink-0">
+            🔒
           </div>
-          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-            {material.description}
-          </p>
-          {locked && (
-            <p className="text-[10px] text-gray-400 mt-1 font-medium">
-              Unlock with {beltInfo?.en} access
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-400">{material.title}</p>
+            <p className="text-xs text-gray-300 mt-0.5">{material.subtitle}</p>
+            <p className="text-[10px] text-gray-400 mt-1.5 font-medium">
+              Ask your coach to unlock {beltInfo?.en} materials
             </p>
-          )}
+          </div>
         </div>
       </div>
-    </a>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden transition-shadow hover:shadow-sm">
+      <button
+        onClick={onToggle}
+        className="w-full px-3.5 py-3 text-left"
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center text-base shrink-0">
+            {catIcon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-gray-900">{material.title}</p>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">{material.subtitle}</p>
+          </div>
+          <span className="text-gray-300 text-xs shrink-0 mt-1">{expanded ? '▲' : '▼'}</span>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-3.5 pb-4 border-t border-gray-50">
+          <div className="pt-3">
+            {/* Category badge */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                {MATERIAL_CATEGORY_LABELS[material.category]}
+              </span>
+              <span
+                className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white"
+                style={{ backgroundColor: beltInfo?.color || '#999' }}
+              >
+                {beltInfo?.en}
+              </span>
+            </div>
+
+            {/* Content rendered as formatted text */}
+            <div className="prose prose-sm max-w-none">
+              <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed font-[system-ui]">
+                {material.content.split('\n').map((line, i) => {
+                  // Style section headers (ALL CAPS lines)
+                  if (/^[A-Z][A-Z\s&—:#+\-\/().0-9]+$/.test(line.trim()) && line.trim().length > 3) {
+                    return (
+                      <p key={i} className="font-bold text-[var(--tss-navy)] text-sm mt-4 mb-1.5">
+                        {line}
+                      </p>
+                    );
+                  }
+                  // Style numbered section headers (e.g., "1. STANCE ANALYSIS")
+                  if (/^\d+\.\s+[A-Z]/.test(line.trim())) {
+                    return (
+                      <p key={i} className="font-semibold text-gray-800 text-sm mt-3 mb-1">
+                        {line}
+                      </p>
+                    );
+                  }
+                  // Style lettered steps (e.g., "a) From cobra position...")
+                  if (/^[a-z]\)\s/.test(line.trim())) {
+                    return (
+                      <p key={i} className="text-sm text-gray-700 pl-4 mb-0.5">
+                        {line}
+                      </p>
+                    );
+                  }
+                  // Style bullet points
+                  if (/^[-•✓]\s/.test(line.trim()) || /^✓\s/.test(line.trim())) {
+                    return (
+                      <p key={i} className="text-sm text-gray-600 pl-3 mb-0.5">
+                        {line}
+                      </p>
+                    );
+                  }
+                  // Style coaching cues (quoted or in specific format)
+                  if (/^".*"$/.test(line.trim()) || /^Coaching cue:/.test(line.trim())) {
+                    return (
+                      <p key={i} className="text-sm text-blue-700 italic pl-3 mb-0.5">
+                        {line}
+                      </p>
+                    );
+                  }
+                  // Style STANDARD lines
+                  if (/^STANDARD:/.test(line.trim())) {
+                    return (
+                      <p key={i} className="text-sm font-semibold text-green-800 bg-green-50 rounded-lg px-3 py-2 mt-3">
+                        {line}
+                      </p>
+                    );
+                  }
+                  // Empty lines = spacing
+                  if (line.trim() === '') {
+                    return <br key={i} />;
+                  }
+                  // Default text
+                  return (
+                    <p key={i} className="text-sm text-gray-700 mb-0.5">
+                      {line}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
 function groupByBelt(
-  materials: StudentMaterial[]
-): Record<string, StudentMaterial[]> {
-  const grouped: Record<string, StudentMaterial[]> = {};
+  materials: BeltMaterial[]
+): Record<string, BeltMaterial[]> {
+  const grouped: Record<string, BeltMaterial[]> = {};
   for (const mat of materials) {
     if (!grouped[mat.beltLevel]) grouped[mat.beltLevel] = [];
     grouped[mat.beltLevel].push(mat);
+  }
+  return grouped;
+}
+
+function groupByCategory(
+  materials: BeltMaterial[]
+): Record<string, BeltMaterial[]> {
+  const grouped: Record<string, BeltMaterial[]> = {};
+  for (const mat of materials) {
+    if (!grouped[mat.category]) grouped[mat.category] = [];
+    grouped[mat.category].push(mat);
   }
   return grouped;
 }

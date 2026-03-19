@@ -1,5 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin';
-import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
+import { type BeltLevel } from '@/lib/constants/belts';
 import { notFound } from 'next/navigation';
 import {
   getStudentPortalData,
@@ -24,13 +23,9 @@ export default async function StudentPortalPage({ params }: Props) {
   const { student } = portalData;
   const beltLevel = student.belt_level as BeltLevel;
 
-  // Compute unlocked levels: everything at or below current belt
-  const beltIndex = BELT_HIERARCHY.indexOf(beltLevel);
-  const unlockedLevels = BELT_HIERARCHY.slice(0, beltIndex + 1);
-
-  // Fetch parallel data
+  // Fetch parallel data — materials use admin access control via student_level_access
   const [materials, drills, pendingSurveys, submittedSurveys] = await Promise.all([
-    getStudentMaterials(beltLevel, unlockedLevels),
+    getStudentMaterials(student.id, beltLevel),
     getStudentDrillsForSelfTraining(beltLevel),
     getPendingSurveys(student.id),
     getSubmittedSurveys(student.id),
