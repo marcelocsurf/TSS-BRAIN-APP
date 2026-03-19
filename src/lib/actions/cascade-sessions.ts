@@ -188,31 +188,26 @@ export async function checkOceanRules(
   oceanLevel: string | null,
   conditions: string
 ): Promise<OceanRiskState> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('ocean_rules')
-    .select('rule_state')
-    .eq('belt_level', beltLevel)
-    .eq('ocean_condition', conditions)
-    .single();
-
-  if (error || !data) {
-    // Default to blocked if no rule found (safety first)
-    return 'blocked';
-  }
-
-  // Map DB values (safe/alert/blocked) to app values (allowed/caution/blocked)
-  const stateMap: Record<string, OceanRiskState> = {
-    safe: 'allowed',
-    alert: 'caution',
-    blocked: 'blocked',
+  // Ocean Rules Matrix — Canon Oficial v5.0 Section 10
+  // Hardcoded for reliability (DB table had column/value mismatches)
+  const matrix: Record<string, Record<string, OceanRiskState>> = {
+    white_belt:  { flat: 'allowed', '1_2ft': 'allowed', '3_4ft': 'blocked', '4_6ft': 'blocked', '6_plus': 'blocked' },
+    yellow_belt: { flat: 'allowed', '1_2ft': 'allowed', '3_4ft': 'caution', '4_6ft': 'blocked', '6_plus': 'blocked' },
+    blue_belt:   { flat: 'allowed', '1_2ft': 'allowed', '3_4ft': 'allowed', '4_6ft': 'allowed', '6_plus': 'caution' },
+    purple_belt: { flat: 'allowed', '1_2ft': 'allowed', '3_4ft': 'allowed', '4_6ft': 'allowed', '6_plus': 'caution' },
+    brown_belt:  { flat: 'allowed', '1_2ft': 'allowed', '3_4ft': 'allowed', '4_6ft': 'allowed', '6_plus': 'allowed' },
+    black_belt:  { flat: 'allowed', '1_2ft': 'allowed', '3_4ft': 'allowed', '4_6ft': 'allowed', '6_plus': 'allowed' },
   };
-  const riskState = stateMap[data.rule_state] ?? 'blocked';
+
+  const beltRules = matrix[beltLevel];
+  if (!beltRules) return 'blocked'; // Unknown belt → safety first
+
+  const riskState = beltRules[conditions] ?? 'blocked';
 
   // Special case: Yellow at 3-4ft is "caution" — allowed only if
   // ocean_level (coach assessment) confirms the student can handle it.
-  if (riskState === 'caution' && beltLevel === 'yellow_belt' && !oceanLevel) {
+  // If no coach assessment on record, default to blocked.
+  if (riskState === 'caution' && beltLevel === 'yellow_belt' && (!oceanLevel || oceanLevel === 'beginner')) {
     return 'blocked';
   }
 
