@@ -5,6 +5,18 @@ import { getStudentWithCascadeContext } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import type { CascadeFormState, StudentCascadeContext } from '@/types/session';
 
+const BELT_COLORS: Record<string, string> = {
+  white_belt: '#E8E8E8',
+  yellow_belt: '#F5C518',
+  blue_belt: '#1E6FBF',
+  purple_belt: '#7B4FBE',
+  brown_belt: '#7D4E27',
+  black_belt: '#111111',
+};
+
+const normalize = (s: string) =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 interface Props {
   formState: CascadeFormState;
   students: { id: string; first_name: string; last_name: string; belt_level: string }[];
@@ -26,13 +38,21 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
 
   const loadedStudent = formState.student;
 
-  const filteredStudents = search.length >= 2
-    ? students.filter(
-        (s) =>
-          s.first_name.toLowerCase().includes(search.toLowerCase()) ||
-          s.last_name.toLowerCase().includes(search.toLowerCase())
-      )
-    : [];
+  // Show all students if fewer than 20, otherwise require at least 1 char
+  const filteredStudents = (() => {
+    if (students.length < 20 && search.length === 0) {
+      return students;
+    }
+    if (search.length === 0) {
+      return [];
+    }
+    const normalizedSearch = normalize(search);
+    return students.filter(
+      (s) =>
+        normalize(s.first_name).includes(normalizedSearch) ||
+        normalize(s.last_name).includes(normalizedSearch)
+    );
+  })();
 
   return (
     <div className="space-y-4">
@@ -48,8 +68,8 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
         className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
       />
 
-      {search.length < 2 && !loadedStudent && (
-        <p className="text-sm text-gray-400 text-center py-4">Type at least 2 letters to search</p>
+      {students.length >= 20 && search.length === 0 && !loadedStudent && (
+        <p className="text-sm text-gray-400 text-center py-4">Type at least 1 letter to search</p>
       )}
 
       {/* Student list */}
@@ -57,6 +77,7 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
         {filteredStudents.slice(0, 20).map((s) => {
           const belt = BELT_DISPLAY[s.belt_level as keyof typeof BELT_DISPLAY];
           const isSelected = selected === s.id;
+          const beltColor = BELT_COLORS[s.belt_level] || '#999';
 
           return (
             <button
@@ -76,10 +97,18 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
               >
                 {s.first_name[0]}{s.last_name[0]}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">
-                  {s.first_name} {s.last_name}
-                </p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {s.first_name} {s.last_name}
+                  </p>
+                  {/* Belt color badge */}
+                  <span
+                    className="inline-block w-3 h-3 rounded-full shrink-0 border border-gray-300"
+                    style={{ backgroundColor: beltColor }}
+                    title={belt?.en || s.belt_level}
+                  />
+                </div>
                 <p className="text-xs text-gray-400">{belt?.en || s.belt_level}</p>
               </div>
               {isSelected && (
@@ -88,8 +117,8 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
             </button>
           );
         })}
-        {search.length >= 2 && filteredStudents.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-4">No students match "{search}"</p>
+        {search.length >= 1 && filteredStudents.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">No students match &quot;{search}&quot;</p>
         )}
         {filteredStudents.length > 20 && (
           <p className="text-xs text-gray-400 text-center py-2">Showing 20 of {filteredStudents.length} — type more to narrow</p>

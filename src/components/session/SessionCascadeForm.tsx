@@ -75,6 +75,8 @@ function cascadeReducer(state: CascadeFormState, action: CascadeAction): Cascade
       return { ...state, session_type: action.payload };
     case 'SET_DATE':
       return { ...state, session_date: action.payload };
+    case 'SET_SESSION_TIME':
+      return { ...state, session_time: action.payload };
     case 'SET_PILAR_PART':
       return {
         ...state,
@@ -83,6 +85,8 @@ function cascadeReducer(state: CascadeFormState, action: CascadeAction): Cascade
         // Reset drill when pilar part changes
         drill_id: null,
       };
+    case 'SET_MISSION_TYPE':
+      return { ...state, mission_type: action.payload };
     case 'SET_MISSION':
       return { ...state, mission: action.payload };
     case 'SET_DRILL':
@@ -149,11 +153,12 @@ interface Props {
   students: { id: string; first_name: string; last_name: string; belt_level: string }[];
   venues: DropdownOption[];
   sessionTypes: DropdownOption[];
+  coachName?: string;
 }
 
 // ─── Component ───
 
-export function SessionCascadeForm({ initialStudent, students, venues, sessionTypes }: Props) {
+export function SessionCascadeForm({ initialStudent, students, venues, sessionTypes, coachName }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -180,6 +185,8 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
   const [totalDurationOptions, setTotalDurationOptions] = useState<DropdownOption[]>([]);
   const [incidentTypeOptions, setIncidentTypeOptions] = useState<DropdownOption[]>([]);
   const [ratingScales, setRatingScales] = useState<RatingScale[]>([]);
+  const [missionTypeOptions, setMissionTypeOptions] = useState<DropdownOption[]>([]);
+  const [achievementOptions, setAchievementOptions] = useState<DropdownOption[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // ─── Load data when entering specific steps ───
@@ -192,6 +199,9 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
     }
     if (step === 6 && pilarParts.length === 0 && state.student) {
       getPilarParts(state.student.belt_level as BeltLevel).then(setPilarParts);
+    }
+    if (step === 7 && missionTypeOptions.length === 0) {
+      getDropdownOptions('mission_type').then(setMissionTypeOptions);
     }
     if (step === 8 && state.student) {
       // Find the selected pilar part name to filter drills
@@ -220,6 +230,9 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
     if (step === 17 && feedbackQuickOptions.length === 0) {
       getDropdownOptions('coach_feedback_quick').then(setFeedbackQuickOptions);
     }
+    if (step === 18 && achievementOptions.length === 0) {
+      getDropdownOptions('achievement_quick').then(setAchievementOptions);
+    }
     if (step === 19 && pilarParts.length === 0 && state.student) {
       getPilarParts(state.student.belt_level as BeltLevel).then(setPilarParts);
     }
@@ -233,6 +246,10 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
       getDropdownOptions('incident_type').then(setIncidentTypeOptions);
     }
   }, [state.currentStep]);
+
+  // ─── Derived values ───
+
+  const selectedPilarPartName = pilarParts.find((p) => p.id === state.pilar_part_id)?.name ?? null;
 
   // ─── Navigation ───
 
@@ -316,6 +333,7 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
           <Step05Date
             formState={state}
             onSelect={(v) => dispatch({ type: 'SET_DATE', payload: v })}
+            onTimeChange={(v) => dispatch({ type: 'SET_SESSION_TIME', payload: v })}
           />
         );
       case 6:
@@ -330,7 +348,10 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
         return (
           <Step07Mission
             formState={state}
+            missionTypes={missionTypeOptions}
+            selectedPilarPartName={selectedPilarPartName}
             onChange={(v) => dispatch({ type: 'SET_MISSION', payload: v })}
+            onMissionTypeChange={(v) => dispatch({ type: 'SET_MISSION_TYPE', payload: v })}
           />
         );
       case 8:
@@ -415,6 +436,7 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
         return (
           <Step18Achieved
             formState={state}
+            achievementOptions={achievementOptions}
             onChange={(v) => dispatch({ type: 'SET_ACHIEVED', payload: v })}
           />
         );
@@ -423,6 +445,8 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
           <Step19WhatsNext
             formState={state}
             pilarParts={pilarParts}
+            currentPilarPartId={state.pilar_part_id}
+            status={state.status}
             onSelect={(v) => dispatch({ type: 'SET_WHATS_NEXT', payload: v })}
           />
         );
@@ -431,6 +455,7 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
           <Step20Homework
             formState={state}
             cueOptions={homeworkCueOptions}
+            currentPilar={state.pilar_id_snapshot}
             onToggleCue={(cue) => {
               const cues = state.homework_cues.includes(cue)
                 ? state.homework_cues.filter((c) => c !== cue)
@@ -483,6 +508,13 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
     <div className="min-h-screen bg-white">
       {/* Progress */}
       <CascadeProgress currentStep={state.currentStep} isWaterVenue={state.isWaterVenue} />
+
+      {/* Coach info line */}
+      {coachName && (
+        <div className="px-4 pt-2">
+          <p className="text-xs text-gray-400">Session by: <span className="text-gray-600 font-medium">{coachName}</span></p>
+        </div>
+      )}
 
       {/* Step content */}
       <div className="px-4 py-6">

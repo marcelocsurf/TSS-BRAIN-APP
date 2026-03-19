@@ -113,10 +113,12 @@ export interface CascadeFormState {
 
   // Step 5: Date
   session_date: string;
+  session_time: string | null;
 
   // Step 6: Pilar Part
   pilar_part_id: string | null;
   pilar_id_snapshot: string | null;
+  mission_type: string | null;
 
   // Step 7: Mission
   mission: string | null;
@@ -189,7 +191,9 @@ export type CascadeAction =
   | { type: 'SET_OCEAN'; payload: { conditions: string; riskState: OceanRiskState } }
   | { type: 'SET_SESSION_TYPE'; payload: string }
   | { type: 'SET_DATE'; payload: string }
+  | { type: 'SET_SESSION_TIME'; payload: string }
   | { type: 'SET_PILAR_PART'; payload: { id: string; pilarId: string } }
+  | { type: 'SET_MISSION_TYPE'; payload: string }
   | { type: 'SET_MISSION'; payload: string }
   | { type: 'SET_DRILL'; payload: string }
   | { type: 'SET_WARM_UP'; payload: string }

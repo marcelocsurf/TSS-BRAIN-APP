@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { CascadeFormState, PilarPart } from '@/types/session';
+import type { CascadeFormState, PilarPart, SessionStatus } from '@/types/session';
 
 interface Props {
   formState: CascadeFormState;
   pilarParts: PilarPart[]; // Same filtered list as Step 6
+  currentPilarPartId: string | null;
+  status: SessionStatus | null;
   onSelect: (partId: string) => void;
 }
 
@@ -16,8 +18,27 @@ const PILAR_LABELS: Record<string, string> = {
   physical:  'Physical',
 };
 
-export function Step19WhatsNext({ formState, pilarParts, onSelect }: Props) {
+export function Step19WhatsNext({ formState, pilarParts, currentPilarPartId, status, onSelect }: Props) {
   const [search, setSearch] = useState('');
+
+  // Determine suggested pilar part
+  const currentPart = pilarParts.find((p) => p.id === currentPilarPartId);
+  let suggestedPart: PilarPart | null = null;
+  let suggestionBadge = '';
+
+  if (status === 'mastered' && currentPart) {
+    // Find next pilar part by display_order + 1 in same pilar
+    const nextPart = pilarParts.find(
+      (p) => p.pilar_id === currentPart.pilar_id && p.display_order === currentPart.display_order + 1
+    );
+    if (nextPart) {
+      suggestedPart = nextPart;
+      suggestionBadge = 'Suggested';
+    }
+  } else if ((status === 'partial' || status === 'not_achieved') && currentPart) {
+    suggestedPart = currentPart;
+    suggestionBadge = 'Continue';
+  }
 
   const filtered = search
     ? pilarParts.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -32,8 +53,38 @@ export function Step19WhatsNext({ formState, pilarParts, onSelect }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-[#1A1A2E]">What's Next</h3>
+      <h3 className="text-lg font-semibold text-[#1A1A2E]">What&apos;s Next</h3>
       <p className="text-xs text-gray-400">Select the focus for the next session</p>
+
+      {/* Contextual suggestion */}
+      {suggestedPart && (
+        <button
+          type="button"
+          onClick={() => onSelect(suggestedPart!.id)}
+          className={`w-full p-3 rounded-xl border text-left text-sm transition-all ${
+            formState.whats_next_pilar_part_id === suggestedPart.id
+              ? 'border-[#D4A843] bg-amber-50 font-medium'
+              : 'border-[#D4A843]/40 bg-amber-50/30 hover:bg-amber-50/60'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                suggestionBadge === 'Suggested'
+                  ? 'bg-[#D4A843] text-white'
+                  : 'bg-[#1A1A2E] text-white'
+              }`}
+            >
+              {suggestionBadge}
+            </span>
+            <span className="text-gray-800">{suggestedPart.name}</span>
+            {formState.whats_next_pilar_part_id === suggestedPart.id && (
+              <span className="ml-auto text-[#D4A843]">&#10003;</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mt-1">{PILAR_LABELS[suggestedPart.pilar_id] || suggestedPart.pilar_id}</p>
+        </button>
+      )}
 
       <input
         type="text"
