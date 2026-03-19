@@ -27,7 +27,7 @@ export async function sendSessionEmail(data: SessionEmailData): Promise<{ succes
 
   try {
     await resend.emails.send({
-      from: 'TSS Brain <noreply@thesurfsequence.com>',
+      from: process.env.RESEND_FROM_EMAIL || 'TSS Brain <onboarding@resend.dev>',
       to: data.studentEmail,
       subject: `Session Report — ${data.mission.slice(0, 50)}`,
       html: buildEmailHtml({ ...data, portalUrl, beltColor: belt?.color || '#1A1A2E' }),
