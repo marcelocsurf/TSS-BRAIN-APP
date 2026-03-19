@@ -52,6 +52,7 @@ export async function createCampInstance(input: {
   template_id: string;
   camp_name: string;
   coach_id: string;
+  head_coach_id?: string;
   start_date: string;
   end_date: string;
   modality: 'individual' | 'group';
@@ -75,6 +76,7 @@ export async function createCampInstance(input: {
       template_id: input.template_id,
       camp_name: input.camp_name,
       coach_id: input.coach_id,
+      head_coach_id: input.head_coach_id || input.coach_id,
       start_date: input.start_date,
       end_date: input.end_date,
       modality: input.modality,
@@ -125,7 +127,7 @@ export async function getCampDetail(campId: string) {
 
   const { data: instance } = await supabase
     .from('camp_instances')
-    .select('*, camp_templates(*), coaches(display_name)')
+    .select('*, camp_templates(*), coaches(display_name), head_coach:head_coach_id(id, display_name)')
     .eq('id', campId)
     .single();
 
@@ -317,4 +319,57 @@ export async function closeCampSessionResult(input: {
 
   revalidatePath(`/camps/${input.camp_instance_id}`);
   return { success: true, resultId: result.id };
+}
+
+// ═══════════════════════════════════════
+// ADD STUDENT TO CAMP
+// ═══════════════════════════════════════
+
+export async function addStudentToCamp(campInstanceId: string, studentId: string) {
+  const supabase = await createClient();
+
+  // Check if already enrolled
+  const { data: existing } = await supabase
+    .from('camp_participants')
+    .select('id')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('student_id', studentId)
+    .single();
+
+  if (existing) {
+    // Re-activate if was removed
+    await supabase
+      .from('camp_participants')
+      .update({ enrollment_status: 'active' })
+      .eq('id', existing.id);
+  } else {
+    const { error } = await supabase.from('camp_participants').insert({
+      camp_instance_id: campInstanceId,
+      student_id: studentId,
+      enrollment_status: 'active',
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath(`/camps/${campInstanceId}`);
+  return { success: true };
+}
+
+// ═══════════════════════════════════════
+// REMOVE STUDENT FROM CAMP
+// ═══════════════════════════════════════
+
+export async function removeStudentFromCamp(campInstanceId: string, studentId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('camp_participants')
+    .update({ enrollment_status: 'removed' })
+    .eq('camp_instance_id', campInstanceId)
+    .eq('student_id', studentId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/camps/${campInstanceId}`);
+  return { success: true };
 }

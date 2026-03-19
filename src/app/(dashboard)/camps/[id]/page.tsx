@@ -1,5 +1,6 @@
 import { getCampDetail } from '@/lib/actions/camps';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
+import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -17,42 +18,95 @@ export default async function CampDetailPage({ params }: Props) {
   const { instance, participants, sessions } = camp;
   if (!instance) notFound();
 
+  const headCoach = (instance as any).head_coach;
+  const creatorCoach = (instance as any).coaches;
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-[var(--tss-navy)]">{instance.camp_name}</h2>
-        <p className="text-sm text-gray-500">
-          {(instance as any).camp_templates?.template_name} · {(instance as any).coaches?.display_name}
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-          {instance.start_date} → {instance.end_date} · {instance.modality}
-        </p>
-      </div>
-
-      {/* Participants */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <h3 className="text-sm font-semibold text-[var(--tss-navy)] mb-3">
-          Participants ({participants.length})
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {participants.map((p: any) => (
-            <Link key={p.id} href={`/students/${p.students?.id}`}
-              className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors">
-              <div className="w-5 h-5 rounded-full text-white text-[8px] font-bold flex items-center justify-center"
-                style={{ backgroundColor: BELT_DISPLAY[p.students?.belt_level as BeltLevel]?.color || '#999' }}>
-                {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
-              </div>
-              <span className="text-xs text-gray-700">{p.students?.first_name}</span>
-            </Link>
-          ))}
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-[var(--tss-navy)]">{instance.camp_name}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {(instance as any).camp_templates?.template_name}
+            </p>
+          </div>
+          <CampStatusBadge status={instance.status} />
+        </div>
+
+        {/* Head Coach prominently */}
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-gray-500">Head Coach:</span>
+          <span className="text-sm font-medium text-[var(--tss-navy)]">
+            {headCoach?.display_name || creatorCoach?.display_name || 'Not assigned'}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-400">
+          <span>{instance.start_date} &rarr; {instance.end_date}</span>
+          <span className="capitalize">{instance.modality}</span>
+          {creatorCoach?.display_name && headCoach?.display_name !== creatorCoach?.display_name && (
+            <span>Created by: {creatorCoach.display_name}</span>
+          )}
         </div>
       </div>
 
-      {/* Day progress */}
+      {/* Participants with belt levels */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+            Enrolled Students ({participants.length})
+          </h3>
+        </div>
+
+        {participants.length > 0 ? (
+          <div className="space-y-2">
+            {participants.map((p: any) => {
+              const belt = BELT_DISPLAY[p.students?.belt_level as BeltLevel];
+              return (
+                <Link
+                  key={p.id}
+                  href={`/students/${p.students?.id}`}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: belt?.color || '#999' }}
+                  >
+                    {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {p.students?.first_name} {p.students?.last_name}
+                    </p>
+                    <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
+                  </div>
+                  <span
+                    className="text-[10px] px-2 py-0.5 rounded-full text-white shrink-0"
+                    style={{ backgroundColor: belt?.color || '#999' }}
+                  >
+                    {belt?.en}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 text-center py-3">No students enrolled</p>
+        )}
+
+        {/* Add/Remove students */}
+        <CampStudentManager
+          campInstanceId={id}
+          currentParticipantIds={participants.map((p: any) => p.students?.id).filter(Boolean)}
+        />
+      </div>
+
+      {/* Day schedule with session blocks */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Sessions by Day</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Schedule</h3>
         </div>
         <div className="divide-y divide-gray-50">
           {sessions.map((s: any) => {
@@ -74,6 +128,11 @@ export default async function CampDetailPage({ params }: Props) {
                     <p className="text-xs text-gray-500 truncate max-w-[200px]">
                       {s.camp_template_days?.day_goal?.slice(0, 60)}
                     </p>
+                    {s.camp_template_days?.evaluation_focus && (
+                      <p className="text-[10px] text-purple-500 mt-0.5">
+                        Focus: {s.camp_template_days.evaluation_focus.slice(0, 40)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -94,5 +153,20 @@ export default async function CampDetailPage({ params }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+function CampStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    planned: 'bg-blue-50 text-blue-700',
+    active: 'bg-green-50 text-green-700',
+    completed: 'bg-gray-100 text-gray-600',
+    draft: 'bg-gray-50 text-gray-500',
+    cancelled: 'bg-red-50 text-red-600',
+  };
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${styles[status] || 'bg-gray-50'}`}>
+      {status}
+    </span>
   );
 }

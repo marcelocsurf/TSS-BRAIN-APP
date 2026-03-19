@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { listCampTemplates, createCampInstance } from '@/lib/actions/camps';
 import { listStudents, type StudentRow } from '@/lib/actions/students';
 import { getCurrentCoach } from '@/lib/actions/sessions';
+import { getCoachesForAssignment, type CoachForAssignment } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 
 export default function NewCampPage() {
   const router = useRouter();
   const [templates, setTemplates] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
+  const [coaches, setCoaches] = useState<CoachForAssignment[]>([]);
   const [coach, setCoach] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +20,7 @@ export default function NewCampPage() {
   const [form, setForm] = useState({
     template_id: '',
     camp_name: '',
+    head_coach_id: '',
     start_date: new Date().toISOString().slice(0, 10),
     end_date: '',
     modality: 'group' as 'individual' | 'group',
@@ -29,10 +32,16 @@ export default function NewCampPage() {
       listCampTemplates(),
       listStudents({ status: 'active' }),
       getCurrentCoach(),
-    ]).then(([t, s, c]) => {
+      getCoachesForAssignment(),
+    ]).then(([t, s, c, coachesList]) => {
       setTemplates(t);
       setStudents(s.students);
       setCoach(c);
+      setCoaches(coachesList);
+      // Default head coach to current coach
+      if (c?.id) {
+        setForm(f => ({ ...f, head_coach_id: c.id }));
+      }
     });
   }, []);
 
@@ -57,6 +66,7 @@ export default function NewCampPage() {
       const instance = await createCampInstance({
         ...form,
         coach_id: coach.id,
+        head_coach_id: form.head_coach_id || coach.id,
       });
       router.push(`/camps/${instance.id}`);
     } catch (err: any) {
@@ -95,6 +105,24 @@ export default function NewCampPage() {
           <input type="text" placeholder="Camp name *" value={form.camp_name}
             onChange={e => setForm(f => ({ ...f, camp_name: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+
+          {/* Head Coach */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Head Coach</label>
+            <select
+              value={form.head_coach_id}
+              onChange={e => setForm(f => ({ ...f, head_coach_id: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            >
+              <option value="">Select head coach...</option>
+              {coaches.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.display_name} ({c.role})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Start</label>

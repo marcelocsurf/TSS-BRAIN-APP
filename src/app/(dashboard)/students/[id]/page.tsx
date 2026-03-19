@@ -1,5 +1,7 @@
 import { getStudent } from '@/lib/actions/students';
 import { getStudentLevelAccess } from '@/lib/actions/access';
+import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/actions/evaluations';
+import { getCurrentCoach } from '@/lib/actions/sessions';
 import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
@@ -7,6 +9,9 @@ import { LevelAccessCard } from '@/components/student/LevelAccessCard';
 import { ProfilePhoto } from '@/components/shared/ProfilePhoto';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection';
+import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
+import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
+import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -25,23 +30,91 @@ export default async function StudentProfilePage({ params }: Props) {
   }
 
   const supabase = await createClient();
-  const [levelAccess, sessionResult] = await Promise.all([
+
+  // Get coach (may fail if user is not a coach, e.g. admin-only)
+  let coach: any = null;
+  try {
+    coach = await getCurrentCoach();
+  } catch {
+    // Not a coach — evaluation buttons won't show
+  }
+
+  const [
+    levelAccess,
+    standaloneResult,
+    cascadeResult,
+    seqHistory,
+    oceanHistory,
+  ] = await Promise.all([
     getStudentLevelAccess(id),
+    // Standalone session results
     supabase
       .from('student_session_results')
       .select(`
         id, status, focus_rating,
         coach_feedback, homework, whats_next, created_at, coach_id,
-        standalone_sessions(mission, training_venue, session_date, pilar),
+        standalone_sessions(mission, training_venue, session_date, pilar, duration_minutes),
+        coaches:coach_id(display_name)
+      `)
+      .eq('student_id', id)
+      .eq('completion_state', 'closed')
+      .not('standalone_session_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    // Cascade session results
+    supabase
+      .from('cascade_sessions')
+      .select(`
+        id, mission, pilar_id_snapshot, status,
+        session_date, training_venue, total_duration,
+        coach_feedback_text, homework_text, homework_cues,
         coaches:coach_id(display_name)
       `)
       .eq('student_id', id)
       .eq('completion_state', 'closed')
       .order('created_at', { ascending: false })
-      .limit(20),
+      .limit(50),
+    getSequenceEvaluationHistory(id, 10).catch(() => []),
+    getOceanLevelHistory(id, 10).catch(() => []),
   ]);
 
-  const sessionHistory = sessionResult.data ?? [];
+  // Merge and sort all sessions for the unified history
+  const standaloneEntries = (standaloneResult.data ?? []).map((r: any) => ({
+    id: r.id,
+    source: 'standalone' as const,
+    date: r.standalone_sessions?.session_date || r.created_at,
+    coachName: r.coaches?.display_name || null,
+    mission: r.standalone_sessions?.mission || null,
+    pilar: r.standalone_sessions?.pilar || null,
+    status: r.status,
+    coachFeedback: r.coach_feedback || null,
+    homework: r.homework || null,
+    whatsNext: r.whats_next || null,
+    duration: r.standalone_sessions?.duration_minutes || null,
+    venue: r.standalone_sessions?.training_venue || null,
+  }));
+
+  const cascadeEntries = (cascadeResult.data ?? []).map((c: any) => ({
+    id: c.id,
+    source: 'cascade' as const,
+    date: c.session_date || c.created_at,
+    coachName: c.coaches?.display_name || null,
+    mission: c.mission || null,
+    pilar: c.pilar_id_snapshot || null,
+    status: c.status || null,
+    coachFeedback: c.coach_feedback_text || null,
+    homework: [
+      c.homework_cues?.length ? c.homework_cues.join(', ') : null,
+      c.homework_text,
+    ].filter(Boolean).join(' — ') || null,
+    whatsNext: null,
+    duration: c.total_duration || null,
+    venue: c.training_venue || null,
+  }));
+
+  const allSessions = [...standaloneEntries, ...cascadeEntries]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   const unlockedKeys = levelAccess.map((a: any) => a.level_key);
   const belt = BELT_DISPLAY[student.belt_level];
   const fullName = `${student.first_name} ${student.last_name}`;
@@ -51,7 +124,7 @@ export default async function StudentProfilePage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
 
-      {/* ─── 1. HEADER (always visible) ─── */}
+      {/* --- 1. HEADER (always visible) --- */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
@@ -115,7 +188,7 @@ export default async function StudentProfilePage({ params }: Props) {
         </div>
       </div>
 
-      {/* ─── 2. LAST SESSION (always visible, highlighted) ─── */}
+      {/* --- 2. LAST SESSION (always visible, highlighted) --- */}
       <Card title="Last Session" highlighted>
         {student.last_session_date ? (
           <div className="space-y-2">
@@ -131,7 +204,7 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </Card>
 
-      {/* ─── 3. PROGRESSION (always visible) ─── */}
+      {/* --- 3. PROGRESSION (always visible) --- */}
       <Card title="Progression">
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
@@ -148,10 +221,31 @@ export default async function StudentProfilePage({ params }: Props) {
         </div>
       </Card>
 
+      {/* --- 3b. SEQUENCE EVALUATION (collapsible) --- */}
+      <CollapsibleSection title="Sequence Evaluation" defaultOpen={false}>
+        <SequenceEvaluationPanel
+          studentId={id}
+          coachId={coach?.id || ''}
+          currentSequence={student.current_sequence_number}
+          currentStep={student.current_step_order}
+          history={seqHistory}
+        />
+      </CollapsibleSection>
+
+      {/* --- 3c. OCEAN LEVEL EVALUATION (collapsible) --- */}
+      <CollapsibleSection title="Ocean Level" defaultOpen={false}>
+        <OceanLevelPanel
+          studentId={id}
+          coachId={coach?.id || ''}
+          currentLevel={student.ocean_level}
+          history={oceanHistory}
+        />
+      </CollapsibleSection>
+
       {/* Level Access */}
       <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />
 
-      {/* ─── 4. SAFETY & MEDICAL (always visible, highlighted if data) ─── */}
+      {/* --- 4. SAFETY & MEDICAL (always visible, highlighted if data) --- */}
       <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
         <div className="space-y-2">
           <Row label="Emergency Contact" value={student.emergency_contact_name} />
@@ -174,7 +268,7 @@ export default async function StudentProfilePage({ params }: Props) {
         </div>
       </Card>
 
-      {/* ─── 5. WAIVER STATUS (visible) ─── */}
+      {/* --- 5. WAIVER STATUS (visible) --- */}
       <Card title="Waiver Status">
         {student.waiver_signed ? (
           <div className="flex items-center gap-2 py-1">
@@ -199,59 +293,12 @@ export default async function StudentProfilePage({ params }: Props) {
         )}
       </Card>
 
-      {/* ─── 6. SESSION HISTORY (collapsible, default closed) ─── */}
-      <CollapsibleSection title={`Session History (${sessionHistory.length})`} defaultOpen={false}>
-        {sessionHistory.length > 0 ? (
-          <div className="space-y-3">
-            {sessionHistory.map((result: any) => {
-              const session = result.standalone_sessions;
-              const coachDisplayName = result.coaches?.display_name;
-              return (
-                <div key={result.id} className="border-b border-gray-50 pb-3 last:border-0 last:pb-0">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {session?.mission || 'Session'}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {session?.session_date
-                          ? new Date(session.session_date).toLocaleDateString('en-US', {
-                              month: 'short', day: 'numeric', year: 'numeric'
-                            })
-                          : new Date(result.created_at).toLocaleDateString()}
-                        {session?.training_venue && ` \u00b7 ${session.training_venue}`}
-                        {coachDisplayName && ` \u00b7 Coach: ${coachDisplayName}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatusBadge status={result.status} />
-                      {session?.pilar && (
-                        <span className="text-[10px] text-gray-400">
-                          {PILAR_LABELS[session.pilar as Pilar] || session.pilar}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {result.coach_feedback && (
-                    <p className="text-xs text-gray-600 mt-1.5 bg-gray-50 rounded p-2 leading-relaxed">
-                      {result.coach_feedback}
-                    </p>
-                  )}
-                  {result.homework && (
-                    <p className="text-xs text-amber-700 mt-1">
-                      <span className="font-medium">HW:</span> {result.homework}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400 py-4 text-center">No closed sessions yet</p>
-        )}
+      {/* --- 6. SESSION HISTORY (collapsible) --- */}
+      <CollapsibleSection title={`Session History (${allSessions.length})`} defaultOpen={false}>
+        <SessionHistoryPanel sessions={allSessions} />
       </CollapsibleSection>
 
-      {/* ─── 7. PROFILE DETAILS (collapsible, default closed) ─── */}
+      {/* --- 7. PROFILE DETAILS (collapsible, default closed) --- */}
       <CollapsibleSection title="Profile Details" defaultOpen={false}>
         <div className="space-y-2">
           <Row label="Email" value={student.email} />
@@ -284,7 +331,7 @@ export default async function StudentProfilePage({ params }: Props) {
         </div>
       </CollapsibleSection>
 
-      {/* ─── 8. COACH NOTES (collapsible) ─── */}
+      {/* --- 8. COACH NOTES (collapsible) --- */}
       <CollapsibleSection title="Coach Notes" defaultOpen={false}>
         <div className="space-y-3">
           {student.coach_notes_general ? (
