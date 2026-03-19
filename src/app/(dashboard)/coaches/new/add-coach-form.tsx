@@ -49,8 +49,8 @@ export function AddCoachForm() {
   const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
 
   const handleSubmit = async () => {
-    if (!form.first_name || !form.last_name || !form.email) {
-      setError('First name, last name and email are required.');
+    if (!form.first_name || !form.last_name || !form.email || !form.phone || !form.languages) {
+      setError('First name, last name, email, phone, and languages are required.');
       return;
     }
     if (!form.email.includes('@')) {
@@ -126,9 +126,15 @@ export function AddCoachForm() {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
           <input type="text" value={form.phone} onChange={e => set('phone', e.target.value)}
             placeholder="+503 7000 0000"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Languages *</label>
+          <input type="text" value={form.languages} onChange={e => set('languages', e.target.value)}
+            placeholder="e.g. Spanish, English"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
       </div>
@@ -197,12 +203,6 @@ export function AddCoachForm() {
           <label className="block text-xs font-medium text-gray-600 mb-1">Specialty Area</label>
           <input type="text" value={form.specialty_area} onChange={e => set('specialty_area', e.target.value)}
             placeholder="e.g. Competition, Beginners, Barrel riding"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Languages</label>
-          <input type="text" value={form.languages} onChange={e => set('languages', e.target.value)}
-            placeholder="e.g. Spanish, English"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
         <div>
