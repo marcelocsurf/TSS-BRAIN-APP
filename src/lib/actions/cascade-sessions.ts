@@ -22,22 +22,11 @@ export async function getStudentsForCoach(): Promise<
   { id: string; first_name: string; last_name: string; belt_level: string }[]
 > {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
 
-  const { data: coach } = await supabase
-    .from('coaches')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  if (!coach) throw new Error('Coach not found');
-
-  // Get students assigned to this coach
+  // Students table uses RLS — coach sees all students they have access to
   const { data, error } = await supabase
     .from('students')
     .select('id, first_name, last_name, belt_level')
-    .eq('coach_id', coach.id)
     .order('first_name');
 
   if (error) throw new Error(error.message);
