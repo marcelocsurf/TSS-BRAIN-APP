@@ -26,13 +26,13 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
 
   const loadedStudent = formState.student;
 
-  const filteredStudents = search
+  const filteredStudents = search.length >= 2
     ? students.filter(
         (s) =>
           s.first_name.toLowerCase().includes(search.toLowerCase()) ||
           s.last_name.toLowerCase().includes(search.toLowerCase())
       )
-    : students;
+    : [];
 
   return (
     <div className="space-y-4">
@@ -41,15 +41,20 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
       {/* Search */}
       <input
         type="text"
-        placeholder="Search by name..."
+        placeholder="Type student name..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843]"
+        autoFocus
+        className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
       />
 
+      {search.length < 2 && !loadedStudent && (
+        <p className="text-sm text-gray-400 text-center py-4">Type at least 2 letters to search</p>
+      )}
+
       {/* Student list */}
-      <div className="space-y-2 max-h-64 overflow-y-auto">
-        {filteredStudents.map((s) => {
+      <div className="space-y-2 max-h-72 overflow-y-auto">
+        {filteredStudents.slice(0, 20).map((s) => {
           const belt = BELT_DISPLAY[s.belt_level as keyof typeof BELT_DISPLAY];
           const isSelected = selected === s.id;
 
@@ -83,8 +88,11 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
             </button>
           );
         })}
-        {filteredStudents.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-4">No students match your search</p>
+        {search.length >= 2 && filteredStudents.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">No students match "{search}"</p>
+        )}
+        {filteredStudents.length > 20 && (
+          <p className="text-xs text-gray-400 text-center py-2">Showing 20 of {filteredStudents.length} — type more to narrow</p>
         )}
       </div>
 
