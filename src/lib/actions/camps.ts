@@ -373,3 +373,161 @@ export async function removeStudentFromCamp(campInstanceId: string, studentId: s
   revalidatePath(`/camps/${campInstanceId}`);
   return { success: true };
 }
+
+// ═══════════════════════════════════════
+// DAILY FEEDBACK
+// ═══════════════════════════════════════
+
+export async function submitDailyFeedback(
+  campId: string,
+  dayNumber: number,
+  studentId: string,
+  coachId: string,
+  feedback: {
+    status: string;
+    focus_rating: number;
+    effort_rating: number;
+    notes: string;
+    highlights: string;
+    areas_to_improve: string;
+  }
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_daily_feedback')
+    .upsert(
+      {
+        camp_instance_id: campId,
+        day_number: dayNumber,
+        student_id: studentId,
+        coach_id: coachId,
+        status: feedback.status,
+        focus_rating: feedback.focus_rating,
+        effort_rating: feedback.effort_rating,
+        notes: feedback.notes,
+        highlights: feedback.highlights,
+        areas_to_improve: feedback.areas_to_improve,
+      },
+      { onConflict: 'camp_instance_id,day_number,student_id' }
+    )
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/camps/${campId}`);
+  return data;
+}
+
+export async function getDailyFeedback(campId: string, dayNumber: number) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_daily_feedback')
+    .select('*, students(id, first_name, last_name), coaches(display_name)')
+    .eq('camp_instance_id', campId)
+    .eq('day_number', dayNumber);
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function getStudentCampFeedback(campId: string, studentId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_daily_feedback')
+    .select('*')
+    .eq('camp_instance_id', campId)
+    .eq('student_id', studentId)
+    .order('day_number');
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+// ═══════════════════════════════════════
+// FINAL EVALUATIONS
+// ═══════════════════════════════════════
+
+export async function submitFinalEvaluation(
+  campId: string,
+  studentId: string,
+  coachId: string,
+  evaluation: {
+    overall_rating: number;
+    technical_progress: string;
+    tactical_progress: string;
+    mental_progress: string;
+    physical_progress: string;
+    sequence_recommendation: number | null;
+    ocean_level_recommendation: string;
+    general_notes: string;
+    strengths: string;
+    areas_to_improve: string;
+    homework_for_after_camp: string;
+  }
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_final_evaluations')
+    .upsert(
+      {
+        camp_instance_id: campId,
+        student_id: studentId,
+        coach_id: coachId,
+        ...evaluation,
+      },
+      { onConflict: 'camp_instance_id,student_id' }
+    )
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  // Update student profile if sequence or ocean level recommendation is provided
+  if (evaluation.sequence_recommendation || evaluation.ocean_level_recommendation) {
+    const updates: Record<string, unknown> = {};
+    if (evaluation.sequence_recommendation) {
+      updates.current_sequence = evaluation.sequence_recommendation;
+    }
+    if (evaluation.ocean_level_recommendation) {
+      updates.ocean_level = evaluation.ocean_level_recommendation;
+    }
+    await supabase
+      .from('students')
+      .update(updates)
+      .eq('id', studentId);
+  }
+
+  revalidatePath(`/camps/${campId}`);
+  return data;
+}
+
+export async function getFinalEvaluation(campId: string, studentId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_final_evaluations')
+    .select('*, coaches(display_name)')
+    .eq('camp_instance_id', campId)
+    .eq('student_id', studentId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw new Error(error.message);
+  return data || null;
+}
+
+export async function getCampEvaluations(campId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_final_evaluations')
+    .select('*, students(id, first_name, last_name, belt_level), coaches(display_name)')
+    .eq('camp_instance_id', campId);
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}

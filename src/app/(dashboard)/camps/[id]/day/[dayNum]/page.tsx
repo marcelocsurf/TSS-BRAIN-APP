@@ -1,6 +1,8 @@
 import { getCampSession } from '@/lib/actions/camps';
+import { getCurrentCoach } from '@/lib/actions/auth';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
+import { CampDailyFeedbackForm } from '@/components/camp/CampDailyFeedbackForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -18,6 +20,7 @@ export default async function CampDayPage({ params }: Props) {
   const { session, participants, existingResults, blocks } = data;
   if (!session) notFound();
 
+  const coach = await getCurrentCoach();
   const dayInfo = session.camp_template_days;
   const evaluatedIds = new Set(existingResults.map((r: any) => r.student_id));
   const allEvaluated = participants.every((p: any) => evaluatedIds.has(p.students?.id));
@@ -26,7 +29,7 @@ export default async function CampDayPage({ params }: Props) {
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
       <div>
-        <Link href={`/camps/${id}`} className="text-xs text-gray-400 hover:text-gray-600">← Back to camp</Link>
+        <Link href={`/camps/${id}`} className="text-xs text-gray-400 hover:text-gray-600">&larr; Back to camp</Link>
         <h2 className="text-xl font-bold text-[var(--tss-navy)] mt-1">Day {dayNum}</h2>
         {dayInfo?.day_goal && (
           <p className="text-sm text-gray-600 mt-1">{dayInfo.day_goal}</p>
@@ -81,11 +84,27 @@ export default async function CampDayPage({ params }: Props) {
         )}
       </div>
 
+      {/* Daily Feedback */}
+      {coach && (
+        <div>
+          <div className="px-1 mb-2">
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Daily Feedback</h3>
+            <p className="text-[10px] text-gray-400">Quick attendance and notes per student for this day</p>
+          </div>
+          <CampDailyFeedbackForm
+            campId={id}
+            dayNumber={parseInt(dayNum)}
+            coachId={coach.id}
+            participants={participants}
+          />
+        </div>
+      )}
+
       {/* Participants evaluation status */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            Evaluation ({existingResults.length}/{participants.length})
+            Session Evaluation ({existingResults.length}/{participants.length})
           </h3>
         </div>
         <div className="divide-y divide-gray-50">
@@ -102,7 +121,7 @@ export default async function CampDayPage({ params }: Props) {
                   <div>
                     <p className="text-sm text-gray-900">{p.students?.first_name} {p.students?.last_name}</p>
                     {isEvaluated && result && (
-                      <p className="text-[10px] text-gray-400 capitalize">{result.status?.replace('_',' ')} · Focus {result.focus_rating}/5</p>
+                      <p className="text-[10px] text-gray-400 capitalize">{result.status?.replace('_',' ')} &middot; Focus {result.focus_rating}/5</p>
                     )}
                   </div>
                 </div>

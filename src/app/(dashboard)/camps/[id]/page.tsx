@@ -1,4 +1,4 @@
-import { getCampDetail } from '@/lib/actions/camps';
+import { getCampDetail, getCampEvaluations } from '@/lib/actions/camps';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import Link from 'next/link';
@@ -11,8 +11,10 @@ interface Props {
 export default async function CampDetailPage({ params }: Props) {
   const { id } = await params;
   let camp;
+  let evaluations: any[] = [];
   try {
     camp = await getCampDetail(id);
+    evaluations = await getCampEvaluations(id);
   } catch { notFound(); }
 
   const { instance, participants, sessions } = camp;
@@ -20,6 +22,8 @@ export default async function CampDetailPage({ params }: Props) {
 
   const headCoach = (instance as any).head_coach;
   const creatorCoach = (instance as any).coaches;
+  const evaluatedCount = evaluations.length;
+  const totalStudents = participants.length;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -50,6 +54,32 @@ export default async function CampDetailPage({ params }: Props) {
             <span>Created by: {creatorCoach.display_name}</span>
           )}
         </div>
+      </div>
+
+      {/* Final Evaluations CTA */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Final Evaluations</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {evaluatedCount} of {totalStudents} students evaluated
+            </p>
+          </div>
+          <Link
+            href={`/camps/${id}/evaluate`}
+            className="px-4 py-2 bg-[var(--tss-navy)] text-white text-xs font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            {evaluatedCount === 0 ? 'Start Evaluations' : evaluatedCount < totalStudents ? 'Continue Evaluations' : 'View Evaluations'}
+          </Link>
+        </div>
+        {totalStudents > 0 && (
+          <div className="mt-2 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-green-500 h-full rounded-full transition-all"
+              style={{ width: `${(evaluatedCount / totalStudents) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Participants with belt levels */}
