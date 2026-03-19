@@ -47,22 +47,13 @@ export default async function IntakePage({ params }: Props) {
           </div>
         </div>
 
-        {/* Already completed notice */}
-        {student.intake_completed_at && (
-          <div className="bg-green-50 rounded-xl px-4 py-3 text-center">
-            <p className="text-sm text-green-700 font-medium">
-              Profile submitted — you can update it anytime.
-            </p>
-          </div>
-        )}
-
         {/* Intro */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Help us prepare the best experience for you.
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            Takes about 5 minutes. Be honest — it helps your coach.
+            Complete the required safety info first, then optionally add more details.
           </p>
         </div>
 
@@ -71,7 +62,7 @@ export default async function IntakePage({ params }: Props) {
       </div>
 
       <div className="text-center py-8">
-        <p className="text-xs text-gray-400">The Surf Sequence® · {BRAND.tagline}</p>
+        <p className="text-xs text-gray-400">The Surf Sequence&reg; &middot; {BRAND.tagline}</p>
       </div>
     </div>
   );

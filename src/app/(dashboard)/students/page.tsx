@@ -1,23 +1,52 @@
 import { listStudents } from '@/lib/actions/students';
 import { BELT_DISPLAY, BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import Link from 'next/link';
+import { StudentSearch } from './student-search';
 
 interface Props {
-  searchParams: Promise<{ belt?: string; status?: string; q?: string }>;
+  searchParams: Promise<{ belt?: string; status?: string; q?: string; page?: string }>;
 }
 
 export default async function StudentRosterPage({ searchParams }: Props) {
   const params = await searchParams;
-  const students = await listStudents({
+  const currentPage = Math.max(1, parseInt(params.page || '1', 10));
+  const limit = 20;
+
+  const { students, total } = await listStudents({
     belt_level: params.belt as BeltLevel | undefined,
     status: params.status || 'active',
     search: params.q,
+    page: currentPage,
+    limit,
   });
+
+  const totalPages = Math.ceil(total / limit);
+
+  // Build base URL for pagination links preserving current filters
+  const buildPageUrl = (page: number) => {
+    const p = new URLSearchParams();
+    if (params.belt) p.set('belt', params.belt);
+    if (params.status) p.set('status', params.status);
+    if (params.q) p.set('q', params.q);
+    p.set('page', String(page));
+    return `/students?${p.toString()}`;
+  };
+
+  // Build filter URL preserving search but resetting page
+  const buildFilterUrl = (belt?: string) => {
+    const p = new URLSearchParams();
+    if (belt) p.set('belt', belt);
+    if (params.q) p.set('q', params.q);
+    return `/students${p.toString() ? '?' + p.toString() : ''}`;
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-[var(--tss-navy)]">Students</h2>
+        <div>
+          <h2 className="text-xl font-bold text-[var(--tss-navy)]">Students</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{total} student{total !== 1 ? 's' : ''} total</p>
+        </div>
         <Link
           href="/students/new"
           className="px-4 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90 transition-opacity"
@@ -26,13 +55,13 @@ export default async function StudentRosterPage({ searchParams }: Props) {
         </Link>
       </div>
 
-      {/* Filters */}
+      {/* Belt filter tabs */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <FilterLink href="/students" label="All" active={!params.belt} />
+        <FilterLink href={buildFilterUrl()} label="All" active={!params.belt} />
         {BELT_HIERARCHY.map((belt) => (
           <FilterLink
             key={belt}
-            href={`/students?belt=${belt}`}
+            href={buildFilterUrl(belt)}
             label={BELT_DISPLAY[belt].levelName}
             active={params.belt === belt}
             color={BELT_DISPLAY[belt].color}
@@ -40,17 +69,12 @@ export default async function StudentRosterPage({ searchParams }: Props) {
         ))}
       </div>
 
-      {/* Search */}
-      <form className="mb-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={params.q}
-          placeholder="Search by name..."
-          className="w-full md:w-64 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
-        />
-        {params.belt && <input type="hidden" name="belt" value={params.belt} />}
-      </form>
+      {/* Search with debounce */}
+      <StudentSearch
+        defaultValue={params.q || ''}
+        belt={params.belt}
+        status={params.status}
+      />
 
       {/* Student list */}
       {students.length === 0 ? (
@@ -90,9 +114,31 @@ export default async function StudentRosterPage({ searchParams }: Props) {
                 </p>
               </div>
 
-              {/* Last session indicator */}
+              {/* Badges & indicators */}
               <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                {!s.intake_completed_at && (
+                <div className="flex items-center gap-1.5">
+                  {/* Waiver status badge */}
+                  {s.waiver_signed ? (
+                    <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full" title="Waiver signed">
+                      &#10003;
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full" title="Waiver not signed">
+                      &#9888;
+                    </span>
+                  )}
+                  {/* Intake tier badge */}
+                  {s.intake_tier && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      s.intake_tier === 'extended'
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'bg-gray-50 text-gray-500'
+                    }`}>
+                      {s.intake_tier === 'extended' ? 'Full' : 'Basic'}
+                    </span>
+                  )}
+                </div>
+                {!s.intake_completed_at && !s.intake_tier && (
                   <span className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">
                     No profile
                   </span>
@@ -109,6 +155,33 @@ export default async function StudentRosterPage({ searchParams }: Props) {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+          <p className="text-xs text-gray-400">
+            Page {currentPage} of {totalPages} ({total} students)
+          </p>
+          <div className="flex gap-2">
+            {currentPage > 1 && (
+              <Link
+                href={buildPageUrl(currentPage - 1)}
+                className="px-4 py-2 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 hover:border-gray-400 transition-colors"
+              >
+                Previous
+              </Link>
+            )}
+            {currentPage < totalPages && (
+              <Link
+                href={buildPageUrl(currentPage + 1)}
+                className="px-4 py-2 text-xs border border-[var(--tss-navy)] rounded-lg bg-[var(--tss-navy)] text-white hover:opacity-90 transition-opacity"
+              >
+                Next
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>

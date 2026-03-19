@@ -102,7 +102,7 @@ export default function SessionCascadePage() {
       getOceanRules(),
       getCurrentCoach(),
     ]).then(([s, r, c]) => {
-      setStudents(s);
+      setStudents(s.students);
       setOceanRules(r as OceanRule[]);
       setCoach(c);
     });
@@ -203,7 +203,7 @@ export default function SessionCascadePage() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <span className="text-3xl">✓</span>
+          <span className="text-3xl">&#10003;</span>
         </div>
         <h2 className="text-xl font-bold text-[var(--tss-navy)]">Session Closed</h2>
         <p className="text-sm text-gray-500 mt-2">{missions.length} mission(s) saved. Redirecting...</p>
@@ -254,7 +254,7 @@ export default function SessionCascadePage() {
                 ))}
               </select>
               {selectedStudent && coach && !canCoachStudent(coach.max_belt_permission, selectedStudent.belt_level as BeltLevel).allowed && (
-                <p className="text-xs text-red-600 mt-1">You are not authorized for this student's belt level.</p>
+                <p className="text-xs text-red-600 mt-1">You are not authorized for this student&apos;s belt level.</p>
               )}
             </div>
 
@@ -406,7 +406,7 @@ export default function SessionCascadePage() {
                 <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
                   <p className="text-xs font-medium text-[var(--tss-navy)]">
                     Mission {i + 1}: {m.mission || '(no mission text)'}
-                    {m.pilar_part && <span className="text-gray-400 ml-1">· {m.pilar_part}</span>}
+                    {m.pilar_part && <span className="text-gray-400 ml-1">&middot; {m.pilar_part}</span>}
                   </p>
 
                   <div>
@@ -490,7 +490,7 @@ export default function SessionCascadePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">What's Next *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">What&apos;s Next *</label>
                 {pilarParts.length > 0 && (
                   <div className="flex gap-1 mb-1 flex-wrap">
                     {pilarParts.slice(0, 6).map(p => (

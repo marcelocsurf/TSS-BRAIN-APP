@@ -31,7 +31,7 @@ export default function NewCampPage() {
       getCurrentCoach(),
     ]).then(([t, s, c]) => {
       setTemplates(t);
-      setStudents(s);
+      setStudents(s.students);
       setCoach(c);
     });
   }, []);
@@ -143,7 +143,7 @@ export default function NewCampPage() {
                   <p className="text-[10px] text-gray-400">{BELT_DISPLAY[s.belt_level]?.levelName}</p>
                 </div>
                 {form.student_ids.includes(s.id) && (
-                  <span className="text-blue-600 text-xs">✓</span>
+                  <span className="text-blue-600 text-xs">&#10003;</span>
                 )}
               </button>
             ))}

@@ -139,6 +139,8 @@ export interface StudentRow {
 
   // Intake tracking
   intake_completed_at: string | null;
+  intake_tier: string | null;
+  waiver_signed_at: string | null;
 
   created_at: string;
   updated_at: string;
@@ -262,11 +264,18 @@ export async function listStudents(filters?: {
   belt_level?: BeltLevel;
   status?: string;
   search?: string;
-}) {
+  page?: number;
+  limit?: number;
+}): Promise<{ students: StudentRow[]; total: number }> {
   const supabase = await createClient();
+  const page = filters?.page || 1;
+  const limit = filters?.limit || 20;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
   let query = supabase
     .from('students')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('last_name', { ascending: true });
 
   if (filters?.belt_level) {
@@ -281,9 +290,11 @@ export async function listStudents(filters?: {
     );
   }
 
-  const { data, error } = await query;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
   if (error) throw new Error(error.message);
-  return data as StudentRow[];
+  return { students: data as StudentRow[], total: count || 0 };
 }
 
 // ═══════════════════════════════════════
