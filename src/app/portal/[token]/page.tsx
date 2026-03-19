@@ -28,7 +28,7 @@ export default async function StudentPortalPage({ params }: Props) {
     .limit(10);
 
   const latestResult = results?.[0];
-  
+
   // Check if latest session has a survey
   let hasSurvey = false;
   if (latestResult) {
@@ -130,13 +130,16 @@ export default async function StudentPortalPage({ params }: Props) {
                 </span>
               </div>
 
-              {/* LOCKED: Coach feedback — unlocked after survey */}
+              {/* LOCKED: Session summary — unlocked after survey */}
               {surveyCompleted ? (
                 <>
-                  {latestResult.coach_feedback && (
+                  {/* Student-visible summary (primary), fallback to coach_feedback for backward compat */}
+                  {(latestResult.student_visible_summary || latestResult.coach_feedback) && (
                     <div className="pt-2 border-t border-gray-50">
-                      <p className="text-xs text-gray-400 mb-1">Coach Feedback</p>
-                      <p className="text-sm text-gray-700">{latestResult.coach_feedback}</p>
+                      <p className="text-xs text-gray-400 mb-1">Session Summary</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-line">
+                        {latestResult.student_visible_summary || latestResult.coach_feedback}
+                      </p>
                     </div>
                   )}
                   <div className="flex gap-4 pt-1">
@@ -213,8 +216,11 @@ export default async function StudentPortalPage({ params }: Props) {
                     </div>
                     <span className="text-xs text-gray-400">Focus: {r.focus_rating}/5</span>
                   </div>
-                  {r.coach_feedback && (
-                    <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded p-2">{r.coach_feedback}</p>
+                  {/* Show student_visible_summary if available, fallback to coach_feedback */}
+                  {(r.student_visible_summary || r.coach_feedback) && (
+                    <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded p-2 whitespace-pre-line">
+                      {r.student_visible_summary || r.coach_feedback}
+                    </p>
                   )}
                   {r.video_link && (
                     <a

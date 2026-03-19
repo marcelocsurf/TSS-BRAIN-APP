@@ -24,15 +24,15 @@ export async function getCurrentCoach(): Promise<CurrentCoach | null> {
   return data as CurrentCoach;
 }
 
-// Quick permission checks
-export function isAdmin(role: CoachRole): boolean {
+// Quick permission checks (async required by 'use server' directive)
+export async function isAdmin(role: CoachRole): Promise<boolean> {
   return role === 'admin';
 }
 
-export function isCoordinatorOrAbove(role: CoachRole): boolean {
+export async function isCoordinatorOrAbove(role: CoachRole): Promise<boolean> {
   return role === 'admin' || role === 'coordinator';
 }
 
-export function isCoachOrAbove(role: CoachRole): boolean {
+export async function isCoachOrAbove(role: CoachRole): Promise<boolean> {
   return role === 'admin' || role === 'coordinator' || role === 'coach';
 }

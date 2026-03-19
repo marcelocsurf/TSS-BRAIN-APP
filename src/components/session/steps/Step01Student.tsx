@@ -19,7 +19,7 @@ const normalize = (s: string) =>
 
 interface Props {
   formState: CascadeFormState;
-  students: { id: string; first_name: string; last_name: string; belt_level: string }[];
+  students: { id: string; first_name: string; last_name: string; belt_level: string; waiver_signed?: boolean }[];
   onStudentLoaded: (student: StudentCascadeContext) => void;
 }
 
@@ -53,6 +53,9 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
         normalize(s.last_name).includes(normalizedSearch)
     );
   })();
+
+  // Check waiver status from loaded student context
+  const waiverMissing = loadedStudent && !loadedStudent.waiver_signed;
 
   return (
     <div className="space-y-4">
@@ -125,6 +128,18 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
         )}
       </div>
 
+      {/* Waiver warning */}
+      {waiverMissing && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-sm font-semibold text-red-700">
+            {'\u26A0\uFE0F'} This student has not signed the liability waiver.
+          </p>
+          <p className="text-xs text-red-600 mt-1">
+            A signed waiver is required before starting a session. Please register the waiver in the student profile before proceeding.
+          </p>
+        </div>
+      )}
+
       {/* Auto-loaded context */}
       {loadedStudent && (
         <div className="bg-gray-50 rounded-xl p-4 space-y-2">
@@ -136,7 +151,7 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
             </div>
             <div>
               <span className="text-gray-400 text-xs">Ocean Level</span>
-              <p className="font-medium">{loadedStudent.ocean_level || '—'}</p>
+              <p className="font-medium">{loadedStudent.ocean_level || '\u2014'}</p>
             </div>
             <div>
               <span className="text-gray-400 text-xs">Sequence</span>

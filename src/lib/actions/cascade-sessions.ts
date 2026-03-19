@@ -19,14 +19,14 @@ import type {
 // ═══════════════════════════════════════
 
 export async function getStudentsForCoach(): Promise<
-  { id: string; first_name: string; last_name: string; belt_level: string }[]
+  { id: string; first_name: string; last_name: string; belt_level: string; waiver_signed: boolean }[]
 > {
   const supabase = await createClient();
 
   // Students table uses RLS — coach sees all students they have access to
   const { data, error } = await supabase
     .from('students')
-    .select('id, first_name, last_name, belt_level')
+    .select('id, first_name, last_name, belt_level, waiver_signed')
     .order('first_name');
 
   if (error) throw new Error(error.message);
@@ -51,7 +51,8 @@ export async function getStudentWithCascadeContext(
       allergies, injuries, medical_notes, risk_notes,
       board_clearance_hardtop,
       last_session_date, last_session_mission, last_session_pilar,
-      last_session_status, last_homework, next_recommended_focus
+      last_session_status, last_homework, next_recommended_focus,
+      waiver_signed
     `)
     .eq('id', studentId)
     .single();
@@ -311,11 +312,106 @@ export async function createCascadeSession(
     return { success: false, error: error.message };
   }
 
+  const sessionId = data as string;
+
+  // ── Create student_session_results for cascade session ──
+  try {
+    const { buildStudentVisibleSummary } = await import('@/lib/actions/sessions');
+
+    // Compose homework and feedback from cascade fields
+    const homeworkText = [
+      formState.homework_cues?.length ? formState.homework_cues.join(', ') : null,
+      formState.homework_text,
+    ].filter(Boolean).join(' — ') || '';
+
+    const coachFeedbackText = [
+      formState.coach_feedback_quick,
+      formState.coach_feedback_text,
+    ].filter(Boolean).join(' — ') || '';
+
+    const whatsNextText = formState.whats_next_pilar_part_id || '';
+
+    const studentVisibleSummary = await buildStudentVisibleSummary({
+      mission: formState.mission || '',
+      status: formState.status || 'partial',
+      homework: homeworkText,
+      whatsNext: whatsNextText,
+      coachFeedback: coachFeedbackText,
+    });
+
+    // Get student for portal_token and email
+    const { data: student } = await supabase
+      .from('students')
+      .select('portal_token, email, first_name, belt_level')
+      .eq('id', formState.student_id!)
+      .single();
+
+    const { data: resultRow } = await supabase
+      .from('student_session_results')
+      .insert({
+        student_id: formState.student_id,
+        coach_id: coach.id,
+        standalone_session_id: null,
+        status: formState.status || 'partial',
+        focus_rating: formState.focus_rating || null,
+        frustration_rating: formState.frustration_rating || null,
+        coach_feedback: coachFeedbackText || null,
+        student_visible_summary: studentVisibleSummary,
+        homework: homeworkText || null,
+        whats_next: whatsNextText || null,
+        completion_state: 'pending_survey',
+        survey_unlocked: true,
+        portal_token: student?.portal_token || null,
+      })
+      .select()
+      .single();
+
+    // Send email notification
+    if (student?.email && resultRow) {
+      try {
+        const { sendSessionEmail } = await import('@/lib/actions/email');
+
+        // Get coach display name
+        const { data: coachFull } = await supabase
+          .from('coaches')
+          .select('display_name')
+          .eq('id', coach.id)
+          .single();
+
+        const emailResult = await sendSessionEmail({
+          studentName: student.first_name,
+          studentEmail: student.email,
+          portalToken: student.portal_token,
+          coachName: coachFull?.display_name || 'Your Coach',
+          sessionDate: formState.session_date || new Date().toISOString(),
+          mission: formState.mission || 'Cascade Session',
+          status: formState.status || 'partial',
+          coachFeedback: coachFeedbackText,
+          homework: homeworkText,
+          whatsNext: whatsNextText,
+          beltLevel: student.belt_level,
+        });
+
+        if (emailResult.success && resultRow) {
+          await supabase.from('student_session_results').update({
+            email_sent: true,
+            email_sent_at: new Date().toISOString(),
+          }).eq('id', resultRow.id);
+        }
+      } catch (emailErr: any) {
+        console.error('Cascade email failed (non-blocking):', emailErr.message);
+      }
+    }
+  } catch (resultErr: any) {
+    // Non-blocking: cascade session was saved, results row is supplementary
+    console.error('Cascade session results creation failed (non-blocking):', resultErr.message);
+  }
+
   // Revalidate affected pages
   revalidatePath('/sessions');
   revalidatePath(`/students/${formState.student_id}`);
 
-  return { success: true, sessionId: data as string };
+  return { success: true, sessionId };
 }
 
 // ═══════════════════════════════════════

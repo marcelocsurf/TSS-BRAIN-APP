@@ -1,13 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from '@/lib/actions/sessions';
+import { getCurrentCoach as getAuthCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
 import { EvaluationForm } from './evaluation-form';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 export default async function CoachEvaluatePage({ params }: Props) {
+  // Role guard — coordinator or above
+  const authCoach = await getAuthCoach();
+  if (!authCoach) redirect('/login');
+  if (!isCoordinatorOrAbove(authCoach.role)) redirect('/');
+
   const { id } = await params;
   const supabase = await createClient();
 

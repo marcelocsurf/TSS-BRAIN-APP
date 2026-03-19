@@ -1,20 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { getCurrentCoach, isAdmin } from '@/lib/actions/auth';
 
 export default async function AuditDashboardPage() {
   const supabase = await createClient();
 
   // Check role — admin only
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-  const { data: coach } = await supabase.from('coaches').select('role').eq('auth_user_id', user.id).single();
-  if (coach?.role !== 'admin') {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-400">Access restricted to Admin.</p>
-      </div>
-    );
-  }
+  const currentCoach = await getCurrentCoach();
+  if (!currentCoach) redirect('/login');
+  if (!isAdmin(currentCoach.role)) redirect('/');
 
   // ── SESSION METRICS ──
   const { count: totalClosed } = await supabase

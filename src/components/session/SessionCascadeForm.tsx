@@ -150,7 +150,7 @@ function cascadeReducer(state: CascadeFormState, action: CascadeAction): Cascade
 
 interface Props {
   initialStudent: StudentCascadeContext | null;
-  students: { id: string; first_name: string; last_name: string; belt_level: string }[];
+  students: { id: string; first_name: string; last_name: string; belt_level: string; waiver_signed?: boolean }[];
   venues: DropdownOption[];
   sessionTypes: DropdownOption[];
   coachName?: string;
@@ -495,7 +495,9 @@ export function SessionCascadeForm({ initialStudent, students, venues, sessionTy
 
   function canAdvance(): boolean {
     switch (state.currentStep) {
-      case 1: return !!state.student_id && !!state.student;
+      case 1:
+        // Block if student not selected OR waiver not signed
+        return !!state.student_id && !!state.student && !!state.student.waiver_signed;
       case 2: return !!state.training_venue;
       case 3: return !!state.ocean_conditions && state.oceanRiskState !== 'blocked';
       case 4: return !!state.session_type;

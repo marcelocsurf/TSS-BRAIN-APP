@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { LevelAccessCard } from '@/components/student/LevelAccessCard';
+import { ProfilePhoto } from '@/components/shared/ProfilePhoto';
+import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -40,25 +42,28 @@ export default async function StudentProfilePage({ params }: Props) {
   const sessionHistory = sessionResult.data ?? [];
   const unlockedKeys = levelAccess.map((a: any) => a.level_key);
   const belt = BELT_DISPLAY[student.belt_level];
+  const fullName = `${student.first_name} ${student.last_name}`;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
 
-      {/* Header */}
+      {/* Header with ProfilePhoto */}
       <div className="flex items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0"
-          style={{ backgroundColor: belt?.color || '#999' }}
-        >
-          {student.photo_url ? (
-            <img src={student.photo_url} alt="" className="w-16 h-16 rounded-full object-cover" />
-          ) : (
-            `${student.first_name[0]}${student.last_name[0]}`
-          )}
+        <div className="flex flex-col items-center gap-1">
+          <ProfilePhoto
+            photoUrl={student.photo_url}
+            name={fullName}
+            size="lg"
+          />
+          <PhotoUploader
+            entityType="student"
+            entityId={student.id}
+            currentPhotoUrl={student.photo_url}
+          />
         </div>
         <div>
           <h2 className="text-xl font-bold text-[var(--tss-navy)]">
-            {student.first_name} {student.last_name}
+            {fullName}
           </h2>
           <p className="text-sm text-gray-500">{belt?.en} — {belt?.levelName}</p>
           <p className="text-xs text-gray-400">

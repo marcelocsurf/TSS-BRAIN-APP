@@ -1,15 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import type { CoachRole } from '@/lib/constants/brand';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Home', icon: '⌂' },
-  { href: '/students', label: 'Students', icon: '◉' },
-  { href: '/sessions/new', label: 'Session', icon: '▶' },
-  { href: '/camps', label: 'Camps', icon: '⛺' },
-  { href: '/coaches', label: 'Coaches', icon: '★' },
-  { href: '/audit', label: 'Audit', icon: '✓' },
+  { href: '/', label: 'Home', icon: '\u2302', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
+  { href: '/students', label: 'Students', icon: '\u25C9', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
+  { href: '/sessions/new', label: 'Session', icon: '\u25B6', roles: ['admin', 'coordinator', 'coach'] },
+  { href: '/camps', label: 'Camps', icon: '\u26FA', roles: ['admin', 'coordinator'] },
+  { href: '/coaches', label: 'Coaches', icon: '\u2605', roles: ['admin', 'coordinator'] },
+  { href: '/audit', label: 'Audit', icon: '\u2713', roles: ['admin'] },
 ];
+
+function getNavItemsForRole(role: CoachRole) {
+  return NAV_ITEMS.filter((item) => item.roles.includes(role));
+}
 
 export default async function DashboardLayout({
   children,
@@ -27,6 +32,9 @@ export default async function DashboardLayout({
     .eq('auth_user_id', user.id)
     .single();
 
+  const role = (coach?.role as CoachRole) || 'assistant';
+  const visibleNav = getNavItemsForRole(role);
+
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0" style={{ paddingLeft: '0' }}>
       {/* Desktop sidebar */}
@@ -36,7 +44,7 @@ export default async function DashboardLayout({
           <p className="text-xs text-[var(--tss-gold)]">{coach?.display_name || 'Coach'}</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {NAV_ITEMS.map((item) => (
+          {visibleNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -67,7 +75,7 @@ export default async function DashboardLayout({
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 flex justify-around py-2 z-40">
-        {NAV_ITEMS.map((item) => (
+        {visibleNav.map((item) => (
           <Link
             key={item.href}
             href={item.href}

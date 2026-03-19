@@ -85,6 +85,7 @@ export interface StudentCascadeContext {
   last_session_status: string | null;
   last_homework: string | null;
   next_recommended_focus: string | null;
+  waiver_signed: boolean;
 }
 
 // ─── Cascade form state ───

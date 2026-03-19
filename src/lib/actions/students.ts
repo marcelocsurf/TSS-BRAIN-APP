@@ -16,6 +16,11 @@ export interface CreateStudentInput {
   belt_level: BeltLevel;
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  date_of_birth?: string;
+  swim_level?: string;
+  ocean_level?: string;
+  surf_experience?: string;
+  waiver_signed?: boolean;
 
   // Contact
   email?: string;
@@ -25,7 +30,6 @@ export interface CreateStudentInput {
   nationality?: string;
 
   // Safety
-  swim_level?: string;
   allergies?: string;
   injuries?: string;
   medical_notes?: string;
@@ -50,7 +54,6 @@ export interface CreateStudentInput {
   fears_phobias?: string;
 
   // Personal / logistics
-  date_of_birth?: string;
   languages?: string;
   instagram?: string;
   height?: string;
@@ -58,7 +61,10 @@ export interface CreateStudentInput {
   shirt_size?: string;
   how_did_you_hear?: string;
   returning_student?: boolean;
-  waiver_signed?: boolean;
+
+  // Waiver metadata (set automatically by the action)
+  waiver_signed_at?: string;
+  waiver_signed_by?: string;
 }
 
 export interface StudentRow {
@@ -145,10 +151,36 @@ export interface StudentRow {
 export async function createStudent(input: CreateStudentInput) {
   const supabase = await createClient();
 
-  // Default ocean_level based on belt
-  const oceanLevel = input.belt_level === 'white_belt' ? 'Assisted' :
-    input.belt_level === 'yellow_belt' ? 'Supervised' :
-    input.belt_level === 'blue_belt' ? 'Autonomous' : 'Functional Leader';
+  // ── Mandatory field validation ──
+  if (!input.first_name?.trim()) throw new Error('First name is required');
+  if (!input.last_name?.trim()) throw new Error('Last name is required');
+  if (!input.emergency_contact_name?.trim()) throw new Error('Emergency contact name is required');
+  if (!input.emergency_contact_phone?.trim()) throw new Error('Emergency contact phone is required');
+  if (!input.date_of_birth) throw new Error('Date of birth is required');
+  if (!input.swim_level) throw new Error('Swim level is required');
+  if (!input.belt_level) throw new Error('Belt level is required');
+  if (!input.ocean_level) throw new Error('Ocean level is required');
+  if (!input.surf_experience) throw new Error('Surf experience is required');
+
+  // ── Waiver validation ──
+  if (!input.waiver_signed) {
+    throw new Error('Liability waiver must be signed before registering a student');
+  }
+
+  // ── Get coach display name for waiver_signed_by ──
+  const { data: { user } } = await supabase.auth.getUser();
+  let coachDisplayName = 'Unknown Coach';
+  if (user) {
+    const { data: coach } = await supabase
+      .from('coaches')
+      .select('display_name')
+      .eq('auth_user_id', user.id)
+      .single();
+    if (coach?.display_name) coachDisplayName = coach.display_name;
+  }
+
+  // Use explicit ocean_level from form instead of belt-based default
+  const oceanLevel = input.ocean_level || 'beginner';
 
   const { data, error } = await supabase
     .from('students')
@@ -159,6 +191,7 @@ export async function createStudent(input: CreateStudentInput) {
       belt_level: input.belt_level,
       emergency_contact_name: input.emergency_contact_name.trim(),
       emergency_contact_phone: input.emergency_contact_phone.trim(),
+      date_of_birth: input.date_of_birth,
 
       // Contact
       email: input.email?.trim() || null,
@@ -168,7 +201,7 @@ export async function createStudent(input: CreateStudentInput) {
       nationality: input.nationality?.trim() || null,
 
       // Safety
-      swim_level: input.swim_level || null,
+      swim_level: input.swim_level,
       allergies: input.allergies?.trim() || null,
       injuries: input.injuries?.trim() || null,
       medical_notes: input.medical_notes?.trim() || null,
@@ -177,15 +210,15 @@ export async function createStudent(input: CreateStudentInput) {
       primary_goal: input.primary_goal?.trim() || null,
       photo_url: input.photo_url || null,
 
-      // Progression defaults
+      // Progression
       ocean_level: oceanLevel,
+      surf_experience_years: input.surf_experience || null,
       current_sequence_number: 1,
       current_step_order: 1,
       status: 'active',
 
       // Surf profile
       stance: input.stance?.trim() || null,
-      surf_experience_years: input.surf_experience_years?.trim() || null,
       surf_frequency: input.surf_frequency?.trim() || null,
       board_type: input.board_type?.trim() || null,
       other_sports: input.other_sports?.trim() || null,
@@ -199,7 +232,6 @@ export async function createStudent(input: CreateStudentInput) {
       fears_phobias: input.fears_phobias?.trim() || null,
 
       // Personal / logistics
-      date_of_birth: input.date_of_birth || null,
       languages: input.languages?.trim() || null,
       instagram: input.instagram?.trim() || null,
       height: input.height?.trim() || null,
@@ -207,7 +239,11 @@ export async function createStudent(input: CreateStudentInput) {
       shirt_size: input.shirt_size?.trim() || null,
       how_did_you_hear: input.how_did_you_hear?.trim() || null,
       returning_student: input.returning_student || false,
-      waiver_signed: input.waiver_signed || false,
+
+      // Waiver
+      waiver_signed: true,
+      waiver_signed_at: new Date().toISOString(),
+      waiver_signed_by: coachDisplayName,
     })
     .select()
     .single();

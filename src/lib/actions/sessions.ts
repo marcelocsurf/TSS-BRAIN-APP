@@ -162,6 +162,38 @@ export async function searchDrills(query: string, pilar?: string) {
 }
 
 // ═══════════════════════════════════════
+// BUILD STUDENT-VISIBLE SUMMARY
+// ═══════════════════════════════════════
+
+export async function buildStudentVisibleSummary(input: {
+  mission: string;
+  status: string;
+  homework: string;
+  whatsNext: string;
+  coachFeedback: string;
+}): Promise<string> {
+  const statusLabel = input.status?.replace(/_/g, ' ') || 'pending';
+  const lines: string[] = [];
+
+  if (input.mission) {
+    lines.push(`Mission: ${input.mission}`);
+  }
+  lines.push(`Result: ${statusLabel}`);
+
+  if (input.coachFeedback) {
+    lines.push(`\nCoach Feedback:\n${input.coachFeedback}`);
+  }
+  if (input.homework) {
+    lines.push(`\nHomework:\n${input.homework}`);
+  }
+  if (input.whatsNext) {
+    lines.push(`\nNext Focus:\n${input.whatsNext}`);
+  }
+
+  return lines.join('\n');
+}
+
+// ═══════════════════════════════════════
 // CLOSE SESSION (Multi-mission)
 // ═══════════════════════════════════════
 
@@ -276,17 +308,28 @@ export async function closeStandaloneSession(
   // Average focus
   const avgFocus = Math.round(missions.reduce((sum, m) => sum + m.focus_rating, 0) / missions.length);
 
+  // Build student-safe summary
+  const studentVisibleSummary = await buildStudentVisibleSummary({
+    mission: primaryMission,
+    status: overallStatus,
+    homework: evaluation.homework,
+    whatsNext: evaluation.whats_next,
+    coachFeedback: evaluation.coach_feedback,
+  });
+
   // Create student_session_results
   const { data: result, error: resultErr } = await supabase
     .from('student_session_results')
     .insert({
       standalone_session_id: session.id,
       student_id: draft.student_id,
+      coach_id: coach.id,
       status: overallStatus,
       focus_rating: avgFocus,
       frustration_rating: evaluation.frustration_rating,
       coach_feedback: evaluation.coach_feedback,
       internal_notes: evaluation.internal_notes || null,
+      student_visible_summary: studentVisibleSummary,
       whats_next: evaluation.whats_next,
       homework: evaluation.homework,
       completion_state: 'closed',
