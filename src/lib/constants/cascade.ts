@@ -172,4 +172,4 @@ export const INITIAL_CASCADE_STATE = {
   incident_type: null,
   incident_description: null,
   incident_action_taken: null,
-} as const;
+};

@@ -32,7 +32,7 @@ export function Step01Student({ formState, students, onStudentLoaded }: Props) {
       {/* Student list */}
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {students.map((s) => {
-          const belt = BELT_DISPLAY[s.belt_level];
+          const belt = BELT_DISPLAY[s.belt_level as keyof typeof BELT_DISPLAY];
           const isSelected = selected === s.id;
 
           return (
