@@ -198,10 +198,11 @@ function StatusBadge({ status }: { status: string | null }) {
     competent: 'bg-blue-50 text-blue-700',
     partial: 'bg-amber-50 text-amber-700',
     not_yet: 'bg-gray-50 text-gray-600',
+    not_achieved: 'bg-gray-50 text-gray-600',
   };
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${styles[status] || 'bg-gray-50 text-gray-600'}`}>
-      {status?.replace('_', ' ')}
+      {status?.replace(/_/g, ' ')}
     </span>
   );
 }

@@ -225,22 +225,40 @@ export async function createSelfTrainingSession(
     mental_hack: string | null;
     duration_minutes: number;
     notes: string | null;
+    venue_type?: string | null;
+    wave_conditions?: string | null;
+    wind?: string | null;
+    tide?: string | null;
+    crowd_level?: string | null;
+    safety_check?: boolean;
+    venue_notes?: string | null;
   }
 ) {
   const admin = createAdminClient();
 
+  const insertData: Record<string, any> = {
+    student_id: studentId,
+    warm_up: data.warm_up,
+    drill_id: data.drill_id,
+    drill_name: data.drill_name,
+    mental_hack: data.mental_hack,
+    duration_minutes: data.duration_minutes,
+    completed: false,
+    notes: data.notes,
+  };
+
+  // Venue analysis fields (optional — columns may not exist yet)
+  if (data.venue_type) insertData.venue_type = data.venue_type;
+  if (data.wave_conditions) insertData.wave_conditions = data.wave_conditions;
+  if (data.wind) insertData.wind = data.wind;
+  if (data.tide) insertData.tide = data.tide;
+  if (data.crowd_level) insertData.crowd_level = data.crowd_level;
+  if (data.safety_check !== undefined) insertData.safety_check = data.safety_check;
+  if (data.venue_notes) insertData.venue_notes = data.venue_notes;
+
   const { data: session, error } = await admin
     .from('self_training_sessions')
-    .insert({
-      student_id: studentId,
-      warm_up: data.warm_up,
-      drill_id: data.drill_id,
-      drill_name: data.drill_name,
-      mental_hack: data.mental_hack,
-      duration_minutes: data.duration_minutes,
-      completed: false,
-      notes: data.notes,
-    })
+    .insert(insertData)
     .select()
     .single();
 

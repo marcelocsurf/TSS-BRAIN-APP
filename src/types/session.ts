@@ -13,7 +13,7 @@ export type CascadeMoment = 'context' | 'planning' | 'close';
 
 export type OceanRiskState = 'allowed' | 'caution' | 'blocked';
 
-export type SessionStatus = 'not_achieved' | 'partial' | 'competent' | 'mastered';
+export type SessionStatus = 'not_achieved' | 'not_yet' | 'partial' | 'competent' | 'mastered';
 
 export type CompletionState = 'draft' | 'closed';
 

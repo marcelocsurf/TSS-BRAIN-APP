@@ -300,7 +300,7 @@ export async function closeStandaloneSession(
   if (missionsErr) throw new Error(`Missions creation failed: ${missionsErr.message}`);
 
   // Determine overall status (worst status among missions)
-  const statusRank: Record<string, number> = { not_yet: 1, partial: 2, competent: 3, mastered: 4 };
+  const statusRank: Record<string, number> = { not_yet: 1, not_achieved: 1, partial: 2, competent: 3, mastered: 4 };
   const overallStatus = missions.reduce((worst, m) => {
     return (statusRank[m.status] || 99) < (statusRank[worst] || 99) ? m.status : worst;
   }, missions[0].status);
