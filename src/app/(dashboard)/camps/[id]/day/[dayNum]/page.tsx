@@ -1,4 +1,4 @@
-import { getCampSession, getStudentCustomizations } from '@/lib/actions/camps';
+import { getCampSession, getStudentCustomizations, getCampTotalDays } from '@/lib/actions/camps';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
@@ -13,15 +13,21 @@ interface Props {
 
 export default async function CampDayPage({ params }: Props) {
   const { id, dayNum } = await params;
+  const currentDay = parseInt(dayNum);
+
   let data;
   try {
-    data = await getCampSession(id, parseInt(dayNum));
+    data = await getCampSession(id, currentDay);
   } catch { notFound(); }
 
   const { session, participants, existingResults, blocks } = data;
   if (!session) notFound();
 
-  const coach = await getCurrentCoach();
+  const [coach, totalDays] = await Promise.all([
+    getCurrentCoach(),
+    getCampTotalDays(id),
+  ]);
+
   const dayInfo = session.camp_template_days;
   const evaluatedIds = new Set(existingResults.map((r: any) => r.student_id));
   const allEvaluated = participants.every((p: any) => evaluatedIds.has(p.students?.id));
@@ -32,11 +38,46 @@ export default async function CampDayPage({ params }: Props) {
     const customPromises = participants.map(async (p: any) => {
       if (!p.students?.id) return [];
       const customs = await getStudentCustomizations(id, p.students.id);
-      return customs.filter((c: any) => c.day_number === parseInt(dayNum));
+      return customs.filter((c: any) => c.day_number === currentDay);
     });
     const results = await Promise.all(customPromises);
     allCustomizations = results.flat();
   } catch { /* ignore if table doesn't exist yet */ }
+
+  const hasPrev = currentDay > 1;
+  const hasNext = currentDay < totalDays;
+
+  const DayNav = () => (
+    <div className="flex items-center justify-between gap-2">
+      {hasPrev ? (
+        <Link
+          href={`/camps/${id}/day/${currentDay - 1}`}
+          className="px-3 py-1.5 text-xs text-[var(--tss-navy)] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          &larr; Previous Day
+        </Link>
+      ) : (
+        <span className="px-3 py-1.5 text-xs text-gray-300 bg-gray-50 border border-gray-100 rounded-lg cursor-not-allowed">
+          &larr; Previous Day
+        </span>
+      )}
+      <span className="text-xs font-medium text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>
+        Day {currentDay} of {totalDays}
+      </span>
+      {hasNext ? (
+        <Link
+          href={`/camps/${id}/day/${currentDay + 1}`}
+          className="px-3 py-1.5 text-xs text-[var(--tss-navy)] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Next Day &rarr;
+        </Link>
+      ) : (
+        <span className="px-3 py-1.5 text-xs text-gray-300 bg-gray-50 border border-gray-100 rounded-lg cursor-not-allowed">
+          Next Day &rarr;
+        </span>
+      )}
+    </div>
+  );
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -51,6 +92,9 @@ export default async function CampDayPage({ params }: Props) {
           <p className="text-xs text-[var(--tss-gold)] mt-0.5">Focus: {dayInfo.evaluation_focus}</p>
         )}
       </div>
+
+      {/* Day Navigation — Top */}
+      <DayNav />
 
       {/* Blocks (the shared plan) */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -101,7 +145,7 @@ export default async function CampDayPage({ params }: Props) {
       {coach && blocks.length > 0 && (
         <CampCustomizationPanel
           campInstanceId={id}
-          dayNumber={parseInt(dayNum)}
+          dayNumber={currentDay}
           blocks={blocks.map((b: any) => ({
             id: b.id,
             block_order: b.block_order,
@@ -124,7 +168,7 @@ export default async function CampDayPage({ params }: Props) {
           </div>
           <CampDailyFeedbackForm
             campId={id}
-            dayNumber={parseInt(dayNum)}
+            dayNumber={currentDay}
             coachId={coach.id}
             participants={participants}
           />
@@ -180,6 +224,9 @@ export default async function CampDayPage({ params }: Props) {
           <p className="text-sm text-green-700 font-medium">All students evaluated for Day {dayNum}.</p>
         </div>
       )}
+
+      {/* Day Navigation — Bottom */}
+      <DayNav />
     </div>
   );
 }

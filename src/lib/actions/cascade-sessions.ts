@@ -509,3 +509,123 @@ export async function saveCascadeDraft(
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+// ═══════════════════════════════════════
+// GET DRAFT SESSIONS (for current coach)
+// ═══════════════════════════════════════
+
+export async function getDraftSessions(): Promise<{
+  id: string;
+  student_name: string;
+  student_id: string;
+  session_date: string;
+  mission: string | null;
+  training_venue: string | null;
+  created_at: string;
+}[]> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!coach) return [];
+
+  const { data, error } = await supabase
+    .from('cascade_sessions')
+    .select(`
+      id, student_id, session_date, mission, training_venue, created_at,
+      students:student_id(first_name, last_name)
+    `)
+    .eq('coach_id', coach.id)
+    .eq('completion_state', 'draft')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getDraftSessions error:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map((d: any) => ({
+    id: d.id,
+    student_id: d.student_id,
+    student_name: d.students
+      ? `${d.students.first_name} ${d.students.last_name}`
+      : 'Unknown',
+    session_date: d.session_date,
+    mission: d.mission,
+    training_venue: d.training_venue,
+    created_at: d.created_at,
+  }));
+}
+
+// ═══════════════════════════════════════
+// GET SINGLE DRAFT SESSION (for resuming)
+// ═══════════════════════════════════════
+
+export async function getDraftSession(draftId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('cascade_sessions')
+    .select('*')
+    .eq('id', draftId)
+    .eq('completion_state', 'draft')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ═══════════════════════════════════════
+// DELETE DRAFT SESSION
+// ═══════════════════════════════════════
+
+export async function deleteDraftSession(draftId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('cascade_sessions')
+    .delete()
+    .eq('id', draftId)
+    .eq('completion_state', 'draft');
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/sessions/drafts');
+  revalidatePath('/');
+  return { success: true };
+}
+
+// ═══════════════════════════════════════
+// GET DRAFT COUNT (for nav badge)
+// ═══════════════════════════════════════
+
+export async function getDraftCount(): Promise<number> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!coach) return 0;
+
+  const { count, error } = await supabase
+    .from('cascade_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('coach_id', coach.id)
+    .eq('completion_state', 'draft');
+
+  if (error) return 0;
+  return count ?? 0;
+}

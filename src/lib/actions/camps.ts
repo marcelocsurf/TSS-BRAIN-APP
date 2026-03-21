@@ -1018,6 +1018,22 @@ export async function bulkScheduleEvaluations(
 }
 
 // ═══════════════════════════════════════
+// GET TOTAL DAYS FOR CAMP INSTANCE
+// ═══════════════════════════════════════
+
+export async function getCampTotalDays(campId: string): Promise<number> {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from('camp_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('camp_instance_id', campId);
+
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+// ═══════════════════════════════════════
 // CAMP COMPLETION
 // ═══════════════════════════════════════
 

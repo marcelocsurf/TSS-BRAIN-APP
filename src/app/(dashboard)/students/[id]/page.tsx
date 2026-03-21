@@ -9,6 +9,7 @@ import { LevelAccessCard } from '@/components/student/LevelAccessCard';
 import { ProfilePhoto } from '@/components/shared/ProfilePhoto';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection';
+import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton';
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
@@ -180,6 +181,7 @@ export default async function StudentProfilePage({ params }: Props) {
           >
             Open Portal
           </Link>
+          <CopyIntakeLinkButton portalToken={student.portal_token} />
           {!student.email && (
             <span className="px-3 py-2 bg-red-50 text-red-500 text-xs rounded-lg flex items-center">
               No email
