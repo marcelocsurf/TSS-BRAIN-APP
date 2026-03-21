@@ -47,6 +47,7 @@ import { Step19WhatsNext } from './steps/Step19WhatsNext';
 import { Step20Homework } from './steps/Step20Homework';
 import { Step21TotalDuration } from './steps/Step21TotalDuration';
 import { Step22IncidentClose } from './steps/Step22IncidentClose';
+import { SessionPlanReview } from './SessionPlanReview';
 
 // ─── Reducer ───
 
@@ -211,6 +212,7 @@ export function SessionCascadeForm({
   const [missionTypeOptions, setMissionTypeOptions] = useState<DropdownOption[]>([]);
   const [achievementOptions, setAchievementOptions] = useState<DropdownOption[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showPlanReview, setShowPlanReview] = useState(false);
 
   // ─── Load data when entering specific steps ───
 
@@ -563,9 +565,24 @@ export function SessionCascadeForm({
         </div>
       )}
 
-      {/* Step content */}
+      {/* Step content OR Plan Review */}
       <div className="px-4 py-6">
-        {renderStep()}
+        {showPlanReview ? (
+          <SessionPlanReview
+            formState={state}
+            pilarParts={pilarParts}
+            drills={drills}
+            onContinueToClose={() => {
+              setShowPlanReview(false);
+              dispatch({ type: 'GO_TO_STEP', payload: 14 });
+            }}
+            onBackToPlanning={() => {
+              setShowPlanReview(false);
+            }}
+          />
+        ) : (
+          renderStep()
+        )}
       </div>
 
       {/* Error */}
@@ -575,8 +592,8 @@ export function SessionCascadeForm({
         </div>
       )}
 
-      {/* Navigation (not shown on step 22 — it has its own save button) */}
-      {state.currentStep < 22 && (
+      {/* Navigation (not shown on step 22 or plan review — they have own buttons) */}
+      {state.currentStep < 22 && !showPlanReview && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--tss-gray-100)] px-4 py-3 flex gap-3 max-w-lg mx-auto shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
           {state.currentStep > 1 && (
             <button
@@ -589,7 +606,14 @@ export function SessionCascadeForm({
           )}
           <button
             type="button"
-            onClick={goNext}
+            onClick={() => {
+              // Show plan review when finishing Planning (step 13 → Close)
+              if (state.currentStep === 13) {
+                setShowPlanReview(true);
+              } else {
+                goNext();
+              }
+            }}
             disabled={!canAdvance() || isPending}
             className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
               canAdvance() && !isPending
@@ -597,7 +621,7 @@ export function SessionCascadeForm({
                 : 'bg-[var(--tss-gray-200)] text-[var(--tss-gray-500)] cursor-not-allowed'
             }`}
           >
-            {isPending ? 'Loading...' : 'Next'}
+            {isPending ? 'Loading...' : state.currentStep === 13 ? 'Review Plan' : 'Next'}
           </button>
         </div>
       )}
