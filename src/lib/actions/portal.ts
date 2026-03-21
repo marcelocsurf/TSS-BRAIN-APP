@@ -163,13 +163,25 @@ export async function getStudentDrillsForSelfTraining(beltLevel: BeltLevel) {
   // Get the belt order index
   const beltIndex = BELT_HIERARCHY.indexOf(beltLevel);
 
-  // 1. Try DB drills first (remove .eq('active') which may not exist)
+  // 1. Try DB drills first — column names match drills table schema
   const { data: dbDrills } = await admin
     .from('drills')
-    .select('id, name, description, goal, key_cue, pilar, belt_level_range')
-    .order('name');
+    .select('id, drill_name, drill_type, goal, key_cue, related_pilar, belt_level_range')
+    .eq('active_status', true)
+    .order('drill_name');
 
-  const filteredDbDrills = (dbDrills || []).filter((drill: any) => {
+  // Normalize DB drill rows to a consistent shape
+  const normalizedDbDrills = (dbDrills || []).map((d: any) => ({
+    id: d.id,
+    name: d.drill_name,
+    description: d.drill_type,
+    goal: d.goal,
+    key_cue: d.key_cue,
+    pilar: d.related_pilar,
+    belt_level_range: d.belt_level_range,
+  }));
+
+  const filteredDbDrills = normalizedDbDrills.filter((drill: any) => {
     if (!drill.belt_level_range) return true;
     const range = drill.belt_level_range.split('-').map((b: string) => b.trim());
     if (range.length === 2) {
