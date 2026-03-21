@@ -73,9 +73,7 @@ export async function getStudentWithCascadeContext(
     .select(`
       id, first_name, last_name, belt_level, ocean_level,
       current_sequence_number, current_step_order,
-      student_path, age_group,
       allergies, injuries, medical_notes, risk_notes,
-      board_clearance_hardtop,
       last_session_date, last_session_mission, last_session_pilar,
       last_session_status, last_homework, next_recommended_focus,
       waiver_signed
@@ -398,7 +396,7 @@ export async function createCascadeSession(
     const insertPayload = {
         student_id: formState.student_id,
         coach_id: effectiveCoachId,
-        standalone_session_id: null,
+        cascade_session_id: sessionId,
         status: formState.status || null,
         focus_rating: formState.focus_rating || null,
         frustration_rating: formState.frustration_rating || null,

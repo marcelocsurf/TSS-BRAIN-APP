@@ -232,6 +232,7 @@ export async function closeCampSessionResult(input: {
     .insert({
       camp_session_id: input.camp_session_id,
       student_id: input.student_id,
+      coach_id: coach?.id || null,
       status: input.status,
       focus_rating: input.focus_rating,
       frustration_rating: input.frustration_rating,

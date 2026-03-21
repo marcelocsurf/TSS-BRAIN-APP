@@ -301,7 +301,7 @@ export async function getSubmittedSurveys(studentId: string) {
     .from('survey_responses')
     .select('*, student_session_results(created_at, status, standalone_sessions(mission))')
     .eq('student_id', studentId)
-    .order('created_at', { ascending: false });
+    .order('submitted_at', { ascending: false });
 
   return surveys || [];
 }

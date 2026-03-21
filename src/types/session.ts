@@ -72,13 +72,10 @@ export interface StudentCascadeContext {
   ocean_level: string | null;
   current_sequence_number: number | null;
   current_step_order: number | null;
-  student_path: string | null;
-  age_group: string | null;
   allergies: string | null;
   injuries: string | null;
   medical_notes: string | null;
   risk_notes: string | null;
-  board_clearance_hardtop: boolean;
   last_session_date: string | null;
   last_session_mission: string | null;
   last_session_pilar: string | null;
