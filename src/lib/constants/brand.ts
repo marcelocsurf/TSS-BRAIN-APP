@@ -119,6 +119,60 @@ export const WARMUP_OPTIONS = [
   { value: 'flow_motion', label: 'Flow motion simulation' },
 ] as const;
 
+// Belt-specific warm-up options for self-training
+// Each belt inherits all warm-ups from lower belts
+export const SELF_TRAINING_WARMUPS: Record<string, { value: string; label: string }[]> = {
+  white_belt: [
+    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
+    { value: 'board_handling_circuit', label: 'Board Handling Circuit' },
+    { value: 'cobra_direction', label: 'Cobra + Direction Choice drill' },
+  ],
+  yellow_belt: [
+    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
+    { value: 'board_handling_circuit', label: 'Board Handling Circuit' },
+    { value: 'cobra_direction', label: 'Cobra + Direction Choice drill' },
+    { value: 'popup_transitions', label: 'Pop-Up with Transitions' },
+    { value: 'rotation_chain', label: 'Rotation Kinetic Chain' },
+    { value: 'wave_simulation', label: 'Wave Simulation' },
+  ],
+  blue_belt: [
+    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
+    { value: 'board_handling_circuit', label: 'Board Handling Circuit' },
+    { value: 'cobra_direction', label: 'Cobra + Direction Choice drill' },
+    { value: 'popup_transitions', label: 'Pop-Up with Transitions' },
+    { value: 'rotation_chain', label: 'Rotation Kinetic Chain' },
+    { value: 'wave_simulation', label: 'Wave Simulation' },
+    { value: 'stance_rotation', label: 'Stance + Rotation' },
+    { value: 'bottom_turn_projection', label: 'Bottom Turn + Projection' },
+    { value: 'rail_transition', label: 'Rail Transition Full Sequence' },
+  ],
+  purple_belt: [
+    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
+    { value: 'board_handling_circuit', label: 'Board Handling Circuit' },
+    { value: 'popup_transitions', label: 'Pop-Up with Transitions' },
+    { value: 'rotation_chain', label: 'Rotation Kinetic Chain' },
+    { value: 'wave_simulation', label: 'Wave Simulation' },
+    { value: 'stance_rotation', label: 'Stance + Rotation' },
+    { value: 'bottom_turn_projection', label: 'Bottom Turn + Projection' },
+    { value: 'rail_transition', label: 'Rail Transition Full Sequence' },
+  ],
+  brown_belt: [
+    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
+    { value: 'rotation_chain', label: 'Rotation Kinetic Chain' },
+    { value: 'wave_simulation', label: 'Wave Simulation' },
+    { value: 'stance_rotation', label: 'Stance + Rotation' },
+    { value: 'bottom_turn_projection', label: 'Bottom Turn + Projection' },
+    { value: 'rail_transition', label: 'Rail Transition Full Sequence' },
+  ],
+  black_belt: [
+    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
+    { value: 'rotation_chain', label: 'Rotation Kinetic Chain' },
+    { value: 'stance_rotation', label: 'Stance + Rotation' },
+    { value: 'bottom_turn_projection', label: 'Bottom Turn + Projection' },
+    { value: 'rail_transition', label: 'Rail Transition Full Sequence' },
+  ],
+};
+
 // ═══════════════════════════════════════
 // SIMULATION — Section 6.4
 // ═══════════════════════════════════════

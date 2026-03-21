@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import type { BeltLevel } from '@/lib/constants/belts';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { BELT_HIERARCHY, BELT_RANK } from '@/lib/constants/belts';
-import { WARMUP_OPTIONS, MENTAL_HACK_OPTIONS } from '@/lib/constants/brand';
+import { WARMUP_OPTIONS, MENTAL_HACK_OPTIONS, SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
 import {
   MATERIAL_CATEGORY_LABELS,
   MATERIAL_CATEGORY_ICONS,
+  STUDENT_MATERIALS,
   type BeltMaterial,
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
@@ -27,11 +28,39 @@ interface PortalData {
   hasSurveyEver: boolean;
   totalSessions: number;
   streak: number;
+  selfTrainingCount: number;
+  totalTrainingMinutes: number;
+  drillsPracticed: string[];
+  recentDrills: { name: string; date: string; source: 'coach' | 'self' }[];
   drills: any[];
   pendingSurveys: any[];
   submittedSurveys: any[];
   materials: { unlocked: BeltMaterial[]; locked: BeltMaterial[] };
   token: string;
+}
+
+// ─── Helpers: extract drills and missions from STUDENT_MATERIALS by belt ───
+
+function getDrillsForBelt(beltLevel: BeltLevel): BeltMaterial[] {
+  const beltIndex = BELT_HIERARCHY.indexOf(beltLevel);
+  return STUDENT_MATERIALS.filter(
+    (m) =>
+      m.category === 'drill' &&
+      BELT_HIERARCHY.indexOf(m.beltLevel as BeltLevel) <= beltIndex
+  );
+}
+
+function getMissionsForBelt(beltLevel: BeltLevel): BeltMaterial[] {
+  const beltIndex = BELT_HIERARCHY.indexOf(beltLevel);
+  return STUDENT_MATERIALS.filter(
+    (m) =>
+      m.category === 'mission' &&
+      BELT_HIERARCHY.indexOf(m.beltLevel as BeltLevel) <= beltIndex
+  );
+}
+
+function getWarmupsForBelt(beltLevel: BeltLevel) {
+  return SELF_TRAINING_WARMUPS[beltLevel] || SELF_TRAINING_WARMUPS['white_belt'];
 }
 
 type Tab = 'home' | 'sessions' | 'materials' | 'self-training' | 'feedback';
@@ -106,8 +135,9 @@ export function PortalTabs({ data }: { data: PortalData }) {
 // ═══════════════════════════════════════
 
 function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
-  const { student, sessions, totalSessions, streak } = data;
+  const { student, sessions, totalSessions, streak, selfTrainingCount, totalTrainingMinutes, drillsPracticed, recentDrills } = data;
   const latestResult = sessions[0];
+  const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
 
   return (
     <div className="space-y-4">
@@ -145,30 +175,82 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
         </div>
       </div>
 
-      {/* Current Position */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Current Position</p>
-            <p className="text-sm font-medium text-[var(--tss-navy)] mt-1">
-              Sequence {student.current_sequence_number || '—'} / Step{' '}
-              {student.current_step_order || '—'}
-            </p>
-          </div>
-          <div className="flex gap-4 text-center">
-            <div>
-              <p className="text-lg font-bold text-[var(--tss-navy)]">{totalSessions}</p>
-              <p className="text-[10px] text-gray-400">Sessions</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold" style={{ color: BRAND.colors.gold }}>
-                {streak}
-              </p>
-              <p className="text-[10px] text-gray-400">Streak</p>
-            </div>
-          </div>
+      {/* Training Stats Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+          <p className="text-2xl font-bold text-[var(--tss-navy)]">{totalSessions}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Total Sessions</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+          <p className="text-2xl font-bold" style={{ color: BRAND.colors.gold }}>{trainingHours}h</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Training Hours</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+          <p className="text-2xl font-bold text-purple-600">{selfTrainingCount}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Self-Training</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+          <p className="text-2xl font-bold" style={{ color: BRAND.colors.gold }}>{streak}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Day Streak</p>
         </div>
       </div>
+
+      {/* Current Position */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold" style={{ fontFamily: 'DM Mono, monospace' }}>Current Position</p>
+        <p className="text-sm font-medium text-[var(--tss-navy)] mt-1">
+          Sequence {student.current_sequence_number || '---'} / Step{' '}
+          {student.current_step_order || '---'}
+        </p>
+        {drillsPracticed.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-50">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+              Drills Practiced ({drillsPracticed.length})
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {drillsPracticed.slice(0, 6).map((d, i) => (
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
+                  {d}
+                </span>
+              ))}
+              {drillsPracticed.length > 6 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-400">
+                  +{drillsPracticed.length - 6} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Recent Drills */}
+      {recentDrills.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-50">
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Recent Drills</h3>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {recentDrills.map((drill, i) => (
+              <div key={i} className="px-4 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="text-xs shrink-0">{drill.source === 'coach' ? '👨‍🏫' : '🏄'}</span>
+                  <p className="text-sm text-gray-700 truncate">{drill.name}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                    drill.source === 'coach' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
+                  }`}>
+                    {drill.source === 'coach' ? 'Coach' : 'Self'}
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {new Date(drill.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Homework */}
       {student.last_homework && (
@@ -744,14 +826,24 @@ function groupByCategory(
 // TAB 4: SELF-TRAINING
 // ═══════════════════════════════════════
 
-type SelfTrainingStep = 'warmup' | 'drill' | 'duration' | 'mental' | 'timer' | 'done';
+type SelfTrainingStep = 'warmup' | 'drill' | 'mission' | 'duration' | 'mental' | 'review' | 'timer' | 'done';
+
+const STEP_LABELS: { key: SelfTrainingStep; label: string; icon: string }[] = [
+  { key: 'warmup', label: 'Warm-up', icon: '🏋️' },
+  { key: 'drill', label: 'Drill', icon: '🎯' },
+  { key: 'mission', label: 'Mission', icon: '🌊' },
+  { key: 'duration', label: 'Duration', icon: '⏱️' },
+  { key: 'mental', label: 'Mental', icon: '🧠' },
+];
 
 function SelfTrainingTab({ data }: { data: PortalData }) {
   const { student, drills } = data;
+  const beltLevel = student.belt_level as BeltLevel;
   const [step, setStep] = useState<SelfTrainingStep>('warmup');
   const [warmUp, setWarmUp] = useState<string | null>(null);
   const [drillId, setDrillId] = useState<string | null>(null);
   const [drillName, setDrillName] = useState<string | null>(null);
+  const [missionName, setMissionName] = useState<string | null>(null);
   const [duration, setDuration] = useState<number>(30);
   const [mentalHack, setMentalHack] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -762,6 +854,16 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
   const [error, setError] = useState('');
 
   const durations = [15, 20, 30, 45, 60];
+  const warmupOptions = getWarmupsForBelt(beltLevel);
+  const materialDrills = getDrillsForBelt(beltLevel);
+  const materialMissions = getMissionsForBelt(beltLevel);
+
+  const builderSteps: SelfTrainingStep[] = ['warmup', 'drill', 'mission', 'duration', 'mental'];
+  const currentStepIndex = builderSteps.indexOf(step);
+
+  // Get display labels for selected items
+  const warmUpLabel = warmUp === 'skip' ? null : warmupOptions.find((o) => o.value === warmUp)?.label || warmUp;
+  const mentalHackLabel = MENTAL_HACK_OPTIONS.find((o) => o.value === mentalHack)?.label || mentalHack;
 
   const handleStart = async () => {
     setLoading(true);
@@ -770,10 +872,10 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
       const session = await createSelfTrainingSession(student.id, {
         warm_up: warmUp,
         drill_id: drillId,
-        drill_name: drillName,
+        drill_name: drillName || missionName,
         mental_hack: mentalHack,
         duration_minutes: duration,
-        notes: null,
+        notes: missionName ? `Mission: ${missionName}` : null,
       });
       setSessionId(session.id);
       setTimeLeft(duration * 60);
@@ -802,6 +904,7 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
     setWarmUp(null);
     setDrillId(null);
     setDrillName(null);
+    setMissionName(null);
     setDuration(30);
     setMentalHack(null);
     setSessionId(null);
@@ -811,40 +914,140 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
     setError('');
   };
 
+  // ─── Done Screen ───
   if (step === 'done') {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-8 text-center space-y-3">
-        <p className="text-3xl">🤙</p>
-        <p className="text-base font-semibold text-[var(--tss-navy)]">Session Complete!</p>
-        <p className="text-sm text-gray-500">Great work. Keep the momentum going.</p>
+      <div className="space-y-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl" style={{ background: `${BRAND.colors.gold}20` }}>
+            🤙
+          </div>
+          <div>
+            <p className="text-lg font-bold text-[var(--tss-navy)]">Session Complete!</p>
+            <p className="text-sm text-gray-500 mt-1">Great work. Keep the momentum going.</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-left">
+            {warmUp && warmUp !== 'skip' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs">🏋️</span>
+                <span className="text-xs text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Warm-up:</span>
+                <span className="text-xs text-gray-700">{warmUpLabel}</span>
+              </div>
+            )}
+            {drillName && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs">🎯</span>
+                <span className="text-xs text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Drill:</span>
+                <span className="text-xs text-gray-700">{drillName}</span>
+              </div>
+            )}
+            {missionName && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs">🌊</span>
+                <span className="text-xs text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Mission:</span>
+                <span className="text-xs text-gray-700">{missionName}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs">⏱️</span>
+              <span className="text-xs text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Duration:</span>
+              <span className="text-xs text-gray-700">{duration} min</span>
+            </div>
+          </div>
+          <button
+            onClick={reset}
+            className="w-full py-3 rounded-xl text-sm font-bold text-white shadow-sm"
+            style={{ background: BRAND.colors.navy }}
+          >
+            Start Another Session
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Timer Screen ───
+  if (step === 'timer') {
+    return (
+      <ProfessionalTimerView
+        timeLeft={timeLeft}
+        setTimeLeft={setTimeLeft}
+        timerActive={timerActive}
+        setTimerActive={setTimerActive}
+        warmUp={warmUp}
+        warmUpLabel={warmUpLabel || null}
+        drillName={drillName}
+        missionName={missionName}
+        mentalHack={mentalHack}
+        mentalHackLabel={mentalHackLabel || null}
+        duration={duration}
+        notes={notes}
+        setNotes={setNotes}
+        loading={loading}
+        onComplete={handleComplete}
+      />
+    );
+  }
+
+  // ─── Plan Review Screen ───
+  if (step === 'review') {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Session Plan Review</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Review your plan before starting</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: `${BRAND.colors.navy}30` }}>
+          {/* Header */}
+          <div className="px-5 py-4" style={{ background: BRAND.colors.navy }}>
+            <p className="text-xs font-bold text-white uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
+              Your Session Plan
+            </p>
+            <p className="text-[10px] mt-0.5" style={{ color: BRAND.colors.gold }}>
+              {BELT_DISPLAY[beltLevel]?.en} Level
+            </p>
+          </div>
+
+          {/* Plan Items */}
+          <div className="p-5 space-y-4">
+            {warmUp && warmUp !== 'skip' && (
+              <PlanReviewRow icon="🏋️" label="Warm-up" value={warmUpLabel || '---'} />
+            )}
+            {drillName && (
+              <PlanReviewRow icon="🎯" label="Drill" value={drillName} />
+            )}
+            {missionName && (
+              <PlanReviewRow icon="🌊" label="Mission" value={missionName} />
+            )}
+            <PlanReviewRow icon="🧠" label="Mental Hack" value={mentalHackLabel || 'None'} />
+            <PlanReviewRow icon="⏱️" label="Duration" value={`${duration} min`} />
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>
+        )}
+
         <button
-          onClick={reset}
-          className="mt-4 px-6 py-2.5 rounded-lg text-sm font-semibold text-white"
+          onClick={handleStart}
+          disabled={loading}
+          className="w-full py-3.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-all shadow-sm"
           style={{ background: BRAND.colors.navy }}
         >
-          Start Another
+          {loading ? 'Starting...' : 'Start Session'}
+        </button>
+        <button
+          onClick={() => setStep('mental')}
+          className="w-full py-2 text-xs text-gray-400 hover:text-gray-600"
+        >
+          Edit Plan
         </button>
       </div>
     );
   }
 
-  if (step === 'timer') {
-    return <TimerView
-      timeLeft={timeLeft}
-      setTimeLeft={setTimeLeft}
-      timerActive={timerActive}
-      setTimerActive={setTimerActive}
-      warmUp={warmUp}
-      drillName={drillName}
-      mentalHack={mentalHack}
-      duration={duration}
-      notes={notes}
-      setNotes={setNotes}
-      loading={loading}
-      onComplete={handleComplete}
-    />;
-  }
-
+  // ─── Builder Steps ───
   return (
     <div className="space-y-4">
       <div>
@@ -854,18 +1057,24 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
         </p>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex items-center gap-2 justify-center">
-        {(['warmup', 'drill', 'duration', 'mental'] as SelfTrainingStep[]).map((s, i) => (
-          <div
-            key={s}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              (['warmup', 'drill', 'duration', 'mental'] as SelfTrainingStep[]).indexOf(step) >= i
-                ? 'bg-[var(--tss-navy)]'
-                : 'bg-gray-200'
-            }`}
-          />
-        ))}
+      {/* Progress Bar */}
+      <div className="bg-white rounded-xl border border-gray-100 p-3">
+        <div className="flex items-center gap-1">
+          {STEP_LABELS.map((s, i) => (
+            <div key={s.key} className="flex-1 flex flex-col items-center">
+              <div
+                className={`w-full h-1.5 rounded-full transition-colors ${
+                  currentStepIndex >= i ? 'bg-[var(--tss-navy)]' : 'bg-gray-100'
+                }`}
+              />
+              <span className={`text-[9px] mt-1 ${
+                currentStepIndex >= i ? 'text-[var(--tss-navy)] font-medium' : 'text-gray-300'
+              }`}>
+                {s.icon}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -875,16 +1084,19 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
       {/* Step 1: Warm-up */}
       {step === 'warmup' && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-gray-700">1. Pick a warm-up</p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🏋️</span>
+            <p className="text-sm font-medium text-[var(--tss-navy)]">1. Pick a warm-up</p>
+          </div>
           <div className="grid grid-cols-1 gap-2">
-            {WARMUP_OPTIONS.map((opt) => (
+            {warmupOptions.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setWarmUp(opt.value)}
                 className={`px-4 py-3 rounded-xl border text-sm text-left transition-all ${
                   warmUp === opt.value
-                    ? 'border-[var(--tss-navy)] bg-blue-50 text-[var(--tss-navy)] font-medium'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    ? 'border-[var(--tss-navy)] bg-blue-50 text-[var(--tss-navy)] font-medium shadow-sm'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'
                 }`}
               >
                 {opt.label}
@@ -904,10 +1116,10 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
           <button
             onClick={() => setStep('drill')}
             disabled={!warmUp}
-            className="w-full py-3 rounded-lg text-sm font-semibold text-white disabled:opacity-40 transition-opacity"
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-opacity shadow-sm"
             style={{ background: BRAND.colors.navy }}
           >
-            Next
+            Next: Pick a Drill
           </button>
         </div>
       )}
@@ -915,36 +1127,46 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
       {/* Step 2: Drill */}
       {step === 'drill' && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-gray-700">2. Pick a drill</p>
-          {drills.length > 0 ? (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {drills.map((drill: any) => (
-                <button
-                  key={drill.id}
-                  onClick={() => {
-                    setDrillId(drill.id);
-                    setDrillName(drill.name);
-                  }}
-                  className={`w-full px-4 py-3 rounded-xl border text-left transition-all ${
-                    drillId === drill.id
-                      ? 'border-[var(--tss-navy)] bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <p
-                    className={`text-sm ${
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🎯</span>
+            <p className="text-sm font-medium text-[var(--tss-navy)]">2. Pick a drill</p>
+          </div>
+          {materialDrills.length > 0 ? (
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {materialDrills.map((drill) => {
+                const beltInfo = BELT_DISPLAY[drill.beltLevel];
+                return (
+                  <button
+                    key={drill.id}
+                    onClick={() => {
+                      setDrillId(drill.id);
+                      setDrillName(drill.title);
+                    }}
+                    className={`w-full px-4 py-3 rounded-xl border text-left transition-all ${
                       drillId === drill.id
-                        ? 'text-[var(--tss-navy)] font-medium'
-                        : 'text-gray-700'
+                        ? 'border-[var(--tss-navy)] bg-blue-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
-                    {drill.name}
-                  </p>
-                  {drill.goal && (
-                    <p className="text-[10px] text-gray-400 mt-0.5">{drill.goal}</p>
-                  )}
-                </button>
-              ))}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm ${
+                          drillId === drill.id ? 'text-[var(--tss-navy)] font-medium' : 'text-gray-700'
+                        }`}>
+                          {drill.title}
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{drill.subtitle}</p>
+                      </div>
+                      <span
+                        className="text-[9px] px-1.5 py-0.5 rounded-full font-medium text-white shrink-0 mt-0.5"
+                        style={{ backgroundColor: beltInfo?.color || '#999' }}
+                      >
+                        {beltInfo?.en?.split(' ')[0]}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-gray-50 rounded-xl p-4 text-center">
@@ -956,26 +1178,91 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
               if (!drillId) {
                 setDrillName('Free practice');
               }
-              setStep('duration');
+              setStep('mission');
             }}
-            className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-opacity"
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
             style={{ background: BRAND.colors.navy }}
           >
-            {drillId ? 'Next' : 'Skip (Free Practice)'}
+            {drillId ? 'Next: Pick a Mission' : 'Skip (Free Practice)'}
           </button>
           <button
             onClick={() => setStep('warmup')}
-            className="w-full py-2 text-xs text-gray-400"
+            className="w-full py-2 text-xs text-gray-400 hover:text-gray-600"
           >
             Back
           </button>
         </div>
       )}
 
-      {/* Step 3: Duration */}
+      {/* Step 3: Mission */}
+      {step === 'mission' && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🌊</span>
+            <p className="text-sm font-medium text-[var(--tss-navy)]">3. Pick a mission <span className="text-gray-400 font-normal">(optional)</span></p>
+          </div>
+          {materialMissions.length > 0 ? (
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {materialMissions.map((mission) => {
+                const beltInfo = BELT_DISPLAY[mission.beltLevel];
+                return (
+                  <button
+                    key={mission.id}
+                    onClick={() => setMissionName(missionName === mission.title ? null : mission.title)}
+                    className={`w-full px-4 py-3 rounded-xl border text-left transition-all ${
+                      missionName === mission.title
+                        ? 'border-[var(--tss-navy)] bg-blue-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm ${
+                          missionName === mission.title ? 'text-[var(--tss-navy)] font-medium' : 'text-gray-700'
+                        }`}>
+                          {mission.title}
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{mission.subtitle}</p>
+                      </div>
+                      <span
+                        className="text-[9px] px-1.5 py-0.5 rounded-full font-medium text-white shrink-0 mt-0.5"
+                        style={{ backgroundColor: beltInfo?.color || '#999' }}
+                      >
+                        {beltInfo?.en?.split(' ')[0]}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-gray-400">No missions available for your level yet.</p>
+            </div>
+          )}
+          <button
+            onClick={() => setStep('duration')}
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
+            style={{ background: BRAND.colors.navy }}
+          >
+            {missionName ? 'Next: Set Duration' : 'Skip Mission'}
+          </button>
+          <button
+            onClick={() => setStep('drill')}
+            className="w-full py-2 text-xs text-gray-400 hover:text-gray-600"
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {/* Step 4: Duration */}
       {step === 'duration' && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-gray-700">3. Set duration</p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">⏱️</span>
+            <p className="text-sm font-medium text-[var(--tss-navy)]">4. Set duration</p>
+          </div>
           <div className="flex gap-2 flex-wrap">
             {durations.map((d) => (
               <button
@@ -983,7 +1270,7 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
                 onClick={() => setDuration(d)}
                 className={`flex-1 min-w-[60px] py-3 rounded-xl border text-sm font-medium transition-all ${
                   duration === d
-                    ? 'border-[var(--tss-navy)] bg-blue-50 text-[var(--tss-navy)]'
+                    ? 'border-[var(--tss-navy)] bg-blue-50 text-[var(--tss-navy)] shadow-sm'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
               >
@@ -993,26 +1280,29 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
           </div>
           <button
             onClick={() => setStep('mental')}
-            className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-opacity"
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
             style={{ background: BRAND.colors.navy }}
           >
-            Next
+            Next: Mental Hack
           </button>
           <button
-            onClick={() => setStep('drill')}
-            className="w-full py-2 text-xs text-gray-400"
+            onClick={() => setStep('mission')}
+            className="w-full py-2 text-xs text-gray-400 hover:text-gray-600"
           >
             Back
           </button>
         </div>
       )}
 
-      {/* Step 4: Mental Hack (optional) */}
+      {/* Step 5: Mental Hack (optional) */}
       {step === 'mental' && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-gray-700">
-            4. Mental hack <span className="text-gray-400 font-normal">(optional)</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🧠</span>
+            <p className="text-sm font-medium text-[var(--tss-navy)]">
+              5. Mental hack <span className="text-gray-400 font-normal">(optional)</span>
+            </p>
+          </div>
           <div className="grid grid-cols-1 gap-2">
             {MENTAL_HACK_OPTIONS.map((opt) => (
               <button
@@ -1022,8 +1312,8 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
                 }
                 className={`px-4 py-3 rounded-xl border text-sm text-left transition-all ${
                   mentalHack === opt.value
-                    ? 'border-[var(--tss-navy)] bg-blue-50 text-[var(--tss-navy)] font-medium'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    ? 'border-[var(--tss-navy)] bg-blue-50 text-[var(--tss-navy)] font-medium shadow-sm'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'
                 }`}
               >
                 {opt.label}
@@ -1031,16 +1321,15 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
             ))}
           </div>
           <button
-            onClick={handleStart}
-            disabled={loading}
-            className="w-full py-3 rounded-lg text-sm font-bold text-white disabled:opacity-40 transition-opacity"
+            onClick={() => setStep('review')}
+            className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-opacity shadow-sm"
             style={{ background: BRAND.colors.navy }}
           >
-            {loading ? 'Starting...' : 'Start Session'}
+            Review Session Plan
           </button>
           <button
             onClick={() => setStep('duration')}
-            className="w-full py-2 text-xs text-gray-400"
+            className="w-full py-2 text-xs text-gray-400 hover:text-gray-600"
           >
             Back
           </button>
@@ -1050,16 +1339,33 @@ function SelfTrainingTab({ data }: { data: PortalData }) {
   );
 }
 
-// ─── Timer View ───
+// ─── Plan Review Row ───
 
-function TimerView({
+function PlanReviewRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-base">{icon}</span>
+      <div className="flex-1">
+        <p className="text-[10px] text-gray-400 uppercase tracking-wide" style={{ fontFamily: 'DM Mono, monospace' }}>{label}</p>
+        <p className="text-sm font-medium text-[var(--tss-navy)]">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Professional Timer View ───
+
+function ProfessionalTimerView({
   timeLeft,
   setTimeLeft,
   timerActive,
   setTimerActive,
   warmUp,
+  warmUpLabel,
   drillName,
+  missionName,
   mentalHack,
+  mentalHackLabel,
   duration,
   notes,
   setNotes,
@@ -1071,131 +1377,125 @@ function TimerView({
   timerActive: boolean;
   setTimerActive: (v: boolean) => void;
   warmUp: string | null;
+  warmUpLabel: string | null;
   drillName: string | null;
+  missionName: string | null;
   mentalHack: string | null;
+  mentalHackLabel: string | null;
   duration: number;
   notes: string;
   setNotes: (v: string) => void;
   loading: boolean;
   onComplete: () => void;
 }) {
-  // Timer countdown
-  useState(() => {
-    // We'll handle the timer with setInterval in an effect-like pattern
-  });
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Use a ref-style approach with useState for the interval
-  const [, setTick] = useState(0);
-
-  // Simple interval using useState
-  if (timerActive && timeLeft > 0) {
-    setTimeout(() => {
-      setTimeLeft((p: number) => {
-        if (p <= 1) {
-          setTimerActive(false);
-          return 0;
-        }
-        return p - 1;
-      });
-      setTick((t) => t + 1);
-    }, 1000);
-  }
+  useEffect(() => {
+    if (timerActive && timeLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((p: number) => {
+          if (p <= 1) {
+            setTimerActive(false);
+            return 0;
+          }
+          return p - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [timerActive, timeLeft > 0]);
 
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
-  const progress = timeLeft / (duration * 60);
+  const totalSeconds = duration * 60;
+  const progress = totalSeconds > 0 ? timeLeft / totalSeconds : 0;
+  const circumference = 2 * Math.PI * 54;
 
   return (
     <div className="space-y-4">
-      {/* Timer circle */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
-        <div className="relative w-40 h-40 mx-auto mb-4">
+      {/* Timer Circle */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center shadow-sm">
+        <div className="relative w-44 h-44 mx-auto mb-5">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+            {/* Background circle */}
+            <circle cx="60" cy="60" r="54" fill="none" stroke="#f3f4f6" strokeWidth="6" />
+            {/* Gold progress circle */}
             <circle
-              cx="60"
-              cy="60"
-              r="54"
+              cx="60" cy="60" r="54"
               fill="none"
-              stroke="#f3f4f6"
-              strokeWidth="8"
-            />
-            <circle
-              cx="60"
-              cy="60"
-              r="54"
-              fill="none"
-              stroke={BRAND.colors.navy}
-              strokeWidth="8"
+              stroke={timeLeft === 0 ? BRAND.colors.gold : BRAND.colors.navy}
+              strokeWidth="6"
               strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 54}`}
-              strokeDashoffset={`${2 * Math.PI * 54 * (1 - progress)}`}
-              className="transition-all duration-1000"
+              strokeDasharray={`${circumference}`}
+              strokeDashoffset={`${circumference * (1 - progress)}`}
+              className="transition-all duration-1000 ease-linear"
             />
+            {/* Inner decorative circle */}
+            <circle cx="60" cy="60" r="46" fill="none" stroke="#f9fafb" strokeWidth="1" />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-3xl font-bold text-[var(--tss-navy)] tabular-nums">
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-4xl font-bold text-[var(--tss-navy)] tabular-nums tracking-tight" style={{ fontFamily: 'DM Mono, monospace' }}>
               {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+            </span>
+            <span className="text-[10px] text-gray-400 mt-1">
+              {timeLeft === 0 ? 'COMPLETE' : timerActive ? 'IN PROGRESS' : 'PAUSED'}
             </span>
           </div>
         </div>
 
-        {timerActive ? (
-          <button
-            onClick={() => setTimerActive(false)}
-            className="px-6 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600"
-          >
-            Pause
-          </button>
-        ) : timeLeft > 0 ? (
-          <button
-            onClick={() => setTimerActive(true)}
-            className="px-6 py-2 rounded-lg text-sm font-medium text-white"
-            style={{ background: BRAND.colors.navy }}
-          >
-            Resume
-          </button>
-        ) : (
-          <p className="text-sm font-semibold" style={{ color: BRAND.colors.gold }}>
-            Time is up!
-          </p>
-        )}
+        <div className="flex justify-center gap-3">
+          {timerActive ? (
+            <button
+              onClick={() => setTimerActive(false)}
+              className="px-8 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:border-gray-300 transition-colors"
+            >
+              Pause
+            </button>
+          ) : timeLeft > 0 ? (
+            <button
+              onClick={() => setTimerActive(true)}
+              className="px-8 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm transition-colors"
+              style={{ background: BRAND.colors.navy }}
+            >
+              Resume
+            </button>
+          ) : (
+            <p className="text-base font-bold" style={{ color: BRAND.colors.gold }}>
+              Time is up!
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Session checklist */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+      {/* Session Plan Card */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3 shadow-sm">
+        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
           Session Plan
         </h3>
         {warmUp && warmUp !== 'skip' && (
-          <ChecklistItem
-            label="Warm-up"
-            value={WARMUP_OPTIONS.find((o) => o.value === warmUp)?.label || warmUp}
-          />
+          <PlanChecklistItem icon="🏋️" label="Warm-up" value={warmUpLabel || warmUp} />
         )}
-        {drillName && <ChecklistItem label="Drill" value={drillName} />}
+        {drillName && <PlanChecklistItem icon="🎯" label="Drill" value={drillName} />}
+        {missionName && <PlanChecklistItem icon="🌊" label="Mission" value={missionName} />}
         {mentalHack && (
-          <ChecklistItem
-            label="Mental Hack"
-            value={
-              MENTAL_HACK_OPTIONS.find((o) => o.value === mentalHack)?.label ||
-              mentalHack
-            }
-          />
+          <PlanChecklistItem icon="🧠" label="Mental Hack" value={mentalHackLabel || mentalHack} />
         )}
-        <ChecklistItem label="Duration" value={`${duration} min`} />
+        <PlanChecklistItem icon="⏱️" label="Duration" value={`${duration} min`} />
       </div>
 
       {/* Notes */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <label className="block text-xs font-medium text-gray-600 mb-2">
-          Session notes <span className="text-gray-400 font-normal">(optional)</span>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2" style={{ fontFamily: 'DM Mono, monospace' }}>
+          Session notes <span className="font-normal normal-case">(optional)</span>
         </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           placeholder="How did it go? What did you notice?"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300"
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200"
         />
       </div>
 
@@ -1203,7 +1503,7 @@ function TimerView({
       <button
         onClick={onComplete}
         disabled={loading}
-        className="w-full py-3 rounded-lg text-sm font-bold text-white disabled:opacity-40 transition-opacity"
+        className="w-full py-3.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-all shadow-sm"
         style={{ background: BRAND.colors.navy }}
       >
         {loading ? 'Saving...' : 'Complete Session'}
@@ -1212,6 +1512,24 @@ function TimerView({
   );
 }
 
+function PlanChecklistItem({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+        <span className="text-xs">{icon}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>{label}</p>
+        <p className="text-sm text-gray-700 truncate">{value}</p>
+      </div>
+      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+        <span className="text-green-600 text-[10px]">✓</span>
+      </div>
+    </div>
+  );
+}
+
+// ChecklistItem kept for backward compatibility
 function ChecklistItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-3">

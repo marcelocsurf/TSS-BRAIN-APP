@@ -42,13 +42,65 @@ export async function getStudentPortalData(token: string) {
   const hasSurveyEver = (surveys || []).length > 0;
 
   // 5. Compute quick stats
-  const totalSessions = (sessions || []).length + (selfTrainingSessions || []).length;
+  const coachSessions = sessions || [];
+  const selfSessions = selfTrainingSessions || [];
+  const totalSessions = coachSessions.length + selfSessions.length;
+  const selfTrainingCount = selfSessions.filter((s: any) => s.completed).length;
 
-  // Calculate streak (consecutive days with sessions, counting backwards)
+  // Training hours: sum durations from both sources
+  const coachHours = coachSessions.reduce((sum: number, s: any) => {
+    const dur = s.standalone_sessions?.duration_minutes || s.duration_minutes || 0;
+    return sum + dur;
+  }, 0);
+  const selfHours = selfSessions
+    .filter((s: any) => s.completed)
+    .reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0);
+  const totalTrainingMinutes = coachHours + selfHours;
+
+  // Drills practiced (unique names from self-training)
+  const drillsPracticed = [
+    ...new Set(
+      selfSessions
+        .filter((s: any) => s.completed && s.drill_name)
+        .map((s: any) => s.drill_name as string)
+    ),
+  ];
+
+  // Recent drills with dates (from both sources, last 5)
+  const recentDrills: { name: string; date: string; source: 'coach' | 'self' }[] = [];
+  for (const s of coachSessions) {
+    const mission = s.standalone_sessions?.mission;
+    if (mission) {
+      recentDrills.push({
+        name: mission,
+        date: s.created_at,
+        source: 'coach',
+      });
+    }
+  }
+  for (const s of selfSessions) {
+    if (s.completed && s.drill_name) {
+      recentDrills.push({
+        name: s.drill_name,
+        date: s.created_at,
+        source: 'self',
+      });
+    }
+  }
+  recentDrills.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const topRecentDrills = recentDrills.slice(0, 5);
+
+  // Calculate streak (consecutive days with sessions, counting backwards from both sources)
   let streak = 0;
-  if (sessions && sessions.length > 0) {
-    const dates = sessions.map((s: any) => new Date(s.created_at).toDateString());
-    const uniqueDates = [...new Set(dates)];
+  const allDates = [
+    ...coachSessions.map((s: any) => new Date(s.created_at).toDateString()),
+    ...selfSessions
+      .filter((s: any) => s.completed)
+      .map((s: any) => new Date(s.created_at).toDateString()),
+  ];
+  const uniqueDates = [...new Set(allDates)];
+
+  if (uniqueDates.length > 0) {
     const today = new Date();
     let checkDate = new Date(today);
 
@@ -58,7 +110,6 @@ export async function getStudentPortalData(token: string) {
         streak++;
         checkDate.setDate(checkDate.getDate() - 1);
       } else if (i === 0) {
-        // Today hasn't had a session yet — check from yesterday
         checkDate.setDate(checkDate.getDate() - 1);
         continue;
       } else {
@@ -69,12 +120,16 @@ export async function getStudentPortalData(token: string) {
 
   return {
     student,
-    sessions: sessions || [],
-    selfTrainingSessions: selfTrainingSessions || [],
+    sessions: coachSessions,
+    selfTrainingSessions: selfSessions,
     surveyResultIds: Array.from(surveyResultIds),
     hasSurveyEver,
     totalSessions,
     streak,
+    selfTrainingCount,
+    totalTrainingMinutes,
+    drillsPracticed,
+    recentDrills: topRecentDrills,
   };
 }
 
