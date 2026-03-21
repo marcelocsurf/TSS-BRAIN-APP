@@ -491,7 +491,7 @@ export async function submitFinalEvaluation(
   if (evaluation.sequence_recommendation || evaluation.ocean_level_recommendation) {
     const updates: Record<string, unknown> = {};
     if (evaluation.sequence_recommendation) {
-      updates.current_sequence = evaluation.sequence_recommendation;
+      updates.current_sequence_number = evaluation.sequence_recommendation;
     }
     if (evaluation.ocean_level_recommendation) {
       updates.ocean_level = evaluation.ocean_level_recommendation;

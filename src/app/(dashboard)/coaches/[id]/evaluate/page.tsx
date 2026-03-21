@@ -12,7 +12,7 @@ export default async function CoachEvaluatePage({ params }: Props) {
   // Role guard — coordinator or above
   const authCoach = await getAuthCoach();
   if (!authCoach) redirect('/login');
-  if (!isCoordinatorOrAbove(authCoach.role)) redirect('/');
+  if (!(await isCoordinatorOrAbove(authCoach.role))) redirect('/');
 
   const { id } = await params;
   const supabase = await createClient();

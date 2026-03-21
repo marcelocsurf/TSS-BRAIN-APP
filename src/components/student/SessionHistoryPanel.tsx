@@ -14,7 +14,7 @@ interface SessionEntry {
   coachFeedback: string | null;
   homework: string | null;
   whatsNext: string | null;
-  duration: number | null;
+  duration: string | number | null;
   venue: string | null;
 }
 

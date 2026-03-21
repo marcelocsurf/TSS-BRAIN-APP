@@ -17,19 +17,33 @@ export interface CoachStats {
 export async function getCoachStats(coachId: string): Promise<CoachStats> {
   const supabase = await createClient();
 
-  // Query cascade_sessions
+  // Query cascade_sessions (uses total_duration as text, e.g. "60")
   const { data: cascadeSessions } = await supabase
     .from('cascade_sessions')
-    .select('id, student_id, duration_minutes, session_date')
+    .select('id, student_id, total_duration, session_date')
     .eq('coach_id', coachId);
 
-  // Query standalone_sessions
+  // Query standalone_sessions (uses duration_minutes as number)
   const { data: standaloneSessions } = await supabase
     .from('standalone_sessions')
     .select('id, student_id, duration_minutes, session_date')
     .eq('coach_id', coachId);
 
-  const allSessions = [...(cascadeSessions ?? []), ...(standaloneSessions ?? [])];
+  // Normalize both to a common shape for stats
+  const cascadeNormalized = (cascadeSessions ?? []).map(s => ({
+    id: s.id,
+    student_id: s.student_id,
+    duration_minutes: s.total_duration ? parseInt(s.total_duration, 10) || 0 : 0,
+    session_date: s.session_date,
+  }));
+  const standaloneNormalized = (standaloneSessions ?? []).map(s => ({
+    id: s.id,
+    student_id: s.student_id,
+    duration_minutes: s.duration_minutes || 0,
+    session_date: s.session_date,
+  }));
+
+  const allSessions = [...cascadeNormalized, ...standaloneNormalized];
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];

@@ -61,9 +61,14 @@ export default async function CoachProfilePage({ params }: Props) {
     .eq('coach_id', id)
     .order('created_at', { ascending: false });
 
-  const currentCoach = await getCurrentCoach();
+  let currentCoach: any;
+  try {
+    currentCoach = await getCurrentCoach();
+  } catch {
+    currentCoach = { id: '', display_name: 'Unknown', role: 'assistant' };
+  }
   const currentCerts = certifications?.map(c => c.certification_key) || [];
-  const currentUserIsAdmin = currentCoach.role === 'admin';
+  const currentUserIsAdmin = currentCoach?.role === 'admin';
 
   // Fetch dashboard data in parallel
   const [stats, ratingStats, feedback, resources, recentSessions] = await Promise.all([
