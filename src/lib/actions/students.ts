@@ -260,13 +260,24 @@ export async function createStudent(input: CreateStudentInput) {
 // LIST STUDENTS
 // ═══════════════════════════════════════
 
-export async function listStudents(filters?: {
+export interface StudentFilters {
   belt_level?: BeltLevel;
   status?: string;
   search?: string;
   page?: number;
   limit?: number;
-}): Promise<{ students: StudentRow[]; total: number }> {
+  // Advanced filters
+  age_range?: string;       // 'junior' | 'teen' | 'young_adult' | 'adult'
+  gender?: string;
+  language?: string;        // filter on 'languages' column
+  nationality?: string;     // partial match on 'nationality' column
+  stance?: string;          // 'regular' | 'goofy'
+  returning?: string;       // 'true' | 'false'
+  waiver?: string;          // 'signed' | 'pending'
+  ocean_level?: string;
+}
+
+export async function listStudents(filters?: StudentFilters): Promise<{ students: StudentRow[]; total: number }> {
   const supabase = await createClient();
   const page = filters?.page || 1;
   const limit = filters?.limit || 20;
@@ -288,6 +299,57 @@ export async function listStudents(filters?: {
     query = query.or(
       `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%`
     );
+  }
+
+  // ── Advanced filters ──
+
+  if (filters?.gender) {
+    query = query.ilike('gender', filters.gender);
+  }
+  if (filters?.language) {
+    query = query.ilike('languages', `%${filters.language}%`);
+  }
+  if (filters?.nationality) {
+    query = query.ilike('nationality', `%${filters.nationality}%`);
+  }
+  if (filters?.stance) {
+    query = query.ilike('stance', filters.stance);
+  }
+  if (filters?.returning === 'true') {
+    query = query.eq('returning_student', true);
+  } else if (filters?.returning === 'false') {
+    query = query.eq('returning_student', false);
+  }
+  if (filters?.waiver === 'signed') {
+    query = query.eq('waiver_signed', true);
+  } else if (filters?.waiver === 'pending') {
+    query = query.or('waiver_signed.is.null,waiver_signed.eq.false');
+  }
+  if (filters?.ocean_level) {
+    query = query.eq('ocean_level', filters.ocean_level);
+  }
+
+  // Age range filtering — uses date_of_birth to calculate age
+  if (filters?.age_range) {
+    const today = new Date();
+    let minAge: number | undefined;
+    let maxAge: number | undefined;
+    switch (filters.age_range) {
+      case 'junior':      minAge = 8;  maxAge = 14; break;
+      case 'teen':         minAge = 14; maxAge = 18; break;
+      case 'young_adult':  minAge = 18; maxAge = 30; break;
+      case 'adult':        minAge = 30; break;
+    }
+    if (maxAge !== undefined) {
+      // Born AFTER this date = younger than maxAge
+      const bornAfter = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+      query = query.gte('date_of_birth', bornAfter.toISOString().slice(0, 10));
+    }
+    if (minAge !== undefined) {
+      // Born BEFORE this date = older than minAge
+      const bornBefore = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+      query = query.lte('date_of_birth', bornBefore.toISOString().slice(0, 10));
+    }
   }
 
   query = query.range(from, to);

@@ -2,9 +2,36 @@ import { listStudents } from '@/lib/actions/students';
 import { BELT_DISPLAY, BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import Link from 'next/link';
 import { StudentSearch } from './student-search';
+import { StudentFilters } from './student-filters';
+import { Suspense } from 'react';
+
+// All advanced filter keys that map to URL params
+const ADVANCED_KEYS = [
+  'age_range', 'gender', 'language', 'nationality',
+  'stance', 'returning', 'waiver', 'status', 'ocean_level',
+] as const;
+
+// Human-readable labels for the stats summary
+const FILTER_LABELS: Record<string, string> = {
+  age_range: 'Age',
+  gender: 'Gender',
+  language: 'Language',
+  nationality: 'Nationality',
+  stance: 'Stance',
+  returning: 'Returning',
+  waiver: 'Waiver',
+  status: 'Status',
+  ocean_level: 'Ocean',
+};
+
+const DISPLAY_VALUES: Record<string, Record<string, string>> = {
+  age_range: { junior: 'Junior (8-14)', teen: 'Teen (14-18)', young_adult: 'Young Adult (18-30)', adult: 'Adult (30+)' },
+  returning: { true: 'Yes', false: 'No' },
+  waiver: { signed: 'Signed', pending: 'Pending' },
+};
 
 interface Props {
-  searchParams: Promise<{ belt?: string; status?: string; q?: string; page?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function StudentRosterPage({ searchParams }: Props) {
@@ -18,27 +45,55 @@ export default async function StudentRosterPage({ searchParams }: Props) {
     search: params.q,
     page: currentPage,
     limit,
+    // Advanced filters
+    age_range: params.age_range,
+    gender: params.gender,
+    language: params.language,
+    nationality: params.nationality,
+    stance: params.stance,
+    returning: params.returning,
+    waiver: params.waiver,
+    ocean_level: params.ocean_level,
   });
 
   const totalPages = Math.ceil(total / limit);
 
-  // Build base URL for pagination links preserving current filters
+  // Build base URL preserving ALL current params
   const buildPageUrl = (page: number) => {
     const p = new URLSearchParams();
-    if (params.belt) p.set('belt', params.belt);
-    if (params.status) p.set('status', params.status);
-    if (params.q) p.set('q', params.q);
+    // Preserve all params except page
+    for (const [key, val] of Object.entries(params)) {
+      if (val && key !== 'page') p.set(key, val);
+    }
     p.set('page', String(page));
     return `/students?${p.toString()}`;
   };
 
-  // Build filter URL preserving search but resetting page
+  // Build filter URL preserving search + advanced filters but resetting page
   const buildFilterUrl = (belt?: string) => {
     const p = new URLSearchParams();
     if (belt) p.set('belt', belt);
     if (params.q) p.set('q', params.q);
+    // Preserve advanced filters
+    for (const key of ADVANCED_KEYS) {
+      if (params[key]) p.set(key, params[key]!);
+    }
     return `/students${p.toString() ? '?' + p.toString() : ''}`;
   };
+
+  // Build active filters summary
+  const activeFilterSummary: string[] = [];
+  if (params.belt) {
+    activeFilterSummary.push(`Belt: ${BELT_DISPLAY[params.belt as BeltLevel]?.en || params.belt}`);
+  }
+  for (const key of ADVANCED_KEYS) {
+    const val = params[key];
+    if (val) {
+      const label = FILTER_LABELS[key] || key;
+      const display = DISPLAY_VALUES[key]?.[val] || val.charAt(0).toUpperCase() + val.slice(1);
+      activeFilterSummary.push(`${label}: ${display}`);
+    }
+  }
 
   return (
     <div>
@@ -75,6 +130,26 @@ export default async function StudentRosterPage({ searchParams }: Props) {
         belt={params.belt}
         status={params.status}
       />
+
+      {/* Advanced Filters */}
+      <Suspense fallback={null}>
+        <StudentFilters />
+      </Suspense>
+
+      {/* Stats bar */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 px-1">
+        <p className="text-xs text-[var(--tss-gray-500)]" style={{ fontFamily: 'var(--font-mono)' }}>
+          Showing {students.length} of {total} student{total !== 1 ? 's' : ''}
+        </p>
+        {activeFilterSummary.length > 0 && (
+          <>
+            <span className="text-[var(--tss-gray-300)]">|</span>
+            <p className="text-xs text-[var(--tss-gray-500)]" style={{ fontFamily: 'var(--font-mono)' }}>
+              {activeFilterSummary.join(' · ')}
+            </p>
+          </>
+        )}
+      </div>
 
       {/* Student list */}
       {students.length === 0 ? (

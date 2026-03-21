@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useEffect, useState, useCallback } from 'react';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
 
 export function StudentSearch({ defaultValue, belt, status }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -19,12 +20,17 @@ export function StudentSearch({ defaultValue, belt, status }: Props) {
   }, [defaultValue]);
 
   const navigate = useCallback((newValue: string) => {
-    const p = new URLSearchParams();
-    if (belt) p.set('belt', belt);
-    if (status) p.set('status', status);
-    if (newValue.trim()) p.set('q', newValue.trim());
+    // Preserve ALL existing params (including advanced filters)
+    const p = new URLSearchParams(searchParams.toString());
+    // Reset page on new search
+    p.delete('page');
+    if (newValue.trim()) {
+      p.set('q', newValue.trim());
+    } else {
+      p.delete('q');
+    }
     router.push(`/students${p.toString() ? '?' + p.toString() : ''}`);
-  }, [belt, status, router]);
+  }, [searchParams, router]);
 
   const handleChange = (newValue: string) => {
     setValue(newValue);
