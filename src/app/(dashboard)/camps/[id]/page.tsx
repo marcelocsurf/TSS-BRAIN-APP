@@ -1,6 +1,9 @@
-import { getCampDetail, getCampEvaluations } from '@/lib/actions/camps';
+import { getCampDetail, getCampEvaluations, getScheduledEvaluations } from '@/lib/actions/camps';
+import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
+import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
+import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -12,18 +15,28 @@ export default async function CampDetailPage({ params }: Props) {
   const { id } = await params;
   let camp;
   let evaluations: any[] = [];
+  let scheduledEvals: any[] = [];
   try {
     camp = await getCampDetail(id);
     evaluations = await getCampEvaluations(id);
+    try {
+      scheduledEvals = await getScheduledEvaluations(id);
+    } catch { /* table may not exist yet */ }
   } catch { notFound(); }
 
   const { instance, participants, sessions } = camp;
   if (!instance) notFound();
 
+  const coach = await getCurrentCoach();
   const headCoach = (instance as any).head_coach;
   const creatorCoach = (instance as any).coaches;
   const evaluatedCount = evaluations.length;
   const totalStudents = participants.length;
+  const totalDays = sessions.length;
+
+  // Check if all final evaluations are submitted for all students
+  const allFinalEvalsDone = totalStudents > 0 && evaluatedCount >= totalStudents;
+  const campNotCompleted = instance.status !== 'completed';
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -81,6 +94,44 @@ export default async function CampDetailPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Scheduled Evaluations */}
+      {coach && totalStudents > 0 && (
+        <ScheduledEvaluationsPanel
+          campInstanceId={id}
+          coachId={coach.id}
+          participants={participants.map((p: any) => ({
+            students: {
+              id: p.students?.id,
+              first_name: p.students?.first_name,
+              last_name: p.students?.last_name,
+            },
+          }))}
+          scheduledEvals={scheduledEvals}
+          totalDays={totalDays}
+        />
+      )}
+
+      {/* Camp Completion */}
+      {allFinalEvalsDone && campNotCompleted && (
+        <div className="bg-green-50 rounded-xl border border-green-200 p-4 space-y-3">
+          <div className="text-center">
+            <p className="text-sm font-medium text-green-700">
+              All {totalStudents} students have been evaluated.
+            </p>
+            <p className="text-xs text-green-600 mt-0.5">
+              Ready to mark this camp as completed.
+            </p>
+          </div>
+          <CampCompleteButton campId={id} />
+        </div>
+      )}
+
+      {instance.status === 'completed' && (
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-sm font-medium text-gray-600">This camp has been completed.</p>
+        </div>
+      )}
 
       {/* Participants with belt levels */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">

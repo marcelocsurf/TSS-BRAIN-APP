@@ -1,8 +1,9 @@
-import { getCampSession } from '@/lib/actions/camps';
+import { getCampSession, getStudentCustomizations } from '@/lib/actions/camps';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampDailyFeedbackForm } from '@/components/camp/CampDailyFeedbackForm';
+import { CampCustomizationPanel } from '@/components/camp/CampCustomizationPanel';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -24,6 +25,18 @@ export default async function CampDayPage({ params }: Props) {
   const dayInfo = session.camp_template_days;
   const evaluatedIds = new Set(existingResults.map((r: any) => r.student_id));
   const allEvaluated = participants.every((p: any) => evaluatedIds.has(p.students?.id));
+
+  // Fetch all student customizations for this day
+  let allCustomizations: any[] = [];
+  try {
+    const customPromises = participants.map(async (p: any) => {
+      if (!p.students?.id) return [];
+      const customs = await getStudentCustomizations(id, p.students.id);
+      return customs.filter((c: any) => c.day_number === parseInt(dayNum));
+    });
+    const results = await Promise.all(customPromises);
+    allCustomizations = results.flat();
+  } catch { /* ignore if table doesn't exist yet */ }
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -83,6 +96,24 @@ export default async function CampDayPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Coach Customization Per Student */}
+      {coach && blocks.length > 0 && (
+        <CampCustomizationPanel
+          campInstanceId={id}
+          dayNumber={parseInt(dayNum)}
+          blocks={blocks.map((b: any) => ({
+            id: b.id,
+            block_order: b.block_order,
+            pilar: b.pilar,
+            pilar_part: b.pilar_part,
+            mission: b.mission,
+            drill_name: b.drill_name,
+          }))}
+          participants={participants}
+          existingCustomizations={allCustomizations}
+        />
+      )}
 
       {/* Daily Feedback */}
       {coach && (

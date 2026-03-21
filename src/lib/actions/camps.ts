@@ -531,3 +531,507 @@ export async function getCampEvaluations(campId: string) {
   if (error) throw new Error(error.message);
   return data || [];
 }
+
+// ═══════════════════════════════════════
+// TEMPLATE MANAGEMENT (Admin only)
+// ═══════════════════════════════════════
+
+export interface TemplateBlockInput {
+  block_order: number;
+  pilar: string | null;
+  is_safety_layer?: boolean;
+  pilar_part: string | null;
+  mission: string | null;
+  drill_name: string | null;
+  mission_time: string | null;
+  repetitions_default: number | null;
+  warm_up: string | null;
+  simulation: string | null;
+  mental_hack: string | null;
+  evaluation_focus: string | null;
+  block_type: string;
+}
+
+export interface TemplateDayInput {
+  day_number: number;
+  venue_default: string | null;
+  ocean_condition_target: string | null;
+  day_goal: string | null;
+  day_notes: string | null;
+  evaluation_focus: string | null;
+  has_evaluation: boolean;
+  evaluation_type: string | null;
+  blocks: TemplateBlockInput[];
+}
+
+export interface CreateTemplateInput {
+  template_name: string;
+  level_name: string;
+  duration_days: number;
+  modality: string;
+  delivery_model: string;
+  description: string;
+  days: TemplateDayInput[];
+}
+
+export async function createCampTemplate(input: CreateTemplateInput) {
+  const supabase = await createClient();
+
+  // Create template
+  const { data: template, error: tplErr } = await supabase
+    .from('camp_templates')
+    .insert({
+      id: crypto.randomUUID(),
+      template_name: input.template_name,
+      level_name: input.level_name,
+      duration_days: input.duration_days,
+      modality: input.modality,
+      delivery_model: input.delivery_model,
+      description: input.description,
+      active_status: true,
+    })
+    .select()
+    .single();
+
+  if (tplErr) throw new Error(tplErr.message);
+
+  // Create days + blocks
+  for (const day of input.days) {
+    const { data: dayRow, error: dayErr } = await supabase
+      .from('camp_template_days')
+      .insert({
+        id: crypto.randomUUID(),
+        template_id: template.id,
+        day_number: day.day_number,
+        venue_default: day.venue_default,
+        ocean_condition_target: day.ocean_condition_target,
+        day_goal: day.day_goal,
+        day_notes: day.day_notes,
+        evaluation_focus: day.evaluation_focus,
+        has_evaluation: day.has_evaluation,
+        evaluation_type: day.evaluation_type,
+      })
+      .select()
+      .single();
+
+    if (dayErr) throw new Error(dayErr.message);
+
+    if (day.blocks.length > 0) {
+      const blockRows = day.blocks.map((b) => ({
+        id: crypto.randomUUID(),
+        template_day_id: dayRow.id,
+        block_order: b.block_order,
+        pilar: b.pilar,
+        is_safety_layer: b.is_safety_layer || false,
+        pilar_part: b.pilar_part,
+        mission: b.mission,
+        drill_name: b.drill_name,
+        mission_time: b.mission_time,
+        repetitions_default: b.repetitions_default,
+        warm_up: b.warm_up,
+        simulation: b.simulation,
+        mental_hack: b.mental_hack,
+        evaluation_focus: b.evaluation_focus,
+        block_type: b.block_type,
+      }));
+
+      const { error: blkErr } = await supabase
+        .from('camp_template_blocks')
+        .insert(blockRows);
+
+      if (blkErr) throw new Error(blkErr.message);
+    }
+  }
+
+  revalidatePath('/camps/templates');
+  return template;
+}
+
+export async function updateCampTemplate(templateId: string, input: CreateTemplateInput) {
+  const supabase = await createClient();
+
+  // Update template row
+  const { error: tplErr } = await supabase
+    .from('camp_templates')
+    .update({
+      template_name: input.template_name,
+      level_name: input.level_name,
+      duration_days: input.duration_days,
+      modality: input.modality,
+      delivery_model: input.delivery_model,
+      description: input.description,
+    })
+    .eq('id', templateId);
+
+  if (tplErr) throw new Error(tplErr.message);
+
+  // Delete existing days (cascade deletes blocks via DB)
+  const { data: existingDays } = await supabase
+    .from('camp_template_days')
+    .select('id')
+    .eq('template_id', templateId);
+
+  if (existingDays && existingDays.length > 0) {
+    const dayIds = existingDays.map((d) => d.id);
+    // Delete blocks first
+    await supabase
+      .from('camp_template_blocks')
+      .delete()
+      .in('template_day_id', dayIds);
+    // Then days
+    await supabase
+      .from('camp_template_days')
+      .delete()
+      .eq('template_id', templateId);
+  }
+
+  // Re-create days + blocks
+  for (const day of input.days) {
+    const { data: dayRow, error: dayErr } = await supabase
+      .from('camp_template_days')
+      .insert({
+        id: crypto.randomUUID(),
+        template_id: templateId,
+        day_number: day.day_number,
+        venue_default: day.venue_default,
+        ocean_condition_target: day.ocean_condition_target,
+        day_goal: day.day_goal,
+        day_notes: day.day_notes,
+        evaluation_focus: day.evaluation_focus,
+        has_evaluation: day.has_evaluation,
+        evaluation_type: day.evaluation_type,
+      })
+      .select()
+      .single();
+
+    if (dayErr) throw new Error(dayErr.message);
+
+    if (day.blocks.length > 0) {
+      const blockRows = day.blocks.map((b) => ({
+        id: crypto.randomUUID(),
+        template_day_id: dayRow.id,
+        block_order: b.block_order,
+        pilar: b.pilar,
+        is_safety_layer: b.is_safety_layer || false,
+        pilar_part: b.pilar_part,
+        mission: b.mission,
+        drill_name: b.drill_name,
+        mission_time: b.mission_time,
+        repetitions_default: b.repetitions_default,
+        warm_up: b.warm_up,
+        simulation: b.simulation,
+        mental_hack: b.mental_hack,
+        evaluation_focus: b.evaluation_focus,
+        block_type: b.block_type,
+      }));
+
+      const { error: blkErr } = await supabase
+        .from('camp_template_blocks')
+        .insert(blockRows);
+
+      if (blkErr) throw new Error(blkErr.message);
+    }
+  }
+
+  revalidatePath('/camps/templates');
+  return { success: true };
+}
+
+export async function deleteCampTemplate(templateId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('camp_templates')
+    .update({ active_status: false })
+    .eq('id', templateId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/camps/templates');
+  return { success: true };
+}
+
+export async function duplicateCampTemplate(templateId: string) {
+  const supabase = await createClient();
+
+  // Get existing template
+  const { data: original } = await supabase
+    .from('camp_templates')
+    .select('*')
+    .eq('id', templateId)
+    .single();
+
+  if (!original) throw new Error('Template not found');
+
+  // Get days + blocks
+  const detail = await getTemplateDetail(templateId);
+
+  const newInput: CreateTemplateInput = {
+    template_name: `${original.template_name} (Copy)`,
+    level_name: original.level_name,
+    duration_days: original.duration_days,
+    modality: original.modality,
+    delivery_model: original.delivery_model,
+    description: original.description || '',
+    days: detail.days.map((day: any) => {
+      const dayBlocks = detail.blocks.filter((b: any) => b.template_day_id === day.id);
+      return {
+        day_number: day.day_number,
+        venue_default: day.venue_default,
+        ocean_condition_target: day.ocean_condition_target,
+        day_goal: day.day_goal,
+        day_notes: day.day_notes,
+        evaluation_focus: day.evaluation_focus,
+        has_evaluation: day.has_evaluation || false,
+        evaluation_type: day.evaluation_type || null,
+        blocks: dayBlocks.map((b: any) => ({
+          block_order: b.block_order,
+          pilar: b.pilar,
+          is_safety_layer: b.is_safety_layer,
+          pilar_part: b.pilar_part,
+          mission: b.mission,
+          drill_name: b.drill_name,
+          mission_time: b.mission_time,
+          repetitions_default: b.repetitions_default,
+          warm_up: b.warm_up,
+          simulation: b.simulation,
+          mental_hack: b.mental_hack,
+          evaluation_focus: b.evaluation_focus,
+          block_type: b.block_type || 'mission',
+        })),
+      };
+    }),
+  };
+
+  return createCampTemplate(newInput);
+}
+
+// ═══════════════════════════════════════
+// STUDENT CUSTOMIZATIONS
+// ═══════════════════════════════════════
+
+export async function getStudentCustomizations(campInstanceId: string, studentId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_student_customizations')
+    .select('*')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('student_id', studentId)
+    .order('day_number')
+    .order('block_order');
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function saveStudentCustomization(
+  campInstanceId: string,
+  studentId: string,
+  dayNumber: number,
+  blockOrder: number,
+  customDrill: string | null,
+  customMission: string | null,
+  notes: string | null
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_student_customizations')
+    .upsert(
+      {
+        camp_instance_id: campInstanceId,
+        student_id: studentId,
+        day_number: dayNumber,
+        block_order: blockOrder,
+        custom_drill_name: customDrill,
+        custom_mission: customMission,
+        custom_notes: notes,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'camp_instance_id,student_id,day_number,block_order' }
+    )
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/camps');
+  return data;
+}
+
+export async function getCustomizedPlan(
+  campInstanceId: string,
+  studentId: string,
+  dayNumber: number
+) {
+  const supabase = await createClient();
+
+  // Get the camp instance to find template
+  const { data: instance } = await supabase
+    .from('camp_instances')
+    .select('template_id')
+    .eq('id', campInstanceId)
+    .single();
+
+  if (!instance) throw new Error('Camp instance not found');
+
+  // Get the template day
+  const { data: templateDay } = await supabase
+    .from('camp_template_days')
+    .select('id')
+    .eq('template_id', instance.template_id)
+    .eq('day_number', dayNumber)
+    .single();
+
+  if (!templateDay) throw new Error('Template day not found');
+
+  // Get blocks
+  const { data: blocks } = await supabase
+    .from('camp_template_blocks')
+    .select('*')
+    .eq('template_day_id', templateDay.id)
+    .order('block_order');
+
+  // Get customizations
+  const { data: customizations } = await supabase
+    .from('camp_student_customizations')
+    .select('*')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('student_id', studentId)
+    .eq('day_number', dayNumber);
+
+  // Merge: apply customizations as overrides
+  const customMap = new Map(
+    (customizations || []).map((c: any) => [c.block_order, c])
+  );
+
+  const mergedBlocks = (blocks || []).map((block: any) => {
+    const custom = customMap.get(block.block_order);
+    if (custom) {
+      return {
+        ...block,
+        drill_name: custom.custom_drill_name || block.drill_name,
+        mission: custom.custom_mission || block.mission,
+        _custom_notes: custom.custom_notes,
+        _is_customized: true,
+      };
+    }
+    return { ...block, _is_customized: false };
+  });
+
+  return mergedBlocks;
+}
+
+// ═══════════════════════════════════════
+// SCHEDULED EVALUATIONS
+// ═══════════════════════════════════════
+
+export async function scheduleEvaluation(
+  campInstanceId: string,
+  studentId: string,
+  dayNumber: number,
+  evaluationType: string
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_scheduled_evaluations')
+    .upsert(
+      {
+        camp_instance_id: campInstanceId,
+        student_id: studentId,
+        scheduled_day: dayNumber,
+        evaluation_type: evaluationType,
+      },
+      { onConflict: 'camp_instance_id,student_id,scheduled_day,evaluation_type' }
+    )
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/camps/${campInstanceId}`);
+  return data;
+}
+
+export async function getScheduledEvaluations(campInstanceId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_scheduled_evaluations')
+    .select('*, students(id, first_name, last_name, belt_level), coaches:completed_by(display_name)')
+    .eq('camp_instance_id', campInstanceId)
+    .order('scheduled_day')
+    .order('evaluation_type');
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function completeScheduledEvaluation(
+  evaluationId: string,
+  coachId: string,
+  notes: string
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('camp_scheduled_evaluations')
+    .update({
+      completed: true,
+      completed_at: new Date().toISOString(),
+      completed_by: coachId,
+      notes,
+    })
+    .eq('id', evaluationId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/camps');
+  return data;
+}
+
+export async function bulkScheduleEvaluations(
+  campInstanceId: string,
+  evaluations: { student_id: string; scheduled_day: number; evaluation_type: string }[]
+) {
+  const supabase = await createClient();
+
+  const rows = evaluations.map((e) => ({
+    camp_instance_id: campInstanceId,
+    student_id: e.student_id,
+    scheduled_day: e.scheduled_day,
+    evaluation_type: e.evaluation_type,
+  }));
+
+  const { error } = await supabase
+    .from('camp_scheduled_evaluations')
+    .upsert(rows, { onConflict: 'camp_instance_id,student_id,scheduled_day,evaluation_type' });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/camps/${campInstanceId}`);
+  return { success: true, count: rows.length };
+}
+
+// ═══════════════════════════════════════
+// CAMP COMPLETION
+// ═══════════════════════════════════════
+
+export async function completeCamp(campId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('camp_instances')
+    .update({ status: 'completed' })
+    .eq('id', campId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/camps/${campId}`);
+  revalidatePath('/camps');
+  return { success: true };
+}
