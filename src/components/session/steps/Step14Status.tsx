@@ -8,7 +8,7 @@ interface Props {
 }
 
 const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string; bg: string }[] = [
-  { value: 'not_achieved', label: 'Not Achieved', color: 'text-gray-600',  bg: 'bg-gray-50 border-gray-200' },
+  { value: 'not_yet',      label: 'Not Yet',       color: 'text-gray-600',  bg: 'bg-gray-50 border-gray-200' },
   { value: 'partial',      label: 'Partial',      color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
   { value: 'competent',    label: 'Competent',    color: 'text-blue-700',  bg: 'bg-blue-50 border-blue-200' },
   { value: 'mastered',     label: 'Mastered',     color: 'text-green-700', bg: 'bg-green-50 border-green-200' },

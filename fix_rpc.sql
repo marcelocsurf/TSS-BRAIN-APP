@@ -19,7 +19,7 @@ CREATE OR REPLACE FUNCTION save_cascade_session(
   p_pilar_id_snapshot text,
   p_mission_type text,
   p_mission text,
-  p_drill_id uuid,
+  p_drill_id text,
   p_warm_up text,
   p_simulation text,
   p_mental_hack text,

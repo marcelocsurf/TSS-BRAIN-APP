@@ -29,7 +29,7 @@ CREATE TYPE risk_state AS ENUM (
 );
 
 CREATE TYPE coach_role AS ENUM (
-  'ayudante', 'instructor', 'coach', 'head_coach', 'holistic_coach'
+  'admin', 'coordinator', 'coach', 'assistant'
 );
 
 CREATE TYPE camp_modality AS ENUM (
@@ -41,5 +41,5 @@ CREATE TYPE camp_status AS ENUM (
 );
 
 CREATE TYPE enrollment_status AS ENUM (
-  'active', 'paused', 'completed', 'cancelled'
+  'active', 'paused', 'completed', 'cancelled', 'removed'
 );

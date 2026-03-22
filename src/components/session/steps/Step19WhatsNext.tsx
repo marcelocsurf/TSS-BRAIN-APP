@@ -35,7 +35,7 @@ export function Step19WhatsNext({ formState, pilarParts, currentPilarPartId, sta
       suggestedPart = nextPart;
       suggestionBadge = 'Suggested';
     }
-  } else if ((status === 'partial' || status === 'not_achieved') && currentPart) {
+  } else if ((status === 'partial' || status === 'not_yet') && currentPart) {
     suggestedPart = currentPart;
     suggestionBadge = 'Continue';
   }

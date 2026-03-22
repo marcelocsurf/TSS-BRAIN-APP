@@ -18,12 +18,60 @@ export async function getStudentPortalData(token: string) {
 
   if (studentErr || !student) return null;
 
-  // 2. Get all session results with related data
-  const { data: sessions } = await admin
+  // 2. Get session results (standalone + cascade linked)
+  const { data: sessionResults } = await admin
     .from('student_session_results')
     .select('*, standalone_sessions(*), coaches:coach_id(display_name)')
     .eq('student_id', student.id)
     .order('created_at', { ascending: false });
+
+  // 2b. Get cascade sessions directly (may not have student_session_results row)
+  const { data: cascadeSessions } = await admin
+    .from('cascade_sessions')
+    .select('*, coaches:coach_id(display_name), pilar_parts:pilar_part_id(name)')
+    .eq('student_id', student.id)
+    .eq('completion_state', 'closed')
+    .order('session_date', { ascending: false });
+
+  // 2c. Merge: cascade sessions that DON'T have a matching student_session_results row
+  const resultCascadeIds = new Set(
+    (sessionResults || [])
+      .filter((r: any) => r.cascade_session_id)
+      .map((r: any) => r.cascade_session_id)
+  );
+
+  const unmatchedCascade = (cascadeSessions || [])
+    .filter((cs: any) => !resultCascadeIds.has(cs.id))
+    .map((cs: any) => ({
+      id: cs.id,
+      student_id: cs.student_id,
+      coach_id: cs.coach_id,
+      status: cs.status,
+      focus_rating: cs.focus_rating,
+      frustration_rating: cs.frustration_rating,
+      coach_feedback: [cs.coach_feedback_quick, cs.coach_feedback_text].filter(Boolean).join(' — '),
+      homework: [cs.homework_cues?.join(', '), cs.homework_text].filter(Boolean).join(' — '),
+      whats_next: cs.pilar_parts?.name || null,
+      achieved: cs.achieved,
+      student_visible_summary: null,
+      completion_state: 'closed',
+      created_at: cs.created_at || cs.session_date,
+      session_date: cs.session_date,
+      coaches: cs.coaches,
+      // Cascade-specific fields for display
+      mission: cs.mission,
+      training_venue: cs.training_venue,
+      ocean_conditions: cs.ocean_conditions,
+      pilar_id_snapshot: cs.pilar_id_snapshot,
+      total_duration: cs.total_duration,
+      warm_up: cs.warm_up,
+      mental_hack: cs.mental_hack,
+      drill_id: cs.drill_id,
+      _source: 'cascade' as const,
+    }));
+
+  const sessions = [...(sessionResults || []), ...unmatchedCascade]
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // 3. Get self-training sessions
   const { data: selfTrainingSessions } = await admin

@@ -222,7 +222,7 @@ export async function closeCampSessionResult(input: {
   // Get student portal token
   const { data: student } = await supabase
     .from('students')
-    .select('portal_token, email, first_name')
+    .select('portal_token, email, first_name, belt_level')
     .eq('id', input.student_id)
     .single();
 
@@ -288,7 +288,7 @@ export async function closeCampSessionResult(input: {
         coachFeedback: input.coach_feedback,
         homework: input.homework,
         whatsNext: input.whats_next,
-        beltLevel: 'white_belt', // will get actual from student
+        beltLevel: student?.belt_level || 'white_belt',
       });
       if (emailResult.success) {
         await supabase.from('student_session_results').update({
