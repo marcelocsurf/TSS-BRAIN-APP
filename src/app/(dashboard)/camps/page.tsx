@@ -1,7 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
 export default async function CampsPage() {
+  const currentCoach = await getCurrentCoach();
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+
   const supabase = await createClient();
 
   const { data: camps } = await supabase

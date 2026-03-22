@@ -29,17 +29,25 @@ export async function getCoachStats(coachId: string): Promise<CoachStats> {
     .select('id, student_id, duration_minutes, session_date')
     .eq('coach_id', coachId);
 
+  // Safe duration parser: handles NULL, strings, numbers
+  const parseDuration = (val: any): number => {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    const parsed = parseInt(String(val), 10);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   // Normalize both to a common shape for stats
   const cascadeNormalized = (cascadeSessions ?? []).map(s => ({
     id: s.id,
     student_id: s.student_id,
-    duration_minutes: s.total_duration ? parseInt(s.total_duration, 10) || 0 : 0,
+    duration_minutes: parseDuration(s.total_duration),
     session_date: s.session_date,
   }));
   const standaloneNormalized = (standaloneSessions ?? []).map(s => ({
     id: s.id,
     student_id: s.student_id,
-    duration_minutes: s.duration_minutes || 0,
+    duration_minutes: parseDuration(s.duration_minutes),
     session_date: s.session_date,
   }));
 

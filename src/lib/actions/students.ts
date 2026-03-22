@@ -329,27 +329,25 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
     query = query.eq('ocean_level', filters.ocean_level);
   }
 
-  // Age range filtering — uses date_of_birth to calculate age
+  // Age range filtering — uses date_of_birth to calculate exact age
   if (filters?.age_range) {
     const today = new Date();
-    let minAge: number | undefined;
-    let maxAge: number | undefined;
+    let minAge: number;
+    let maxAge: number;
     switch (filters.age_range) {
-      case 'junior':      minAge = 8;  maxAge = 14; break;
-      case 'teen':         minAge = 14; maxAge = 18; break;
-      case 'young_adult':  minAge = 18; maxAge = 30; break;
-      case 'adult':        minAge = 30; break;
+      case 'junior':      minAge = 8;  maxAge = 13; break;
+      case 'teen':         minAge = 14; maxAge = 17; break;
+      case 'young_adult':  minAge = 18; maxAge = 29; break;
+      case 'adult':        minAge = 30; maxAge = 120; break;
+      default:             minAge = 0;  maxAge = 120;
     }
-    if (maxAge !== undefined) {
-      // Born AFTER this date = younger than maxAge
-      const bornAfter = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
-      query = query.gte('date_of_birth', bornAfter.toISOString().slice(0, 10));
-    }
-    if (minAge !== undefined) {
-      // Born BEFORE this date = older than minAge
-      const bornBefore = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
-      query = query.lte('date_of_birth', bornBefore.toISOString().slice(0, 10));
-    }
+    // maxDob = born on or before this date means at least minAge years old
+    const maxDob = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+    // minDob = born on or after this date means at most maxAge years old
+    const minDob = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate());
+    query = query
+      .gte('date_of_birth', minDob.toISOString().split('T')[0])
+      .lte('date_of_birth', maxDob.toISOString().split('T')[0]);
   }
 
   query = query.range(from, to);

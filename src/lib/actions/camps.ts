@@ -578,11 +578,12 @@ export interface CreateTemplateInput {
 export async function createCampTemplate(input: CreateTemplateInput) {
   const supabase = await createClient();
 
-  // Create template
+  // Create template — use text-based ID consistent with seed templates (e.g. TPL-NOVICE-6D)
+  const templateId = `TPL-${Date.now()}`;
   const { data: template, error: tplErr } = await supabase
     .from('camp_templates')
     .insert({
-      id: crypto.randomUUID(),
+      id: templateId,
       template_name: input.template_name,
       level_name: input.level_name,
       duration_days: input.duration_days,

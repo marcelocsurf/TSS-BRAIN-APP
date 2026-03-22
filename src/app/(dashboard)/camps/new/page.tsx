@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { listCampTemplates, createCampInstance } from '@/lib/actions/camps';
 import { listStudents, type StudentRow } from '@/lib/actions/students';
 import { getCurrentCoach } from '@/lib/actions/sessions';
+import { getCurrentCoach as getAuthCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
 import { getCoachesForAssignment, type CoachForAssignment } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 
@@ -28,6 +29,14 @@ export default function NewCampPage() {
   });
 
   useEffect(() => {
+    // Role guard: only coordinators and above can create camps
+    getAuthCoach().then(async (authCoach) => {
+      if (!authCoach || !(await isCoordinatorOrAbove(authCoach.role))) {
+        router.replace('/');
+        return;
+      }
+    });
+
     Promise.all([
       listCampTemplates(),
       listStudents({ status: 'active' }),

@@ -1,4 +1,6 @@
 import { listCampTemplates, getTemplateDetail } from '@/lib/actions/camps';
+import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { redirect } from 'next/navigation';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { TemplateActions } from '@/components/camp/TemplateActions';
 import Link from 'next/link';
@@ -12,6 +14,9 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 export default async function CampTemplatesPage() {
+  const currentCoach = await getCurrentCoach();
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+
   const templates = await listCampTemplates();
 
   return (

@@ -285,6 +285,18 @@ export async function createCascadeSession(
     return { success: false, error: 'No student selected' };
   }
 
+  // Validate pilar_part_id exists if provided (non-blocking)
+  if (formState.pilar_part_id) {
+    const { data: pp } = await supabase
+      .from('pilar_parts')
+      .select('id')
+      .eq('id', formState.pilar_part_id)
+      .single();
+    if (!pp) {
+      console.warn('pilar_part_id not found, proceeding with provided value');
+    }
+  }
+
   // Determine effective coach: use assigned_coach_id if set (admin/coordinator assigned),
   // otherwise fall back to the logged-in coach
   const effectiveCoachId = formState.assigned_coach_id || coach.id;
@@ -416,7 +428,7 @@ export async function createCascadeSession(
       .single();
 
     if (resultError) {
-      console.error('student_session_results insert FAILED:', resultError.message, JSON.stringify(insertPayload));
+      console.error('student_session_results insert FAILED:', resultError.message);
     }
 
     // Send email notification (even if result row failed)

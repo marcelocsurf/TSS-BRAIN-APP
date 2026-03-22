@@ -44,10 +44,14 @@ export async function submitSurvey(input: SurveyInput) {
   if (surveyErr) throw new Error(surveyErr.message);
 
   // Update result completion state
-  await admin
+  const { error: updateErr } = await admin
     .from('student_session_results')
-    .update({ completion_state: 'survey_completed' })
+    .update({ completion_state: 'closed' })
     .eq('id', input.session_result_id);
+
+  if (updateErr) {
+    console.error('Failed to update completion_state:', updateErr.message);
+  }
 
   // Audit log
   await admin.from('audit_log').insert({
@@ -57,7 +61,7 @@ export async function submitSurvey(input: SurveyInput) {
     actor_name: input.student_id,
     event_type: 'survey_submitted',
     status_before: 'closed',
-    status_after: 'survey_completed',
+    status_after: 'closed',
     note: `Survey submitted. Coach rating: ${input.coach_rating}/5.`,
   });
 

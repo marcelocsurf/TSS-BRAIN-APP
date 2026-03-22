@@ -1,7 +1,12 @@
 import { TemplateBuilderForm } from '@/components/camp/TemplateBuilderForm';
+import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-export default function NewCampTemplatePage() {
+export default async function NewCampTemplatePage() {
+  const currentCoach = await getCurrentCoach();
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">

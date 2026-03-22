@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -18,6 +20,9 @@ const BELT_COLORS: Record<string, string> = {
 };
 
 export default async function CoachesPage() {
+  const currentCoach = await getCurrentCoach();
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+
   const supabase = await createClient();
 
   const { data: coaches } = await supabase
