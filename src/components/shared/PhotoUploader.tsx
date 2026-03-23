@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface PhotoUploaderProps {
@@ -16,6 +17,7 @@ export function PhotoUploader({
   currentPhotoUrl,
   onUploadComplete,
 }: PhotoUploaderProps) {
+  const router = useRouter();
   const [photoUrl, setPhotoUrl] = useState(currentPhotoUrl);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -65,6 +67,8 @@ export function PhotoUploader({
 
       setPhotoUrl(freshUrl);
       onUploadComplete?.(freshUrl);
+      // Refresh server components so ProfilePhoto picks up the new URL
+      router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed.';
       setError(message);
@@ -86,6 +90,7 @@ export function PhotoUploader({
 
       if (updateErr) throw updateErr;
       setPhotoUrl(null);
+      router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Remove failed.';
       setError(message);

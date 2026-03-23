@@ -171,14 +171,14 @@ export function Step01Student({
         )}
       </div>
 
-      {/* Waiver warning */}
+      {/* Waiver warning — soft, does not block session */}
       {waiverMissing && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-sm font-semibold text-red-700">
-            {'\u26A0\uFE0F'} This student has not signed the liability waiver.
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <p className="text-sm font-semibold text-amber-700">
+            {'\u26A0\uFE0F'} This student has not signed the waiver yet.
           </p>
-          <p className="text-xs text-red-600 mt-1">
-            A signed waiver is required before starting a session. Please register the waiver in the student profile before proceeding.
+          <p className="text-xs text-amber-600 mt-1">
+            You can continue, but ensure the waiver is signed before the next session.
           </p>
         </div>
       )}

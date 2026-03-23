@@ -524,8 +524,8 @@ export function SessionCascadeForm({
   function canAdvance(): boolean {
     switch (state.currentStep) {
       case 1:
-        // Block if student not selected OR waiver not signed
-        return !!state.student_id && !!state.student && !!state.student.waiver_signed;
+        // Block only if student not selected — waiver is a soft warning, not a blocker
+        return !!state.student_id && !!state.student;
       case 2: return !!state.training_venue;
       case 3: return !!state.ocean_conditions && state.oceanRiskState !== 'blocked';
       case 4: return !!state.session_type;

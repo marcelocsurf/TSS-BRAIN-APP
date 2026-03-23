@@ -164,22 +164,8 @@ export async function createStudent(input: CreateStudentInput) {
   if (!input.ocean_level) throw new Error('Ocean level is required');
   if (!input.surf_experience) throw new Error('Surf experience is required');
 
-  // ── Waiver validation ──
-  if (!input.waiver_signed) {
-    throw new Error('Liability waiver must be signed before registering a student');
-  }
-
-  // ── Get coach display name for waiver_signed_by ──
-  const { data: { user } } = await supabase.auth.getUser();
-  let coachDisplayName = 'Unknown Coach';
-  if (user) {
-    const { data: coach } = await supabase
-      .from('coaches')
-      .select('display_name')
-      .eq('auth_user_id', user.id)
-      .single();
-    if (coach?.display_name) coachDisplayName = coach.display_name;
-  }
+  // Waiver is NOT required at coach-side creation.
+  // The student signs the waiver via their intake link.
 
   // Use explicit ocean_level from form instead of belt-based default
   const oceanLevel = input.ocean_level || 'beginner';
@@ -242,10 +228,8 @@ export async function createStudent(input: CreateStudentInput) {
       how_did_you_hear: input.how_did_you_hear?.trim() || null,
       returning_student: input.returning_student || false,
 
-      // Waiver
-      waiver_signed: true,
-      waiver_signed_at: new Date().toISOString(),
-      waiver_signed_by: coachDisplayName,
+      // Waiver — defaults to false; student signs via intake link
+      waiver_signed: false,
     })
     .select()
     .single();

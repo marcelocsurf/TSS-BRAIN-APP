@@ -15,9 +15,6 @@ const SURF_EXPERIENCE_OPTIONS = [
   'Professional',
 ];
 
-const WAIVER_TEXT =
-  'I acknowledge that surf training involves inherent risks. I release The Surf Sequence\u00AE, its coaches, and affiliated academies from liability for injuries during training sessions, whether self-directed or coach-supervised. I confirm the medical information provided is accurate.';
-
 export default function AddStudentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -44,16 +41,11 @@ export default function AddStudentPage() {
     e.preventDefault();
     setError('');
 
-    if (!form.waiver_signed) {
-      setError('The liability waiver must be signed before registering a student.');
-      return;
-    }
-
     setLoading(true);
 
     try {
       const student = await createStudent(form);
-      router.push(`/students/${student.id}`);
+      router.push(`/students/${student.id}?created=true`);
     } catch (err: any) {
       setError(err.message || 'Failed to create student');
       setLoading(false);
@@ -176,27 +168,11 @@ export default function AddStudentPage() {
           />
         </Section>
 
-        {/* ── WAIVER ── */}
+        {/* ── WAIVER INFO ── */}
         <Section title="Liability Waiver">
-          <div className="bg-[var(--tss-gray-50)] rounded-xl p-3 text-xs text-[var(--tss-gray-700)] leading-relaxed">
-            {WAIVER_TEXT}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 leading-relaxed">
+            The student will sign the liability waiver themselves via their intake link. After creating this student, copy the intake link from their profile and send it to them.
           </div>
-          <label className="flex items-start gap-3 cursor-pointer mt-2">
-            <input
-              type="checkbox"
-              checked={!!form.waiver_signed}
-              onChange={(e) => set('waiver_signed', e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-[var(--tss-gray-300)] text-[var(--tss-navy)] focus:ring-[var(--tss-cyan)]"
-            />
-            <span className="text-sm text-[var(--tss-gray-700)] font-medium">
-              I have read and agree to the liability waiver above <span className="text-[var(--tss-danger)]">*</span>
-            </span>
-          </label>
-          {!form.waiver_signed && (
-            <p className="text-xs text-amber-600 mt-1">
-              The waiver must be accepted before the student can be registered.
-            </p>
-          )}
         </Section>
 
         {/* Error */}
@@ -213,7 +189,7 @@ export default function AddStudentPage() {
           </button>
           <button
             type="submit"
-            disabled={loading || !form.waiver_signed}
+            disabled={loading}
             className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
           >
             {loading ? 'Creating...' : 'Create Student'}

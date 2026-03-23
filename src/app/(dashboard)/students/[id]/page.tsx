@@ -18,10 +18,13 @@ import { notFound } from 'next/navigation';
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }
 
-export default async function StudentProfilePage({ params }: Props) {
+export default async function StudentProfilePage({ params, searchParams }: Props) {
   const { id } = await params;
+  const search = await searchParams;
+  const justCreated = search.created === 'true';
 
   let student;
   try {
@@ -125,6 +128,18 @@ export default async function StudentProfilePage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
 
+      {/* --- SUCCESS BANNER (shown after student creation) --- */}
+      {justCreated && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-1">
+          <p className="text-sm font-semibold text-green-700">
+            Student created successfully!
+          </p>
+          <p className="text-xs text-green-600">
+            Copy the intake link below and send it to the student to complete their profile and sign the waiver.
+          </p>
+        </div>
+      )}
+
       {/* --- 1. HEADER (always visible) --- */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">
         <div className="flex items-center gap-4">
@@ -181,7 +196,9 @@ export default async function StudentProfilePage({ params }: Props) {
           >
             Open Portal
           </Link>
-          <CopyIntakeLinkButton portalToken={student.portal_token} />
+          <span className={justCreated ? 'ring-2 ring-green-400 ring-offset-1 rounded-lg animate-pulse' : ''}>
+            <CopyIntakeLinkButton portalToken={student.portal_token} />
+          </span>
           {!student.email && (
             <span className="px-3 py-2 bg-red-50 text-red-500 text-xs rounded-lg flex items-center">
               No email
