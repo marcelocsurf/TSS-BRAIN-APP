@@ -432,6 +432,7 @@ export async function createCascadeSession(
     }
 
     // Send email notification (even if result row failed)
+    console.log('Email flow: student email =', student?.email, 'portal_token =', student?.portal_token);
     if (student?.email) {
       try {
         const { sendSessionEmail } = await import('@/lib/actions/email');
@@ -457,15 +458,19 @@ export async function createCascadeSession(
           beltLevel: student.belt_level,
         });
 
+        console.log('Email flow: sendSessionEmail result =', emailResult.success, emailResult.error || '');
         if (emailResult.success && resultRow) {
           await supabase.from('student_session_results').update({
             email_sent: true,
             email_sent_at: new Date().toISOString(),
           }).eq('id', resultRow.id);
+          console.log('Email flow: email_sent flag updated for result row', resultRow.id);
         }
       } catch (emailErr: any) {
         console.error('Cascade email failed (non-blocking):', emailErr.message);
       }
+    } else {
+      console.log('Email flow: skipped — student has no email address');
     }
   } catch (resultErr: any) {
     // Non-blocking: cascade session was saved, results row is supplementary

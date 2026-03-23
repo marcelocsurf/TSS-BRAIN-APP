@@ -11,10 +11,12 @@ import { PortalTabs } from './portal-tabs';
 
 interface Props {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function StudentPortalPage({ params }: Props) {
+export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
+  const { tab } = await searchParams;
 
   // Get comprehensive student data
   const portalData = await getStudentPortalData(token);
@@ -41,6 +43,7 @@ export default async function StudentPortalPage({ params }: Props) {
         materials,
         token,
       }}
+      initialTab={tab === 'feedback' ? 'feedback' : undefined}
     />
   );
 }

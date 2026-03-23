@@ -168,8 +168,8 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 
 // ─── Main Portal Tabs Component ───
 
-export function PortalTabs({ data }: { data: PortalData }) {
-  const [activeTab, setActiveTab] = useState<Tab>('home');
+export function PortalTabs({ data, initialTab }: { data: PortalData; initialTab?: Tab }) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
 
@@ -189,7 +189,7 @@ export function PortalTabs({ data }: { data: PortalData }) {
         {activeTab === 'sessions' && <SessionsTab data={data} />}
         {activeTab === 'materials' && <MaterialsTab data={data} belt={belt} />}
         {activeTab === 'self-training' && <SelfTrainingTab data={data} />}
-        {activeTab === 'feedback' && <FeedbackTab data={data} />}
+        {activeTab === 'feedback' && <FeedbackTab data={data} autoExpandFirst={initialTab === 'feedback'} />}
       </div>
 
       {/* Bottom Tab Bar */}
@@ -2153,9 +2153,11 @@ function ChecklistItem({ label, value }: { label: string; value: string }) {
 // TAB 5: FEEDBACK
 // ═══════════════════════════════════════
 
-function FeedbackTab({ data }: { data: PortalData }) {
+function FeedbackTab({ data, autoExpandFirst = false }: { data: PortalData; autoExpandFirst?: boolean }) {
   const { pendingSurveys, submittedSurveys, student, token } = data;
-  const [expandedSurveyId, setExpandedSurveyId] = useState<string | null>(null);
+  const [expandedSurveyId, setExpandedSurveyId] = useState<string | null>(
+    autoExpandFirst && pendingSurveys.length > 0 ? pendingSurveys[0].id : null
+  );
 
   return (
     <div className="space-y-5">

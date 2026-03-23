@@ -6,6 +6,8 @@ interface SurveyInput {
   session_result_id: string;
   student_id: string;
   coach_rating: number;
+  academy_rating: number;
+  session_quality: number;
   q1_clarity: number;
   q2_feedback: string;
   q3_homework_clarity: number;
@@ -34,6 +36,8 @@ export async function submitSurvey(input: SurveyInput) {
       session_result_id: input.session_result_id,
       student_id: input.student_id,
       coach_rating: input.coach_rating,
+      academy_rating: input.academy_rating,
+      session_quality: input.session_quality,
       q1_clarity: input.q1_clarity,
       q2_feedback: input.q2_feedback || null,
       q3_homework_clarity: input.q3_homework_clarity,
@@ -43,10 +47,10 @@ export async function submitSurvey(input: SurveyInput) {
 
   if (surveyErr) throw new Error(surveyErr.message);
 
-  // Update result completion state
+  // Update result completion state and lock the survey
   const { error: updateErr } = await admin
     .from('student_session_results')
-    .update({ completion_state: 'closed' })
+    .update({ completion_state: 'closed', survey_unlocked: false })
     .eq('id', input.session_result_id);
 
   if (updateErr) {

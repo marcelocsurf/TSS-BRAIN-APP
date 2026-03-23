@@ -27,10 +27,10 @@ export async function sendSessionEmail(data: SessionEmailData): Promise<{ succes
 
   try {
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'TSS Brain <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.studentEmail,
-      subject: `Session Report — ${data.mission.slice(0, 50)}`,
-      html: buildEmailHtml({ ...data, portalUrl, beltColor: belt?.color || '#1A1A2E' }),
+      subject: `Your session report from ${data.coachName}`,
+      html: buildEmailHtml({ ...data, portalUrl, feedbackUrl: `${portalUrl}?tab=feedback`, beltColor: belt?.color || '#1A1A2E' }),
     });
     return { success: true };
   } catch (err: any) {
@@ -39,7 +39,7 @@ export async function sendSessionEmail(data: SessionEmailData): Promise<{ succes
   }
 }
 
-function buildEmailHtml(data: SessionEmailData & { portalUrl: string; beltColor: string }): string {
+function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUrl: string; beltColor: string }): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -94,14 +94,19 @@ function buildEmailHtml(data: SessionEmailData & { portalUrl: string; beltColor:
         <p style="font-size:14px;color:#111827;font-weight:500;margin:0;">${data.whatsNext}</p>
       </div>
 
-      <!-- CTA -->
-      <a href="${data.portalUrl}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
-        View Full Report & Share Feedback
+      <!-- CTA: Rate Session -->
+      <a href="${data.feedbackUrl}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+        Rate Your Session &amp; Coach &#9733;
       </a>
 
       <p style="margin:16px 0 0;font-size:12px;color:#9CA3AF;text-align:center;">
         Your feedback helps us improve. Takes 30 seconds.
       </p>
+
+      <!-- Secondary CTA: Dashboard -->
+      <a href="${data.portalUrl}" style="display:block;text-align:center;padding:10px;font-size:13px;color:${BRAND.colors.navy};text-decoration:none;font-weight:500;margin-top:8px;">
+        View your full training dashboard &rarr;
+      </a>
     </div>
 
     <!-- Footer -->

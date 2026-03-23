@@ -16,13 +16,14 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
+    coach_rating: 0,
+    academy_rating: 0,
+    session_quality: 0,
     q1_clarity: 0,
     q2_feedback: 0,
     q3_homework_clarity: 0,
     q4_session_value: 0,
-    coach_rating: 0,
     open_comment: '',
-    q2_feedback_text: '',
     equipment_notes: '',
   });
 
@@ -31,11 +32,13 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
+      form.coach_rating === 0 ||
+      form.academy_rating === 0 ||
+      form.session_quality === 0 ||
       form.q1_clarity === 0 ||
       form.q2_feedback === 0 ||
       form.q3_homework_clarity === 0 ||
-      form.q4_session_value === 0 ||
-      form.coach_rating === 0
+      form.q4_session_value === 0
     ) {
       setError('Please answer all rating questions.');
       return;
@@ -47,11 +50,14 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
         session_result_id: resultId,
         student_id: studentId,
         coach_rating: form.coach_rating,
+        academy_rating: form.academy_rating,
+        session_quality: form.session_quality,
         q1_clarity: form.q1_clarity,
-        q2_feedback: form.q2_feedback_text || '',
+        q2_feedback: '',
         q3_homework_clarity: form.q3_homework_clarity,
         q4_session_value: form.q4_session_value,
         open_comment: [
+          form.open_comment,
           form.equipment_notes ? `Equipment/facilities: ${form.equipment_notes}` : '',
         ].filter(Boolean).join('\n') || '',
       });
@@ -82,64 +88,63 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
       <div className="p-4 space-y-5">
 
         <StarQuestion
-          label="1. Was today's goal clear?"
+          label="1. How was your coach?"
+          value={form.coach_rating}
+          onChange={v => set('coach_rating', v)}
+        />
+
+        <StarQuestion
+          label="2. How was the overall experience?"
+          value={form.academy_rating}
+          onChange={v => set('academy_rating', v)}
+        />
+
+        <StarQuestion
+          label="3. How useful was this session?"
+          value={form.session_quality}
+          onChange={v => set('session_quality', v)}
+        />
+
+        <StarQuestion
+          label="4. Was today's goal clear?"
           value={form.q1_clarity}
           onChange={v => set('q1_clarity', v)}
         />
 
         <StarQuestion
-          label="2. Did your coach help you understand what to improve?"
+          label="5. Did your coach help you understand what to improve?"
           value={form.q2_feedback}
           onChange={v => set('q2_feedback', v)}
         />
 
         <StarQuestion
-          label="3. Do you understand your next step?"
+          label="6. Do you understand your next step?"
           value={form.q3_homework_clarity}
           onChange={v => set('q3_homework_clarity', v)}
         />
 
         <StarQuestion
-          label="4. How valuable was this session for your progress?"
+          label="7. How valuable was this session for your progress?"
           value={form.q4_session_value}
           onChange={v => set('q4_session_value', v)}
         />
 
-        <StarQuestion
-          label="5. How was your overall experience today?"
-          value={form.coach_rating}
-          onChange={v => set('coach_rating', v)}
-        />
-
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            6. What helped you most today? <span className="text-gray-400 font-normal">(optional)</span>
-          </label>
-          <textarea
-            value={form.q2_feedback_text}
-            onChange={e => set('q2_feedback_text', e.target.value)}
-            rows={2}
-            placeholder="e.g. The drill on rotation really clicked..."
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            7. Anything your coach could explain better next time? <span className="text-gray-400 font-normal">(optional)</span>
+            8. Any comments or suggestions? <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <textarea
             value={form.open_comment}
             onChange={e => set('open_comment', e.target.value)}
             rows={2}
-            placeholder="e.g. I needed more time on the takeoff..."
+            placeholder="e.g. The drill on rotation really clicked, but I needed more time on the takeoff..."
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300"
           />
         </div>
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            8. Any issue with equipment, facilities, or logistics? <span className="text-gray-400 font-normal">(optional)</span>
+            9. Any issue with equipment, facilities, or logistics? <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <textarea
             value={form.equipment_notes}
