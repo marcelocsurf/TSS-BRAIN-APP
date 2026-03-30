@@ -38,12 +38,19 @@ export function Step01Student({
   const [selected, setSelected] = useState(formState.student_id ?? '');
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   function handleSelect(studentId: string) {
     setSelected(studentId);
+    setLoadError('');
     startTransition(async () => {
-      const student = await getStudentWithCascadeContext(studentId);
-      onStudentLoaded(student);
+      try {
+        const student = await getStudentWithCascadeContext(studentId);
+        onStudentLoaded(student);
+      } catch (err: any) {
+        console.error('Failed to load student context:', err);
+        setLoadError(err.message || 'Failed to load student data');
+      }
     });
   }
 
@@ -170,6 +177,14 @@ export function Step01Student({
           <p className="text-xs text-gray-400 text-center py-2">Showing 20 of {filteredStudents.length} — type more to narrow</p>
         )}
       </div>
+
+      {/* Error display */}
+      {loadError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-sm font-semibold text-red-700">Error loading student</p>
+          <p className="text-xs text-red-600 mt-1">{loadError}</p>
+        </div>
+      )}
 
       {/* Waiver warning — soft, does not block session */}
       {waiverMissing && (

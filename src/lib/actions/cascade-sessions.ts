@@ -68,23 +68,37 @@ export async function getStudentWithCascadeContext(
 ): Promise<StudentCascadeContext> {
   const supabase = await createClient();
 
+  // Use select('*') to avoid crashing on missing columns
   const { data, error } = await supabase
     .from('students')
-    .select(`
-      id, first_name, last_name, belt_level, ocean_level,
-      current_sequence_number, current_step_order,
-      allergies, injuries, medical_notes, risk_notes,
-      last_session_date, last_session_mission, last_session_pilar,
-      last_session_status, last_homework, next_recommended_focus,
-      waiver_signed
-    `)
+    .select('*')
     .eq('id', studentId)
     .single();
 
   if (error) throw new Error(error.message);
   if (!data) throw new Error('Student not found');
 
-  return data as StudentCascadeContext;
+  // Map with safe defaults for any missing columns
+  return {
+    id: data.id,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    belt_level: data.belt_level || 'white_belt',
+    ocean_level: data.ocean_level || 'beginner',
+    current_sequence_number: data.current_sequence_number || 1,
+    current_step_order: data.current_step_order || 1,
+    allergies: data.allergies || null,
+    injuries: data.injuries || null,
+    medical_notes: data.medical_notes || null,
+    risk_notes: data.risk_notes || null,
+    last_session_date: data.last_session_date || null,
+    last_session_mission: data.last_session_mission || null,
+    last_session_pilar: data.last_session_pilar || null,
+    last_session_status: data.last_session_status || null,
+    last_homework: data.last_homework || null,
+    next_recommended_focus: data.next_recommended_focus || null,
+    waiver_signed: data.waiver_signed || false,
+  } as StudentCascadeContext;
 }
 
 // ═══════════════════════════════════════
