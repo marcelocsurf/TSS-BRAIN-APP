@@ -25,7 +25,7 @@ export function validateMandatoryFields(data: SessionCloseData): ValidationResul
   if (!data.status) missing.push('status');
   if (!data.focus_rating || data.focus_rating < 1 || data.focus_rating > 5)
     missing.push('focus_rating');
-  if (!data.frustration_rating || data.frustration_rating < 1 || data.frustration_rating > 10)
+  if (data.frustration_rating === null || data.frustration_rating === undefined || data.frustration_rating < 0 || data.frustration_rating > 3)
     missing.push('frustration_rating');
   if (!data.coach_feedback || data.coach_feedback.trim().length < 10)
     missing.push('coach_feedback (min 10 characters)');

@@ -649,10 +649,16 @@ function SessionsTab({ data }: { data: PortalData }) {
                     {session.focus_rating && (
                       <DetailRow label="Focus" value={`${session.focus_rating}/5`} />
                     )}
-                    {session.frustration_rating && (
+                    {(session.frustration_rating !== null && session.frustration_rating !== undefined) && (
                       <DetailRow
                         label="Frustration"
-                        value={`${session.frustration_rating}/10`}
+                        value={
+                          session.frustration_rating === 0 ? '😎 No frustration' :
+                          session.frustration_rating === 1 ? '💪 Difficult but achievable' :
+                          session.frustration_rating === 2 ? '😤 Very difficult' :
+                          session.frustration_rating === 3 ? '🚫 Total frustration' :
+                          `${session.frustration_rating}/3`
+                        }
                       />
                     )}
                     {/* Homework */}

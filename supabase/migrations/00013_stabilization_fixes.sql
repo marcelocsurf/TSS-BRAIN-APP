@@ -75,3 +75,10 @@ UPDATE student_session_results ssr
 SET coach_id = ss.coach_id
 FROM standalone_sessions ss
 WHERE ssr.standalone_session_id = ss.id AND ssr.coach_id IS NULL;
+
+-- ═══════════════════════════════════════
+-- 6. FRUSTRATION_RATING: Update CHECK constraint to allow 0-3 range
+-- ═══════════════════════════════════════
+ALTER TABLE student_session_results DROP CONSTRAINT IF EXISTS student_session_results_frustration_rating_check;
+ALTER TABLE student_session_results ADD CONSTRAINT student_session_results_frustration_rating_check
+  CHECK (frustration_rating BETWEEN 0 AND 10);
