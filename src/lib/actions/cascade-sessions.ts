@@ -283,13 +283,13 @@ export async function createCascadeSession(
 ): Promise<{ success: boolean; sessionId?: string; error?: string }> {
   const supabase = await createClient();
 
-  // Get coach ID
+  // Get coach ID and display name
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
   const { data: coach } = await supabase
     .from('coaches')
-    .select('id')
+    .select('id, display_name')
     .eq('auth_user_id', user.id)
     .single();
 
@@ -380,7 +380,7 @@ export async function createCascadeSession(
       .from('cascade_sessions')
       .update({
         assigned_by: assignedById,
-        assigned_by_name: assignedByName || formState.assigned_coach_name || coach.id,
+        assigned_by_name: assignedByName || formState.assigned_coach_name || coach.display_name,
       })
       .eq('id', sessionId);
   } catch (assignErr: any) {

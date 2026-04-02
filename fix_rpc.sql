@@ -96,7 +96,7 @@ BEGIN
 
   -- Update student continuity fields
   UPDATE students SET
-    last_session_date = p_session_date,
+    last_session_date = p_session_date::timestamptz,
     last_session_mission = p_mission,
     last_session_pilar = p_pilar_id_snapshot,
     last_session_status = p_status,

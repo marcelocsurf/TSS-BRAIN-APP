@@ -53,7 +53,7 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
         academy_rating: form.academy_rating,
         session_quality: form.session_quality,
         q1_clarity: form.q1_clarity,
-        q2_feedback: '',
+        q2_feedback: form.q2_feedback,
         q3_homework_clarity: form.q3_homework_clarity,
         q4_session_value: form.q4_session_value,
         open_comment: [

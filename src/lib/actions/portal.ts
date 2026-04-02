@@ -28,7 +28,7 @@ export async function getStudentPortalData(token: string) {
   // 2b. Get cascade sessions directly (may not have student_session_results row)
   const { data: cascadeSessions } = await admin
     .from('cascade_sessions')
-    .select('*, coaches:coach_id(display_name), pilar_parts:pilar_part_id(name)')
+    .select('*, coaches:coach_id(display_name)')
     .eq('student_id', student.id)
     .eq('completion_state', 'closed')
     .order('session_date', { ascending: false });
@@ -51,7 +51,7 @@ export async function getStudentPortalData(token: string) {
       frustration_rating: cs.frustration_rating,
       coach_feedback: [cs.coach_feedback_quick, cs.coach_feedback_text].filter(Boolean).join(' — ') || null,
       homework: [cs.homework_cues?.join(', '), cs.homework_text].filter(Boolean).join(' — ') || null,
-      whats_next: cs.pilar_parts?.name || null,
+      whats_next: cs.pilar_id_snapshot || null,
       achieved: cs.achieved,
       student_visible_summary: null,
       completion_state: 'closed',
@@ -97,7 +97,9 @@ export async function getStudentPortalData(token: string) {
 
   // Training hours: sum durations from both sources
   const coachHours = coachSessions.reduce((sum: number, s: any) => {
-    const dur = s.standalone_sessions?.duration_minutes || s.duration_minutes || 0;
+    const dur = s.standalone_sessions?.duration_minutes
+      || s.duration_minutes
+      || (s.total_duration ? parseInt(s.total_duration, 10) || 0 : 0);
     return sum + dur;
   }, 0);
   const selfHours = selfSessions

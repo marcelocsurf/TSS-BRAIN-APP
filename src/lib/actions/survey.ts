@@ -9,7 +9,7 @@ interface SurveyInput {
   academy_rating: number;
   session_quality: number;
   q1_clarity: number;
-  q2_feedback: string;
+  q2_feedback: number;
   q3_homework_clarity: number;
   q4_session_value: number;
   open_comment: string;
