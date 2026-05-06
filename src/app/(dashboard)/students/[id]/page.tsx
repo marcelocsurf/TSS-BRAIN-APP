@@ -13,6 +13,7 @@ import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton'
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
+import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -258,6 +259,14 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           coachId={coach?.id || ''}
           currentLevel={student.ocean_level}
           history={oceanHistory}
+        />
+      </CollapsibleSection>
+
+      {/* --- 3d. COURSE PROGRESS (collapsible) --- */}
+      <CollapsibleSection title="🎓 White Belt Course Progress" defaultOpen={false}>
+        <CourseProgressPanel
+          studentId={id}
+          hasAccess={(student as any).course_access_white === true}
         />
       </CollapsibleSection>
 

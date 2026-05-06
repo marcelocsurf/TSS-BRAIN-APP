@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: '/sessions/drafts', label: 'Drafts', icon: '\u270E', roles: ['admin', 'coordinator', 'coach'] },
   { href: '/camps', label: 'Camps', icon: '\u26FA', roles: ['admin', 'coordinator'] },
   { href: '/coaches', label: 'Coaches', icon: '\u2605', roles: ['admin', 'coordinator'] },
+  { href: '/course-codes', label: 'Course Codes', icon: '\u26bf', roles: ['admin', 'coordinator'] },
   { href: '/audit', label: 'Audit', icon: '\u2713', roles: ['admin'] },
 ];
 
