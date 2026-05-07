@@ -14,6 +14,7 @@ import {
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
 import { CourseTab } from '@/components/course/CourseTab';
+import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
@@ -166,14 +167,14 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
   return SELF_TRAINING_WARMUPS[beltLevel] || SELF_TRAINING_WARMUPS['white_belt'];
 }
 
-type Tab = 'home' | 'course' | 'sessions' | 'materials' | 'self-training' | 'feedback';
+type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'self-training' | 'feedback';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'course', label: 'Course', icon: '🎓' },
-  { key: 'sessions', label: 'Sessions', icon: '📋' },
-  { key: 'materials', label: 'Materials', icon: '📚' },
+  { key: 'sequence', label: 'Sequence', icon: '🎯' },
   { key: 'self-training', label: 'Train', icon: '🏄' },
+  { key: 'sessions', label: 'Sessions', icon: '📋' },
   { key: 'feedback', label: 'Feedback', icon: '💬' },
 ];
 
@@ -198,8 +199,10 @@ export function PortalTabs({ data, initialTab }: { data: PortalData; initialTab?
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && <HomeTab data={data} belt={belt} />}
         {activeTab === 'course' && data.courseData && <CourseTab data={data.courseData} />}
+        {activeTab === 'sequence' && (
+          <MySequenceTab studentId={student.id} belt={student.belt_level || 'white'} />
+        )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
-        {activeTab === 'materials' && <MaterialsTab data={data} belt={belt} />}
         {activeTab === 'self-training' && <SelfTrainingTab data={data} />}
         {activeTab === 'feedback' && <FeedbackTab data={data} autoExpandFirst={initialTab === 'feedback'} />}
       </div>
