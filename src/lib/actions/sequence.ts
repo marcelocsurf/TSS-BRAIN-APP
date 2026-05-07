@@ -59,19 +59,24 @@ export type SequenceData = {
 export async function getMySequence(studentId: string, belt: string = 'white'): Promise<SequenceData> {
   const admin = createAdminClient();
 
-  // 1. Get all White Belt drills/missions
+  // Normalize belt: students.belt_level uses 'white_belt'/'yellow_belt'/etc,
+  // but drills_missions.belt uses 'white'/'yellow'/etc.
+  const beltKey = belt.replace(/_belt$/, '');
+  const courseSection = beltKey === 'white' ? 'white_belt' : `${beltKey}_belt`;
+
+  // 1. Get all drills/missions for this belt
   const { data: drills } = await admin
     .from('drills_missions')
     .select('*')
-    .eq('belt', belt)
+    .eq('belt', beltKey)
     .eq('active', true)
     .order('display_order', { ascending: true });
 
-  // 2. Get all White Belt STP lessons (for titles + pillars)
+  // 2. Get all STP lessons (for titles + pillars)
   const { data: lessons } = await admin
     .from('lessons')
     .select('id, title, pillar, display_order')
-    .eq('course_section', 'white_belt')
+    .eq('course_section', courseSection)
     .eq('active', true);
 
   // 3. Get student ratings

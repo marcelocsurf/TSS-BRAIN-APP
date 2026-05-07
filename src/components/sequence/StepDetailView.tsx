@@ -19,7 +19,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange }: Pr
 
   useEffect(() => {
     let mounted = true;
-    getStepDetail(stepId, studentId).then((res) => {
+    getStepDetail(studentId, stepId).then((res) => {
       if (mounted) {
         setData(res);
         setLoading(false);
@@ -32,7 +32,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange }: Pr
     setSavingRating(true);
     await updateStepRating(studentId, stepId, rating);
     // Re-fetch
-    const fresh = await getStepDetail(stepId, studentId);
+    const fresh = await getStepDetail(studentId, stepId);
     setData(fresh);
     setSavingRating(false);
     onRatingChange?.();
