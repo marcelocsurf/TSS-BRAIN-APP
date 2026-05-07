@@ -10,6 +10,10 @@ import {
 import { getCourseCatalog } from '@/lib/actions/course';
 import { PortalTabs } from './portal-tabs';
 
+// Always fetch fresh data — no caching of student portal
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ token: string }>;
   searchParams: Promise<{ tab?: string }>;
