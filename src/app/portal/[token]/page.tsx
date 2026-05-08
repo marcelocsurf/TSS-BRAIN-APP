@@ -39,6 +39,14 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     getCourseCatalog(student.id),
   ]);
 
+  // Course owners (TSS founders) bypass the access gate so they can review
+  // content without needing a paid course code. Keep in sync with
+  // COURSE_OWNER_IDS in src/lib/actions/course.ts.
+  const COURSE_OWNER_IDS = new Set<string>([
+    '3518cc9c-d633-44ff-b32a-bfb86b5ae748', // Marcelo Castellanos
+  ]);
+  const isOwner = COURSE_OWNER_IDS.has(student.id);
+
   // Build course data
   const courseData = {
     lessons: courseCatalog.lessons,
@@ -47,7 +55,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     totalLessons: courseCatalog.totalLessons,
     studentId: student.id,
     studentName: student.first_name || student.display_name || 'student',
-    hasAccess: student.course_access_white === true,
+    hasAccess: isOwner || student.course_access_white === true,
   };
 
   // Validate initialTab against allowed tab values

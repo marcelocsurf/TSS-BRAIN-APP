@@ -54,10 +54,18 @@ export type LessonProgress = {
   completed_at: string | null;
 };
 
+// Course owners — bypass gate logic so they can review all content freely
+// without having to "complete" each lesson. Add student IDs here as needed.
+const COURSE_OWNER_IDS = new Set<string>([
+  '3518cc9c-d633-44ff-b32a-bfb86b5ae748', // Marcelo Castellanos (TSS founder)
+]);
+
 // ─── Get all lessons for a section ───
 
 export async function getCourseCatalog(studentId: string) {
   const admin = createAdminClient();
+
+  const isOwner = COURSE_OWNER_IDS.has(studentId);
 
   // Get all lessons
   const { data: lessons } = await admin
@@ -85,8 +93,11 @@ export async function getCourseCatalog(studentId: string) {
        l.course_section === 'wb_onboarding') &&
       l.status_v1 !== 'PROPOSED'
   );
-  const preCourseCompleted = moduleZeroAndOneLessons.length > 0 &&
-    moduleZeroAndOneLessons.every((l: any) => progressMap.get(l.id)?.completed);
+  // Owners always see preCourseCompleted = true so the entire WB unlocks.
+  const preCourseCompleted = isOwner || (
+    moduleZeroAndOneLessons.length > 0 &&
+    moduleZeroAndOneLessons.every((l: any) => progressMap.get(l.id)?.completed)
+  );
 
   // Build response with lock state
   const enriched = (lessons || []).map((lesson: any, idx: number) => {
@@ -96,14 +107,14 @@ export async function getCourseCatalog(studentId: string) {
     let locked = false;
     let lockReason: string | null = null;
 
-    // White belt is locked until pre-course is complete
-    if (lesson.course_section === 'white_belt' && !preCourseCompleted) {
+    // White belt is locked until pre-course is complete (skipped for owners)
+    if (lesson.course_section === 'white_belt' && !preCourseCompleted && !isOwner) {
       locked = true;
       lockReason = 'Complete the Pre-Course first to unlock White Belt lessons';
     }
 
-    // Check prerequisites
-    if (lesson.prerequisites && lesson.prerequisites.length > 0) {
+    // Check prerequisites (skipped for owners)
+    if (lesson.prerequisites && lesson.prerequisites.length > 0 && !isOwner) {
       const prereqsMet = lesson.prerequisites.every((prereqId: string) =>
         progressMap.get(prereqId)?.completed
       );
