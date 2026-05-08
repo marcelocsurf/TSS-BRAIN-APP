@@ -68,6 +68,59 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
 
   const { lesson, quizzes, progress } = data;
 
+  // PROPOSED items have no canonical content yet — show v1.5 placeholder
+  if (lesson.status_v1 === 'PROPOSED') {
+    return (
+      <div className="space-y-4 pb-8">
+        <button
+          onClick={onBack}
+          className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+        >
+          ← Back to course
+        </button>
+
+        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-6">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-3xl">⏳</span>
+            <div className="flex-1">
+              <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">
+                {lesson.id} · Section {lesson.pc_section_id || '—'}
+                {lesson.is_test && ' · Gate Test'}
+              </div>
+              <h1 className="text-xl font-bold text-amber-900">{lesson.title}</h1>
+              {lesson.pc_section_name && (
+                <p className="text-sm text-amber-700 mt-1">{lesson.pc_section_name}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white/60 rounded-lg p-4 mt-4">
+            <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-2">
+              📝 Status
+            </div>
+            <p className="text-sm text-amber-900 font-semibold mb-2">
+              Coming in v1.5
+            </p>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Marcelo will release the full canonical content
+              {lesson.is_test
+                ? ' — including test specifications, evaluation rubric, accepted formats, and retake policy —'
+                : ' — including description, key concepts, coach cue, common errors, drill, and success indicators —'}
+              {' '}as part of the next update. The TSS canon prioritizes precision over speed: pedagogical content is only published once it is doctrinally complete.
+            </p>
+          </div>
+
+          <button
+            onClick={onBack}
+            className="mt-4 w-full py-3 rounded-lg bg-amber-200 hover:bg-amber-300 transition-colors text-sm font-bold text-amber-900"
+          >
+            ← Back to {lesson.pc_section_name || 'course'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Build available sections based on lesson content
   const availableSections: { key: Section; label: string; icon: string }[] = [];
 

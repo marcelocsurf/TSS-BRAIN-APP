@@ -21,6 +21,16 @@ export type LessonRow = {
   prerequisites: string[];
   lesson_type: 'reading' | 'form' | 'test';
   display_order: number;
+  // Phase 1 canon structure (00018):
+  pc_section_id: string | null;
+  pc_section_name: string | null;
+  pc_section_order: number | null;
+  status_v1: 'PRODUCTIZED' | 'PROPOSED' | null;
+  is_test: boolean;
+  wb_chapter_id: string | null;
+  wb_chapter_name: string | null;
+  wb_chapter_order: number | null;
+  chapter_step_order: number | null;
 };
 
 export type QuizQuestion = {
@@ -64,10 +74,13 @@ export async function getCourseCatalog(studentId: string) {
   const progressMap = new Map<string, LessonProgress>();
   (progress || []).forEach((p: any) => progressMap.set(p.lesson_id, p));
 
-  // Determine if pre-course is complete
+  // Determine if pre-course is complete (only PRODUCTIZED items count;
+  // PROPOSED items are placeholders awaiting v1.5 canon and cannot be completed)
   const preCourseLessons = (lessons || []).filter(
-    (l: any) => l.course_section === 'pre_course_fundamentals' ||
-                l.course_section === 'pre_course_values'
+    (l: any) =>
+      (l.course_section === 'pre_course_fundamentals' ||
+       l.course_section === 'pre_course_values') &&
+      l.status_v1 !== 'PROPOSED'
   );
   const preCourseCompleted = preCourseLessons.length > 0 &&
     preCourseLessons.every((l: any) => progressMap.get(l.id)?.completed);
@@ -95,6 +108,12 @@ export async function getCourseCatalog(studentId: string) {
         locked = true;
         lockReason = `Complete previous lessons first`;
       }
+    }
+
+    // PROPOSED items (Coming in v1.5) are not "locked" but cannot be opened
+    // for completion. They have no canonical content yet.
+    if (lesson.status_v1 === 'PROPOSED') {
+      locked = false; // override: not locked, just not completable
     }
 
     return {

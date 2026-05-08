@@ -18,6 +18,16 @@ interface LessonRow {
   locked: boolean;
   lockReason: string | null;
   completed: boolean;
+  // Phase 1 canon structure
+  pc_section_id: string | null;
+  pc_section_name: string | null;
+  pc_section_order: number | null;
+  status_v1: 'PRODUCTIZED' | 'PROPOSED' | null;
+  is_test: boolean;
+  wb_chapter_id: string | null;
+  wb_chapter_name: string | null;
+  wb_chapter_order: number | null;
+  chapter_step_order: number | null;
 }
 
 interface CourseData {
@@ -30,21 +40,39 @@ interface CourseData {
   hasAccess: boolean;
 }
 
-const SECTION_LABELS: Record<string, { title: string; emoji: string; description: string }> = {
-  pre_course_fundamentals: {
-    title: 'Pre-Course · Fundamentals',
-    emoji: '📖',
-    description: 'Doctrinal foundations every student must know before entering the water',
+// Pre-Course section emoji map (per spec Section C)
+const PC_SECTION_EMOJI: Record<string, string> = {
+  '0.1': '📜', // TSS Doctrine
+  '0.2': '🧠', // Mindset and Learning
+  '0.3': '🌊', // D1 Ocean
+  '0.4': '🤝', // D2 Etiquette
+  '0.5': '🛟', // D3 Equipment
+  '0.6': '💪', // D4 Physical
+  '0.7': '👀', // Entry Block preview
+  '0.8': '🚪', // Readiness Gate
+};
+
+// White Belt chapter promises (per spec Section D)
+const WB_CHAPTER_META: Record<string, { emoji: string; promise: string }> = {
+  'WB-CH-1': {
+    emoji: '🌅',
+    promise: 'You learn to read the spot and prepare your body before touching the board.',
   },
-  pre_course_values: {
-    title: 'Pre-Course · TSS Values',
-    emoji: '✨',
-    description: 'The seven values that guide every belt of your TSS journey',
+  'WB-CH-2': {
+    emoji: '🏖',
+    promise: 'You take the board to the water, control its movement, and return safely.',
   },
-  white_belt: {
-    title: 'White Belt · 24 Steps',
-    emoji: '🤍',
-    description: 'The foundation belt — board control, safety, and your first waves',
+  'WB-CH-3': {
+    emoji: '🌊',
+    promise: 'You find your sweet spot, paddle, catch foam, and maneuver in prone position.',
+  },
+  'WB-CH-4': {
+    emoji: '🚀',
+    promise: 'You stand on the board. The moment that turns you into a surfer.',
+  },
+  'WB-CH-5': {
+    emoji: '🏄',
+    promise: 'Already standing, you generate speed, control posture, and execute your first turns.',
   },
 };
 
@@ -78,16 +106,26 @@ export function CourseTab({ data }: { data: CourseData }) {
     );
   }
 
-  // Group lessons by section (preserving display order)
-  const grouped: Record<string, LessonRow[]> = {};
-  for (const l of data.lessons) {
-    if (!grouped[l.course_section]) grouped[l.course_section] = [];
-    grouped[l.course_section].push(l);
-  }
+  // Split lessons into Pre-Course and White Belt
+  const preCourseLessons = data.lessons.filter(
+    (l) =>
+      l.course_section === 'pre_course_fundamentals' ||
+      l.course_section === 'pre_course_values'
+  );
+  const whiteBeltLessons = data.lessons.filter(
+    (l) => l.course_section === 'white_belt'
+  );
 
-  const overallPercent = data.totalLessons > 0
-    ? Math.round((data.totalCompleted / data.totalLessons) * 100)
-    : 0;
+  // Group Pre-Course by pc_section_id (8 sections)
+  const pcSections = groupByPcSection(preCourseLessons);
+
+  // Group White Belt by wb_chapter_id (5 chapters)
+  const wbChapters = groupByWbChapter(whiteBeltLessons);
+
+  const overallPercent =
+    data.totalLessons > 0
+      ? Math.round((data.totalCompleted / data.totalLessons) * 100)
+      : 0;
 
   return (
     <div className="space-y-5">
@@ -113,15 +151,66 @@ export function CourseTab({ data }: { data: CourseData }) {
         </p>
       </div>
 
-      {/* Sections */}
-      {Object.entries(grouped).map(([section, lessons]) => (
-        <SectionBlock
-          key={section}
-          section={section}
-          lessons={lessons}
-          onOpenLesson={(id) => setOpenLessonId(id)}
-        />
-      ))}
+      {/* PRE-COURSE — 8 sections */}
+      {pcSections.length > 0 && (
+        <div className="space-y-3">
+          <div className="px-2">
+            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
+              📖 Pre-Course
+              <span className="text-[11px] font-normal text-gray-500">
+                · 8 sections · {preCourseLessons.length} units
+              </span>
+            </h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Doctrinal foundations every student must know before entering the water
+            </p>
+          </div>
+
+          {pcSections.map((section) => (
+            <SectionBlock
+              key={section.id}
+              title={section.name}
+              subtitle={null}
+              emoji={PC_SECTION_EMOJI[section.id] || '📘'}
+              badge={`Section ${section.id}`}
+              lessons={section.lessons}
+              onOpenLesson={(id) => setOpenLessonId(id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* WHITE BELT — 5 chapters */}
+      {wbChapters.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <div className="px-2">
+            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
+              🤍 White Belt
+              <span className="text-[11px] font-normal text-gray-500">
+                · 5 chapters · {whiteBeltLessons.length} steps
+              </span>
+            </h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              The foundation belt — board control, safety, and your first waves
+            </p>
+          </div>
+
+          {wbChapters.map((chapter) => {
+            const meta = WB_CHAPTER_META[chapter.id] || { emoji: '📘', promise: '' };
+            return (
+              <SectionBlock
+                key={chapter.id}
+                title={`Chapter ${chapter.order}: ${chapter.name}`}
+                subtitle={meta.promise}
+                emoji={meta.emoji}
+                badge={null}
+                lessons={chapter.lessons}
+                onOpenLesson={(id) => setOpenLessonId(id)}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Footer */}
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (
@@ -137,33 +226,114 @@ export function CourseTab({ data }: { data: CourseData }) {
   );
 }
 
+// ─── Helpers ───
+
+function groupByPcSection(lessons: LessonRow[]) {
+  const map = new Map<
+    string,
+    { id: string; name: string; order: number; lessons: LessonRow[] }
+  >();
+  for (const l of lessons) {
+    const id = l.pc_section_id || 'unknown';
+    if (!map.has(id)) {
+      map.set(id, {
+        id,
+        name: l.pc_section_name || id,
+        order: l.pc_section_order || 99,
+        lessons: [],
+      });
+    }
+    map.get(id)!.lessons.push(l);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => a.order - b.order)
+    .map((s) => ({
+      ...s,
+      lessons: s.lessons.sort(
+        (a, b) => (a.display_order || 0) - (b.display_order || 0)
+      ),
+    }));
+}
+
+function groupByWbChapter(lessons: LessonRow[]) {
+  const map = new Map<
+    string,
+    { id: string; name: string; order: number; lessons: LessonRow[] }
+  >();
+  for (const l of lessons) {
+    const id = l.wb_chapter_id || 'unassigned';
+    if (!map.has(id)) {
+      map.set(id, {
+        id,
+        name: l.wb_chapter_name || id,
+        order: l.wb_chapter_order || 99,
+        lessons: [],
+      });
+    }
+    map.get(id)!.lessons.push(l);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => a.order - b.order)
+    .map((c) => ({
+      ...c,
+      lessons: c.lessons.sort(
+        (a, b) =>
+          (a.chapter_step_order || a.display_order || 0) -
+          (b.chapter_step_order || b.display_order || 0)
+      ),
+    }));
+}
+
+// ─── Section/Chapter Block ───
+
 function SectionBlock({
-  section,
+  title,
+  subtitle,
+  emoji,
+  badge,
   lessons,
   onOpenLesson,
 }: {
-  section: string;
+  title: string;
+  subtitle: string | null;
+  emoji: string;
+  badge: string | null;
   lessons: LessonRow[];
   onOpenLesson: (id: string) => void;
 }) {
-  const meta = SECTION_LABELS[section] || { title: section, emoji: '📘', description: '' };
-  const completed = lessons.filter((l) => l.completed).length;
-  const sectionPercent = lessons.length > 0 ? Math.round((completed / lessons.length) * 100) : 0;
+  // Only count PRODUCTIZED items toward progress (PROPOSED can't be completed)
+  const productized = lessons.filter((l) => l.status_v1 !== 'PROPOSED');
+  const completed = productized.filter((l) => l.completed).length;
+  const sectionPercent =
+    productized.length > 0 ? Math.round((completed / productized.length) * 100) : 0;
+  const proposedCount = lessons.length - productized.length;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <h3 className="font-bold text-sm flex items-center gap-2">
-              <span>{meta.emoji}</span>
-              {meta.title}
+              <span>{emoji}</span>
+              <span className="truncate">{title}</span>
+              {badge && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-mono flex-shrink-0">
+                  {badge}
+                </span>
+              )}
             </h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">{meta.description}</p>
+            {subtitle && (
+              <p className="text-[11px] text-gray-500 mt-0.5 italic">"{subtitle}"</p>
+            )}
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <div className="text-xs font-bold text-[var(--tss-navy)]">{sectionPercent}%</div>
-            <div className="text-[10px] text-gray-400">{completed}/{lessons.length}</div>
+            <div className="text-[10px] text-gray-400">
+              {completed}/{productized.length}
+              {proposedCount > 0 && (
+                <span className="text-amber-600"> +{proposedCount}↗</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -176,18 +346,28 @@ function SectionBlock({
   );
 }
 
+// ─── Lesson Card ───
+
 function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void }) {
-  const isLocked = lesson.locked && !lesson.completed;
+  const isProposed = lesson.status_v1 === 'PROPOSED';
+  const isLocked = lesson.locked && !lesson.completed && !isProposed;
   const isCompleted = lesson.completed;
-  const isInProgress = lesson.progress && !lesson.completed && (
-    lesson.progress.video_watched || lesson.progress.content_read || lesson.progress.quiz_attempts > 0
-  );
+  const isInProgress =
+    lesson.progress &&
+    !lesson.completed &&
+    (lesson.progress.video_watched ||
+      lesson.progress.content_read ||
+      lesson.progress.quiz_attempts > 0);
 
   let statusIcon = '🔓';
   let statusText = 'Start';
   let statusColor = 'text-gray-500';
 
-  if (isLocked) {
+  if (isProposed) {
+    statusIcon = '⏳';
+    statusText = 'v1.5';
+    statusColor = 'text-amber-600';
+  } else if (isLocked) {
     statusIcon = '🔒';
     statusText = 'Locked';
     statusColor = 'text-gray-400';
@@ -201,41 +381,72 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
     statusColor = 'text-amber-600';
   }
 
+  // Step number badge: PC-015 → 015, STP-001 → 001, PRWB-001 → R-1
+  const idParts = lesson.id.split('-');
+  const badgeNum = lesson.id.startsWith('PRWB-')
+    ? `R-${parseInt(idParts[1], 10)}`
+    : idParts[idParts.length - 1];
+
   return (
     <button
       onClick={isLocked ? undefined : onOpen}
       disabled={isLocked}
       className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors ${
         isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
-      }`}
+      } ${isProposed ? 'bg-amber-50/30' : ''}`}
     >
       {/* Step number badge */}
-      <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${
-        isCompleted ? 'bg-green-100 text-green-700' :
-        isInProgress ? 'bg-amber-100 text-amber-700' :
-        'bg-gray-100 text-gray-600'
-      }`}>
-        {lesson.id.split('-')[1]}
+      <div
+        className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${
+          isProposed
+            ? 'bg-amber-100 text-amber-700 border border-amber-300 border-dashed'
+            : isCompleted
+            ? 'bg-green-100 text-green-700'
+            : isInProgress
+            ? 'bg-amber-100 text-amber-700'
+            : lesson.is_test
+            ? 'bg-purple-100 text-purple-700'
+            : 'bg-gray-100 text-gray-600'
+        }`}
+      >
+        {badgeNum}
       </div>
 
       {/* Title + meta */}
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm truncate">{lesson.title}</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm truncate">{lesson.title}</span>
+          {isProposed && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold uppercase tracking-wide flex-shrink-0">
+              Coming v1.5
+            </span>
+          )}
+          {lesson.is_test && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold uppercase tracking-wide flex-shrink-0">
+              Gate Test
+            </span>
+          )}
+        </div>
         <div className="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
-          <span>{lesson.estimated_minutes} min</span>
-          {lesson.pillar && (
+          {!isProposed && <span>{lesson.estimated_minutes} min</span>}
+          {lesson.pillar && !isProposed && (
             <>
-              <span>·</span>
+              {!isProposed && <span>·</span>}
               <span className="truncate">{lesson.pillar}</span>
             </>
           )}
-          {lesson.lesson_type !== 'reading' && (
+          {!isProposed && lesson.lesson_type !== 'reading' && (
             <>
               <span>·</span>
               <span className="font-medium text-[var(--tss-navy)]">
                 {lesson.lesson_type === 'form' ? 'Goal Setting' : 'Self Test'}
               </span>
             </>
+          )}
+          {isProposed && (
+            <span className="italic text-amber-700">
+              Canonical content coming in v1.5
+            </span>
           )}
         </div>
         {isLocked && lesson.lockReason && (
