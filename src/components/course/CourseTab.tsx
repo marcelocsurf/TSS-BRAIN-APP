@@ -103,17 +103,23 @@ export function CourseTab({ data }: { data: CourseData }) {
     );
   }
 
-  // Split lessons into Pre-Course and White Belt
+  // 3-module canonical structure (per WB canon v1):
+  //   Module 0: Pre-Course (8 PC-PRE-XX items, value: Conciencia)
+  //   Module 1: WB Onboarding (6 ONB-XX items)
+  //   Module 2: WB Sequences (25 STPs in 5 cumulative sequences, value: Humildad)
   const preCourseLessons = data.lessons.filter(
     (l) =>
       l.course_section === 'pre_course_fundamentals' ||
       l.course_section === 'pre_course_values'
   );
+  const onboardingLessons = data.lessons.filter(
+    (l) => l.course_section === 'wb_onboarding'
+  );
   const whiteBeltLessons = data.lessons.filter(
     (l) => l.course_section === 'white_belt'
   );
 
-  // Group Pre-Course by pc_section_id (8 sections)
+  // Group Pre-Course by pc_section_id (canon v1 uses M0 for all 8)
   const pcSections = groupByPcSection(preCourseLessons);
 
   // Group White Belt by wb_sequence_id (5 cumulative sequences)
@@ -174,6 +180,34 @@ export function CourseTab({ data }: { data: CourseData }) {
               onOpenLesson={(id) => setOpenLessonId(id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* WB ONBOARDING — Module 1, single block */}
+      {onboardingLessons.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <div className="px-2">
+            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
+              🧭 WB Onboarding
+              <span className="text-[11px] font-normal text-gray-500">
+                · Module 1 · {onboardingLessons.length} items
+              </span>
+            </h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Conceptual scaffolding before the sequences — your stance, surf identity, the 4 pillars, equipment, venue analysis.
+            </p>
+          </div>
+
+          <SectionBlock
+            title="WB Onboarding"
+            subtitle="Bridge between awareness (Pre-Course) and action (Sequences)"
+            emoji="🧭"
+            badge="Module 1"
+            lessons={onboardingLessons.sort(
+              (a, b) => (a.display_order || 0) - (b.display_order || 0)
+            )}
+            onOpenLesson={(id) => setOpenLessonId(id)}
+          />
         </div>
       )}
 

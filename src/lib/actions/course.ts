@@ -75,16 +75,18 @@ export async function getCourseCatalog(studentId: string) {
   const progressMap = new Map<string, LessonProgress>();
   (progress || []).forEach((p: any) => progressMap.set(p.lesson_id, p));
 
-  // Determine if pre-course is complete (only PRODUCTIZED items count;
-  // PROPOSED items are placeholders awaiting v1.5 canon and cannot be completed)
-  const preCourseLessons = (lessons || []).filter(
+  // Per canon v1: WB Sequences unlock only after BOTH Module 0 (Pre-Course)
+  // AND Module 1 (WB Onboarding) are completed. PROPOSED items are placeholders
+  // and cannot be completed — they don't count toward gate.
+  const moduleZeroAndOneLessons = (lessons || []).filter(
     (l: any) =>
       (l.course_section === 'pre_course_fundamentals' ||
-       l.course_section === 'pre_course_values') &&
+       l.course_section === 'pre_course_values' ||
+       l.course_section === 'wb_onboarding') &&
       l.status_v1 !== 'PROPOSED'
   );
-  const preCourseCompleted = preCourseLessons.length > 0 &&
-    preCourseLessons.every((l: any) => progressMap.get(l.id)?.completed);
+  const preCourseCompleted = moduleZeroAndOneLessons.length > 0 &&
+    moduleZeroAndOneLessons.every((l: any) => progressMap.get(l.id)?.completed);
 
   // Build response with lock state
   const enriched = (lessons || []).map((lesson: any, idx: number) => {
