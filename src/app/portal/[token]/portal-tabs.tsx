@@ -1238,6 +1238,7 @@ function SelfTrainingTab({
       <LinkedTrainingFlow
         drillMissionId={incomingDrillMissionId}
         studentId={student.id}
+        studentBelt={beltLevel}
         onClearIncoming={onClearIncoming || (() => {})}
         onReturnToSequence={onReturnToSequence || (() => {})}
       />
