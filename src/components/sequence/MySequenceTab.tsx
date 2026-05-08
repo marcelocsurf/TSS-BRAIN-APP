@@ -164,8 +164,11 @@ function BlockSection({
 }
 
 function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
-  const drill = item.drill_mission;
-  const typeIcon = drill?.type === 'drill' ? '🏖' : '🌊';
+  const hasDrill = !!item.drill;
+  const hasMission = !!item.mission;
+  const subtitleParts: string[] = [];
+  if (hasDrill) subtitleParts.push('🏖 Drill');
+  if (hasMission) subtitleParts.push('🌊 Mission');
 
   return (
     <button
@@ -176,14 +179,13 @@ function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-gray-400">{item.step_id}</span>
-            <span className="text-base">{typeIcon}</span>
           </div>
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
           </div>
-          {drill && (
+          {subtitleParts.length > 0 && (
             <div className="text-[11px] text-gray-500 mt-0.5 truncate">
-              {drill.title} · {drill.time_estimate}
+              {subtitleParts.join(' · ')}
             </div>
           )}
         </div>

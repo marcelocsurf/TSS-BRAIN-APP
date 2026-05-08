@@ -57,9 +57,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
     );
   }
 
-  const { lesson, drillMission, rating, ratingCount, lastRated, sessionHistory } = data;
-  const typeIcon = drillMission?.type === 'drill' ? '🏖' : '🌊';
-  const typeLabel = drillMission?.type === 'drill' ? 'Drill (out of water)' : 'Mission (in water)';
+  const { lesson, drill, mission, rating, ratingCount, lastRated, sessionHistory } = data;
 
   return (
     <div className="space-y-4 pb-8">
@@ -112,92 +110,31 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
         </div>
       </div>
 
-      {/* Drill / Mission */}
-      {drillMission && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
-                {typeIcon} {drillMission.type === 'drill' ? 'DRILL' : 'MISSION'}
-              </div>
-              <h3 className="font-bold text-base">{drillMission.title}</h3>
-              <div className="text-xs text-gray-500 mt-0.5">{typeLabel}</div>
-            </div>
-          </div>
-
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="bg-gray-50 rounded p-2 text-center">
-              <div className="text-[10px] uppercase text-gray-500">Time</div>
-              <div className="text-sm font-bold">{drillMission.time_estimate}</div>
-            </div>
-            <div className="bg-gray-50 rounded p-2 text-center">
-              <div className="text-[10px] uppercase text-gray-500">Reps</div>
-              <div className="text-sm font-bold">{drillMission.reps_recommended}</div>
-            </div>
-          </div>
-
-          {/* 5 Key Words */}
-          {drillMission.key_words && drillMission.key_words.length > 0 && (
-            <div className="mb-4">
-              <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-                5 Key Words (canonical chain)
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {drillMission.key_words.map((kw: string, i: number) => (
-                  <span
-                    key={i}
-                    className="px-2 py-0.5 bg-[var(--tss-navy)] text-white text-[11px] font-bold rounded-full"
-                  >
-                    {kw}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Description */}
-          {drillMission.description_md && (
-            <div className="mt-4">
-              <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-                Procedure
-              </div>
-              <div className="prose prose-sm max-w-none">
-                <MarkdownContent markdown={drillMission.description_md} />
-              </div>
-            </div>
-          )}
-
-          {/* Success criteria */}
-          {drillMission.success_criteria && drillMission.success_criteria.length > 0 && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-              <div className="text-[10px] uppercase tracking-wider text-green-700 font-bold mb-2">
-                ✅ Success Criteria
-              </div>
-              <ul className="space-y-1">
-                {drillMission.success_criteria.map((sc: string, i: number) => (
-                  <li key={i} className="text-xs text-green-800 flex gap-2">
-                    <span className="font-bold">{i + 1}.</span>
-                    <span>{sc}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Practice button — opens Train tab pre-filled with this drill/mission */}
-          <button
-            onClick={() => onPracticeDrill?.(drillMission.id)}
-            disabled={!onPracticeDrill}
-            className={`mt-5 w-full rounded-lg py-3 text-sm font-bold transition-colors ${
-              onPracticeDrill
-                ? 'bg-[var(--tss-navy)] text-white hover:bg-[var(--tss-navy-dark,#0a1628)]'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            📝 Practice this {drillMission.type} →
-          </button>
+      {/* Pedagogy doctrine note (when both drill + mission available) */}
+      {drill && mission && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900">
+          <strong>Drill</strong> = how the skill is trained (on land or calm water).
+          <br />
+          <strong>Mission</strong> = how the learning is applied (in real water conditions).
+          <br />
+          Choose the practice that fits today's session.
         </div>
+      )}
+
+      {/* DRILL card */}
+      {drill && (
+        <DrillOrMissionCard
+          item={drill}
+          onPractice={onPracticeDrill}
+        />
+      )}
+
+      {/* MISSION card */}
+      {mission && (
+        <DrillOrMissionCard
+          item={mission}
+          onPractice={onPracticeDrill}
+        />
       )}
 
       {/* Session history */}
@@ -232,6 +169,119 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
           Go to <strong>Course tab</strong> → find {stepId} in White Belt section
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── DrillOrMissionCard — renders a single drill OR mission with Practice button ───
+
+function DrillOrMissionCard({
+  item,
+  onPractice,
+}: {
+  item: any;
+  onPractice?: (drillMissionId: string) => void;
+}) {
+  const isDrill = item.type === 'drill';
+  const typeIcon = isDrill ? '🏖' : '🌊';
+  const typeLabel = isDrill ? 'Drill — training mechanic' : 'Mission — water application';
+  const accent = isDrill ? 'amber' : 'blue';
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-sm border-2 p-5"
+      style={{
+        borderColor: isDrill ? '#fde68a' : '#bfdbfe', // amber-200 / blue-200
+      }}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <div
+            className={`text-[10px] uppercase tracking-wider font-bold ${
+              isDrill ? 'text-amber-700' : 'text-blue-700'
+            }`}
+          >
+            {typeIcon} {isDrill ? 'DRILL' : 'MISSION'}
+          </div>
+          <h3 className="font-bold text-base mt-0.5">{item.title}</h3>
+          <div className="text-xs text-gray-500 mt-0.5">{typeLabel}</div>
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="bg-gray-50 rounded p-2 text-center">
+          <div className="text-[10px] uppercase text-gray-500">Time</div>
+          <div className="text-sm font-bold">{item.time_estimate || '—'}</div>
+        </div>
+        <div className="bg-gray-50 rounded p-2 text-center">
+          <div className="text-[10px] uppercase text-gray-500">Reps</div>
+          <div className="text-sm font-bold">{item.reps_recommended || '—'}</div>
+        </div>
+      </div>
+
+      {/* 5 Key Words — only on drill (canonical chain) */}
+      {isDrill && item.key_words && item.key_words.length > 0 && (
+        <div className="mb-4">
+          <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
+            5 Key Words (canonical chain)
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {item.key_words.map((kw: string, i: number) => (
+              <span
+                key={i}
+                className="px-2 py-0.5 bg-[var(--tss-navy)] text-white text-[11px] font-bold rounded-full"
+              >
+                {kw}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Description / Procedure */}
+      {item.description_md && (
+        <div className="mt-4">
+          <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
+            {isDrill ? 'Procedure' : 'What to do in the water'}
+          </div>
+          <div className="prose prose-sm max-w-none">
+            <MarkdownContent markdown={item.description_md} />
+          </div>
+        </div>
+      )}
+
+      {/* Success criteria */}
+      {item.success_criteria && item.success_criteria.length > 0 && (
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+          <div className="text-[10px] uppercase tracking-wider text-green-700 font-bold mb-2">
+            ✅ Success Criteria
+          </div>
+          <ul className="space-y-1">
+            {item.success_criteria.map((sc: string, i: number) => (
+              <li key={i} className="text-xs text-green-800 flex gap-2">
+                <span className="font-bold">{i + 1}.</span>
+                <span>{sc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Practice button */}
+      <button
+        onClick={() => onPractice?.(item.id)}
+        disabled={!onPractice}
+        className={`mt-5 w-full rounded-lg py-3 text-sm font-bold transition-colors ${
+          onPractice
+            ? isDrill
+              ? 'bg-amber-500 text-white hover:bg-amber-600'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+        }`}
+      >
+        📝 Practice this {isDrill ? 'drill' : 'mission'} →
+      </button>
     </div>
   );
 }

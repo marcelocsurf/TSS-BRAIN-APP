@@ -35,7 +35,10 @@ export type SequenceItem = {
   block_number: number;
   block_name: string;
   display_order: number;
-  drill_mission: DrillMissionRow | null;
+  // Per canon v1, each STP has BOTH a drill (training mechanic, on-land/calm)
+  // AND a mission (water application — Ecological Dynamics).
+  drill: DrillMissionRow | null;
+  mission: DrillMissionRow | null;
   rating: number | null;
   rating_count: number;
   last_rated: string | null;
@@ -93,9 +96,13 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
     .not('linked_step_id', 'is', null)
     .order('created_at', { ascending: false });
 
-  // Build lookup maps
+  // Build lookup maps — split drills and missions
   const drillMap = new Map<string, DrillMissionRow>();
-  (drills || []).forEach((d: any) => drillMap.set(d.step_id, d));
+  const missionMap = new Map<string, DrillMissionRow>();
+  (drills || []).forEach((d: any) => {
+    if (d.type === 'drill') drillMap.set(d.step_id, d as DrillMissionRow);
+    else if (d.type === 'mission') missionMap.set(d.step_id, d as DrillMissionRow);
+  });
 
   const lessonMap = new Map<string, any>();
   (lessons || []).forEach((l: any) => lessonMap.set(l.id, l));
@@ -110,22 +117,30 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
     }
   });
 
-  // Build sequence items (one per STP that has drill_mission)
-  const items: SequenceItem[] = (drills || []).map((d: any) => {
-    const lesson = lessonMap.get(d.step_id);
-    const rating = ratingMap.get(d.step_id);
+  // Get unique step IDs from drills+missions (one item per STP, with both)
+  const stepIds = new Set<string>();
+  (drills || []).forEach((d: any) => stepIds.add(d.step_id));
+
+  // Build sequence items (one per STP, holds both drill and mission)
+  const items: SequenceItem[] = Array.from(stepIds).map((stepId) => {
+    const drill = drillMap.get(stepId) || null;
+    const mission = missionMap.get(stepId) || null;
+    const primary = drill || mission; // for block / display order
+    const lesson = lessonMap.get(stepId);
+    const rating = ratingMap.get(stepId);
     return {
-      step_id: d.step_id,
-      step_title: lesson?.title || d.step_id,
+      step_id: stepId,
+      step_title: lesson?.title || stepId,
       pillar: lesson?.pillar || null,
-      block_number: d.block_number,
-      block_name: d.block_name,
-      display_order: d.display_order,
-      drill_mission: d as DrillMissionRow,
+      block_number: primary?.block_number || 0,
+      block_name: primary?.block_name || '',
+      display_order: primary?.display_order || 0,
+      drill,
+      mission,
       rating: rating?.current_rating || null,
       rating_count: rating?.rating_count || 0,
       last_rated: rating?.last_updated || null,
-      last_practiced: lastPracticedMap.get(d.step_id) || null,
+      last_practiced: lastPracticedMap.get(stepId) || null,
     };
   });
 
@@ -176,12 +191,17 @@ export async function getStepDetail(studentId: string, stepId: string) {
     .eq('id', stepId)
     .single();
 
-  // Get drill/mission
-  const { data: drillMission } = await admin
+  // Get drill AND mission for this step (canon v1: each STP has both)
+  const { data: drillsAndMissions } = await admin
     .from('drills_missions')
     .select('*')
     .eq('step_id', stepId)
-    .single();
+    .eq('active', true);
+
+  const drill =
+    (drillsAndMissions || []).find((d: any) => d.type === 'drill') || null;
+  const mission =
+    (drillsAndMissions || []).find((d: any) => d.type === 'mission') || null;
 
   // Get current rating
   const { data: rating } = await admin
@@ -194,7 +214,7 @@ export async function getStepDetail(studentId: string, stepId: string) {
   // Get session history for this step
   const { data: sessions } = await admin
     .from('self_training_sessions')
-    .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes')
+    .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes, linked_drill_mission_id')
     .eq('student_id', studentId)
     .eq('linked_step_id', stepId)
     .order('created_at', { ascending: false })
@@ -202,7 +222,8 @@ export async function getStepDetail(studentId: string, stepId: string) {
 
   return {
     lesson: lesson || null,
-    drillMission: drillMission || null,
+    drill,
+    mission,
     rating: rating?.current_rating || null,
     ratingCount: rating?.rating_count || 0,
     lastRated: rating?.last_updated || null,
