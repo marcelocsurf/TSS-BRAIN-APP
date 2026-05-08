@@ -73,6 +73,7 @@ export function LinkedTrainingFlow({
 
   // Warmup
   const [warmUp, setWarmUp] = useState<string | null>(null);
+  const [warmUpCustom, setWarmUpCustom] = useState('');
 
   // Intent
   const [intention, setIntention] = useState('');
@@ -260,6 +261,18 @@ export function LinkedTrainingFlow({
               <div className="font-medium">{w.label}</div>
             </button>
           ))}
+
+          {warmUp === 'custom' && (
+            <input
+              type="text"
+              value={warmUpCustom}
+              onChange={(e) => setWarmUpCustom(e.target.value)}
+              placeholder="Describe your custom warm-up..."
+              className="w-full px-3 py-2 border-2 border-[var(--tss-navy)] rounded-lg text-sm"
+              autoFocus
+            />
+          )}
+
           <button
             onClick={() => setWarmUp('skip')}
             className={`w-full px-4 py-3 rounded-lg border-2 text-left text-xs transition-colors ${
@@ -275,7 +288,7 @@ export function LinkedTrainingFlow({
         <NavButtons
           onBack={() => setPhase('venue')}
           onNext={() => setPhase('intent')}
-          nextDisabled={!warmUp}
+          nextDisabled={!warmUp || (warmUp === 'custom' && !warmUpCustom.trim())}
         />
       </FlowShell>
     );
@@ -445,7 +458,11 @@ export function LinkedTrainingFlow({
     const tideLabel = TIDE_OPTIONS.find((t) => t.value === tide)?.label;
     const crowdLabel = CROWD_OPTIONS.find((c) => c.value === crowdLevel)?.label;
     const warmUpLabel =
-      warmUp === 'skip' ? 'Skipped' : warmupOptions.find((w) => w.value === warmUp)?.label;
+      warmUp === 'skip'
+        ? 'Skipped'
+        : warmUp === 'custom'
+        ? `Custom: ${warmUpCustom}`
+        : warmupOptions.find((w) => w.value === warmUp)?.label;
     const mentalLabel =
       mentalHack === 'none'
         ? 'None'

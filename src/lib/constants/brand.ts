@@ -123,9 +123,9 @@ export const WARMUP_OPTIONS = [
 // Each belt inherits all warm-ups from lower belts
 export const SELF_TRAINING_WARMUPS: Record<string, { value: string; label: string }[]> = {
   white_belt: [
-    { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
-    { value: 'board_handling_circuit', label: 'Board Handling Circuit' },
-    { value: 'cobra_direction', label: 'Cobra + Direction Choice drill' },
+    { value: 'zen_swing', label: 'Zen Swing' },
+    { value: 'head_to_toe', label: 'Head to Toe' },
+    { value: 'custom', label: 'Custom' },
   ],
   yellow_belt: [
     { value: 'head_to_toe', label: 'Head to toe dynamic warm-up' },
