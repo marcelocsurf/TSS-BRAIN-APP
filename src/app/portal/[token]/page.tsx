@@ -44,6 +44,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // COURSE_OWNER_IDS in src/lib/actions/course.ts.
   const COURSE_OWNER_IDS = new Set<string>([
     '3518cc9c-d633-44ff-b32a-bfb86b5ae748', // Marcelo Castellanos
+    '0f6816db-a637-4af0-86b6-1a1c8227953c', // Androide Salvadoreno (review account)
   ]);
   const isOwner = COURSE_OWNER_IDS.has(student.id);
 

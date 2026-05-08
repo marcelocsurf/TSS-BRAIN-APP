@@ -58,6 +58,7 @@ export type LessonProgress = {
 // without having to "complete" each lesson. Add student IDs here as needed.
 const COURSE_OWNER_IDS = new Set<string>([
   '3518cc9c-d633-44ff-b32a-bfb86b5ae748', // Marcelo Castellanos (TSS founder)
+  '0f6816db-a637-4af0-86b6-1a1c8227953c', // Androide Salvadoreno (test/review account)
 ]);
 
 // ─── Get all lessons for a section ───
