@@ -27,10 +27,11 @@ export type LessonRow = {
   pc_section_order: number | null;
   status_v1: 'PRODUCTIZED' | 'PROPOSED' | null;
   is_test: boolean;
-  wb_chapter_id: string | null;
-  wb_chapter_name: string | null;
-  wb_chapter_order: number | null;
-  chapter_step_order: number | null;
+  wb_sequence_id: string | null;
+  wb_sequence_name: string | null;
+  wb_sequence_order: number | null;
+  wb_sequence_promise: string | null;
+  sequence_step_order: number | null;
 };
 
 export type QuizQuestion = {

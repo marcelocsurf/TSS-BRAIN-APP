@@ -24,10 +24,11 @@ interface LessonRow {
   pc_section_order: number | null;
   status_v1: 'PRODUCTIZED' | 'PROPOSED' | null;
   is_test: boolean;
-  wb_chapter_id: string | null;
-  wb_chapter_name: string | null;
-  wb_chapter_order: number | null;
-  chapter_step_order: number | null;
+  wb_sequence_id: string | null;
+  wb_sequence_name: string | null;
+  wb_sequence_order: number | null;
+  wb_sequence_promise: string | null;
+  sequence_step_order: number | null;
 }
 
 interface CourseData {
@@ -52,28 +53,24 @@ const PC_SECTION_EMOJI: Record<string, string> = {
   '0.8': '🚪', // Readiness Gate
 };
 
-// White Belt chapter promises (per spec Section D)
-const WB_CHAPTER_META: Record<string, { emoji: string; promise: string }> = {
-  'WB-CH-1': {
-    emoji: '🌅',
-    promise: 'You learn to read the spot and prepare your body before touching the board.',
-  },
-  'WB-CH-2': {
-    emoji: '🏖',
-    promise: 'You take the board to the water, control its movement, and return safely.',
-  },
-  'WB-CH-3': {
-    emoji: '🌊',
-    promise: 'You find your sweet spot, paddle, catch foam, and maneuver in prone position.',
-  },
-  'WB-CH-4': {
-    emoji: '🚀',
-    promise: 'You stand on the board. The moment that turns you into a surfer.',
-  },
-  'WB-CH-5': {
-    emoji: '🏄',
-    promise: 'Already standing, you generate speed, control posture, and execute your first turns.',
-  },
+// White Belt sequence emoji map (canonical promise text comes from DB
+// wb_sequence_promise field per Migration 00020). Sequences are CUMULATIVE:
+// each builds on all previous (canon doctrine).
+const WB_SEQUENCE_EMOJI: Record<string, string> = {
+  'WB-SEQ-1': '🏖', // Board Control
+  'WB-SEQ-2': '🌊', // Sweet Spot
+  'WB-SEQ-3': '🚀', // Pop-Up
+  'WB-SEQ-4': '↔️', // Directional Turns
+  'WB-SEQ-5': '🏄', // Independence
+};
+
+// Cumulative steps mastered after completing each sequence (canon)
+const WB_SEQUENCE_CUMULATIVE: Record<string, number> = {
+  'WB-SEQ-1': 9,
+  'WB-SEQ-2': 14,
+  'WB-SEQ-3': 20,
+  'WB-SEQ-4': 22,
+  'WB-SEQ-5': 25,
 };
 
 export function CourseTab({ data }: { data: CourseData }) {
@@ -119,8 +116,8 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Group Pre-Course by pc_section_id (8 sections)
   const pcSections = groupByPcSection(preCourseLessons);
 
-  // Group White Belt by wb_chapter_id (5 chapters)
-  const wbChapters = groupByWbChapter(whiteBeltLessons);
+  // Group White Belt by wb_sequence_id (5 cumulative sequences)
+  const wbSequences = groupByWbSequence(whiteBeltLessons);
 
   const overallPercent =
     data.totalLessons > 0
@@ -180,31 +177,33 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
-      {/* WHITE BELT — 5 chapters */}
-      {wbChapters.length > 0 && (
+      {/* WHITE BELT — 5 cumulative sequences */}
+      {wbSequences.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="px-2">
             <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
               🤍 White Belt
               <span className="text-[11px] font-normal text-gray-500">
-                · 5 chapters · {whiteBeltLessons.length} steps
+                · 5 sequences · 25 steps · Value: Humildad
               </span>
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              The foundation belt — board control, safety, and your first waves
+              <strong>Cumulative</strong> — each sequence builds on all previous. Mastery of #5 means mastery of #1–5.
             </p>
           </div>
 
-          {wbChapters.map((chapter) => {
-            const meta = WB_CHAPTER_META[chapter.id] || { emoji: '📘', promise: '' };
+          {wbSequences.map((sequence) => {
+            const emoji = WB_SEQUENCE_EMOJI[sequence.id] || '📘';
+            const cumulative = WB_SEQUENCE_CUMULATIVE[sequence.id];
+            const promise = sequence.lessons[0]?.wb_sequence_promise || '';
             return (
               <SectionBlock
-                key={chapter.id}
-                title={`Chapter ${chapter.order}: ${chapter.name}`}
-                subtitle={meta.promise}
-                emoji={meta.emoji}
-                badge={null}
-                lessons={chapter.lessons}
+                key={sequence.id}
+                title={`Sequence #${sequence.order}: ${sequence.name}`}
+                subtitle={promise}
+                emoji={emoji}
+                badge={cumulative ? `${cumulative}/25 cumulative` : null}
+                lessons={sequence.lessons}
                 onOpenLesson={(id) => setOpenLessonId(id)}
               />
             );
@@ -255,18 +254,18 @@ function groupByPcSection(lessons: LessonRow[]) {
     }));
 }
 
-function groupByWbChapter(lessons: LessonRow[]) {
+function groupByWbSequence(lessons: LessonRow[]) {
   const map = new Map<
     string,
     { id: string; name: string; order: number; lessons: LessonRow[] }
   >();
   for (const l of lessons) {
-    const id = l.wb_chapter_id || 'unassigned';
+    const id = l.wb_sequence_id || 'unassigned';
     if (!map.has(id)) {
       map.set(id, {
         id,
-        name: l.wb_chapter_name || id,
-        order: l.wb_chapter_order || 99,
+        name: l.wb_sequence_name || id,
+        order: l.wb_sequence_order || 99,
         lessons: [],
       });
     }
@@ -278,8 +277,8 @@ function groupByWbChapter(lessons: LessonRow[]) {
       ...c,
       lessons: c.lessons.sort(
         (a, b) =>
-          (a.chapter_step_order || a.display_order || 0) -
-          (b.chapter_step_order || b.display_order || 0)
+          (a.sequence_step_order || a.display_order || 0) -
+          (b.sequence_step_order || b.display_order || 0)
       ),
     }));
 }
