@@ -10,9 +10,10 @@ interface Props {
   studentId: string;
   onBack: () => void;
   onRatingChange?: () => void;
+  onPracticeDrill?: (drillMissionId: string) => void;
 }
 
-export function StepDetailView({ stepId, studentId, onBack, onRatingChange }: Props) {
+export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPracticeDrill }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savingRating, setSavingRating] = useState(false);
@@ -184,13 +185,17 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange }: Pr
             </div>
           )}
 
-          {/* Practice button (Phase 2 — links to Train tab) */}
+          {/* Practice button — opens Train tab pre-filled with this drill/mission */}
           <button
-            disabled
-            className="mt-5 w-full bg-gray-100 text-gray-400 rounded-lg py-3 text-sm font-medium cursor-not-allowed"
-            title="Phase 2 — coming next"
+            onClick={() => onPracticeDrill?.(drillMission.id)}
+            disabled={!onPracticeDrill}
+            className={`mt-5 w-full rounded-lg py-3 text-sm font-bold transition-colors ${
+              onPracticeDrill
+                ? 'bg-[var(--tss-navy)] text-white hover:bg-[var(--tss-navy-dark,#0a1628)]'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
           >
-            📝 Practice this {drillMission.type} → (coming soon)
+            📝 Practice this {drillMission.type} →
           </button>
         </div>
       )}

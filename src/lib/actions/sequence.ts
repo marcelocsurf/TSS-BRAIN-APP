@@ -255,11 +255,20 @@ export async function getDrillMissionForTraining(drillId: string) {
 
 // ─── Save training session linked to a drill/mission ───
 
+export type CriterionResult = 'met' | 'partial' | 'not_met';
+export type CriterionEvaluation = {
+  criterion_index: number;
+  criterion_text: string;
+  result: CriterionResult;
+};
+
 export async function saveLinkedTrainingSession(
   studentId: string,
   drillMissionId: string,
   data: {
-    intention?: string;
+    intention_text?: string;
+    planned_duration_minutes?: number;
+    planned_reps?: number;
     duration_minutes?: number;
     reps_completed?: number;
     venue_type?: string;
@@ -273,6 +282,7 @@ export async function saveLinkedTrainingSession(
     focus_rating?: number;        // 0-3
     mission_completion?: 'yes' | 'partial' | 'no';
     execution_rating?: number;    // 1-5
+    criteria_evaluation?: CriterionEvaluation[];
   }
 ) {
   const admin = createAdminClient();
@@ -295,7 +305,10 @@ export async function saveLinkedTrainingSession(
       student_id: studentId,
       linked_drill_mission_id: drillMissionId,
       linked_step_id: drillMission.step_id,
-      duration_minutes: data.duration_minutes,
+      intention_text: data.intention_text,
+      planned_duration_minutes: data.planned_duration_minutes,
+      planned_reps: data.planned_reps,
+      duration_minutes: data.duration_minutes ?? data.planned_duration_minutes,
       reps_completed: data.reps_completed,
       venue_type: data.venue_type,
       wave_conditions: data.wave_conditions,
@@ -308,6 +321,7 @@ export async function saveLinkedTrainingSession(
       focus_rating: data.focus_rating,
       mission_completion: data.mission_completion,
       execution_rating: data.execution_rating,
+      criteria_evaluation: data.criteria_evaluation ?? null,
       completed: true,
     })
     .select()
@@ -327,5 +341,5 @@ export async function saveLinkedTrainingSession(
       }, { onConflict: 'student_id,step_id' });
   }
 
-  return { ok: true, session };
+  return { ok: true, session, stepId: drillMission.step_id };
 }

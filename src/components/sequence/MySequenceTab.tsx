@@ -8,9 +8,10 @@ import { StepDetailView } from './StepDetailView';
 interface Props {
   studentId: string;
   belt?: string;
+  onPracticeDrill?: (drillMissionId: string) => void;
 }
 
-export function MySequenceTab({ studentId, belt = 'white' }: Props) {
+export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Props) {
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [openStepId, setOpenStepId] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export function MySequenceTab({ studentId, belt = 'white' }: Props) {
           refresh();
         }}
         onRatingChange={refresh}
+        onPracticeDrill={onPracticeDrill}
       />
     );
   }

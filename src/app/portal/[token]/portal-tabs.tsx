@@ -15,6 +15,7 @@ import {
 import { SurveyForm } from './survey-form';
 import { CourseTab } from '@/components/course/CourseTab';
 import { MySequenceTab } from '@/components/sequence/MySequenceTab';
+import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
@@ -182,8 +183,18 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 
 export function PortalTabs({ data, initialTab }: { data: PortalData; initialTab?: Tab }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // Linked Train flow: when student taps "Practice this drill" from My Sequence,
+  // we store the drill ID here and switch to Train tab. SelfTrainingTab reads
+  // this prop to enter "linked mode" (banner + skip drill picker + per-criterion
+  // evaluation post-session).
+  const [pendingDrillMissionId, setPendingDrillMissionId] = useState<string | null>(null);
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
+
+  const handlePracticeDrill = (drillMissionId: string) => {
+    setPendingDrillMissionId(drillMissionId);
+    setActiveTab('self-training');
+  };
 
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
@@ -200,10 +211,25 @@ export function PortalTabs({ data, initialTab }: { data: PortalData; initialTab?
         {activeTab === 'home' && <HomeTab data={data} belt={belt} />}
         {activeTab === 'course' && data.courseData && <CourseTab data={data.courseData} />}
         {activeTab === 'sequence' && (
-          <MySequenceTab studentId={student.id} belt={student.belt_level || 'white'} />
+          <MySequenceTab
+            studentId={student.id}
+            belt={student.belt_level || 'white'}
+            onPracticeDrill={handlePracticeDrill}
+          />
         )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
-        {activeTab === 'self-training' && <SelfTrainingTab data={data} />}
+        {activeTab === 'self-training' && (
+          <SelfTrainingTab
+            key={pendingDrillMissionId || 'free'}
+            data={data}
+            incomingDrillMissionId={pendingDrillMissionId}
+            onClearIncoming={() => setPendingDrillMissionId(null)}
+            onReturnToSequence={() => {
+              setPendingDrillMissionId(null);
+              setActiveTab('sequence');
+            }}
+          />
+        )}
         {activeTab === 'feedback' && <FeedbackTab data={data} autoExpandFirst={initialTab === 'feedback'} />}
       </div>
 
@@ -1190,9 +1216,34 @@ const STEP_LABELS: { key: SelfTrainingStep; label: string; icon: string }[] = [
   { key: 'mental', label: 'Mental', icon: '🧠' },
 ];
 
-function SelfTrainingTab({ data }: { data: PortalData }) {
+function SelfTrainingTab({
+  data,
+  incomingDrillMissionId,
+  onClearIncoming,
+  onReturnToSequence,
+}: {
+  data: PortalData;
+  incomingDrillMissionId?: string | null;
+  onClearIncoming?: () => void;
+  onReturnToSequence?: () => void;
+}) {
   const { student, drills } = data;
   const beltLevel = student.belt_level as BeltLevel;
+
+  // Linked mode: when arriving from My Sequence with a specific drill/mission,
+  // render the focused LinkedTrainingFlow (intent → in-progress → per-criterion eval).
+  // Free-form mode (no incoming): render the existing builder flow below.
+  if (incomingDrillMissionId) {
+    return (
+      <LinkedTrainingFlow
+        drillMissionId={incomingDrillMissionId}
+        studentId={student.id}
+        onClearIncoming={onClearIncoming || (() => {})}
+        onReturnToSequence={onReturnToSequence || (() => {})}
+      />
+    );
+  }
+
   const [step, setStep] = useState<SelfTrainingStep>('venue');
 
   // Venue analysis state
