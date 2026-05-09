@@ -1,0 +1,485 @@
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { revalidatePath } from 'next/cache';
+import { getCurrentCoach } from './sessions';
+
+export type BlockStatus = 'achieved' | 'partial' | 'not_yet';
+export type SessionState = 'planned' | 'in_progress' | 'closed';
+
+// ─── Create new multi-block session (planning starts) ───
+
+export async function createMultiBlockSession(input: {
+  studentId: string;
+  sessionDate?: string;
+  trainingVenue?: string;
+  warmUp?: string;
+  mentalHack?: string;
+}) {
+  const supabase = await createClient();
+  const coach = await getCurrentCoach();
+
+  const { data, error } = await supabase
+    .from('multi_block_sessions')
+    .insert({
+      student_id: input.studentId,
+      coach_id: coach.id,
+      session_date: input.sessionDate || new Date().toISOString().slice(0, 10),
+      training_venue: input.trainingVenue || null,
+      warm_up: input.warmUp || null,
+      mental_hack: input.mentalHack || null,
+      total_planned_minutes: 0,
+      completion_state: 'planned',
+    })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/students/${input.studentId}`);
+  return { id: data.id };
+}
+
+// ─── Update session header (date, venue, warm-up, mental hack) ───
+
+export async function updateMultiBlockSession(
+  id: string,
+  patch: Partial<{
+    session_date: string;
+    training_venue: string;
+    warm_up: string;
+    mental_hack: string;
+    notes_general: string;
+  }>
+) {
+  const supabase = await createClient();
+  const updates: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(patch)) {
+    updates[k] = v === '' ? null : v;
+  }
+  const { error } = await supabase
+    .from('multi_block_sessions')
+    .update(updates)
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+// ─── Add a block to a session (returns the new block) ───
+
+export async function addBlock(input: {
+  multiBlockSessionId: string;
+  studentId: string;
+  stepId?: string | null;
+  drillId?: string | null;
+  durationMinutes: number;
+  objectiveText?: string | null;
+}) {
+  const supabase = await createClient();
+
+  // Compute next order_index
+  const { data: existing } = await supabase
+    .from('lesson_plan_blocks')
+    .select('order_index')
+    .eq('multi_block_session_id', input.multiBlockSessionId)
+    .order('order_index', { ascending: false })
+    .limit(1);
+
+  const nextOrder = existing && existing.length > 0 ? existing[0].order_index + 1 : 0;
+
+  const { data: block, error } = await supabase
+    .from('lesson_plan_blocks')
+    .insert({
+      multi_block_session_id: input.multiBlockSessionId,
+      student_id: input.studentId,
+      order_index: nextOrder,
+      step_id: input.stepId || null,
+      drill_id: input.drillId || null,
+      duration_minutes: input.durationMinutes,
+      objective_text: input.objectiveText || null,
+    })
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+  await recomputePlannedMinutes(input.multiBlockSessionId);
+  return block;
+}
+
+// ─── Update a single block's planning fields ───
+
+export async function updateBlock(
+  blockId: string,
+  patch: Partial<{
+    duration_minutes: number;
+    objective_text: string | null;
+    drill_id: string | null;
+    step_id: string | null;
+  }>
+) {
+  const supabase = await createClient();
+
+  const { data: block } = await supabase
+    .from('lesson_plan_blocks')
+    .select('multi_block_session_id')
+    .eq('id', blockId)
+    .single();
+
+  const updates: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(patch)) {
+    updates[k] = v === '' ? null : v;
+  }
+
+  const { error } = await supabase
+    .from('lesson_plan_blocks')
+    .update(updates)
+    .eq('id', blockId);
+
+  if (error) throw new Error(error.message);
+  if (block?.multi_block_session_id) {
+    await recomputePlannedMinutes(block.multi_block_session_id);
+  }
+}
+
+// ─── Reorder a block up or down by 1 ───
+
+export async function reorderBlock(blockId: string, direction: 'up' | 'down') {
+  const supabase = await createClient();
+
+  const { data: target } = await supabase
+    .from('lesson_plan_blocks')
+    .select('id, multi_block_session_id, order_index')
+    .eq('id', blockId)
+    .single();
+
+  if (!target) throw new Error('Block not found');
+
+  const cmp = direction === 'up' ? 'lt' : 'gt';
+  const order = direction === 'up' ? 'desc' : 'asc';
+
+  const { data: neighbor } = await supabase
+    .from('lesson_plan_blocks')
+    .select('id, order_index')
+    .eq('multi_block_session_id', target.multi_block_session_id)
+    [cmp]('order_index', target.order_index)
+    .order('order_index', { ascending: order === 'asc' })
+    .limit(1)
+    .maybeSingle();
+
+  if (!neighbor) return; // already at edge
+
+  // Swap
+  await supabase
+    .from('lesson_plan_blocks')
+    .update({ order_index: -1 })
+    .eq('id', target.id);
+  await supabase
+    .from('lesson_plan_blocks')
+    .update({ order_index: target.order_index })
+    .eq('id', neighbor.id);
+  await supabase
+    .from('lesson_plan_blocks')
+    .update({ order_index: neighbor.order_index })
+    .eq('id', target.id);
+}
+
+// ─── Delete a block ───
+
+export async function deleteBlock(blockId: string) {
+  const supabase = await createClient();
+  const { data: block } = await supabase
+    .from('lesson_plan_blocks')
+    .select('multi_block_session_id')
+    .eq('id', blockId)
+    .single();
+
+  const { error } = await supabase
+    .from('lesson_plan_blocks')
+    .delete()
+    .eq('id', blockId);
+  if (error) throw new Error(error.message);
+
+  if (block?.multi_block_session_id) {
+    await recomputePlannedMinutes(block.multi_block_session_id);
+  }
+}
+
+// ─── Start a planned session (in_progress) ───
+
+export async function startMultiBlockSession(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('multi_block_sessions')
+    .update({
+      completion_state: 'in_progress',
+      started_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+// ─── Close a single block with status + notes ───
+
+export async function closeBlock(input: {
+  blockId: string;
+  status: BlockStatus;
+  coachNotes?: string;
+}) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('lesson_plan_blocks')
+    .update({
+      status: input.status,
+      coach_notes: input.coachNotes?.trim() || null,
+    })
+    .eq('id', input.blockId);
+  if (error) throw new Error(error.message);
+}
+
+// ─── Close the entire session: writes student_session_results + emails ───
+
+export async function closeMultiBlockSession(input: {
+  multiBlockSessionId: string;
+  generalCoachFeedback?: string;
+  generalHomework?: string;
+  generalWhatsNext?: string;
+  totalActualMinutes?: number;
+}) {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+  const coach = await getCurrentCoach();
+
+  // Fetch session + student + blocks for the closing summary
+  const { data: session, error: sErr } = await supabase
+    .from('multi_block_sessions')
+    .select(
+      'id, student_id, coach_id, session_date, training_venue, total_planned_minutes'
+    )
+    .eq('id', input.multiBlockSessionId)
+    .single();
+  if (sErr || !session) throw new Error('Session not found');
+
+  const { data: blocks } = await supabase
+    .from('lesson_plan_blocks')
+    .select('id, status, drill_id, objective_text, order_index')
+    .eq('multi_block_session_id', input.multiBlockSessionId)
+    .order('order_index');
+
+  // Validate every block has been scored
+  const unscored = (blocks ?? []).filter((b: any) => !b.status);
+  if (unscored.length > 0) {
+    throw new Error(
+      `Score all blocks before closing (${unscored.length} unscored).`
+    );
+  }
+
+  // Compute overall status from per-block statuses (worst = overall)
+  const statuses = (blocks ?? []).map((b: any) => b.status);
+  const overallStatus = statuses.includes('not_yet')
+    ? 'not_yet'
+    : statuses.includes('partial')
+    ? 'partial'
+    : 'achieved';
+
+  const overallMission = `${(blocks ?? []).length}-block session: ${(blocks ?? [])
+    .map((b: any) => b.objective_text || b.drill_id || `Block ${b.order_index + 1}`)
+    .join(' / ')}`.slice(0, 240);
+
+  // Update session row
+  const { error: closeErr } = await supabase
+    .from('multi_block_sessions')
+    .update({
+      completion_state: 'closed',
+      closed_at: new Date().toISOString(),
+      total_actual_minutes: input.totalActualMinutes ?? null,
+      general_coach_feedback: input.generalCoachFeedback?.trim() || null,
+      general_homework: input.generalHomework?.trim() || null,
+      general_whats_next: input.generalWhatsNext?.trim() || null,
+    })
+    .eq('id', input.multiBlockSessionId);
+  if (closeErr) throw new Error(closeErr.message);
+
+  // Insert into unified bítacora
+  const { data: result, error: resultErr } = await supabase
+    .from('student_session_results')
+    .insert({
+      student_id: session.student_id,
+      coach_id: coach.id,
+      multi_block_session_id: session.id,
+      status: overallStatus,
+      coach_feedback: input.generalCoachFeedback?.trim() || null,
+      homework: input.generalHomework?.trim() || null,
+      whats_next: input.generalWhatsNext?.trim() || null,
+      completion_state: 'closed',
+      survey_unlocked: true,
+      portal_token: null,
+    })
+    .select('id')
+    .single();
+
+  if (resultErr) {
+    console.error('student_session_results insert failed:', resultErr.message);
+  }
+
+  // Audit log
+  await admin.from('audit_log').insert({
+    session_result_id: result?.id || null,
+    actor_type: 'coach',
+    actor_id: coach.id,
+    actor_name: coach.display_name,
+    event_type: 'session_closed',
+    status_before: 'in_progress',
+    status_after: 'closed',
+    note: `Multi-block session closed: ${(blocks ?? []).length} blocks. Overall: ${overallStatus}.`,
+  });
+
+  // Email — fetch student then send (non-blocking)
+  const { data: student } = await admin
+    .from('students')
+    .select('first_name, email, portal_token, belt_level')
+    .eq('id', session.student_id)
+    .single();
+
+  if (student?.email && student.portal_token && result?.id) {
+    try {
+      const { sendSessionEmail } = await import('@/lib/actions/email');
+      const emailResult = await sendSessionEmail({
+        studentName: student.first_name,
+        studentEmail: student.email,
+        portalToken: student.portal_token,
+        coachName: coach.display_name,
+        sessionDate: session.session_date || new Date().toISOString(),
+        mission: overallMission,
+        status: overallStatus,
+        coachFeedback: input.generalCoachFeedback?.trim() || '(no general feedback)',
+        homework: input.generalHomework?.trim() || '(see per-block notes)',
+        whatsNext: input.generalWhatsNext?.trim() || '(planned soon)',
+        beltLevel: student.belt_level,
+        sessionResultId: result.id,
+      });
+      if (emailResult.success) {
+        await supabase
+          .from('student_session_results')
+          .update({ email_sent: true, email_sent_at: new Date().toISOString() })
+          .eq('id', result.id);
+      }
+    } catch (e: any) {
+      console.error('Email failed (non-blocking):', e.message);
+    }
+  }
+
+  revalidatePath(`/students/${session.student_id}`);
+  revalidatePath(`/sessions/plan/${input.multiBlockSessionId}`);
+  return { resultId: result?.id, overallStatus };
+}
+
+// ─── Recompute total_planned_minutes from blocks (called after add/edit/del) ───
+
+async function recomputePlannedMinutes(multiBlockSessionId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('lesson_plan_blocks')
+    .select('duration_minutes')
+    .eq('multi_block_session_id', multiBlockSessionId);
+  const total = (data ?? []).reduce(
+    (s: number, b: any) => s + (b.duration_minutes || 0),
+    0
+  );
+  await supabase
+    .from('multi_block_sessions')
+    .update({ total_planned_minutes: total })
+    .eq('id', multiBlockSessionId);
+}
+
+// ═══════════════════════════════════════════════════════════
+// READ HELPERS — used by the planning UI
+// ═══════════════════════════════════════════════════════════
+
+export async function getMultiBlockSession(id: string) {
+  const supabase = await createClient();
+
+  const [sessionQ, blocksQ] = await Promise.all([
+    supabase
+      .from('multi_block_sessions')
+      .select(
+        `*,
+         students(id, first_name, last_name, belt_level, ocean_level, portal_token, photo_url),
+         coaches:coach_id(id, display_name)`
+      )
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('lesson_plan_blocks')
+      .select('*')
+      .eq('multi_block_session_id', id)
+      .order('order_index'),
+  ]);
+
+  if (sessionQ.error || !sessionQ.data) return null;
+  return { session: sessionQ.data, blocks: blocksQ.data ?? [] };
+}
+
+// Returns drills_missions filtered by step_id and (optionally) belt
+export async function getDrillsForStep(stepId: string, belt?: string) {
+  const supabase = await createClient();
+  let q = supabase
+    .from('drills_missions')
+    .select('id, step_id, title, type, time_estimate, key_words, success_criteria, belt, block_name')
+    .eq('step_id', stepId)
+    .eq('active', true);
+  if (belt) q = q.eq('belt', belt);
+  const { data } = await q.order('type').order('id');
+  return data ?? [];
+}
+
+// Steps the student should be working on given their belt + sequence number.
+// Returns the canonical list of STP-XXX ids with title for the picker.
+export async function getStepsForBelt(belt: string) {
+  const supabase = await createClient();
+  // Steps live in the `lessons` table for white belt (course_section='white_belt')
+  const { data } = await supabase
+    .from('lessons')
+    .select('id, title, sequence_step_order, wb_sequence_id, wb_sequence_name')
+    .eq('course_section', 'white_belt')
+    .eq('active', true)
+    .order('sequence_step_order', { ascending: true });
+  return (data ?? []) as Array<{
+    id: string;
+    title: string;
+    sequence_step_order: number | null;
+    wb_sequence_id: string | null;
+    wb_sequence_name: string | null;
+  }>;
+}
+
+// Suggestions for this student based on their self-ratings (from Track A).
+// Returns the IDs of drills_missions whose step_id is among the student's
+// "struggling" steps (current_rating < 3), ranked by lowest rating first.
+export async function getSuggestedDrillsForStudent(studentId: string, belt: string) {
+  const supabase = await createClient();
+
+  const { data: ratings } = await supabase
+    .from('student_step_ratings')
+    .select('step_id, current_rating')
+    .eq('student_id', studentId)
+    .lt('current_rating', 3)
+    .order('current_rating', { ascending: true })
+    .limit(10);
+
+  const stepIds = (ratings ?? []).map((r: any) => r.step_id);
+  if (stepIds.length === 0) return [];
+
+  const { data: drills } = await supabase
+    .from('drills_missions')
+    .select('id, step_id, title, type, time_estimate, key_words')
+    .in('step_id', stepIds)
+    .eq('active', true)
+    .eq('belt', belt);
+
+  const byStep = new Map(stepIds.map((s, i) => [s, i]));
+  return (drills ?? [])
+    .map((d: any) => ({
+      ...d,
+      currentRating: ratings?.find((r: any) => r.step_id === d.step_id)?.current_rating ?? null,
+    }))
+    .sort((a, b) => (byStep.get(a.step_id) ?? 99) - (byStep.get(b.step_id) ?? 99));
+}

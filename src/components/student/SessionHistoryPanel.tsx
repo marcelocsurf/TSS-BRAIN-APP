@@ -5,7 +5,7 @@ import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 
 interface SessionEntry {
   id: string;
-  source: 'standalone' | 'cascade';
+  source: 'standalone' | 'cascade' | 'multi_block';
   date: string;
   coachName: string | null;
   mission: string | null;
@@ -67,10 +67,16 @@ export function SessionHistoryPanel({ sessions }: Props) {
                       {PILAR_LABELS[s.pilar as Pilar] || s.pilar}
                     </span>
                   )}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    s.source === 'cascade' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'
-                  }`}>
-                    {s.source === 'cascade' ? 'CSC' : 'STD'}
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      s.source === 'cascade'
+                        ? 'bg-purple-50 text-purple-600'
+                        : s.source === 'multi_block'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-blue-50 text-blue-600'
+                    }`}
+                  >
+                    {s.source === 'cascade' ? 'CSC' : s.source === 'multi_block' ? 'PLN' : 'STD'}
                   </span>
                   <svg
                     className={`w-3 h-3 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}

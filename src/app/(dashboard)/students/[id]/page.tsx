@@ -10,6 +10,7 @@ import { ProfilePhoto } from '@/components/shared/ProfilePhoto';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection';
 import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton';
+import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
@@ -54,6 +55,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     selfTrainingResult,
     stepRatingsResult,
     lessonProgressResult,
+    multiBlockResult,
   ] = await Promise.all([
     getStudentLevelAccess(id),
     // Standalone session results
@@ -110,6 +112,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('completed', true)
       .order('completed_at', { ascending: false, nullsFirst: false })
       .limit(20),
+    // Multi-block sessions: planned/in-progress (active) + recent closed
+    supabase
+      .from('multi_block_sessions')
+      .select(
+        'id, session_date, training_venue, completion_state, total_planned_minutes, total_actual_minutes, general_coach_feedback, general_homework, general_whats_next, created_at, coach_id, coaches:coach_id(display_name)'
+      )
+      .eq('student_id', id)
+      .order('created_at', { ascending: false })
+      .limit(30),
   ]);
 
   // Merge and sort all sessions for the unified history
@@ -146,9 +157,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     venue: c.training_venue || null,
   }));
 
-  const allSessions = [...standaloneEntries, ...cascadeEntries]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
   // Portal activity — shaped for PortalActivityPanel
   const selfTraining = (selfTrainingResult.data ?? []).map((s: any) => ({
     id: s.id,
@@ -173,6 +181,32 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     completed_at: l.completed_at,
     quiz_score: l.quiz_score,
   }));
+
+  // Multi-block sessions: split active (resume) vs closed (history merge)
+  const allMultiBlock = (multiBlockResult?.data ?? []) as any[];
+  const activeMultiBlock = allMultiBlock.filter((s) => s.completion_state !== 'closed');
+  const closedMultiBlock = allMultiBlock.filter((s) => s.completion_state === 'closed');
+
+  const multiBlockEntries = closedMultiBlock.map((m: any) => {
+    const coachRel = Array.isArray(m.coaches) ? m.coaches[0] : m.coaches;
+    return {
+      id: m.id,
+      source: 'multi_block' as const,
+      date: m.session_date || m.created_at,
+      coachName: coachRel?.display_name || null,
+      mission: `Multi-block · ${m.total_actual_minutes ?? m.total_planned_minutes}min`,
+      pilar: null,
+      status: null,
+      coachFeedback: m.general_coach_feedback || null,
+      homework: m.general_homework || null,
+      whatsNext: m.general_whats_next || null,
+      duration: m.total_actual_minutes ?? m.total_planned_minutes,
+      venue: m.training_venue || null,
+    };
+  });
+
+  const allSessions = [...standaloneEntries, ...cascadeEntries, ...multiBlockEntries]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const unlockedKeys = levelAccess.map((a: any) => a.level_key);
   const belt = BELT_DISPLAY[student.belt_level];
@@ -237,13 +271,14 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           </div>
         </div>
         {/* Quick actions */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-4">
           <Link
             href={`/sessions/new?student=${student.id}`}
-            className="flex-1 text-center py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90"
+            className="flex-1 min-w-[110px] text-center py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90"
           >
             Start Session
           </Link>
+          <PlanSessionButton studentId={student.id} className="flex-1 min-w-[110px] text-center py-2 bg-emerald-50 text-emerald-700 text-sm rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-50" />
           <Link
             href={`/portal/${student.portal_token}`}
             target="_blank"
@@ -261,6 +296,32 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           )}
         </div>
       </div>
+
+      {/* --- ACTIVE PLANS (resume CTA, only when there's an unfinished plan) --- */}
+      {activeMultiBlock.length > 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700">
+            🟢 Sessions in progress / planned
+          </p>
+          {activeMultiBlock.map((s) => (
+            <Link
+              key={s.id}
+              href={`/sessions/plan/${s.id}`}
+              className="flex items-center justify-between gap-2 bg-white rounded-lg p-3 hover:bg-emerald-100 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-emerald-800">
+                  {s.completion_state === 'in_progress' ? 'In progress' : 'Planned'} · {s.total_planned_minutes}min
+                </p>
+                <p className="text-[10px] text-emerald-600">
+                  {new Date(s.session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+              </div>
+              <span className="text-xs text-emerald-600 font-medium">Resume →</span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* --- 2. LAST SESSION (always visible, highlighted) --- */}
       <Card title="Last Session" highlighted>
