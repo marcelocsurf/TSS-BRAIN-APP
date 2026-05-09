@@ -438,7 +438,7 @@ export function LinkedTrainingFlow({
       {
         value: 'breathe',
         icon: '🫁',
-        title: 'Breathe',
+        title: 'Box Breath',
         desc: 'Inhale 4 · hold 4 · exhale 4. Land in the body.',
       },
       {
@@ -450,7 +450,7 @@ export function LinkedTrainingFlow({
       {
         value: 'play',
         icon: '▶️',
-        title: 'Respira · Focus · Play',
+        title: 'Breathe · Focus · Play',
         desc: 'The TSS mantra — drop in and play the game.',
       },
     ];
@@ -519,9 +519,9 @@ export function LinkedTrainingFlow({
         ? `Custom: ${warmUpCustom}`
         : warmupOptions.find((w) => w.value === warmUp)?.label;
     const HACK_LABELS: Record<string, string> = {
-      breathe: '🫁 Breathe',
+      breathe: '🫁 Box Breath',
       key_words: '🎯 Mission key words',
-      play: '▶️ Respira · Focus · Play',
+      play: '▶️ Breathe · Focus · Play',
       none: 'Skip',
     };
     const mentalLabel =
