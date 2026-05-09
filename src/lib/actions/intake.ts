@@ -215,23 +215,12 @@ export async function submitOceanQuiz(token: string, answers: OceanQuizAnswers) 
 export async function getStudentForIntake(token: string) {
   const admin = createAdminClient();
 
+  // Use select('*') so the page does not 500/404 when new columns are
+  // added in code but the migration hasn't been applied to Supabase yet.
+  // The form treats every field as optional / nullable.
   const { data, error } = await admin
     .from('students')
-    .select(`
-      id, first_name, last_name, photo_url, belt_level,
-      email, phone, age, gender, nationality, languages, instagram,
-      date_of_birth, stance, surf_experience_years, surf_frequency,
-      board_type, other_sports, learning_style,
-      goal_short_term, goal_mid_term, goal_long_term,
-      biggest_barrier, fears_phobias,
-      swim_level, allergies, injuries, medical_notes,
-      emergency_contact_name, emergency_contact_phone,
-      height, weight, shirt_size, how_did_you_hear,
-      returning_student, waiver_signed, waiver_signed_at,
-      intake_completed_at, intake_tier,
-      ocean_level, ocean_level_provisional,
-      ocean_quiz_answers, ocean_quiz_completed_at
-    `)
+    .select('*')
     .eq('portal_token', token)
     .single();
 
