@@ -168,6 +168,48 @@ export async function getStudentPortalData(token: string) {
     }
   }
 
+  // ── Multi-block sessions: pull upcoming (planned/in_progress) + closed history
+  const { data: multiBlockSessions } = await admin
+    .from('multi_block_sessions')
+    .select(
+      'id, session_date, training_venue, completion_state, total_planned_minutes, total_actual_minutes, general_coach_feedback, general_homework, general_whats_next, started_at, closed_at, created_at, coach_id, coaches:coach_id(display_name)'
+    )
+    .eq('student_id', student.id)
+    .order('session_date', { ascending: false })
+    .limit(30);
+
+  const upcomingMultiBlock = (multiBlockSessions ?? []).filter(
+    (m: any) => m.completion_state === 'planned' || m.completion_state === 'in_progress'
+  );
+  const closedMultiBlock = (multiBlockSessions ?? []).filter(
+    (m: any) => m.completion_state === 'closed'
+  );
+
+  // For upcoming, also fetch the blocks so the student can see what's planned
+  const upcomingIds = upcomingMultiBlock.map((m: any) => m.id);
+  let upcomingBlocks: any[] = [];
+  if (upcomingIds.length > 0) {
+    const { data } = await admin
+      .from('lesson_plan_blocks')
+      .select('id, multi_block_session_id, order_index, step_id, drill_id, duration_minutes, objective_text')
+      .in('multi_block_session_id', upcomingIds)
+      .order('multi_block_session_id')
+      .order('order_index');
+    upcomingBlocks = data ?? [];
+  }
+
+  // Group blocks by session_id
+  const blocksBySession = new Map<string, any[]>();
+  upcomingBlocks.forEach((b: any) => {
+    const arr = blocksBySession.get(b.multi_block_session_id) ?? [];
+    arr.push(b);
+    blocksBySession.set(b.multi_block_session_id, arr);
+  });
+  const upcomingWithBlocks = upcomingMultiBlock.map((m: any) => ({
+    ...m,
+    blocks: blocksBySession.get(m.id) ?? [],
+  }));
+
   return {
     student,
     sessions: coachSessions,
@@ -180,6 +222,8 @@ export async function getStudentPortalData(token: string) {
     totalTrainingMinutes,
     drillsPracticed,
     recentDrills: topRecentDrills,
+    upcomingMultiBlock: upcomingWithBlocks,
+    closedMultiBlock,
   };
 }
 

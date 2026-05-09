@@ -23,6 +23,38 @@ import {
 
 // ─── Types ───
 
+interface UpcomingMultiBlock {
+  id: string;
+  session_date: string;
+  training_venue: string | null;
+  completion_state: 'planned' | 'in_progress';
+  total_planned_minutes: number;
+  coaches?: any;
+  blocks: Array<{
+    id: string;
+    order_index: number;
+    step_id: string | null;
+    drill_id: string | null;
+    duration_minutes: number;
+    objective_text: string | null;
+  }>;
+}
+
+interface ClosedMultiBlock {
+  id: string;
+  session_date: string;
+  training_venue: string | null;
+  completion_state: 'closed';
+  total_planned_minutes: number;
+  total_actual_minutes: number | null;
+  general_coach_feedback: string | null;
+  general_homework: string | null;
+  general_whats_next: string | null;
+  closed_at: string | null;
+  created_at: string;
+  coaches?: any;
+}
+
 interface PortalData {
   student: any;
   sessions: any[];
@@ -35,6 +67,8 @@ interface PortalData {
   totalTrainingMinutes: number;
   drillsPracticed: string[];
   recentDrills: { name: string; date: string; source: 'coach' | 'self' }[];
+  upcomingMultiBlock?: UpcomingMultiBlock[];
+  closedMultiBlock?: ClosedMultiBlock[];
   drills: any[];
   pendingSurveys: any[];
   submittedSurveys: any[];
@@ -315,6 +349,7 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
   const latestResult = sessions[0];
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
   const beltLevel = student.belt_level as BeltLevel;
+  const upcoming = data.upcomingMultiBlock ?? [];
 
   // Training tip of the day — rotate based on day of year
   const tips = TRAINING_TIPS[beltLevel] || TRAINING_TIPS['white_belt'];
@@ -323,6 +358,9 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
 
   return (
     <div className="space-y-4">
+      {/* Upcoming session card — most important thing on Home */}
+      {upcoming.length > 0 && <UpcomingSessionCard upcoming={upcoming[0]} />}
+
       {/* Student Card */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
         <div className="flex items-center gap-3">
@@ -556,15 +594,21 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
 
 function SessionsTab({ data }: { data: PortalData }) {
   const { sessions, selfTrainingSessions, surveyResultIds, hasSurveyEver } = data;
+  const closedMultiBlock = data.closedMultiBlock ?? [];
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Merge coach sessions and self-training into a unified timeline
+  // Merge all 3 source types into a unified timeline
   const allSessions = [
     ...sessions.map((s: any) => ({ ...s, _type: 'coach' as const })),
     ...selfTrainingSessions.map((s: any) => ({
       ...s,
       _type: 'self' as const,
       created_at: s.created_at,
+    })),
+    ...closedMultiBlock.map((m: ClosedMultiBlock) => ({
+      ...m,
+      _type: 'multi_block' as const,
+      created_at: m.closed_at || m.created_at,
     })),
   ].sort(
     (a: any, b: any) =>
@@ -588,6 +632,13 @@ function SessionsTab({ data }: { data: PortalData }) {
       {allSessions.map((session: any) => {
         const isExpanded = expandedId === session.id;
         const isSelf = session._type === 'self';
+        const isMultiBlock = session._type === 'multi_block';
+
+        const titleText = isSelf
+          ? `Self-Training: ${session.drill_name || 'Free session'}`
+          : isMultiBlock
+          ? `Coach Session · ${session.total_actual_minutes ?? session.total_planned_minutes}min`
+          : session.standalone_sessions?.mission || 'Session';
 
         return (
           <div
@@ -601,11 +652,7 @@ function SessionsTab({ data }: { data: PortalData }) {
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">
-                      {isSelf
-                        ? `Self-Training: ${session.drill_name || 'Free session'}`
-                        : session.standalone_sessions?.mission || 'Session'}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">{titleText}</p>
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className="text-[10px] text-gray-500">
@@ -615,26 +662,37 @@ function SessionsTab({ data }: { data: PortalData }) {
                         year: 'numeric',
                       })}
                     </span>
-                    {!isSelf && session.coaches?.display_name && (
-                      <>
-                        <span className="text-gray-300">-</span>
-                        <span className="text-[10px] text-gray-500">
-                          {session.coaches.display_name}
-                        </span>
-                      </>
-                    )}
+                    {(!isSelf || isMultiBlock) && (() => {
+                      const c = Array.isArray(session.coaches) ? session.coaches[0] : session.coaches;
+                      return c?.display_name ? (
+                        <>
+                          <span className="text-gray-300">-</span>
+                          <span className="text-[10px] text-gray-500">{c.display_name}</span>
+                        </>
+                      ) : null;
+                    })()}
                     {isSelf && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">
                         Self
                       </span>
                     )}
+                    {isMultiBlock && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-medium">
+                        Plan
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {!isSelf && <StatusBadge status={session.status} />}
+                  {!isSelf && !isMultiBlock && <StatusBadge status={session.status} />}
                   {isSelf && session.completed && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
                       Done
+                    </span>
+                  )}
+                  {isMultiBlock && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
+                      Closed
                     </span>
                   )}
                   <span className="text-gray-300 text-xs">{isExpanded ? '▲' : '▼'}</span>
@@ -644,7 +702,47 @@ function SessionsTab({ data }: { data: PortalData }) {
 
             {isExpanded && (
               <div className="px-4 pb-3 border-t border-gray-50 pt-3 space-y-2">
-                {isSelf ? (
+                {isMultiBlock ? (
+                  <>
+                    {session.training_venue && (
+                      <DetailRow label="Venue" value={session.training_venue} />
+                    )}
+                    {session.total_planned_minutes != null && (
+                      <DetailRow
+                        label="Planned"
+                        value={`${session.total_planned_minutes} min`}
+                      />
+                    )}
+                    {session.total_actual_minutes != null && (
+                      <DetailRow
+                        label="Actual"
+                        value={`${session.total_actual_minutes} min`}
+                      />
+                    )}
+                    {session.general_coach_feedback && (
+                      <div className="pt-1">
+                        <p className="text-xs text-gray-400 mb-1">Coach feedback</p>
+                        <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-2 whitespace-pre-line">
+                          {session.general_coach_feedback}
+                        </p>
+                      </div>
+                    )}
+                    {session.general_homework && (
+                      <div>
+                        <p className="text-xs text-amber-700 mt-1">
+                          <span className="font-medium">Homework:</span>{' '}
+                          {session.general_homework}
+                        </p>
+                      </div>
+                    )}
+                    {session.general_whats_next && (
+                      <p className="text-xs text-blue-700">
+                        <span className="font-medium">Next:</span>{' '}
+                        {session.general_whats_next}
+                      </p>
+                    )}
+                  </>
+                ) : isSelf ? (
                   <>
                     {/* Venue analysis for self-training */}
                     {session.venue_type && (
@@ -2579,6 +2677,93 @@ function StatCard({
         {label}
       </p>
       {sublabel && <p className="text-[9px] text-gray-400 mt-0.5">{sublabel}</p>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// UPCOMING SESSION CARD — shown at the top of Home when coach has planned blocks
+// ═══════════════════════════════════════
+
+function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
+  const isInProgress = upcoming.completion_state === 'in_progress';
+  const coachRel = Array.isArray(upcoming.coaches) ? upcoming.coaches[0] : upcoming.coaches;
+  const coachName = coachRel?.display_name || 'your coach';
+  const dateLabel = new Date(upcoming.session_date).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return (
+    <div
+      className="rounded-2xl p-4 shadow-sm border-2"
+      style={{
+        background: isInProgress ? '#ECFDF5' : '#FEF3C7',
+        borderColor: isInProgress ? '#10B981' : BRAND.colors.gold,
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className="text-[10px] font-mono uppercase tracking-wider"
+             style={{ color: isInProgress ? '#047857' : '#92400E' }}>
+            {isInProgress ? '🟢 Session in progress' : '📅 Your next session'}
+          </p>
+          <p className="text-base font-bold mt-0.5"
+             style={{ color: isInProgress ? '#065F46' : '#78350F' }}>
+            {dateLabel}
+            {upcoming.training_venue ? ` · ${upcoming.training_venue}` : ''}
+          </p>
+          <p className="text-[11px] mt-0.5"
+             style={{ color: isInProgress ? '#047857' : '#92400E' }}>
+            Coach: {coachName} · {upcoming.total_planned_minutes} min planned
+          </p>
+        </div>
+      </div>
+
+      {upcoming.blocks.length > 0 && (
+        <div className="space-y-1.5 mt-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider"
+             style={{ color: isInProgress ? '#047857' : '#92400E' }}>
+            What you'll work on
+          </p>
+          {upcoming.blocks.map((b, idx) => (
+            <div
+              key={b.id}
+              className="bg-white rounded-lg p-2.5 flex items-start gap-2"
+            >
+              <span className="text-[10px] font-mono text-gray-400 w-6 text-center shrink-0 mt-0.5">
+                #{idx + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-800">
+                  {b.step_id && (
+                    <span className="text-[10px] font-mono text-gray-400 mr-1">
+                      {b.step_id}
+                    </span>
+                  )}
+                  {b.drill_id || 'Custom block'}
+                </p>
+                {b.objective_text && (
+                  <p className="text-[11px] text-gray-500 italic mt-0.5">
+                    ⮕ {b.objective_text}
+                  </p>
+                )}
+              </div>
+              <span className="text-[11px] text-gray-500 font-medium shrink-0">
+                {b.duration_minutes}m
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {upcoming.blocks.length === 0 && (
+        <p className="text-[11px] italic mt-2"
+           style={{ color: isInProgress ? '#047857' : '#92400E' }}>
+          Your coach is still building this session.
+        </p>
+      )}
     </div>
   );
 }
