@@ -307,12 +307,16 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       </CollapsibleSection>
 
       {/* --- 3c. OCEAN LEVEL EVALUATION (collapsible) --- */}
-      <CollapsibleSection title="Ocean Level" defaultOpen={false}>
+      <CollapsibleSection
+        title={`Ocean Level${(student as any).ocean_level_provisional ? ' · ⏳ Provisional' : ''}`}
+        defaultOpen={!!(student as any).ocean_level_provisional}
+      >
         <OceanLevelPanel
           studentId={id}
           coachId={coach?.id || ''}
           currentLevel={student.ocean_level}
           history={oceanHistory}
+          provisional={!!(student as any).ocean_level_provisional}
         />
       </CollapsibleSection>
 

@@ -1,6 +1,11 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  scoreOceanQuiz,
+  isOceanQuizComplete,
+  type OceanQuizAnswers,
+} from '@/lib/constants/ocean-quiz';
 
 // ═══════════════════════════════════════
 // INTAKE FORM INPUTS
@@ -164,6 +169,46 @@ export async function submitIntake(token: string, input: IntakeFormInput) {
 }
 
 // ═══════════════════════════════════════
+// SUBMIT OCEAN QUIZ (Stage 0 — runs before Basic intake)
+// ═══════════════════════════════════════
+
+export async function submitOceanQuiz(token: string, answers: OceanQuizAnswers) {
+  const admin = createAdminClient();
+
+  if (!isOceanQuizComplete(answers)) {
+    throw new Error('Please answer all questions before submitting.');
+  }
+
+  // Find student by portal token
+  const { data: student, error: findErr } = await admin
+    .from('students')
+    .select('id, ocean_level_provisional')
+    .eq('portal_token', token)
+    .single();
+
+  if (findErr || !student) {
+    throw new Error('Invalid link. Please contact your coordinator.');
+  }
+
+  const { level, score } = scoreOceanQuiz(answers);
+
+  const { error: updateErr } = await admin
+    .from('students')
+    .update({
+      ocean_level: level,
+      ocean_level_provisional: true,
+      ocean_quiz_answers: answers,
+      ocean_quiz_score: score,
+      ocean_quiz_completed_at: new Date().toISOString(),
+    })
+    .eq('id', student.id);
+
+  if (updateErr) throw new Error(updateErr.message);
+
+  return { success: true, level, score };
+}
+
+// ═══════════════════════════════════════
 // GET STUDENT FOR INTAKE (public, minimal)
 // ═══════════════════════════════════════
 
@@ -183,7 +228,9 @@ export async function getStudentForIntake(token: string) {
       emergency_contact_name, emergency_contact_phone,
       height, weight, shirt_size, how_did_you_hear,
       returning_student, waiver_signed, waiver_signed_at,
-      intake_completed_at, intake_tier
+      intake_completed_at, intake_tier,
+      ocean_level, ocean_level_provisional,
+      ocean_quiz_answers, ocean_quiz_completed_at
     `)
     .eq('portal_token', token)
     .single();

@@ -2,17 +2,18 @@
 
 import { useState } from 'react';
 import { evaluateOceanLevel } from '@/lib/actions/evaluations';
+import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
 
 interface Props {
   studentId: string;
   coachId: string;
   currentLevel: string | null;
   history: any[];
+  /** True when the level came from the student's intake quiz, awaiting coach validation. */
+  provisional?: boolean;
 }
 
-const OCEAN_LEVELS = ['beginner', 'supervised', 'autonomous', 'advanced'];
-
-export function OceanLevelPanel({ studentId, coachId, currentLevel, history }: Props) {
+export function OceanLevelPanel({ studentId, coachId, currentLevel, history, provisional }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,27 +50,43 @@ export function OceanLevelPanel({ studentId, coachId, currentLevel, history }: P
   const levelColor: Record<string, string> = {
     beginner: 'bg-gray-100 text-gray-700',
     supervised: 'bg-blue-50 text-blue-700',
+    semi_autonomous: 'bg-teal-50 text-teal-700',
     autonomous: 'bg-green-50 text-green-700',
     advanced: 'bg-purple-50 text-purple-700',
   };
 
+  const currentInfo = currentLevel
+    ? OCEAN_LEVEL_INFO[currentLevel as keyof typeof OCEAN_LEVEL_INFO]
+    : null;
+
   return (
     <div className="space-y-3">
       {/* Current level */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${levelColor[currentLevel || ''] || 'bg-gray-50 text-gray-600'}`}>
-            {currentLevel || 'Not set'}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-xs px-2 py-0.5 rounded-full ${levelColor[currentLevel || ''] || 'bg-gray-50 text-gray-600'}`}>
+            {currentInfo ? `${currentInfo.short} · ${currentInfo.name}` : (currentLevel || 'Not set')}
           </span>
+          {provisional && (
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium"
+              title="Auto-assigned by the student's intake quiz. Confirm or adjust to clear this badge."
+            >
+              ⏳ Provisional — quiz-assigned
+            </span>
+          )}
         </div>
         <button
           type="button"
           onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); }}
           className="text-xs px-3 py-1.5 bg-[var(--tss-navy)] text-white rounded-lg hover:opacity-90"
         >
-          {showForm ? 'Cancel' : 'Update Ocean Level'}
+          {showForm ? 'Cancel' : provisional ? 'Confirm Level' : 'Update Ocean Level'}
         </button>
       </div>
+      {currentInfo && (
+        <p className="text-[11px] text-gray-500 italic">{currentInfo.cleared}</p>
+      )}
 
       {/* Inline form */}
       {showForm && (
@@ -83,7 +100,9 @@ export function OceanLevelPanel({ studentId, coachId, currentLevel, history }: P
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
               >
                 {OCEAN_LEVELS.map(level => (
-                  <option key={level} value={level}>{level.charAt(0).toUpperCase() + level.slice(1)}</option>
+                  <option key={level} value={level}>
+                    {OCEAN_LEVEL_INFO[level].short} · {OCEAN_LEVEL_INFO[level].name}
+                  </option>
                 ))}
               </select>
             </div>

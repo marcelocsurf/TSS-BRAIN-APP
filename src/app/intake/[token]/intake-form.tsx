@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
 import { BRAND } from '@/lib/constants/brand';
+import { OceanQuizStep, OceanQuizResult } from './ocean-quiz-step';
+import type { OceanLevel } from '@/lib/constants/ocean-levels';
 
 interface StudentData {
   gender?: string | null;
@@ -36,6 +38,9 @@ interface StudentData {
   waiver_signed_at?: string | null;
   intake_completed_at?: string | null;
   intake_tier?: string | null;
+  ocean_level?: string | null;
+  ocean_level_provisional?: boolean;
+  ocean_quiz_completed_at?: string | null;
 }
 
 interface Props {
@@ -43,16 +48,18 @@ interface Props {
   student: StudentData;
 }
 
-type Stage = 'basic' | 'basic_done' | 'extended' | 'all_done';
+type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done';
 
 export function IntakeForm({ token, student }: Props) {
   // Determine initial stage based on existing data
   const initialStage: Stage =
     student.intake_tier === 'extended' ? 'all_done'
     : student.intake_tier === 'basic' || (student.waiver_signed && student.emergency_contact_name) ? 'basic_done'
-    : 'basic';
+    : student.ocean_quiz_completed_at ? 'basic'
+    : 'ocean_quiz';
 
   const [stage, setStage] = useState<Stage>(initialStage);
+  const [oceanLevelResult, setOceanLevelResult] = useState<OceanLevel | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [extendedStep, setExtendedStep] = useState(0);
@@ -192,6 +199,45 @@ export function IntakeForm({ token, student }: Props) {
           </button>
           <p className="text-[10px] text-gray-400">You can also do this later from the same link.</p>
         </div>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // STAGE 0: OCEAN QUIZ
+  // ═══════════════════════════════════════
+
+  if (stage === 'ocean_quiz') {
+    return (
+      <div className="space-y-4">
+        <StageIndicator current={0} />
+        <OceanQuizStep
+          token={token}
+          onComplete={(level) => {
+            setOceanLevelResult(level);
+            setStage('ocean_quiz_done');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // STAGE 0.5: OCEAN QUIZ RESULT
+  // ═══════════════════════════════════════
+
+  if (stage === 'ocean_quiz_done' && oceanLevelResult) {
+    return (
+      <div className="space-y-4">
+        <StageIndicator current={0} />
+        <OceanQuizResult
+          level={oceanLevelResult}
+          onContinue={() => {
+            setStage('basic');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       </div>
     );
   }
@@ -558,29 +604,41 @@ export function IntakeForm({ token, student }: Props) {
 // STAGE INDICATOR
 // ═══════════════════════════════════════
 
-function StageIndicator({ current }: { current: 1 | 2 }) {
+function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
+  const steps: { label: string }[] = [
+    { label: 'Ocean Quiz' },
+    { label: 'Safety & Waiver' },
+    { label: 'Extended Profile' },
+  ];
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3">
-      <div className="flex items-center gap-3">
-        <div className={`flex items-center gap-2 flex-1 ${current >= 1 ? '' : 'opacity-40'}`}>
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ background: current >= 1 ? BRAND.colors.navy : '#D1D5DB' }}
-          >
-            {current > 1 ? '\u2713' : '1'}
-          </div>
-          <span className="text-xs font-medium text-gray-700">Safety &amp; Waiver</span>
-        </div>
-        <div className="w-8 h-0.5 bg-gray-200" />
-        <div className={`flex items-center gap-2 flex-1 ${current >= 2 ? '' : 'opacity-40'}`}>
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ background: current >= 2 ? BRAND.colors.navy : '#D1D5DB' }}
-          >
-            2
-          </div>
-          <span className="text-xs font-medium text-gray-700">Extended Profile</span>
-        </div>
+      <div className="flex items-center gap-2">
+        {steps.map((s, i) => {
+          const isActive = current >= i;
+          const isDone = current > i;
+          return (
+            <div key={i} className="flex items-center gap-2 flex-1 min-w-0">
+              <div
+                className={`flex items-center gap-1.5 flex-1 min-w-0 ${
+                  isActive ? '' : 'opacity-40'
+                }`}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                  style={{ background: isActive ? BRAND.colors.navy : '#D1D5DB' }}
+                >
+                  {isDone ? '\u2713' : i + 1}
+                </div>
+                <span className="text-[11px] font-medium text-gray-700 truncate">
+                  {s.label}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className="w-3 h-0.5 bg-gray-200 shrink-0" />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

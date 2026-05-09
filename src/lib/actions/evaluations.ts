@@ -99,10 +99,10 @@ export async function evaluateOceanLevel(input: {
 
   if (evalErr) throw new Error(evalErr.message);
 
-  // Update student's ocean level
+  // Update student's ocean level — coach override clears the provisional flag
   const { error: updateErr } = await supabase
     .from('students')
-    .update({ ocean_level: input.newLevel })
+    .update({ ocean_level: input.newLevel, ocean_level_provisional: false })
     .eq('id', input.studentId);
 
   if (updateErr) throw new Error(updateErr.message);
