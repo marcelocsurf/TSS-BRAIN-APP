@@ -16,7 +16,7 @@ import { SurveyForm } from './survey-form';
 import { CourseTab } from '@/components/course/CourseTab';
 import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
-import { TrainTab } from '@/components/portal/TrainTab';
+import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
@@ -226,13 +226,12 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
   return SELF_TRAINING_WARMUPS[beltLevel] || SELF_TRAINING_WARMUPS['white_belt'];
 }
 
-type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'self-training' | 'feedback' | 'my-coach';
+type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'feedback' | 'my-coach';
 
 const ALL_TABS: { key: Tab; label: string; icon: string; lockedUntilCoachUnlock?: boolean }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'course', label: 'Course', icon: '🎓' },
-  { key: 'sequence', label: 'Sequence', icon: '🎯' },
-  { key: 'self-training', label: 'Train', icon: '🏄' },
+  { key: 'sequence', label: "Let's Play", icon: '▶️' },
   { key: 'sessions', label: 'Sessions', icon: '📋' },
   { key: 'feedback', label: 'Feedback', icon: '💬' },
   { key: 'my-coach', label: 'My Coach', icon: '👤', lockedUntilCoachUnlock: true },
@@ -255,16 +254,17 @@ export function PortalTabs({
     [data.coachProfileUnlocked]
   );
   // Linked Train flow: when student taps "Practice this drill" from My Sequence,
-  // we store the drill ID here and switch to Train tab. SelfTrainingTab reads
-  // this prop to enter "linked mode" (banner + skip drill picker + per-criterion
-  // evaluation post-session).
+  // we store the drill ID and render LinkedTrainingFlow inline within the
+  // unified "Let's Play" tab (no tab switch — single home for sequence + train).
   const [pendingDrillMissionId, setPendingDrillMissionId] = useState<string | null>(null);
+  const [showCustomSession, setShowCustomSession] = useState(false);
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
 
   const handlePracticeDrill = (drillMissionId: string) => {
     setPendingDrillMissionId(drillMissionId);
-    setActiveTab('self-training');
+    // Stay on 'sequence' tab — Let's Play renders LinkedTrainingFlow inline.
+    setActiveTab('sequence');
   };
 
   return (
@@ -282,27 +282,50 @@ export function PortalTabs({
         {activeTab === 'home' && <HomeTab data={data} belt={belt} />}
         {activeTab === 'course' && data.courseData && <CourseTab data={data.courseData} />}
         {activeTab === 'sequence' && (
-          <MySequenceTab
-            studentId={student.id}
-            belt={student.belt_level || 'white'}
-            onPracticeDrill={handlePracticeDrill}
-          />
+          pendingDrillMissionId ? (
+            // 1) Drill picked from MySequenceTab → run the linked flow inline
+            <LinkedTrainingFlow
+              key={pendingDrillMissionId}
+              drillMissionId={pendingDrillMissionId}
+              studentId={student.id}
+              studentBelt={student.belt_level || 'white_belt'}
+              onClearIncoming={() => setPendingDrillMissionId(null)}
+              onReturnToSequence={() => setPendingDrillMissionId(null)}
+            />
+          ) : showCustomSession ? (
+            // 2) Custom Session escape hatch — free-form, doesn't count toward step mastery
+            <CustomSessionFlow
+              studentId={student.id}
+              onCancel={() => setShowCustomSession(false)}
+              onDone={() => setShowCustomSession(false)}
+            />
+          ) : (
+            // 3) Default: pick a drill or mission from your sequence
+            <div className="space-y-4">
+              <MySequenceTab
+                studentId={student.id}
+                belt={student.belt_level || 'white'}
+                onPracticeDrill={handlePracticeDrill}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCustomSession(true)}
+                className="w-full bg-gray-50 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-2xl p-4 text-left transition-colors"
+              >
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                  🏖 Custom Session
+                </p>
+                <p className="text-sm font-semibold text-[var(--tss-navy)] mt-1">
+                  Free surf, breathing, fun — anything off-script
+                </p>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Logged for the record but does NOT count toward step mastery.
+                </p>
+              </button>
+            </div>
+          )
         )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
-        {activeTab === 'self-training' && (
-          <TrainTab
-            key={pendingDrillMissionId || 'pick'}
-            studentId={student.id}
-            beltLevel={student.belt_level as BeltLevel}
-            drillsMissions={data.drillsMissions ?? []}
-            incomingDrillMissionId={pendingDrillMissionId}
-            onClearIncoming={() => setPendingDrillMissionId(null)}
-            onReturnToSequence={() => {
-              setPendingDrillMissionId(null);
-              setActiveTab('sequence');
-            }}
-          />
-        )}
         {activeTab === 'feedback' && (
           <FeedbackTab
             data={data}

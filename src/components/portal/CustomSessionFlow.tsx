@@ -2,261 +2,18 @@
 
 import { useState, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
-import type { BeltLevel } from '@/lib/constants/belts';
-import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
 } from '@/lib/actions/portal';
 
-// New Train Tab — replaces the old "free builder".
-//
-// Flow (per Marcelo's spec):
-//   1. Default screen = drill picker (mandatory). Student MUST pick a canonical
-//      drill or mission from drills_missions before training. This closes the
-//      loop with My Sequence + Track A's struggling-step signals.
-//   2. Alternative entrypoint = "Custom Session" — free-form training that gets
-//      logged for completeness but does NOT count toward step mastery.
-//   3. If a drill is picked (here OR via Sequence tab's "Practice this drill"),
-//      delegate to LinkedTrainingFlow (which handles intent → in-progress →
-//      criteria_evaluation as before).
-
-interface DrillMission {
-  id: string;
-  step_id: string | null;
-  title: string;
-  type: 'drill' | 'mission';
-  time_estimate: string | null;
-  key_words: string[] | null;
-  block_name: string | null;
-}
-
-interface TrainTabProps {
-  studentId: string;
-  beltLevel: BeltLevel;
-  drillsMissions: DrillMission[];
-  incomingDrillMissionId?: string | null;
-  onClearIncoming?: () => void;
-  onReturnToSequence?: () => void;
-}
-
-export function TrainTab({
-  studentId,
-  beltLevel,
-  drillsMissions,
-  incomingDrillMissionId,
-  onClearIncoming,
-  onReturnToSequence,
-}: TrainTabProps) {
-  const [pickedDrillId, setPickedDrillId] = useState<string | null>(null);
-  const [customMode, setCustomMode] = useState(false);
-
-  // Active drill = one passed in from Sequence tab OR one picked in this tab.
-  const activeDrillId = incomingDrillMissionId || pickedDrillId;
-
-  // ── Mode A: drill picked → delegate to LinkedTrainingFlow ──
-  if (activeDrillId) {
-    return (
-      <LinkedTrainingFlow
-        drillMissionId={activeDrillId}
-        studentId={studentId}
-        studentBelt={beltLevel}
-        onClearIncoming={() => {
-          setPickedDrillId(null);
-          onClearIncoming?.();
-        }}
-        onReturnToSequence={
-          onReturnToSequence ||
-          (() => {
-            setPickedDrillId(null);
-          })
-        }
-      />
-    );
-  }
-
-  // ── Mode B: custom session ──
-  if (customMode) {
-    return (
-      <CustomSessionFlow
-        studentId={studentId}
-        onCancel={() => setCustomMode(false)}
-        onDone={() => setCustomMode(false)}
-      />
-    );
-  }
-
-  // ── Mode C (default): drill picker ──
-  return (
-    <TrainPicker
-      drillsMissions={drillsMissions}
-      onPickDrill={(id) => setPickedDrillId(id)}
-      onCustomSession={() => setCustomMode(true)}
-    />
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TRAIN PICKER — default screen
-// ═══════════════════════════════════════════════════════════════
-
-function TrainPicker({
-  drillsMissions,
-  onPickDrill,
-  onCustomSession,
-}: {
-  drillsMissions: DrillMission[];
-  onPickDrill: (id: string) => void;
-  onCustomSession: () => void;
-}) {
-  const drills = drillsMissions.filter((d) => d.type === 'drill');
-  const missions = drillsMissions.filter((d) => d.type === 'mission');
-
-  return (
-    <div className="space-y-4 pb-4">
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          🏄 Train
-        </p>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]">
-          Pick a drill or mission to practice
-        </h2>
-        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-          Each drill is tied to a specific step in your sequence. Practicing
-          one updates your self-rating for that step. If you want to do free
-          surf or work on something not on the list, tap{' '}
-          <strong>Custom Session</strong> below.
-        </p>
-      </div>
-
-      {/* Custom Session entrypoint — placed on top so it's discoverable */}
-      <button
-        type="button"
-        onClick={onCustomSession}
-        className="w-full bg-gray-50 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-2xl p-4 text-left transition-colors"
-      >
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-          🏖 Custom Session
-        </p>
-        <p className="text-sm font-semibold text-[var(--tss-navy)] mt-1">
-          Free surf, breathing, fun — anything off-script
-        </p>
-        <p className="text-[11px] text-gray-500 mt-1">
-          Logged for the record but does NOT count toward step mastery.
-        </p>
-      </button>
-
-      {/* Drills */}
-      {drills.length > 0 && (
-        <DrillGroup
-          label="Drills"
-          icon="🔧"
-          subtitle="Train the technique on land or in shallow water"
-          items={drills}
-          onPick={onPickDrill}
-          accent="amber"
-        />
-      )}
-
-      {/* Missions */}
-      {missions.length > 0 && (
-        <DrillGroup
-          label="Missions"
-          icon="🌊"
-          subtitle="Apply the learning in the water with a specific objective"
-          items={missions}
-          onPick={onPickDrill}
-          accent="blue"
-        />
-      )}
-
-      {drills.length === 0 && missions.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
-          <p className="text-sm text-gray-400">
-            No drills or missions available for your belt yet.
-          </p>
-          <p className="text-xs text-gray-300 mt-2">
-            Use Custom Session above to log your training in the meantime.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DrillGroup({
-  label,
-  icon,
-  subtitle,
-  items,
-  onPick,
-  accent,
-}: {
-  label: string;
-  icon: string;
-  subtitle: string;
-  items: DrillMission[];
-  onPick: (id: string) => void;
-  accent: 'amber' | 'blue';
-}) {
-  const accentClasses =
-    accent === 'amber'
-      ? 'bg-amber-50/60 hover:bg-amber-100 border-amber-100'
-      : 'bg-blue-50/60 hover:bg-blue-100 border-blue-100';
-
-  return (
-    <div>
-      <div className="px-1 mb-2">
-        <h3 className="text-sm font-bold text-[var(--tss-navy)]">
-          {icon} {label}
-        </h3>
-        <p className="text-[11px] text-gray-500">{subtitle}</p>
-      </div>
-      <div className="space-y-1.5">
-        {items.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => onPick(d.id)}
-            className={`w-full text-left rounded-xl border ${accentClasses} p-3 transition-colors`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-mono text-gray-400 truncate">
-                  {d.id}
-                  {d.step_id ? ` · ${d.step_id}` : ''}
-                  {d.block_name ? ` · ${d.block_name}` : ''}
-                </p>
-                <p className="text-sm font-medium text-gray-800 mt-0.5">
-                  {d.title}
-                </p>
-                {d.key_words && d.key_words.length > 0 && (
-                  <p className="text-[11px] text-gray-500 italic mt-1 truncate">
-                    {d.key_words.join(' · ')}
-                  </p>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                {d.time_estimate && (
-                  <span className="text-[10px] text-gray-500">{d.time_estimate}</span>
-                )}
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CUSTOM SESSION FLOW — free-form training
-// ═══════════════════════════════════════════════════════════════
+// Custom Session — free-form training that gets logged but does NOT count
+// toward step mastery. Lives inside the unified "Let's Play" tab as an
+// alternative to the canonical drill picker.
 
 const DURATION_CHIPS = [10, 20, 30, 45, 60];
 
-function CustomSessionFlow({
+export function CustomSessionFlow({
   studentId,
   onCancel,
   onDone,
@@ -401,7 +158,7 @@ function CustomSessionFlow({
     );
   }
 
-  // ── Review phase (rating + notes) ──
+  // ── Review phase ──
   if (phase === 'review') {
     return (
       <div className="space-y-4 pb-4">
@@ -495,7 +252,7 @@ function CustomSessionFlow({
         className="w-full py-3 rounded-xl text-white text-sm font-semibold"
         style={{ background: BRAND.colors.navy }}
       >
-        Back to Train
+        Back to Let&apos;s Play
       </button>
     </div>
   );

@@ -66,7 +66,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   };
 
   // Validate initialTab against allowed tab values
-  const validTabs = ['home', 'course', 'sequence', 'sessions', 'self-training', 'feedback', 'my-coach'];
+  const validTabs = ['home', 'course', 'sequence', 'sessions', 'feedback', 'my-coach'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
 
   return (

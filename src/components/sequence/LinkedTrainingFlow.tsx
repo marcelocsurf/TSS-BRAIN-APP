@@ -145,6 +145,39 @@ export function LinkedTrainingFlow({
 
   // ─── PHASE: VENUE ───
   if (phase === 'venue') {
+    const isDrillOnly = drill?.type === 'drill';
+
+    // Drills are dry-land — skip the full venue analysis with a simple "no aplica" card.
+    if (isDrillOnly) {
+      return (
+        <FlowShell drill={drill} phase={phase} onCancel={onClearIncoming}>
+          <PhaseHeader
+            step="1 / 5"
+            title="Venue"
+            subtitle="This drill is dry-land — no venue analysis needed."
+          />
+
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center">
+            <p className="text-3xl mb-2">🏖</p>
+            <p className="text-sm font-semibold text-gray-700">No aplica</p>
+            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              You can practice this drill anywhere safe — sand, skatepark, gym, or at home.
+            </p>
+          </div>
+
+          <NavButtons
+            onBack={onClearIncoming}
+            backLabel="Cancel"
+            onNext={() => {
+              setVenueType('dry_land');
+              setSafetyCheck(true);
+              setPhase('warmup');
+            }}
+          />
+        </FlowShell>
+      );
+    }
+
     const canContinue = !!venueType;
     return (
       <FlowShell drill={drill} phase={phase} onCancel={onClearIncoming}>
@@ -409,37 +442,71 @@ export function LinkedTrainingFlow({
 
   // ─── PHASE: MENTAL HACK ───
   if (phase === 'mental') {
+    // Simplified to 3 anchors + skip. Aligned with TSS slogan "Evolve through play":
+    // get into the zone, focus on the mission, go play the game.
+    const drillKeyWords =
+      drill?.key_words && drill.key_words.length > 0
+        ? drill.key_words.join(' · ')
+        : 'Repeat the cues from the step';
+
+    const HACK_OPTIONS = [
+      {
+        value: 'breathe',
+        icon: '🫁',
+        title: 'Breathe',
+        desc: 'Inhale 4 · hold 4 · exhale 4. Land in the body.',
+      },
+      {
+        value: 'key_words',
+        icon: '🎯',
+        title: 'Mission key words',
+        desc: drillKeyWords,
+      },
+      {
+        value: 'play',
+        icon: '▶️',
+        title: 'Respira · Focus · Play',
+        desc: 'The TSS mantra — drop in and play the game.',
+      },
+    ];
+
     return (
       <FlowShell drill={drill} phase={phase} onCancel={onClearIncoming}>
         <PhaseHeader
           step="4 / 5"
           title="Mental Hack"
-          subtitle="Pick one mental tool to anchor your focus during practice."
+          subtitle="One anchor to enter the zone. Pick or skip."
         />
 
         <div className="space-y-2">
-          {MENTAL_HACK_OPTIONS.map((m) => (
+          {HACK_OPTIONS.map((m) => (
             <button
               key={m.value}
               onClick={() => setMentalHack(m.value)}
-              className={`w-full px-4 py-3 rounded-lg border-2 text-left text-sm transition-colors ${
+              className={`w-full px-4 py-3 rounded-xl border-2 text-left transition-colors ${
                 mentalHack === m.value
                   ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)]/5'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="font-medium">{m.label}</div>
+              <div className="flex items-start gap-2">
+                <span className="text-base">{m.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-gray-800">{m.title}</div>
+                  <div className="text-[11px] text-gray-500 italic mt-0.5">{m.desc}</div>
+                </div>
+              </div>
             </button>
           ))}
           <button
             onClick={() => setMentalHack('none')}
-            className={`w-full px-4 py-3 rounded-lg border-2 text-left text-xs transition-colors ${
+            className={`w-full px-4 py-2 rounded-xl border-2 text-center text-xs transition-colors ${
               mentalHack === 'none'
-                ? 'border-gray-400 bg-gray-100'
+                ? 'border-gray-400 bg-gray-100 text-gray-700'
                 : 'border-dashed border-gray-300 text-gray-500'
             }`}
           >
-            None — pure execution
+            Skip — pure execution
           </button>
         </div>
 
@@ -466,10 +533,16 @@ export function LinkedTrainingFlow({
         : warmUp === 'custom'
         ? `Custom: ${warmUpCustom}`
         : warmupOptions.find((w) => w.value === warmUp)?.label;
+    const HACK_LABELS: Record<string, string> = {
+      breathe: '🫁 Breathe',
+      key_words: '🎯 Mission key words',
+      play: '▶️ Respira · Focus · Play',
+      none: 'Skip',
+    };
     const mentalLabel =
-      mentalHack === 'none'
-        ? 'None'
-        : MENTAL_HACK_OPTIONS.find((m) => m.value === mentalHack)?.label;
+      HACK_LABELS[mentalHack || ''] ||
+      MENTAL_HACK_OPTIONS.find((m) => m.value === mentalHack)?.label ||
+      mentalHack;
 
     return (
       <FlowShell drill={drill} phase={phase} onCancel={onClearIncoming}>
