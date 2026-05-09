@@ -418,17 +418,28 @@ export async function getMultiBlockSession(id: string) {
   return { session: sessionQ.data, blocks: blocksQ.data ?? [] };
 }
 
-// Returns drills_missions filtered by step_id and (optionally) belt
+// Returns drills_missions filtered by step_id (and belt if a match exists).
+// NOTE: drills_missions.belt stores values like 'white', while student.belt_level
+// is 'white_belt'. We normalize by stripping the '_belt' suffix. If filtering
+// returns 0 rows we fall back to no-belt-filter so the coach is never blocked.
 export async function getDrillsForStep(stepId: string, belt?: string) {
   const supabase = await createClient();
-  let q = supabase
-    .from('drills_missions')
-    .select('id, step_id, title, type, time_estimate, key_words, success_criteria, belt, block_name')
-    .eq('step_id', stepId)
-    .eq('active', true);
-  if (belt) q = q.eq('belt', belt);
-  const { data } = await q.order('type').order('id');
-  return data ?? [];
+  const normalizedBelt = belt ? belt.replace(/_belt$/, '') : null;
+
+  const baseQuery = () =>
+    supabase
+      .from('drills_missions')
+      .select('id, step_id, title, type, time_estimate, key_words, success_criteria, belt, block_name')
+      .eq('step_id', stepId)
+      .eq('active', true);
+
+  if (normalizedBelt) {
+    const { data } = await baseQuery().eq('belt', normalizedBelt).order('type').order('id');
+    if (data && data.length > 0) return data;
+  }
+  // Fallback: any belt
+  const { data: all } = await baseQuery().order('type').order('id');
+  return all ?? [];
 }
 
 // Steps the student should be working on given their belt + sequence number.
@@ -456,6 +467,7 @@ export async function getStepsForBelt(belt: string) {
 // "struggling" steps (current_rating < 3), ranked by lowest rating first.
 export async function getSuggestedDrillsForStudent(studentId: string, belt: string) {
   const supabase = await createClient();
+  const normalizedBelt = belt ? belt.replace(/_belt$/, '') : null;
 
   const { data: ratings } = await supabase
     .from('student_step_ratings')
@@ -468,12 +480,22 @@ export async function getSuggestedDrillsForStudent(studentId: string, belt: stri
   const stepIds = (ratings ?? []).map((r: any) => r.step_id);
   if (stepIds.length === 0) return [];
 
-  const { data: drills } = await supabase
-    .from('drills_missions')
-    .select('id, step_id, title, type, time_estimate, key_words')
-    .in('step_id', stepIds)
-    .eq('active', true)
-    .eq('belt', belt);
+  const baseQuery = () =>
+    supabase
+      .from('drills_missions')
+      .select('id, step_id, title, type, time_estimate, key_words')
+      .in('step_id', stepIds)
+      .eq('active', true);
+
+  let drills: any[] | null = null;
+  if (normalizedBelt) {
+    const r = await baseQuery().eq('belt', normalizedBelt);
+    drills = r.data;
+  }
+  if (!drills || drills.length === 0) {
+    const r = await baseQuery();
+    drills = r.data ?? [];
+  }
 
   const byStep = new Map(stepIds.map((s, i) => [s, i]));
   return (drills ?? [])
