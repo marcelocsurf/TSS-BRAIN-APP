@@ -373,3 +373,87 @@ export async function getSubmittedSurveys(studentId: string) {
 
   return surveys || [];
 }
+
+// ─── Get "My Coach" data — current coach + stats with this student ───
+//
+// Returns the coach who ran the student's MOST RECENT closed session, plus
+// computed stats specific to that coach + student pair (sessions count,
+// total hours, average rating from this student's surveys, latest session
+// date). Used by the portal "My Coach" tab, which only renders if the
+// student's coach_profile_unlocked_at is set.
+
+export async function getMyCoachData(studentId: string) {
+  const admin = createAdminClient();
+
+  // Find the coach of the student's most recent closed session
+  const { data: lastResult } = await admin
+    .from('student_session_results')
+    .select('coach_id, created_at')
+    .eq('student_id', studentId)
+    .eq('completion_state', 'closed')
+    .not('coach_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!lastResult?.coach_id) return null;
+  const coachId = lastResult.coach_id;
+
+  // Fetch coach profile + this student's history with this coach in parallel
+  const [coachQ, sessionsQ, surveysQ] = await Promise.all([
+    admin
+      .from('coaches')
+      .select(
+        'id, display_name, first_name, last_name, role, certification_level, max_belt_permission, languages, specialty_area, active_status'
+      )
+      .eq('id', coachId)
+      .single(),
+    admin
+      .from('student_session_results')
+      .select('id, created_at, status, standalone_sessions(duration_minutes, session_date)')
+      .eq('student_id', studentId)
+      .eq('coach_id', coachId)
+      .eq('completion_state', 'closed'),
+    admin
+      .from('survey_responses')
+      .select('coach_rating, session_quality, q4_session_value, submitted_at, session_result_id, student_session_results!inner(coach_id)')
+      .eq('student_id', studentId)
+      .eq('student_session_results.coach_id', coachId),
+  ]);
+
+  if (!coachQ.data) return null;
+
+  const sessions = sessionsQ.data || [];
+  const surveys = surveysQ.data || [];
+
+  const totalSessions = sessions.length;
+  // Supabase returns the related row(s) — sometimes as a single object,
+  // sometimes as an array depending on FK shape. Normalize defensively.
+  const standaloneOf = (row: any) => {
+    const ss = row?.standalone_sessions;
+    if (!ss) return null;
+    return Array.isArray(ss) ? ss[0] : ss;
+  };
+  const totalMinutes = sessions.reduce(
+    (sum: number, s: any) => sum + (standaloneOf(s)?.duration_minutes || 0),
+    0
+  );
+  const lastSessionDate =
+    standaloneOf(sessions[0])?.session_date || sessions[0]?.created_at || null;
+
+  const ratings = surveys.map((s: any) => s.coach_rating).filter((n: number) => n > 0);
+  const avgRating = ratings.length
+    ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
+    : null;
+
+  return {
+    coach: coachQ.data,
+    stats: {
+      totalSessions,
+      totalMinutes,
+      lastSessionDate,
+      avgRating,
+      ratingsCount: ratings.length,
+    },
+  };
+}

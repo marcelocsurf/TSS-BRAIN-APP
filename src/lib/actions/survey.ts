@@ -29,6 +29,17 @@ export async function submitSurvey(input: SurveyInput) {
     throw new Error('Survey already submitted for this session.');
   }
 
+  // Detect first-ever submission BEFORE insert — used to unlock "My Coach"
+  // tab. We check student record's coach_profile_unlocked_at since one
+  // student gets one unlock for life (not per-coach).
+  const { data: studentRow } = await admin
+    .from('students')
+    .select('coach_profile_unlocked_at')
+    .eq('id', input.student_id)
+    .single();
+
+  const isFirstUnlock = !studentRow?.coach_profile_unlocked_at;
+
   // Insert survey
   const { error: surveyErr } = await admin
     .from('survey_responses')
@@ -57,6 +68,18 @@ export async function submitSurvey(input: SurveyInput) {
     console.error('Failed to update completion_state:', updateErr.message);
   }
 
+  // First survey ever from this student → unlock "My Coach" tab forever
+  if (isFirstUnlock) {
+    const { error: unlockErr } = await admin
+      .from('students')
+      .update({ coach_profile_unlocked_at: new Date().toISOString() })
+      .eq('id', input.student_id);
+
+    if (unlockErr) {
+      console.error('Failed to set coach_profile_unlocked_at:', unlockErr.message);
+    }
+  }
+
   // Audit log
   await admin.from('audit_log').insert({
     session_result_id: input.session_result_id,
@@ -66,8 +89,8 @@ export async function submitSurvey(input: SurveyInput) {
     event_type: 'survey_submitted',
     status_before: 'closed',
     status_after: 'closed',
-    note: `Survey submitted. Coach rating: ${input.coach_rating}/5.`,
+    note: `Survey submitted. Coach rating: ${input.coach_rating}/5.${isFirstUnlock ? ' Coach profile unlocked.' : ''}`,
   });
 
-  return { success: true };
+  return { success: true, justUnlockedCoachProfile: isFirstUnlock };
 }

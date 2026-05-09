@@ -6,6 +6,7 @@ import {
   getStudentDrillsForSelfTraining,
   getPendingSurveys,
   getSubmittedSurveys,
+  getMyCoachData,
 } from '@/lib/actions/portal';
 import { getCourseCatalog } from '@/lib/actions/course';
 import { PortalTabs } from './portal-tabs';
@@ -16,12 +17,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; survey?: string }>;
 }
 
 export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab } = await searchParams;
+  const { tab, survey } = await searchParams;
 
   // Get comprehensive student data
   const portalData = await getStudentPortalData(token);
@@ -30,13 +31,16 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const { student } = portalData;
   const beltLevel = student.belt_level as BeltLevel;
 
+  const coachUnlocked = !!(student as any).coach_profile_unlocked_at;
+
   // Fetch parallel data — materials use admin access control via student_level_access
-  const [materials, drills, pendingSurveys, submittedSurveys, courseCatalog] = await Promise.all([
+  const [materials, drills, pendingSurveys, submittedSurveys, courseCatalog, myCoach] = await Promise.all([
     getStudentMaterials(student.id, beltLevel),
     getStudentDrillsForSelfTraining(beltLevel),
     getPendingSurveys(student.id),
     getSubmittedSurveys(student.id),
     getCourseCatalog(student.id),
+    coachUnlocked ? getMyCoachData(student.id) : Promise.resolve(null),
   ]);
 
   // Course owners (TSS founders) bypass the access gate so they can review
@@ -60,7 +64,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   };
 
   // Validate initialTab against allowed tab values
-  const validTabs = ['home', 'course', 'sequence', 'sessions', 'self-training', 'feedback'];
+  const validTabs = ['home', 'course', 'sequence', 'sessions', 'self-training', 'feedback', 'my-coach'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
 
   return (
@@ -73,8 +77,11 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
         materials,
         token,
         courseData,
+        myCoach,
+        coachProfileUnlocked: coachUnlocked,
       }}
       initialTab={initialTab}
+      initialSurveyId={survey || null}
     />
   );
 }

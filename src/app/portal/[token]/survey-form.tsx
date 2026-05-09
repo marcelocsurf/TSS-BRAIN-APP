@@ -12,6 +12,7 @@ interface Props {
 
 export function SurveyForm({ resultId, studentId, token }: Props) {
   const [submitted, setSubmitted] = useState(false);
+  const [justUnlocked, setJustUnlocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,7 +47,7 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
     setLoading(true);
     setError('');
     try {
-      await submitSurvey({
+      const result = await submitSurvey({
         session_result_id: resultId,
         student_id: studentId,
         coach_rating: form.coach_rating,
@@ -61,6 +62,7 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
           form.equipment_notes ? `Equipment/facilities: ${form.equipment_notes}` : '',
         ].filter(Boolean).join('\n') || '',
       });
+      setJustUnlocked(!!result.justUnlockedCoachProfile);
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message || 'Failed to submit survey');
@@ -70,10 +72,27 @@ export function SurveyForm({ resultId, studentId, token }: Props) {
 
   if (submitted) {
     return (
-      <div className="bg-green-50 rounded-xl p-6 text-center">
-        <p className="text-2xl mb-2">🤙</p>
-        <p className="text-sm font-semibold text-green-700">Thank you for your feedback!</p>
-        <p className="text-xs text-green-600 mt-1">It helps us get better every session.</p>
+      <div className="space-y-3">
+        <div className="bg-green-50 rounded-xl p-6 text-center">
+          <p className="text-2xl mb-2">🤙</p>
+          <p className="text-sm font-semibold text-green-700">Thank you for your feedback!</p>
+          <p className="text-xs text-green-600 mt-1">It helps us get better every session.</p>
+        </div>
+        {justUnlocked && (
+          <div
+            className="rounded-xl p-5 text-center border-2"
+            style={{ background: '#FEF3C7', borderColor: BRAND.colors.gold }}
+          >
+            <p className="text-3xl mb-1">&#128275;</p>
+            <p className="text-sm font-bold text-amber-900">
+              You just unlocked your coach&apos;s profile
+            </p>
+            <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+              Open the new <strong>My Coach</strong> tab to see their rating,
+              certifications, and your session history together.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

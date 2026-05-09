@@ -470,6 +470,7 @@ export async function createCascadeSession(
           homework: homeworkText,
           whatsNext: whatsNextText,
           beltLevel: student.belt_level,
+          sessionResultId: resultRow?.id,
         });
 
         console.log('Email flow: sendSessionEmail result =', emailResult.success, emailResult.error || '');

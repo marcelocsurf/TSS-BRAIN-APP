@@ -49,6 +49,28 @@ interface PortalData {
     studentName: string;
     hasAccess: boolean;
   };
+  myCoach?: {
+    coach: {
+      id: string;
+      display_name: string;
+      first_name: string;
+      last_name: string | null;
+      role: string;
+      certification_level: string | null;
+      max_belt_permission: string;
+      languages: string | null;
+      specialty_area: string | null;
+      active_status: boolean;
+    };
+    stats: {
+      totalSessions: number;
+      totalMinutes: number;
+      lastSessionDate: string | null;
+      avgRating: number | null;
+      ratingsCount: number;
+    };
+  } | null;
+  coachProfileUnlocked?: boolean;
 }
 
 // ─── Venue Analysis Constants ───
@@ -168,21 +190,34 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
   return SELF_TRAINING_WARMUPS[beltLevel] || SELF_TRAINING_WARMUPS['white_belt'];
 }
 
-type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'self-training' | 'feedback';
+type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'self-training' | 'feedback' | 'my-coach';
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
+const ALL_TABS: { key: Tab; label: string; icon: string; lockedUntilCoachUnlock?: boolean }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'course', label: 'Course', icon: '🎓' },
   { key: 'sequence', label: 'Sequence', icon: '🎯' },
   { key: 'self-training', label: 'Train', icon: '🏄' },
   { key: 'sessions', label: 'Sessions', icon: '📋' },
   { key: 'feedback', label: 'Feedback', icon: '💬' },
+  { key: 'my-coach', label: 'My Coach', icon: '👤', lockedUntilCoachUnlock: true },
 ];
 
 // ─── Main Portal Tabs Component ───
 
-export function PortalTabs({ data, initialTab }: { data: PortalData; initialTab?: Tab }) {
+export function PortalTabs({
+  data,
+  initialTab,
+  initialSurveyId,
+}: {
+  data: PortalData;
+  initialTab?: Tab;
+  initialSurveyId?: string | null;
+}) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  const TABS = useMemo(
+    () => ALL_TABS.filter((t) => !t.lockedUntilCoachUnlock || data.coachProfileUnlocked),
+    [data.coachProfileUnlocked]
+  );
   // Linked Train flow: when student taps "Practice this drill" from My Sequence,
   // we store the drill ID here and switch to Train tab. SelfTrainingTab reads
   // this prop to enter "linked mode" (banner + skip drill picker + per-criterion
@@ -230,7 +265,14 @@ export function PortalTabs({ data, initialTab }: { data: PortalData; initialTab?
             }}
           />
         )}
-        {activeTab === 'feedback' && <FeedbackTab data={data} autoExpandFirst={initialTab === 'feedback'} />}
+        {activeTab === 'feedback' && (
+          <FeedbackTab
+            data={data}
+            autoExpandFirst={initialTab === 'feedback'}
+            initialSurveyId={initialSurveyId || null}
+          />
+        )}
+        {activeTab === 'my-coach' && data.myCoach && <MyCoachTab data={data} />}
       </div>
 
       {/* Bottom Tab Bar */}
@@ -2226,11 +2268,27 @@ function ChecklistItem({ label, value }: { label: string; value: string }) {
 // TAB 5: FEEDBACK
 // ═══════════════════════════════════════
 
-function FeedbackTab({ data, autoExpandFirst = false }: { data: PortalData; autoExpandFirst?: boolean }) {
+function FeedbackTab({
+  data,
+  autoExpandFirst = false,
+  initialSurveyId = null,
+}: {
+  data: PortalData;
+  autoExpandFirst?: boolean;
+  initialSurveyId?: string | null;
+}) {
   const { pendingSurveys, submittedSurveys, student, token } = data;
-  const [expandedSurveyId, setExpandedSurveyId] = useState<string | null>(
-    autoExpandFirst && pendingSurveys.length > 0 ? pendingSurveys[0].id : null
-  );
+  // Priority: ?survey=X URL param wins (deep-link from email).
+  // Then autoExpandFirst (general "open feedback tab from email").
+  // Otherwise nothing expanded.
+  const initialExpand = (() => {
+    if (initialSurveyId && pendingSurveys.some((s: any) => s.id === initialSurveyId)) {
+      return initialSurveyId;
+    }
+    if (autoExpandFirst && pendingSurveys.length > 0) return pendingSurveys[0].id;
+    return null;
+  })();
+  const [expandedSurveyId, setExpandedSurveyId] = useState<string | null>(initialExpand);
 
   return (
     <div className="space-y-5">
@@ -2384,6 +2442,143 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between">
       <span className="text-xs text-gray-400">{label}</span>
       <span className="text-sm text-gray-700 capitalize">{value?.replace(/_/g, ' ')}</span>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// TAB 6: MY COACH (visible only after first survey unlocks it)
+// ═══════════════════════════════════════
+
+function MyCoachTab({ data }: { data: PortalData }) {
+  if (!data.myCoach) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center shadow-sm">
+        <p className="text-2xl mb-2">👤</p>
+        <p className="text-sm text-gray-500">
+          No coach data yet. Once you have a closed session with a coach, their
+          profile will show here.
+        </p>
+      </div>
+    );
+  }
+
+  const { coach, stats } = data.myCoach;
+  const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase() || '👤';
+  const hours = Math.round((stats.totalMinutes / 60) * 10) / 10;
+
+  return (
+    <div className="space-y-4">
+      {/* Coach card */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 ring-2 ring-white shadow-md"
+            style={{ background: BRAND.colors.navy }}
+          >
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-[var(--tss-navy)] text-base truncate">
+              {coach.display_name}
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 capitalize font-medium">
+                {coach.role.replace(/_/g, ' ')}
+              </span>
+              {coach.certification_level && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
+                  {coach.certification_level}
+                </span>
+              )}
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
+                Up to {coach.max_belt_permission?.replace(/_/g, ' ')}
+              </span>
+            </div>
+          </div>
+        </div>
+        {(coach.specialty_area || coach.languages) && (
+          <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
+            {coach.specialty_area && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Specialty
+                </p>
+                <p className="text-sm text-gray-700 mt-0.5">{coach.specialty_area}</p>
+              </div>
+            )}
+            {coach.languages && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Languages
+                </p>
+                <p className="text-sm text-gray-700 mt-0.5">{coach.languages}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Stats with this student */}
+      <div>
+        <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+          Your history together
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          <StatCard label="Sessions" value={stats.totalSessions.toString()} />
+          <StatCard label="Hours trained" value={hours > 0 ? hours.toString() : '—'} />
+          <StatCard
+            label="Last session"
+            value={
+              stats.lastSessionDate
+                ? new Date(stats.lastSessionDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : '—'
+            }
+          />
+          <StatCard
+            label="Your rating"
+            value={
+              stats.avgRating !== null
+                ? `${stats.avgRating}/5`
+                : '—'
+            }
+            sublabel={stats.ratingsCount > 0 ? `${stats.ratingsCount} survey${stats.ratingsCount > 1 ? 's' : ''}` : undefined}
+          />
+        </div>
+      </div>
+
+      {/* Hint */}
+      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+        <p className="text-[11px] text-amber-700 leading-relaxed">
+          <strong>How this works:</strong> Your coach earns their reputation
+          from your honest feedback. After every session, you&apos;ll get an
+          email with a quick survey. The more you submit, the more accurate
+          their rating becomes.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  sublabel,
+}: {
+  label: string;
+  value: string;
+  sublabel?: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
+      <p className="text-lg font-bold text-[var(--tss-navy)]">{value}</p>
+      <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">
+        {label}
+      </p>
+      {sublabel && <p className="text-[9px] text-gray-400 mt-0.5">{sublabel}</p>}
     </div>
   );
 }

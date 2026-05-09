@@ -396,6 +396,7 @@ export async function closeStandaloneSession(
         homework: evaluation.homework,
         whatsNext: evaluation.whats_next,
         beltLevel: student.belt_level,
+        sessionResultId: result.id,
       });
 
       if (emailResult.success) {

@@ -18,19 +18,24 @@ interface SessionEmailData {
   homework: string;
   whatsNext: string;
   beltLevel: BeltLevel;
+  /** student_session_results.id — used to deep-link directly to this survey. */
+  sessionResultId?: string;
 }
 
 export async function sendSessionEmail(data: SessionEmailData): Promise<{ success: boolean; error?: string }> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const portalUrl = `${appUrl}/portal/${data.portalToken}`;
   const belt = BELT_DISPLAY[data.beltLevel];
+  const feedbackUrl = data.sessionResultId
+    ? `${portalUrl}?tab=feedback&survey=${data.sessionResultId}`
+    : `${portalUrl}?tab=feedback`;
 
   try {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.studentEmail,
       subject: `Your session report from ${data.coachName}`,
-      html: buildEmailHtml({ ...data, portalUrl, feedbackUrl: `${portalUrl}?tab=feedback`, beltColor: belt?.color || '#1A1A2E' }),
+      html: buildEmailHtml({ ...data, portalUrl, feedbackUrl, beltColor: belt?.color || '#1A1A2E' }),
     });
     return { success: true };
   } catch (err: any) {
