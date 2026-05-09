@@ -249,6 +249,31 @@ export async function getStudentMaterials(studentId: string, beltLevel: BeltLeve
   return getMaterialsForStudent(beltLevel, grantedLevels);
 }
 
+// ─── Get all drills + missions from drills_missions for the Train picker ───
+//
+// Used by the redesigned Train tab: the student MUST pick a canonical drill
+// or mission before training, so this returns the full catalog filtered by
+// belt + active. (For "Custom Session" mode the picker is bypassed entirely.)
+
+export async function getDrillsMissionsForBelt(belt: string) {
+  const admin = createAdminClient();
+  const normalizedBelt = belt ? belt.replace(/_belt$/, '') : null;
+
+  const baseQuery = () =>
+    admin
+      .from('drills_missions')
+      .select('id, step_id, title, type, time_estimate, key_words, success_criteria, belt, block_name, reps_recommended')
+      .eq('active', true);
+
+  // Try filter by belt; fall back to all if zero matches (defensive vs naming drift)
+  if (normalizedBelt) {
+    const { data } = await baseQuery().eq('belt', normalizedBelt).order('type').order('id');
+    if (data && data.length > 0) return data;
+  }
+  const { data: all } = await baseQuery().order('type').order('id');
+  return all ?? [];
+}
+
 // ─── Get drills for self-training filtered by belt ───
 
 export async function getStudentDrillsForSelfTraining(beltLevel: BeltLevel) {
@@ -326,6 +351,8 @@ export async function createSelfTrainingSession(
     crowd_level?: string | null;
     safety_check?: boolean;
     venue_notes?: string | null;
+    /** 'drill' (default — counts toward step metrics) or 'custom' (free-form, doesn't count). */
+    kind?: 'drill' | 'custom';
   }
 ) {
   const admin = createAdminClient();
@@ -339,6 +366,7 @@ export async function createSelfTrainingSession(
     duration_minutes: data.duration_minutes,
     completed: false,
     notes: data.notes,
+    kind: data.kind || 'drill',
   };
 
   // Venue analysis fields (optional — columns may not exist yet)

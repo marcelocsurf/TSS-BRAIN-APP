@@ -4,6 +4,7 @@ import {
   getStudentPortalData,
   getStudentMaterials,
   getStudentDrillsForSelfTraining,
+  getDrillsMissionsForBelt,
   getPendingSurveys,
   getSubmittedSurveys,
   getMyCoachData,
@@ -34,9 +35,10 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const coachUnlocked = !!(student as any).coach_profile_unlocked_at;
 
   // Fetch parallel data — materials use admin access control via student_level_access
-  const [materials, drills, pendingSurveys, submittedSurveys, courseCatalog, myCoach] = await Promise.all([
+  const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach] = await Promise.all([
     getStudentMaterials(student.id, beltLevel),
     getStudentDrillsForSelfTraining(beltLevel),
+    getDrillsMissionsForBelt(beltLevel),
     getPendingSurveys(student.id),
     getSubmittedSurveys(student.id),
     getCourseCatalog(student.id),
@@ -72,6 +74,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
       data={{
         ...portalData,
         drills,
+        drillsMissions,
         pendingSurveys,
         submittedSurveys,
         materials,

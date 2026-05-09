@@ -344,15 +344,18 @@ export function LinkedTrainingFlow({
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              📝 Today's intention <span className="text-gray-400 font-normal">(optional)</span>
+              🎯 Specific objective(s) <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               value={intention}
               onChange={(e) => setIntention(e.target.value)}
-              placeholder="e.g., Focus on keeping elbows close to the body during the roll"
+              placeholder="e.g. posture, knee in, chest forward, scapula, full movement execution"
               rows={2}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
+            <p className="text-[10px] text-gray-400 mt-1">
+              What detail of the technique are you focusing on today? Leave blank to just execute the mission as-is.
+            </p>
           </div>
 
           <div>
@@ -505,7 +508,7 @@ export function LinkedTrainingFlow({
             {intention && (
               <div className="bg-amber-50 border border-amber-200 rounded p-2">
                 <div className="text-[9px] uppercase font-bold text-amber-700 tracking-wider">
-                  Today's intention
+                  Specific objective(s)
                 </div>
                 <div className="text-xs italic text-amber-900 mt-0.5">"{intention}"</div>
               </div>

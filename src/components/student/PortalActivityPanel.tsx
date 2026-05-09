@@ -10,6 +10,7 @@ interface SelfTraining {
   intention_text: string | null;
   completed: boolean;
   linked_step_id: string | null;
+  kind?: 'drill' | 'custom';
 }
 
 interface StepRating {
@@ -123,36 +124,49 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
             Recent self-training
           </p>
           <div className="space-y-1">
-            {recentSelf.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center justify-between border border-gray-100 rounded px-3 py-2"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-700 truncate">
-                    {s.drill_name || s.linked_step_id || 'Untitled drill'}
-                  </p>
-                  <p className="text-[10px] text-gray-400">
-                    {new Date(s.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                    {s.duration_minutes ? ` · ${s.duration_minutes}min` : ''}
-                    {s.mission_completion ? ` · ${s.mission_completion}` : ''}
-                  </p>
-                  {s.intention_text && (
-                    <p className="text-[10px] text-gray-500 italic mt-0.5 truncate">
-                      &ldquo;{s.intention_text}&rdquo;
+            {recentSelf.map((s) => {
+              const isCustom = s.kind === 'custom';
+              return (
+                <div
+                  key={s.id}
+                  className={`flex items-center justify-between border rounded px-3 py-2 ${
+                    isCustom ? 'border-gray-100 bg-gray-50/40' : 'border-gray-100'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm text-gray-700 truncate">
+                        {s.drill_name || s.linked_step_id || 'Untitled drill'}
+                      </p>
+                      {isCustom && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-medium uppercase tracking-wider shrink-0">
+                          Custom
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(s.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                      {s.duration_minutes ? ` · ${s.duration_minutes}min` : ''}
+                      {s.mission_completion ? ` · ${s.mission_completion}` : ''}
+                      {isCustom ? ' · does not count toward step mastery' : ''}
                     </p>
+                    {s.intention_text && (
+                      <p className="text-[10px] text-gray-500 italic mt-0.5 truncate">
+                        &ldquo;{s.intention_text}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                  {s.execution_rating != null && !isCustom && (
+                    <div className="shrink-0 ml-2">
+                      <RatingStars rating={s.execution_rating} />
+                    </div>
                   )}
                 </div>
-                {s.execution_rating != null && (
-                  <div className="shrink-0 ml-2">
-                    <RatingStars rating={s.execution_rating} />
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
