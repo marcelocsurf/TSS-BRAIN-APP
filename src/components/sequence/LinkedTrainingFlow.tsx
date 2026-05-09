@@ -178,78 +178,60 @@ export function LinkedTrainingFlow({
       );
     }
 
-    const canContinue = !!venueType;
+    // Missions are in the water — skip the "Where are you?" grid entirely
+    // and ask the conditions questions directly. We auto-set venueType='beach'
+    // on first render so the rest of the flow + the review screen behave
+    // consistently with the existing schema.
+    const canContinue = !!waveConditions;
     return (
       <FlowShell drill={drill} phase={phase} onCancel={onClearIncoming}>
         <PhaseHeader
           step="1 / 5"
           title="Venue Analysis"
-          subtitle="Where are you practicing today? Read the conditions before you start."
+          subtitle="Read today's conditions before you paddle out."
         />
 
         <div className="space-y-4">
-          {/* Venue type */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              📍 Where are you?
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {VENUE_TYPES.map((v) => (
-                <Pill
-                  key={v.value}
-                  active={venueType === v.value}
-                  onClick={() => setVenueType(v.value)}
-                  label={v.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Beach-only fields */}
-          {isBeach && (
-            <>
-              <Picker
-                label="🌊 Wave size"
-                options={WAVE_CONDITIONS}
-                value={waveConditions}
-                onChange={setWaveConditions}
-                cols={3}
-              />
-              <Picker
-                label="💨 Wind"
-                options={WIND_OPTIONS}
-                value={wind}
-                onChange={setWind}
-                cols={2}
-              />
-              <Picker
-                label="🌙 Tide"
-                options={TIDE_OPTIONS}
-                value={tide}
-                onChange={setTide}
-                cols={3}
-              />
-              <Picker
-                label="👥 Crowd"
-                options={CROWD_OPTIONS}
-                value={crowdLevel}
-                onChange={setCrowdLevel}
-                cols={2}
-              />
-              <label className="flex items-start gap-2 cursor-pointer p-3 bg-green-50 border border-green-200 rounded-lg">
-                <input
-                  type="checkbox"
-                  checked={safetyCheck}
-                  onChange={(e) => setSafetyCheck(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span className="text-xs text-green-900">
-                  <strong>Safety check:</strong> I identified the safe zone, the
-                  impact zone, hazards, and entry/exit points.
-                </span>
-              </label>
-            </>
-          )}
+          <Picker
+            label="🌊 Wave size"
+            options={WAVE_CONDITIONS}
+            value={waveConditions}
+            onChange={setWaveConditions}
+            cols={3}
+          />
+          <Picker
+            label="💨 Wind"
+            options={WIND_OPTIONS}
+            value={wind}
+            onChange={setWind}
+            cols={2}
+          />
+          <Picker
+            label="🌙 Tide"
+            options={TIDE_OPTIONS}
+            value={tide}
+            onChange={setTide}
+            cols={3}
+          />
+          <Picker
+            label="👥 Crowd"
+            options={CROWD_OPTIONS}
+            value={crowdLevel}
+            onChange={setCrowdLevel}
+            cols={2}
+          />
+          <label className="flex items-start gap-2 cursor-pointer p-3 bg-green-50 border border-green-200 rounded-lg">
+            <input
+              type="checkbox"
+              checked={safetyCheck}
+              onChange={(e) => setSafetyCheck(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span className="text-xs text-green-900">
+              <strong>Safety check:</strong> I identified the safe zone, the
+              impact zone, hazards, and entry/exit points.
+            </span>
+          </label>
 
           <textarea
             value={venueNotes}
@@ -263,7 +245,10 @@ export function LinkedTrainingFlow({
         <NavButtons
           onBack={onClearIncoming}
           backLabel="Cancel"
-          onNext={() => setPhase('warmup')}
+          onNext={() => {
+            if (!venueType) setVenueType('beach');
+            setPhase('warmup');
+          }}
           nextDisabled={!canContinue}
         />
       </FlowShell>
