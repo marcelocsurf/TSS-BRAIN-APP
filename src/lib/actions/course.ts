@@ -175,10 +175,24 @@ export async function getLessonDetail(lessonId: string, studentId: string) {
     .eq('lesson_id', lessonId)
     .maybeSingle();
 
+  // For STP-XXX lessons, also pull the canonical drills + missions for this
+  // step so the LessonViewer can offer "Practice this in Let's Play →" CTAs.
+  let drillsMissions: any[] = [];
+  if (lessonId.startsWith('STP-')) {
+    const { data } = await admin
+      .from('drills_missions')
+      .select('id, step_id, title, type, time_estimate, key_words, success_criteria, reps_recommended, description_md')
+      .eq('step_id', lessonId)
+      .eq('active', true)
+      .order('type');
+    drillsMissions = data || [];
+  }
+
   return {
     lesson,
     quizzes: quizzes || [],
     progress: progress || null,
+    drillsMissions,
   };
 }
 

@@ -16,7 +16,7 @@ interface LessonViewerProps {
   onBack: () => void;
 }
 
-type Section = 'video' | 'theory' | 'drill' | 'errors' | 'quiz' | 'form';
+type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'form';
 
 export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
@@ -66,7 +66,9 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
     );
   }
 
-  const { lesson, quizzes, progress } = data;
+  const { lesson, quizzes, progress, drillsMissions = [] } = data;
+  const canonicalDrill = drillsMissions.find((d: any) => d.type === 'drill');
+  const canonicalMission = drillsMissions.find((d: any) => d.type === 'mission');
 
   // PROPOSED items have no canonical content yet — show v1.5 placeholder
   if (lesson.status_v1 === 'PROPOSED') {
@@ -129,7 +131,10 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
   } else {
     availableSections.push({ key: 'video', label: 'Video', icon: '▶️' });
     if (lesson.description_md) availableSections.push({ key: 'theory', label: 'Theory', icon: '📖' });
-    if (lesson.drill_md) availableSections.push({ key: 'drill', label: 'Drill', icon: '🏋️' });
+    // Drill: canonical drills_missions row preferred, fallback to lesson.drill_md
+    if (canonicalDrill || lesson.drill_md) availableSections.push({ key: 'drill', label: 'Drill', icon: '🏋️' });
+    // Mission: only when there's a canonical mission for this step
+    if (canonicalMission) availableSections.push({ key: 'mission', label: 'Mission', icon: '🌊' });
     if (lesson.errors_md) availableSections.push({ key: 'errors', label: 'Errors', icon: '⚠️' });
     if (quizzes && quizzes.length > 0) availableSections.push({ key: 'quiz', label: 'Quiz', icon: '🧠' });
   }
@@ -203,8 +208,14 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
             onRead={refreshProgress}
           />
         )}
-        {activeSection === 'drill' && (
+        {activeSection === 'drill' && canonicalDrill && (
+          <PracticeSection item={canonicalDrill} />
+        )}
+        {activeSection === 'drill' && !canonicalDrill && lesson.drill_md && (
           <ContentSection content={lesson.drill_md} studentId={studentId} lessonId={lesson.id} alreadyRead={progress?.content_read} onRead={refreshProgress} hideMarkRead />
+        )}
+        {activeSection === 'mission' && canonicalMission && (
+          <PracticeSection item={canonicalMission} />
         )}
         {activeSection === 'errors' && (
           <ContentSection content={lesson.errors_md} studentId={studentId} lessonId={lesson.id} alreadyRead={progress?.content_read} onRead={refreshProgress} hideMarkRead />
@@ -388,8 +399,9 @@ function FormSection({
   isCompleted: boolean;
   onComplete: () => void;
 }) {
-  // PC-002: Set Goal (text input)
-  if (lesson.id === 'PC-002') {
+  // ONB-06: Venue Analysis + Set Goal (text input). v5 canon ID — replaces
+  // legacy PC-002 which no longer exists post-COMPLETE-PACKAGE import.
+  if (lesson.id === 'ONB-06' || lesson.id === 'PC-002') {
     return (
       <SetGoalForm
         lesson={lesson}
@@ -401,8 +413,8 @@ function FormSection({
     );
   }
 
-  // PC-004: Goofy or Regular (selection)
-  if (lesson.id === 'PC-004') {
+  // ONB-01: Goofy or Regular (selection). v5 canon ID — replaces legacy PC-004.
+  if (lesson.id === 'ONB-01' || lesson.id === 'PC-004') {
     return (
       <GoofyOrRegularForm
         lesson={lesson}
@@ -560,6 +572,70 @@ function GoofyOrRegularForm({
           {isCompleted ? `✓ Saved: ${existingStance}` : saving ? 'Saving...' : `Confirm: ${stance || '...'}`}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Practice Section (renders canonical drill or mission for an STP) ───
+//
+// Used when the lesson is an STP-XXX and we have its drills_missions row.
+// Shows 5 KEY WORDS, time/reps, description, success criteria, and a CTA
+// that deep-links to Let's Play with this drill auto-selected so the
+// student can run the linked training flow without leaving the portal.
+
+function PracticeSection({ item }: { item: any }) {
+  const isMission = item.type === 'mission';
+  const ctaLabel = isMission ? 'Run this Mission in Let’s Play →' : 'Practice this Drill in Let’s Play →';
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+          {item.id}
+          {item.time_estimate ? ` · ${item.time_estimate}` : ''}
+          {item.reps_recommended ? ` · ${item.reps_recommended}` : ''}
+        </p>
+        <h3 className="text-base font-bold text-[var(--tss-navy)] mt-1">
+          {item.title}
+        </h3>
+      </div>
+
+      {item.key_words && item.key_words.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700">
+            5 Key Words
+          </p>
+          <p className="text-sm font-bold text-amber-900 mt-1 tracking-wide">
+            {item.key_words.join(' · ')}
+          </p>
+        </div>
+      )}
+
+      {item.description_md && (
+        <div className="prose prose-sm max-w-none">
+          <MarkdownContent markdown={item.description_md} />
+        </div>
+      )}
+
+      {item.success_criteria && item.success_criteria.length > 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700">
+            How you know you got it
+          </p>
+          <ul className="text-xs text-emerald-900 mt-1 space-y-1">
+            {item.success_criteria.map((c: string, i: number) => (
+              <li key={i}>• {c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <a
+        href={`?tab=sequence&drill=${item.id}`}
+        className="block w-full py-3 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold text-center hover:opacity-90"
+      >
+        ▶️ {ctaLabel}
+      </a>
     </div>
   );
 }

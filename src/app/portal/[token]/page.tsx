@@ -18,12 +18,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string; survey?: string }>;
+  searchParams: Promise<{ tab?: string; survey?: string; drill?: string }>;
 }
 
 export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab, survey } = await searchParams;
+  const { tab, survey, drill } = await searchParams;
 
   // Get comprehensive student data
   const portalData = await getStudentPortalData(token);
@@ -66,7 +66,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   };
 
   // Validate initialTab against allowed tab values
-  const validTabs = ['home', 'course', 'sequence', 'sessions', 'feedback', 'my-coach'];
+  const validTabs = ['home', 'course', 'sequence', 'sessions', 'feedback', 'glossary', 'my-coach'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
 
   return (
@@ -85,6 +85,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
       }}
       initialTab={initialTab}
       initialSurveyId={survey || null}
+      initialDrillId={drill || null}
     />
   );
 }

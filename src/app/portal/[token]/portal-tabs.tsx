@@ -17,6 +17,7 @@ import { CourseTab } from '@/components/course/CourseTab';
 import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
+import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
@@ -226,7 +227,7 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
   return SELF_TRAINING_WARMUPS[beltLevel] || SELF_TRAINING_WARMUPS['white_belt'];
 }
 
-type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'feedback' | 'my-coach';
+type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'feedback' | 'glossary' | 'my-coach';
 
 const ALL_TABS: { key: Tab; label: string; icon: string; lockedUntilCoachUnlock?: boolean }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
@@ -234,6 +235,7 @@ const ALL_TABS: { key: Tab; label: string; icon: string; lockedUntilCoachUnlock?
   { key: 'sequence', label: "Let's Play", icon: '▶️' },
   { key: 'sessions', label: 'Sessions', icon: '📋' },
   { key: 'feedback', label: 'Feedback', icon: '💬' },
+  { key: 'glossary', label: 'Glossary', icon: '📖' },
   { key: 'my-coach', label: 'My Coach', icon: '👤', lockedUntilCoachUnlock: true },
 ];
 
@@ -243,20 +245,24 @@ export function PortalTabs({
   data,
   initialTab,
   initialSurveyId,
+  initialDrillId,
 }: {
   data: PortalData;
   initialTab?: Tab;
   initialSurveyId?: string | null;
+  initialDrillId?: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   const TABS = useMemo(
     () => ALL_TABS.filter((t) => !t.lockedUntilCoachUnlock || data.coachProfileUnlocked),
     [data.coachProfileUnlocked]
   );
-  // Linked Train flow: when student taps "Practice this drill" from My Sequence,
-  // we store the drill ID and render LinkedTrainingFlow inline within the
-  // unified "Let's Play" tab (no tab switch — single home for sequence + train).
-  const [pendingDrillMissionId, setPendingDrillMissionId] = useState<string | null>(null);
+  // Linked Train flow: when student taps "Practice this drill" from My Sequence
+  // OR arrives via deep-link from a Course lesson (?drill=X), we store the drill
+  // ID and render LinkedTrainingFlow inline within the unified "Let's Play" tab.
+  const [pendingDrillMissionId, setPendingDrillMissionId] = useState<string | null>(
+    initialDrillId || null
+  );
   const [showCustomSession, setShowCustomSession] = useState(false);
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
@@ -326,6 +332,7 @@ export function PortalTabs({
           )
         )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
+        {activeTab === 'glossary' && <GlossaryTab />}
         {activeTab === 'feedback' && (
           <FeedbackTab
             data={data}
