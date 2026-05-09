@@ -14,6 +14,7 @@ import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluation
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
+import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -50,6 +51,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     cascadeResult,
     seqHistory,
     oceanHistory,
+    selfTrainingResult,
+    stepRatingsResult,
+    lessonProgressResult,
   ] = await Promise.all([
     getStudentLevelAccess(id),
     // Standalone session results
@@ -81,6 +85,31 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .limit(50),
     getSequenceEvaluationHistory(id, 10).catch(() => []),
     getOceanLevelHistory(id, 10).catch(() => []),
+    // Portal activity: self-training sessions logged by the student alone
+    supabase
+      .from('self_training_sessions')
+      .select(
+        'id, drill_name, duration_minutes, execution_rating, mission_completion, intention_text, completed, completed_at, created_at, linked_step_id'
+      )
+      .eq('student_id', id)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    // Portal activity: student self-ratings of sequence steps
+    supabase
+      .from('student_step_ratings')
+      .select('step_id, current_rating, last_updated')
+      .eq('student_id', id)
+      .order('current_rating', { ascending: true }),
+    // Portal activity: lessons the student completed (with title + section)
+    supabase
+      .from('lesson_progress')
+      .select(
+        'lesson_id, completed, completed_at, quiz_score, lessons:lesson_id(title, course_section)'
+      )
+      .eq('student_id', id)
+      .eq('completed', true)
+      .order('completed_at', { ascending: false, nullsFirst: false })
+      .limit(20),
   ]);
 
   // Merge and sort all sessions for the unified history
@@ -119,6 +148,31 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
   const allSessions = [...standaloneEntries, ...cascadeEntries]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Portal activity — shaped for PortalActivityPanel
+  const selfTraining = (selfTrainingResult.data ?? []).map((s: any) => ({
+    id: s.id,
+    date: s.completed_at || s.created_at,
+    drill_name: s.drill_name,
+    duration_minutes: s.duration_minutes,
+    execution_rating: s.execution_rating,
+    mission_completion: s.mission_completion,
+    intention_text: s.intention_text,
+    completed: !!s.completed,
+    linked_step_id: s.linked_step_id,
+  }));
+  const stepRatings = (stepRatingsResult.data ?? []) as Array<{
+    step_id: string;
+    current_rating: number;
+    last_updated: string;
+  }>;
+  const lessonsCompleted = (lessonProgressResult.data ?? []).map((l: any) => ({
+    lesson_id: l.lesson_id,
+    lesson_title: l.lessons?.title ?? null,
+    course_section: l.lessons?.course_section ?? null,
+    completed_at: l.completed_at,
+    quiz_score: l.quiz_score,
+  }));
 
   const unlockedKeys = levelAccess.map((a: any) => a.level_key);
   const belt = BELT_DISPLAY[student.belt_level];
@@ -267,6 +321,22 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         <CourseProgressPanel
           studentId={id}
           hasAccess={(student as any).course_access_white === true}
+        />
+      </CollapsibleSection>
+
+      {/* --- 3e. PORTAL ACTIVITY (what the student did on their own) --- */}
+      <CollapsibleSection
+        title={`🌊 Portal Activity${
+          stepRatings.filter((r) => r.current_rating < 3).length > 0
+            ? ` · ${stepRatings.filter((r) => r.current_rating < 3).length} struggling`
+            : ''
+        }`}
+        defaultOpen={stepRatings.filter((r) => r.current_rating < 3).length > 0}
+      >
+        <PortalActivityPanel
+          selfTraining={selfTraining}
+          stepRatings={stepRatings}
+          lessonsCompleted={lessonsCompleted}
         />
       </CollapsibleSection>
 
