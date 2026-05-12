@@ -199,9 +199,72 @@ async function CoordinatorDashboard() {
     return null;
   }
 
+  const { stats } = coordData;
+
   return (
     <div className="space-y-6">
-      {/* Student Pipeline */}
+      {/* ── Stats at a glance ── */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <MiniStat label="Active Students" value={stats.totalStudents} />
+        <MiniStat label="Active Coaches" value={stats.totalCoaches} />
+        <MiniStat label="Active Camps" value={stats.activeCamps} />
+        <MiniStat
+          label="Pending Actions"
+          value={stats.pendingActions}
+          accent={stats.pendingActions > 0 ? 'amber' : undefined}
+        />
+      </div>
+
+      {/* ── Quick actions ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <Link
+            href="/students/new"
+            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+          >
+            <p className="text-xl mb-1">👤</p>
+            <p className="text-xs font-medium text-gray-700">New Student</p>
+          </Link>
+          <Link
+            href="/coaches/new"
+            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+          >
+            <p className="text-xl mb-1">🎓</p>
+            <p className="text-xs font-medium text-gray-700">New Coach</p>
+          </Link>
+          <Link
+            href="/camps/new"
+            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+          >
+            <p className="text-xl mb-1">⛺️</p>
+            <p className="text-xs font-medium text-gray-700">New Camp</p>
+          </Link>
+          <Link
+            href="/students"
+            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+          >
+            <p className="text-xl mb-1">📋</p>
+            <p className="text-xs font-medium text-gray-700">All Students</p>
+          </Link>
+          <Link
+            href="/coaches"
+            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+          >
+            <p className="text-xl mb-1">👥</p>
+            <p className="text-xs font-medium text-gray-700">All Coaches</p>
+          </Link>
+          <Link
+            href="/camps"
+            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+          >
+            <p className="text-xl mb-1">🏕</p>
+            <p className="text-xs font-medium text-gray-700">All Camps</p>
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Student Pipeline — needs action ── */}
       {coordData.pendingIntake.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Pending Intake ({coordData.pendingIntake.length})</h3>
@@ -230,23 +293,62 @@ async function CoordinatorDashboard() {
         </div>
       )}
 
+      {/* ── Stuck students — no recent session ── */}
+      {coordData.stuckStudents.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+            ⚠️ No session in 30+ days ({coordData.stuckStudentsCount})
+          </h3>
+          <div className="bg-white rounded-xl border border-orange-100 divide-y divide-gray-50 overflow-hidden">
+            {coordData.stuckStudents.map((s: any) => (
+              <Link
+                key={s.id}
+                href={`/students/${s.id}`}
+                className="flex items-center justify-between px-4 py-2.5 hover:bg-orange-50/30 transition-colors"
+              >
+                <div>
+                  <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
+                  <p className="text-[10px] text-gray-400">
+                    {s.last_session_date
+                      ? `Last session: ${new Date(s.last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      : 'Never had an in-person session'}
+                  </p>
+                </div>
+                <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full capitalize">
+                  {s.belt_level?.replace('_belt', '') ?? '—'}
+                </span>
+              </Link>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2 italic">
+            These students haven&apos;t had a coach-led session in over 30 days. Consider following up or re-engaging.
+          </p>
+        </div>
+      )}
+
       {coordData.activeCamps.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Active Camps</h3>
           <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-            {coordData.activeCamps.map((c: any) => (
-              <Link key={c.id} href={`/camps/${c.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                <div>
-                  <p className="text-sm text-gray-700">{c.camp_name}</p>
-                  <p className="text-[10px] text-gray-400">{c.start_date} - {c.end_date}</p>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${
-                  c.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
-                }`}>
-                  {c.status}
-                </span>
-              </Link>
-            ))}
+            {coordData.activeCamps.map((c: any) => {
+              const coachRel = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
+              return (
+                <Link key={c.id} href={`/camps/${c.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-gray-700 truncate">{c.camp_name}</p>
+                    <p className="text-[10px] text-gray-400">
+                      {c.start_date} - {c.end_date}
+                      {coachRel?.display_name ? ` · ${coachRel.display_name}` : ''}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${
+                    c.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                  }`}>
+                    {c.status}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
@@ -376,10 +478,25 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: 'amber';
+}) {
+  const isAmber = accent === 'amber';
   return (
-    <div className="bg-white rounded-xl p-3 border border-gray-100">
-      <p className="text-lg font-bold text-[var(--tss-navy)]">{value}</p>
+    <div
+      className={`rounded-xl p-3 border ${
+        isAmber ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'
+      }`}
+    >
+      <p className={`text-lg font-bold ${isAmber ? 'text-amber-700' : 'text-[var(--tss-navy)]'}`}>
+        {value}
+      </p>
       <p className="text-[10px] text-gray-400" style={{ fontFamily: 'var(--font-mono)' }}>{label}</p>
     </div>
   );
