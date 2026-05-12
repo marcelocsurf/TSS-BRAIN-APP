@@ -16,6 +16,8 @@ import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
+import { LearningProfileCard } from '@/components/student/LearningProfileCard';
+import type { LearningChannel } from '@/lib/constants/learning-profiles';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -297,6 +299,14 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           )}
         </div>
       </div>
+
+      {/* --- LEARNING PROFILE (how this student learns — coach scans before every session) --- */}
+      <LearningProfileCard
+        studentId={student.id}
+        primary={(student as any).learning_profile_primary as LearningChannel | null}
+        secondary={(student as any).learning_profile_secondary as LearningChannel | null}
+        portalToken={student.portal_token}
+      />
 
       {/* --- ACTIVE PLANS (resume CTA, only when there's an unfinished plan) --- */}
       {activeMultiBlock.length > 0 && (

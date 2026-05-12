@@ -419,3 +419,35 @@ export async function reactivateStudent(id: string) {
   revalidatePath(`/students/${id}`);
   revalidatePath('/students');
 }
+
+// ═══════════════════════════════════════
+// LEARNING PROFILE (VAKR) — set or clear
+// ═══════════════════════════════════════
+
+type LearningChannelInput = 'V' | 'K' | 'A' | 'R';
+
+export async function setStudentLearningProfile(input: {
+  studentId: string;
+  primary: LearningChannelInput | null;
+  secondary: LearningChannelInput | null;
+  scores?: { V: number; K: number; A: number; R: number } | null;
+}) {
+  const supabase = await createClient();
+
+  if (input.primary && input.secondary && input.primary === input.secondary) {
+    throw new Error('Primary and secondary channels must be different.');
+  }
+
+  const { error } = await supabase
+    .from('students')
+    .update({
+      learning_profile_primary: input.primary,
+      learning_profile_secondary: input.secondary,
+      learning_profile_scores: input.scores ?? null,
+      learning_profile_completed_at: input.primary ? new Date().toISOString() : null,
+    })
+    .eq('id', input.studentId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/students/${input.studentId}`);
+}
