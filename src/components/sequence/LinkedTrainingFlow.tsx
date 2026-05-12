@@ -359,6 +359,10 @@ export function LinkedTrainingFlow({
           )}
         </div>
 
+        {drill.videos && drill.videos.length > 0 && (
+          <DrillVideoPlayer videos={drill.videos} title={drill.title} />
+        )}
+
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -1128,4 +1132,71 @@ function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => v
       </button>
     </div>
   );
+}
+
+// ─── Drill / Mission video player (used in the Intent phase) ───
+
+function DrillVideoPlayer({
+  videos,
+  title,
+}: {
+  videos: { id: string; url: string; label: string | null }[];
+  title: string;
+}) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const current = videos[Math.min(activeIdx, videos.length - 1)];
+  const embedUrl = toEmbedUrlLocal(current.url);
+
+  return (
+    <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+        ▶ Demo {videos.length > 1 ? `(${videos.length} videos)` : ''}
+      </p>
+      {videos.length > 1 && (
+        <div className="flex gap-1 overflow-x-auto pb-1">
+          {videos.map((v, i) => (
+            <button
+              key={v.id ?? i}
+              type="button"
+              onClick={() => setActiveIdx(i)}
+              className={`px-2 py-1 text-[10px] font-medium rounded whitespace-nowrap ${
+                activeIdx === i
+                  ? 'bg-[var(--tss-navy)] text-white'
+                  : 'bg-white border border-gray-200 text-gray-600'
+              }`}
+            >
+              {v.label || `Video ${i + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="aspect-video bg-black rounded-lg overflow-hidden">
+        {embedUrl ? (
+          <iframe
+            key={current.url}
+            src={embedUrl}
+            title={current.label || title}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white text-xs">
+            Invalid video URL
+          </div>
+        )}
+      </div>
+      {current.label && videos.length === 1 && (
+        <p className="text-[11px] text-gray-500 italic">▶ {current.label}</p>
+      )}
+    </div>
+  );
+}
+
+function toEmbedUrlLocal(url: string): string | null {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vimeo = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return url;
 }

@@ -177,6 +177,7 @@ export async function getLessonDetail(lessonId: string, studentId: string) {
 
   // For STP-XXX lessons, also pull the canonical drills + missions for this
   // step so the LessonViewer can offer "Practice this in Let's Play →" CTAs.
+  // Each drill/mission also gets its own videos[] (from content_videos).
   let drillsMissions: any[] = [];
   if (lessonId.startsWith('STP-')) {
     const { data } = await admin
@@ -186,13 +187,40 @@ export async function getLessonDetail(lessonId: string, studentId: string) {
       .eq('active', true)
       .order('type');
     drillsMissions = data || [];
+    const dmIds = drillsMissions.map((d: any) => d.id);
+    if (dmIds.length > 0) {
+      const { data: dmVideos } = await admin
+        .from('content_videos')
+        .select('id, drill_mission_id, url, label, display_order')
+        .in('drill_mission_id', dmIds)
+        .order('display_order');
+      const byDm = new Map<string, any[]>();
+      for (const v of dmVideos || []) {
+        const arr = byDm.get(v.drill_mission_id) ?? [];
+        arr.push(v);
+        byDm.set(v.drill_mission_id, arr);
+      }
+      drillsMissions = drillsMissions.map((d: any) => ({
+        ...d,
+        videos: byDm.get(d.id) ?? [],
+      }));
+    }
   }
+
+  // Multi-video support (content_videos table). Returns ordered list of
+  // {url, label} per lesson; LessonViewer renders them as tabs.
+  const { data: videos } = await admin
+    .from('content_videos')
+    .select('id, url, label, display_order')
+    .eq('lesson_id', lessonId)
+    .order('display_order');
 
   return {
     lesson,
     quizzes: quizzes || [],
     progress: progress || null,
     drillsMissions,
+    videos: videos || [],
   };
 }
 

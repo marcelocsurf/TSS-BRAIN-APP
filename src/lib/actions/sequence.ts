@@ -18,6 +18,7 @@ export type DrillMissionRow = {
   block_number: number;
   block_name: string;
   display_order: number;
+  videos?: { id: string; url: string; label: string | null }[];
 };
 
 export type StepRating = {
@@ -270,8 +271,16 @@ export async function getDrillMissionForTraining(drillId: string) {
     .eq('id', drillId)
     .single();
 
-  if (error) return null;
-  return data as DrillMissionRow;
+  if (error || !data) return null;
+
+  // Also pull any videos attached to this drill/mission (multi-video).
+  const { data: videos } = await admin
+    .from('content_videos')
+    .select('id, url, label, display_order')
+    .eq('drill_mission_id', drillId)
+    .order('display_order');
+
+  return { ...data, videos: videos || [] } as DrillMissionRow;
 }
 
 // ─── Save training session linked to a drill/mission ───

@@ -33,7 +33,7 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
         if (res?.lesson) {
           if (res.lesson.lesson_type === 'form' || res.lesson.lesson_type === 'test') {
             setActiveSection('form');
-          } else if (res.lesson.video_url) {
+          } else if ((res.videos?.length ?? 0) > 0 || res.lesson.video_url) {
             setActiveSection('video');
           } else {
             setActiveSection('theory');
@@ -66,9 +66,17 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
     );
   }
 
-  const { lesson, quizzes, progress, drillsMissions = [] } = data;
+  const { lesson, quizzes, progress, drillsMissions = [], videos = [] } = data;
   const canonicalDrill = drillsMissions.find((d: any) => d.type === 'drill');
   const canonicalMission = drillsMissions.find((d: any) => d.type === 'mission');
+  // Videos come from content_videos table (multi-video). Falls back to the
+  // legacy single video_url column if no rows in content_videos (back-compat).
+  const lessonVideos: { id?: string; url: string; label: string | null }[] =
+    videos.length > 0
+      ? videos
+      : lesson.video_url
+      ? [{ url: lesson.video_url, label: null }]
+      : [];
 
   // PROPOSED items have no canonical content yet — show v1.5 placeholder
   if (lesson.status_v1 === 'PROPOSED') {
@@ -129,7 +137,8 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
   if (lesson.lesson_type === 'form' || lesson.lesson_type === 'test') {
     availableSections.push({ key: 'form', label: 'Activity', icon: '📝' });
   } else {
-    availableSections.push({ key: 'video', label: 'Video', icon: '▶️' });
+    // Always show Video tab — VideoSection itself handles the "coming soon" empty state
+    availableSections.push({ key: 'video', label: lessonVideos.length > 1 ? `Videos (${lessonVideos.length})` : 'Video', icon: '▶️' });
     if (lesson.description_md) availableSections.push({ key: 'theory', label: 'Theory', icon: '📖' });
     // Drill: canonical drills_missions row preferred, fallback to lesson.drill_md
     if (canonicalDrill || lesson.drill_md) availableSections.push({ key: 'drill', label: 'Drill', icon: '🏋️' });
@@ -197,7 +206,13 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
       {/* Section content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 min-h-[300px]">
         {activeSection === 'video' && (
-          <VideoSection lesson={lesson} progress={progress} studentId={studentId} onWatched={refreshProgress} />
+          <VideoSection
+            lesson={lesson}
+            videos={lessonVideos}
+            progress={progress}
+            studentId={studentId}
+            onWatched={refreshProgress}
+          />
         )}
         {activeSection === 'theory' && (
           <ContentSection
@@ -259,16 +274,19 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
 
 function VideoSection({
   lesson,
+  videos,
   progress,
   studentId,
   onWatched,
 }: {
   lesson: any;
+  videos: { id?: string; url: string; label: string | null }[];
   progress: any;
   studentId: string;
   onWatched: () => void;
 }) {
   const [marking, setMarking] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
 
   const handleMarkWatched = async () => {
     setMarking(true);
@@ -277,10 +295,7 @@ function VideoSection({
     setMarking(false);
   };
 
-  // Convert YouTube URL to embed format
-  const embedUrl = lesson.video_url ? toEmbedUrl(lesson.video_url) : null;
-
-  if (!lesson.video_url) {
+  if (videos.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-5xl mb-3">📹</div>
@@ -292,13 +307,37 @@ function VideoSection({
     );
   }
 
+  const current = videos[Math.min(activeIdx, videos.length - 1)];
+  const embedUrl = toEmbedUrl(current.url);
+
   return (
     <div>
+      {/* Video selector tabs (only when there's more than 1) */}
+      {videos.length > 1 && (
+        <div className="flex gap-1 mb-3 overflow-x-auto pb-1">
+          {videos.map((v, i) => (
+            <button
+              key={v.id ?? i}
+              type="button"
+              onClick={() => setActiveIdx(i)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+                activeIdx === i
+                  ? 'bg-[var(--tss-navy)] text-white'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {v.label || `Video ${i + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
         {embedUrl ? (
           <iframe
+            key={current.url}
             src={embedUrl}
-            title={lesson.title}
+            title={current.label || lesson.title}
             className="w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -309,6 +348,10 @@ function VideoSection({
           </div>
         )}
       </div>
+
+      {current.label && (
+        <p className="text-[11px] text-gray-500 italic mb-3">▶ {current.label}</p>
+      )}
 
       <button
         onClick={handleMarkWatched}
@@ -583,9 +626,64 @@ function GoofyOrRegularForm({
 // that deep-links to Let's Play with this drill auto-selected so the
 // student can run the linked training flow without leaving the portal.
 
+function DrillMissionVideos({
+  videos,
+  title,
+}: {
+  videos: { id?: string; url: string; label: string | null }[];
+  title: string;
+}) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const current = videos[Math.min(activeIdx, videos.length - 1)];
+  const embedUrl = toEmbedUrl(current.url);
+
+  return (
+    <div>
+      {videos.length > 1 && (
+        <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
+          {videos.map((v, i) => (
+            <button
+              key={v.id ?? i}
+              type="button"
+              onClick={() => setActiveIdx(i)}
+              className={`px-3 py-1 text-[11px] font-medium rounded-md whitespace-nowrap ${
+                activeIdx === i
+                  ? 'bg-[var(--tss-navy)] text-white'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {v.label || `Video ${i + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="aspect-video bg-black rounded-lg overflow-hidden">
+        {embedUrl ? (
+          <iframe
+            key={current.url}
+            src={embedUrl}
+            title={current.label || title}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white text-sm">
+            Invalid video URL
+          </div>
+        )}
+      </div>
+      {current.label && videos.length === 1 && (
+        <p className="text-[11px] text-gray-500 italic mt-1.5">▶ {current.label}</p>
+      )}
+    </div>
+  );
+}
+
 function PracticeSection({ item }: { item: any }) {
   const isMission = item.type === 'mission';
   const ctaLabel = isMission ? 'Run this Mission in Let’s Play →' : 'Practice this Drill in Let’s Play →';
+  const videos: { id?: string; url: string; label: string | null }[] = item.videos || [];
 
   return (
     <div className="space-y-4">
@@ -599,6 +697,8 @@ function PracticeSection({ item }: { item: any }) {
           {item.title}
         </h3>
       </div>
+
+      {videos.length > 0 && <DrillMissionVideos videos={videos} title={item.title} />}
 
       {item.key_words && item.key_words.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
