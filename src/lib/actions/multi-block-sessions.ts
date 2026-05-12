@@ -372,6 +372,79 @@ export async function closeMultiBlockSession(input: {
   return { resultId: result?.id, overallStatus };
 }
 
+// ─── G3 Continuity: clone the just-closed session as a new planned one ───
+//
+// Called from the "Plan next session?" modal that appears after a close.
+// Creates a new multi_block_sessions row in 'planned' state for the same
+// student, optionally with the same blocks (drill_id + duration +
+// objective) and warm-up / mental-hack copied over so the coach can use
+// the closed session's plan as the starting point for the next one.
+//
+// The general feedback / homework / whats_next from the just-closed
+// session are NOT copied — those are evaluation, not planning.
+
+export async function planNextSession(input: {
+  currentSessionId: string;
+  sessionDate: string;
+  copyBlocks: boolean;
+  copyCommon: boolean;
+}) {
+  const supabase = await createClient();
+  const coach = await getCurrentCoach();
+
+  // Fetch the source session header + (optionally) blocks
+  const { data: source, error: srcErr } = await supabase
+    .from('multi_block_sessions')
+    .select('student_id, training_venue, warm_up, mental_hack')
+    .eq('id', input.currentSessionId)
+    .single();
+  if (srcErr || !source) throw new Error('Source session not found');
+
+  // Create the new planned session
+  const { data: newSession, error: insErr } = await supabase
+    .from('multi_block_sessions')
+    .insert({
+      student_id: source.student_id,
+      coach_id: coach.id,
+      session_date: input.sessionDate,
+      training_venue: source.training_venue,
+      warm_up: input.copyCommon ? source.warm_up : null,
+      mental_hack: input.copyCommon ? source.mental_hack : null,
+      total_planned_minutes: 0,
+      completion_state: 'planned',
+    })
+    .select('id')
+    .single();
+  if (insErr || !newSession) throw new Error(insErr?.message || 'Failed to create next session');
+
+  // Optionally copy the blocks
+  if (input.copyBlocks) {
+    const { data: blocks } = await supabase
+      .from('lesson_plan_blocks')
+      .select('order_index, step_id, drill_id, duration_minutes, objective_text')
+      .eq('multi_block_session_id', input.currentSessionId)
+      .order('order_index');
+
+    if (blocks && blocks.length > 0) {
+      const rows = blocks.map((b: any) => ({
+        multi_block_session_id: newSession.id,
+        student_id: source.student_id,
+        order_index: b.order_index,
+        step_id: b.step_id,
+        drill_id: b.drill_id,
+        duration_minutes: b.duration_minutes,
+        objective_text: b.objective_text,
+      }));
+      const { error: blockErr } = await supabase.from('lesson_plan_blocks').insert(rows);
+      if (blockErr) throw new Error(blockErr.message);
+      await recomputePlannedMinutes(newSession.id);
+    }
+  }
+
+  revalidatePath(`/students/${source.student_id}`);
+  return { id: newSession.id };
+}
+
 // ─── Recompute total_planned_minutes from blocks (called after add/edit/del) ───
 
 async function recomputePlannedMinutes(multiBlockSessionId: string) {

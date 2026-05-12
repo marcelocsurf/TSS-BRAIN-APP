@@ -13,6 +13,7 @@ import {
   startMultiBlockSession,
   closeBlock,
   closeMultiBlockSession,
+  planNextSession,
   type BlockStatus,
 } from '@/lib/actions/multi-block-sessions';
 import { AddBlockModal } from './AddBlockModal';
@@ -65,6 +66,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
   const [session, setSession] = useState(initialSession);
   const [blocks, setBlocks] = useState(initialBlocks);
   const [showAdd, setShowAdd] = useState(false);
+  const [showPlanNext, setShowPlanNext] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
 
@@ -320,6 +322,8 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
                     closeMultiBlockSession(payload).then(() => {
                       setSession((s) => ({ ...s, completion_state: 'closed' }));
                       refresh();
+                      // G3 Continuity: prompt to plan the next session
+                      setShowPlanNext(true);
                     }).catch((e) => setError(e.message))
                   );
                 }}
@@ -340,6 +344,164 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
         studentId={student.id}
         beltLevel={student.belt_level}
       />
+
+      <PlanNextModal
+        open={showPlanNext}
+        currentSessionId={session.id}
+        studentName={student.first_name}
+        currentDate={session.session_date}
+        hasBlocks={blocks.length > 0}
+        hasCommon={!!(session.warm_up || session.mental_hack)}
+        onSkip={() => setShowPlanNext(false)}
+        onCreated={(newId) => {
+          setShowPlanNext(false);
+          router.push(`/sessions/plan/${newId}`);
+        }}
+      />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// PLAN NEXT MODAL — G3 Continuity. Appears right after close.
+// ─────────────────────────────────────────────────────────────
+
+function PlanNextModal({
+  open,
+  currentSessionId,
+  studentName,
+  currentDate,
+  hasBlocks,
+  hasCommon,
+  onSkip,
+  onCreated,
+}: {
+  open: boolean;
+  currentSessionId: string;
+  studentName: string;
+  currentDate: string;
+  hasBlocks: boolean;
+  hasCommon: boolean;
+  onSkip: () => void;
+  onCreated: (newId: string) => void;
+}) {
+  // Default next date: 7 days after the current session
+  const defaultNext = (() => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const [nextDate, setNextDate] = useState(defaultNext);
+  const [copyBlocks, setCopyBlocks] = useState(hasBlocks);
+  const [copyCommon, setCopyCommon] = useState(hasCommon);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState('');
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-gray-100 text-center">
+          <p className="text-2xl mb-1">🤙</p>
+          <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
+            Session closed. Plan the next one?
+          </h2>
+          <p className="text-[11px] text-gray-500 mt-1">
+            Pre-load a session for {studentName} so they see what's coming.
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              📅 Date
+            </label>
+            <input
+              type="date"
+              value={nextDate}
+              onChange={(e) => setNextDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            />
+          </div>
+
+          {hasBlocks && (
+            <label className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={copyBlocks}
+                onChange={(e) => setCopyBlocks(e.target.checked)}
+                className="mt-0.5"
+              />
+              <div className="text-[12px] text-gray-700">
+                <p className="font-medium">Copy the same blocks</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  Reuse the drills + missions you ran today as the starting
+                  point for next session. You can edit them after.
+                </p>
+              </div>
+            </label>
+          )}
+
+          {hasCommon && (
+            <label className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={copyCommon}
+                onChange={(e) => setCopyCommon(e.target.checked)}
+                className="mt-0.5"
+              />
+              <div className="text-[12px] text-gray-700">
+                <p className="font-medium">Copy warm-up & mental hack</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  Use the same common setup as today's session.
+                </p>
+              </div>
+            </label>
+          )}
+
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 p-2 rounded">{error}</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 p-3 flex gap-2">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-600"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            disabled={pending || !nextDate}
+            onClick={() =>
+              startTransition(async () => {
+                try {
+                  const { id } = await planNextSession({
+                    currentSessionId,
+                    sessionDate: nextDate,
+                    copyBlocks,
+                    copyCommon,
+                  });
+                  onCreated(id);
+                } catch (e: any) {
+                  setError(e.message || 'Failed to plan next session');
+                }
+              })
+            }
+            className="flex-1 py-2.5 rounded-lg text-white text-sm font-semibold disabled:opacity-50"
+            style={{ background: BRAND.colors.navy }}
+          >
+            {pending ? 'Creating…' : 'Plan Next Session →'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
