@@ -9,10 +9,17 @@ export default async function CampsPage() {
 
   const supabase = await createClient();
 
-  const { data: camps } = await supabase
+  // M6 — scope camp listing by academy unless platform admin.
+  let query = supabase
     .from('camp_instances')
     .select('*, camp_templates(template_name, duration_days), coaches(display_name)')
     .order('created_at', { ascending: false });
+
+  if (!currentCoach.is_platform_admin && currentCoach.academy_id) {
+    query = query.eq('academy_id', currentCoach.academy_id);
+  }
+
+  const { data: camps } = await query;
 
   return (
     <div>

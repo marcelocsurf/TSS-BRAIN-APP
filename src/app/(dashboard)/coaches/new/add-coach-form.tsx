@@ -27,7 +27,19 @@ const CERT_LEVELS = [
   { value: 'L5', label: 'L5 — Master / Director' },
 ];
 
-export function AddCoachForm() {
+interface AcademyOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface AddCoachFormProps {
+  academies: AcademyOption[];
+  defaultAcademyId: string | null;
+  isPlatformAdmin: boolean;
+}
+
+export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: AddCoachFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -44,6 +56,7 @@ export function AddCoachForm() {
     specialty_area: '',
     languages: '',
     internal_notes: '',
+    academy_id: defaultAcademyId ?? (academies[0]?.id ?? ''),
   });
 
   const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
@@ -138,6 +151,35 @@ export function AddCoachForm() {
             className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
         </div>
       </div>
+
+      {/* Academy (platform admin only) */}
+      {isPlatformAdmin && academies.length > 0 && (
+        <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-3 shadow-sm">
+          <p className="text-xs tracking-widest text-[var(--tss-gray-500)] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>Academy</p>
+          <p className="text-xs text-[var(--tss-gray-500)]">
+            Which academy does this coach belong to? Only platform admin can pick across academies.
+          </p>
+          <div className="space-y-1.5">
+            {academies.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => set('academy_id', a.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
+                  form.academy_id === a.id
+                    ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
+                    : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
+                }`}
+              >
+                <span className="text-sm font-semibold">{a.name}</span>
+                <span className={`text-[11px] font-mono ${form.academy_id === a.id ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>
+                  {a.slug}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Role & Permissions */}
       <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">

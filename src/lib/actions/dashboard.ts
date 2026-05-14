@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentCoach } from './auth';
 
 // ═══════════════════════════════════════
 // ADMIN DASHBOARD DATA
@@ -9,6 +10,33 @@ import { createClient } from '@/lib/supabase/server';
 export async function getAdminDashboardData() {
   const supabase = await createClient();
 
+  // M6 — scope counts by academy unless caller is platform admin
+  const me = await getCurrentCoach();
+  const academyId: string | null = me?.is_platform_admin ? null : me?.academy_id ?? null;
+
+  let totalStudentsQ = supabase.from('students').select('*', { count: 'exact', head: true });
+  if (academyId) totalStudentsQ = totalStudentsQ.eq('academy_id', academyId);
+
+  let totalCoachesQ = supabase.from('coaches').select('*', { count: 'exact', head: true });
+  if (academyId) totalCoachesQ = totalCoachesQ.eq('academy_id', academyId);
+
+  let totalCampsQ = supabase.from('camp_instances').select('*', { count: 'exact', head: true });
+  if (academyId) totalCampsQ = totalCampsQ.eq('academy_id', academyId);
+
+  let activeCampsQ = supabase
+    .from('camp_instances')
+    .select('*', { count: 'exact', head: true })
+    .in('status', ['planned', 'active']);
+  if (academyId) activeCampsQ = activeCampsQ.eq('academy_id', academyId);
+
+  // session_results don't have academy_id directly; we leave the count
+  // unscoped for now (admins only see it on their own dashboard, and the
+  // signal is rough by design).
+  const totalSessionsQ = supabase
+    .from('student_session_results')
+    .select('*', { count: 'exact', head: true })
+    .eq('completion_state', 'closed');
+
   const [
     { count: totalStudents },
     { count: totalCoaches },
@@ -16,11 +44,11 @@ export async function getAdminDashboardData() {
     { count: totalCamps },
     { count: activeCamps },
   ] = await Promise.all([
-    supabase.from('students').select('*', { count: 'exact', head: true }),
-    supabase.from('coaches').select('*', { count: 'exact', head: true }),
-    supabase.from('student_session_results').select('*', { count: 'exact', head: true }).eq('completion_state', 'closed'),
-    supabase.from('camp_instances').select('*', { count: 'exact', head: true }),
-    supabase.from('camp_instances').select('*', { count: 'exact', head: true }).in('status', ['planned', 'active']),
+    totalStudentsQ,
+    totalCoachesQ,
+    totalSessionsQ,
+    totalCampsQ,
+    activeCampsQ,
   ]);
 
   return {
@@ -137,9 +165,65 @@ export async function getCoachDashboardData(coachId: string) {
 export async function getCoordinatorDashboardData() {
   const supabase = await createClient();
 
+  // M6 — scope by academy unless caller is platform admin
+  const me = await getCurrentCoach();
+  const academyId: string | null = me?.is_platform_admin ? null : me?.academy_id ?? null;
+
   // "Stuck students" cutoff: no in-person session in 30 days
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  // Build base queries, then conditionally apply the academy filter.
+  // Keeping each as its own variable so TypeScript narrows correctly.
+  let pendingIntakeQ = supabase
+    .from('students')
+    .select('id, first_name, last_name, belt_level, created_at')
+    .is('intake_completed_at', null)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (academyId) pendingIntakeQ = pendingIntakeQ.eq('academy_id', academyId);
+
+  let noWaiverQ = supabase
+    .from('students')
+    .select('id, first_name, last_name, belt_level')
+    .eq('waiver_signed', false)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (academyId) noWaiverQ = noWaiverQ.eq('academy_id', academyId);
+
+  let activeCampsQ = supabase
+    .from('camp_instances')
+    .select('id, camp_name, status, start_date, end_date, coach_id, coaches:coach_id(display_name)')
+    .in('status', ['planned', 'active'])
+    .order('start_date')
+    .limit(10);
+  if (academyId) activeCampsQ = activeCampsQ.eq('academy_id', academyId);
+
+  let totalStudentsQ = supabase
+    .from('students')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active');
+  if (academyId) totalStudentsQ = totalStudentsQ.eq('academy_id', academyId);
+
+  let totalCoachesQ = supabase
+    .from('coaches')
+    .select('*', { count: 'exact', head: true })
+    .eq('active_status', true);
+  if (academyId) totalCoachesQ = totalCoachesQ.eq('academy_id', academyId);
+
+  let totalCampsQ = supabase
+    .from('camp_instances')
+    .select('*', { count: 'exact', head: true })
+    .in('status', ['planned', 'active']);
+  if (academyId) totalCampsQ = totalCampsQ.eq('academy_id', academyId);
+
+  const recentSessionsQ = supabase
+    .from('student_session_results')
+    .select('student_id, created_at')
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .eq('completion_state', 'closed');
 
   const [
     pendingIntakeResult,
@@ -150,35 +234,13 @@ export async function getCoordinatorDashboardData() {
     { count: totalCamps },
     recentSessionsResult,
   ] = await Promise.all([
-    supabase
-      .from('students')
-      .select('id, first_name, last_name, belt_level, created_at')
-      .is('intake_completed_at', null)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(10),
-    supabase
-      .from('students')
-      .select('id, first_name, last_name, belt_level')
-      .eq('waiver_signed', false)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(10),
-    supabase
-      .from('camp_instances')
-      .select('id, camp_name, status, start_date, end_date, coach_id, coaches:coach_id(display_name)')
-      .in('status', ['planned', 'active'])
-      .order('start_date')
-      .limit(10),
-    supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('coaches').select('*', { count: 'exact', head: true }).eq('active_status', true),
-    supabase.from('camp_instances').select('*', { count: 'exact', head: true }).in('status', ['planned', 'active']),
-    // For "stuck students" — pull list of student_ids with a session in the last 30 days
-    supabase
-      .from('student_session_results')
-      .select('student_id, created_at')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .eq('completion_state', 'closed'),
+    pendingIntakeQ,
+    noWaiverQ,
+    activeCampsQ,
+    totalStudentsQ,
+    totalCoachesQ,
+    totalCampsQ,
+    recentSessionsQ,
   ]);
 
   // Compute stuck students: active students whose id is NOT in the recent-sessions set
@@ -187,13 +249,16 @@ export async function getCoordinatorDashboardData() {
   );
 
   // Need a separate query to enumerate all active students that completed intake
-  const { data: allActiveStudents } = await supabase
+  let allActiveStudentsQ = supabase
     .from('students')
     .select('id, first_name, last_name, belt_level, last_session_date')
     .eq('status', 'active')
     .not('intake_completed_at', 'is', null)
     .order('last_session_date', { ascending: true, nullsFirst: true })
     .limit(50);
+  if (academyId) allActiveStudentsQ = allActiveStudentsQ.eq('academy_id', academyId);
+
+  const { data: allActiveStudents } = await allActiveStudentsQ;
 
   const stuckStudents = (allActiveStudents ?? []).filter(
     (s: any) => !recentlyActiveIds.has(s.id)
