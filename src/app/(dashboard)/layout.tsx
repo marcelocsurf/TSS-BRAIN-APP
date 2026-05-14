@@ -6,6 +6,7 @@ import type { CoachRole } from '@/lib/constants/brand';
 import { LogoutButton } from '@/components/shared/LogoutButton';
 import { getActAsAcademyId, isRealPlatformAdmin } from '@/lib/actions/auth';
 import { ActAsBanner } from '@/components/admin/ActAsBanner';
+import { AcademySwitcher } from '@/components/admin/AcademySwitcher';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -59,13 +60,16 @@ export default async function DashboardLayout({
     getActAsAcademyId(),
   ]);
   let actAsAcademyName: string | null = null;
-  if (isAdmin && actAsId) {
-    const { data: academy } = await supabase
+  let allAcademies: { id: string; name: string; slug: string }[] = [];
+  if (isAdmin) {
+    const { data: list } = await supabase
       .from('academies')
-      .select('name')
-      .eq('id', actAsId)
-      .single();
-    actAsAcademyName = academy?.name ?? null;
+      .select('id, name, slug')
+      .order('name');
+    allAcademies = list ?? [];
+    if (actAsId) {
+      actAsAcademyName = allAcademies.find((a) => a.id === actAsId)?.name ?? null;
+    }
   }
 
   return (
@@ -90,6 +94,9 @@ export default async function DashboardLayout({
             {coach?.display_name || 'Coach'}
           </p>
         </div>
+        {isAdmin && allAcademies.length > 0 && (
+          <AcademySwitcher academies={allAcademies} currentActAsId={actAsId} />
+        )}
         <nav className="flex-1 p-3 space-y-0.5">
           {visibleNav.map((item) => (
             <Link

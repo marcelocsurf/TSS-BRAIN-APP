@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createAcademy, assignCoordinator } from './actions';
 import { actAsAcademy } from '@/lib/actions/auth';
 
@@ -116,15 +117,23 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
 
           <div className="flex items-center justify-between text-[11px] text-gray-500">
             <span>👥 {a.student_count} students</span>
-            <button
-              type="button"
-              onClick={() => enterAcademy(a.id)}
-              disabled={entering === a.id}
-              className="text-[11px] px-3 py-1.5 bg-[var(--tss-navy)] text-white rounded-lg hover:brightness-110 disabled:opacity-50 transition-all"
-              title="View the app as this academy's coordinator"
-            >
-              {entering === a.id ? 'Entering…' : 'Enter →'}
-            </button>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/academies/${a.id}`}
+                className="text-[11px] px-3 py-1.5 border border-[var(--tss-navy)] text-[var(--tss-navy)] rounded-lg hover:bg-[var(--tss-navy)] hover:text-white transition-colors"
+              >
+                Detail
+              </Link>
+              <button
+                type="button"
+                onClick={() => enterAcademy(a.id)}
+                disabled={entering === a.id}
+                className="text-[11px] px-3 py-1.5 bg-[var(--tss-navy)] text-white rounded-lg hover:brightness-110 disabled:opacity-50 transition-all"
+                title="View the app as this academy's coordinator"
+              >
+                {entering === a.id ? 'Entering…' : 'Enter →'}
+              </button>
+            </div>
           </div>
 
           {assigningTo === a.id && (

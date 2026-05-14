@@ -210,6 +210,24 @@ export async function getStudentPortalData(token: string) {
     blocks: blocksBySession.get(m.id) ?? [],
   }));
 
+  // M9 — load the student's academy branding so the portal can theme
+  // its top bar / hero. Falls back to TSS defaults when missing.
+  let academyBranding: {
+    name: string | null;
+    logo_url: string | null;
+    primary_color: string | null;
+    accent_color: string | null;
+    tagline: string | null;
+  } | null = null;
+  if (student.academy_id) {
+    const { data: aca } = await admin
+      .from('academies')
+      .select('name, logo_url, primary_color, accent_color, tagline')
+      .eq('id', student.academy_id)
+      .single();
+    academyBranding = aca ?? null;
+  }
+
   return {
     student,
     sessions: coachSessions,
@@ -224,6 +242,7 @@ export async function getStudentPortalData(token: string) {
     recentDrills: topRecentDrills,
     upcomingMultiBlock: upcomingWithBlocks,
     closedMultiBlock,
+    academyBranding,
   };
 }
 

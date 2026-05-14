@@ -32,6 +32,13 @@ export interface CoachPortalData {
   pastServices: any[];
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
+  academyBranding: {
+    name: string | null;
+    logo_url: string | null;
+    primary_color: string | null;
+    accent_color: string | null;
+    tagline: string | null;
+  } | null;
 }
 
 export async function getCoachPortalData(token: string): Promise<CoachPortalData | null> {
@@ -124,6 +131,17 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     return r <= myRank;
   });
 
+  // M9 — coach portal also themed by academy.
+  let academyBranding: CoachPortalData['academyBranding'] = null;
+  if (coach.academy_id) {
+    const { data: aca } = await admin
+      .from('academies')
+      .select('name, logo_url, primary_color, accent_color, tagline')
+      .eq('id', coach.academy_id)
+      .single();
+    academyBranding = aca ?? null;
+  }
+
   return {
     coach,
     stats: {
@@ -137,5 +155,6 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     pastServices: pastResult.data ?? [],
     coachCourses: coachCoursesResult.data ?? [],
     availableDrills,
+    academyBranding,
   };
 }

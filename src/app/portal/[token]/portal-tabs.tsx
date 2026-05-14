@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BRAND } from '@/lib/constants/brand';
+import { resolveAcademyBranding } from '@/lib/branding';
 import type { BeltLevel } from '@/lib/constants/belts';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { BELT_HIERARCHY, BELT_RANK } from '@/lib/constants/belts';
@@ -273,13 +274,25 @@ export function PortalTabs({
     setActiveTab('sequence');
   };
 
+  // M9 — academy branding (falls back to TSS defaults when academy
+  // hasn't set logo / colors / tagline / name).
+  const brand = resolveAcademyBranding((data as any).academyBranding ?? null);
+
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
-      {/* Header */}
-      <div style={{ background: BRAND.colors.navy }} className="px-4 py-5 text-center">
-        <h1 className="text-lg font-bold text-white">The Surf Sequence</h1>
-        <p style={{ color: BRAND.colors.gold }} className="text-[10px] mt-0.5 tracking-wide uppercase">
-          {BRAND.tagline}
+      {/* Header — themed by academy */}
+      <div style={{ background: brand.primary }} className="px-4 py-5 text-center">
+        {brand.logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={brand.logoUrl}
+            alt={brand.name}
+            className="h-10 mx-auto mb-2 object-contain"
+          />
+        )}
+        <h1 className="text-lg font-bold text-white">{brand.name}</h1>
+        <p style={{ color: brand.accent }} className="text-[10px] mt-0.5 tracking-wide uppercase">
+          {brand.tagline}
         </p>
       </div>
 

@@ -150,3 +150,76 @@ export async function assignCoordinator(input: {
   revalidatePath('/academies');
   return { success: true, coach_id: coachId };
 }
+
+// M8 — Branding editor. Updates the 4 brand columns on academies.
+// NULL means "fall back to TSS default". Hex colors validated by the
+// CHECK constraint on the column.
+export async function updateAcademyBranding(input: {
+  academy_id: string;
+  name?: string;
+  country?: string | null;
+  logo_url: string | null;
+  primary_color: string | null;
+  accent_color: string | null;
+  tagline: string | null;
+}) {
+  const me = await getCurrentCoach();
+  if (!me?.is_platform_admin) {
+    throw new Error('Only the platform admin can edit academy branding.');
+  }
+
+  const admin = createAdminClient();
+  const update: Record<string, any> = {
+    logo_url: input.logo_url?.trim() || null,
+    primary_color: input.primary_color?.trim() || null,
+    accent_color: input.accent_color?.trim() || null,
+    tagline: input.tagline?.trim() || null,
+  };
+  if (input.name !== undefined) update.name = input.name.trim();
+  if (input.country !== undefined) update.country = input.country?.trim() || null;
+
+  const { error } = await admin
+    .from('academies')
+    .update(update)
+    .eq('id', input.academy_id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/academies');
+  revalidatePath(`/academies/${input.academy_id}`);
+}
+
+// M8 — Delete academy. Only allowed when no students / coaches / camps
+// exist for the academy. Refuses with a friendly error otherwise.
+export async function deleteAcademy(academyId: string) {
+  const me = await getCurrentCoach();
+  if (!me?.is_platform_admin) {
+    throw new Error('Only the platform admin can delete academies.');
+  }
+
+  const admin = createAdminClient();
+
+  const [{ count: studentCount }, { count: coachCount }, { count: campCount }] =
+    await Promise.all([
+      admin.from('students').select('*', { count: 'exact', head: true }).eq('academy_id', academyId),
+      admin.from('coaches').select('*', { count: 'exact', head: true }).eq('academy_id', academyId),
+      admin.from('camp_instances').select('*', { count: 'exact', head: true }).eq('academy_id', academyId),
+    ]);
+
+  if ((studentCount ?? 0) + (coachCount ?? 0) + (campCount ?? 0) > 0) {
+    throw new Error(
+      `Cannot delete academy: it still has ${studentCount ?? 0} students, ${coachCount ?? 0} coaches, ${campCount ?? 0} services. Reassign or delete those first.`
+    );
+  }
+
+  // Clear coordinator link first (FK ON DELETE SET NULL would also work,
+  // but explicit is clearer).
+  await admin
+    .from('academies')
+    .update({ assigned_coordinator_id: null })
+    .eq('id', academyId);
+
+  const { error } = await admin.from('academies').delete().eq('id', academyId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/academies');
+}
