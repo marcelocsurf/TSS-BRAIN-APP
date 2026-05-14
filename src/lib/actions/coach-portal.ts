@@ -196,7 +196,13 @@ export interface CoachLessonDetail {
     lesson_type: string;
   };
   videos: { id: string; title: string | null; url: string; provider: string; display_order: number }[];
-  progress: { completed: boolean; completed_at: string | null } | null;
+  progress: {
+    completed: boolean;
+    completed_at: string | null;
+    quiz_score: number | null;
+    quiz_attempts: number;
+  } | null;
+  quizzes: { id: string; question: string; options: { text: string; correct: boolean }[]; display_order: number }[];
 }
 
 export async function getCoachLessonDetail(
@@ -232,10 +238,16 @@ export async function getCoachLessonDetail(
 
   const { data: progress } = await admin
     .from('coach_lesson_progress')
-    .select('completed, completed_at')
+    .select('completed, completed_at, quiz_score, quiz_attempts')
     .eq('coach_id', coach.id)
     .eq('lesson_id', lessonId)
     .maybeSingle();
+
+  const { data: quizzes } = await admin
+    .from('lesson_quizzes')
+    .select('id, question, options, display_order')
+    .eq('lesson_id', lessonId)
+    .order('display_order');
 
   return {
     lesson: {
@@ -244,7 +256,77 @@ export async function getCoachLessonDetail(
     },
     videos: videos ?? [],
     progress: progress ?? null,
+    quizzes: (quizzes ?? []) as any[],
   };
+}
+
+// Score + persist a coach quiz attempt. Returns the score and a per-question
+// correctness map so the UI can show which they got wrong.
+export async function submitCoachQuiz(
+  token: string,
+  lessonId: string,
+  answers: Record<string, number>  // questionId → chosen option index
+): Promise<{
+  score: number;       // 0-100 percentage
+  passed: boolean;     // >= 80%
+  correctById: Record<string, { correctIdx: number; gotIt: boolean }>;
+  attempts: number;
+}> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  const { data: quizzes } = await admin
+    .from('lesson_quizzes')
+    .select('id, options')
+    .eq('lesson_id', lessonId)
+    .order('display_order');
+  if (!quizzes || quizzes.length === 0) {
+    throw new Error('No quiz questions for this lesson.');
+  }
+
+  let correctCount = 0;
+  const correctById: Record<string, { correctIdx: number; gotIt: boolean }> = {};
+  for (const q of quizzes as any[]) {
+    const correctIdx = (q.options as any[]).findIndex((o) => o.correct);
+    const chosen = answers[q.id];
+    const gotIt = chosen === correctIdx;
+    if (gotIt) correctCount++;
+    correctById[q.id] = { correctIdx, gotIt };
+  }
+  const score = Math.round((correctCount / quizzes.length) * 100);
+  const passed = score >= 80;
+
+  // Upsert progress with score + attempts++
+  const { data: prev } = await admin
+    .from('coach_lesson_progress')
+    .select('quiz_attempts, quiz_score')
+    .eq('coach_id', coach.id)
+    .eq('lesson_id', lessonId)
+    .maybeSingle();
+  const attempts = (prev?.quiz_attempts ?? 0) + 1;
+  // Keep the best score
+  const bestScore = Math.max(prev?.quiz_score ?? 0, score);
+
+  await admin.from('coach_lesson_progress').upsert(
+    {
+      coach_id: coach.id,
+      lesson_id: lessonId,
+      quiz_score: bestScore,
+      quiz_attempts: attempts,
+      completed: passed || ((prev as any)?.completed ?? false),
+      completed_at: passed ? new Date().toISOString() : (prev as any)?.completed_at ?? null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'coach_id,lesson_id' }
+  );
+
+  return { score, passed, correctById, attempts };
 }
 
 // Mark a coach lesson as read. Upserts into coach_lesson_progress.

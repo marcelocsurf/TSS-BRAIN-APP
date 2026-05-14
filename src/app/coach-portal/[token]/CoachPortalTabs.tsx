@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { BRAND } from '@/lib/constants/brand';
 import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-portal';
-import { getCoachLessonDetail, markCoachLessonRead } from '@/lib/actions/coach-portal';
+import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/lib/actions/coach-portal';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 
 type Tab = 'home' | 'courses' | 'tools' | 'services' | 'rating';
@@ -205,7 +205,12 @@ function CoursesTab({
           d
             ? {
                 ...d,
-                progress: { completed: true, completed_at: new Date().toISOString() },
+                progress: {
+                  completed: true,
+                  completed_at: new Date().toISOString(),
+                  quiz_score: d.progress?.quiz_score ?? null,
+                  quiz_attempts: d.progress?.quiz_attempts ?? 0,
+                },
               }
             : d
         );
@@ -278,30 +283,90 @@ function CoursesTab({
               </div>
             )}
 
-            {/* Mark as read */}
-            <button
-              type="button"
-              onClick={markRead}
-              disabled={pending || isCompleted}
-              className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${
-                isCompleted
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                  : 'text-white hover:brightness-110'
-              }`}
-              style={isCompleted ? {} : { background: BRAND.colors.navy }}
-            >
-              {isCompleted ? '✓ Completed' : pending ? 'Saving…' : 'Mark as read'}
-            </button>
+            {/* Quiz (when lesson_type === 'test' with questions attached) */}
+            {detail.lesson.lesson_type === 'test' && detail.quizzes.length > 0 ? (
+              <CoachQuizSection
+                token={token}
+                lessonId={openLessonId}
+                quizzes={detail.quizzes}
+                existingScore={detail.progress?.quiz_score ?? null}
+                existingAttempts={detail.progress?.quiz_attempts ?? 0}
+                onPassed={() => {
+                  setReadState((p) => ({
+                    ...p,
+                    [openLessonId]: { completed: true, completed_at: new Date().toISOString() },
+                  }));
+                  setDetail((d) =>
+                    d ? { ...d, progress: { ...(d.progress ?? { quiz_score: null, quiz_attempts: 0 }), completed: true, completed_at: new Date().toISOString() } } : d
+                  );
+                }}
+              />
+            ) : (
+              /* Mark as read (for reading-type lessons) */
+              <button
+                type="button"
+                onClick={markRead}
+                disabled={pending || isCompleted}
+                className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${
+                  isCompleted
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                    : 'text-white hover:brightness-110'
+                }`}
+                style={isCompleted ? {} : { background: BRAND.colors.navy }}
+              >
+                {isCompleted ? '✓ Completed' : pending ? 'Saving…' : 'Mark as read'}
+              </button>
+            )}
           </>
         )}
       </div>
     );
   }
 
-  // ── List view ──────────────────────────────────────────────
+  // ── List view (grouped by course_section) ─────────────────
   const completedCount = courses.filter((c) => completedSet.has(c.id)).length;
+
+  // Group lessons. Coach Manual delivery (coach_wb without -EXIT-TEST) and
+  // Master Manual canon (coach_wb_master) shown as separate sections.
+  // Exit Test is its own group (it's a test, not a chapter).
+  const delivery = courses.filter((c) => c.course_section === 'coach_wb' && c.id !== 'COACH-WB-EXIT-TEST');
+  const master = courses.filter((c) => c.course_section === 'coach_wb_master');
+  const exitTest = courses.filter((c) => c.id === 'COACH-WB-EXIT-TEST');
+
+  const renderCard = (c: any) => {
+    const isCompleted = completedSet.has(c.id);
+    const prereqs: string[] = c.prerequisites ?? [];
+    const lockedBy = prereqs.find((id) => !completedSet.has(id));
+    const isLocked = !!lockedBy;
+    return (
+      <button
+        key={c.id}
+        type="button"
+        onClick={() => !isLocked && openLesson(c.id)}
+        disabled={isLocked}
+        className={`w-full text-left bg-white rounded-xl border p-3 transition-all ${
+          isLocked
+            ? 'border-gray-100 opacity-60 cursor-not-allowed'
+            : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-mono text-gray-400">
+              {c.id} · ~{c.estimated_minutes ?? '?'} min
+              {isCompleted && ' · ✓ done'}
+              {isLocked && ` · 🔒 finish ${lockedBy} first`}
+            </p>
+            <p className="text-sm font-medium text-gray-800 mt-0.5">{c.title}</p>
+          </div>
+          {!isLocked && <span className="text-gray-400 shrink-0 text-sm">›</span>}
+        </div>
+      </button>
+    );
+  };
+
   return (
-    <div className="space-y-3 pb-4">
+    <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 p-4">
         <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
           🎓 Coach Courses
@@ -335,41 +400,43 @@ function CoursesTab({
           <p className="text-sm text-gray-500">No coach courses published yet.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {courses.map((c) => {
-            const isCompleted = completedSet.has(c.id);
-            const prereqs: string[] = c.prerequisites ?? [];
-            const lockedBy = prereqs.find((id) => !completedSet.has(id));
-            const isLocked = !!lockedBy;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => !isLocked && openLesson(c.id)}
-                disabled={isLocked}
-                className={`w-full text-left bg-white rounded-xl border p-3 transition-all ${
-                  isLocked
-                    ? 'border-gray-100 opacity-60 cursor-not-allowed'
-                    : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-mono text-gray-400">
-                      {c.id} · ~{c.estimated_minutes ?? '?'} min
-                      {isCompleted && ' · ✓ done'}
-                      {isLocked && ` · 🔒 finish ${lockedBy} first`}
-                    </p>
-                    <p className="text-sm font-medium text-gray-800 mt-0.5">{c.title}</p>
-                  </div>
-                  {!isLocked && (
-                    <span className="text-gray-400 shrink-0 text-sm">›</span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          {delivery.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5 px-1">
+                📘 Coach Manual — Delivery Curriculum
+              </p>
+              <p className="text-[11px] text-gray-400 mb-2 px-1">
+                How you teach the White Belt. 15 sequential lessons.
+              </p>
+              <div className="space-y-1.5">{delivery.map(renderCard)}</div>
+            </div>
+          )}
+
+          {master.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5 px-1">
+                📕 Master Manual — Canon Reference
+              </p>
+              <p className="text-[11px] text-gray-400 mb-2 px-1">
+                Single source of truth. 15 reference lessons (no prerequisites).
+              </p>
+              <div className="space-y-1.5">{master.map(renderCard)}</div>
+            </div>
+          )}
+
+          {exitTest.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5 px-1">
+                🎯 Exit Test — Component 1
+              </p>
+              <p className="text-[11px] text-gray-400 mb-2 px-1">
+                50-question theoretical exam. 80% to pass. Unlocks after Part XV.
+              </p>
+              <div className="space-y-1.5">{exitTest.map(renderCard)}</div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -387,6 +454,200 @@ function embedUrlFor(provider: string, url: string): string {
     return m ? `https://player.vimeo.com/video/${m[1]}` : url;
   }
   return url;
+}
+
+// ─── Quiz section for test-type coach lessons ───────────────────
+//
+// Renders all questions, lets the coach pick answers, submits to server,
+// shows per-question correctness + final score with pass/fail banner.
+// Pass threshold: 80%. Retake = clears local state, server keeps best score.
+
+interface CoachQuizSectionProps {
+  token: string;
+  lessonId: string;
+  quizzes: { id: string; question: string; options: { text: string; correct: boolean }[]; display_order: number }[];
+  existingScore: number | null;
+  existingAttempts: number;
+  onPassed: () => void;
+}
+
+function CoachQuizSection({
+  token,
+  lessonId,
+  quizzes,
+  existingScore,
+  existingAttempts,
+  onPassed,
+}: CoachQuizSectionProps) {
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{
+    score: number;
+    passed: boolean;
+    correctById: Record<string, { correctIdx: number; gotIt: boolean }>;
+  } | null>(null);
+
+  const allAnswered = quizzes.every((q) => answers[q.id] !== undefined);
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      const r = await submitCoachQuiz(token, lessonId, answers);
+      setResult({ score: r.score, passed: r.passed, correctById: r.correctById });
+      if (r.passed) onPassed();
+    } catch (e: any) {
+      alert(e.message || 'Failed to submit quiz');
+    }
+    setSubmitting(false);
+  };
+
+  const retake = () => {
+    setAnswers({});
+    setResult(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ── Result view ──
+  if (result) {
+    return (
+      <div className="space-y-3">
+        <div
+          className={`rounded-2xl p-5 text-center ${
+            result.passed
+              ? 'bg-emerald-50 border-2 border-emerald-300'
+              : 'bg-amber-50 border-2 border-amber-300'
+          }`}
+        >
+          <p className="text-4xl mb-1">{result.passed ? '🎉' : '📚'}</p>
+          <p className="text-2xl font-bold" style={{ color: result.passed ? '#047857' : '#92400E' }}>
+            {result.score}%
+          </p>
+          <p
+            className="text-sm font-semibold mt-1"
+            style={{ color: result.passed ? '#047857' : '#92400E' }}
+          >
+            {result.passed ? 'Passed — 80%+ required' : 'Not yet — 80%+ required to pass'}
+          </p>
+          <p className="text-[11px] text-gray-500 mt-2">
+            Attempt #{existingAttempts + 1}
+            {existingScore !== null && ` · Best score so far: ${Math.max(existingScore, result.score)}%`}
+          </p>
+        </div>
+
+        {/* Per-question review */}
+        <div className="space-y-2">
+          {quizzes.map((q, idx) => {
+            const r = result.correctById[q.id];
+            const chosen = answers[q.id];
+            return (
+              <div
+                key={q.id}
+                className={`bg-white rounded-xl border p-3 ${
+                  r?.gotIt ? 'border-emerald-200' : 'border-red-200'
+                }`}
+              >
+                <p className="text-[10px] font-mono text-gray-400 mb-1">
+                  Q{idx + 1} {r?.gotIt ? '· ✓' : '· ✗'}
+                </p>
+                <p className="text-sm text-gray-800">{q.question}</p>
+                <div className="mt-2 space-y-1">
+                  {q.options.map((o, oIdx) => {
+                    const isChosen = chosen === oIdx;
+                    const isCorrect = oIdx === r?.correctIdx;
+                    return (
+                      <div
+                        key={oIdx}
+                        className={`text-[11px] px-2 py-1 rounded ${
+                          isCorrect
+                            ? 'bg-emerald-50 text-emerald-900'
+                            : isChosen
+                            ? 'bg-red-50 text-red-900'
+                            : 'text-gray-500'
+                        }`}
+                      >
+                        {isCorrect && '✓ '}
+                        {!isCorrect && isChosen && '✗ '}
+                        {o.text}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {!result.passed && (
+          <button
+            type="button"
+            onClick={retake}
+            className="w-full py-3 text-white text-sm font-semibold rounded-xl"
+            style={{ background: BRAND.colors.navy }}
+          >
+            Retake the test
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // ── Quiz form ──
+  return (
+    <div className="space-y-3">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+          {quizzes.length} questions · 80% to pass
+        </p>
+        {existingAttempts > 0 && existingScore !== null && (
+          <p className="text-[11px] text-gray-500 mt-1">
+            Previous best: <strong>{existingScore}%</strong> ({existingAttempts} attempt{existingAttempts > 1 ? 's' : ''})
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {quizzes.map((q, idx) => (
+          <div key={q.id} className="bg-white rounded-xl border border-gray-100 p-3">
+            <p className="text-[10px] font-mono text-gray-400 mb-1">Q{idx + 1}</p>
+            <p className="text-sm text-gray-800 leading-relaxed">{q.question}</p>
+            <div className="mt-3 space-y-1.5">
+              {q.options.map((o, oIdx) => {
+                const chosen = answers[q.id] === oIdx;
+                return (
+                  <button
+                    key={oIdx}
+                    type="button"
+                    onClick={() => setAnswers((a) => ({ ...a, [q.id]: oIdx }))}
+                    className={`w-full text-left px-3 py-2 rounded-lg border text-[12px] transition-colors ${
+                      chosen
+                        ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
+                        : 'border-gray-200 hover:border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    {o.text}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!allAnswered || submitting}
+        className="w-full py-3 text-white text-sm font-semibold rounded-xl disabled:opacity-50"
+        style={{ background: BRAND.colors.navy }}
+      >
+        {submitting
+          ? 'Scoring…'
+          : allAnswered
+          ? 'Submit answers'
+          : `Answer all ${quizzes.length} questions first (${Object.keys(answers).length} / ${quizzes.length})`}
+      </button>
+    </div>
+  );
 }
 
 function ToolsTab({ drills, coach }: { drills: any[]; coach: any }) {

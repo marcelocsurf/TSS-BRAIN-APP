@@ -18,6 +18,7 @@ export default async function ContentAdminPage() {
   );
   const onboarding = lessons.filter((l: any) => l.course_section === 'wb_onboarding');
   const whiteBelt = lessons.filter((l: any) => l.course_section === 'white_belt');
+  const coachLessons = lessons.filter((l: any) => l.course_section?.startsWith('coach_'));
 
   const drills = drillsMissions.filter((d: any) => d.type === 'drill');
   const missions = drillsMissions.filter((d: any) => d.type === 'mission');
@@ -61,6 +62,14 @@ export default async function ContentAdminPage() {
         emoji="🏄"
         subtitle="25 STPs · Module 2"
         items={whiteBelt}
+        kind="lesson"
+      />
+
+      <Section
+        title="Coach Courses"
+        emoji="🎓"
+        subtitle="Coach curriculum (delivery + master canon)"
+        items={coachLessons}
         kind="lesson"
       />
 
