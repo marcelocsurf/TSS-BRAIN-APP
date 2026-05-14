@@ -31,6 +31,7 @@ export interface CoachPortalData {
   upcomingServices: any[];
   pastServices: any[];
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
+  courseProgress: Record<string, { completed: boolean; completed_at: string | null }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
   academyBranding: {
     name: string | null;
@@ -90,7 +91,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       .eq('student_session_results.coach_id', coach.id),
     admin
       .from('lessons')
-      .select('id, title, course_section, step_number, display_order, lesson_type')
+      .select('id, title, course_section, step_number, display_order, lesson_type, estimated_minutes, prerequisites')
       .like('course_section', 'coach_%')
       .eq('active', true)
       .order('display_order'),
@@ -131,6 +132,19 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     return r <= myRank;
   });
 
+  // Course progress map (coach_lesson_progress for this coach)
+  const { data: progressRows } = await admin
+    .from('coach_lesson_progress')
+    .select('lesson_id, completed, completed_at')
+    .eq('coach_id', coach.id);
+  const courseProgress: Record<string, { completed: boolean; completed_at: string | null }> = {};
+  for (const r of progressRows ?? []) {
+    courseProgress[r.lesson_id] = {
+      completed: !!r.completed,
+      completed_at: r.completed_at,
+    };
+  }
+
   // M9 — coach portal also themed by academy.
   let academyBranding: CoachPortalData['academyBranding'] = null;
   if (coach.academy_id) {
@@ -154,7 +168,108 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     upcomingServices: upcomingResult.data ?? [],
     pastServices: pastResult.data ?? [],
     coachCourses: coachCoursesResult.data ?? [],
+    courseProgress,
     availableDrills,
     academyBranding,
   };
+}
+
+// ─── Coach Lesson detail (lazy-loaded on click) ────────────────
+//
+// Returns the full markdown body + video URL + any attached content
+// videos for a single coach lesson. Used by CoursesTab when a coach
+// clicks into a course to read it. Also reads any existing
+// coach_lesson_progress row for this coach+lesson pair so the UI can
+// show "read / not read" state.
+
+export interface CoachLessonDetail {
+  lesson: {
+    id: string;
+    title: string;
+    subtitle: string | null;
+    description_md: string | null;
+    video_url: string | null;
+    cover_image_url: string | null;
+    estimated_minutes: number | null;
+    prerequisites: string[];
+    display_order: number;
+    lesson_type: string;
+  };
+  videos: { id: string; title: string | null; url: string; provider: string; display_order: number }[];
+  progress: { completed: boolean; completed_at: string | null } | null;
+}
+
+export async function getCoachLessonDetail(
+  token: string,
+  lessonId: string
+): Promise<CoachLessonDetail | null> {
+  const admin = createAdminClient();
+
+  // Resolve coach by token to scope progress lookup
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) return null;
+
+  const { data: lesson } = await admin
+    .from('lessons')
+    .select(
+      'id, title, subtitle, description_md, video_url, cover_image_url, estimated_minutes, prerequisites, display_order, lesson_type'
+    )
+    .eq('id', lessonId)
+    .eq('active', true)
+    .single();
+  if (!lesson) return null;
+
+  const { data: videos } = await admin
+    .from('content_videos')
+    .select('id, title, url, provider, display_order')
+    .eq('content_type', 'lesson')
+    .eq('content_id', lessonId)
+    .order('display_order');
+
+  const { data: progress } = await admin
+    .from('coach_lesson_progress')
+    .select('completed, completed_at')
+    .eq('coach_id', coach.id)
+    .eq('lesson_id', lessonId)
+    .maybeSingle();
+
+  return {
+    lesson: {
+      ...lesson,
+      prerequisites: (lesson.prerequisites ?? []) as string[],
+    },
+    videos: videos ?? [],
+    progress: progress ?? null,
+  };
+}
+
+// Mark a coach lesson as read. Upserts into coach_lesson_progress.
+export async function markCoachLessonRead(token: string, lessonId: string): Promise<void> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  const { error } = await admin
+    .from('coach_lesson_progress')
+    .upsert(
+      {
+        coach_id: coach.id,
+        lesson_id: lessonId,
+        content_read: true,
+        completed: true,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'coach_id,lesson_id' }
+    );
+  if (error) throw new Error(error.message);
 }
