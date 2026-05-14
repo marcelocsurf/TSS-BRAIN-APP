@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { CoachRole } from '@/lib/constants/brand';
 import { LogoutButton } from '@/components/shared/LogoutButton';
+import { getActAsAcademyId, isRealPlatformAdmin } from '@/lib/actions/auth';
+import { ActAsBanner } from '@/components/admin/ActAsBanner';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -48,8 +50,28 @@ export default async function DashboardLayout({
   const role = (coach?.role as CoachRole) || 'assistant';
   const visibleNav = getNavItemsForRole(role);
 
+  // M7 — if the REAL user is platform admin AND they have set an act-as
+  // cookie, fetch the academy name and render the banner up top. We
+  // intentionally use isRealPlatformAdmin (which ignores the override)
+  // so the banner stays visible during act-as mode.
+  const [isAdmin, actAsId] = await Promise.all([
+    isRealPlatformAdmin(),
+    getActAsAcademyId(),
+  ]);
+  let actAsAcademyName: string | null = null;
+  if (isAdmin && actAsId) {
+    const { data: academy } = await supabase
+      .from('academies')
+      .select('name')
+      .eq('id', actAsId)
+      .single();
+    actAsAcademyName = academy?.name ?? null;
+  }
+
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0" style={{ paddingLeft: '0' }}>
+      {actAsAcademyName && <ActAsBanner academyName={actAsAcademyName} />}
+
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 bg-[var(--tss-navy)] text-white z-30" style={{ width: '224px' }}>
         {/* Cyan accent line at top */}
