@@ -2,16 +2,22 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
+// 3-question post-class survey. Student rates the coach right after class
+// from the email deep-link or from their portal feed.
+//   1. coach_rating       — overall coach impression
+//   2. feedback_clarity   — how clear was their feedback (maps to q2_feedback)
+//   3. improvement_value  — how much did this help me improve (maps to q4_session_value)
+//
+// The DB still has 7 rating columns from the original survey. We backfill
+// the obsolete ones (academy_rating, session_quality, q1_clarity,
+// q3_homework_clarity) with the coach_rating value so existing averages and
+// dashboards keep producing sensible numbers without a schema migration.
 interface SurveyInput {
   session_result_id: string;
   student_id: string;
   coach_rating: number;
-  academy_rating: number;
-  session_quality: number;
-  q1_clarity: number;
-  q2_feedback: number;
-  q3_homework_clarity: number;
-  q4_session_value: number;
+  feedback_clarity: number;
+  improvement_value: number;
   open_comment: string;
 }
 
@@ -40,19 +46,20 @@ export async function submitSurvey(input: SurveyInput) {
 
   const isFirstUnlock = !studentRow?.coach_profile_unlocked_at;
 
-  // Insert survey
+  // Insert survey — fill obsolete legacy columns with coach_rating so any
+  // SQL views averaging the old shape still see plausible data.
   const { error: surveyErr } = await admin
     .from('survey_responses')
     .insert({
       session_result_id: input.session_result_id,
       student_id: input.student_id,
       coach_rating: input.coach_rating,
-      academy_rating: input.academy_rating,
-      session_quality: input.session_quality,
-      q1_clarity: input.q1_clarity,
-      q2_feedback: input.q2_feedback || null,
-      q3_homework_clarity: input.q3_homework_clarity,
-      q4_session_value: input.q4_session_value,
+      academy_rating: input.coach_rating,        // legacy — mirror coach
+      session_quality: input.improvement_value,  // legacy — closest semantic match
+      q1_clarity: input.feedback_clarity,        // legacy — closest semantic match
+      q2_feedback: input.feedback_clarity,
+      q3_homework_clarity: input.feedback_clarity, // legacy — closest match
+      q4_session_value: input.improvement_value,
       open_comment: input.open_comment || null,
     });
 
