@@ -1,4 +1,4 @@
-import { getStudent } from '@/lib/actions/students';
+import { getStudent, checkCoachAccessToStudent } from '@/lib/actions/students';
 import { getStudentLevelAccess } from '@/lib/actions/access';
 import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/actions/evaluations';
 import { getCurrentCoach } from '@/lib/actions/sessions';
@@ -30,6 +30,34 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   const { id } = await params;
   const search = await searchParams;
   const justCreated = search.created === 'true';
+
+  // Time-bounded access check (M3): coach can only see students in their
+  // active service window. Coordinator/admin/platform_admin: always allowed
+  // (within their academy).
+  const access = await checkCoachAccessToStudent(id);
+  if (access === 'expired') {
+    return (
+      <div className="max-w-md mx-auto p-6 text-center mt-8">
+        <p className="text-3xl mb-3">⏳</p>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)] mb-2">Access expired</h2>
+        <p className="text-sm text-gray-600 leading-relaxed">
+          You can only view this student during the service window you&apos;re
+          assigned to (from the start of the service until 1 day after it
+          ends). Ask the coordinator to assign you again or wait for the next
+          camp.
+        </p>
+        <Link
+          href="/students"
+          className="inline-block mt-4 text-xs text-blue-600 underline"
+        >
+          ← Back to your students
+        </Link>
+      </div>
+    );
+  }
+  if (access === 'wrong-academy') {
+    notFound();
+  }
 
   let student;
   try {

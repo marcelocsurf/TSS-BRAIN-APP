@@ -268,10 +268,32 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
+  // ── Multi-tenant + role scoping (M1 + M3) ──
+  // Platform admin: see all academies. Coordinator: scoped to academy.
+  // Coach (not platform_admin): only students inside their active service window.
+  const { getCurrentCoach, getCoachAccessibleStudentIds } = await import('./auth');
+  const me = await getCurrentCoach();
+
   let query = supabase
     .from('students')
     .select('*', { count: 'exact' })
     .order('last_name', { ascending: true });
+
+  if (me && !me.is_platform_admin) {
+    // Academy scope for non-platform-admins
+    if (me.academy_id) {
+      // Tolerate legacy rows where academy_id is NULL — show them to coordinators too
+      query = query.or(`academy_id.eq.${me.academy_id},academy_id.is.null`);
+    }
+    // Coach-only: intersect with time-bounded accessible students
+    if (me.role === 'coach') {
+      const ids = await getCoachAccessibleStudentIds(me.id);
+      if (ids.length === 0) {
+        return { students: [], total: 0 };
+      }
+      query = query.in('id', ids);
+    }
+  }
 
   if (filters?.belt_level) {
     query = query.eq('belt_level', filters.belt_level);
@@ -355,6 +377,42 @@ export async function getStudent(id: string) {
 
   if (error) throw new Error(error.message);
   return data as StudentRow;
+}
+
+// ─── Coach access check for a specific student (M3) ──
+// Returns 'allowed' or 'expired' or 'wrong-academy' or 'not-coach'.
+// Used by /students/[id]/page.tsx to gate render.
+
+export async function checkCoachAccessToStudent(
+  studentId: string
+): Promise<'allowed' | 'expired' | 'wrong-academy'> {
+  const { getCurrentCoach, getCoachAccessibleStudentIds } = await import('./auth');
+  const me = await getCurrentCoach();
+
+  // Platform admin / coordinator / admin always allowed
+  if (!me || me.is_platform_admin) return 'allowed';
+  if (me.role === 'admin' || me.role === 'coordinator') {
+    // Still check academy match for non-platform-admins
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('students')
+      .select('academy_id')
+      .eq('id', studentId)
+      .maybeSingle();
+    if (data?.academy_id && me.academy_id && data.academy_id !== me.academy_id) {
+      return 'wrong-academy';
+    }
+    return 'allowed';
+  }
+
+  // Coach: must be in active service window
+  if (me.role === 'coach') {
+    const ids = await getCoachAccessibleStudentIds(me.id);
+    if (ids.includes(studentId)) return 'allowed';
+    return 'expired';
+  }
+
+  return 'allowed';
 }
 
 // ═══════════════════════════════════════

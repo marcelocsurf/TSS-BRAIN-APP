@@ -26,6 +26,9 @@ export default function NewCampPage() {
     end_date: '',
     modality: 'group' as 'individual' | 'group',
     student_ids: [] as string[],
+    // Custom-template overrides (only used when selected template is_custom)
+    capacity_override: 4,
+    duration_override: 1,
   });
 
   useEffect(() => {
@@ -63,10 +66,21 @@ export default function NewCampPage() {
     }));
   };
 
+  const selectedTemplate = templates.find(t => t.id === form.template_id);
+  const effectiveCapacity = selectedTemplate?.is_custom
+    ? form.capacity_override
+    : selectedTemplate?.capacity_max ?? Infinity;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.template_id || !form.camp_name || form.student_ids.length === 0) {
-      setError('Select a template, name the camp, and add at least one student.');
+      setError('Select a service, name it, and add at least one student.');
+      return;
+    }
+    if (form.student_ids.length > effectiveCapacity) {
+      setError(
+        `This service has a capacity of ${effectiveCapacity}. Remove ${form.student_ids.length - effectiveCapacity} student(s).`
+      );
       return;
     }
     setLoading(true);
@@ -84,27 +98,79 @@ export default function NewCampPage() {
     }
   };
 
-  const selectedTemplate = templates.find(t => t.id === form.template_id);
-
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-xl font-bold text-[var(--tss-navy)] mb-6">Create Camp Instance</h2>
+      <h2 className="text-xl font-bold text-[var(--tss-navy)] mb-6">Open a New Service</h2>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Template */}
+        {/* Service Template */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Template</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Service</h3>
           <select value={form.template_id} onChange={e => setForm(f => ({ ...f, template_id: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-            <option value="">Select template...</option>
+            <option value="">Select service...</option>
             {templates.map(t => (
               <option key={t.id} value={t.id}>
-                {t.template_name} ({t.duration_days} days)
+                {t.template_name}
+                {t.duration_days ? ` · ${t.duration_days}d` : ''}
+                {t.capacity_max ? ` · ${t.capacity_max} spots` : ''}
+                {t.is_custom ? ' · custom' : ''}
               </option>
             ))}
           </select>
           {selectedTemplate && (
-            <p className="text-xs text-gray-500">{selectedTemplate.description}</p>
+            <>
+              <p className="text-xs text-gray-500">{selectedTemplate.description}</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedTemplate.service_kind && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 uppercase font-mono tracking-wider">
+                    {selectedTemplate.service_kind.replace(/_/g, ' ')}
+                  </span>
+                )}
+                {!selectedTemplate.is_custom && selectedTemplate.capacity_max && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                    Capacity: {selectedTemplate.capacity_max} students
+                  </span>
+                )}
+                {selectedTemplate.duration_days && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    {selectedTemplate.duration_days} day{selectedTemplate.duration_days > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Custom-template inline overrides */}
+          {selectedTemplate?.is_custom && (
+            <div className="mt-2 grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Capacity</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={form.capacity_override}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, capacity_override: parseInt(e.target.value, 10) || 1 }))
+                  }
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Duration (days)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={form.duration_override}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, duration_override: parseInt(e.target.value, 10) || 1 }))
+                  }
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                />
+              </div>
+            </div>
           )}
         </div>
 
@@ -160,30 +226,46 @@ export default function NewCampPage() {
 
         {/* Students */}
         <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)] mb-3">
-            Participants ({form.student_ids.length})
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+              Participants ({form.student_ids.length}
+              {effectiveCapacity !== Infinity ? ` / ${effectiveCapacity}` : ''})
+            </h3>
+            {effectiveCapacity !== Infinity && form.student_ids.length >= effectiveCapacity && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium">
+                Full
+              </span>
+            )}
+          </div>
           <div className="space-y-1 max-h-60 overflow-y-auto">
-            {students.map(s => (
-              <button key={s.id} type="button" onClick={() => toggleStudent(s.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                  form.student_ids.includes(s.id)
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-gray-50 border border-transparent'
-                }`}>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                  style={{ backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999' }}>
-                  {s.first_name[0]}{s.last_name[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{s.first_name} {s.last_name}</p>
-                  <p className="text-[10px] text-gray-400">{BELT_DISPLAY[s.belt_level]?.levelName}</p>
-                </div>
-                {form.student_ids.includes(s.id) && (
-                  <span className="text-blue-600 text-xs">&#10003;</span>
-                )}
-              </button>
-            ))}
+            {students.map(s => {
+              const isSelected = form.student_ids.includes(s.id);
+              const atCapacity = !isSelected && form.student_ids.length >= effectiveCapacity;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  disabled={atCapacity}
+                  onClick={() => toggleStudent(s.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    isSelected
+                      ? 'bg-blue-50 border border-blue-200'
+                      : atCapacity
+                      ? 'opacity-30 cursor-not-allowed border border-transparent'
+                      : 'hover:bg-gray-50 border border-transparent'
+                  }`}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                    style={{ backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999' }}>
+                    {s.first_name[0]}{s.last_name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{s.first_name} {s.last_name}</p>
+                    <p className="text-[10px] text-gray-400">{BELT_DISPLAY[s.belt_level]?.levelName}</p>
+                  </div>
+                  {isSelected && <span className="text-blue-600 text-xs">&#10003;</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
 
