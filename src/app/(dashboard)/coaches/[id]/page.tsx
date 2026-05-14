@@ -123,7 +123,7 @@ export default async function CoachProfilePage({ params }: Props) {
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <ToggleCoachStatus
               coachId={id}
               isActive={coach.active_status}
@@ -135,8 +135,31 @@ export default async function CoachProfilePage({ params }: Props) {
             >
               + Evaluate
             </Link>
+            {coach.portal_token && (
+              <Link
+                href={`/coach-portal/${coach.portal_token}`}
+                target="_blank"
+                className="px-3 py-2 bg-amber-50 text-amber-700 text-xs rounded-lg hover:bg-amber-100"
+                title="Open this coach's personal portal in a new tab"
+              >
+                Open Coach Portal ↗
+              </Link>
+            )}
           </div>
         </div>
+        {coach.portal_token && (
+          <div className="mt-3 pt-3 border-t border-gray-50">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Coach Portal Link
+            </p>
+            <code className="text-[10px] text-gray-600 break-all block bg-gray-50 px-2 py-1.5 rounded">
+              /coach-portal/{coach.portal_token}
+            </code>
+            <p className="text-[9px] text-gray-400 italic mt-1">
+              Share with the coach so they can access their personal portal (courses + tools + their stats).
+            </p>
+          </div>
+        )}
       </div>
 
       {/* STATS GRID */}
