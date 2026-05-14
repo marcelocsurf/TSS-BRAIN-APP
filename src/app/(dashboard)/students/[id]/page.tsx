@@ -17,6 +17,7 @@ import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
 import { LearningProfileCard } from '@/components/student/LearningProfileCard';
+import { OfficialEvaluationPanel } from '@/components/student/OfficialEvaluationPanel';
 import type { LearningChannel } from '@/lib/constants/learning-profiles';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -86,6 +87,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     stepRatingsResult,
     lessonProgressResult,
     multiBlockResult,
+    stpLessonsResult,
   ] = await Promise.all([
     getStudentLevelAccess(id),
     // Standalone session results
@@ -126,10 +128,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('student_id', id)
       .order('created_at', { ascending: false })
       .limit(20),
-    // Portal activity: student self-ratings of sequence steps
+    // Portal activity: student self-ratings of sequence steps + official coach ratings
     supabase
       .from('student_step_ratings')
-      .select('step_id, current_rating, last_updated')
+      .select('step_id, current_rating, coach_rating, coach_rated_at, last_updated')
       .eq('student_id', id)
       .order('current_rating', { ascending: true }),
     // Portal activity: lessons the student completed (with title + section)
@@ -151,6 +153,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('student_id', id)
       .order('created_at', { ascending: false })
       .limit(30),
+    // M4: STP catalog for OfficialEvaluationPanel (rows to rate)
+    supabase
+      .from('lessons')
+      .select('id, title, step_number')
+      .eq('course_section', 'white_belt')
+      .eq('active', true)
+      .order('step_number'),
   ]);
 
   // Merge and sort all sessions for the unified history
@@ -203,8 +212,23 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   const stepRatings = (stepRatingsResult.data ?? []) as Array<{
     step_id: string;
     current_rating: number;
+    coach_rating: number | null;
+    coach_rated_at: string | null;
     last_updated: string;
   }>;
+
+  // M4: build official-eval rows (lessons catalog + ratings join)
+  const stepRatingsMap = new Map(stepRatings.map((r) => [r.step_id, r]));
+  const officialEvalRows = (stpLessonsResult?.data ?? []).map((l: any) => {
+    const r = stepRatingsMap.get(l.id);
+    return {
+      step_id: l.id,
+      step_title: l.title ?? null,
+      student_self_rating: r?.current_rating ?? null,
+      coach_rating: r?.coach_rating ?? null,
+      coach_rated_at: r?.coach_rated_at ?? null,
+    };
+  });
   const lessonsCompleted = (lessonProgressResult.data ?? []).map((l: any) => ({
     lesson_id: l.lesson_id,
     lesson_title: l.lessons?.title ?? null,
@@ -394,6 +418,24 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Progression Status" value={student.progression_status} />
         </div>
       </Card>
+
+      {/* --- 3a. OFFICIAL STEP EVALUATION (coach gives gold stars per STP) --- */}
+      {coach && (
+        <CollapsibleSection
+          title={`⭐ Official Step Evaluation${
+            officialEvalRows.filter((r: any) => r.coach_rating !== null).length > 0
+              ? ` · ${officialEvalRows.filter((r: any) => r.coach_rating !== null).length} rated`
+              : ''
+          }`}
+          defaultOpen={false}
+        >
+          <OfficialEvaluationPanel
+            studentId={id}
+            coachId={coach.id}
+            rows={officialEvalRows}
+          />
+        </CollapsibleSection>
+      )}
 
       {/* --- 3b. SEQUENCE EVALUATION (collapsible) --- */}
       <CollapsibleSection title="Sequence Evaluation" defaultOpen={false}>

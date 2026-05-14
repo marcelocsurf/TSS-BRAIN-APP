@@ -112,6 +112,47 @@ export async function evaluateOceanLevel(input: {
 }
 
 // ═══════════════════════════════════════
+// SET OFFICIAL STEP RATING (M4)
+// ═══════════════════════════════════════
+//
+// Coach can rate any STP for a student at any time. The rating lives in
+// student_step_ratings.coach_rating + coach_rated_at + coach_rated_by,
+// separate from current_rating (student self-rating). Portal renders gold
+// when coach_rating is set; falls back to amber self-rating otherwise.
+
+export async function setOfficialStepRating(input: {
+  studentId: string;
+  stepId: string;
+  rating: number | null;  // null = clear official rating
+  coachId: string;
+}) {
+  const supabase = await createClient();
+
+  if (input.rating !== null && (input.rating < 1 || input.rating > 5)) {
+    throw new Error('Rating must be 1-5 or null to clear.');
+  }
+
+  // Upsert the row keyed by (student_id, step_id)
+  const { error } = await supabase
+    .from('student_step_ratings')
+    .upsert(
+      {
+        student_id: input.studentId,
+        step_id: input.stepId,
+        coach_rating: input.rating,
+        coach_rated_at: input.rating !== null ? new Date().toISOString() : null,
+        coach_rated_by: input.rating !== null ? input.coachId : null,
+        // Don't touch current_rating — that's the student's space
+        last_updated: new Date().toISOString(),
+      },
+      { onConflict: 'student_id,step_id' }
+    );
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/students/${input.studentId}`);
+}
+
+// ═══════════════════════════════════════
 // GET SEQUENCE EVALUATION HISTORY
 // ═══════════════════════════════════════
 

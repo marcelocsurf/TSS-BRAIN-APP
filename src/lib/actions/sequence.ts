@@ -43,6 +43,9 @@ export type SequenceItem = {
   rating: number | null;
   rating_count: number;
   last_rated: string | null;
+  // M4: Official rating from coach (gold). Null when not yet evaluated.
+  coach_rating?: number | null;
+  coach_rated_at?: string | null;
   last_practiced: string | null;
 };
 
@@ -141,6 +144,8 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
       rating: rating?.current_rating || null,
       rating_count: rating?.rating_count || 0,
       last_rated: rating?.last_updated || null,
+      coach_rating: rating?.coach_rating ?? null,
+      coach_rated_at: rating?.coach_rated_at ?? null,
       last_practiced: lastPracticedMap.get(stepId) || null,
     };
   });

@@ -8,6 +8,11 @@ interface StarRatingProps {
   size?: 'sm' | 'md' | 'lg';
   readOnly?: boolean;
   showLabel?: boolean;
+  /**
+   * 'self' (default) = amber stars, student self-rating.
+   * 'official' = gold stars, coach-assigned canonical rating.
+   */
+  variant?: 'self' | 'official';
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -30,11 +35,16 @@ export function StarRating({
   size = 'md',
   readOnly = false,
   showLabel = false,
+  variant = 'self',
 }: StarRatingProps) {
   const [hover, setHover] = useState<number | null>(null);
 
   const display = hover ?? value;
   const cls = SIZES[size];
+
+  // Color tokens by variant
+  const filledColor = variant === 'official' ? 'text-yellow-500' : 'text-amber-400';
+  const emptyColor = variant === 'official' ? 'text-yellow-200' : 'text-gray-300';
 
   return (
     <div className="inline-flex flex-col items-start">
@@ -53,8 +63,8 @@ export function StarRating({
               onMouseEnter={() => !readOnly && setHover(n)}
               className={`${cls.star} transition-all ${
                 readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-110'
-              } ${filled ? 'text-amber-400' : 'text-gray-300'}`}
-              aria-label={`Rate ${n} stars`}
+              } ${filled ? filledColor : emptyColor}`}
+              aria-label={`Rate ${n} stars${variant === 'official' ? ' (coach official)' : ''}`}
             >
               {filled ? '★' : '☆'}
             </button>
@@ -65,11 +75,18 @@ export function StarRating({
             {value}/5
           </span>
         )}
+        {variant === 'official' && value !== null && size !== 'sm' && (
+          <span className="ml-1 text-[9px] uppercase tracking-wider text-yellow-700 font-bold">
+            Official
+          </span>
+        )}
       </div>
       {showLabel && (
         <div className="mt-1 text-[11px] text-gray-500 italic">
           {display !== null
             ? RATING_LABELS[display]
+            : variant === 'official'
+            ? 'Not yet officially evaluated'
             : 'Not rated yet — tap to self-evaluate'}
         </div>
       )}

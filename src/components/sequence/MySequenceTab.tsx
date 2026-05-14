@@ -191,9 +191,24 @@ function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
         </div>
 
         <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
-          <StarRating value={item.rating} size="sm" readOnly />
-          {item.rating !== null && (
-            <div className="text-[10px] text-gray-400">{item.rating}/5</div>
+          {item.coach_rating != null ? (
+            // M4: Coach official rating overrides self-rating visually (gold)
+            <>
+              <StarRating value={item.coach_rating} size="sm" readOnly variant="official" />
+              <div className="text-[9px] text-yellow-700 font-bold uppercase tracking-wider">
+                Official {item.coach_rating}/5
+              </div>
+              {item.rating !== null && item.rating !== item.coach_rating && (
+                <div className="text-[9px] text-gray-400">self: {item.rating}/5</div>
+              )}
+            </>
+          ) : (
+            <>
+              <StarRating value={item.rating} size="sm" readOnly />
+              {item.rating !== null && (
+                <div className="text-[10px] text-gray-400">{item.rating}/5</div>
+              )}
+            </>
           )}
         </div>
       </div>
