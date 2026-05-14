@@ -379,6 +379,54 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
         </div>
       </div>
 
+      {/* My Next Classes (M3) — upcoming + active services assigned to me */}
+      {coachData.upcomingServices && coachData.upcomingServices.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+            ▶ My Next Classes ({coachData.upcomingServices.length})
+          </h3>
+          <div className="space-y-2">
+            {coachData.upcomingServices.map((s: any) => {
+              const isActive = s.status === 'active';
+              const date = new Date(s.start_date);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const startsToday = date.toDateString() === today.toDateString();
+              return (
+                <Link
+                  key={s.id}
+                  href={`/camps/${s.id}`}
+                  className={`block rounded-xl border p-3 hover:opacity-90 transition ${
+                    isActive
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : startsToday
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-white border-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] font-mono uppercase tracking-wider"
+                       style={{ color: isActive ? '#047857' : startsToday ? '#92400E' : '#9CA3AF' }}>
+                      {isActive ? '🟢 In progress' : startsToday ? '📅 Today' : '⏰ Upcoming'}
+                      {s.service_kind ? ` · ${s.service_kind.replace(/_/g, ' ')}` : ''}
+                    </p>
+                    <span className="text-[10px] text-gray-400">
+                      {s.participant_count}/{s.capacity_max ?? '?'} students
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-[var(--tss-navy)]">{s.camp_name}</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {new Date(s.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Recent Sessions */}
       {coachData.recentSessions.length > 0 && (
         <div>
@@ -398,6 +446,18 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Empty state when nothing scheduled */}
+      {(!coachData.upcomingServices || coachData.upcomingServices.length === 0) &&
+       coachData.recentSessions.length === 0 && (
+        <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
+          <p className="text-3xl mb-2">🌊</p>
+          <p className="text-sm text-gray-500">No upcoming classes assigned yet.</p>
+          <p className="text-[11px] text-gray-400 mt-1">
+            When a coordinator assigns you to a service, it shows up here.
+          </p>
         </div>
       )}
     </div>

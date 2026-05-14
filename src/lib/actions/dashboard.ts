@@ -58,11 +58,13 @@ export async function getRecentAuditEvents(limit: number = 5) {
 
 export async function getCoachDashboardData(coachId: string) {
   const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
 
   const [
     { count: myStudentCount },
     recentSessionsResult,
     { count: draftCount },
+    upcomingServicesResult,
   ] = await Promise.all([
     supabase.from('students').select('*', { count: 'exact', head: true }),
     supabase
@@ -77,12 +79,54 @@ export async function getCoachDashboardData(coachId: string) {
       .select('*', { count: 'exact', head: true })
       .eq('coach_id', coachId)
       .eq('completion_state', 'draft'),
+    // M3: Upcoming + active services assigned to me as head_coach OR coach
+    supabase
+      .from('camp_instances')
+      .select(
+        'id, camp_name, start_date, end_date, status, scheduled_time, camp_templates:template_id(service_kind, template_name, capacity_max)'
+      )
+      .or(`coach_id.eq.${coachId},head_coach_id.eq.${coachId}`)
+      .in('status', ['planned', 'active'])
+      .gte('end_date', today)
+      .order('start_date', { ascending: true })
+      .limit(10),
   ]);
+
+  // Pull participant counts per upcoming instance (one query)
+  const upcomingIds = (upcomingServicesResult.data ?? []).map((s: any) => s.id);
+  const participantsByCamp: Record<string, number> = {};
+  if (upcomingIds.length > 0) {
+    const { data: ps } = await supabase
+      .from('camp_participants')
+      .select('camp_instance_id')
+      .in('camp_instance_id', upcomingIds)
+      .eq('enrollment_status', 'active');
+    for (const p of ps ?? []) {
+      participantsByCamp[p.camp_instance_id] =
+        (participantsByCamp[p.camp_instance_id] || 0) + 1;
+    }
+  }
+  const upcomingServices = (upcomingServicesResult.data ?? []).map((s: any) => {
+    const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
+    return {
+      id: s.id,
+      camp_name: s.camp_name,
+      start_date: s.start_date,
+      end_date: s.end_date,
+      status: s.status,
+      scheduled_time: s.scheduled_time,
+      service_kind: tpl?.service_kind ?? null,
+      template_name: tpl?.template_name ?? null,
+      capacity_max: tpl?.capacity_max ?? null,
+      participant_count: participantsByCamp[s.id] || 0,
+    };
+  });
 
   return {
     myStudentCount: myStudentCount ?? 0,
     recentSessions: recentSessionsResult.data ?? [],
     draftCount: draftCount ?? 0,
+    upcomingServices,
   };
 }
 
