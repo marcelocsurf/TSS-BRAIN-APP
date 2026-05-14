@@ -132,6 +132,27 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     return r <= myRank;
   });
 
+  // 4b. Enrich upcoming + past with participant counts (one query)
+  const allCampIds = [
+    ...(upcomingResult.data ?? []).map((s: any) => s.id),
+    ...(pastResult.data ?? []).map((s: any) => s.id),
+  ];
+  const participantCounts: Record<string, number> = {};
+  if (allCampIds.length > 0) {
+    const { data: pCounts } = await admin
+      .from('camp_participants')
+      .select('camp_instance_id')
+      .in('camp_instance_id', allCampIds)
+      .eq('enrollment_status', 'active');
+    for (const p of pCounts ?? []) {
+      participantCounts[p.camp_instance_id] =
+        (participantCounts[p.camp_instance_id] || 0) + 1;
+    }
+  }
+  const enrich = (s: any) => ({ ...s, participant_count: participantCounts[s.id] || 0 });
+  const upcomingEnriched = (upcomingResult.data ?? []).map(enrich);
+  const pastEnriched = (pastResult.data ?? []).map(enrich);
+
   // Course progress map (coach_lesson_progress for this coach)
   const { data: progressRows } = await admin
     .from('coach_lesson_progress')
@@ -165,8 +186,8 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       avgRating,
       ratingsCount: ratings.length,
     },
-    upcomingServices: upcomingResult.data ?? [],
-    pastServices: pastResult.data ?? [],
+    upcomingServices: upcomingEnriched,
+    pastServices: pastEnriched,
     coachCourses: coachCoursesResult.data ?? [],
     courseProgress,
     availableDrills,

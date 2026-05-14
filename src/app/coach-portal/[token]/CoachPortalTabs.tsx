@@ -5,15 +5,17 @@ import Link from 'next/link';
 import { BRAND } from '@/lib/constants/brand';
 import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-portal';
 import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/lib/actions/coach-portal';
+import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
+import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 
-type Tab = 'home' | 'courses' | 'tools' | 'services' | 'rating';
+type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'courses', label: 'Courses', icon: '🎓' },
   { key: 'tools', label: 'Tools', icon: '🛠' },
-  { key: 'services', label: 'Services', icon: '📋' },
+  { key: 'plan', label: 'Plan', icon: '📋' },
   { key: 'rating', label: 'Rating', icon: '⭐' },
 ];
 
@@ -40,7 +42,13 @@ export function CoachPortalTabs({
           />
         )}
         {activeTab === 'tools' && <ToolsTab drills={data.availableDrills} coach={coach} />}
-        {activeTab === 'services' && <ServicesTab upcoming={data.upcomingServices} past={data.pastServices} />}
+        {activeTab === 'plan' && (
+          <PlanTab
+            upcoming={data.upcomingServices}
+            past={data.pastServices}
+            token={coach.portal_token}
+          />
+        )}
         {activeTab === 'rating' && <RatingTab stats={stats} />}
       </div>
 
@@ -707,6 +715,152 @@ function ToolGroup({ label, items, accent }: { label: string; items: any[]; acce
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── New "Plan" tab (replaces the old "Services" tab) ───────────────
+// Lists upcoming + past services. Click → open the planner inline.
+
+function PlanTab({
+  upcoming,
+  past,
+  token,
+}: {
+  upcoming: any[];
+  past: any[];
+  token: string;
+}) {
+  const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
+  const [planData, setPlanData] = useState<ServicePlanData | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const openPlanner = async (campId: string) => {
+    setSelectedCampId(campId);
+    setLoading(true);
+    setPlanData(null);
+    try {
+      const d = await getServicePlan(token, campId);
+      setPlanData(d);
+    } catch (e) {
+      setPlanData(null);
+    }
+    setLoading(false);
+  };
+
+  const close = () => {
+    setSelectedCampId(null);
+    setPlanData(null);
+  };
+
+  if (selectedCampId) {
+    if (loading) {
+      return (
+        <div className="text-center py-16">
+          <div className="animate-pulse text-4xl mb-2">📋</div>
+          <p className="text-gray-500 text-sm">Loading planner…</p>
+        </div>
+      );
+    }
+    if (!planData) {
+      return (
+        <div className="text-center py-16">
+          <p className="text-sm text-gray-500">Couldn&apos;t load this service.</p>
+          <button onClick={close} className="text-[12px] text-[var(--tss-navy)] hover:underline mt-2">
+            ← Back
+          </button>
+        </div>
+      );
+    }
+    return <SessionPlanner data={planData} token={token} onBack={close} />;
+  }
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          📋 Plan the Session
+        </p>
+        <h2 className="text-base font-bold text-[var(--tss-navy)]">
+          Your assigned classes
+        </h2>
+        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+          Tap a class to plan the venue read, warm-up, mental hack, and per-student
+          drills + missions.
+        </p>
+      </div>
+
+      {upcoming.length > 0 && (
+        <div>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 mb-1.5">
+            Upcoming + active ({upcoming.length})
+          </p>
+          <div className="space-y-1.5">
+            {upcoming.map((s: any) => {
+              const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => openPlanner(s.id)}
+                  className="w-full text-left bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 hover:border-emerald-300 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-mono text-emerald-700">
+                        {tpl?.service_kind?.replace(/_/g, ' ') || s.status}
+                        {' · '}
+                        {s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
+                      </p>
+                      <p className="text-sm font-medium text-gray-800 mt-0.5">{s.camp_name}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                        {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}
+                      </p>
+                    </div>
+                    <span className="text-emerald-700 shrink-0 text-sm">→</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <div>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+            Past ({past.length})
+          </p>
+          <div className="space-y-1.5">
+            {past.map((s: any) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => openPlanner(s.id)}
+                className="w-full text-left bg-white border border-gray-100 rounded-xl p-3 hover:border-gray-300 transition-colors"
+              >
+                <p className="text-sm font-medium text-gray-700">{s.camp_name}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {upcoming.length === 0 && past.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <p className="text-3xl mb-2">🌊</p>
+          <p className="text-sm text-gray-500">No services assigned yet.</p>
+          <p className="text-[11px] text-gray-400 mt-1">
+            When the coordinator assigns you to a class, it&apos;ll show up here.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
