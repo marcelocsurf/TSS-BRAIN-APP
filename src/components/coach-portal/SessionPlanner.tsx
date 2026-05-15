@@ -20,17 +20,17 @@ const MENTAL_HACK_QUICK = [
 ];
 
 // ────────────────────────────────────────────────────────────────────
-// SessionPlanner — coach's session-planning UI in the coach portal.
+// SessionPlanner — coach's session-planning UI. Two phases driven by
+// service_plans.completion_state:
 //
-// Layout (top → bottom):
-//   1. Class header (camp_name, date, template)
-//   2. Venue Analysis (conditions + go/no-go)
-//   3. Group Warm-Up (pick from drills OR custom)
-//   4. Mental Hack (3 options + custom)
-//   5. Per-student cards (sequence focus + land drill + water drill + objective)
-//   6. Sticky bottom bar: Start / Close session
+//   planned     → PLANNING MODE: editable form (venue, warm-up, mental
+//                 hack, per-student sequence/drills/objective).
+//   in_progress → RUN + EVALUATE MODE: read-only recap of the plan, then
+//                 per-student evaluation cards (status + close note
+//                 against the objective that was set).
+//   closed      → read-only summary with every student's result.
 //
-// All writes are autosaved on blur to keep UX friction-free.
+// All writes autosave on blur.
 // ────────────────────────────────────────────────────────────────────
 
 interface SessionPlannerProps {
@@ -45,17 +45,31 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
   const [pending, startTransition] = useTransition();
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
 
-  const isClosed = plan.completion_state === 'closed';
+  const state = plan.completion_state; // 'planned' | 'in_progress' | 'closed'
+  const isPlanning = state === 'planned';
+  const isClosed = state === 'closed';
 
-  // Auto-save helpers — small debounce visual feedback
   const flash = (msg: string) => {
     setSavedFlash(msg);
     setTimeout(() => setSavedFlash(null), 1500);
   };
 
-  // Commit a plan-header patch: update local state AND persist the delta.
-  // Sends only the changed fields — avoids the stale-state trap of reading
-  // `plan` after an async setState.
+  // ── label helpers ──
+  const drillTitle = (id: string | null) =>
+    id ? data.availableDrills.find((d) => d.id === id)?.title ?? id : null;
+  const stpLabel = (id: string | null) => {
+    if (!id) return null;
+    const stp = data.stpCatalog.find((s) => s.id === id);
+    return stp ? `${stp.id} — ${stp.title}` : id;
+  };
+  const warmUpLabel = plan.warm_up_drill_id
+    ? drillTitle(plan.warm_up_drill_id)
+    : plan.warm_up_custom;
+  const mentalLabel =
+    MENTAL_HACK_QUICK.find((o) => o.id === plan.mental_hack)?.label ??
+    plan.mental_hack;
+
+  // ── commit helpers (state + persist delta, no stale reads) ──
   const commitPlanPatch = (patch: Partial<ServicePlanData['plan']>) => {
     setPlan((p) => ({ ...p, ...patch }));
     startTransition(async () => {
@@ -70,8 +84,6 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
   const commitPlanField = (field: keyof ServicePlanData['plan'], value: any) =>
     commitPlanPatch({ [field]: value } as any);
 
-  // Commit a per-student block patch: update local state AND persist the
-  // exact patch (the delta) — never the whole block object.
   const commitStudentBlock = (
     studentId: string,
     patch: Partial<ServicePlanStudent['block']>
@@ -102,6 +114,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           started_at: new Date().toISOString(),
         }));
         flash('🌊 Session started');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e: any) {
         alert(e.message || 'Failed to start');
       }
@@ -109,7 +122,16 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
   };
 
   const close = () => {
-    if (!confirm('Close this session? All blocks should have a status (✓ / ~ / ✗).')) return;
+    const unevaluated = students.filter((s) => !s.block.status);
+    if (unevaluated.length > 0) {
+      if (
+        !confirm(
+          `${unevaluated.length} student(s) have no status yet. Close anyway?`
+        )
+      ) {
+        return;
+      }
+    }
     startTransition(async () => {
       try {
         await closeServicePlan(token, data.camp.id);
@@ -119,20 +141,21 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           closed_at: new Date().toISOString(),
         }));
         flash('✓ Session closed');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e: any) {
         alert(e.message || 'Failed to close');
       }
     });
   };
 
-  // Filter drills by type for the pickers
   const warmupOptions = data.availableDrills.filter(
     (d) => d.block_name?.toLowerCase().includes('warm') || d.step_id === 'STP-002'
   );
 
+  const evaluatedCount = students.filter((s) => s.block.status).length;
+
   return (
     <div className="space-y-4 pb-32">
-      {/* Sticky save toast */}
       {savedFlash && (
         <div
           className="fixed top-2 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-full text-[11px] font-semibold shadow-lg"
@@ -151,13 +174,10 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
       </button>
 
       {/* Header */}
-      <div
-        className="rounded-2xl p-4 text-white"
-        style={{ background: BRAND.colors.navy }}
-      >
+      <div className="rounded-2xl p-4 text-white" style={{ background: BRAND.colors.navy }}>
         <p className="text-[10px] font-mono uppercase tracking-wider opacity-80">
           {data.camp.service_kind?.replace(/_/g, ' ') || 'Service'} ·{' '}
-          {plan.completion_state}
+          {state === 'planned' ? 'planning' : state === 'in_progress' ? 'in progress' : 'closed'}
         </p>
         <h2 className="text-base font-bold mt-0.5">{data.camp.camp_name}</h2>
         <p className="text-[11px] opacity-80 mt-0.5">
@@ -170,192 +190,182 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           {data.camp.template_name ? ` · ${data.camp.template_name}` : ''}
         </p>
         <p className="text-[11px] mt-1" style={{ color: BRAND.colors.gold }}>
-          {students.length} student{students.length === 1 ? '' : 's'} enrolled
+          {students.length} student{students.length === 1 ? '' : 's'}
+          {!isPlanning && ` · ${evaluatedCount}/${students.length} evaluated`}
         </p>
       </div>
 
-      {/* 1. VENUE ANALYSIS */}
-      <Section
-        emoji="🌊"
-        title="1. Venue Analysis"
-        subtitle="Read today's conditions before going in"
-      >
-        <div className="space-y-2">
-          {/* Go / Modified / No-Go */}
-          <div className="grid grid-cols-3 gap-2">
-            {(
-              [
-                { v: 'go', label: '✓ Go', bg: '#D1FAE5', fg: '#047857' },
-                { v: 'modified', label: '~ Modified', bg: '#FEF3C7', fg: '#92400E' },
-                { v: 'no_go', label: '✗ No-Go', bg: '#FEE2E2', fg: '#991B1B' },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.v}
-                type="button"
-                disabled={isClosed}
-                onClick={() => commitPlanField('venue_go_no_go', opt.v)}
-                className="py-2 rounded-lg text-xs font-semibold transition-all"
-                style={
-                  plan.venue_go_no_go === opt.v
-                    ? { background: opt.bg, color: opt.fg, boxShadow: 'inset 0 0 0 2px ' + opt.fg }
-                    : { background: '#F3F4F6', color: '#6B7280' }
-                }
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+      {/* ════════════ PLANNING MODE ════════════ */}
+      {isPlanning && (
+        <>
+          {/* 1. VENUE ANALYSIS */}
+          <Section emoji="🌊" title="1. Venue Analysis" subtitle="Read today's conditions before going in">
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { v: 'go', label: '✓ Go', bg: '#D1FAE5', fg: '#047857' },
+                    { v: 'modified', label: '~ Modified', bg: '#FEF3C7', fg: '#92400E' },
+                    { v: 'no_go', label: '✗ No-Go', bg: '#FEE2E2', fg: '#991B1B' },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => commitPlanField('venue_go_no_go', opt.v)}
+                    className="py-2 rounded-lg text-xs font-semibold transition-all"
+                    style={
+                      plan.venue_go_no_go === opt.v
+                        ? { background: opt.bg, color: opt.fg, boxShadow: 'inset 0 0 0 2px ' + opt.fg }
+                        : { background: '#F3F4F6', color: '#6B7280' }
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
 
-          {/* Conditions grid */}
-          <div className="grid grid-cols-2 gap-2">
-            <SmallField
-              label="Wave size"
-              value={plan.venue_wave_size}
-              onBlur={(v) => commitPlanField('venue_wave_size', v)}
-              placeholder="knee · waist · head"
-              disabled={isClosed}
-            />
-            <SmallField
-              label="Wind"
-              value={plan.venue_wind}
-              onBlur={(v) => commitPlanField('venue_wind', v)}
-              placeholder="offshore 10 kts"
-              disabled={isClosed}
-            />
-            <SmallField
-              label="Tide"
-              value={plan.venue_tide}
-              onBlur={(v) => commitPlanField('venue_tide', v)}
-              placeholder="rising mid"
-              disabled={isClosed}
-            />
-            <SmallField
-              label="Hazards"
-              value={plan.venue_hazards}
-              onBlur={(v) => commitPlanField('venue_hazards', v)}
-              placeholder="rocks · current"
-              disabled={isClosed}
-            />
-          </div>
+              <div className="grid grid-cols-2 gap-2">
+                <SmallField label="Wave size" value={plan.venue_wave_size} onBlur={(v) => commitPlanField('venue_wave_size', v)} placeholder="knee · waist · head" />
+                <SmallField label="Wind" value={plan.venue_wind} onBlur={(v) => commitPlanField('venue_wind', v)} placeholder="offshore 10 kts" />
+                <SmallField label="Tide" value={plan.venue_tide} onBlur={(v) => commitPlanField('venue_tide', v)} placeholder="rising mid" />
+                <SmallField label="Hazards" value={plan.venue_hazards} onBlur={(v) => commitPlanField('venue_hazards', v)} placeholder="rocks · current" />
+              </div>
 
-          <TextArea
-            label="Full read"
-            value={plan.venue_analysis}
-            onBlur={(v) => commitPlanField('venue_analysis', v)}
-            placeholder="What you see — currents, impact zone, where students should enter…"
-            disabled={isClosed}
-            rows={3}
+              <TextArea
+                label="Full read"
+                value={plan.venue_analysis}
+                onBlur={(v) => commitPlanField('venue_analysis', v)}
+                placeholder="What you see — currents, impact zone, where students should enter…"
+                rows={3}
+              />
+            </div>
+          </Section>
+
+          {/* 2. GROUP WARM-UP */}
+          <Section emoji="🔥" title="2. Group Warm-Up" subtitle="Pick from your tools or write your own">
+            <PickerOrCustom
+              options={warmupOptions.map((d) => ({
+                id: d.id,
+                label: d.title,
+                sublabel: d.key_words?.join(' · ') ?? '',
+              }))}
+              selectedId={plan.warm_up_drill_id}
+              customValue={plan.warm_up_custom}
+              onPick={(id) => commitPlanPatch({ warm_up_drill_id: id, warm_up_custom: null })}
+              onCustom={(v) => commitPlanPatch({ warm_up_custom: v, warm_up_drill_id: null })}
+              customPlaceholder="e.g. Joint mobility + 10 sand pop-ups"
+            />
+          </Section>
+
+          {/* 3. MENTAL HACK */}
+          <Section emoji="🧠" title="3. Mental Hack" subtitle="Get them in the zone">
+            <div className="grid grid-cols-3 gap-2">
+              {MENTAL_HACK_QUICK.map((opt) => {
+                const isSelected = plan.mental_hack === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => commitPlanField('mental_hack', opt.id)}
+                    className="py-3 rounded-xl text-xs font-medium transition-all border"
+                    style={
+                      isSelected
+                        ? { background: BRAND.colors.navy, color: 'white', borderColor: BRAND.colors.navy }
+                        : { background: 'white', color: '#374151', borderColor: '#E5E7EB' }
+                    }
+                  >
+                    <div className="text-base mb-0.5">{opt.emoji}</div>
+                    <div>{opt.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+            <SmallField
+              label="Or custom"
+              value={
+                plan.mental_hack && !MENTAL_HACK_QUICK.find((o) => o.id === plan.mental_hack)
+                  ? plan.mental_hack
+                  : ''
+              }
+              onBlur={(v) => commitPlanField('mental_hack', v || null)}
+              placeholder="Visualization · breath ladder · etc."
+            />
+          </Section>
+
+          {/* 4. PER-STUDENT PLANNING */}
+          <Section
+            emoji="👥"
+            title="4. Per Student"
+            subtitle="Plan a different mission for each — sequence, drills, objective"
+          >
+            <div className="space-y-3">
+              {students.map((s) => (
+                <StudentPlanCard
+                  key={s.student_id}
+                  student={s}
+                  stpCatalog={data.stpCatalog}
+                  availableDrills={data.availableDrills}
+                  onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
+                />
+              ))}
+            </div>
+          </Section>
+
+          {/* 5. GENERAL NOTES */}
+          <Section emoji="📝" title="5. General notes (private)">
+            <TextArea
+              label=""
+              value={plan.notes_general}
+              onBlur={(v) => commitPlanField('notes_general', v)}
+              placeholder="Anything else you want to remember about the session…"
+              rows={3}
+            />
+          </Section>
+        </>
+      )}
+
+      {/* ════════════ RUN + EVALUATE MODE ════════════ */}
+      {!isPlanning && (
+        <>
+          <GeneralPlanSummary
+            plan={plan}
+            warmUpLabel={warmUpLabel}
+            mentalLabel={mentalLabel}
           />
-        </div>
-      </Section>
 
-      {/* 2. GROUP WARM-UP */}
-      <Section
-        emoji="🔥"
-        title="2. Group Warm-Up"
-        subtitle="Pick from your tools or write your own"
-      >
-        <PickerOrCustom
-          options={warmupOptions.map((d) => ({
-            id: d.id,
-            label: d.title,
-            sublabel: d.key_words?.join(' · ') ?? '',
-          }))}
-          selectedId={plan.warm_up_drill_id}
-          customValue={plan.warm_up_custom}
-          onPick={(id) =>
-            commitPlanPatch({ warm_up_drill_id: id, warm_up_custom: null })
-          }
-          onCustom={(v) =>
-            commitPlanPatch({ warm_up_custom: v, warm_up_drill_id: null })
-          }
-          customPlaceholder="e.g. Joint mobility + 10 sand pop-ups"
-          disabled={isClosed}
-        />
-      </Section>
+          <Section
+            emoji="🎯"
+            title={isClosed ? 'Student results' : 'Evaluate each student'}
+            subtitle={
+              isClosed
+                ? 'How each student did against their objective.'
+                : 'Mark each student against the objective you set for them.'
+            }
+          >
+            <div className="space-y-3">
+              {students.map((s) => (
+                <StudentEvalCard
+                  key={s.student_id}
+                  student={s}
+                  isClosed={isClosed}
+                  stpLabel={stpLabel}
+                  drillTitle={drillTitle}
+                  onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
+                />
+              ))}
+            </div>
+          </Section>
+        </>
+      )}
 
-      {/* 3. MENTAL HACK */}
-      <Section
-        emoji="🧠"
-        title="3. Mental Hack"
-        subtitle="Get them in the zone"
-      >
-        <div className="grid grid-cols-3 gap-2">
-          {MENTAL_HACK_QUICK.map((opt) => {
-            const isSelected = plan.mental_hack === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                disabled={isClosed}
-                onClick={() => commitPlanField('mental_hack', opt.id)}
-                className="py-3 rounded-xl text-xs font-medium transition-all border"
-                style={
-                  isSelected
-                    ? { background: BRAND.colors.navy, color: 'white', borderColor: BRAND.colors.navy }
-                    : { background: 'white', color: '#374151', borderColor: '#E5E7EB' }
-                }
-              >
-                <div className="text-base mb-0.5">{opt.emoji}</div>
-                <div>{opt.label}</div>
-              </button>
-            );
-          })}
-        </div>
-        <SmallField
-          label="Or custom"
-          value={
-            plan.mental_hack &&
-            !MENTAL_HACK_QUICK.find((o) => o.id === plan.mental_hack)
-              ? plan.mental_hack
-              : ''
-          }
-          onBlur={(v) => commitPlanField('mental_hack', v || null)}
-          placeholder="Visualization · breath ladder · etc."
-          disabled={isClosed}
-        />
-      </Section>
-
-      {/* 4. STUDENT BLOCKS */}
-      <Section
-        emoji="👥"
-        title="4. Per Student"
-        subtitle="Plan a different mission for each — sequence, drills, objective"
-      >
-        <div className="space-y-3">
-          {students.map((s) => (
-            <StudentCard
-              key={s.student_id}
-              student={s}
-              isClosed={isClosed}
-              stpCatalog={data.stpCatalog}
-              availableDrills={data.availableDrills}
-              onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
-            />
-          ))}
-        </div>
-      </Section>
-
-      {/* 5. NOTES + LIFECYCLE */}
-      <Section emoji="📝" title="5. General notes (private)">
-        <TextArea
-          label=""
-          value={plan.notes_general}
-          onBlur={(v) => commitPlanField('notes_general', v)}
-          placeholder="Anything else you want to remember about the session…"
-          disabled={isClosed}
-          rows={3}
-        />
-      </Section>
-
-      {/* Sticky footer with lifecycle buttons */}
+      {/* Sticky footer */}
       <div
         className="fixed bottom-14 left-0 right-0 px-4 py-2 z-40 border-t border-gray-200"
         style={{ background: 'white' }}
       >
         <div className="max-w-lg mx-auto flex gap-2">
-          {plan.completion_state === 'planned' && (
+          {state === 'planned' && (
             <button
               type="button"
               onClick={start}
@@ -366,7 +376,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
               🌊 Start session
             </button>
           )}
-          {plan.completion_state === 'in_progress' && (
+          {state === 'in_progress' && (
             <button
               type="button"
               onClick={close}
@@ -374,16 +384,82 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
               className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
               style={{ background: '#10B981' }}
             >
-              ✓ Close session
+              ✓ Close session ({evaluatedCount}/{students.length} evaluated)
             </button>
           )}
-          {plan.completion_state === 'closed' && (
+          {state === 'closed' && (
             <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700">
-              ✓ Closed{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleTimeString()}` : ''}
+              ✓ Closed{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleDateString()}` : ''}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── General plan summary (read-only recap) ───────────────────────
+
+function GeneralPlanSummary({
+  plan,
+  warmUpLabel,
+  mentalLabel,
+}: {
+  plan: ServicePlanData['plan'];
+  warmUpLabel: string | null | undefined;
+  mentalLabel: string | null | undefined;
+}) {
+  const goLabel =
+    plan.venue_go_no_go === 'go'
+      ? '✓ Go'
+      : plan.venue_go_no_go === 'modified'
+      ? '~ Modified'
+      : plan.venue_go_no_go === 'no_go'
+      ? '✗ No-Go'
+      : '—';
+  const conditions = [
+    plan.venue_wave_size && `🌊 ${plan.venue_wave_size}`,
+    plan.venue_wind && `💨 ${plan.venue_wind}`,
+    plan.venue_tide && `🌙 ${plan.venue_tide}`,
+    plan.venue_hazards && `⚠ ${plan.venue_hazards}`,
+  ].filter(Boolean);
+
+  return (
+    <Section emoji="📋" title="Session Plan" subtitle="The plan you set for this class">
+      <div className="space-y-2.5">
+        <SummaryRow label="Venue call" value={goLabel} />
+        {conditions.length > 0 && (
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Conditions
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {conditions.map((c, i) => (
+                <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {plan.venue_analysis && (
+          <SummaryRow label="Venue read" value={plan.venue_analysis} />
+        )}
+        <SummaryRow label="🔥 Warm-up" value={warmUpLabel || '—'} />
+        <SummaryRow label="🧠 Mental hack" value={mentalLabel || '—'} />
+        {plan.notes_general && (
+          <SummaryRow label="📝 Notes" value={plan.notes_general} />
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{label}</p>
+      <p className="text-sm text-gray-800 mt-0.5 whitespace-pre-wrap">{value}</p>
     </div>
   );
 }
@@ -497,7 +573,6 @@ function PickerOrCustom({
   onPick,
   onCustom,
   customPlaceholder,
-  disabled,
 }: {
   options: Array<{ id: string; label: string; sublabel?: string }>;
   selectedId: string | null;
@@ -505,7 +580,6 @@ function PickerOrCustom({
   onPick: (id: string | null) => void;
   onCustom: (v: string) => void;
   customPlaceholder?: string;
-  disabled?: boolean;
 }) {
   return (
     <div className="space-y-2">
@@ -515,7 +589,6 @@ function PickerOrCustom({
             <button
               key={o.id}
               type="button"
-              disabled={disabled}
               onClick={() => onPick(selectedId === o.id ? null : o.id)}
               className={`w-full text-left px-3 py-2 rounded-lg border text-[12px] transition-colors ${
                 selectedId === o.id
@@ -542,23 +615,20 @@ function PickerOrCustom({
         value={customValue}
         onBlur={onCustom}
         placeholder={customPlaceholder}
-        disabled={disabled}
       />
     </div>
   );
 }
 
-// ─── Per-student card ─────────────────────────────────────────────
+// ─── Per-student PLANNING card ────────────────────────────────────
 
-function StudentCard({
+function StudentPlanCard({
   student,
-  isClosed,
   stpCatalog,
   availableDrills,
   onCommit,
 }: {
   student: ServicePlanStudent;
-  isClosed: boolean;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
   onCommit: (patch: Partial<ServicePlanStudent['block']>) => void;
@@ -567,15 +637,12 @@ function StudentCard({
   const [showLandPicker, setShowLandPicker] = useState(false);
   const [showWaterPicker, setShowWaterPicker] = useState(false);
 
-  // When a step is picked, filter drills/missions by step_id
   const stepDrills = availableDrills.filter(
     (d) => d.type === 'drill' && d.step_id === block.step_id
   );
   const stepMissions = availableDrills.filter(
     (d) => d.type === 'mission' && d.step_id === block.step_id
   );
-
-  // Find display labels for selected drill ids
   const landLabel = block.land_drill_id
     ? availableDrills.find((d) => d.id === block.land_drill_id)?.title
     : null;
@@ -585,33 +652,16 @@ function StudentCard({
 
   return (
     <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2">
-      {/* Student header + status pill */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
-            {student.display_name}
-          </p>
-          <p className="text-[10px] text-gray-500 capitalize">
-            {student.belt_level?.replace(/_/g, ' ')}
-          </p>
-        </div>
-        {block.status && (
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-            style={
-              block.status === 'achieved'
-                ? { background: '#D1FAE5', color: '#047857' }
-                : block.status === 'partial'
-                ? { background: '#FEF3C7', color: '#92400E' }
-                : { background: '#FEE2E2', color: '#991B1B' }
-            }
-          >
-            {block.status === 'achieved' ? '✓ Achieved' : block.status === 'partial' ? '~ Partial' : '✗ Not yet'}
-          </span>
-        )}
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
+          {student.display_name}
+        </p>
+        <p className="text-[10px] text-gray-500 capitalize">
+          {student.belt_level?.replace(/_/g, ' ')}
+        </p>
       </div>
 
-      {/* Sequence focus picker */}
+      {/* Sequence focus */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
           Sequence focus
@@ -619,8 +669,7 @@ function StudentCard({
         <select
           value={block.step_id ?? ''}
           onChange={(e) => onCommit({ step_id: e.target.value || null })}
-          disabled={isClosed}
-          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs disabled:bg-gray-50"
+          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
         >
           <option value="">— pick a step —</option>
           {stpCatalog.map((stp) => (
@@ -639,9 +688,8 @@ function StudentCard({
         {!showLandPicker ? (
           <button
             type="button"
-            disabled={isClosed}
             onClick={() => setShowLandPicker(true)}
-            className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50 disabled:bg-gray-50"
+            className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
           >
             {landLabel || block.land_drill_custom || (
               <span className="text-gray-400 italic">— tap to pick —</span>
@@ -686,7 +734,7 @@ function StudentCard({
         )}
       </div>
 
-      {/* Water drill / mission */}
+      {/* Water mission */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
           In-water mission
@@ -694,9 +742,8 @@ function StudentCard({
         {!showWaterPicker ? (
           <button
             type="button"
-            disabled={isClosed}
             onClick={() => setShowWaterPicker(true)}
-            className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50 disabled:bg-gray-50"
+            className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
           >
             {waterLabel || block.water_drill_custom || (
               <span className="text-gray-400 italic">— tap to pick —</span>
@@ -747,60 +794,140 @@ function StudentCard({
         value={block.objective_text}
         onBlur={(v) => onCommit({ objective_text: v })}
         placeholder="e.g. 3 clean pop-ups landing in FP2"
-        disabled={isClosed}
       />
 
-      {/* Pre notes (only before close) */}
-      {!isClosed && (
-        <TextArea
-          label="Pre-session note"
-          value={block.notes_pre}
-          onBlur={(v) => onCommit({ notes_pre: v })}
-          placeholder="What to watch for with this student today"
-          rows={2}
-        />
-      )}
+      {/* Pre-session note */}
+      <TextArea
+        label="Pre-session note"
+        value={block.notes_pre}
+        onBlur={(v) => onCommit({ notes_pre: v })}
+        placeholder="What to watch for with this student today"
+        rows={2}
+      />
+    </div>
+  );
+}
 
-      {/* Close evaluation — only in progress or closed */}
-      {(block.notes_pre || isClosed) && (
-        <div className="border-t border-gray-200 pt-2 mt-2 space-y-2">
-          <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-              Status at close
-            </label>
-            <div className="grid grid-cols-3 gap-1">
-              {(
-                [
-                  { v: 'achieved', label: '✓', color: '#047857', bg: '#D1FAE5' },
-                  { v: 'partial', label: '~', color: '#92400E', bg: '#FEF3C7' },
-                  { v: 'not_yet', label: '✗', color: '#991B1B', bg: '#FEE2E2' },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.v}
-                  type="button"
-                  onClick={() => onCommit({ status: opt.v })}
-                  className="py-1 rounded text-xs font-bold transition-all"
-                  style={
-                    block.status === opt.v
-                      ? { background: opt.bg, color: opt.color, boxShadow: 'inset 0 0 0 2px ' + opt.color }
-                      : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <TextArea
-            label="Close note (visible to student)"
-            value={block.notes_post}
-            onBlur={(v) => onCommit({ notes_post: v })}
-            placeholder="What they did well · what to work on next"
-            rows={2}
-          />
+// ─── Per-student EVALUATION card ──────────────────────────────────
+
+function StudentEvalCard({
+  student,
+  isClosed,
+  stpLabel,
+  drillTitle,
+  onCommit,
+}: {
+  student: ServicePlanStudent;
+  isClosed: boolean;
+  stpLabel: (id: string | null) => string | null;
+  drillTitle: (id: string | null) => string | null;
+  onCommit: (patch: Partial<ServicePlanStudent['block']>) => void;
+}) {
+  const { block } = student;
+  const land = block.land_drill_id ? drillTitle(block.land_drill_id) : block.land_drill_custom;
+  const water = block.water_drill_id ? drillTitle(block.water_drill_id) : block.water_drill_custom;
+
+  return (
+    <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2.5">
+      {/* Student header + status pill */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
+            {student.display_name}
+          </p>
+          <p className="text-[10px] text-gray-500 capitalize">
+            {student.belt_level?.replace(/_/g, ' ')}
+          </p>
         </div>
-      )}
+        {block.status && (
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
+            style={
+              block.status === 'achieved'
+                ? { background: '#D1FAE5', color: '#047857' }
+                : block.status === 'partial'
+                ? { background: '#FEF3C7', color: '#92400E' }
+                : { background: '#FEE2E2', color: '#991B1B' }
+            }
+          >
+            {block.status === 'achieved' ? '✓ Achieved' : block.status === 'partial' ? '~ Partial' : '✗ Not yet'}
+          </span>
+        )}
+      </div>
+
+      {/* The plan that was set — read-only recap */}
+      <div className="bg-white rounded-lg border border-gray-100 p-2.5 space-y-1.5">
+        <EvalRow label="Sequence" value={stpLabel(block.step_id) || '—'} />
+        <EvalRow label="🏋️ Land drill" value={land || '—'} />
+        <EvalRow label="🌊 Water mission" value={water || '—'} />
+        <EvalRow label="🎯 Objective" value={block.objective_text || '—'} highlight />
+        {block.notes_pre && <EvalRow label="Pre-note" value={block.notes_pre} />}
+      </div>
+
+      {/* Evaluation controls */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          Did they hit the objective?
+        </label>
+        <div className="grid grid-cols-3 gap-1.5">
+          {(
+            [
+              { v: 'achieved', label: '✓ Achieved', color: '#047857', bg: '#D1FAE5' },
+              { v: 'partial', label: '~ Partial', color: '#92400E', bg: '#FEF3C7' },
+              { v: 'not_yet', label: '✗ Not yet', color: '#991B1B', bg: '#FEE2E2' },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.v}
+              type="button"
+              disabled={isClosed}
+              onClick={() => onCommit({ status: opt.v })}
+              className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
+              style={
+                block.status === opt.v
+                  ? { background: opt.bg, color: opt.color, boxShadow: 'inset 0 0 0 2px ' + opt.color }
+                  : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <TextArea
+        label="Close note (visible to student)"
+        value={block.notes_post}
+        onBlur={(v) => onCommit({ notes_post: v })}
+        placeholder="What they did well · what to work on next"
+        rows={2}
+        disabled={isClosed}
+      />
+    </div>
+  );
+}
+
+function EvalRow({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex gap-2 text-xs">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0 w-24 pt-0.5">
+        {label}
+      </span>
+      <span
+        className={`flex-1 whitespace-pre-wrap ${
+          highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-gray-700'
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
