@@ -620,6 +620,191 @@ function PickerOrCustom({
   );
 }
 
+// ─── Student profile / bitácora panel (collapsible) ──────────────
+//
+// Shown at the top of each student card so the coach can review the
+// student's level, goals, fears, injuries, medical info and last
+// session BEFORE planning their mission.
+
+function StudentProfilePanel({
+  profile,
+  beltLevel,
+}: {
+  profile: ServicePlanStudent['profile'];
+  beltLevel: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const hasMedical = !!(
+    profile.injuries ||
+    profile.allergies ||
+    profile.medical_notes ||
+    profile.risk_notes
+  );
+
+  const quickFacts = [
+    beltLevel && `🥋 ${beltLevel.replace(/_/g, ' ')}`,
+    profile.ocean_level && `🌊 ${profile.ocean_level}`,
+    profile.age && `${profile.age} yrs`,
+    profile.weight && `${profile.weight} kg`,
+    profile.height && `${profile.height} cm`,
+    (profile.goofy_or_regular || profile.stance) &&
+      `${profile.goofy_or_regular || profile.stance}`,
+    profile.surf_experience_years != null &&
+      `${profile.surf_experience_years} yr exp`,
+    profile.swim_level && `swim: ${profile.swim_level}`,
+    profile.learning_profile_primary &&
+      `learns: ${profile.learning_profile_primary}`,
+  ].filter(Boolean) as string[];
+
+  const goals = [
+    profile.primary_goal && ['Primary', profile.primary_goal],
+    profile.personal_goal && ['Personal', profile.personal_goal],
+    profile.goal_short_term && ['Short-term', profile.goal_short_term],
+    profile.goal_mid_term && ['Mid-term', profile.goal_mid_term],
+    profile.goal_long_term && ['Long-term', profile.goal_long_term],
+  ].filter(Boolean) as [string, string][];
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-2.5 py-2 text-left"
+      >
+        <span className="text-[11px] font-semibold text-[var(--tss-navy)]">
+          📋 Profile & bitácora
+          {hasMedical && (
+            <span className="ml-1.5 text-[10px] text-red-600">⚠ medical</span>
+          )}
+        </span>
+        <span className={`text-gray-400 text-xs transition ${open ? 'rotate-180' : ''}`}>
+          ▾
+        </span>
+      </button>
+
+      {open && (
+        <div className="px-2.5 pb-2.5 space-y-2.5 border-t border-gray-100 pt-2">
+          {/* Quick facts */}
+          {quickFacts.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {quickFacts.map((f, i) => (
+                <span
+                  key={i}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Medical & safety — prominent when present */}
+          {hasMedical && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-2 space-y-1">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-red-700">
+                ⚠ Medical & safety
+              </p>
+              {profile.injuries && <ProfileLine label="Injuries" value={profile.injuries} danger />}
+              {profile.allergies && <ProfileLine label="Allergies" value={profile.allergies} danger />}
+              {profile.medical_notes && <ProfileLine label="Medical" value={profile.medical_notes} danger />}
+              {profile.risk_notes && <ProfileLine label="Risk" value={profile.risk_notes} danger />}
+            </div>
+          )}
+
+          {/* Last session */}
+          {(profile.last_session_date || profile.last_session_mission) && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                Last session
+              </p>
+              {profile.last_session_date && (
+                <ProfileLine
+                  label="Date"
+                  value={new Date(profile.last_session_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                />
+              )}
+              {profile.last_session_mission && <ProfileLine label="Mission" value={profile.last_session_mission} />}
+              {profile.last_session_status && <ProfileLine label="Result" value={profile.last_session_status} />}
+              {profile.last_homework && <ProfileLine label="Homework" value={profile.last_homework} />}
+            </div>
+          )}
+
+          {/* Goals */}
+          {goals.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                🎯 Goals
+              </p>
+              {goals.map(([label, value], i) => (
+                <ProfileLine key={i} label={label} value={value} />
+              ))}
+            </div>
+          )}
+
+          {/* Watch out */}
+          {(profile.fears_phobias || profile.biggest_barrier) && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                ⚡ Watch out
+              </p>
+              {profile.fears_phobias && <ProfileLine label="Fears" value={profile.fears_phobias} />}
+              {profile.biggest_barrier && <ProfileLine label="Barrier" value={profile.biggest_barrier} />}
+            </div>
+          )}
+
+          {/* Coach notes */}
+          {(profile.current_focus_area ||
+            profile.next_recommended_focus ||
+            profile.coach_notes_general) && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                Coach notes
+              </p>
+              {profile.current_focus_area && <ProfileLine label="Focus now" value={profile.current_focus_area} />}
+              {profile.next_recommended_focus && <ProfileLine label="Next" value={profile.next_recommended_focus} />}
+              {profile.coach_notes_general && <ProfileLine label="General" value={profile.coach_notes_general} />}
+            </div>
+          )}
+
+          {quickFacts.length === 0 && !hasMedical && goals.length === 0 && (
+            <p className="text-[11px] text-gray-400 italic">
+              No profile data filled in for this student yet.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfileLine({
+  label,
+  value,
+  danger,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="flex gap-2 text-[11px]">
+      <span
+        className={`shrink-0 w-20 ${danger ? 'text-red-500' : 'text-gray-400'}`}
+      >
+        {label}
+      </span>
+      <span className={`flex-1 ${danger ? 'text-red-800' : 'text-gray-700'}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
 // ─── Per-student PLANNING card ────────────────────────────────────
 
 function StudentPlanCard({
@@ -660,6 +845,9 @@ function StudentPlanCard({
           {student.belt_level?.replace(/_/g, ' ')}
         </p>
       </div>
+
+      {/* Profile / bitácora — review before planning */}
+      <StudentProfilePanel profile={student.profile} beltLevel={student.belt_level} />
 
       {/* Sequence focus */}
       <div>
@@ -854,6 +1042,9 @@ function StudentEvalCard({
           </span>
         )}
       </div>
+
+      {/* Profile / bitácora — context while evaluating */}
+      <StudentProfilePanel profile={student.profile} beltLevel={student.belt_level} />
 
       {/* The plan that was set — read-only recap */}
       <div className="bg-white rounded-lg border border-gray-100 p-2.5 space-y-1.5">

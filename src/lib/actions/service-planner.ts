@@ -46,10 +46,41 @@ export interface ServicePlanData {
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
 }
 
+export interface StudentProfileSnapshot {
+  age: number | null;
+  weight: number | null;
+  height: number | null;
+  ocean_level: string | null;
+  stance: string | null;
+  goofy_or_regular: string | null;
+  surf_experience_years: number | null;
+  swim_level: string | null;
+  primary_goal: string | null;
+  personal_goal: string | null;
+  goal_short_term: string | null;
+  goal_mid_term: string | null;
+  goal_long_term: string | null;
+  fears_phobias: string | null;
+  biggest_barrier: string | null;
+  injuries: string | null;
+  allergies: string | null;
+  medical_notes: string | null;
+  risk_notes: string | null;
+  last_session_date: string | null;
+  last_session_mission: string | null;
+  last_session_status: string | null;
+  last_homework: string | null;
+  current_focus_area: string | null;
+  next_recommended_focus: string | null;
+  coach_notes_general: string | null;
+  learning_profile_primary: string | null;
+}
+
 export interface ServicePlanStudent {
   student_id: string;
   display_name: string;
   belt_level: string | null;
+  profile: StudentProfileSnapshot;
   // Their block in this service (one block per student per service for v1)
   block: {
     id: string | null;
@@ -100,12 +131,23 @@ export async function getServicePlan(
     .eq('camp_instance_id', campInstanceId)
     .maybeSingle();
 
-  // Students enrolled in this camp_instance.
+  // Students enrolled in this camp_instance — pull the full profile
+  // snapshot so the coach can review level, goals, fears, injuries,
+  // medical info and last-session history before planning.
   // NOTE: students has no display_name column (that's on coaches) — we
   // compose it from first_name + last_name.
   const { data: participants } = await admin
     .from('camp_participants')
-    .select('student_id, students:student_id(id, first_name, last_name, belt_level)')
+    .select(
+      'student_id, students:student_id(' +
+        'id, first_name, last_name, belt_level, age, weight, height, ocean_level, ' +
+        'stance, goofy_or_regular, surf_experience_years, swim_level, ' +
+        'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
+        'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, ' +
+        'last_session_date, last_session_mission, last_session_status, last_homework, ' +
+        'current_focus_area, next_recommended_focus, coach_notes_general, learning_profile_primary' +
+      ')'
+    )
     .eq('camp_instance_id', campInstanceId)
     .eq('enrollment_status', 'active');
 
@@ -127,6 +169,35 @@ export async function getServicePlan(
       display_name:
         `${s?.first_name ?? ''} ${s?.last_name ?? ''}`.trim() || 'Student',
       belt_level: s?.belt_level ?? null,
+      profile: {
+        age: s?.age ?? null,
+        weight: s?.weight ?? null,
+        height: s?.height ?? null,
+        ocean_level: s?.ocean_level ?? null,
+        stance: s?.stance ?? null,
+        goofy_or_regular: s?.goofy_or_regular ?? null,
+        surf_experience_years: s?.surf_experience_years ?? null,
+        swim_level: s?.swim_level ?? null,
+        primary_goal: s?.primary_goal ?? null,
+        personal_goal: s?.personal_goal ?? null,
+        goal_short_term: s?.goal_short_term ?? null,
+        goal_mid_term: s?.goal_mid_term ?? null,
+        goal_long_term: s?.goal_long_term ?? null,
+        fears_phobias: s?.fears_phobias ?? null,
+        biggest_barrier: s?.biggest_barrier ?? null,
+        injuries: s?.injuries ?? null,
+        allergies: s?.allergies ?? null,
+        medical_notes: s?.medical_notes ?? null,
+        risk_notes: s?.risk_notes ?? null,
+        last_session_date: s?.last_session_date ?? null,
+        last_session_mission: s?.last_session_mission ?? null,
+        last_session_status: s?.last_session_status ?? null,
+        last_homework: s?.last_homework ?? null,
+        current_focus_area: s?.current_focus_area ?? null,
+        next_recommended_focus: s?.next_recommended_focus ?? null,
+        coach_notes_general: s?.coach_notes_general ?? null,
+        learning_profile_primary: s?.learning_profile_primary ?? null,
+      },
       block: {
         id: block?.id ?? null,
         step_id: block?.step_id ?? null,
