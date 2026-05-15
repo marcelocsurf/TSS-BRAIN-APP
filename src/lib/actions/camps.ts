@@ -6,6 +6,7 @@ import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
 import { revalidatePath } from 'next/cache';
 import type { SessionStatus } from '@/lib/constants/brand';
+import { getCurrentCoach } from '@/lib/actions/auth';
 
 // ═══════════════════════════════════════
 // LIST TEMPLATES
@@ -69,6 +70,13 @@ export async function createCampInstance(input: {
 
   if (!days || days.length === 0) throw new Error('Template has no days configured.');
 
+  // Resolve the academy this service belongs to. getCurrentCoach()
+  // honors the act-as cookie, so a platform admin acting-as academy B
+  // creates the service inside academy B; otherwise it falls back to
+  // the creator's own academy. Always yields a real academy.
+  const me = await getCurrentCoach();
+  const academyId = me?.academy_id ?? null;
+
   // Create instance
   const { data: instance, error: instErr } = await supabase
     .from('camp_instances')
@@ -81,6 +89,7 @@ export async function createCampInstance(input: {
       end_date: input.end_date,
       modality: input.modality,
       status: 'planned',
+      academy_id: academyId,
     })
     .select()
     .single();

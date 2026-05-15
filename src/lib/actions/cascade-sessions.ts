@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { isBeltInRange } from '@/lib/constants/cascade';
+import { getCurrentAcademyId } from '@/lib/actions/auth';
 import type {
   BeltLevel,
   CascadeFormState,
@@ -28,10 +29,18 @@ export interface CoachForAssignment {
 export async function getCoachesForAssignment(): Promise<CoachForAssignment[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // Scope to the current academy (honors the act-as cookie). Platform
+  // admin not in act-as mode → academyId null → all coaches.
+  const academyId = await getCurrentAcademyId();
+
+  let query = supabase
     .from('coaches')
     .select('id, display_name, role, max_belt_permission')
+    .eq('active_status', true)
     .order('display_name');
+  if (academyId) query = query.eq('academy_id', academyId);
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('getCoachesForAssignment error:', error.message);
