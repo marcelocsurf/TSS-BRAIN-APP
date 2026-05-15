@@ -432,15 +432,198 @@ export async function startServicePlan(token: string, campInstanceId: string): P
     );
 }
 
+// Close the service plan AND sync every student's evaluation into the
+// unified bitácora (student_session_results) so it shows up in the
+// student portal + their admin profile. Mirrors closeCampSessionResult.
+//
+// Steps:
+//   1. Ensure a camp_session exists for this camp_instance (day 1).
+//   2. Wipe + re-insert one student_session_results row per block
+//      (idempotent — re-closing re-syncs cleanly).
+//   3. Call update_student_profile_on_close RPC per student so the
+//      student's last_session_* snapshot updates.
+//   4. Email each student their feedback + survey link (first close only).
+//   5. Flip service_plans → closed and camp_instance → completed.
 export async function closeServicePlan(token: string, campInstanceId: string): Promise<void> {
   const admin = createAdminClient();
+
   const { data: coach } = await admin
     .from('coaches')
-    .select('id')
+    .select('id, display_name')
     .eq('portal_token', token)
     .single();
   if (!coach) throw new Error('Coach not found.');
 
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, start_date, coach_id, head_coach_id')
+    .eq('id', campInstanceId)
+    .single();
+  if (!camp) throw new Error('Service not found.');
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    throw new Error('You are not assigned to this service.');
+  }
+
+  const { data: plan } = await admin
+    .from('service_plans')
+    .select('*')
+    .eq('camp_instance_id', campInstanceId)
+    .maybeSingle();
+  const alreadyClosed = plan?.completion_state === 'closed';
+
+  const { data: blocks } = await admin
+    .from('service_plan_blocks')
+    .select('*')
+    .eq('camp_instance_id', campInstanceId);
+  const allBlocks = blocks ?? [];
+
+  // 1. Ensure a camp_session exists (day 1)
+  let { data: campSession } = await admin
+    .from('camp_sessions')
+    .select('id')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('day_number', 1)
+    .maybeSingle();
+  if (!campSession) {
+    const { data: created, error: csErr } = await admin
+      .from('camp_sessions')
+      .insert({
+        camp_instance_id: campInstanceId,
+        day_number: 1,
+        session_date: camp.start_date ?? new Date().toISOString().slice(0, 10),
+        venue_actual: plan?.venue_analysis ?? null,
+        common_notes:
+          [plan?.warm_up_custom, plan?.mental_hack].filter(Boolean).join(' · ') || null,
+        session_status: 'completed',
+      })
+      .select('id')
+      .single();
+    if (csErr) throw new Error(csErr.message);
+    campSession = created;
+  } else {
+    await admin
+      .from('camp_sessions')
+      .update({ session_status: 'completed' })
+      .eq('id', campSession.id);
+  }
+
+  // 2. Idempotency — clear prior results for this camp_session
+  await admin
+    .from('student_session_results')
+    .delete()
+    .eq('camp_session_id', campSession!.id);
+
+  // Resolve drill/mission titles for the mission text
+  const drillIds = Array.from(
+    new Set(
+      allBlocks
+        .flatMap((b: any) => [b.water_drill_id, b.land_drill_id])
+        .filter(Boolean)
+    )
+  );
+  const titleById: Record<string, string> = {};
+  if (drillIds.length > 0) {
+    const { data: dm } = await admin
+      .from('drills_missions')
+      .select('id, title')
+      .in('id', drillIds);
+    for (const d of dm ?? []) titleById[d.id] = d.title;
+  }
+
+  // Students (portal_token + email for the close email)
+  const studentIds = allBlocks.map((b: any) => b.student_id);
+  const studById: Record<string, any> = {};
+  if (studentIds.length > 0) {
+    const { data: studs } = await admin
+      .from('students')
+      .select('id, first_name, email, portal_token, belt_level')
+      .in('id', studentIds);
+    for (const s of studs ?? []) studById[s.id] = s;
+  }
+
+  const STATUS_MAP: Record<string, string> = {
+    achieved: 'competent',
+    partial: 'partial',
+    not_yet: 'not_yet',
+  };
+
+  // 3. One result per block + profile snapshot sync
+  for (const b of allBlocks) {
+    const stud = studById[b.student_id];
+    const missionTitle =
+      b.objective_text ||
+      (b.water_drill_id ? titleById[b.water_drill_id] : b.water_drill_custom) ||
+      (b.land_drill_id ? titleById[b.land_drill_id] : b.land_drill_custom) ||
+      'Service session';
+    const status = STATUS_MAP[b.status as string] ?? 'partial';
+    const achievedText =
+      b.status === 'achieved' ? 'yes' : b.status === 'not_yet' ? 'not yet' : 'partial';
+
+    const { data: result, error: resErr } = await admin
+      .from('student_session_results')
+      .insert({
+        camp_session_id: campSession!.id,
+        student_id: b.student_id,
+        coach_id: coach.id,
+        status,
+        coach_feedback: b.notes_post ?? null,
+        achieved: achievedText,
+        whats_next: null,
+        homework: null,
+        completion_state: 'closed',
+        survey_unlocked: true,
+        portal_token: stud?.portal_token ?? null,
+      })
+      .select('id')
+      .single();
+    if (resErr) throw new Error(resErr.message);
+
+    // Sync the student's profile snapshot (last_session_*)
+    if (result) {
+      try {
+        await admin.rpc('update_student_profile_on_close', {
+          p_student_id: b.student_id,
+          p_session_result_id: result.id,
+          p_session_date: new Date().toISOString(),
+          p_mission: missionTitle,
+          p_pilar: b.step_id ?? null,
+          p_status: status,
+          p_homework: null,
+          p_whats_next: null,
+        });
+      } catch {
+        /* non-blocking — profile snapshot is best-effort */
+      }
+    }
+
+    // 4. Email feedback + survey link (only on first close, non-blocking)
+    if (!alreadyClosed && stud?.email && result) {
+      try {
+        const { sendSessionEmail } = await import('@/lib/actions/email');
+        await sendSessionEmail({
+          studentName: stud.first_name,
+          studentEmail: stud.email,
+          portalToken: stud.portal_token,
+          coachName: coach.display_name || 'Coach',
+          sessionDate: new Date().toISOString(),
+          mission: missionTitle,
+          status,
+          coachFeedback: b.notes_post ?? '',
+          homework: '',
+          whatsNext: '',
+          beltLevel: stud.belt_level || 'white_belt',
+        });
+        await admin
+          .from('student_session_results')
+          .update({ email_sent: true, email_sent_at: new Date().toISOString() })
+          .eq('id', result.id);
+      } catch {
+        /* non-blocking */
+      }
+    }
+  }
+
+  // 5. Flip lifecycle states
   await admin
     .from('service_plans')
     .upsert(
@@ -453,8 +636,6 @@ export async function closeServicePlan(token: string, campInstanceId: string): P
       { onConflict: 'camp_instance_id' }
     );
 
-  // Mark the camp_instance as completed if all blocks have status
-  // (light heuristic — coordinator can override)
   await admin
     .from('camp_instances')
     .update({ status: 'completed' })
