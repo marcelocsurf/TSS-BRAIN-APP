@@ -47,14 +47,22 @@ export interface ServicePlanData {
 }
 
 export interface StudentProfileSnapshot {
-  age: number | null;
+  age: number | null;            // computed from date_of_birth if age column is empty
   weight: number | null;
   height: number | null;
   ocean_level: string | null;
   stance: string | null;
   goofy_or_regular: string | null;
   surf_experience_years: number | null;
+  surf_frequency: string | null;
   swim_level: string | null;
+  board_type: string | null;
+  favorite_wave_size: string | null;
+  progression_status: string | null;
+  current_sequence_number: number | null;
+  current_step_order: number | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
   primary_goal: string | null;
   personal_goal: string | null;
   goal_short_term: string | null;
@@ -76,11 +84,21 @@ export interface StudentProfileSnapshot {
   learning_profile_primary: string | null;
 }
 
+// One entry in a student's recent training history — coach session or
+// self-training, merged + sorted so the coach sees the full picture.
+export interface RecentSessionEntry {
+  date: string | null;
+  type: 'coach' | 'self';
+  label: string;
+  status: string | null;
+}
+
 export interface ServicePlanStudent {
   student_id: string;
   display_name: string;
   belt_level: string | null;
   profile: StudentProfileSnapshot;
+  recentSessions: RecentSessionEntry[];
   // Their block in this service (one block per student per service for v1)
   block: {
     id: string | null;
@@ -140,8 +158,11 @@ export async function getServicePlan(
     .from('camp_participants')
     .select(
       'student_id, students:student_id(' +
-        'id, first_name, last_name, belt_level, age, weight, height, ocean_level, ' +
-        'stance, goofy_or_regular, surf_experience_years, swim_level, ' +
+        'id, first_name, last_name, belt_level, age, date_of_birth, weight, height, ocean_level, ' +
+        'stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
+        'board_type, favorite_wave_size, progression_status, ' +
+        'current_sequence_number, current_step_order, ' +
+        'emergency_contact_name, emergency_contact_phone, ' +
         'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
         'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, ' +
         'last_session_date, last_session_mission, last_session_status, last_homework, ' +
@@ -161,6 +182,61 @@ export async function getServicePlan(
   const blocksByStudent = new Map<string, any>();
   for (const b of blocks ?? []) blocksByStudent.set(b.student_id, b);
 
+  // Recent training history per student — coach sessions
+  // (student_session_results) + self-training (self_training_sessions),
+  // merged and sorted so the coach sees the full picture.
+  const recentByStudent: Record<string, RecentSessionEntry[]> = {};
+  if (studentIds.length > 0) {
+    const [coachSessRes, selfSessRes] = await Promise.all([
+      admin
+        .from('student_session_results')
+        .select('student_id, created_at, status, standalone_sessions(mission)')
+        .in('student_id', studentIds)
+        .order('created_at', { ascending: false }),
+      admin
+        .from('self_training_sessions')
+        .select('student_id, created_at, session_date, drill_name, intention_text, completed')
+        .in('student_id', studentIds)
+        .order('created_at', { ascending: false }),
+    ]);
+    for (const r of coachSessRes.data ?? []) {
+      const ss = Array.isArray(r.standalone_sessions)
+        ? r.standalone_sessions[0]
+        : r.standalone_sessions;
+      (recentByStudent[r.student_id] ??= []).push({
+        date: r.created_at,
+        type: 'coach',
+        label: ss?.mission || 'Coach session',
+        status: r.status,
+      });
+    }
+    for (const r of selfSessRes.data ?? []) {
+      (recentByStudent[r.student_id] ??= []).push({
+        date: r.session_date || r.created_at,
+        type: 'self',
+        label: r.drill_name || r.intention_text || 'Self-training',
+        status: r.completed ? 'completed' : 'incomplete',
+      });
+    }
+    for (const sid of Object.keys(recentByStudent)) {
+      recentByStudent[sid].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+      recentByStudent[sid] = recentByStudent[sid].slice(0, 10);
+    }
+  }
+
+  // Compute age from date_of_birth (fallback when the age column is empty)
+  const ageFrom = (age: number | null, dob: string | null): number | null => {
+    if (age != null) return age;
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    const now = new Date();
+    let a = now.getFullYear() - d.getFullYear();
+    const m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+    return a >= 0 && a < 120 ? a : null;
+  };
+
   const students: ServicePlanStudent[] = (participants ?? []).map((p: any) => {
     const s = Array.isArray(p.students) ? p.students[0] : p.students;
     const block = blocksByStudent.get(p.student_id);
@@ -169,15 +245,24 @@ export async function getServicePlan(
       display_name:
         `${s?.first_name ?? ''} ${s?.last_name ?? ''}`.trim() || 'Student',
       belt_level: s?.belt_level ?? null,
+      recentSessions: recentByStudent[p.student_id] ?? [],
       profile: {
-        age: s?.age ?? null,
+        age: ageFrom(s?.age ?? null, s?.date_of_birth ?? null),
         weight: s?.weight ?? null,
         height: s?.height ?? null,
         ocean_level: s?.ocean_level ?? null,
         stance: s?.stance ?? null,
         goofy_or_regular: s?.goofy_or_regular ?? null,
         surf_experience_years: s?.surf_experience_years ?? null,
+        surf_frequency: s?.surf_frequency ?? null,
         swim_level: s?.swim_level ?? null,
+        board_type: s?.board_type ?? null,
+        favorite_wave_size: s?.favorite_wave_size ?? null,
+        progression_status: s?.progression_status ?? null,
+        current_sequence_number: s?.current_sequence_number ?? null,
+        current_step_order: s?.current_step_order ?? null,
+        emergency_contact_name: s?.emergency_contact_name ?? null,
+        emergency_contact_phone: s?.emergency_contact_phone ?? null,
         primary_goal: s?.primary_goal ?? null,
         personal_goal: s?.personal_goal ?? null,
         goal_short_term: s?.goal_short_term ?? null,

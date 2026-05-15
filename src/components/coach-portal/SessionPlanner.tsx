@@ -626,14 +626,10 @@ function PickerOrCustom({
 // student's level, goals, fears, injuries, medical info and last
 // session BEFORE planning their mission.
 
-function StudentProfilePanel({
-  profile,
-  beltLevel,
-}: {
-  profile: ServicePlanStudent['profile'];
-  beltLevel: string | null;
-}) {
+function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
+  const { profile, belt_level: beltLevel, recentSessions } = student;
   const [open, setOpen] = useState(false);
+  const [showAllDays, setShowAllDays] = useState(false);
 
   const hasMedical = !!(
     profile.injuries ||
@@ -652,7 +648,10 @@ function StudentProfilePanel({
       `${profile.goofy_or_regular || profile.stance}`,
     profile.surf_experience_years != null &&
       `${profile.surf_experience_years} yr exp`,
+    profile.surf_frequency && `surfs: ${profile.surf_frequency}`,
     profile.swim_level && `swim: ${profile.swim_level}`,
+    profile.board_type && `🛹 ${profile.board_type}`,
+    profile.favorite_wave_size && `fav wave: ${profile.favorite_wave_size}`,
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
   ].filter(Boolean) as string[];
@@ -664,6 +663,25 @@ function StudentProfilePanel({
     profile.goal_mid_term && ['Mid-term', profile.goal_mid_term],
     profile.goal_long_term && ['Long-term', profile.goal_long_term],
   ].filter(Boolean) as [string, string][];
+
+  // Sequence position — where the student is in the 25 STPs
+  const seqPos =
+    profile.current_sequence_number != null || profile.current_step_order != null
+      ? [
+          profile.current_sequence_number != null &&
+            `Sequence ${profile.current_sequence_number}`,
+          profile.current_step_order != null &&
+            `Step ${profile.current_step_order}`,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : null;
+
+  const hasEmergency = !!(
+    profile.emergency_contact_name || profile.emergency_contact_phone
+  );
+
+  const visibleSessions = showAllDays ? recentSessions : recentSessions.slice(0, 3);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
@@ -699,40 +717,78 @@ function StudentProfilePanel({
             </div>
           )}
 
+          {/* Sequence position */}
+          {seqPos && (
+            <ProfileLine label="📍 Position" value={seqPos} />
+          )}
+
           {/* Medical & safety — prominent when present */}
-          {hasMedical && (
+          {(hasMedical || hasEmergency) && (
             <div className="rounded-md bg-red-50 border border-red-200 p-2 space-y-1">
               <p className="text-[10px] font-mono uppercase tracking-wider text-red-700">
-                ⚠ Medical & safety
+                ⚠ Safety
               </p>
               {profile.injuries && <ProfileLine label="Injuries" value={profile.injuries} danger />}
               {profile.allergies && <ProfileLine label="Allergies" value={profile.allergies} danger />}
               {profile.medical_notes && <ProfileLine label="Medical" value={profile.medical_notes} danger />}
               {profile.risk_notes && <ProfileLine label="Risk" value={profile.risk_notes} danger />}
+              {hasEmergency && (
+                <ProfileLine
+                  label="Emergency"
+                  value={[profile.emergency_contact_name, profile.emergency_contact_phone]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  danger
+                />
+              )}
             </div>
           )}
 
-          {/* Last session */}
-          {(profile.last_session_date || profile.last_session_mission) && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-                Last session
-              </p>
-              {profile.last_session_date && (
-                <ProfileLine
-                  label="Date"
-                  value={new Date(profile.last_session_date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                />
-              )}
-              {profile.last_session_mission && <ProfileLine label="Mission" value={profile.last_session_mission} />}
-              {profile.last_session_status && <ProfileLine label="Result" value={profile.last_session_status} />}
-              {profile.last_homework && <ProfileLine label="Homework" value={profile.last_homework} />}
-            </div>
-          )}
+          {/* Recent training history — coach + self, fold-down for more days */}
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Recent training
+            </p>
+            {recentSessions.length === 0 ? (
+              <p className="text-[11px] text-gray-400 italic">No sessions logged yet.</p>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  {visibleSessions.map((rs, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[11px]">
+                      <span className="shrink-0">{rs.type === 'coach' ? '🏄' : '🧍'}</span>
+                      <span className="shrink-0 text-gray-400 w-14">
+                        {rs.date
+                          ? new Date(rs.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : '—'}
+                      </span>
+                      <span className="flex-1 text-gray-700">
+                        {rs.label}
+                        <span className="text-gray-400">
+                          {' '}· {rs.type === 'coach' ? 'with coach' : 'self'}
+                          {rs.status ? ` · ${rs.status}` : ''}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {recentSessions.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllDays((v) => !v)}
+                    className="text-[10px] text-[var(--tss-navy)] hover:underline mt-1"
+                  >
+                    {showAllDays
+                      ? '▴ Show less'
+                      : `▾ Show ${recentSessions.length - 3} more`}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Goals */}
           {goals.length > 0 && (
@@ -847,7 +903,7 @@ function StudentPlanCard({
       </div>
 
       {/* Profile / bitácora — review before planning */}
-      <StudentProfilePanel profile={student.profile} beltLevel={student.belt_level} />
+      <StudentProfilePanel student={student} />
 
       {/* Sequence focus */}
       <div>
@@ -1044,7 +1100,7 @@ function StudentEvalCard({
       </div>
 
       {/* Profile / bitácora — context while evaluating */}
-      <StudentProfilePanel profile={student.profile} beltLevel={student.belt_level} />
+      <StudentProfilePanel student={student} />
 
       {/* The plan that was set — read-only recap */}
       <div className="bg-white rounded-lg border border-gray-100 p-2.5 space-y-1.5">
