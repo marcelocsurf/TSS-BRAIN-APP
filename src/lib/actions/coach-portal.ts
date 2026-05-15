@@ -215,6 +215,12 @@ export interface CoachLessonDetail {
     prerequisites: string[];
     display_order: number;
     lesson_type: string;
+    // Coach STP pillar columns (null on non-STP lessons)
+    coach_what_md: string | null;
+    coach_deliver_md: string | null;
+    coach_errors_md: string | null;
+    coach_validate_md: string | null;
+    linked_step_id: string | null;
   };
   videos: { id: string; title: string | null; url: string; provider: string; display_order: number }[];
   progress: {
@@ -224,6 +230,9 @@ export interface CoachLessonDetail {
     quiz_attempts: number;
   } | null;
   quizzes: { id: string; question: string; options: { text: string; correct: boolean }[]; display_order: number }[];
+  // The drill + mission for the linked STP (pulled from drills_missions)
+  linkedDrill: { id: string; title: string; key_words: string[] | null; time_estimate: string | null; block_name: string | null } | null;
+  linkedMission: { id: string; title: string; key_words: string[] | null; time_estimate: string | null; block_name: string | null } | null;
 }
 
 export async function getCoachLessonDetail(
@@ -243,7 +252,7 @@ export async function getCoachLessonDetail(
   const { data: lesson } = await admin
     .from('lessons')
     .select(
-      'id, title, subtitle, description_md, video_url, cover_image_url, estimated_minutes, prerequisites, display_order, lesson_type'
+      'id, title, subtitle, description_md, video_url, cover_image_url, estimated_minutes, prerequisites, display_order, lesson_type, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md, linked_step_id'
     )
     .eq('id', lessonId)
     .eq('active', true)
@@ -270,6 +279,28 @@ export async function getCoachLessonDetail(
     .eq('lesson_id', lessonId)
     .order('display_order');
 
+  // For STP lessons, pull the linked drill + mission from drills_missions
+  let linkedDrill: CoachLessonDetail['linkedDrill'] = null;
+  let linkedMission: CoachLessonDetail['linkedMission'] = null;
+  if (lesson.linked_step_id) {
+    const { data: dm } = await admin
+      .from('drills_missions')
+      .select('id, title, type, key_words, time_estimate, block_name')
+      .eq('step_id', lesson.linked_step_id)
+      .eq('active', true);
+    for (const row of dm ?? []) {
+      const item = {
+        id: row.id,
+        title: row.title,
+        key_words: row.key_words,
+        time_estimate: row.time_estimate,
+        block_name: row.block_name,
+      };
+      if (row.type === 'drill' && !linkedDrill) linkedDrill = item;
+      if (row.type === 'mission' && !linkedMission) linkedMission = item;
+    }
+  }
+
   return {
     lesson: {
       ...lesson,
@@ -278,6 +309,8 @@ export async function getCoachLessonDetail(
     videos: videos ?? [],
     progress: progress ?? null,
     quizzes: (quizzes ?? []) as any[],
+    linkedDrill,
+    linkedMission,
   };
 }
 

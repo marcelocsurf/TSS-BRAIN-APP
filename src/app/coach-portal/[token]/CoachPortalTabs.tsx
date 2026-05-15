@@ -8,6 +8,7 @@ import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/li
 import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
+import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 
 type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating';
 
@@ -280,12 +281,14 @@ function CoursesTab({
               </div>
             )}
 
-            {/* Body */}
-            {detail.lesson.description_md ? (
+            {/* Body — STP lessons get pillar tabs, others plain markdown */}
+            {detail.lesson.coach_what_md ? (
+              <StpPillarReader detail={detail} />
+            ) : detail.lesson.description_md ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-4">
                 <MarkdownContent markdown={detail.lesson.description_md} />
               </div>
-            ) : (
+            ) : detail.lesson.lesson_type === 'test' ? null : (
               <div className="bg-white rounded-2xl border border-gray-100 p-4 text-sm text-gray-500 italic">
                 No content for this lesson yet.
               </div>
@@ -331,15 +334,20 @@ function CoursesTab({
     );
   }
 
-  // ── List view (grouped by course_section) ─────────────────
+  // ── List view (grouped into the 5 tiers) ──────────────────
   const completedCount = courses.filter((c) => completedSet.has(c.id)).length;
 
-  // Group lessons. Coach Manual delivery (coach_wb without -EXIT-TEST) and
-  // Master Manual canon (coach_wb_master) shown as separate sections.
-  // Exit Test is its own group (it's a test, not a chapter).
-  const delivery = courses.filter((c) => c.course_section === 'coach_wb' && c.id !== 'COACH-WB-EXIT-TEST');
-  const master = courses.filter((c) => c.course_section === 'coach_wb_master');
+  // The restructured coach_wb course groups by ID prefix into 5 tiers.
+  const byPrefix = (prefix: string) => courses.filter((c) => c.id.startsWith(prefix));
+  const tierFoundations = byPrefix('COACH-FOUND-');
+  const tierPreOnboard = courses.filter(
+    (c) => c.id === 'COACH-PC-VERIFY' || c.id === 'COACH-OB-DELIVERY'
+  );
+  const tierStps = byPrefix('COACH-STP-');
+  const tierDiagnostics = byPrefix('COACH-DIAG-');
+  const tierCareer = byPrefix('COACH-CAREER-');
   const exitTest = courses.filter((c) => c.id === 'COACH-WB-EXIT-TEST');
+  const master = courses.filter((c) => c.course_section === 'coach_wb_master');
 
   const renderCard = (c: any) => {
     const isCompleted = completedSet.has(c.id);
@@ -409,43 +417,73 @@ function CoursesTab({
         </div>
       ) : (
         <>
-          {delivery.length > 0 && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5 px-1">
-                📘 Coach Manual — Delivery Curriculum
-              </p>
-              <p className="text-[11px] text-gray-400 mb-2 px-1">
-                How you teach the White Belt. 15 sequential lessons.
-              </p>
-              <div className="space-y-1.5">{delivery.map(renderCard)}</div>
-            </div>
-          )}
-
-          {master.length > 0 && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5 px-1">
-                📕 Master Manual — Canon Reference
-              </p>
-              <p className="text-[11px] text-gray-400 mb-2 px-1">
-                Single source of truth. 15 reference lessons (no prerequisites).
-              </p>
-              <div className="space-y-1.5">{master.map(renderCard)}</div>
-            </div>
-          )}
-
-          {exitTest.length > 0 && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5 px-1">
-                🎯 Exit Test — Component 1
-              </p>
-              <p className="text-[11px] text-gray-400 mb-2 px-1">
-                50-question theoretical exam. 80% to pass. Unlocks after Part XV.
-              </p>
-              <div className="space-y-1.5">{exitTest.map(renderCard)}</div>
-            </div>
-          )}
+          <TierGroup
+            label="📘 Tier 1 — Foundations"
+            sub="The TSS method, architecture, and coaching framework."
+            items={tierFoundations}
+            render={renderCard}
+          />
+          <TierGroup
+            label="🌊 Tier 2 — Pre-Course + Onboarding"
+            sub="The gate before water + the 6 onboarding items."
+            items={tierPreOnboard}
+            render={renderCard}
+          />
+          <TierGroup
+            label="🎯 Tier 3 — The 25 Steps"
+            sub="One lesson per STP. Tabs: What · Deliver · Errors · Validate · Drill · Mission."
+            items={tierStps}
+            render={renderCard}
+          />
+          <TierGroup
+            label="🛠 Tier 4 — Diagnostics + Evaluation"
+            sub="Error taxonomy + the Exit Test evaluation protocol."
+            items={tierDiagnostics}
+            render={renderCard}
+          />
+          <TierGroup
+            label="🎖 Exit Test — Component 1"
+            sub="50-question theoretical exam. 80% to pass."
+            items={exitTest}
+            render={renderCard}
+          />
+          <TierGroup
+            label="🏅 Tier 5 — Career"
+            sub="The 5-level coach certification ladder + code of conduct."
+            items={tierCareer}
+            render={renderCard}
+          />
+          <TierGroup
+            label="📕 Master Manual — Canon Reference"
+            sub="Single source of truth. 15 reference lessons (no prerequisites)."
+            items={master}
+            render={renderCard}
+          />
         </>
       )}
+    </div>
+  );
+}
+
+function TierGroup({
+  label,
+  sub,
+  items,
+  render,
+}: {
+  label: string;
+  sub: string;
+  items: any[];
+  render: (c: any) => React.ReactNode;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1 px-1">
+        {label} ({items.length})
+      </p>
+      <p className="text-[11px] text-gray-400 mb-2 px-1">{sub}</p>
+      <div className="space-y-1.5">{items.map(render)}</div>
     </div>
   );
 }
