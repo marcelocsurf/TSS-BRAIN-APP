@@ -294,7 +294,26 @@ export async function saveServicePlanBlock(
     .maybeSingle();
   if (!participant) throw new Error('Student not enrolled in this service.');
 
-  // One block per student per service for v1 — upsert
+  // Whitelist only the writable columns. The caller may pass the full
+  // block object (including `id`, which must NOT be in the payload —
+  // it's a gen_random_uuid() PK and an explicit null violates NOT NULL).
+  const ALLOWED = [
+    'step_id',
+    'land_drill_id',
+    'land_drill_custom',
+    'water_drill_id',
+    'water_drill_custom',
+    'objective_text',
+    'notes_pre',
+    'status',
+    'notes_post',
+  ] as const;
+  const cleanPatch: Record<string, any> = {};
+  for (const k of ALLOWED) {
+    if (k in patch) cleanPatch[k] = (patch as any)[k];
+  }
+
+  // One block per student per service for v1 — update if exists, else insert
   const { data: existing } = await admin
     .from('service_plan_blocks')
     .select('id')
@@ -305,14 +324,14 @@ export async function saveServicePlanBlock(
   if (existing) {
     const { error } = await admin
       .from('service_plan_blocks')
-      .update({ ...patch, updated_at: new Date().toISOString() })
+      .update({ ...cleanPatch, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
     if (error) throw new Error(error.message);
   } else {
     const { error } = await admin.from('service_plan_blocks').insert({
       camp_instance_id: campInstanceId,
       student_id: studentId,
-      ...patch,
+      ...cleanPatch,
     });
     if (error) throw new Error(error.message);
   }

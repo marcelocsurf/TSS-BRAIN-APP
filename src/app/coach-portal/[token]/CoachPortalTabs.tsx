@@ -739,21 +739,69 @@ function ToolGroup({ label, items, accent }: { label: string; items: any[]; acce
       </p>
       <div className="space-y-1.5">
         {items.map((d) => (
-          <div key={d.id} className={`rounded-xl border ${bg} p-3`}>
-            <p className="text-[10px] font-mono text-gray-400">
-              {d.id} · {d.step_id} · {d.belt} {d.block_name ? `· ${d.block_name}` : ''}
-            </p>
-            <p className="text-sm font-medium text-gray-800 mt-0.5">{d.title}</p>
-            {d.key_words && d.key_words.length > 0 && (
-              <p className="text-[11px] text-gray-500 italic mt-1 truncate">{d.key_words.join(' · ')}</p>
-            )}
-            {d.time_estimate && (
-              <p className="text-[10px] text-gray-400 mt-0.5">⏱ {d.time_estimate}</p>
-            )}
-          </div>
+          <ToolCard key={d.id} d={d} bg={bg} />
         ))}
       </div>
     </div>
+  );
+}
+
+// Expandable tool card — tap to reveal key words + timing detail.
+function ToolCard({ d, bg }: { d: any; bg: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen((o) => !o)}
+      className={`w-full text-left rounded-xl border ${bg} p-3 transition-all hover:shadow-sm`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-mono text-gray-400">
+            {d.id} · {d.step_id} · {d.belt} {d.block_name ? `· ${d.block_name}` : ''}
+          </p>
+          <p className="text-sm font-medium text-gray-800 mt-0.5">{d.title}</p>
+          {!open && d.key_words && d.key_words.length > 0 && (
+            <p className="text-[11px] text-gray-500 italic mt-1 truncate">
+              {d.key_words.join(' · ')}
+            </p>
+          )}
+        </div>
+        <span className={`text-gray-400 shrink-0 text-xs transition ${open ? 'rotate-180' : ''}`}>
+          ▾
+        </span>
+      </div>
+
+      {open && (
+        <div className="mt-2 pt-2 border-t border-gray-200/70 space-y-2">
+          {d.time_estimate && (
+            <p className="text-[11px] text-gray-600">⏱ {d.time_estimate}</p>
+          )}
+          {d.key_words && d.key_words.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                Key words
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {d.key_words.map((k: string, i: number) => (
+                  <span
+                    key={i}
+                    className="text-[11px] px-2 py-0.5 rounded-full bg-white/80 text-gray-700 border border-gray-200"
+                  >
+                    {k}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="text-[10px] text-gray-400 italic">
+            {d.type === 'mission'
+              ? 'Use this as an in-water mission when planning a session.'
+              : 'Use this as a dry-land drill when planning a session.'}
+          </p>
+        </div>
+      )}
+    </button>
   );
 }
 

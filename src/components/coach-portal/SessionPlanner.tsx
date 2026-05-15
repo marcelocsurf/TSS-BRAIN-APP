@@ -53,36 +53,26 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
     setTimeout(() => setSavedFlash(null), 1500);
   };
 
-  const savePlanField = (
-    field: keyof ServicePlanData['plan'],
-    value: any
-  ) => {
-    setPlan((p) => ({ ...p, [field]: value }));
-  };
-
-  const persistPlanHeader = () => {
+  // Commit a plan-header patch: update local state AND persist the delta.
+  // Sends only the changed fields — avoids the stale-state trap of reading
+  // `plan` after an async setState.
+  const commitPlanPatch = (patch: Partial<ServicePlanData['plan']>) => {
+    setPlan((p) => ({ ...p, ...patch }));
     startTransition(async () => {
       try {
-        await saveServicePlanHeader(token, data.camp.id, {
-          venue_analysis: plan.venue_analysis,
-          venue_go_no_go: plan.venue_go_no_go,
-          venue_wave_size: plan.venue_wave_size,
-          venue_wind: plan.venue_wind,
-          venue_tide: plan.venue_tide,
-          venue_hazards: plan.venue_hazards,
-          warm_up_drill_id: plan.warm_up_drill_id,
-          warm_up_custom: plan.warm_up_custom,
-          mental_hack: plan.mental_hack,
-          notes_general: plan.notes_general,
-        });
+        await saveServicePlanHeader(token, data.camp.id, patch as any);
         flash('✓ Saved');
       } catch (e: any) {
         alert(e.message || 'Save failed');
       }
     });
   };
+  const commitPlanField = (field: keyof ServicePlanData['plan'], value: any) =>
+    commitPlanPatch({ [field]: value } as any);
 
-  const updateStudentBlock = (
+  // Commit a per-student block patch: update local state AND persist the
+  // exact patch (the delta) — never the whole block object.
+  const commitStudentBlock = (
     studentId: string,
     patch: Partial<ServicePlanStudent['block']>
   ) => {
@@ -91,15 +81,11 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
         s.student_id === studentId ? { ...s, block: { ...s.block, ...patch } } : s
       )
     );
-  };
-
-  const persistStudentBlock = (studentId: string) => {
-    const s = students.find((x) => x.student_id === studentId);
-    if (!s) return;
     startTransition(async () => {
       try {
-        await saveServicePlanBlock(token, data.camp.id, studentId, s.block);
-        flash(`✓ ${s.display_name.split(' ')[0]}`);
+        await saveServicePlanBlock(token, data.camp.id, studentId, patch as any);
+        const s = students.find((x) => x.student_id === studentId);
+        flash(`✓ ${(s?.display_name ?? 'Saved').split(' ')[0]}`);
       } catch (e: any) {
         alert(e.message || 'Save failed');
       }
@@ -208,10 +194,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
                 key={opt.v}
                 type="button"
                 disabled={isClosed}
-                onClick={() => {
-                  savePlanField('venue_go_no_go', opt.v);
-                  persistPlanHeader();
-                }}
+                onClick={() => commitPlanField('venue_go_no_go', opt.v)}
                 className="py-2 rounded-lg text-xs font-semibold transition-all"
                 style={
                   plan.venue_go_no_go === opt.v
@@ -229,40 +212,28 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
             <SmallField
               label="Wave size"
               value={plan.venue_wave_size}
-              onBlur={(v) => {
-                savePlanField('venue_wave_size', v);
-                persistPlanHeader();
-              }}
+              onBlur={(v) => commitPlanField('venue_wave_size', v)}
               placeholder="knee · waist · head"
               disabled={isClosed}
             />
             <SmallField
               label="Wind"
               value={plan.venue_wind}
-              onBlur={(v) => {
-                savePlanField('venue_wind', v);
-                persistPlanHeader();
-              }}
+              onBlur={(v) => commitPlanField('venue_wind', v)}
               placeholder="offshore 10 kts"
               disabled={isClosed}
             />
             <SmallField
               label="Tide"
               value={plan.venue_tide}
-              onBlur={(v) => {
-                savePlanField('venue_tide', v);
-                persistPlanHeader();
-              }}
+              onBlur={(v) => commitPlanField('venue_tide', v)}
               placeholder="rising mid"
               disabled={isClosed}
             />
             <SmallField
               label="Hazards"
               value={plan.venue_hazards}
-              onBlur={(v) => {
-                savePlanField('venue_hazards', v);
-                persistPlanHeader();
-              }}
+              onBlur={(v) => commitPlanField('venue_hazards', v)}
               placeholder="rocks · current"
               disabled={isClosed}
             />
@@ -271,10 +242,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           <TextArea
             label="Full read"
             value={plan.venue_analysis}
-            onBlur={(v) => {
-              savePlanField('venue_analysis', v);
-              persistPlanHeader();
-            }}
+            onBlur={(v) => commitPlanField('venue_analysis', v)}
             placeholder="What you see — currents, impact zone, where students should enter…"
             disabled={isClosed}
             rows={3}
@@ -296,16 +264,12 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           }))}
           selectedId={plan.warm_up_drill_id}
           customValue={plan.warm_up_custom}
-          onPick={(id) => {
-            savePlanField('warm_up_drill_id', id);
-            savePlanField('warm_up_custom', null);
-            persistPlanHeader();
-          }}
-          onCustom={(v) => {
-            savePlanField('warm_up_custom', v);
-            savePlanField('warm_up_drill_id', null);
-            persistPlanHeader();
-          }}
+          onPick={(id) =>
+            commitPlanPatch({ warm_up_drill_id: id, warm_up_custom: null })
+          }
+          onCustom={(v) =>
+            commitPlanPatch({ warm_up_custom: v, warm_up_drill_id: null })
+          }
           customPlaceholder="e.g. Joint mobility + 10 sand pop-ups"
           disabled={isClosed}
         />
@@ -325,10 +289,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
                 key={opt.id}
                 type="button"
                 disabled={isClosed}
-                onClick={() => {
-                  savePlanField('mental_hack', opt.id);
-                  persistPlanHeader();
-                }}
+                onClick={() => commitPlanField('mental_hack', opt.id)}
                 className="py-3 rounded-xl text-xs font-medium transition-all border"
                 style={
                   isSelected
@@ -350,10 +311,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
               ? plan.mental_hack
               : ''
           }
-          onBlur={(v) => {
-            savePlanField('mental_hack', v || null);
-            persistPlanHeader();
-          }}
+          onBlur={(v) => commitPlanField('mental_hack', v || null)}
           placeholder="Visualization · breath ladder · etc."
           disabled={isClosed}
         />
@@ -373,8 +331,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
               isClosed={isClosed}
               stpCatalog={data.stpCatalog}
               availableDrills={data.availableDrills}
-              onUpdate={(patch) => updateStudentBlock(s.student_id, patch)}
-              onBlur={() => persistStudentBlock(s.student_id)}
+              onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
             />
           ))}
         </div>
@@ -385,10 +342,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
         <TextArea
           label=""
           value={plan.notes_general}
-          onBlur={(v) => {
-            savePlanField('notes_general', v);
-            persistPlanHeader();
-          }}
+          onBlur={(v) => commitPlanField('notes_general', v)}
           placeholder="Anything else you want to remember about the session…"
           disabled={isClosed}
           rows={3}
@@ -601,15 +555,13 @@ function StudentCard({
   isClosed,
   stpCatalog,
   availableDrills,
-  onUpdate,
-  onBlur,
+  onCommit,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
-  onUpdate: (patch: Partial<ServicePlanStudent['block']>) => void;
-  onBlur: () => void;
+  onCommit: (patch: Partial<ServicePlanStudent['block']>) => void;
 }) {
   const { block } = student;
   const [showLandPicker, setShowLandPicker] = useState(false);
@@ -666,8 +618,7 @@ function StudentCard({
         </label>
         <select
           value={block.step_id ?? ''}
-          onChange={(e) => onUpdate({ step_id: e.target.value || null })}
-          onBlur={onBlur}
+          onChange={(e) => onCommit({ step_id: e.target.value || null })}
           disabled={isClosed}
           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs disabled:bg-gray-50"
         >
@@ -704,8 +655,7 @@ function StudentCard({
                   key={d.id}
                   type="button"
                   onClick={() => {
-                    onUpdate({ land_drill_id: d.id, land_drill_custom: null });
-                    onBlur();
+                    onCommit({ land_drill_id: d.id, land_drill_custom: null });
                     setShowLandPicker(false);
                   }}
                   className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
@@ -720,8 +670,7 @@ function StudentCard({
               label=""
               value={block.land_drill_custom}
               onBlur={(v) => {
-                onUpdate({ land_drill_custom: v, land_drill_id: null });
-                onBlur();
+                onCommit({ land_drill_custom: v, land_drill_id: null });
                 setShowLandPicker(false);
               }}
               placeholder="Or write your own land drill"
@@ -761,8 +710,7 @@ function StudentCard({
                   key={d.id}
                   type="button"
                   onClick={() => {
-                    onUpdate({ water_drill_id: d.id, water_drill_custom: null });
-                    onBlur();
+                    onCommit({ water_drill_id: d.id, water_drill_custom: null });
                     setShowWaterPicker(false);
                   }}
                   className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
@@ -777,8 +725,7 @@ function StudentCard({
               label=""
               value={block.water_drill_custom}
               onBlur={(v) => {
-                onUpdate({ water_drill_custom: v, water_drill_id: null });
-                onBlur();
+                onCommit({ water_drill_custom: v, water_drill_id: null });
                 setShowWaterPicker(false);
               }}
               placeholder="Or write your own water mission"
@@ -798,10 +745,7 @@ function StudentCard({
       <SmallField
         label="Objective today"
         value={block.objective_text}
-        onBlur={(v) => {
-          onUpdate({ objective_text: v });
-          onBlur();
-        }}
+        onBlur={(v) => onCommit({ objective_text: v })}
         placeholder="e.g. 3 clean pop-ups landing in FP2"
         disabled={isClosed}
       />
@@ -811,10 +755,7 @@ function StudentCard({
         <TextArea
           label="Pre-session note"
           value={block.notes_pre}
-          onBlur={(v) => {
-            onUpdate({ notes_pre: v });
-            onBlur();
-          }}
+          onBlur={(v) => onCommit({ notes_pre: v })}
           placeholder="What to watch for with this student today"
           rows={2}
         />
@@ -838,10 +779,7 @@ function StudentCard({
                 <button
                   key={opt.v}
                   type="button"
-                  onClick={() => {
-                    onUpdate({ status: opt.v });
-                    onBlur();
-                  }}
+                  onClick={() => onCommit({ status: opt.v })}
                   className="py-1 rounded text-xs font-bold transition-all"
                   style={
                     block.status === opt.v
@@ -857,10 +795,7 @@ function StudentCard({
           <TextArea
             label="Close note (visible to student)"
             value={block.notes_post}
-            onBlur={(v) => {
-              onUpdate({ notes_post: v });
-              onBlur();
-            }}
+            onBlur={(v) => onCommit({ notes_post: v })}
             placeholder="What they did well · what to work on next"
             rows={2}
           />
