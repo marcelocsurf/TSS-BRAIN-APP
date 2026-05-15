@@ -121,16 +121,30 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
     });
   };
 
-  const close = () => {
+  // The explicit FINALIZE gate — this is the real close of the cycle.
+  // Only here does the data sync to each student's profile + the survey
+  // request go out. Deliberate + confirmed + irreversible.
+  const finalize = () => {
     const unevaluated = students.filter((s) => !s.block.status);
     if (unevaluated.length > 0) {
       if (
         !confirm(
-          `${unevaluated.length} student(s) have no status yet. Close anyway?`
+          `${unevaluated.length} student(s) still have no status. Finalize anyway?`
         )
       ) {
         return;
       }
+    }
+    if (
+      !confirm(
+        'Finalize this session?\n\n' +
+          '• Each student gets their results in their profile + portal\n' +
+          '• Each student receives a coach-rating survey\n' +
+          '• The session locks — no more edits\n\n' +
+          'Continue?'
+      )
+    ) {
+      return;
     }
     startTransition(async () => {
       try {
@@ -140,10 +154,10 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           completion_state: 'closed',
           closed_at: new Date().toISOString(),
         }));
-        flash('✓ Session closed');
+        flash('🏁 Session finalized');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e: any) {
-        alert(e.message || 'Failed to close');
+        alert(e.message || 'Failed to finalize');
       }
     });
   };
@@ -153,6 +167,11 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
   );
 
   const evaluatedCount = students.filter((s) => s.block.status).length;
+
+  // When the plan is in_progress the coach can re-open the editable plan
+  // view (the plan stays modifiable until finalize).
+  const [editingPlan, setEditingPlan] = useState(false);
+  const showPlanForm = isPlanning || (state === 'in_progress' && editingPlan);
 
   return (
     <div className="space-y-4 pb-32">
@@ -196,7 +215,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
       </div>
 
       {/* ════════════ PLANNING MODE ════════════ */}
-      {isPlanning && (
+      {showPlanForm && (
         <>
           {/* 1. VENUE ANALYSIS */}
           <Section emoji="🌊" title="1. Venue Analysis" subtitle="Read today's conditions before going in">
@@ -326,7 +345,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
       )}
 
       {/* ════════════ RUN + EVALUATE MODE ════════════ */}
-      {!isPlanning && (
+      {!showPlanForm && (
         <>
           <GeneralPlanSummary
             plan={plan}
@@ -365,6 +384,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
         style={{ background: 'white' }}
       >
         <div className="max-w-lg mx-auto flex gap-2">
+          {/* PLANNING → close the plan (still editable after) */}
           {state === 'planned' && (
             <button
               type="button"
@@ -373,23 +393,55 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
               className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
               style={{ background: BRAND.colors.navy }}
             >
-              🌊 Start session
+              🔒 Close the plan → evaluate
             </button>
           )}
-          {state === 'in_progress' && (
+
+          {/* IN PROGRESS + editing the plan → done editing */}
+          {state === 'in_progress' && editingPlan && (
             <button
               type="button"
-              onClick={close}
-              disabled={pending}
+              onClick={() => {
+                setEditingPlan(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
-              style={{ background: '#10B981' }}
+              style={{ background: BRAND.colors.navy }}
             >
-              ✓ Close session ({evaluatedCount}/{students.length} evaluated)
+              ✓ Done editing → back to evaluation
             </button>
           )}
+
+          {/* IN PROGRESS + evaluating → edit plan OR finalize */}
+          {state === 'in_progress' && !editingPlan && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPlan(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={pending}
+                className="py-2.5 px-4 text-sm font-semibold rounded-xl border"
+                style={{ borderColor: BRAND.colors.navy, color: BRAND.colors.navy }}
+              >
+                ✏️ Edit plan
+              </button>
+              <button
+                type="button"
+                onClick={finalize}
+                disabled={pending}
+                className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
+                style={{ background: '#10B981' }}
+              >
+                🏁 Finalize ({evaluatedCount}/{students.length})
+              </button>
+            </>
+          )}
+
           {state === 'closed' && (
             <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700">
-              ✓ Closed{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleDateString()}` : ''}
+              🏁 Finalized{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleDateString()}` : ''}
             </div>
           )}
         </div>
