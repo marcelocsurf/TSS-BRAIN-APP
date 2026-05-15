@@ -100,10 +100,12 @@ export async function getServicePlan(
     .eq('camp_instance_id', campInstanceId)
     .maybeSingle();
 
-  // Students enrolled in this camp_instance
+  // Students enrolled in this camp_instance.
+  // NOTE: students has no display_name column (that's on coaches) — we
+  // compose it from first_name + last_name.
   const { data: participants } = await admin
     .from('camp_participants')
-    .select('student_id, students:student_id(id, display_name, first_name, last_name, belt_level)')
+    .select('student_id, students:student_id(id, first_name, last_name, belt_level)')
     .eq('camp_instance_id', campInstanceId)
     .eq('enrollment_status', 'active');
 
@@ -123,9 +125,7 @@ export async function getServicePlan(
     return {
       student_id: p.student_id,
       display_name:
-        s?.display_name ||
-        `${s?.first_name ?? ''} ${s?.last_name ?? ''}`.trim() ||
-        'Student',
+        `${s?.first_name ?? ''} ${s?.last_name ?? ''}`.trim() || 'Student',
       belt_level: s?.belt_level ?? null,
       block: {
         id: block?.id ?? null,

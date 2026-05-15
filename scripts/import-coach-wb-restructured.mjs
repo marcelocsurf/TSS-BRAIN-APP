@@ -146,7 +146,7 @@ const stpLessons = stpStarts.map((stp, i) => {
     video_url: null,
     cover_image_url: null,
     estimated_minutes: 12,
-    prerequisites: i === 0 ? ['COACH-OB-DELIVERY'] : [`COACH-STP-${String(i).padStart(3, '0')}`],
+    prerequisites: [],  // No gating — coaches navigate reference material freely
     lesson_type: 'reading',
     display_order: 10 + i,
     active: true,
@@ -155,7 +155,7 @@ const stpLessons = stpStarts.map((stp, i) => {
 
 // ─── Non-STP lessons (single-body markdown) ──────────────────────
 
-function bodyLesson({ id, part, step_number, display_order, title, prereq, minutes }) {
+function bodyLesson({ id, part, step_number, display_order, title, minutes }) {
   return {
     id,
     course_section: 'coach_wb',
@@ -174,7 +174,7 @@ function bodyLesson({ id, part, step_number, display_order, title, prereq, minut
     video_url: null,
     cover_image_url: null,
     estimated_minutes: minutes,
-    prerequisites: prereq,
+    prerequisites: [],  // No gating — coaches navigate reference material freely
     lesson_type: 'reading',
     display_order,
     active: true,
