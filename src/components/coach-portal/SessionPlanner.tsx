@@ -626,8 +626,43 @@ function PickerOrCustom({
 // student's level, goals, fears, injuries, medical info and last
 // session BEFORE planning their mission.
 
+// Small avatar — photo if available, else initials circle.
+function StudentAvatar({
+  url,
+  name,
+}: {
+  url: string | null;
+  name: string;
+}) {
+  const initials = name
+    .split(' ')
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={url}
+        alt={name}
+        className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
+      />
+    );
+  }
+  return (
+    <div
+      className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+      style={{ background: BRAND.colors.navy }}
+    >
+      {initials || '🏄'}
+    </div>
+  );
+}
+
 function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
-  const { profile, belt_level: beltLevel, recentSessions } = student;
+  const { profile, belt_level: beltLevel, recentSessions, stepRatings } = student;
   const [open, setOpen] = useState(false);
   const [showAllDays, setShowAllDays] = useState(false);
 
@@ -652,9 +687,14 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
     profile.swim_level && `swim: ${profile.swim_level}`,
     profile.board_type && `🛹 ${profile.board_type}`,
     profile.favorite_wave_size && `fav wave: ${profile.favorite_wave_size}`,
+    profile.ocean_quiz_score != null && `ocean quiz: ${profile.ocean_quiz_score}`,
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
   ].filter(Boolean) as string[];
+
+  // Self-assessment summary — ★ the student gave themselves on STPs,
+  // plus the official coach rating average (the gap is the signal).
+  const hasRatings = stepRatings.selfRatedCount > 0 || stepRatings.coachRatedCount > 0;
 
   const goals = [
     profile.primary_goal && ['Primary', profile.primary_goal],
@@ -720,6 +760,36 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
           {/* Sequence position */}
           {seqPos && (
             <ProfileLine label="📍 Position" value={seqPos} />
+          )}
+
+          {/* Self-assessment vs coach rating */}
+          {hasRatings && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                ⭐ Self-assessment
+              </p>
+              {stepRatings.selfRatedCount > 0 && (
+                <ProfileLine
+                  label="Self-rated"
+                  value={`${stepRatings.selfRatedCount} STPs · avg ★${stepRatings.avgSelfRating}`}
+                />
+              )}
+              {stepRatings.coachRatedCount > 0 && (
+                <ProfileLine
+                  label="Coach-rated"
+                  value={`${stepRatings.coachRatedCount} STPs · avg ★${stepRatings.avgCoachRating}`}
+                />
+              )}
+              {stepRatings.selfRatedCount > 0 &&
+                stepRatings.coachRatedCount > 0 &&
+                stepRatings.avgSelfRating != null &&
+                stepRatings.avgCoachRating != null &&
+                stepRatings.avgSelfRating - stepRatings.avgCoachRating >= 1 && (
+                  <p className="text-[10px] text-amber-700 mt-0.5">
+                    ⚠ Self-rates noticeably higher than coach — may be over-estimating.
+                  </p>
+                )}
+            </div>
           )}
 
           {/* Medical & safety — prominent when present */}
@@ -893,13 +963,16 @@ function StudentPlanCard({
 
   return (
     <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2">
-      <div className="min-w-0">
-        <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
-          {student.display_name}
-        </p>
-        <p className="text-[10px] text-gray-500 capitalize">
-          {student.belt_level?.replace(/_/g, ' ')}
-        </p>
+      <div className="flex items-center gap-2 min-w-0">
+        <StudentAvatar url={student.photo_url} name={student.display_name} />
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
+            {student.display_name}
+          </p>
+          <p className="text-[10px] text-gray-500 capitalize">
+            {student.belt_level?.replace(/_/g, ' ')}
+          </p>
+        </div>
       </div>
 
       {/* Profile / bitácora — review before planning */}
@@ -1075,13 +1148,16 @@ function StudentEvalCard({
     <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2.5">
       {/* Student header + status pill */}
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
-            {student.display_name}
-          </p>
-          <p className="text-[10px] text-gray-500 capitalize">
-            {student.belt_level?.replace(/_/g, ' ')}
-          </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <StudentAvatar url={student.photo_url} name={student.display_name} />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
+              {student.display_name}
+            </p>
+            <p className="text-[10px] text-gray-500 capitalize">
+              {student.belt_level?.replace(/_/g, ' ')}
+            </p>
+          </div>
         </div>
         {block.status && (
           <span

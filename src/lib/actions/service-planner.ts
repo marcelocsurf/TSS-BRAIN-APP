@@ -82,6 +82,7 @@ export interface StudentProfileSnapshot {
   next_recommended_focus: string | null;
   coach_notes_general: string | null;
   learning_profile_primary: string | null;
+  ocean_quiz_score: number | null;
 }
 
 // One entry in a student's recent training history — coach session or
@@ -93,12 +94,23 @@ export interface RecentSessionEntry {
   status: string | null;
 }
 
+// Summary of the student's STP self-ratings (and any official coach
+// ratings) — lets the coach spot over/under-estimation before planning.
+export interface StepRatingSummary {
+  selfRatedCount: number;
+  avgSelfRating: number | null;
+  coachRatedCount: number;
+  avgCoachRating: number | null;
+}
+
 export interface ServicePlanStudent {
   student_id: string;
   display_name: string;
   belt_level: string | null;
+  photo_url: string | null;
   profile: StudentProfileSnapshot;
   recentSessions: RecentSessionEntry[];
+  stepRatings: StepRatingSummary;
   // Their block in this service (one block per student per service for v1)
   block: {
     id: string | null;
@@ -158,8 +170,8 @@ export async function getServicePlan(
     .from('camp_participants')
     .select(
       'student_id, students:student_id(' +
-        'id, first_name, last_name, belt_level, age, date_of_birth, weight, height, ocean_level, ' +
-        'stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
+        'id, first_name, last_name, belt_level, photo_url, age, date_of_birth, weight, height, ocean_level, ' +
+        'ocean_quiz_score, stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
         'board_type, favorite_wave_size, progression_status, ' +
         'current_sequence_number, current_step_order, ' +
         'emergency_contact_name, emergency_contact_phone, ' +
@@ -224,6 +236,22 @@ export async function getServicePlan(
     }
   }
 
+  // STP self-rating summary per student (+ official coach ratings)
+  const ratingsByStudent: Record<string, { self: number[]; coach: number[] }> = {};
+  if (studentIds.length > 0) {
+    const { data: ratings } = await admin
+      .from('student_step_ratings')
+      .select('student_id, current_rating, coach_rating')
+      .in('student_id', studentIds);
+    for (const r of ratings ?? []) {
+      const e = (ratingsByStudent[r.student_id] ??= { self: [], coach: [] });
+      if (r.current_rating && r.current_rating > 0) e.self.push(r.current_rating);
+      if (r.coach_rating && r.coach_rating > 0) e.coach.push(r.coach_rating);
+    }
+  }
+  const avgOf = (arr: number[]): number | null =>
+    arr.length ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : null;
+
   // Compute age from date_of_birth (fallback when the age column is empty)
   const ageFrom = (age: number | null, dob: string | null): number | null => {
     if (age != null) return age;
@@ -240,12 +268,20 @@ export async function getServicePlan(
   const students: ServicePlanStudent[] = (participants ?? []).map((p: any) => {
     const s = Array.isArray(p.students) ? p.students[0] : p.students;
     const block = blocksByStudent.get(p.student_id);
+    const rr = ratingsByStudent[p.student_id] ?? { self: [], coach: [] };
     return {
       student_id: p.student_id,
       display_name:
         `${s?.first_name ?? ''} ${s?.last_name ?? ''}`.trim() || 'Student',
       belt_level: s?.belt_level ?? null,
+      photo_url: s?.photo_url ?? null,
       recentSessions: recentByStudent[p.student_id] ?? [],
+      stepRatings: {
+        selfRatedCount: rr.self.length,
+        avgSelfRating: avgOf(rr.self),
+        coachRatedCount: rr.coach.length,
+        avgCoachRating: avgOf(rr.coach),
+      },
       profile: {
         age: ageFrom(s?.age ?? null, s?.date_of_birth ?? null),
         weight: s?.weight ?? null,
@@ -282,6 +318,7 @@ export async function getServicePlan(
         next_recommended_focus: s?.next_recommended_focus ?? null,
         coach_notes_general: s?.coach_notes_general ?? null,
         learning_profile_primary: s?.learning_profile_primary ?? null,
+        ocean_quiz_score: s?.ocean_quiz_score ?? null,
       },
       block: {
         id: block?.id ?? null,
