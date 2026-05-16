@@ -25,13 +25,14 @@ export async function POST(req: NextRequest) {
       .eq('auth_user_id', user.id)
       .single();
 
-    if (
-      !currentCoach ||
-      (currentCoach.role !== 'admin' &&
-        currentCoach.role !== 'coordinator' &&
-        !currentCoach.is_platform_admin)
-    ) {
-      return NextResponse.json({ error: 'Only admin or coordinator can add coaches.' }, { status: 403 });
+    // Only the platform admin (TSS HQ) can onboard coaches. This ensures
+    // every coach across all academies is vetted against TSS method
+    // standards — academy coordinators cannot add their own coaches.
+    if (!currentCoach || !currentCoach.is_platform_admin) {
+      return NextResponse.json(
+        { error: 'Only the TSS platform administrator can add coaches.' },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
