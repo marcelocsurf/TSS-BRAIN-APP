@@ -301,21 +301,25 @@ export async function closeCampSessionResult(input: {
     throw new Error(`Could not save evaluation: ${resultErr?.message ?? 'unknown error'}`);
   }
 
-  // Update student profile (non-blocking — failure here must not lose the result)
+  // Update the student's profile snapshot directly (the "Last Session"
+  // card on the coach profile reads these columns). Done with the admin
+  // client and as a plain UPDATE — avoids the RPC's enum-cast pitfalls.
   try {
-    const { error: rpcErr } = await admin.rpc('update_student_profile_on_close', {
-      p_student_id: input.student_id,
-      p_session_result_id: result.id,
-      p_session_date: new Date().toISOString(),
-      p_mission: input.mission,
-      p_pilar: input.pilar,
-      p_status: input.status,
-      p_homework: input.homework,
-      p_whats_next: input.whats_next,
-    });
-    if (rpcErr) console.error('[closeCampSessionResult] profile RPC failed', rpcErr);
+    const { error: profErr } = await admin
+      .from('students')
+      .update({
+        last_session_id: result.id,
+        last_session_date: new Date().toISOString(),
+        last_session_mission: input.mission,
+        last_session_pilar: input.pilar,
+        last_session_status: input.status,
+        last_homework: input.homework,
+        next_recommended_focus: input.whats_next,
+      })
+      .eq('id', input.student_id);
+    if (profErr) console.error('[closeCampSessionResult] profile update failed', profErr);
   } catch (e) {
-    console.error('[closeCampSessionResult] profile RPC threw', e);
+    console.error('[closeCampSessionResult] profile update threw', e);
   }
 
   // Audit (non-blocking)
@@ -384,6 +388,9 @@ export async function closeCampSessionResult(input: {
   }
 
   revalidatePath(`/camps/${input.camp_instance_id}`);
+  revalidatePath(`/students/${input.student_id}`);
+  revalidatePath(`/students/${input.student_id}/history`);
+  revalidatePath('/students');
   return { success: true, resultId: result.id };
 }
 
