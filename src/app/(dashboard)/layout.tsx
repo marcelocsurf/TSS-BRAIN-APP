@@ -51,9 +51,6 @@ export default async function DashboardLayout({
     console.error('[DashboardLayout] Failed to fetch coach for user', user.id, coachError);
   }
 
-  const role = (coach?.role as CoachRole) || 'assistant';
-  const visibleNav = getNavItemsForRole(role);
-
   // M7 — if the REAL user is platform admin AND they have set an act-as
   // cookie, fetch the academy name and render the banner up top. We
   // intentionally use isRealPlatformAdmin (which ignores the override)
@@ -62,6 +59,12 @@ export default async function DashboardLayout({
     isRealPlatformAdmin(),
     getActAsAcademyId(),
   ]);
+
+  // When acting-as a coordinator, show coordinator nav (not full admin nav)
+  const effectiveRole = (isAdmin && actAsId)
+    ? 'coordinator'
+    : (coach?.role as CoachRole) || 'assistant';
+  const visibleNav = getNavItemsForRole(effectiveRole);
   let actAsAcademyName: string | null = null;
   let allAcademies: { id: string; name: string; slug: string }[] = [];
   if (isAdmin) {
