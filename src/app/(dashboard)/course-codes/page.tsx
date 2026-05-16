@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
 import { listAccessCodesForAcademy, getCodeUsageByAcademy } from '@/lib/actions/course';
+import { getCourseGrantBillingByAcademy } from '@/lib/actions/course-grants';
 import { CourseCodesClient } from './course-codes-client';
 
 export const dynamic = 'force-dynamic';
@@ -14,9 +15,10 @@ export default async function CourseCodesPage() {
 
   const isPlatformAdmin = !!currentCoach.is_platform_admin;
 
-  const [codes, usage] = await Promise.all([
+  const [codes, usage, grantBilling] = await Promise.all([
     listAccessCodesForAcademy(),
     isPlatformAdmin ? getCodeUsageByAcademy() : Promise.resolve([]),
+    isPlatformAdmin ? getCourseGrantBillingByAcademy() : Promise.resolve([]),
   ]);
 
   return (
@@ -32,6 +34,7 @@ export default async function CourseCodesPage() {
         initialCodes={codes}
         isPlatformAdmin={isPlatformAdmin}
         initialUsage={usage}
+        grantBilling={grantBilling}
       />
     </div>
   );

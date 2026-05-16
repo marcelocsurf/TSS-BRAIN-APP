@@ -15,6 +15,8 @@ import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluation
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
+import { CoursesPanel } from '@/components/student/CoursesPanel';
+import { listStudentCourseGrants } from '@/lib/actions/course-grants';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
 import { LearningProfileCard } from '@/components/student/LearningProfileCard';
 import { OfficialEvaluationPanel } from '@/components/student/OfficialEvaluationPanel';
@@ -264,6 +266,17 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   const allSessions = [...standaloneEntries, ...cascadeEntries, ...multiBlockEntries]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  // Course grants + earmarked (pending) courses for the CoursesPanel
+  const courseGrants = await listStudentCourseGrants(id);
+  const pendingCourses: string[] = Array.isArray((student as any).pending_courses)
+    ? (student as any).pending_courses
+    : [];
+  const intakeComplete = !!student.waiver_signed && !!student.intake_completed_at;
+  const canManageCourses =
+    coach?.role === 'coordinator' ||
+    coach?.role === 'admin' ||
+    !!coach?.is_platform_admin;
+
   const unlockedKeys = levelAccess.map((a: any) => a.level_key);
   const belt = BELT_DISPLAY[student.belt_level];
   const fullName = `${student.first_name} ${student.last_name}`;
@@ -493,6 +506,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           lessonsCompleted={lessonsCompleted}
         />
       </CollapsibleSection>
+
+      {/* --- COURSES (granted + earmarked + manual grant) --- */}
+      <CoursesPanel
+        studentId={id}
+        grants={courseGrants}
+        pendingCourses={pendingCourses}
+        intakeComplete={intakeComplete}
+        canManage={canManageCourses}
+      />
 
       {/* Level Access */}
       <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />

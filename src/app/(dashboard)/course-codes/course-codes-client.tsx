@@ -24,6 +24,13 @@ interface AcademyUsage {
   this_month_redeemed: number;
 }
 
+interface GrantBilling {
+  academy_id: string;
+  academy_name: string;
+  total_grants: number;
+  this_month_grants: number;
+}
+
 type FilterTab = 'all' | 'pending' | 'redeemed';
 
 const PRODUCT_TYPES: { value: string; label: string }[] = [
@@ -55,10 +62,12 @@ export function CourseCodesClient({
   initialCodes,
   isPlatformAdmin,
   initialUsage,
+  grantBilling = [],
 }: {
   initialCodes: AccessCodeRow[];
   isPlatformAdmin: boolean;
   initialUsage: AcademyUsage[];
+  grantBilling?: GrantBilling[];
 }) {
   const [codes, setCodes] = useState<AccessCodeRow[]>(initialCodes);
   const [usage] = useState<AcademyUsage[]>(initialUsage);
@@ -120,6 +129,46 @@ export function CourseCodesClient({
 
   return (
     <div className="space-y-6">
+      {/* ── Course Grants — Billing (platform admin only) ── */}
+      {isPlatformAdmin && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <h2 className="font-bold text-base mb-1 text-[var(--tss-navy)]">
+            Course Grants — Billing
+          </h2>
+          <p className="text-xs text-gray-500 mb-3">
+            Billable course activations counted per academy.
+          </p>
+          {grantBilling.length === 0 ? (
+            <p className="text-sm text-gray-500">No course grants recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                    <th className="pb-2 pr-4 font-medium">Academy</th>
+                    <th className="pb-2 px-3 font-medium text-right">Total Grants</th>
+                    <th className="pb-2 pl-3 font-medium text-right">This Month</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {grantBilling.map((row) => (
+                    <tr key={row.academy_id}>
+                      <td className="py-2 pr-4 font-medium">{row.academy_name}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">
+                        {row.total_grants}
+                      </td>
+                      <td className="py-2 pl-3 text-right tabular-nums text-green-700">
+                        {row.this_month_grants}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Generate Batch ── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
         <h2 className="font-bold text-base mb-4 text-[var(--tss-navy)]">Generate Code Batch</h2>

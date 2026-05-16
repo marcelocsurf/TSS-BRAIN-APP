@@ -6,6 +6,7 @@ import {
   isOceanQuizComplete,
   type OceanQuizAnswers,
 } from '@/lib/constants/ocean-quiz';
+import { activatePendingCoursesForStudent } from './course-grants';
 
 // ═══════════════════════════════════════
 // INTAKE FORM INPUTS
@@ -115,6 +116,14 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
     .eq('id', student.id);
 
   if (updateErr) throw new Error(updateErr.message);
+
+  // Intake + waiver are now complete — auto-activate any earmarked courses.
+  // A grant failure must never block intake submission.
+  try {
+    await activatePendingCoursesForStudent(student.id);
+  } catch (err) {
+    console.error('activatePendingCoursesForStudent failed:', err);
+  }
 
   return { success: true, firstSubmission: isFirstSubmission };
 }

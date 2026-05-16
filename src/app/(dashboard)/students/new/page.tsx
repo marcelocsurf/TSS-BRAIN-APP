@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createStudent, type CreateStudentInput } from '@/lib/actions/students';
 import { BELT_HIERARCHY, BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
+import { COURSES } from '@/lib/constants/courses';
 
 const SWIM_LEVELS = ['Non-swimmer', 'Beginner', 'Intermediate', 'Advanced'];
 const OCEAN_LEVELS = ['beginner', 'supervised', 'autonomous', 'advanced'];
@@ -32,7 +33,17 @@ export default function AddStudentPage() {
     ocean_level: 'beginner',
     surf_experience: 'None',
     waiver_signed: false,
+    pending_courses: ['white_belt'],
   });
+
+  const toggleCourse = (key: string) =>
+    setForm((prev) => {
+      const current = prev.pending_courses ?? [];
+      const next = current.includes(key)
+        ? current.filter((k) => k !== key)
+        : [...current, key];
+      return { ...prev, pending_courses: next };
+    });
 
   const set = (field: keyof CreateStudentInput, value: string | number | boolean | undefined) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -166,6 +177,37 @@ export default function AddStudentPage() {
             onChange={(v) => set('surf_experience', v)}
             options={SURF_EXPERIENCE_OPTIONS}
           />
+        </Section>
+
+        {/* ── INCLUDED COURSES ── */}
+        <Section title="Included Courses">
+          <p className="text-xs text-[var(--tss-gray-500)] -mt-1 mb-1">
+            Selected courses are earmarked now and activate automatically once the
+            student completes intake and signs the waiver.
+          </p>
+          <div className="space-y-2">
+            {COURSES.map((course) => {
+              const checked = (form.pending_courses ?? []).includes(course.key);
+              return (
+                <label
+                  key={course.key}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                    checked
+                      ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)]/5'
+                      : 'border-[var(--tss-gray-200)] bg-white hover:border-[var(--tss-gray-300)]'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleCourse(course.key)}
+                    className="accent-[var(--tss-navy)]"
+                  />
+                  <span className="text-sm text-[var(--tss-gray-700)]">{course.label}</span>
+                </label>
+              );
+            })}
+          </div>
         </Section>
 
         {/* ── WAIVER INFO ── */}

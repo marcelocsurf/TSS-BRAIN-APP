@@ -65,6 +65,9 @@ export interface CreateStudentInput {
   // Waiver metadata (set automatically by the action)
   waiver_signed_at?: string;
   waiver_signed_by?: string;
+
+  // Courses earmarked at creation; activated when intake + waiver complete
+  pending_courses?: string[];
 }
 
 export interface StudentRow {
@@ -230,6 +233,9 @@ export async function createStudent(input: CreateStudentInput) {
 
       // Waiver — defaults to false; student signs via intake link
       waiver_signed: false,
+
+      // Earmarked courses — activated on intake + waiver completion
+      pending_courses: input.pending_courses ?? [],
     })
     .select()
     .single();
