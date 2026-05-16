@@ -774,8 +774,38 @@ function ToolCard({ d, bg }: { d: any; bg: string }) {
 
       {open && (
         <div className="mt-2 pt-2 border-t border-gray-200/70 space-y-2">
-          {d.time_estimate && (
-            <p className="text-[11px] text-gray-600">⏱ {d.time_estimate}</p>
+          <div className="flex flex-wrap gap-3">
+            {d.time_estimate && (
+              <p className="text-[11px] text-gray-600">⏱ {d.time_estimate}</p>
+            )}
+            {d.reps_recommended && (
+              <p className="text-[11px] text-gray-600">🔁 {d.reps_recommended}</p>
+            )}
+          </div>
+          {d.description_md && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                How it works
+              </p>
+              <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {d.description_md}
+              </p>
+            </div>
+          )}
+          {d.success_criteria && d.success_criteria.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                Success criteria
+              </p>
+              <ul className="space-y-0.5">
+                {d.success_criteria.map((c: string, i: number) => (
+                  <li key={i} className="text-[13px] text-gray-700 flex gap-1.5">
+                    <span className="text-emerald-500">✓</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {d.key_words && d.key_words.length > 0 && (
             <div>

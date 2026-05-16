@@ -99,7 +99,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       .order('display_order'),
     admin
       .from('drills_missions')
-      .select('id, step_id, title, type, time_estimate, key_words, block_name, belt')
+      .select('id, step_id, title, type, time_estimate, key_words, block_name, belt, description_md, success_criteria, reps_recommended')
       .eq('active', true)
       .order('belt')
       .order('display_order'),
@@ -233,8 +233,19 @@ export interface CoachLessonDetail {
   } | null;
   quizzes: { id: string; question: string; options: { text: string; correct: boolean }[]; display_order: number }[];
   // The drill + mission for the linked STP (pulled from drills_missions)
-  linkedDrill: { id: string; title: string; key_words: string[] | null; time_estimate: string | null; block_name: string | null } | null;
-  linkedMission: { id: string; title: string; key_words: string[] | null; time_estimate: string | null; block_name: string | null } | null;
+  linkedDrill: LinkedTool | null;
+  linkedMission: LinkedTool | null;
+}
+
+export interface LinkedTool {
+  id: string;
+  title: string;
+  key_words: string[] | null;
+  time_estimate: string | null;
+  block_name: string | null;
+  description_md: string | null;
+  success_criteria: string[] | null;
+  reps_recommended: string | null;
 }
 
 export async function getCoachLessonDetail(
@@ -287,16 +298,19 @@ export async function getCoachLessonDetail(
   if (lesson.linked_step_id) {
     const { data: dm } = await admin
       .from('drills_missions')
-      .select('id, title, type, key_words, time_estimate, block_name')
+      .select('id, title, type, key_words, time_estimate, block_name, description_md, success_criteria, reps_recommended')
       .eq('step_id', lesson.linked_step_id)
       .eq('active', true);
     for (const row of dm ?? []) {
-      const item = {
+      const item: LinkedTool = {
         id: row.id,
         title: row.title,
         key_words: row.key_words,
         time_estimate: row.time_estimate,
         block_name: row.block_name,
+        description_md: row.description_md,
+        success_criteria: row.success_criteria,
+        reps_recommended: row.reps_recommended,
       };
       if (row.type === 'drill' && !linkedDrill) linkedDrill = item;
       if (row.type === 'mission' && !linkedMission) linkedMission = item;

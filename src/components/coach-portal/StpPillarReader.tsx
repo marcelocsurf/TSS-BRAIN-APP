@@ -153,9 +153,42 @@ function LinkedToolBody({
         {tool.block_name ? ` · ${tool.block_name}` : ''}
       </p>
       <p className="text-base font-bold text-[var(--tss-navy)] mt-0.5">{tool.title}</p>
-      {tool.time_estimate && (
-        <p className="text-[11px] text-gray-500 mt-1">⏱ {tool.time_estimate}</p>
+      <div className="flex flex-wrap gap-3 mt-1">
+        {tool.time_estimate && (
+          <p className="text-[11px] text-gray-500">⏱ {tool.time_estimate}</p>
+        )}
+        {tool.reps_recommended && (
+          <p className="text-[11px] text-gray-500">🔁 {tool.reps_recommended}</p>
+        )}
+      </div>
+
+      {tool.description_md && (
+        <div className="mt-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            How it works
+          </p>
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+            {tool.description_md}
+          </p>
+        </div>
       )}
+
+      {tool.success_criteria && tool.success_criteria.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            Success criteria
+          </p>
+          <ul className="space-y-1">
+            {tool.success_criteria.map((c, i) => (
+              <li key={i} className="text-sm text-gray-700 flex gap-2">
+                <span className="text-emerald-500">✓</span>
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {tool.key_words && tool.key_words.length > 0 && (
         <div className="mt-3">
           <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
@@ -173,10 +206,11 @@ function LinkedToolBody({
           </div>
         </div>
       )}
-      <p className="text-[11px] text-gray-400 italic mt-3">
-        Full {kind.toLowerCase()} mechanics are in the Tools tab. This tab links the
-        canonical {kind.toLowerCase()} for this step so you can plan it fast.
-      </p>
+      {!tool.description_md && (!tool.success_criteria || tool.success_criteria.length === 0) && (
+        <p className="text-[11px] text-gray-400 italic mt-3">
+          No detailed content has been added for this {kind.toLowerCase()} yet.
+        </p>
+      )}
     </div>
   );
 }
