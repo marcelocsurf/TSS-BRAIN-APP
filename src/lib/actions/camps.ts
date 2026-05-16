@@ -61,14 +61,48 @@ export async function createCampInstance(input: {
 }) {
   const supabase = await createClient();
 
-  // Get template days
-  const { data: days } = await supabase
+  // Get template days. If none are configured (e.g. new SVC-* service
+  // templates that don't have pre-seeded days), fall back to the
+  // template's duration_days and auto-create ad-hoc day stubs inline.
+  const { data: rawDays } = await supabase
     .from('camp_template_days')
     .select('id, day_number')
     .eq('template_id', input.template_id)
     .order('day_number');
 
-  if (!days || days.length === 0) throw new Error('Template has no days configured.');
+  let days: { id: string; day_number: number }[] = rawDays ?? [];
+
+  // If no template days exist, auto-generate lightweight ones now
+  if (days.length === 0) {
+    const { data: tmpl } = await supabase
+      .from('camp_templates')
+      .select('duration_days, is_custom')
+      .eq('id', input.template_id)
+      .single();
+
+    // For custom templates, the caller may pass capacity_override/duration_override
+    const durationDays =
+      (input as any).duration_override ??
+      tmpl?.duration_days ??
+      1;
+
+    const newDays = Array.from({ length: durationDays }, (_, i) => ({
+      template_id: input.template_id,
+      day_number: i + 1,
+      day_goal: `Day ${i + 1}`,
+      evaluation_focus: null as string | null,
+    }));
+
+    const { data: inserted, error: dayErr } = await supabase
+      .from('camp_template_days')
+      .insert(newDays)
+      .select('id, day_number');
+
+    if (dayErr || !inserted || inserted.length === 0) {
+      throw new Error(`Could not create template days: ${dayErr?.message ?? 'unknown error'}`);
+    }
+    days = inserted;
+  }
 
   // Resolve the academy this service belongs to. getCurrentCoach()
   // honors the act-as cookie, so a platform admin acting-as academy B

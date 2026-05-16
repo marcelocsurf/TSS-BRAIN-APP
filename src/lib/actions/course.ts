@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentCoach } from '@/lib/actions/auth';
 import { revalidatePath } from 'next/cache';
 
 // ─── Types ───
@@ -511,4 +512,222 @@ export async function listAccessCodes() {
 
   if (error) return [];
   return data || [];
+}
+
+// ─── BATCH GENERATION ───
+
+// Generate multiple codes at once for a batch
+export async function generateAccessCodeBatch(
+  count: number,
+  productType: string = 'white_belt',
+  batchLabel: string,
+  notes?: string
+): Promise<{ ok: true; codes: string[] } | { ok: false; error: string }> {
+  if (count < 1 || count > 50) {
+    return { ok: false, error: 'Count must be between 1 and 50' };
+  }
+
+  const coach = await getCurrentCoach();
+  if (!coach) return { ok: false, error: 'Not authenticated' };
+
+  const admin = createAdminClient();
+  const generatedCodes: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const { data: codeData, error: codeErr } = await admin.rpc('generate_access_code', {
+      p_product_type: productType,
+    });
+
+    if (codeErr || !codeData) {
+      return { ok: false, error: codeErr?.message || 'Failed to generate code' };
+    }
+
+    generatedCodes.push(codeData as string);
+  }
+
+  const rows = generatedCodes.map((code) => ({
+    code,
+    product_type: productType,
+    batch_label: batchLabel || null,
+    notes: notes || null,
+    academy_id: coach.academy_id || null,
+    created_by: coach.id,
+  }));
+
+  const { error: insertErr } = await admin.from('access_codes').insert(rows);
+
+  if (insertErr) return { ok: false, error: insertErr.message };
+
+  revalidatePath('/course-codes');
+  return { ok: true, codes: generatedCodes };
+}
+
+// List codes filtered by academy (or all for platform_admin)
+export async function listAccessCodesForAcademy() {
+  const coach = await getCurrentCoach();
+  if (!coach) return [];
+
+  const admin = createAdminClient();
+
+  let query = admin
+    .from('access_codes')
+    .select('*, students:used_by(first_name, last_name)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  // Platform admins (not acting-as) see all; everyone else scoped to academy
+  if (!coach.is_platform_admin && coach.academy_id) {
+    query = query.eq('academy_id', coach.academy_id);
+  }
+
+  const { data, error } = await query;
+  if (error) return [];
+  return data || [];
+}
+
+// Usage summary by academy (platform_admin only)
+export async function getCodeUsageByAcademy(): Promise<
+  {
+    academy_id: string;
+    academy_name: string;
+    total_generated: number;
+    total_redeemed: number;
+    this_month_generated: number;
+    this_month_redeemed: number;
+  }[]
+> {
+  const coach = await getCurrentCoach();
+  if (!coach?.is_platform_admin) return [];
+
+  const admin = createAdminClient();
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const { data: codes } = await admin
+    .from('access_codes')
+    .select('academy_id, used_by, created_at');
+
+  const { data: academies } = await admin
+    .from('academies')
+    .select('id, name');
+
+  if (!codes || !academies) return [];
+
+  const academyMap = new Map<string, string>(
+    academies.map((a: { id: string; name: string }) => [a.id, a.name])
+  );
+
+  const byAcademy = new Map<
+    string,
+    { total: number; redeemed: number; thisMonthTotal: number; thisMonthRedeemed: number }
+  >();
+
+  for (const c of codes) {
+    if (!c.academy_id) continue;
+    const entry = byAcademy.get(c.academy_id) ?? {
+      total: 0,
+      redeemed: 0,
+      thisMonthTotal: 0,
+      thisMonthRedeemed: 0,
+    };
+    entry.total++;
+    if (c.used_by) entry.redeemed++;
+    if (c.created_at >= monthStart) {
+      entry.thisMonthTotal++;
+      if (c.used_by) entry.thisMonthRedeemed++;
+    }
+    byAcademy.set(c.academy_id, entry);
+  }
+
+  return Array.from(byAcademy.entries()).map(([academy_id, stats]) => ({
+    academy_id,
+    academy_name: academyMap.get(academy_id) ?? 'Unknown',
+    total_generated: stats.total,
+    total_redeemed: stats.redeemed,
+    this_month_generated: stats.thisMonthTotal,
+    this_month_redeemed: stats.thisMonthRedeemed,
+  }));
+}
+
+// ─── PUBLIC ACTIVATE FLOW ───
+
+// Validate a code without consuming it (step 1 of /activate)
+export async function validateAccessCode(
+  code: string
+): Promise<{ ok: true; productType: string } | { ok: false; error: string }> {
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from('access_codes')
+    .select('code, product_type, used_by, expires_at')
+    .eq('code', code.toUpperCase().trim())
+    .maybeSingle();
+
+  if (error) return { ok: false, error: 'Could not validate code' };
+  if (!data) return { ok: false, error: 'Code not found' };
+  if (data.used_by) return { ok: false, error: 'This code has already been used' };
+  if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    return { ok: false, error: 'This code has expired' };
+  }
+
+  return { ok: true, productType: data.product_type };
+}
+
+// Redeem a code and create a student account (step 2 of /activate)
+export async function redeemCodeAndCreateStudent(
+  code: string,
+  profile: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    country?: string;
+    dob?: string;
+  }
+): Promise<{ ok: true; portalToken: string } | { ok: false; error: string }> {
+  const admin = createAdminClient();
+
+  // Re-validate the code
+  const { data: codeRow } = await admin
+    .from('access_codes')
+    .select('code, product_type, used_by, expires_at, academy_id')
+    .eq('code', code.toUpperCase().trim())
+    .maybeSingle();
+
+  if (!codeRow) return { ok: false, error: 'Code not found' };
+  if (codeRow.used_by) return { ok: false, error: 'Code already used' };
+  if (codeRow.expires_at && new Date(codeRow.expires_at) < new Date()) {
+    return { ok: false, error: 'Code expired' };
+  }
+
+  // Create student record
+  const { data: newStudent, error: studentErr } = await admin
+    .from('students')
+    .insert({
+      first_name: profile.firstName.trim(),
+      last_name: profile.lastName.trim(),
+      email: profile.email?.trim() || null,
+      country: profile.country?.trim() || null,
+      date_of_birth: profile.dob || null,
+      belt_level: 'white_belt',
+      academy_id: codeRow.academy_id || null,
+      course_access_white: false, // consumeAccessCode sets this to true
+      signup_code: code.toUpperCase().trim(),
+    })
+    .select('id, portal_token')
+    .single();
+
+  if (studentErr || !newStudent) {
+    return { ok: false, error: studentErr?.message || 'Failed to create student' };
+  }
+
+  // Consume the code (grants course_access_white = true)
+  const consumeResult = await consumeAccessCode(code, newStudent.id);
+  if (!consumeResult.ok) {
+    // Roll back student creation on failure
+    await admin.from('students').delete().eq('id', newStudent.id);
+    return { ok: false, error: consumeResult.error || 'Failed to activate code' };
+  }
+
+  return { ok: true, portalToken: newStudent.portal_token as string };
 }

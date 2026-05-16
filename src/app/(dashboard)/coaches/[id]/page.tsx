@@ -9,6 +9,8 @@ import {
 } from '@/lib/actions/coach-dashboard';
 import { CertificationManager } from './certification-manager';
 import { ToggleCoachStatus } from './toggle-coach-status';
+import { ToggleCourseAccess } from './toggle-course-access';
+import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -69,6 +71,7 @@ export default async function CoachProfilePage({ params }: Props) {
   }
   const currentCerts = certifications?.map(c => c.certification_key) || [];
   const currentUserIsAdmin = currentCoach?.role === 'admin';
+  const isPlatformAdmin = await isRealPlatformAdmin();
 
   // Fetch dashboard data in parallel
   const [stats, ratingStats, feedback, resources, recentSessions] = await Promise.all([
@@ -158,6 +161,16 @@ export default async function CoachProfilePage({ params }: Props) {
             <p className="text-[9px] text-gray-400 italic mt-1">
               Share with the coach so they can access their personal portal (courses + tools + their stats).
             </p>
+          </div>
+        )}
+
+        {/* Course access toggle — only platform admin */}
+        {isPlatformAdmin && (
+          <div className="mt-3 pt-3 border-t border-gray-50">
+            <ToggleCourseAccess
+              coachId={id}
+              currentAccess={!!coach.course_access_granted}
+            />
           </div>
         )}
       </div>

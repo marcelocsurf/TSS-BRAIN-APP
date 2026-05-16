@@ -18,6 +18,7 @@ import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
 import { LearningProfileCard } from '@/components/student/LearningProfileCard';
 import { OfficialEvaluationPanel } from '@/components/student/OfficialEvaluationPanel';
+import { ArchiveSessionButton } from '@/components/session/ArchiveSessionButton';
 import type { LearningChannel } from '@/lib/constants/learning-profiles';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -367,21 +368,28 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             🟢 Sessions in progress / planned
           </p>
           {activeMultiBlock.map((s) => (
-            <Link
+            <div
               key={s.id}
-              href={`/sessions/plan/${s.id}`}
-              className="flex items-center justify-between gap-2 bg-white rounded-lg p-3 hover:bg-emerald-100 transition-colors"
+              className="flex items-center justify-between gap-2 bg-white rounded-lg p-3"
             >
-              <div className="min-w-0">
+              <Link
+                href={`/sessions/plan/${s.id}`}
+                className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+              >
                 <p className="text-sm font-medium text-emerald-800">
                   {s.completion_state === 'in_progress' ? 'In progress' : 'Planned'} · {s.total_planned_minutes}min
                 </p>
                 <p className="text-[10px] text-emerald-600">
                   {new Date(s.session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </p>
+              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href={`/sessions/plan/${s.id}`} className="text-xs text-emerald-600 font-medium">
+                  Resume →
+                </Link>
+                <ArchiveSessionButton sessionId={s.id} sessionState={s.completion_state} />
               </div>
-              <span className="text-xs text-emerald-600 font-medium">Resume →</span>
-            </Link>
+            </div>
           ))}
         </div>
       )}

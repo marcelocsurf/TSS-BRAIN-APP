@@ -49,12 +49,14 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   const { data: coach } = await admin
     .from('coaches')
     .select(
-      'id, first_name, last_name, display_name, email, role, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id'
+      'id, first_name, last_name, display_name, email, role, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted'
     )
     .eq('portal_token', token)
     .single();
 
   if (!coach) return null;
+  // Gate: coach needs explicit access granted by platform admin
+  if (!coach.course_access_granted) return null;
 
   const today = new Date().toISOString().slice(0, 10);
 

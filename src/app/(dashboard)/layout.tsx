@@ -12,15 +12,18 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const NAV_ITEMS = [
+  // \u2500\u2500 Both admin + coordinator \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   { href: '/', label: 'Home', icon: '\u2302', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/students', label: 'Students', icon: '\u25C9', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
-  { href: '/sessions/new', label: 'Session', icon: '\u25B6', roles: ['admin', 'coordinator', 'coach'] },
-  { href: '/sessions/drafts', label: 'Drafts', icon: '\u270E', roles: ['admin', 'coordinator', 'coach'] },
   { href: '/camps', label: 'Services', icon: '\u26FA', roles: ['admin', 'coordinator'] },
-  { href: '/academies', label: 'Academies', icon: '\uD83C\uDFEB', roles: ['admin'] },
   { href: '/coaches', label: 'Coaches', icon: '\u2605', roles: ['admin', 'coordinator'] },
   { href: '/course-codes', label: 'Course Codes', icon: '\u26bf', roles: ['admin', 'coordinator'] },
-  { href: '/content', label: 'Content', icon: '\u25b7', roles: ['admin', 'coordinator'] },
+  // \u2500\u2500 Coach / assistant \u2014 their session workflow \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  { href: '/sessions/new', label: 'Session', icon: '\u25B6', roles: ['admin', 'coach'] },
+  { href: '/sessions/drafts', label: 'Drafts', icon: '\u270E', roles: ['admin', 'coach'] },
+  // \u2500\u2500 Admin only \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  { href: '/academies', label: 'Academies', icon: '\uD83C\uDFEB', roles: ['admin'] },
+  { href: '/content', label: 'Content', icon: '\u25b7', roles: ['admin'] },
   { href: '/audit', label: 'Audit', icon: '\u2713', roles: ['admin'] },
 ];
 

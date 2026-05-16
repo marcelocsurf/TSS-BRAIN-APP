@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { getCurrentCoach, isCoordinatorOrAbove, isRealPlatformAdmin } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
@@ -23,6 +23,9 @@ export default async function CoachesPage() {
   const currentCoach = await getCurrentCoach();
   if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
 
+  // Only platform admin (Marcelo) can create new coaches
+  const canCreateCoach = await isRealPlatformAdmin();
+
   const supabase = await createClient();
 
   const { data: coaches } = await supabase
@@ -44,12 +47,14 @@ export default async function CoachesPage() {
           <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Team Management</h1>
           <p className="text-sm text-[var(--tss-gray-500)] mt-0.5">{activeCoaches.length} active · {inactiveCoaches.length} inactive</p>
         </div>
-        <Link
-          href="/coaches/new"
-          className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
-        >
-          + Add Coach
-        </Link>
+        {canCreateCoach && (
+          <Link
+            href="/coaches/new"
+            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
+          >
+            + Add Coach
+          </Link>
+        )}
       </div>
 
       {/* Role Stats */}
@@ -149,9 +154,11 @@ export default async function CoachesPage() {
       {coaches?.length === 0 && (
         <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-12 text-center">
           <p className="text-[var(--tss-gray-500)] text-sm">No coaches yet.</p>
-          <Link href="/coaches/new" className="mt-3 inline-block px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm rounded-xl hover:brightness-110 transition-all">
-            Add First Coach
-          </Link>
+          {canCreateCoach && (
+            <Link href="/coaches/new" className="mt-3 inline-block px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm rounded-xl hover:brightness-110 transition-all">
+              Add First Coach
+            </Link>
+          )}
         </div>
       )}
     </div>

@@ -668,3 +668,47 @@ export async function getDraftCount(): Promise<number> {
   if (error) return 0;
   return count ?? 0;
 }
+
+// ═══════════════════════════════════════
+// ARCHIVE / CANCEL SESSION
+// ═══════════════════════════════════════
+
+/**
+ * Archives (soft-deletes) a cascade session that is planned or in-progress.
+ * Sets status → 'cancelled'. Only the coach who created it or an admin can do this.
+ */
+export async function archiveCascadeSession(sessionId: string): Promise<void> {
+  'use server';
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('id, role, is_platform_admin')
+    .eq('auth_user_id', user.id)
+    .single();
+  if (!coach) throw new Error('Coach not found');
+
+  // Fetch session to verify ownership
+  const { data: session } = await supabase
+    .from('cascade_sessions')
+    .select('id, coach_id, completion_state')
+    .eq('id', sessionId)
+    .single();
+
+  if (!session) throw new Error('Session not found');
+  if (session.completion_state === 'closed') throw new Error('Cannot archive a closed session');
+  if (session.coach_id !== coach.id && !coach.is_platform_admin && coach.role !== 'admin') {
+    throw new Error('Not authorized to archive this session');
+  }
+
+  const { error } = await supabase
+    .from('cascade_sessions')
+    .update({ completion_state: 'cancelled' })
+    .eq('id', sessionId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/students');
+  revalidatePath('/');
+}

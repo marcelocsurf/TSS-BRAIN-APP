@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
-import { getCurrentCoach, isAdmin, isCoordinatorOrAbove } from '@/lib/actions/auth';
-import { listAccessCodes } from '@/lib/actions/course';
+import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { listAccessCodesForAcademy, getCodeUsageByAcademy } from '@/lib/actions/course';
 import { CourseCodesClient } from './course-codes-client';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,12 @@ export default async function CourseCodesPage() {
   const allowed = await isCoordinatorOrAbove(currentCoach.role);
   if (!allowed) redirect('/');
 
-  const codes = await listAccessCodes();
+  const isPlatformAdmin = !!currentCoach.is_platform_admin;
+
+  const [codes, usage] = await Promise.all([
+    listAccessCodesForAcademy(),
+    isPlatformAdmin ? getCodeUsageByAcademy() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -23,7 +28,11 @@ export default async function CourseCodesPage() {
         </p>
       </div>
 
-      <CourseCodesClient initialCodes={codes} />
+      <CourseCodesClient
+        initialCodes={codes}
+        isPlatformAdmin={isPlatformAdmin}
+        initialUsage={usage}
+      />
     </div>
   );
 }

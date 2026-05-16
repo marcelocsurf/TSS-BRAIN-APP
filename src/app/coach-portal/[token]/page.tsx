@@ -16,7 +16,19 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   const { tab } = await searchParams;
 
   const data = await getCoachPortalData(token);
-  if (!data) notFound();
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-[var(--tss-gray-50)] flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 max-w-sm w-full text-center shadow-sm">
+          <div className="text-4xl mb-4">🔒</div>
+          <h1 className="text-lg font-bold text-[var(--tss-navy)] mb-2">Access not enabled</h1>
+          <p className="text-sm text-gray-500">
+            Your portal access has not been activated yet. Contact your academy administrator to enable it.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const validTabs = ['home', 'courses', 'tools', 'services', 'rating'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
