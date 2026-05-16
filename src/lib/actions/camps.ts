@@ -264,7 +264,8 @@ export async function closeCampSessionResult(input: {
 
   // Get coach
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: coach } = await supabase.from('coaches').select('*').eq('auth_user_id', user!.id).single();
+  if (!user) throw new Error('Not authenticated.');
+  const { data: coach } = await supabase.from('coaches').select('*').eq('auth_user_id', user.id).single();
 
   // Get student portal token
   const { data: student } = await supabase
@@ -273,8 +274,9 @@ export async function closeCampSessionResult(input: {
     .eq('id', input.student_id)
     .single();
 
-  // Insert result
-  const { data: result, error: resultErr } = await supabase
+  // Insert result — use admin client to bypass RLS so an admin acting-as
+  // an academy (or a coach) can always write the evaluation.
+  const { data: result, error: resultErr } = await admin
     .from('student_session_results')
     .insert({
       camp_session_id: input.camp_session_id,
@@ -294,31 +296,43 @@ export async function closeCampSessionResult(input: {
     .select()
     .single();
 
-  if (resultErr) throw new Error(resultErr.message);
+  if (resultErr || !result) {
+    console.error('[closeCampSessionResult] insert failed', resultErr);
+    throw new Error(`Could not save evaluation: ${resultErr?.message ?? 'unknown error'}`);
+  }
 
-  // Update student profile
-  await supabase.rpc('update_student_profile_on_close', {
-    p_student_id: input.student_id,
-    p_session_result_id: result.id,
-    p_session_date: new Date().toISOString(),
-    p_mission: input.mission,
-    p_pilar: input.pilar,
-    p_status: input.status,
-    p_homework: input.homework,
-    p_whats_next: input.whats_next,
-  });
+  // Update student profile (non-blocking — failure here must not lose the result)
+  try {
+    const { error: rpcErr } = await admin.rpc('update_student_profile_on_close', {
+      p_student_id: input.student_id,
+      p_session_result_id: result.id,
+      p_session_date: new Date().toISOString(),
+      p_mission: input.mission,
+      p_pilar: input.pilar,
+      p_status: input.status,
+      p_homework: input.homework,
+      p_whats_next: input.whats_next,
+    });
+    if (rpcErr) console.error('[closeCampSessionResult] profile RPC failed', rpcErr);
+  } catch (e) {
+    console.error('[closeCampSessionResult] profile RPC threw', e);
+  }
 
-  // Audit
-  await admin.from('audit_log').insert({
-    session_result_id: result.id,
-    actor_type: 'coach',
-    actor_id: coach?.id,
-    actor_name: coach?.display_name,
-    event_type: 'camp_result_closed',
-    status_before: 'in_progress',
-    status_after: 'closed',
-    note: `Camp result closed for student ${input.student_id}. Day session: ${input.camp_session_id}.`,
-  });
+  // Audit (non-blocking)
+  try {
+    await admin.from('audit_log').insert({
+      session_result_id: result.id,
+      actor_type: 'coach',
+      actor_id: coach?.id,
+      actor_name: coach?.display_name,
+      event_type: 'camp_result_closed',
+      status_before: 'in_progress',
+      status_after: 'closed',
+      note: `Camp result closed for student ${input.student_id}. Day session: ${input.camp_session_id}.`,
+    });
+  } catch (e) {
+    console.error('[closeCampSessionResult] audit log failed', e);
+  }
 
   // Email (non-blocking)
   if (student?.email) {
@@ -338,7 +352,7 @@ export async function closeCampSessionResult(input: {
         beltLevel: student?.belt_level || 'white_belt',
       });
       if (emailResult.success) {
-        await supabase.from('student_session_results').update({
+        await admin.from('student_session_results').update({
           email_sent: true, email_sent_at: new Date().toISOString(),
         }).eq('id', result.id);
       }
@@ -346,23 +360,27 @@ export async function closeCampSessionResult(input: {
   }
 
   // Check if all participants evaluated — if so, mark session complete
-  const { data: allParticipants } = await supabase
-    .from('camp_participants')
-    .select('student_id')
-    .eq('camp_instance_id', input.camp_instance_id)
-    .eq('enrollment_status', 'active');
+  try {
+    const { data: allParticipants } = await admin
+      .from('camp_participants')
+      .select('student_id')
+      .eq('camp_instance_id', input.camp_instance_id)
+      .eq('enrollment_status', 'active');
 
-  const { data: allResults } = await supabase
-    .from('student_session_results')
-    .select('student_id')
-    .eq('camp_session_id', input.camp_session_id);
+    const { data: allResults } = await admin
+      .from('student_session_results')
+      .select('student_id')
+      .eq('camp_session_id', input.camp_session_id);
 
-  const participantIds = new Set(allParticipants?.map(p => p.student_id));
-  const resultIds = new Set(allResults?.map(r => r.student_id));
-  const allEvaluated = [...participantIds].every(id => resultIds.has(id));
+    const participantIds = new Set(allParticipants?.map(p => p.student_id));
+    const resultIds = new Set(allResults?.map(r => r.student_id));
+    const allEvaluated = participantIds.size > 0 && [...participantIds].every(id => resultIds.has(id));
 
-  if (allEvaluated) {
-    await supabase.from('camp_sessions').update({ session_status: 'completed' }).eq('id', input.camp_session_id);
+    if (allEvaluated) {
+      await admin.from('camp_sessions').update({ session_status: 'completed' }).eq('id', input.camp_session_id);
+    }
+  } catch (e) {
+    console.error('[closeCampSessionResult] session-complete check failed', e);
   }
 
   revalidatePath(`/camps/${input.camp_instance_id}`);
