@@ -12,7 +12,7 @@ export default async function CampsPage() {
   // M6 — scope camp listing by academy unless platform admin.
   let query = supabase
     .from('camp_instances')
-    .select('*, camp_templates(template_name, duration_days), coaches(display_name)')
+    .select('*, camp_templates(template_name, duration_days), coaches:coach_id(display_name)')
     .order('created_at', { ascending: false });
 
   if (!currentCoach.is_platform_admin && currentCoach.academy_id) {

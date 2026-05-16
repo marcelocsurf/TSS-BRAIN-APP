@@ -168,11 +168,15 @@ export async function createCampInstance(input: {
 export async function getCampDetail(campId: string) {
   const supabase = await createClient();
 
-  const { data: instance } = await supabase
+  const { data: instance, error: instanceErr } = await supabase
     .from('camp_instances')
-    .select('*, camp_templates(*), coaches(display_name), head_coach:head_coach_id(id, display_name)')
+    .select('*, camp_templates(*), coaches:coach_id(display_name), head_coach:head_coach_id(id, display_name)')
     .eq('id', campId)
     .single();
+
+  if (instanceErr) {
+    console.error('[getCampDetail] instance query failed', campId, instanceErr);
+  }
 
   const { data: participants } = await supabase
     .from('camp_participants')
