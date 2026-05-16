@@ -700,15 +700,29 @@ export async function redeemCodeAndCreateStudent(
     return { ok: false, error: 'Code expired' };
   }
 
-  // Create student record
+  // Derive age from date of birth (students table has `age`, not `dob`)
+  let age: number | null = null;
+  if (profile.dob) {
+    const birth = new Date(profile.dob);
+    if (!isNaN(birth.getTime())) {
+      const now = new Date();
+      age = now.getFullYear() - birth.getFullYear();
+      const m = now.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+      if (age < 0 || age > 120) age = null;
+    }
+  }
+
+  // Create student record. The students table uses `nationality` (not
+  // `country`) and `age` (not a DOB column).
   const { data: newStudent, error: studentErr } = await admin
     .from('students')
     .insert({
       first_name: profile.firstName.trim(),
       last_name: profile.lastName.trim(),
       email: profile.email?.trim() || null,
-      country: profile.country?.trim() || null,
-      date_of_birth: profile.dob || null,
+      nationality: profile.country?.trim() || null,
+      age,
       belt_level: 'white_belt',
       academy_id: codeRow.academy_id || null,
       course_access_white: false, // consumeAccessCode sets this to true
