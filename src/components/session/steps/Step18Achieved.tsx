@@ -50,7 +50,7 @@ export function Step18Achieved({ formState, achievementOptions, onChange }: Prop
                   onClick={() => handleChipToggle(chipText)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-[#D4A843] text-white'
+                      ? 'bg-[#5AC3E7] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -67,7 +67,7 @@ export function Step18Achieved({ formState, achievementOptions, onChange }: Prop
         onChange={(e) => onChange(e.target.value)}
         placeholder="Document what the student accomplished..."
         rows={4}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
     </div>
   );

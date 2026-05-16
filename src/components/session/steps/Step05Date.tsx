@@ -20,7 +20,7 @@ export function Step05Date({ formState, onSelect, onTimeChange }: Props) {
             type="date"
             value={formState.session_date}
             onChange={(e) => onSelect(e.target.value)}
-            className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+            className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
           />
         </div>
         <div>
@@ -29,7 +29,7 @@ export function Step05Date({ formState, onSelect, onTimeChange }: Props) {
             type="time"
             value={formState.session_time ?? ''}
             onChange={(e) => onTimeChange(e.target.value)}
-            className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+            className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
           />
         </div>
       </div>

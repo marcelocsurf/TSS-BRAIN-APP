@@ -63,15 +63,15 @@ export function Step19WhatsNext({ formState, pilarParts, currentPilarPartId, sta
           onClick={() => onSelect(suggestedPart!.id)}
           className={`w-full p-3 rounded-xl border text-left text-sm transition-all ${
             formState.whats_next_pilar_part_id === suggestedPart.id
-              ? 'border-[#D4A843] bg-amber-50 font-medium'
-              : 'border-[#D4A843]/40 bg-amber-50/30 hover:bg-amber-50/60'
+              ? 'border-[#5AC3E7] bg-amber-50 font-medium'
+              : 'border-[#5AC3E7]/40 bg-amber-50/30 hover:bg-amber-50/60'
           }`}
         >
           <div className="flex items-center gap-2">
             <span
               className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                 suggestionBadge === 'Suggested'
-                  ? 'bg-[#D4A843] text-white'
+                  ? 'bg-[#5AC3E7] text-white'
                   : 'bg-[#1A1A2E] text-white'
               }`}
             >
@@ -79,7 +79,7 @@ export function Step19WhatsNext({ formState, pilarParts, currentPilarPartId, sta
             </span>
             <span className="text-gray-800">{suggestedPart.name}</span>
             {formState.whats_next_pilar_part_id === suggestedPart.id && (
-              <span className="ml-auto text-[#D4A843]">&#10003;</span>
+              <span className="ml-auto text-[#5AC3E7]">&#10003;</span>
             )}
           </div>
           <p className="text-xs text-gray-400 mt-1">{PILAR_LABELS[suggestedPart.pilar_id] || suggestedPart.pilar_id}</p>
@@ -91,7 +91,7 @@ export function Step19WhatsNext({ formState, pilarParts, currentPilarPartId, sta
         placeholder="Search..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843]"
+        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#5AC3E7]"
       />
 
       <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -112,12 +112,12 @@ export function Step19WhatsNext({ formState, pilarParts, currentPilarPartId, sta
                     onClick={() => onSelect(part.id)}
                     className={`w-full p-2.5 rounded-lg border text-left text-sm transition-all mb-1 ${
                       isSelected
-                        ? 'border-[#D4A843] bg-amber-50 font-medium'
+                        ? 'border-[#5AC3E7] bg-amber-50 font-medium'
                         : 'border-gray-50 hover:border-gray-200'
                     }`}
                   >
                     {part.name}
-                    {isSelected && <span className="float-right text-[#D4A843]">&#10003;</span>}
+                    {isSelected && <span className="float-right text-[#5AC3E7]">&#10003;</span>}
                   </button>
                 );
               })}

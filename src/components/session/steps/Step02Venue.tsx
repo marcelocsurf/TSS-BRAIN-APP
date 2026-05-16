@@ -25,7 +25,7 @@ export function Step02Venue({ formState, options, onSelect }: Props) {
               onClick={() => onSelect(opt.value, isWater)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                 isSelected
-                  ? 'border-[#D4A843] bg-amber-50'
+                  ? 'border-[#5AC3E7] bg-amber-50'
                   : 'border-gray-100 hover:border-gray-200'
               }`}
             >
@@ -39,7 +39,7 @@ export function Step02Venue({ formState, options, onSelect }: Props) {
                 </span>
               )}
               {isSelected && (
-                <span className="ml-auto text-[#D4A843] text-lg">&#10003;</span>
+                <span className="ml-auto text-[#5AC3E7] text-lg">&#10003;</span>
               )}
             </button>
           );

@@ -39,17 +39,14 @@ export default function LoginPage() {
         {/* Logo + tagline */}
         <div className="text-center mb-10">
           <Image
-            src="/tss-logo-light.png"
+            src="/tss-logo-white.png"
             alt="The Surf Sequence"
-            width={180}
-            height={180}
-            className="mx-auto mb-4"
+            width={240}
+            height={120}
+            className="mx-auto mb-3"
             priority
           />
-          <p
-            className="text-[var(--tss-cyan)] text-sm tracking-widest uppercase"
-            style={{ fontFamily: 'var(--font-mono)' }}
-          >
+          <p className="tss-tagline text-[var(--tss-cyan)] text-lg">
             Evolve through play
           </p>
         </div>

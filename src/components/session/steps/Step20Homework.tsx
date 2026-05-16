@@ -39,7 +39,7 @@ export function Step20Homework({ formState, cueOptions, currentPilar, onToggleCu
               onClick={() => onToggleCue(opt.value)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 isSelected
-                  ? 'bg-[#D4A843] text-white'
+                  ? 'bg-[#5AC3E7] text-white'
                   : highlight
                     ? 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -84,7 +84,7 @@ export function Step20Homework({ formState, cueOptions, currentPilar, onToggleCu
         onChange={(e) => onChangeText(e.target.value)}
         placeholder="Additional homework instructions (optional)..."
         rows={3}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
     </div>
   );

@@ -89,11 +89,11 @@ export default async function DashboardLayout({
 
         <div className="p-4 border-b border-white/10">
           <Image
-            src="/tss-logo-white-h.png"
+            src="/tss-logo-white.png"
             alt="The Surf Sequence"
-            width={160}
-            height={45}
-            className="opacity-90"
+            width={170}
+            height={85}
+            className="opacity-95"
             priority
           />
           <p className="text-xs text-[var(--tss-gold)] mt-2 font-medium" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -127,11 +127,11 @@ export default async function DashboardLayout({
         <div className="h-[2px] bg-[var(--tss-cyan)] w-full" />
         <div className="px-4 py-3 flex items-center justify-between">
           <Image
-            src="/tss-logo-white-h.png"
+            src="/tss-logo-white.png"
             alt="The Surf Sequence"
-            width={120}
-            height={34}
-            className="opacity-90"
+            width={132}
+            height={66}
+            className="opacity-95"
             priority
           />
           <div className="flex items-center gap-3">

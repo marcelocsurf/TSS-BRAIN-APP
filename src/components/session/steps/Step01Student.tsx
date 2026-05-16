@@ -118,7 +118,7 @@ export function Step01Student({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         autoFocus
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+        className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
 
       {students.length >= 20 && search.length === 0 && !loadedStudent && (
@@ -140,7 +140,7 @@ export function Step01Student({
               disabled={isPending}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                 isSelected
-                  ? 'border-[#D4A843] bg-amber-50'
+                  ? 'border-[#5AC3E7] bg-amber-50'
                   : 'border-gray-100 hover:border-gray-200'
               } ${isPending ? 'opacity-50' : ''}`}
             >
@@ -165,7 +165,7 @@ export function Step01Student({
                 <p className="text-xs text-gray-400">{belt?.en || s.belt_level}</p>
               </div>
               {isSelected && (
-                <span className="ml-auto text-[#D4A843] text-lg">&#10003;</span>
+                <span className="ml-auto text-[#5AC3E7] text-lg">&#10003;</span>
               )}
             </button>
           );

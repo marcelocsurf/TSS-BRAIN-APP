@@ -41,7 +41,7 @@ export function Step17CoachFeedback({ formState, options, onSelectQuick, onChang
         onChange={(e) => onChangeText(e.target.value)}
         placeholder="Detailed feedback (optional)..."
         rows={3}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
     </div>
   );

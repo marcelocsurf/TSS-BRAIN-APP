@@ -23,12 +23,12 @@ export function Step04SessionType({ formState, options, onSelect }: Props) {
               onClick={() => onSelect(opt.value)}
               className={`w-full p-3 rounded-xl border text-left text-sm font-medium transition-all ${
                 isSelected
-                  ? 'border-[#D4A843] bg-amber-50 text-gray-800'
+                  ? 'border-[#5AC3E7] bg-amber-50 text-gray-800'
                   : 'border-gray-100 text-gray-600 hover:border-gray-200'
               }`}
             >
               {opt.label || opt.value}
-              {isSelected && <span className="float-right text-[#D4A843]">&#10003;</span>}
+              {isSelected && <span className="float-right text-[#5AC3E7]">&#10003;</span>}
             </button>
           );
         })}

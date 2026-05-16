@@ -1,30 +1,35 @@
 @import "tailwindcss";
 
-/* ── TSS Brand Design Tokens (Canon v5.0) ── */
+/* ── TSS Brand Design Tokens — Brand Manual v4.2 §3 ── */
 :root {
   /* Core palette */
-  --tss-navy: #0A1628;
-  --tss-navy-light: #0D2D5E;
-  --tss-gold: #D4A843;
-  --tss-cyan: #5AC3E7;
+  --tss-navy: #0A1628;            /* Ocean Navy — fondo primario / autoridad */
+  --tss-navy-light: #0D2D5E;      /* Brand Blue — secundario / estructura */
+  --tss-cyan: #5AC3E7;            /* Signature Cyan — acento / identidad */
+  --tss-cyan-light: #C2EBF8;      /* Cyan Light — highlights / hover */
+  --tss-grey-structural: #4E4D4D; /* Structural Grey — texto neutral / wordmark */
+  /* --tss-gold: alias del acento oficial (Signature Cyan). El dorado NO es
+     un color de marca TSS — se mantiene el nombre por compatibilidad. */
+  --tss-gold: #5AC3E7;
   --tss-white: #FFFFFF;
 
-  /* Grays */
-  --tss-gray-50: #F2F4F7;
+  /* Grays — manual: Light Grey / Mid Grey / Text Soft */
+  --tss-gray-50: #F2F4F7;         /* Light Grey */
   --tss-gray-100: #E8ECF1;
   --tss-gray-200: #D5DAE3;
-  --tss-gray-300: #C8D0DC;
-  --tss-gray-500: #8A95A8;
+  --tss-gray-300: #C8D0DC;        /* Mid Grey */
+  --tss-gray-500: #8A95A8;        /* Text Soft */
   --tss-gray-700: #4A5568;
   --tss-gray-900: #1A202C;
 
-  /* Semantic */
-  --tss-danger: #FF6B6B;
-  --tss-success: #4ECDC4;
-  --tss-warm: #FF8A65;
+  /* Semantic — manual §3 "Colores pop" (SOLO feedback de UI) */
+  --tss-danger: #FF6B6B;          /* Coral — alertas / errores */
+  --tss-warm: #FF8C42;            /* Sunset — warnings */
+  --tss-success: #06D6A0;         /* Foam — confirmación */
+  --tss-golden: #FFD166;          /* Golden — éxito / logros */
   --tss-red: #FF6B6B;
-  --tss-green: #4ECDC4;
-  --tss-amber: #D4A843;
+  --tss-green: #06D6A0;
+  --tss-amber: #FFD166;
 
   /* Role accents */
   --tss-coach-purple: #B388FF;
@@ -38,10 +43,19 @@
   --belt-brown: #7D4E27;
   --belt-black: #111111;
 
-  /* Typography */
+  /* Typography — Brand Manual v4.2 §4 */
   --font-heading: 'Playfair Display', Georgia, serif;
   --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'DM Mono', 'SF Mono', 'Fira Code', monospace;
+  --font-tagline: 'Lora', Georgia, serif; /* EXCLUSIVO para el tagline */
+}
+
+/* Tagline — manual §4: siempre Lora Italic, sentence case.
+   Cyan sobre fondo oscuro, Navy sobre fondo claro. */
+.tss-tagline {
+  font-family: var(--font-tagline);
+  font-style: italic;
+  letter-spacing: 0.01em;
 }
 
 /* ── Base styles ── */

@@ -50,7 +50,7 @@ export function Step06PilarPart({ formState, pilarParts, onSelect }: Props) {
         placeholder="Search parts..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843]"
+        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#5AC3E7]"
       />
 
       {/* Search results */}
@@ -114,12 +114,12 @@ function PartButton({
       onClick={() => onSelect(part.id, part.pilar_id)}
       className={`w-full p-2.5 rounded-lg border text-left text-sm transition-all ${
         isSelected
-          ? 'border-[#D4A843] bg-amber-50 font-medium'
+          ? 'border-[#5AC3E7] bg-amber-50 font-medium'
           : 'border-gray-50 hover:border-gray-200'
       }`}
     >
       {part.name}
-      {isSelected && <span className="float-right text-[#D4A843]">&#10003;</span>}
+      {isSelected && <span className="float-right text-[#5AC3E7]">&#10003;</span>}
     </button>
   );
 }

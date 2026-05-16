@@ -51,7 +51,7 @@ export function Step03Ocean({ formState, options, onSelect, onForceVenueSwitch }
               disabled={isPending}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                 isSelected
-                  ? 'border-[#D4A843] bg-amber-50'
+                  ? 'border-[#5AC3E7] bg-amber-50'
                   : 'border-gray-100 hover:border-gray-200'
               } ${isPending ? 'opacity-50' : ''}`}
             >
@@ -59,7 +59,7 @@ export function Step03Ocean({ formState, options, onSelect, onForceVenueSwitch }
                 {opt.label || opt.value}
               </span>
               {isSelected && (
-                <span className="ml-auto text-[#D4A843] text-lg">&#10003;</span>
+                <span className="ml-auto text-[#5AC3E7] text-lg">&#10003;</span>
               )}
             </button>
           );

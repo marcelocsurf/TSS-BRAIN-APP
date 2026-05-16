@@ -18,7 +18,7 @@ export function Step13Repetitions({ formState, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange(Math.max(0, value - 1))}
-          className="w-14 h-14 rounded-full border-2 border-gray-200 text-2xl text-gray-600 hover:border-[#D4A843] transition-colors"
+          className="w-14 h-14 rounded-full border-2 border-gray-200 text-2xl text-gray-600 hover:border-[#5AC3E7] transition-colors"
         >
           &minus;
         </button>
@@ -28,7 +28,7 @@ export function Step13Repetitions({ formState, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange(value + 1)}
-          className="w-14 h-14 rounded-full border-2 border-gray-200 text-2xl text-gray-600 hover:border-[#D4A843] transition-colors"
+          className="w-14 h-14 rounded-full border-2 border-gray-200 text-2xl text-gray-600 hover:border-[#5AC3E7] transition-colors"
         >
           +
         </button>

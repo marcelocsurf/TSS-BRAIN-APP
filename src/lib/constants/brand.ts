@@ -7,9 +7,13 @@ export const BRAND = {
   tagline: 'Evolve through play',
   appName: 'TSS Brain',
 
+  // TSS Brand Manual v4.2 §3 — paleta primaria
   colors: {
-    navy: '#1A1A2E',
-    gold: '#D4A843',
+    navy: '#0A1628',      // Ocean Navy
+    brandBlue: '#0D2D5E', // Brand Blue
+    cyan: '#5AC3E7',      // Signature Cyan — acento de identidad
+    grey: '#4E4D4D',      // Structural Grey
+    gold: '#5AC3E7',      // alias del acento oficial (Signature Cyan)
     white: '#FFFFFF',
   },
 

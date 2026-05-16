@@ -30,7 +30,7 @@ export function Step08Drill({ formState, drills, onSelect }: Props) {
         placeholder="Search drills..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#D4A843]"
+        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#5AC3E7]"
       />
 
       <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -43,7 +43,7 @@ export function Step08Drill({ formState, drills, onSelect }: Props) {
               onClick={() => onSelect(drill.id)}
               className={`w-full p-3 rounded-xl border text-left transition-all ${
                 isSelected
-                  ? 'border-[#D4A843] bg-amber-50'
+                  ? 'border-[#5AC3E7] bg-amber-50'
                   : 'border-gray-100 hover:border-gray-200'
               }`}
             >
@@ -52,7 +52,7 @@ export function Step08Drill({ formState, drills, onSelect }: Props) {
                 <p className="text-xs text-gray-500 mt-0.5">{drill.goal}</p>
               )}
               {drill.key_cue && (
-                <p className="text-xs text-[#D4A843] mt-0.5">Cue: {drill.key_cue}</p>
+                <p className="text-xs text-[#5AC3E7] mt-0.5">Cue: {drill.key_cue}</p>
               )}
             </button>
           );

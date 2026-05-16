@@ -104,7 +104,7 @@ export default function SetPasswordPage() {
           </form>
         )}
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="tss-tagline text-center text-sm text-[var(--tss-navy)] mt-6">
           Evolve through play
         </p>
       </div>

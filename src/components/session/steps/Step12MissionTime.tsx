@@ -22,7 +22,7 @@ export function Step12MissionTime({ formState, options, onSelect }: Props) {
               onClick={() => onSelect(opt.value)}
               className={`py-3 rounded-xl border text-center text-sm font-medium transition-all ${
                 isSelected
-                  ? 'border-[#D4A843] bg-amber-50 text-gray-800'
+                  ? 'border-[#5AC3E7] bg-amber-50 text-gray-800'
                   : 'border-gray-100 text-gray-600 hover:border-gray-200'
               }`}
             >

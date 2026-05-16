@@ -55,9 +55,9 @@ export function Step07Mission({ formState, missionTypes, selectedPilarPartName, 
         <button
           type="button"
           onClick={() => onChange(suggestion)}
-          className="w-full p-3 rounded-xl border border-dashed border-[#D4A843] bg-amber-50/50 text-left text-sm text-gray-700 hover:bg-amber-50 transition-colors"
+          className="w-full p-3 rounded-xl border border-dashed border-[#5AC3E7] bg-amber-50/50 text-left text-sm text-gray-700 hover:bg-amber-50 transition-colors"
         >
-          <span className="text-xs font-semibold text-[#D4A843] block mb-0.5">Suggested Mission</span>
+          <span className="text-xs font-semibold text-[#5AC3E7] block mb-0.5">Suggested Mission</span>
           {suggestion}
         </button>
       )}
@@ -67,7 +67,7 @@ export function Step07Mission({ formState, missionTypes, selectedPilarPartName, 
         onChange={(e) => onChange(e.target.value)}
         placeholder="E.g., Improve pop-up timing on green waves..."
         rows={3}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#D4A843] focus:ring-1 focus:ring-[#D4A843]"
+        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
 
       {/* Reference: last session context */}

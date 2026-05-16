@@ -23,7 +23,7 @@ export function Step15Focus({ formState, onSelect }: Props) {
               onClick={() => onSelect(n)}
               className={`w-14 h-14 rounded-full text-lg font-bold transition-all ${
                 isSelected
-                  ? 'bg-[#D4A843] text-white scale-110'
+                  ? 'bg-[#5AC3E7] text-white scale-110'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
