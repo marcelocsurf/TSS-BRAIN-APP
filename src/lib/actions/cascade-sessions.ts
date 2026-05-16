@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { isBeltInRange } from '@/lib/constants/cascade';
 import { getCurrentAcademyId } from '@/lib/actions/auth';
@@ -444,7 +445,9 @@ export async function createCascadeSession(
         portal_token: student?.portal_token || null,
       };
 
-    const { data: resultRow, error: resultError } = await supabase
+    // Use admin client — hard RLS (00036) would otherwise block the write.
+    const admin = createAdminClient();
+    const { data: resultRow, error: resultError } = await admin
       .from('student_session_results')
       .insert(insertPayload)
       .select()
@@ -452,6 +455,27 @@ export async function createCascadeSession(
 
     if (resultError) {
       console.error('student_session_results insert FAILED:', resultError.message);
+    }
+
+    // Update the student's profile snapshot so the coach-side "Last
+    // Session" card and bitácora reflect this session immediately.
+    if (resultRow) {
+      try {
+        const { error: profErr } = await admin
+          .from('students')
+          .update({
+            last_session_id: resultRow.id,
+            last_session_date: formState.session_date || new Date().toISOString(),
+            last_session_mission: formState.mission || 'Cascade Session',
+            last_session_status: formState.status || null,
+            last_homework: homeworkText || null,
+            next_recommended_focus: whatsNextText || null,
+          })
+          .eq('id', formState.student_id!);
+        if (profErr) console.error('[cascade close] profile update failed', profErr);
+      } catch (e) {
+        console.error('[cascade close] profile update threw', e);
+      }
     }
 
     // Send email notification (even if result row failed)
@@ -484,7 +508,7 @@ export async function createCascadeSession(
 
         console.log('Email flow: sendSessionEmail result =', emailResult.success, emailResult.error || '');
         if (emailResult.success && resultRow) {
-          await supabase.from('student_session_results').update({
+          await admin.from('student_session_results').update({
             email_sent: true,
             email_sent_at: new Date().toISOString(),
           }).eq('id', resultRow.id);
@@ -504,6 +528,8 @@ export async function createCascadeSession(
   // Revalidate affected pages
   revalidatePath('/sessions');
   revalidatePath(`/students/${formState.student_id}`);
+  revalidatePath(`/students/${formState.student_id}/history`);
+  revalidatePath('/students');
 
   return { success: true, sessionId };
 }
