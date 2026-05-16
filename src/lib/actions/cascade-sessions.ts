@@ -678,7 +678,6 @@ export async function getDraftCount(): Promise<number> {
  * Sets status → 'cancelled'. Only the coach who created it or an admin can do this.
  */
 export async function archiveCascadeSession(sessionId: string): Promise<void> {
-  'use server';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
