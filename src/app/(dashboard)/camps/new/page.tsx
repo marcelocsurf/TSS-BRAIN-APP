@@ -83,17 +83,22 @@ export default function NewCampPage() {
       );
       return;
     }
+    if (!form.end_date) {
+      setError('Please select an end date.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const instance = await createCampInstance({
         ...form,
-        coach_id: coach.id,
-        head_coach_id: form.head_coach_id || coach.id,
+        coach_id: coach?.id || '',
+        head_coach_id: form.head_coach_id || coach?.id || '',
       });
+      if (!instance?.id) throw new Error('Service created but no ID returned. Please refresh /camps.');
       router.push(`/camps/${instance.id}`);
     } catch (err: any) {
-      setError(err.message || 'Failed to create camp');
+      setError(err.message || 'Failed to create service — check all fields and try again.');
       setLoading(false);
     }
   };
@@ -206,8 +211,8 @@ export default function NewCampPage() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">End</label>
-              <input type="date" value={form.end_date}
+              <label className="block text-xs text-gray-500 mb-1">End *</label>
+              <input type="date" value={form.end_date} required
                 onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
             </div>
