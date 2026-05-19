@@ -243,7 +243,7 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
       </div>
 
       {/* Section content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 min-h-[300px]">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-6 min-h-[300px]">
         {activeSection === 'video' && (
           <VideoSection
             lesson={lesson}

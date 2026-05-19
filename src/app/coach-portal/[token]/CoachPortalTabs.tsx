@@ -9,15 +9,35 @@ import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-plan
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
+import {
+  Home,
+  BookOpen,
+  Wrench,
+  ClipboardList,
+  Star,
+  Trophy,
+  BarChart2,
+  Clock,
+  RotateCcw,
+  CheckCircle2,
+  Waves,
+  Dumbbell,
+  Check,
+  ChevronDown,
+  ArrowRight,
+  Lock,
+} from 'lucide-react';
+
+type TabIconComponent = typeof Home;
 
 type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating';
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'home', label: 'Home', icon: '🏠' },
-  { key: 'courses', label: 'Courses', icon: '🎓' },
-  { key: 'tools', label: 'Tools', icon: '🛠' },
-  { key: 'plan', label: 'Plan', icon: '📋' },
-  { key: 'rating', label: 'Rating', icon: '⭐' },
+const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
+  { key: 'home', label: 'Home', Icon: Home },
+  { key: 'courses', label: 'Courses', Icon: BookOpen },
+  { key: 'tools', label: 'Tools', Icon: Wrench },
+  { key: 'plan', label: 'Plan', Icon: ClipboardList },
+  { key: 'rating', label: 'Rating', Icon: Star },
 ];
 
 export function CoachPortalTabs({
@@ -56,18 +76,25 @@ export function CoachPortalTabs({
       {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="max-w-lg mx-auto flex">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-medium transition-colors ${
-                activeTab === tab.key ? 'text-[var(--tss-navy)]' : 'text-gray-400'
-              }`}
-            >
-              <span className="text-base mb-0.5">{tab.icon}</span>
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 flex flex-col items-center py-2.5 text-[10px] font-medium transition-colors ${
+                  isActive ? 'text-[var(--tss-navy)]' : 'text-gray-400'
+                }`}
+              >
+                <tab.Icon
+                  size={20}
+                  strokeWidth={isActive ? 2 : 1.75}
+                  className={`mb-0.5 transition-colors ${isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-400'}`}
+                />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -132,7 +159,7 @@ function HomeTab({
 
       {upcoming.length > 0 && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1.5">
             Your next classes
           </p>
           <div className="space-y-1.5">
@@ -245,22 +272,22 @@ function CoursesTab({
 
         {loading && (
           <div className="text-center py-16">
-            <div className="animate-pulse text-4xl mb-2">📖</div>
+            <BookOpen size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-gray-500 text-sm">Loading lesson…</p>
           </div>
         )}
 
         {!loading && detail && (
           <>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[#0a1628] text-white rounded-xl px-5 py-5">
+              <p className="text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">
                 {detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
               </p>
-              <h2 className="text-base font-bold text-[var(--tss-navy)] mt-0.5">
+              <h2 className="text-xl font-bold leading-tight">
                 {detail.lesson.title}
               </h2>
               {detail.lesson.subtitle && (
-                <p className="text-[11px] text-gray-500 italic mt-1">{detail.lesson.subtitle}</p>
+                <p className="text-sm text-white/70 italic mt-1.5">{detail.lesson.subtitle}</p>
               )}
             </div>
 
@@ -285,16 +312,17 @@ function CoursesTab({
             {detail.lesson.coach_what_md ? (
               <StpPillarReader detail={detail} />
             ) : detail.lesson.description_md ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <div className="bg-white rounded-2xl border border-gray-100 px-5 py-6">
                 <MarkdownContent markdown={detail.lesson.description_md} />
               </div>
             ) : detail.lesson.lesson_type === 'test' ? null : (
-              <div className="bg-white rounded-2xl border border-gray-100 p-4 text-sm text-gray-500 italic">
+              <div className="bg-white rounded-2xl border border-gray-100 px-5 py-6 text-sm text-gray-500 italic">
                 No content for this lesson yet.
               </div>
             )}
 
             {/* Quiz (when lesson_type === 'test' with questions attached) */}
+            {/* Padding wrapper for markdown content */}
             {detail.lesson.lesson_type === 'test' && detail.quizzes.length > 0 ? (
               <CoachQuizSection
                 token={token}
@@ -325,7 +353,12 @@ function CoursesTab({
                 }`}
                 style={isCompleted ? {} : { background: BRAND.colors.navy }}
               >
-                {isCompleted ? '✓ Completed' : pending ? 'Saving…' : 'Mark as read'}
+                {isCompleted ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Check size={15} strokeWidth={1.75} />
+                    Completed
+                  </span>
+                ) : pending ? 'Saving…' : 'Mark as read'}
               </button>
             )}
           </>
@@ -371,7 +404,7 @@ function CoursesTab({
             <p className="text-[10px] font-mono text-gray-400">
               {c.id} · ~{c.estimated_minutes ?? '?'} min
               {isCompleted && ' · ✓ done'}
-              {isLocked && ` · 🔒 finish ${lockedBy} first`}
+              {isLocked && ` · locked — finish ${lockedBy} first`}
             </p>
             <p className="text-sm font-medium text-gray-800 mt-0.5">{c.title}</p>
           </div>
@@ -383,9 +416,9 @@ function CoursesTab({
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          🎓 Coach Courses
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
+          Coach Courses
         </p>
         <h2 className="text-base font-bold text-[var(--tss-navy)]">Your certification path</h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
@@ -399,7 +432,7 @@ function CoursesTab({
                 className="h-full transition-all"
                 style={{
                   width: `${(completedCount / courses.length) * 100}%`,
-                  background: BRAND.colors.gold,
+                  background: BRAND.colors.cyan,
                 }}
               />
             </div>
@@ -412,49 +445,49 @@ function CoursesTab({
 
       {courses.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-3xl mb-2">📚</p>
+          <BookOpen size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm text-gray-500">No coach courses published yet.</p>
         </div>
       ) : (
         <>
           <TierGroup
-            label="📘 Tier 1 — Foundations"
+            label="Tier 1 — Foundations"
             sub="The TSS method, architecture, and coaching framework."
             items={tierFoundations}
             render={renderCard}
           />
           <TierGroup
-            label="🌊 Tier 2 — Pre-Course + Onboarding"
+            label="Tier 2 — Pre-Course + Onboarding"
             sub="The gate before water + the 6 onboarding items."
             items={tierPreOnboard}
             render={renderCard}
           />
           <TierGroup
-            label="🎯 Tier 3 — The 25 Steps"
+            label="Tier 3 — The 25 Steps"
             sub="One lesson per STP. Tabs: What · Deliver · Errors · Validate · Drill · Mission."
             items={tierStps}
             render={renderCard}
           />
           <TierGroup
-            label="🛠 Tier 4 — Diagnostics + Evaluation"
+            label="Tier 4 — Diagnostics + Evaluation"
             sub="Error taxonomy + the Exit Test evaluation protocol."
             items={tierDiagnostics}
             render={renderCard}
           />
           <TierGroup
-            label="🎖 Exit Test — Component 1"
+            label="Exit Test — Component 1"
             sub="50-question theoretical exam. 80% to pass."
             items={exitTest}
             render={renderCard}
           />
           <TierGroup
-            label="🏅 Tier 5 — Career"
+            label="Tier 5 — Career"
             sub="The 5-level coach certification ladder + code of conduct."
             items={tierCareer}
             render={renderCard}
           />
           <TierGroup
-            label="📕 Master Manual — Canon Reference"
+            label="Master Manual — Canon Reference"
             sub="Single source of truth. 15 reference lessons (no prerequisites)."
             items={master}
             render={renderCard}
@@ -564,7 +597,10 @@ function CoachQuizSection({
               : 'bg-amber-50 border-2 border-amber-300'
           }`}
         >
-          <p className="text-4xl mb-1">{result.passed ? '🎉' : '📚'}</p>
+          {result.passed
+            ? <Trophy size={36} strokeWidth={1.75} className="mx-auto mb-1 text-emerald-700" />
+            : <BookOpen size={36} strokeWidth={1.75} className="mx-auto mb-1 text-amber-700" />
+          }
           <p className="text-2xl font-bold" style={{ color: result.passed ? '#047857' : '#92400E' }}>
             {result.score}%
           </p>
@@ -702,8 +738,8 @@ function ToolsTab({ drills, coach }: { drills: any[]; coach: any }) {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">🛠 Your Tools</p>
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Tools</p>
         <h2 className="text-base font-bold text-[var(--tss-navy)]">
           Drills + missions you can teach
         </h2>
@@ -714,15 +750,15 @@ function ToolsTab({ drills, coach }: { drills: any[]; coach: any }) {
       </div>
 
       {drillItems.length > 0 && (
-        <ToolGroup label="🔧 Drills" items={drillItems} accent="amber" />
+        <ToolGroup label="Drills" items={drillItems} accent="amber" />
       )}
       {missionItems.length > 0 && (
-        <ToolGroup label="🌊 Missions" items={missionItems} accent="blue" />
+        <ToolGroup label="Missions" items={missionItems} accent="blue" />
       )}
 
       {drills.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-3xl mb-2">🏄</p>
+          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm text-gray-500">No drills available at your level yet.</p>
         </div>
       )}
@@ -776,10 +812,14 @@ function ToolCard({ d, bg }: { d: any; bg: string }) {
         <div className="mt-2 pt-2 border-t border-gray-200/70 space-y-2">
           <div className="flex flex-wrap gap-3">
             {d.time_estimate && (
-              <p className="text-[11px] text-gray-600">⏱ {d.time_estimate}</p>
+              <p className="text-[11px] text-gray-600 flex items-center gap-1">
+                <Clock size={11} strokeWidth={1.75} /> {d.time_estimate}
+              </p>
             )}
             {d.reps_recommended && (
-              <p className="text-[11px] text-gray-600">🔁 {d.reps_recommended}</p>
+              <p className="text-[11px] text-gray-600 flex items-center gap-1">
+                <RotateCcw size={11} strokeWidth={1.75} /> {d.reps_recommended}
+              </p>
             )}
           </div>
           {d.description_md && (
@@ -800,7 +840,7 @@ function ToolCard({ d, bg }: { d: any; bg: string }) {
               <ul className="space-y-0.5">
                 {d.success_criteria.map((c: string, i: number) => (
                   <li key={i} className="text-[13px] text-gray-700 flex gap-1.5">
-                    <span className="text-emerald-500">✓</span>
+                    <CheckCircle2 size={13} strokeWidth={1.75} className="text-emerald-500 shrink-0 mt-0.5" />
                     <span>{c}</span>
                   </li>
                 ))}
@@ -893,9 +933,9 @@ function PlanTab({
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          📋 Plan the Session
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
+          Plan the Session
         </p>
         <h2 className="text-base font-bold text-[var(--tss-navy)]">
           Your assigned classes
@@ -970,7 +1010,7 @@ function PlanTab({
 
       {upcoming.length === 0 && past.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-3xl mb-2">🌊</p>
+          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm text-gray-500">No services assigned yet.</p>
           <p className="text-[11px] text-gray-400 mt-1">
             When the coordinator assigns you to a class, it&apos;ll show up here.
@@ -984,8 +1024,8 @@ function PlanTab({
 function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">📋 Services</p>
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Services</p>
         <h2 className="text-base font-bold text-[var(--tss-navy)]">All services you&apos;ve led</h2>
       </div>
 
@@ -1035,7 +1075,7 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
 
       {upcoming.length === 0 && past.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-3xl mb-2">🌊</p>
+          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm text-gray-500">No services yet.</p>
           <p className="text-[11px] text-gray-400 mt-1">When the coordinator assigns you, they appear here.</p>
         </div>
@@ -1047,13 +1087,14 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
 function RatingTab({ stats }: { stats: any }) {
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">⭐ Your rating</p>
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Rating</p>
         <h2 className="text-base font-bold text-[var(--tss-navy)]">From your students</h2>
       </div>
 
       {stats.ratingsCount > 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center">
+          <Star size={28} strokeWidth={1.75} className="mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]" />
           <p className="text-5xl font-bold text-[var(--tss-navy)]">{stats.avgRating}</p>
           <p className="text-xs text-gray-500 mt-1">out of 5 · across {stats.ratingsCount} surveys</p>
           <p className="text-[11px] text-gray-400 italic mt-3">
@@ -1062,7 +1103,7 @@ function RatingTab({ stats }: { stats: any }) {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-3xl mb-2">📊</p>
+          <BarChart2 size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm text-gray-500">No ratings yet.</p>
           <p className="text-[11px] text-gray-400 mt-1">
             Close sessions and have students fill the post-session survey to start building your rating.

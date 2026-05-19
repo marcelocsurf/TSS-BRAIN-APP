@@ -16,7 +16,7 @@ export function MarkdownContent({ markdown }: MarkdownContentProps) {
   const blocks = parseMarkdown(markdown);
 
   return (
-    <div className="markdown-content text-[14px] leading-relaxed text-gray-800">
+    <div className="markdown-content text-[15px] leading-[1.8] text-gray-700 max-w-[68ch]">
       {blocks.map((block, idx) => renderBlock(block, idx))}
     </div>
   );
@@ -177,7 +177,7 @@ function renderInline(text: string): React.ReactNode {
     if (boldMatch) {
       const [, before, content, after] = boldMatch;
       if (before) parts.push(<span key={key++}>{before}</span>);
-      parts.push(<strong key={key++} className="font-bold">{content}</strong>);
+      parts.push(<strong key={key++} className="font-bold text-[var(--tss-navy)]">{content}</strong>);
       remaining = after;
       continue;
     }
@@ -215,47 +215,62 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
   switch (block.type) {
     case 'h1':
       return (
-        <h1 key={idx} className="text-2xl font-bold mt-6 mb-3 text-[var(--tss-navy)]">
+        <h1
+          key={idx}
+          className="text-[22px] font-bold mt-8 mb-3 text-[var(--tss-navy)] leading-tight tracking-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
           {renderInline(block.content)}
         </h1>
       );
     case 'h2':
       return (
-        <h2 key={idx} className="text-xl font-bold mt-5 mb-2 text-[var(--tss-navy)]">
+        <h2
+          key={idx}
+          className="text-[18px] font-bold mt-7 mb-2.5 text-[var(--tss-navy)] leading-snug border-b border-gray-100 pb-1.5"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
           {renderInline(block.content)}
         </h2>
       );
     case 'h3':
       return (
-        <h3 key={idx} className="text-lg font-bold mt-4 mb-2 text-gray-800">
+        <h3
+          key={idx}
+          className="text-[15px] font-bold mt-5 mb-2 text-[var(--tss-navy)]"
+        >
           {renderInline(block.content)}
         </h3>
       );
     case 'h4':
       return (
-        <h4 key={idx} className="text-base font-bold mt-3 mb-1.5 text-gray-700">
+        <h4
+          key={idx}
+          className="text-[13px] font-semibold mt-4 mb-1.5 text-gray-600 uppercase tracking-wide"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
           {renderInline(block.content)}
         </h4>
       );
     case 'p':
       return (
-        <p key={idx} className="my-2 leading-relaxed">
+        <p key={idx} className="my-3 leading-[1.8] text-gray-700">
           {renderInline(block.content)}
         </p>
       );
     case 'ul':
       return (
-        <ul key={idx} className="list-disc pl-5 my-2 space-y-1">
+        <ul key={idx} className="list-disc pl-5 my-3 space-y-1.5 text-gray-700">
           {block.items.map((it, j) => (
-            <li key={j}>{renderInline(it)}</li>
+            <li key={j} className="leading-[1.7]">{renderInline(it)}</li>
           ))}
         </ul>
       );
     case 'ol':
       return (
-        <ol key={idx} className="list-decimal pl-5 my-2 space-y-1">
+        <ol key={idx} className="list-decimal pl-5 my-3 space-y-1.5 text-gray-700">
           {block.items.map((it, j) => (
-            <li key={j}>{renderInline(it)}</li>
+            <li key={j} className="leading-[1.7]">{renderInline(it)}</li>
           ))}
         </ol>
       );
@@ -263,7 +278,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       return (
         <blockquote
           key={idx}
-          className="border-l-4 border-[var(--tss-gold,#d4a017)] pl-4 my-3 italic text-gray-700"
+          className="border-l-4 border-[var(--tss-cyan,#5AC3E7)] bg-[var(--tss-cyan,#5AC3E7)]/5 pl-4 pr-3 py-2 my-4 italic text-gray-600 rounded-r-lg"
         >
           {renderInline(block.content)}
         </blockquote>

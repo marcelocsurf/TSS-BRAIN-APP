@@ -58,6 +58,7 @@ export async function createCampInstance(input: {
   end_date: string;
   modality: 'individual' | 'group';
   student_ids: string[];
+  scheduled_time?: string; // "09:00 - 10:30" for lessons, "08:00" for camps
 }) {
   const supabase = await createClient();
 
@@ -124,6 +125,7 @@ export async function createCampInstance(input: {
       modality: input.modality,
       status: 'planned',
       academy_id: academyId,
+      ...(input.scheduled_time ? { scheduled_time: input.scheduled_time } : {}),
     })
     .select()
     .single();

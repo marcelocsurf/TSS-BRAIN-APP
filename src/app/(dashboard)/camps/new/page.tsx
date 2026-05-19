@@ -26,6 +26,10 @@ export default function NewCampPage() {
     end_date: '',
     modality: 'group' as 'individual' | 'group',
     student_ids: [] as string[],
+    // Time fields
+    start_time: '',
+    end_time: '',
+    session_time: '', // for multi-day camps: single daily meeting time
     // Custom-template overrides (only used when selected template is_custom)
     capacity_override: 4,
     duration_override: 1,
@@ -71,6 +75,34 @@ export default function NewCampPage() {
     ? form.capacity_override
     : selectedTemplate?.capacity_max ?? Infinity;
 
+  // Service type helpers
+  const isLesson = selectedTemplate?.service_kind === 'surf_lesson';
+  const isCamp = selectedTemplate?.service_kind === 'surf_camp';
+  const effectiveDuration = selectedTemplate?.is_custom
+    ? form.duration_override
+    : selectedTemplate?.duration_days ?? 1;
+
+  // Auto-derived end date
+  const derivedEndDate = (() => {
+    if (!form.start_date) return '';
+    if (isLesson) return form.start_date; // same day
+    if (isCamp) {
+      const d = new Date(form.start_date);
+      d.setDate(d.getDate() + effectiveDuration - 1);
+      return d.toISOString().slice(0, 10);
+    }
+    return form.end_date;
+  })();
+
+  // Formatted scheduled_time to store
+  const scheduledTime = (() => {
+    if (form.start_time) {
+      return form.end_time ? `${form.start_time} - ${form.end_time}` : form.start_time;
+    }
+    if (form.session_time) return form.session_time;
+    return undefined;
+  })();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.template_id || !form.camp_name || form.student_ids.length === 0) {
@@ -83,8 +115,8 @@ export default function NewCampPage() {
       );
       return;
     }
-    if (!form.end_date) {
-      setError('Please select an end date.');
+    if (!derivedEndDate) {
+      setError('Please select a start date.');
       return;
     }
     setLoading(true);
@@ -92,8 +124,10 @@ export default function NewCampPage() {
     try {
       const instance = await createCampInstance({
         ...form,
+        end_date: derivedEndDate,
         coach_id: coach?.id || '',
         head_coach_id: form.head_coach_id || coach?.id || '',
+        scheduled_time: scheduledTime,
       });
       if (!instance?.id) throw new Error('Service created but no ID returned. Please refresh /camps.');
       router.push(`/camps/${instance.id}`);
@@ -182,7 +216,7 @@ export default function NewCampPage() {
         {/* Details */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Details</h3>
-          <input type="text" placeholder="Camp name *" value={form.camp_name}
+          <input type="text" placeholder="Service name *" value={form.camp_name}
             onChange={e => setForm(f => ({ ...f, camp_name: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
 
@@ -203,20 +237,63 @@ export default function NewCampPage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* ── Dates: smart per service type ── */}
+          {isLesson ? (
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Start</label>
+              <label className="block text-xs text-gray-500 mb-1">Date</label>
               <input type="date" value={form.start_date}
                 onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <p className="text-[10px] text-gray-400 mt-1">Individual lesson — same-day service.</p>
+            </div>
+          ) : isCamp ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Start date</label>
+                <input type="date" value={form.start_date}
+                  onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">End date (auto)</label>
+                <div className="w-full px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm text-gray-500">
+                  {derivedEndDate || '—'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Start</label>
+                <input type="date" value={form.start_date}
+                  onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">End</label>
+                <input type="date" value={form.end_date}
+                  onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+            </div>
+          )}
+
+          {/* ── Time — always shown for all service types ── */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Start time</label>
+              <input type="time" value={form.start_time}
+                onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">End *</label>
-              <input type="date" value={form.end_date} required
-                onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
+              <label className="block text-xs text-gray-500 mb-1">End time</label>
+              <input type="time" value={form.end_time}
+                onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
             </div>
           </div>
+
           <div className="flex gap-2">
             {(['group', 'individual'] as const).map(m => (
               <button key={m} type="button" onClick={() => setForm(f => ({ ...f, modality: m }))}
