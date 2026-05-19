@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { submitSurvey } from '@/lib/actions/survey';
 import { BRAND } from '@/lib/constants/brand';
+import { ThumbsUp, Lock } from 'lucide-react';
 
 interface Props {
   resultId: string;
@@ -65,7 +66,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
     return (
       <div className="space-y-3">
         <div className="bg-green-50 rounded-xl p-6 text-center">
-          <p className="text-2xl mb-2">🤙</p>
+          <ThumbsUp size={24} strokeWidth={1.75} className="mx-auto mb-2 text-green-600" />
           <p className="text-sm font-semibold text-green-700">Thanks for rating your coach!</p>
           <p className="text-xs text-green-600 mt-1">
             Your feedback is part of their official record.
@@ -76,7 +77,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
             className="rounded-xl p-5 text-center border-2"
             style={{ background: '#FEF3C7', borderColor: BRAND.colors.gold }}
           >
-            <p className="text-3xl mb-1">&#128275;</p>
+            <Lock size={28} strokeWidth={1.75} className="mx-auto mb-1 text-amber-700" />
             <p className="text-sm font-bold text-amber-900">
               You just unlocked your coach&apos;s profile
             </p>

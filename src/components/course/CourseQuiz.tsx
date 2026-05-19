@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { submitQuiz } from '@/lib/actions/course';
+import { Trophy, XCircle } from 'lucide-react';
 
 interface QuizQuestion {
   id: string;
@@ -63,7 +64,7 @@ export function CourseQuiz({
   if (isCompleted && !result && !showRetake) {
     return (
       <div className="text-center py-8">
-        <div className="text-5xl mb-3">🎉</div>
+        <Trophy size={48} strokeWidth={1.75} className="mx-auto mb-3 text-[var(--tss-cyan,#5AC3E7)]" />
         <h3 className="font-bold text-lg mb-2">Quiz Passed</h3>
         <p className="text-sm text-gray-600 mb-1">
           You scored <strong>{existingScore}%</strong> on this quiz.
@@ -85,8 +86,12 @@ export function CourseQuiz({
   if (result) {
     return (
       <div className="text-center py-6">
-        <div className={`text-5xl mb-3 ${result.passed ? '' : 'opacity-50'}`}>
-          {result.passed ? '🎉' : '🙁'}
+        <div className="mb-3 flex justify-center">
+          {result.passed ? (
+            <Trophy size={48} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+          ) : (
+            <XCircle size={48} strokeWidth={1.75} className="text-red-500" />
+          )}
         </div>
         <h3 className="font-bold text-lg mb-2">
           {result.passed ? 'Passed!' : 'Not yet'}

@@ -9,6 +9,24 @@ import {
 } from '@/lib/actions/course';
 import { CourseQuiz } from './CourseQuiz';
 import { MarkdownContent } from './MarkdownContent';
+import {
+  BookOpen,
+  PlayCircle,
+  Brain,
+  Dumbbell,
+  Waves,
+  AlertTriangle,
+  ClipboardList,
+  Hourglass,
+  Clock,
+  Check,
+  Video,
+  Play,
+  Footprints,
+  CheckCircle2,
+} from 'lucide-react';
+
+type IconType = typeof BookOpen;
 
 interface LessonViewerProps {
   lessonId: string;
@@ -49,7 +67,11 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
   if (loading) {
     return (
       <div className="text-center py-20">
-        <div className="animate-pulse text-4xl mb-2">📖</div>
+        <BookOpen
+          size={36}
+          strokeWidth={1.75}
+          className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]"
+        />
         <p className="text-gray-500 text-sm">Loading lesson...</p>
       </div>
     );
@@ -91,7 +113,7 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
 
         <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-6">
           <div className="flex items-start gap-3 mb-3">
-            <span className="text-3xl">⏳</span>
+            <Hourglass size={28} strokeWidth={1.75} className="text-amber-700 shrink-0 mt-0.5" />
             <div className="flex-1">
               <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">
                 {lesson.id} · Section {lesson.pc_section_id || '—'}
@@ -105,8 +127,9 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
           </div>
 
           <div className="bg-white/60 rounded-lg p-4 mt-4">
-            <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-2">
-              📝 Status
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-2">
+              <ClipboardList size={14} strokeWidth={1.75} />
+              Status
             </div>
             <p className="text-sm text-amber-900 font-semibold mb-2">
               Coming in v1.5
@@ -132,20 +155,20 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
   }
 
   // Build available sections based on lesson content
-  const availableSections: { key: Section; label: string; icon: string }[] = [];
+  const availableSections: { key: Section; label: string; icon: IconType }[] = [];
 
   if (lesson.lesson_type === 'form' || lesson.lesson_type === 'test') {
-    availableSections.push({ key: 'form', label: 'Activity', icon: '📝' });
+    availableSections.push({ key: 'form', label: 'Activity', icon: ClipboardList });
   } else {
     // Always show Video tab — VideoSection itself handles the "coming soon" empty state
-    availableSections.push({ key: 'video', label: lessonVideos.length > 1 ? `Videos (${lessonVideos.length})` : 'Video', icon: '▶️' });
-    if (lesson.description_md) availableSections.push({ key: 'theory', label: 'Theory', icon: '📖' });
+    availableSections.push({ key: 'video', label: lessonVideos.length > 1 ? `Videos (${lessonVideos.length})` : 'Video', icon: PlayCircle });
+    if (lesson.description_md) availableSections.push({ key: 'theory', label: 'Theory', icon: BookOpen });
     // Drill: canonical drills_missions row preferred, fallback to lesson.drill_md
-    if (canonicalDrill || lesson.drill_md) availableSections.push({ key: 'drill', label: 'Drill', icon: '🏋️' });
+    if (canonicalDrill || lesson.drill_md) availableSections.push({ key: 'drill', label: 'Drill', icon: Dumbbell });
     // Mission: only when there's a canonical mission for this step
-    if (canonicalMission) availableSections.push({ key: 'mission', label: 'Mission', icon: '🌊' });
-    if (lesson.errors_md) availableSections.push({ key: 'errors', label: 'Errors', icon: '⚠️' });
-    if (quizzes && quizzes.length > 0) availableSections.push({ key: 'quiz', label: 'Quiz', icon: '🧠' });
+    if (canonicalMission) availableSections.push({ key: 'mission', label: 'Mission', icon: Waves });
+    if (lesson.errors_md) availableSections.push({ key: 'errors', label: 'Errors', icon: AlertTriangle });
+    if (quizzes && quizzes.length > 0) availableSections.push({ key: 'quiz', label: 'Quiz', icon: Brain });
   }
 
   const currentSectionIdx = availableSections.findIndex((s) => s.key === activeSection);
@@ -174,33 +197,49 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
             <p className="text-sm text-white/80 mt-1 italic">{lesson.subtitle}</p>
           )}
           {lesson.pillar && (
-            <p className="text-xs text-[var(--tss-gold,#d4a017)] mt-2">
+            <p className="text-xs text-[var(--tss-cyan,#5AC3E7)] mt-2">
               Pillar: {lesson.pillar}
             </p>
           )}
           <div className="flex items-center gap-3 mt-3 text-[11px] text-white/70">
-            <span>⏱ {lesson.estimated_minutes} min</span>
-            {progress?.completed && <span className="text-green-300">✓ Completed</span>}
+            <span className="flex items-center gap-1">
+              <Clock size={13} strokeWidth={1.75} />
+              {lesson.estimated_minutes} min
+            </span>
+            {progress?.completed && (
+              <span className="flex items-center gap-1 text-green-300">
+                <CheckCircle2 size={13} strokeWidth={1.75} />
+                Completed
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Section tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
-        {availableSections.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setActiveSection(s.key)}
-            className={`flex-1 px-3 py-2 text-xs font-medium rounded transition-all whitespace-nowrap ${
-              activeSection === s.key
-                ? 'bg-white shadow-sm text-[var(--tss-navy)]'
-                : 'text-gray-600'
-            }`}
-          >
-            <span className="mr-1">{s.icon}</span>
-            {s.label}
-          </button>
-        ))}
+        {availableSections.map((s) => {
+          const Icon = s.icon;
+          const isActive = activeSection === s.key;
+          return (
+            <button
+              key={s.key}
+              onClick={() => setActiveSection(s.key)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded transition-all whitespace-nowrap ${
+                isActive
+                  ? 'bg-white shadow-sm text-[var(--tss-navy)]'
+                  : 'text-gray-600'
+              }`}
+            >
+              <Icon
+                size={16}
+                strokeWidth={1.75}
+                className={isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-400'}
+              />
+              {s.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Section content */}
@@ -258,14 +297,19 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
       </div>
 
       {/* Next section button */}
-      {nextSection && (
-        <button
-          onClick={() => setActiveSection(nextSection.key)}
-          className="w-full bg-[var(--tss-navy)] text-white rounded-lg py-3 text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          Next: {nextSection.icon} {nextSection.label} →
-        </button>
-      )}
+      {nextSection && (() => {
+        const NextIcon = nextSection.icon;
+        return (
+          <button
+            onClick={() => setActiveSection(nextSection.key)}
+            className="w-full flex items-center justify-center gap-1.5 bg-[var(--tss-navy)] text-white rounded-lg py-3 text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Next:
+            <NextIcon size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            {nextSection.label} →
+          </button>
+        );
+      })()}
     </div>
   );
 }
@@ -298,7 +342,7 @@ function VideoSection({
   if (videos.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-5xl mb-3">📹</div>
+        <Video size={48} strokeWidth={1.75} className="mx-auto mb-3 text-gray-300" />
         <h3 className="font-bold text-base mb-2">Video Coming Soon</h3>
         <p className="text-sm text-gray-500 max-w-sm mx-auto">
           The video for this lesson is being filmed. In the meantime, you can review the theory, drill, and errors below.
@@ -350,7 +394,10 @@ function VideoSection({
       </div>
 
       {current.label && (
-        <p className="text-[11px] text-gray-500 italic mb-3">▶ {current.label}</p>
+        <p className="flex items-center gap-1 text-[11px] text-gray-500 italic mb-3">
+          <Play size={11} strokeWidth={1.75} />
+          {current.label}
+        </p>
       )}
 
       <button
@@ -362,7 +409,12 @@ function VideoSection({
             : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
         }`}
       >
-        {progress?.video_watched ? '✓ Marked as watched' : marking ? 'Saving...' : 'Mark as watched'}
+        {progress?.video_watched ? (
+          <span className="flex items-center justify-center gap-1.5">
+            <Check size={15} strokeWidth={1.75} />
+            Marked as watched
+          </span>
+        ) : marking ? 'Saving...' : 'Mark as watched'}
       </button>
     </div>
   );
@@ -419,7 +471,12 @@ function ContentSection({
                 : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
             }`}
           >
-            {alreadyRead ? '✓ Read' : marking ? 'Saving...' : 'Mark as read'}
+            {alreadyRead ? (
+          <span className="flex items-center justify-center gap-1.5">
+            <Check size={15} strokeWidth={1.75} />
+            Read
+          </span>
+        ) : marking ? 'Saving...' : 'Mark as read'}
           </button>
         </div>
       )}
@@ -530,7 +587,12 @@ function SetGoalForm({
               : 'bg-[var(--tss-navy)] text-white hover:opacity-90 disabled:opacity-50'
           }`}
         >
-          {isCompleted ? '✓ Goal saved' : saving ? 'Saving...' : 'Save my goal'}
+          {isCompleted ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <Check size={15} strokeWidth={1.75} />
+              Goal saved
+            </span>
+          ) : saving ? 'Saving...' : 'Save my goal'}
         </button>
       </div>
     </div>
@@ -583,7 +645,7 @@ function GoofyOrRegularForm({
                 : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
-            <div className="text-2xl mb-1">🦶</div>
+            <Footprints size={24} strokeWidth={1.75} className="mx-auto mb-1" />
             <div className="font-bold text-sm">Regular</div>
             <div className="text-[10px] mt-1 opacity-80">Left foot forward</div>
           </button>
@@ -597,7 +659,7 @@ function GoofyOrRegularForm({
                 : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
-            <div className="text-2xl mb-1">🦶</div>
+            <Footprints size={24} strokeWidth={1.75} className="mx-auto mb-1 -scale-x-100" />
             <div className="font-bold text-sm">Goofy</div>
             <div className="text-[10px] mt-1 opacity-80">Right foot forward</div>
           </button>
@@ -612,7 +674,12 @@ function GoofyOrRegularForm({
               : 'bg-[var(--tss-navy)] text-white hover:opacity-90 disabled:opacity-50'
           }`}
         >
-          {isCompleted ? `✓ Saved: ${existingStance}` : saving ? 'Saving...' : `Confirm: ${stance || '...'}`}
+          {isCompleted ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <Check size={15} strokeWidth={1.75} />
+              {`Saved: ${existingStance}`}
+            </span>
+          ) : saving ? 'Saving...' : `Confirm: ${stance || '...'}`}
         </button>
       </div>
     </div>
@@ -674,7 +741,10 @@ function DrillMissionVideos({
         )}
       </div>
       {current.label && videos.length === 1 && (
-        <p className="text-[11px] text-gray-500 italic mt-1.5">▶ {current.label}</p>
+        <p className="flex items-center gap-1 text-[11px] text-gray-500 italic mt-1.5">
+          <Play size={11} strokeWidth={1.75} />
+          {current.label}
+        </p>
       )}
     </div>
   );
@@ -732,9 +802,10 @@ function PracticeSection({ item }: { item: any }) {
 
       <a
         href={`?tab=sequence&drill=${item.id}`}
-        className="block w-full py-3 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold text-center hover:opacity-90"
+        className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold text-center hover:opacity-90"
       >
-        ▶️ {ctaLabel}
+        <PlayCircle size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+        {ctaLabel}
       </a>
     </div>
   );
