@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   createCampTemplate,
@@ -10,15 +10,14 @@ import {
   type TemplateBlockInput,
 } from '@/lib/actions/camps';
 import {
-  PILARS,
-  PILAR_LABELS,
-  type Pilar,
   TRAINING_VENUES,
   MISSION_TIME_OPTIONS,
   WARMUP_OPTIONS,
   SIMULATION_OPTIONS,
   MENTAL_HACK_OPTIONS,
 } from '@/lib/constants/brand';
+import { getTemplateCatalog, type TemplateCatalog } from '@/lib/actions/template-catalog';
+import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
 
 const LEVEL_OPTIONS = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'];
 const MODALITY_OPTIONS = ['individual', 'group'];
@@ -50,6 +49,11 @@ function emptyBlock(order: number): TemplateBlockInput {
     mental_hack: null,
     evaluation_focus: null,
     block_type: 'mission',
+    step_id: null,
+    drill_id: null,
+    drill_custom: null,
+    mission_id: null,
+    mission_custom: null,
   };
 }
 
@@ -89,6 +93,20 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
   );
 
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set([0]));
+
+  // M44 — sequence catalog (STPs + drills + missions) filtered to this
+  // template's level. Reloads when level changes so the picker only shows
+  // relevant items.
+  const [catalog, setCatalog] = useState<TemplateCatalog | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    getTemplateCatalog(levelName).then((c) => {
+      if (mounted) setCatalog(c);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [levelName]);
 
   const toggleDay = (idx: number) => {
     setExpandedDays((prev) => {
@@ -456,54 +474,28 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
                         )}
                       </div>
 
+                      {/* M44 — Sequence picker: STP → drill → mission, with custom fallback */}
+                      <div className="mb-3">
+                        {catalog ? (
+                          <StepDrillPicker
+                            value={{
+                              step_id: block.step_id ?? null,
+                              drill_id: block.drill_id ?? null,
+                              drill_custom: block.drill_custom ?? null,
+                              mission_id: block.mission_id ?? null,
+                              mission_custom: block.mission_custom ?? null,
+                            }}
+                            stps={catalog.stps}
+                            drills={catalog.drills}
+                            missions={catalog.missions}
+                            onChange={(patch) => updateBlock(dayIdx, blockIdx, patch)}
+                          />
+                        ) : (
+                          <p className="text-[11px] text-gray-400 italic">Loading sequence catalog…</p>
+                        )}
+                      </div>
+
                       <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Pilar</label>
-                          <select
-                            value={block.pilar || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { pilar: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                          >
-                            <option value="">Select pilar...</option>
-                            {PILARS.map((p) => (
-                              <option key={p} value={p}>{PILAR_LABELS[p]}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Pilar Part</label>
-                          <input
-                            type="text"
-                            value={block.pilar_part || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { pilar_part: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                            placeholder="e.g. Pop-up"
-                          />
-                        </div>
-
-                        <div className="col-span-2">
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Mission</label>
-                          <input
-                            type="text"
-                            value={block.mission || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { mission: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                            placeholder="Mission description..."
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Drill Name</label>
-                          <input
-                            type="text"
-                            value={block.drill_name || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { drill_name: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                            placeholder="e.g. Wave catch drill"
-                          />
-                        </div>
-
                         <div>
                           <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Mission Time</label>
                           <select

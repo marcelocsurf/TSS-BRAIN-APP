@@ -625,6 +625,12 @@ export interface TemplateBlockInput {
   mental_hack: string | null;
   evaluation_focus: string | null;
   block_type: string;
+  // M44 — sequence catalog links
+  step_id?: string | null;
+  drill_id?: string | null;
+  drill_custom?: string | null;
+  mission_id?: string | null;
+  mission_custom?: string | null;
 }
 
 export interface TemplateDayInput {
@@ -709,6 +715,11 @@ export async function createCampTemplate(input: CreateTemplateInput) {
         mental_hack: b.mental_hack,
         evaluation_focus: b.evaluation_focus,
         block_type: b.block_type,
+        step_id: b.step_id ?? null,
+        drill_id: b.drill_id ?? null,
+        drill_custom: b.drill_custom ?? null,
+        mission_id: b.mission_id ?? null,
+        mission_custom: b.mission_custom ?? null,
       }));
 
       const { error: blkErr } = await supabase
@@ -799,6 +810,11 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
         mental_hack: b.mental_hack,
         evaluation_focus: b.evaluation_focus,
         block_type: b.block_type,
+        step_id: b.step_id ?? null,
+        drill_id: b.drill_id ?? null,
+        drill_custom: b.drill_custom ?? null,
+        mission_id: b.mission_id ?? null,
+        mission_custom: b.mission_custom ?? null,
       }));
 
       const { error: blkErr } = await supabase

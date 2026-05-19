@@ -58,6 +58,11 @@ export default async function EditCampTemplatePage({ params }: Props) {
               mental_hack: b.mental_hack,
               evaluation_focus: b.evaluation_focus,
               block_type: b.block_type || 'mission',
+              step_id: b.step_id ?? null,
+              drill_id: b.drill_id ?? null,
+              drill_custom: b.drill_custom ?? null,
+              mission_id: b.mission_id ?? null,
+              mission_custom: b.mission_custom ?? null,
             }))
           : [
               {
@@ -74,6 +79,11 @@ export default async function EditCampTemplatePage({ params }: Props) {
                 mental_hack: null,
                 evaluation_focus: null,
                 block_type: 'mission',
+                step_id: null,
+                drill_id: null,
+                drill_custom: null,
+                mission_id: null,
+                mission_custom: null,
               },
             ],
       };

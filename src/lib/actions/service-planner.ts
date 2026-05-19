@@ -44,6 +44,25 @@ export interface ServicePlanData {
   }>;
   // Canonical STP catalog (for picking sequence focus)
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
+  // M44 — template plan (the recipe the coordinator pre-built).
+  // Coach sees this as a reference and can apply blocks to all students
+  // with one tap so they don't replan from scratch.
+  templatePlan: Array<{
+    day_number: number;
+    day_goal: string | null;
+    blocks: Array<{
+      block_order: number;
+      step_id: string | null;
+      drill_id: string | null;
+      drill_custom: string | null;
+      mission_id: string | null;
+      mission_custom: string | null;
+      mental_hack: string | null;
+      warm_up: string | null;
+      evaluation_focus: string | null;
+      mission_time: string | null;
+    }>;
+  }>;
 }
 
 export interface StudentProfileSnapshot {
@@ -145,7 +164,7 @@ export async function getServicePlan(
   const { data: camp } = await admin
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, camp_templates:template_id(template_name, service_kind)'
+      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, camp_templates:template_id(template_name, service_kind)'
     )
     .eq('id', campInstanceId)
     .single();
@@ -358,6 +377,46 @@ export async function getServicePlan(
     .eq('active', true)
     .order('display_order');
 
+  // M44 — load the template plan if there is a template attached.
+  // Days come from camp_template_days, blocks from camp_template_blocks
+  // (joined via template_day_id). The UI shows them grouped per day.
+  let templatePlan: ServicePlanData['templatePlan'] = [];
+  if ((camp as any).template_id) {
+    const { data: tplDays } = await admin
+      .from('camp_template_days')
+      .select('id, day_number, day_goal')
+      .eq('template_id', (camp as any).template_id)
+      .order('day_number');
+    if (tplDays && tplDays.length > 0) {
+      const dayIds = tplDays.map((d: any) => d.id);
+      const { data: tplBlocks } = await admin
+        .from('camp_template_blocks')
+        .select(
+          'template_day_id, block_order, step_id, drill_id, drill_custom, mission_id, mission_custom, mental_hack, warm_up, evaluation_focus, mission_time'
+        )
+        .in('template_day_id', dayIds)
+        .order('block_order');
+      templatePlan = tplDays.map((d: any) => ({
+        day_number: d.day_number,
+        day_goal: d.day_goal,
+        blocks: (tplBlocks ?? [])
+          .filter((b: any) => b.template_day_id === d.id)
+          .map((b: any) => ({
+            block_order: b.block_order,
+            step_id: b.step_id ?? null,
+            drill_id: b.drill_id ?? null,
+            drill_custom: b.drill_custom ?? null,
+            mission_id: b.mission_id ?? null,
+            mission_custom: b.mission_custom ?? null,
+            mental_hack: b.mental_hack ?? null,
+            warm_up: b.warm_up ?? null,
+            evaluation_focus: b.evaluation_focus ?? null,
+            mission_time: b.mission_time ?? null,
+          })),
+      }));
+    }
+  }
+
   return {
     camp: {
       id: camp.id,
@@ -387,6 +446,7 @@ export async function getServicePlan(
     students,
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
+    templatePlan,
   };
 }
 

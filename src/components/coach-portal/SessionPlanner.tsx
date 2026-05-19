@@ -217,6 +217,28 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
       {/* ════════════ PLANNING MODE ════════════ */}
       {showPlanForm && (
         <>
+          {/* 0. TEMPLATE PLAN — the recipe the coordinator pre-built.
+              Coach sees it as a reference and can apply each block to all
+              students in one tap so they don't replan from scratch. */}
+          {data.templatePlan.length > 0 && (
+            <TemplatePlanPanel
+              templatePlan={data.templatePlan}
+              availableDrills={data.availableDrills}
+              stpCatalog={data.stpCatalog}
+              onApplyToAll={(block) => {
+                students.forEach((s) => {
+                  commitStudentBlock(s.student_id, {
+                    step_id: block.step_id,
+                    land_drill_id: block.drill_id,
+                    land_drill_custom: block.drill_id ? null : block.drill_custom,
+                    water_drill_id: block.mission_id,
+                    water_drill_custom: block.mission_id ? null : block.mission_custom,
+                  });
+                });
+              }}
+            />
+          )}
+
           {/* 1. VENUE ANALYSIS */}
           <Section emoji="🌊" title="1. Venue Analysis" subtitle="Read today's conditions before going in">
             <div className="space-y-2">
@@ -1278,6 +1300,149 @@ function StudentEvalCard({
         rows={2}
         disabled={isClosed}
       />
+    </div>
+  );
+}
+
+// ─── Template Plan reference panel (M44) ─────────────────────────
+//
+// Shows the day-by-day plan the coordinator built in the template, so
+// the coach can see the canonical recipe (STP + drill + mission +
+// mental hack) and apply it to all students at once with one tap.
+// Per-student overrides still happen in the per-student cards below.
+
+interface TemplatePlanBlock {
+  block_order: number;
+  step_id: string | null;
+  drill_id: string | null;
+  drill_custom: string | null;
+  mission_id: string | null;
+  mission_custom: string | null;
+  mental_hack: string | null;
+  warm_up: string | null;
+  evaluation_focus: string | null;
+  mission_time: string | null;
+}
+
+function TemplatePlanPanel({
+  templatePlan,
+  availableDrills,
+  stpCatalog,
+  onApplyToAll,
+}: {
+  templatePlan: ServicePlanData['templatePlan'];
+  availableDrills: ServicePlanData['availableDrills'];
+  stpCatalog: ServicePlanData['stpCatalog'];
+  onApplyToAll: (block: TemplatePlanBlock) => void;
+}) {
+  const [openDay, setOpenDay] = useState<number | null>(
+    templatePlan[0]?.day_number ?? null,
+  );
+
+  const drillName = (id: string | null) =>
+    id ? availableDrills.find((d) => d.id === id)?.title ?? id : null;
+  const stpName = (id: string | null) => {
+    if (!id) return null;
+    const stp = stpCatalog.find((s) => s.id === id);
+    return stp ? `${stp.id} — ${stp.title}` : id;
+  };
+
+  return (
+    <Section
+      emoji="🧭"
+      title="Template plan"
+      subtitle="The recipe your coordinator pre-built. Apply a block to all students with one tap, then tweak per student."
+    >
+      <div className="space-y-2">
+        {templatePlan.map((day) => {
+          const isOpen = openDay === day.day_number;
+          return (
+            <div key={day.day_number} className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenDay(isOpen ? null : day.day_number)}
+                className="w-full px-3 py-2 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-[var(--tss-navy)] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {day.day_number}
+                  </span>
+                  <span className="text-xs font-semibold text-[var(--tss-navy)] truncate">
+                    Day {day.day_number}
+                  </span>
+                  {day.day_goal && (
+                    <span className="text-[11px] text-gray-500 truncate">— {day.day_goal}</span>
+                  )}
+                </div>
+                <span className={`text-gray-400 text-xs transition ${isOpen ? 'rotate-180' : ''}`}>
+                  ▾
+                </span>
+              </button>
+
+              {isOpen && (
+                <div className="p-2 space-y-2">
+                  {day.blocks.length === 0 ? (
+                    <p className="text-[11px] text-gray-400 italic px-1">No blocks defined.</p>
+                  ) : (
+                    day.blocks.map((b) => {
+                      const stpLabel = stpName(b.step_id);
+                      const drillLabel = drillName(b.drill_id) || b.drill_custom;
+                      const missionLabel = drillName(b.mission_id) || b.mission_custom;
+                      const hasContent = stpLabel || drillLabel || missionLabel;
+                      return (
+                        <div
+                          key={b.block_order}
+                          className="rounded-lg border border-gray-200 bg-white p-2 space-y-1"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                              Block {b.block_order}
+                            </span>
+                            {hasContent && (
+                              <button
+                                type="button"
+                                onClick={() => onApplyToAll(b)}
+                                className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--tss-navy)] text-white font-semibold hover:brightness-110"
+                              >
+                                Apply to all students
+                              </button>
+                            )}
+                          </div>
+                          {stpLabel && <TplRow label="Step" value={stpLabel} />}
+                          {drillLabel && <TplRow label="Drill" value={drillLabel} />}
+                          {missionLabel && <TplRow label="Mission" value={missionLabel} />}
+                          {b.warm_up && <TplRow label="Warm-up" value={b.warm_up} />}
+                          {b.mental_hack && <TplRow label="Mental hack" value={b.mental_hack} />}
+                          {b.evaluation_focus && (
+                            <TplRow label="Eval focus" value={b.evaluation_focus} />
+                          )}
+                          {b.mission_time && (
+                            <TplRow label="Time" value={`${b.mission_time} min`} />
+                          )}
+                          {!hasContent && (
+                            <p className="text-[11px] text-gray-400 italic">
+                              Empty block — nothing pre-defined.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+function TplRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 text-[11px]">
+      <span className="text-gray-400 shrink-0 w-20">{label}</span>
+      <span className="text-gray-700 flex-1">{value}</span>
     </div>
   );
 }
