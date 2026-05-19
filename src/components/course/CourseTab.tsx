@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import { LessonViewer } from './LessonViewer';
+import {
+  BookOpen, Compass, Award, Trophy, Lock, Unlock, CheckCircle2,
+  PlayCircle, Hourglass, ScrollText, Brain, Waves, Handshake,
+  LifeBuoy, Dumbbell, Eye, DoorOpen, Anchor, Rocket, ArrowLeftRight,
+  type LucideIcon,
+} from 'lucide-react';
 
 interface LessonRow {
   id: string;
@@ -41,27 +47,26 @@ interface CourseData {
   hasAccess: boolean;
 }
 
-// Pre-Course section emoji map (per spec Section C)
-const PC_SECTION_EMOJI: Record<string, string> = {
-  '0.1': '📜', // TSS Doctrine
-  '0.2': '🧠', // Mindset and Learning
-  '0.3': '🌊', // D1 Ocean
-  '0.4': '🤝', // D2 Etiquette
-  '0.5': '🛟', // D3 Equipment
-  '0.6': '💪', // D4 Physical
-  '0.7': '👀', // Entry Block preview
-  '0.8': '🚪', // Readiness Gate
+// Pre-Course section icon map (per spec Section C)
+const PC_SECTION_ICON: Record<string, LucideIcon> = {
+  '0.1': ScrollText, // TSS Doctrine
+  '0.2': Brain,      // Mindset and Learning
+  '0.3': Waves,      // D1 Ocean
+  '0.4': Handshake,  // D2 Etiquette
+  '0.5': LifeBuoy,   // D3 Equipment
+  '0.6': Dumbbell,   // D4 Physical
+  '0.7': Eye,        // Entry Block preview
+  '0.8': DoorOpen,   // Readiness Gate
 };
 
-// White Belt sequence emoji map (canonical promise text comes from DB
-// wb_sequence_promise field per Migration 00020). Sequences are CUMULATIVE:
-// each builds on all previous (canon doctrine).
-const WB_SEQUENCE_EMOJI: Record<string, string> = {
-  'WB-SEQ-1': '🏖', // Board Control
-  'WB-SEQ-2': '🌊', // Sweet Spot
-  'WB-SEQ-3': '🚀', // Pop-Up
-  'WB-SEQ-4': '↔️', // Directional Turns
-  'WB-SEQ-5': '🏄', // Independence
+// White Belt sequence icon map. Sequences are CUMULATIVE: each builds on
+// all previous (canon doctrine).
+const WB_SEQUENCE_ICON: Record<string, LucideIcon> = {
+  'WB-SEQ-1': Anchor,         // Board Control
+  'WB-SEQ-2': Waves,          // Sweet Spot
+  'WB-SEQ-3': Rocket,         // Pop-Up
+  'WB-SEQ-4': ArrowLeftRight, // Directional Turns
+  'WB-SEQ-5': Award,          // Independence
 };
 
 // Cumulative steps mastered after completing each sequence (canon)
@@ -80,7 +85,7 @@ export function CourseTab({ data }: { data: CourseData }) {
   if (!data.hasAccess) {
     return (
       <div className="text-center py-16 px-6">
-        <div className="text-6xl mb-4">🔒</div>
+        <Lock className="mx-auto mb-4 text-[var(--tss-cyan)]" size={56} strokeWidth={1.5} />
         <h2 className="text-xl font-bold mb-2">Course Access Required</h2>
         <p className="text-gray-600 mb-6">
           The TSS White Belt Masterclass is a paid course. Reach out to your TSS coach to get access.
@@ -159,7 +164,8 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3">
           <div className="px-2">
             <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              📖 Pre-Course
+              <BookOpen size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+              Pre-Course
               <span className="text-[11px] font-normal text-gray-500">
                 · 8 sections · {preCourseLessons.length} units
               </span>
@@ -174,7 +180,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               key={section.id}
               title={section.name}
               subtitle={null}
-              emoji={PC_SECTION_EMOJI[section.id] || '📘'}
+              Icon={PC_SECTION_ICON[section.id] || BookOpen}
               badge={`Section ${section.id}`}
               lessons={section.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
@@ -188,7 +194,8 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <div className="px-2">
             <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              🧭 WB Onboarding
+              <Compass size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+              WB Onboarding
               <span className="text-[11px] font-normal text-gray-500">
                 · Module 1 · {onboardingLessons.length} items
               </span>
@@ -201,7 +208,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           <SectionBlock
             title="WB Onboarding"
             subtitle="Bridge between awareness (Pre-Course) and action (Sequences)"
-            emoji="🧭"
+            Icon={Compass}
             badge="Module 1"
             lessons={onboardingLessons.sort(
               (a, b) => (a.display_order || 0) - (b.display_order || 0)
@@ -216,7 +223,8 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <div className="px-2">
             <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              🤍 White Belt
+              <Award size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+              White Belt
               <span className="text-[11px] font-normal text-gray-500">
                 · 5 sequences · 25 steps · Value: Humildad
               </span>
@@ -227,7 +235,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           </div>
 
           {wbSequences.map((sequence) => {
-            const emoji = WB_SEQUENCE_EMOJI[sequence.id] || '📘';
+            const SeqIcon = WB_SEQUENCE_ICON[sequence.id] || BookOpen;
             const cumulative = WB_SEQUENCE_CUMULATIVE[sequence.id];
             const promise = sequence.lessons[0]?.wb_sequence_promise || '';
             return (
@@ -235,7 +243,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                 key={sequence.id}
                 title={`Sequence #${sequence.order}: ${sequence.name}`}
                 subtitle={promise}
-                emoji={emoji}
+                Icon={SeqIcon}
                 badge={cumulative ? `${cumulative}/25 cumulative` : null}
                 lessons={sequence.lessons}
                 onOpenLesson={(id) => setOpenLessonId(id)}
@@ -247,10 +255,10 @@ export function CourseTab({ data }: { data: CourseData }) {
 
       {/* Footer */}
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (
-        <div className="bg-gradient-to-r from-yellow-100 to-amber-100 border border-amber-300 rounded-xl p-5 text-center">
-          <div className="text-4xl mb-2">🏆</div>
-          <h3 className="font-bold text-lg text-amber-900 mb-1">White Belt Course Complete!</h3>
-          <p className="text-sm text-amber-800">
+        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 border border-cyan-300 rounded-xl p-5 text-center">
+          <Trophy className="mx-auto mb-2 text-[var(--tss-cyan)]" size={36} strokeWidth={1.75} />
+          <h3 className="font-bold text-lg text-[var(--tss-navy)] mb-1">White Belt Course Complete!</h3>
+          <p className="text-sm text-[var(--tss-navy)]/70">
             You finished the theoretical White Belt course. Talk to your TSS coach to schedule your in-person evaluation.
           </p>
         </div>
@@ -322,14 +330,14 @@ function groupByWbSequence(lessons: LessonRow[]) {
 function SectionBlock({
   title,
   subtitle,
-  emoji,
+  Icon,
   badge,
   lessons,
   onOpenLesson,
 }: {
   title: string;
   subtitle: string | null;
-  emoji: string;
+  Icon: LucideIcon;
   badge: string | null;
   lessons: LessonRow[];
   onOpenLesson: (id: string) => void;
@@ -347,7 +355,7 @@ function SectionBlock({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-sm flex items-center gap-2">
-              <span>{emoji}</span>
+              <Icon size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)] flex-shrink-0" />
               <span className="truncate">{title}</span>
               {badge && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-mono flex-shrink-0">
@@ -392,26 +400,26 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
       lesson.progress.content_read ||
       lesson.progress.quiz_attempts > 0);
 
-  let statusIcon = '🔓';
+  let StatusIcon: LucideIcon = Unlock;
   let statusText = 'Start';
   let statusColor = 'text-gray-500';
 
   if (isProposed) {
-    statusIcon = '⏳';
+    StatusIcon = Hourglass;
     statusText = 'v1.5';
     statusColor = 'text-amber-600';
   } else if (isLocked) {
-    statusIcon = '🔒';
+    StatusIcon = Lock;
     statusText = 'Locked';
     statusColor = 'text-gray-400';
   } else if (isCompleted) {
-    statusIcon = '✅';
+    StatusIcon = CheckCircle2;
     statusText = 'Completed';
     statusColor = 'text-green-600';
   } else if (isInProgress) {
-    statusIcon = '⏯';
+    StatusIcon = PlayCircle;
     statusText = 'Continue';
-    statusColor = 'text-amber-600';
+    statusColor = 'text-[var(--tss-cyan)]';
   }
 
   // Step number badge: PC-015 → 015, STP-001 → 001, PRWB-001 → R-1
@@ -489,7 +497,7 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
 
       {/* Status indicator */}
       <div className={`text-[10px] font-medium flex flex-col items-center gap-0.5 ${statusColor}`}>
-        <span className="text-base">{statusIcon}</span>
+        <StatusIcon size={18} strokeWidth={1.75} />
         <span>{statusText}</span>
       </div>
     </button>
