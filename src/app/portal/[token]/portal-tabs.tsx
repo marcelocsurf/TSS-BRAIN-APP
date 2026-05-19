@@ -301,17 +301,17 @@ export function PortalTabs({
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
       {/* Header — themed by academy */}
-      <div style={{ background: brand.primary }} className="px-4 py-5 text-center">
+      <div style={{ background: brand.primary }} className="px-4 py-6 text-center">
         {brand.logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={brand.logoUrl}
             alt={brand.name}
-            className="h-10 mx-auto mb-2 object-contain"
+            className="h-14 mx-auto mb-2 object-contain"
           />
         )}
-        <h1 className="text-lg font-bold text-white">{brand.name}</h1>
-        <p style={{ color: brand.accent }} className="text-[10px] mt-0.5 tracking-wide uppercase">
+        <h1 className="text-base font-semibold text-white/90">{brand.name}</h1>
+        <p style={{ color: brand.accent }} className="tss-tagline text-sm mt-0.5">
           {brand.tagline}
         </p>
       </div>
