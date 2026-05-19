@@ -11,7 +11,7 @@ import {
 // toward step mastery. Lives inside the unified "Let's Play" tab as an
 // alternative to the canonical drill picker.
 
-const DURATION_CHIPS = [10, 20, 30, 45, 60];
+const DURATION_CHIPS = [10, 20, 30, 45, 60, 90, 120];
 
 export function CustomSessionFlow({
   studentId,
