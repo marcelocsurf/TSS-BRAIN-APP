@@ -141,7 +141,7 @@ export default function NewCampPage() {
     <div className="max-w-lg mx-auto">
       <h2 className="text-xl font-bold text-[var(--tss-navy)] mb-6">Open a New Service</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Service Template */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Service</h3>
