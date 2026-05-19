@@ -18,6 +18,7 @@ import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
+import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import {
   createSelfTrainingSession,
@@ -502,6 +503,9 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
           </p>
         </div>
       </div>
+
+      {/* Belt journey — White Belt to Black Belt */}
+      <BeltJourney currentBelt={beltLevel} />
 
       {/* Training Tip of the Day */}
       <div
