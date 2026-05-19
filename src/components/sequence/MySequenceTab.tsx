@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getMySequence, type SequenceData, type SequenceItem } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
+import { Dumbbell, Waves, Target } from 'lucide-react';
 
 interface Props {
   studentId: string;
@@ -36,7 +37,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Pr
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="animate-pulse text-4xl mb-2">🎯</div>
+        <Target size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan)]" />
         <p className="text-gray-500 text-sm">Loading your sequence...</p>
       </div>
     );
@@ -69,7 +70,10 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Pr
       {/* Header */}
       <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5 shadow-lg">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold">🎯 My Sequence</h2>
+          <h2 className="inline-flex items-center gap-2 text-lg font-bold">
+            <Target size={18} strokeWidth={1.75} />
+            My Sequence
+          </h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 capitalize">
             {data.belt} Belt
           </span>
@@ -166,9 +170,7 @@ function BlockSection({
 function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
   const hasDrill = !!item.drill;
   const hasMission = !!item.mission;
-  const subtitleParts: string[] = [];
-  if (hasDrill) subtitleParts.push('🏖 Drill');
-  if (hasMission) subtitleParts.push('🌊 Mission');
+  const hasSubtitle = hasDrill || hasMission;
 
   return (
     <button
@@ -183,9 +185,20 @@ function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
           </div>
-          {subtitleParts.length > 0 && (
-            <div className="text-[11px] text-gray-500 mt-0.5 truncate">
-              {subtitleParts.join(' · ')}
+          {hasSubtitle && (
+            <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+              {hasDrill && (
+                <span className="inline-flex items-center gap-1">
+                  <Dumbbell size={12} strokeWidth={1.75} />
+                  Drill
+                </span>
+              )}
+              {hasMission && (
+                <span className="inline-flex items-center gap-1">
+                  <Waves size={12} strokeWidth={1.75} />
+                  Mission
+                </span>
+              )}
             </div>
           )}
         </div>

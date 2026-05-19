@@ -9,7 +9,6 @@ import { BELT_HIERARCHY, BELT_RANK } from '@/lib/constants/belts';
 import { WARMUP_OPTIONS, MENTAL_HACK_OPTIONS, SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
 import {
   MATERIAL_CATEGORY_LABELS,
-  MATERIAL_CATEGORY_ICONS,
   STUDENT_MATERIALS,
   type BeltMaterial,
 } from '@/lib/constants/student-materials';
@@ -24,6 +23,25 @@ import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
 } from '@/lib/actions/portal';
+import {
+  Home,
+  GraduationCap,
+  Play,
+  ClipboardList,
+  MessageCircle,
+  BookOpen,
+  User,
+  Dumbbell,
+  Waves,
+  Brain,
+  ShieldAlert,
+  CircleDot,
+  Calendar,
+  Lock,
+  Check,
+  CornerDownRight,
+  type LucideIcon,
+} from 'lucide-react';
 
 // ─── Types ───
 
@@ -232,14 +250,14 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
 
 type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'feedback' | 'glossary' | 'my-coach';
 
-const ALL_TABS: { key: Tab; label: string; icon: string; lockedUntilCoachUnlock?: boolean }[] = [
-  { key: 'home', label: 'Home', icon: '🏠' },
-  { key: 'course', label: 'Course', icon: '🎓' },
-  { key: 'sequence', label: "Let's Play", icon: '▶️' },
-  { key: 'sessions', label: 'Sessions', icon: '📋' },
-  { key: 'feedback', label: 'Feedback', icon: '💬' },
-  { key: 'glossary', label: 'Glossary', icon: '📖' },
-  { key: 'my-coach', label: 'My Coach', icon: '👤', lockedUntilCoachUnlock: true },
+const ALL_TABS: { key: Tab; label: string; icon: LucideIcon; lockedUntilCoachUnlock?: boolean }[] = [
+  { key: 'home', label: 'Home', icon: Home },
+  { key: 'course', label: 'Course', icon: GraduationCap },
+  { key: 'sequence', label: "Let's Play", icon: Play },
+  { key: 'sessions', label: 'Sessions', icon: ClipboardList },
+  { key: 'feedback', label: 'Feedback', icon: MessageCircle },
+  { key: 'glossary', label: 'Glossary', icon: BookOpen },
+  { key: 'my-coach', label: 'My Coach', icon: User, lockedUntilCoachUnlock: true },
 ];
 
 // ─── Main Portal Tabs Component ───
@@ -333,8 +351,9 @@ export function PortalTabs({
                 onClick={() => setShowCustomSession(true)}
                 className="w-full bg-gray-50 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-2xl p-4 text-left transition-colors"
               >
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-                  🏖 Custom Session
+                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                  <Waves size={14} strokeWidth={1.75} />
+                  Custom Session
                 </p>
                 <p className="text-sm font-semibold text-[var(--tss-navy)] mt-1">
                   Free surf, breathing, fun — anything off-script
@@ -371,7 +390,12 @@ export function PortalTabs({
                   : 'text-gray-400'
               }`}
             >
-              <span className="text-base mb-0.5">{tab.icon}</span>
+              <tab.icon
+                size={20}
+                strokeWidth={1.75}
+                className="mb-0.5"
+                color={activeTab === tab.key ? 'var(--tss-cyan)' : undefined}
+              />
               <span>{tab.label}</span>
               {tab.key === 'feedback' && data.pendingSurveys.length > 0 && (
                 <span className="absolute -top-0.5 right-1/4 w-2 h-2 bg-red-500 rounded-full" />
@@ -583,7 +607,11 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
             {recentDrills.map((drill, i) => (
               <div key={i} className="px-4 py-2.5 flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-xs shrink-0">{drill.source === 'coach' ? '👨‍🏫' : '🏄'}</span>
+                  <span className="shrink-0 text-gray-400">
+                    {drill.source === 'coach'
+                      ? <GraduationCap size={15} strokeWidth={1.75} />
+                      : <Waves size={15} strokeWidth={1.75} />}
+                  </span>
                   <p className="text-sm text-gray-700 truncate">{drill.name}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -923,10 +951,10 @@ function SessionsTab({ data }: { data: PortalData }) {
                       <DetailRow
                         label="Frustration"
                         value={
-                          session.frustration_rating === 0 ? '😎 No frustration' :
-                          session.frustration_rating === 1 ? '💪 Difficult but achievable' :
-                          session.frustration_rating === 2 ? '😤 Very difficult' :
-                          session.frustration_rating === 3 ? '🚫 Total frustration' :
+                          session.frustration_rating === 0 ? 'No frustration' :
+                          session.frustration_rating === 1 ? 'Difficult but achievable' :
+                          session.frustration_rating === 2 ? 'Very difficult' :
+                          session.frustration_rating === 3 ? 'Total frustration' :
                           `${session.frustration_rating}/3`
                         }
                       />
@@ -967,7 +995,7 @@ function SessionsTab({ data }: { data: PortalData }) {
                         className="mt-2 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-white"
                         style={{ background: BRAND.colors.navy }}
                       >
-                        <span>▶</span>
+                        <Play size={14} strokeWidth={1.75} />
                         <span>Watch Video</span>
                       </a>
                     )}
@@ -1006,13 +1034,22 @@ const BELT_TEXT_STYLES: Record<string, string> = {
 };
 
 // Category display config for improved grouping
-const CATEGORY_GROUP_CONFIG: { key: string; label: string; icon: string; isSafety?: boolean }[] = [
-  { key: 'theory', label: 'Theory & Sequences', icon: '📖' },
-  { key: 'drill', label: 'Drills', icon: '🏋️' },
-  { key: 'mission', label: 'Water Missions', icon: '🌊' },
-  { key: 'mental', label: 'Mental Tools', icon: '🧠' },
-  { key: 'safety', label: 'Safety', icon: '⚠️', isSafety: true },
+const CATEGORY_GROUP_CONFIG: { key: string; label: string; icon: LucideIcon; isSafety?: boolean }[] = [
+  { key: 'theory', label: 'Theory & Sequences', icon: BookOpen },
+  { key: 'drill', label: 'Drills', icon: Dumbbell },
+  { key: 'mission', label: 'Water Missions', icon: Waves },
+  { key: 'mental', label: 'Mental Tools', icon: Brain },
+  { key: 'safety', label: 'Safety', icon: ShieldAlert, isSafety: true },
 ];
+
+// Per-category icon for individual material cards (replaces shared emoji map).
+const MATERIAL_CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  theory: BookOpen,
+  drill: Dumbbell,
+  mission: Waves,
+  mental: Brain,
+  safety: ShieldAlert,
+};
 
 function MaterialsTab({
   data,
@@ -1117,7 +1154,12 @@ function MaterialsTab({
                       isSafety ? 'bg-amber-50 hover:bg-amber-100' : 'bg-gray-50 hover:bg-gray-100'
                     }`}
                   >
-                    <span className="text-sm">{catGroupIcon}</span>
+                    <span className={isSafety ? 'text-amber-700' : 'text-gray-500'}>
+                      {(() => {
+                        const CatIcon = catGroupIcon;
+                        return <CatIcon size={15} strokeWidth={1.75} />;
+                      })()}
+                    </span>
                     <span className={`text-xs font-semibold uppercase tracking-wider flex-1 text-left ${
                       isSafety ? 'text-amber-700' : 'text-gray-600'
                     }`}>
@@ -1165,7 +1207,7 @@ function MaterialsTab({
                     {mats.length} sections &middot; Locked
                   </p>
                 </div>
-                <span className="text-base">🔒</span>
+                <Lock size={16} strokeWidth={1.75} className="text-gray-400" />
               </div>
             </div>
 
@@ -1198,14 +1240,14 @@ function MaterialCard({
   onToggle: () => void;
 }) {
   const beltInfo = BELT_DISPLAY[material.beltLevel];
-  const catIcon = MATERIAL_CATEGORY_ICONS[material.category];
+  const CatIcon = MATERIAL_CATEGORY_ICON_MAP[material.category] ?? BookOpen;
 
   if (locked) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-3.5 opacity-50 cursor-not-allowed shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-base shrink-0">
-            🔒
+          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
+            <Lock size={18} strokeWidth={1.75} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-400">{material.title}</p>
@@ -1226,8 +1268,8 @@ function MaterialCard({
         className="w-full px-3.5 py-3 text-left"
       >
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-base shrink-0">
-            {catIcon}
+          <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 text-[var(--tss-navy)]">
+            <CatIcon size={18} strokeWidth={1.75} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -1560,8 +1602,8 @@ function FeedbackTab({
                   )}
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-2 text-green-600">
-                <span className="text-[10px]">✓</span>
+              <div className="flex items-center gap-1.5 mt-2 text-green-600">
+                <Check size={12} strokeWidth={2.25} />
                 <span className="text-[10px] font-medium">Submitted</span>
               </div>
             </div>
@@ -1621,7 +1663,7 @@ function MyCoachTab({ data }: { data: PortalData }) {
   if (!data.myCoach) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center shadow-sm">
-        <p className="text-2xl mb-2">👤</p>
+        <User size={28} strokeWidth={1.75} className="mx-auto mb-2 text-gray-300" />
         <p className="text-sm text-gray-500">
           No coach data yet. Once you have a closed session with a coach, their
           profile will show here.
@@ -1631,7 +1673,7 @@ function MyCoachTab({ data }: { data: PortalData }) {
   }
 
   const { coach, stats } = data.myCoach;
-  const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase() || '👤';
+  const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase() || '—';
   const hours = Math.round((stats.totalMinutes / 60) * 10) / 10;
 
   return (
@@ -1774,9 +1816,12 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
     >
       <div className="flex items-center justify-between mb-2">
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider"
+          <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider"
              style={{ color: isInProgress ? '#047857' : '#92400E' }}>
-            {isInProgress ? '🟢 Session in progress' : '📅 Your next session'}
+            {isInProgress
+              ? <CircleDot size={13} strokeWidth={2} />
+              : <Calendar size={13} strokeWidth={1.75} />}
+            {isInProgress ? 'Session in progress' : 'Your next session'}
           </p>
           <p className="text-base font-bold mt-0.5"
              style={{ color: isInProgress ? '#065F46' : '#78350F' }}>
@@ -1814,8 +1859,9 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
                   {b.drill_id || 'Custom block'}
                 </p>
                 {b.objective_text && (
-                  <p className="text-[11px] text-gray-500 italic mt-0.5">
-                    ⮕ {b.objective_text}
+                  <p className="flex items-start gap-1.5 text-[11px] text-gray-500 italic mt-0.5">
+                    <CornerDownRight size={12} strokeWidth={1.75} className="shrink-0 mt-0.5" />
+                    {b.objective_text}
                   </p>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getStepDetail, updateStepRating } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
+import { Dumbbell, Waves, Target, BookOpen, Check, PenLine } from 'lucide-react';
 
 interface Props {
   stepId: string;
@@ -42,7 +43,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="animate-pulse text-4xl mb-2">🎯</div>
+        <Target size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan)]" />
         <p className="text-gray-500 text-sm">Loading step...</p>
       </div>
     );
@@ -84,8 +85,9 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
 
       {/* Self-rating */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-          🎯 Your Self-Evaluation
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
+          <Target size={13} strokeWidth={1.75} />
+          Your Self-Evaluation
         </div>
         <h3 className="font-bold text-sm mb-3">
           How well do you execute this step?
@@ -140,8 +142,9 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
       {/* Session history */}
       {sessionHistory && sessionHistory.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-            🏄 Recent Practice Sessions
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
+            <Waves size={13} strokeWidth={1.75} />
+            Recent Practice Sessions
           </div>
           <div className="space-y-2">
             {sessionHistory.map((s: any) => (
@@ -162,8 +165,9 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
 
       {/* Theory link */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-        <div className="text-xs text-blue-700">
-          📚 Want to review the theory of this step?
+        <div className="inline-flex items-center gap-1.5 text-xs text-blue-700">
+          <BookOpen size={13} strokeWidth={1.75} />
+          Want to review the theory of this step?
         </div>
         <div className="text-[11px] text-blue-600 mt-1">
           Go to <strong>Course tab</strong> → find {stepId} in White Belt section
@@ -183,7 +187,7 @@ function DrillOrMissionCard({
   onPractice?: (drillMissionId: string) => void;
 }) {
   const isDrill = item.type === 'drill';
-  const typeIcon = isDrill ? '🏖' : '🌊';
+  const TypeIcon = isDrill ? Dumbbell : Waves;
   const typeLabel = isDrill ? 'Drill — training mechanic' : 'Mission — water application';
   const accent = isDrill ? 'amber' : 'blue';
 
@@ -197,11 +201,12 @@ function DrillOrMissionCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <div
-            className={`text-[10px] uppercase tracking-wider font-bold ${
+            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold ${
               isDrill ? 'text-amber-700' : 'text-blue-700'
             }`}
           >
-            {typeIcon} {isDrill ? 'DRILL' : 'MISSION'}
+            <TypeIcon size={13} strokeWidth={1.75} />
+            {isDrill ? 'DRILL' : 'MISSION'}
           </div>
           <h3 className="font-bold text-base mt-0.5">{item.title}</h3>
           <div className="text-xs text-gray-500 mt-0.5">{typeLabel}</div>
@@ -254,8 +259,9 @@ function DrillOrMissionCard({
       {/* Success criteria */}
       {item.success_criteria && item.success_criteria.length > 0 && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-          <div className="text-[10px] uppercase tracking-wider text-green-700 font-bold mb-2">
-            ✅ Success Criteria
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-green-700 font-bold mb-2">
+            <Check size={13} strokeWidth={2} />
+            Success Criteria
           </div>
           <ul className="space-y-1">
             {item.success_criteria.map((sc: string, i: number) => (
@@ -280,7 +286,10 @@ function DrillOrMissionCard({
             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         }`}
       >
-        📝 Practice this {isDrill ? 'drill' : 'mission'} →
+        <span className="inline-flex items-center gap-1.5">
+          <PenLine size={15} strokeWidth={1.75} />
+          Practice this {isDrill ? 'drill' : 'mission'} →
+        </span>
       </button>
     </div>
   );

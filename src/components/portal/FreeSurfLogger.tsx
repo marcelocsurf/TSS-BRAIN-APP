@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { BRAND } from '@/lib/constants/brand';
 import { logFreeSurf } from '@/lib/actions/portal';
+import { Waves, Clock, ThumbsUp } from 'lucide-react';
 
 // Free Surf quick-logger — for days the student surfed without a mission.
 // All logged time counts toward "Free Surfing" in the bitácora.
@@ -25,10 +26,11 @@ export function FreeSurfLogger({ token }: { token: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full py-3 rounded-2xl text-white text-sm font-semibold shadow-sm"
+        className="w-full py-3 rounded-2xl text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2"
         style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}, ${BRAND.colors.cyan})` }}
       >
-        🌊 Registrar Free Surf
+        <Waves size={16} strokeWidth={1.75} />
+        Registrar Free Surf
       </button>
     );
   }
@@ -36,7 +38,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
   if (done) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center shadow-sm">
-        <p className="text-2xl mb-1">🤙</p>
+        <ThumbsUp size={24} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan)]" />
         <p className="text-sm font-semibold text-[var(--tss-navy)]">Free surf logged!</p>
       </div>
     );
@@ -45,7 +47,10 @@ export function FreeSurfLogger({ token }: { token: string }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--tss-navy)]">🌊 Log Free Surf</h3>
+        <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--tss-navy)]">
+          <Waves size={15} strokeWidth={1.75} />
+          Log Free Surf
+        </h3>
         <button
           type="button"
           onClick={() => setOpen(false)}
@@ -56,8 +61,9 @@ export function FreeSurfLogger({ token }: { token: string }) {
       </div>
 
       <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
-          ⏱ Time in the water
+        <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+          <Clock size={13} strokeWidth={1.75} />
+          Time in the water
         </label>
         <div className="grid grid-cols-5 gap-2">
           {MINUTE_CHIPS.map((m) => (

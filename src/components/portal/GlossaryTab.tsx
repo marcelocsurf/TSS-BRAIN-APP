@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { WB_GLOSSARY } from '@/lib/constants/wb-glossary';
+import { BookOpen } from 'lucide-react';
 
 // Glossary tab — quick-reference lookup for the 35 essential White Belt terms.
 // Plain client-side filter, no DB calls. Source: 09_GLOSSARY.md (canon v1 EN).
@@ -23,8 +24,9 @@ export function GlossaryTab() {
     <div className="space-y-3 pb-4">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          📖 Glossary
+        <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          <BookOpen size={13} strokeWidth={1.75} />
+          Glossary
         </p>
         <h2 className="text-base font-bold text-[var(--tss-navy)]">
           {WB_GLOSSARY.length} essential White Belt terms

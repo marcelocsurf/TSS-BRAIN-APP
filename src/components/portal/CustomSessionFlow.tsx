@@ -6,6 +6,7 @@ import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
 } from '@/lib/actions/portal';
+import { Clock, CircleDot, Waves, ThumbsUp, Frown, Meh, Smile } from 'lucide-react';
 
 // Custom Session — free-form training that gets logged but does NOT count
 // toward step mastery. Lives inside the unified "Let's Play" tab as an
@@ -68,8 +69,9 @@ export function CustomSessionFlow({
           />
 
           <div className="mt-4">
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
-              ⏱ Duration
+            <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+              <Clock size={13} strokeWidth={1.75} />
+              Duration
             </label>
             <div className="grid grid-cols-5 gap-2">
               {DURATION_CHIPS.map((m) => (
@@ -135,8 +137,9 @@ export function CustomSessionFlow({
     return (
       <div className="space-y-4 pb-4">
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 mb-1">
-            🟢 Custom Session in progress
+          <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-emerald-700 mb-1">
+            <CircleDot size={13} strokeWidth={2} />
+            Custom Session in progress
           </p>
           <p className="text-base font-bold text-emerald-900 mt-1">{focus}</p>
           <p className="text-[11px] text-emerald-700 mt-2">
@@ -173,21 +176,22 @@ export function CustomSessionFlow({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 1, label: '😣 Off' },
-                { value: 2, label: '😐 OK' },
-                { value: 3, label: '🤩 Locked in' },
+                { value: 1, label: 'Off', Icon: Frown },
+                { value: 2, label: 'OK', Icon: Meh },
+                { value: 3, label: 'Locked in', Icon: Smile },
               ].map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setFocusRating(opt.value)}
-                  className={`py-3 rounded-lg text-xs font-medium border ${
+                  className={`flex flex-col items-center gap-1 py-3 rounded-lg text-xs font-medium border ${
                     focusRating === opt.value
                       ? 'border-transparent text-white'
                       : 'border-gray-200 text-gray-600'
                   }`}
                   style={focusRating === opt.value ? { background: BRAND.colors.navy } : {}}
                 >
+                  <opt.Icon size={18} strokeWidth={1.75} />
                   {opt.label}
                 </button>
               ))}
@@ -195,8 +199,9 @@ export function CustomSessionFlow({
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
-              🌊 Total time in the water?
+            <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+              <Waves size={13} strokeWidth={1.75} />
+              Total time in the water?
             </label>
             <p className="text-[11px] text-gray-500 mb-2 leading-relaxed">
               Your mission was {duration}m. If you stayed longer, the extra
@@ -283,7 +288,7 @@ export function CustomSessionFlow({
   return (
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
-        <p className="text-3xl mb-2">🤙</p>
+        <ThumbsUp size={32} strokeWidth={1.75} className="mx-auto mb-2 text-[var(--tss-cyan)]" />
         <p className="text-sm font-semibold text-[var(--tss-navy)]">Session logged</p>
         <p className="text-[11px] text-gray-500 mt-1">
           Custom sessions appear in your history but don&apos;t count toward

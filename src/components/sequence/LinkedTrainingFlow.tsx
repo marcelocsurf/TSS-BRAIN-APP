@@ -19,6 +19,28 @@ import {
   SELF_TRAINING_WARMUPS,
   MENTAL_HACK_OPTIONS,
 } from '@/lib/constants/brand';
+import {
+  Target,
+  Dumbbell,
+  Waves,
+  Wind,
+  Moon,
+  Users,
+  MapPin,
+  Repeat,
+  Brain,
+  Clock,
+  Wind as BreathIcon,
+  Play,
+  Check,
+  CircleDot,
+  X,
+  Star,
+  Lightbulb,
+  Save,
+  ThumbsUp,
+  type LucideIcon,
+} from 'lucide-react';
 
 type Phase =
   | 'loading'
@@ -121,7 +143,7 @@ export function LinkedTrainingFlow({
   if (phase === 'loading') {
     return (
       <div className="text-center py-16">
-        <div className="animate-pulse text-4xl mb-2">🎯</div>
+        <Target size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan)]" />
         <p className="text-gray-500 text-sm">Loading drill...</p>
       </div>
     );
@@ -158,7 +180,7 @@ export function LinkedTrainingFlow({
           />
 
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center">
-            <p className="text-3xl mb-2">🏖</p>
+            <Dumbbell size={32} strokeWidth={1.75} className="mx-auto mb-2 text-gray-400" />
             <p className="text-sm font-semibold text-gray-700">No aplica</p>
             <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
               You can practice this drill anywhere safe — sand, skatepark, gym, or at home.
@@ -193,28 +215,28 @@ export function LinkedTrainingFlow({
 
         <div className="space-y-4">
           <Picker
-            label="🌊 Wave size"
+            label={<><Waves size={14} strokeWidth={1.75} />Wave size</>}
             options={WAVE_CONDITIONS}
             value={waveConditions}
             onChange={setWaveConditions}
             cols={3}
           />
           <Picker
-            label="💨 Wind"
+            label={<><Wind size={14} strokeWidth={1.75} />Wind</>}
             options={WIND_OPTIONS}
             value={wind}
             onChange={setWind}
             cols={2}
           />
           <Picker
-            label="🌙 Tide"
+            label={<><Moon size={14} strokeWidth={1.75} />Tide</>}
             options={TIDE_OPTIONS}
             value={tide}
             onChange={setTide}
             cols={3}
           />
           <Picker
-            label="👥 Crowd"
+            label={<><Users size={14} strokeWidth={1.75} />Crowd</>}
             options={CROWD_OPTIONS}
             value={crowdLevel}
             onChange={setCrowdLevel}
@@ -335,11 +357,14 @@ export function LinkedTrainingFlow({
           }}
         >
           <div
-            className={`text-[10px] uppercase tracking-wider font-bold ${
+            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold ${
               drill.type === 'drill' ? 'text-amber-700' : 'text-blue-700'
             }`}
           >
-            {drill.type === 'drill' ? '🏖 DRILL — PRE-SELECTED' : '🌊 MISSION — PRE-SELECTED'}
+            {drill.type === 'drill'
+              ? <Dumbbell size={13} strokeWidth={1.75} />
+              : <Waves size={13} strokeWidth={1.75} />}
+            {drill.type === 'drill' ? 'DRILL — PRE-SELECTED' : 'MISSION — PRE-SELECTED'}
           </div>
           <div className="font-bold text-sm mt-0.5">{drill.title}</div>
           <div className="text-[11px] text-gray-600 mt-0.5">
@@ -365,8 +390,9 @@ export function LinkedTrainingFlow({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              🎯 Specific objective(s) <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+              <Target size={14} strokeWidth={1.75} />
+              Specific objective(s) <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               value={intention}
@@ -381,8 +407,9 @@ export function LinkedTrainingFlow({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              ⏱ Time you'll focus on this
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+              <Clock size={14} strokeWidth={1.75} />
+              Time you'll focus on this
             </label>
             <div className="grid grid-cols-4 gap-2">
               {[10, 20, 30, 45].map((min) => (
@@ -406,8 +433,9 @@ export function LinkedTrainingFlow({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              🔁 Reps you'll complete
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+              <Repeat size={14} strokeWidth={1.75} />
+              Reps you'll complete
             </label>
             <input
               type="number"
@@ -438,22 +466,22 @@ export function LinkedTrainingFlow({
         ? drill.key_words.join(' · ')
         : 'Repeat the cues from the step';
 
-    const HACK_OPTIONS = [
+    const HACK_OPTIONS: { value: string; Icon: LucideIcon; title: string; desc: string }[] = [
       {
         value: 'breathe',
-        icon: '🫁',
+        Icon: BreathIcon,
         title: 'Box Breath',
         desc: 'Inhale 4 · hold 4 · exhale 4. Land in the body.',
       },
       {
         value: 'key_words',
-        icon: '🎯',
+        Icon: Target,
         title: 'Mission key words',
         desc: drillKeyWords,
       },
       {
         value: 'play',
-        icon: '▶️',
+        Icon: Play,
         title: 'Breathe · Focus · Play',
         desc: 'The TSS mantra — drop in and play the game.',
       },
@@ -479,7 +507,7 @@ export function LinkedTrainingFlow({
               }`}
             >
               <div className="flex items-start gap-2">
-                <span className="text-base">{m.icon}</span>
+                <m.Icon size={16} strokeWidth={1.75} className="mt-0.5 text-[var(--tss-cyan)]" />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-gray-800">{m.title}</div>
                   <div className="text-[11px] text-gray-500 italic mt-0.5">{m.desc}</div>
@@ -523,9 +551,9 @@ export function LinkedTrainingFlow({
         ? `Custom: ${warmUpCustom}`
         : warmupOptions.find((w) => w.value === warmUp)?.label;
     const HACK_LABELS: Record<string, string> = {
-      breathe: '🫁 Box Breath',
-      key_words: '🎯 Mission key words',
-      play: '▶️ Breathe · Focus · Play',
+      breathe: 'Box Breath',
+      key_words: 'Mission key words',
+      play: 'Breathe · Focus · Play',
       none: 'Skip',
     };
     const mentalLabel =
@@ -547,26 +575,32 @@ export function LinkedTrainingFlow({
           </div>
 
           <div className="p-4 space-y-3">
-            <PlanRow icon="📍" label="Venue" value={venueLabel} />
+            <PlanRow icon={<MapPin size={16} strokeWidth={1.75} />} label="Venue" value={venueLabel} />
             {isBeach && (
               <div className="ml-7 space-y-1 text-[11px] text-gray-500">
                 {waveLabel && <div>Waves: {waveLabel}</div>}
                 {windLabel && <div>Wind: {windLabel}</div>}
                 {tideLabel && <div>Tide: {tideLabel}</div>}
                 {crowdLabel && <div>Crowd: {crowdLabel}</div>}
-                {safetyCheck && <div className="text-green-700">✓ Safety zone identified</div>}
+                {safetyCheck && (
+                  <div className="flex items-center gap-1 text-green-700">
+                    <Check size={12} strokeWidth={2} /> Safety zone identified
+                  </div>
+                )}
               </div>
             )}
-            <PlanRow icon="🏋️" label="Warm-up" value={warmUpLabel || '—'} />
+            <PlanRow icon={<Dumbbell size={16} strokeWidth={1.75} />} label="Warm-up" value={warmUpLabel || '—'} />
             <PlanRow
-              icon={drill.type === 'drill' ? '🏖' : '🌊'}
+              icon={drill.type === 'drill'
+                ? <Dumbbell size={16} strokeWidth={1.75} />
+                : <Waves size={16} strokeWidth={1.75} />}
               label={drill.type === 'drill' ? 'Drill' : 'Mission'}
               value={drill.title}
               accent={drill.type === 'drill' ? 'amber' : 'blue'}
             />
-            <PlanRow icon="⏱" label="Time" value={`${plannedDuration} min`} />
-            <PlanRow icon="🔁" label="Reps" value={`${plannedReps}`} />
-            <PlanRow icon="🧠" label="Mental Hack" value={mentalLabel || '—'} />
+            <PlanRow icon={<Clock size={16} strokeWidth={1.75} />} label="Time" value={`${plannedDuration} min`} />
+            <PlanRow icon={<Repeat size={16} strokeWidth={1.75} />} label="Reps" value={`${plannedReps}`} />
+            <PlanRow icon={<Brain size={16} strokeWidth={1.75} />} label="Mental Hack" value={mentalLabel || '—'} />
             {intention && (
               <div className="bg-amber-50 border border-amber-200 rounded p-2">
                 <div className="text-[9px] uppercase font-bold text-amber-700 tracking-wider">
@@ -595,7 +629,11 @@ export function LinkedTrainingFlow({
         <Banner drill={drill} onCancel={onClearIncoming} />
 
         <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl shadow-lg p-6 text-center space-y-4">
-          <div className="text-5xl">{drill.type === 'mission' ? '🌊' : '🏖'}</div>
+          <div className="flex justify-center">
+            {drill.type === 'mission'
+              ? <Waves size={48} strokeWidth={1.5} />
+              : <Dumbbell size={48} strokeWidth={1.5} />}
+          </div>
           <h3 className="font-bold text-lg">Now go practice</h3>
           <p className="text-sm text-white/80 leading-relaxed">
             {drill.type === 'mission'
@@ -624,9 +662,10 @@ export function LinkedTrainingFlow({
 
         <button
           onClick={() => setPhase('evaluation')}
-          className="w-full py-4 rounded-xl bg-amber-400 text-amber-900 font-bold text-base hover:bg-amber-500 transition-colors shadow-md"
+          className="w-full py-4 rounded-xl bg-amber-400 text-amber-900 font-bold text-base hover:bg-amber-500 transition-colors shadow-md inline-flex items-center justify-center gap-2"
         >
-          ✓ I finished — Evaluate now
+          <Check size={18} strokeWidth={2.25} />
+          I finished — Evaluate now
         </button>
 
         <button
@@ -711,8 +750,9 @@ export function LinkedTrainingFlow({
 
           {successCriteria.length > 0 && (
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-gray-700 font-bold mb-2">
-                ✅ Success criteria — evaluate each one
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-700 font-bold mb-2">
+                <Check size={13} strokeWidth={2} />
+                Success criteria — evaluate each one
               </div>
               <div className="space-y-2">
                 {successCriteria.map((text, i) => (
@@ -724,9 +764,9 @@ export function LinkedTrainingFlow({
                     <div className="grid grid-cols-3 gap-1.5">
                       {(
                         [
-                          { key: 'met', label: '✅ Met', color: 'green' },
-                          { key: 'partial', label: '🟡 Partial', color: 'amber' },
-                          { key: 'not_met', label: '❌ Not met', color: 'red' },
+                          { key: 'met', label: 'Met', Icon: Check, color: 'green' },
+                          { key: 'partial', label: 'Partial', Icon: CircleDot, color: 'amber' },
+                          { key: 'not_met', label: 'Not met', Icon: X, color: 'red' },
                         ] as const
                       ).map((opt) => {
                         const selected = criteriaResults[i] === opt.key;
@@ -736,7 +776,7 @@ export function LinkedTrainingFlow({
                             onClick={() =>
                               setCriteriaResults((prev) => ({ ...prev, [i]: opt.key }))
                             }
-                            className={`py-2 rounded text-[11px] font-bold transition-colors ${
+                            className={`inline-flex items-center justify-center gap-1 py-2 rounded text-[11px] font-bold transition-colors ${
                               selected
                                 ? opt.color === 'green'
                                   ? 'bg-green-500 text-white'
@@ -746,6 +786,7 @@ export function LinkedTrainingFlow({
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                           >
+                            <opt.Icon size={12} strokeWidth={2} />
                             {opt.label}
                           </button>
                         );
@@ -758,8 +799,9 @@ export function LinkedTrainingFlow({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              🧠 Focus level during practice (0–3)
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+              <Brain size={14} strokeWidth={1.75} />
+              Focus level during practice (0–3)
             </label>
             <div className="grid grid-cols-4 gap-2">
               {[0, 1, 2, 3].map((n) => {
@@ -783,8 +825,9 @@ export function LinkedTrainingFlow({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              ⭐ Overall execution today (1–5)
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+              <Star size={14} strokeWidth={1.75} />
+              Overall execution today (1–5)
             </label>
             <p className="text-[11px] text-gray-500 mb-2">
               This updates your self-rating in My Sequence.
@@ -811,8 +854,9 @@ export function LinkedTrainingFlow({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              💭 What you learned <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+              <Lightbulb size={14} strokeWidth={1.75} />
+              What you learned <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               value={notesText}
@@ -830,13 +874,20 @@ export function LinkedTrainingFlow({
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className={`w-full py-3 rounded-lg font-bold text-sm transition-colors ${
+            className={`w-full py-3 rounded-lg font-bold text-sm transition-colors inline-flex items-center justify-center gap-2 ${
               canSave
                 ? 'bg-[var(--tss-navy)] text-white hover:bg-[var(--tss-navy-dark,#0a1628)]'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {saving ? 'Saving...' : '💾 Save & Update My Sequence'}
+            {saving ? (
+              'Saving...'
+            ) : (
+              <>
+                <Save size={16} strokeWidth={1.75} />
+                Save &amp; Update My Sequence
+              </>
+            )}
           </button>
           {!canSave && !saving && (
             <p className="text-[11px] text-gray-400 text-center">
@@ -857,7 +908,7 @@ export function LinkedTrainingFlow({
     return (
       <div className="space-y-4">
         <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
-          <div className="text-5xl">🤙</div>
+          <ThumbsUp size={48} strokeWidth={1.5} className="mx-auto text-[var(--tss-cyan)]" />
           <div>
             <h2 className="text-xl font-bold text-[var(--tss-navy)]">Session saved</h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -888,8 +939,9 @@ export function LinkedTrainingFlow({
             )}
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-            ✓ Your self-rating in <strong>My Sequence</strong> has been updated to {executionRating}/5.
+          <div className="flex items-center justify-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+            <Check size={13} strokeWidth={2} className="shrink-0" />
+            <span>Your self-rating in <strong>My Sequence</strong> has been updated to {executionRating}/5.</span>
           </div>
 
           <div className="space-y-2 pt-2">
@@ -1049,7 +1101,7 @@ function Picker({
   onChange,
   cols = 2,
 }: {
-  label: string;
+  label: React.ReactNode;
   options: readonly { value: string; label: string }[];
   value: string | null;
   onChange: (v: string) => void;
@@ -1059,7 +1111,7 @@ function Picker({
     cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4';
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
+      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
       <div className={`grid ${colsClass} gap-2`}>
         {options.map((o) => (
           <Pill
@@ -1080,14 +1132,14 @@ function PlanRow({
   value,
   accent,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   value: string;
   accent?: 'amber' | 'blue';
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-base flex-shrink-0">{icon}</span>
+      <span className="flex-shrink-0 text-gray-500 mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
         <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
           {label}
@@ -1109,13 +1161,14 @@ function PlanRow({
 }
 
 function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => void }) {
-  const typeIcon = drill.type === 'drill' ? '🏖' : '🌊';
+  const TypeIcon = drill.type === 'drill' ? Dumbbell : Waves;
   return (
     <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
-      <span className="text-2xl flex-shrink-0">{typeIcon}</span>
+      <TypeIcon size={24} strokeWidth={1.75} className="flex-shrink-0 text-amber-700 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold">
-          🎯 Practicing from My Sequence · {drill.step_id}
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-amber-700 font-bold">
+          <Target size={12} strokeWidth={1.75} />
+          Practicing from My Sequence · {drill.step_id}
         </div>
         <div className="text-sm font-bold text-amber-900 truncate mt-0.5">{drill.title}</div>
         <div className="text-[11px] text-amber-700 mt-0.5">
@@ -1126,9 +1179,10 @@ function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => v
       <button
         onClick={onCancel}
         title="Cancel linked session"
-        className="text-amber-700 hover:text-amber-900 text-lg flex-shrink-0"
+        aria-label="Cancel linked session"
+        className="text-amber-700 hover:text-amber-900 flex-shrink-0"
       >
-        ✕
+        <X size={18} strokeWidth={2} />
       </button>
     </div>
   );
@@ -1149,8 +1203,9 @@ function DrillVideoPlayer({
 
   return (
     <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
-        ▶ Demo {videos.length > 1 ? `(${videos.length} videos)` : ''}
+      <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-500">
+        <Play size={12} strokeWidth={1.75} />
+        Demo {videos.length > 1 ? `(${videos.length} videos)` : ''}
       </p>
       {videos.length > 1 && (
         <div className="flex gap-1 overflow-x-auto pb-1">
@@ -1187,7 +1242,10 @@ function DrillVideoPlayer({
         )}
       </div>
       {current.label && videos.length === 1 && (
-        <p className="text-[11px] text-gray-500 italic">▶ {current.label}</p>
+        <p className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+          <Play size={11} strokeWidth={1.75} />
+          {current.label}
+        </p>
       )}
     </div>
   );
