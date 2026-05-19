@@ -94,26 +94,6 @@ export default function NewCampPage() {
     return form.end_date;
   })();
 
-  // Helper: add minutes to "HH:MM" → "HH:MM"
-  const addMinutes = (time: string, mins: number): string => {
-    if (!time) return '';
-    const [h, m] = time.split(':').map(Number);
-    const total = h * 60 + m + mins;
-    const eh = Math.floor((total / 60) % 24);
-    const em = total % 60;
-    return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
-  };
-
-  // Common surf-morning start times
-  const START_TIME_CHIPS = ['06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00'];
-  // Duration presets
-  const DURATION_CHIPS = [
-    { mins: 60, label: '1h' },
-    { mins: 90, label: '1h 30m' },
-    { mins: 120, label: '2h' },
-    { mins: 180, label: '3h' },
-  ];
-
   // Formatted scheduled_time to store
   const scheduledTime = (() => {
     if (form.start_time) {
@@ -298,65 +278,22 @@ export default function NewCampPage() {
             </div>
           )}
 
-          {/* ── Time — quick chips for start + duration → end auto ── */}
-          <div className="space-y-3 pt-1">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Start time</label>
-              <div className="grid grid-cols-5 gap-1.5">
-                {START_TIME_CHIPS.map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, start_time: t }))}
-                    className={`py-2 rounded-lg text-[12px] font-medium border transition-colors ${
-                      form.start_time === t
-                        ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-                <input
-                  type="time"
-                  value={form.start_time}
-                  onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                  className="col-span-5 mt-1 w-full px-3 py-1.5 border border-gray-100 bg-gray-50 rounded-lg text-[12px] text-gray-600"
-                  placeholder="Other time…"
-                />
-              </div>
-            </div>
-
-            {form.start_time && (
-              <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Duration</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {DURATION_CHIPS.map(d => {
-                    const computedEnd = addMinutes(form.start_time, d.mins);
-                    const isActive = form.end_time === computedEnd;
-                    return (
-                      <button
-                        key={d.mins}
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, end_time: computedEnd }))}
-                        className={`py-2 rounded-lg text-[12px] font-medium border transition-colors ${
-                          isActive
-                            ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        {d.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.end_time && (
-                  <p className="text-[11px] text-gray-500 mt-2">
-                    Class ends at <span className="font-semibold text-[var(--tss-navy)]">{form.end_time}</span>
-                  </p>
-                )}
-              </div>
-            )}
+          {/* ── Time — compact inline pickers ── */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 shrink-0">Time</span>
+            <input
+              type="time"
+              value={form.start_time}
+              onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
+              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="time"
+              value={form.end_time}
+              onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
+              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+            />
           </div>
 
           <div className="flex gap-2">

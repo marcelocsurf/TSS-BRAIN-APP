@@ -14,7 +14,6 @@ const BELT_HOURS: Record<BeltLevel, string> = {
   black_belt: '10,000 h',
 };
 
-// Text color that reads well on each belt color swatch
 const SWATCH_TEXT: Record<BeltLevel, string> = {
   white_belt: '#0A1628',
   yellow_belt: '#0A1628',
@@ -26,6 +25,7 @@ const SWATCH_TEXT: Record<BeltLevel, string> = {
 
 export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
   const currentIdx = BELT_ORDER.indexOf(currentBelt);
+  const current = BELT_DISPLAY[currentBelt];
 
   return (
     <div className="bg-[var(--tss-navy)] rounded-2xl p-4 shadow-sm">
@@ -39,89 +39,43 @@ export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
         White Belt → Black Belt
       </h3>
 
-      <div className="relative">
-        {/* Vertical connector line */}
-        <div className="absolute left-[19px] top-5 bottom-5 w-[2px] bg-white/15" />
+      {/* Horizontal track */}
+      <div className="relative px-1">
+        {/* Track line */}
+        <div className="absolute left-3 right-3 top-[14px] h-[2px] bg-white/15" />
         {/* Progress fill */}
         <div
-          className="absolute left-[19px] top-5 w-[2px] bg-[var(--tss-cyan)] transition-all"
+          className="absolute left-3 top-[14px] h-[2px] bg-[var(--tss-cyan)] transition-all"
           style={{
-            height: currentIdx === 0
-              ? '0%'
-              : `${(currentIdx / (BELT_ORDER.length - 1)) * 100}%`,
+            width: `calc(${(currentIdx / (BELT_ORDER.length - 1)) * 100}% - ${(currentIdx / (BELT_ORDER.length - 1)) * 24}px)`,
           }}
         />
 
-        <div className="space-y-3">
+        <div className="relative flex justify-between">
           {BELT_ORDER.map((belt: BeltLevel, idx: number) => {
             const d = BELT_DISPLAY[belt];
             const isCurrent = belt === currentBelt;
             const isPast = idx < currentIdx;
-            const isFuture = idx > currentIdx;
 
             return (
-              <div
-                key={belt}
-                className={`relative flex items-center gap-3 transition-all ${isFuture ? 'opacity-40' : ''}`}
-              >
-                {/* Belt color swatch / node */}
+              <div key={belt} className="flex flex-col items-center" style={{ width: 32 }}>
                 <div
                   className={`relative z-10 rounded-full flex items-center justify-center shrink-0 transition-all ${
                     isCurrent
-                      ? 'w-10 h-10 ring-2 ring-[var(--tss-cyan)] ring-offset-2 ring-offset-[var(--tss-navy)]'
-                      : 'w-9 h-9'
-                  }`}
+                      ? 'w-7 h-7 ring-2 ring-[var(--tss-cyan)] ring-offset-2 ring-offset-[var(--tss-navy)]'
+                      : 'w-6 h-6'
+                  } ${!isPast && !isCurrent ? 'opacity-50' : ''}`}
                   style={{
                     backgroundColor: d.color,
                     border: belt === 'white_belt' ? '1.5px solid rgba(255,255,255,0.35)' : 'none',
                   }}
                 >
-                  {isPast ? (
+                  {isPast && (
                     <Check
-                      size={isCurrent ? 16 : 14}
+                      size={12}
                       strokeWidth={2.5}
                       style={{ color: SWATCH_TEXT[belt] }}
                     />
-                  ) : (
-                    <span
-                      className="text-[11px] font-bold"
-                      style={{ color: SWATCH_TEXT[belt] }}
-                    >
-                      {idx + 1}
-                    </span>
-                  )}
-                </div>
-
-                {/* Belt info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p
-                      className={`text-sm leading-tight ${
-                        isCurrent ? 'text-white font-bold' : isPast ? 'text-white/70 font-medium' : 'text-white/50'
-                      }`}
-                    >
-                      {d.levelName}
-                    </p>
-                    <p
-                      className="text-[11px] shrink-0"
-                      style={{ fontFamily: 'DM Mono, monospace', color: isCurrent ? 'var(--tss-cyan)' : 'rgba(255,255,255,0.3)' }}
-                    >
-                      {BELT_HOURS[belt]}
-                    </p>
-                  </div>
-                  <p
-                    className={`text-[10px] mt-0.5 ${
-                      isCurrent ? 'text-white/60' : 'text-white/30'
-                    }`}
-                  >
-                    {d.en}
-                  </p>
-                  {isCurrent && (
-                    <span
-                      className="inline-block text-[9px] uppercase tracking-wider text-[var(--tss-cyan)] font-bold mt-0.5"
-                    >
-                      You are here
-                    </span>
                   )}
                 </div>
               </div>
@@ -130,9 +84,26 @@ export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
         </div>
       </div>
 
-      <p className="text-[9px] text-white/35 mt-5 leading-relaxed text-center italic">
-        Based on the 10,000-hour rule and the 80/20 Pareto principle —
-        average water time per level.
+      {/* Current-belt detail panel */}
+      <div className="mt-4 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="text-[9px] uppercase tracking-wider text-[var(--tss-cyan)] font-bold">
+            You are here
+          </p>
+          <p className="text-sm font-bold text-white leading-tight mt-0.5">
+            {current.levelName} <span className="text-white/50 font-normal">· {current.en}</span>
+          </p>
+        </div>
+        <p
+          className="text-xs text-white/60 shrink-0 ml-3"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          {BELT_HOURS[currentBelt]}
+        </p>
+      </div>
+
+      <p className="text-[9px] text-white/35 mt-3 leading-relaxed text-center italic">
+        10,000-hour rule · average water time per level.
       </p>
     </div>
   );
