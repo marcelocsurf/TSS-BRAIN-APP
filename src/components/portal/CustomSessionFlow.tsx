@@ -28,6 +28,7 @@ export function CustomSessionFlow({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [focusRating, setFocusRating] = useState<number | null>(null);
+  const [waterMinutes, setWaterMinutes] = useState(30);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
 
@@ -148,7 +149,10 @@ export function CustomSessionFlow({
 
         <button
           type="button"
-          onClick={() => setPhase('review')}
+          onClick={() => {
+            setWaterMinutes((w) => (w < duration ? duration : w));
+            setPhase('review');
+          }}
           className="w-full py-3 rounded-xl text-white text-sm font-semibold"
           style={{ background: BRAND.colors.navy }}
         >
@@ -191,6 +195,43 @@ export function CustomSessionFlow({
           </div>
 
           <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+              🌊 Total time in the water?
+            </label>
+            <p className="text-[11px] text-gray-500 mb-2 leading-relaxed">
+              Your mission was {duration}m. If you stayed longer, the extra
+              time counts as free surfing.
+            </p>
+            <div className="grid grid-cols-5 gap-2">
+              {DURATION_CHIPS.filter((m) => m >= duration).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setWaterMinutes(m)}
+                  className={`py-2 rounded-lg text-xs font-medium border ${
+                    waterMinutes === m
+                      ? 'border-transparent text-white'
+                      : 'border-gray-200 text-gray-600'
+                  }`}
+                  style={waterMinutes === m ? { background: BRAND.colors.navy } : {}}
+                >
+                  {m}m
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              min={duration}
+              value={waterMinutes}
+              onChange={(e) =>
+                setWaterMinutes(Math.max(duration, parseInt(e.target.value, 10) || duration))
+              }
+              className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              placeholder={`Minutes (min ${duration})`}
+            />
+          </div>
+
+          <div>
             <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
               Notes (optional)
             </label>
@@ -218,7 +259,11 @@ export function CustomSessionFlow({
               : notes.trim();
             startTransition(async () => {
               try {
-                await completeSelfTrainingSession(sessionId, fullNotes || undefined);
+                await completeSelfTrainingSession(
+                  sessionId,
+                  fullNotes || undefined,
+                  Math.max(duration, waterMinutes)
+                );
                 setPhase('done');
               } catch (e: any) {
                 setError(e.message || 'Failed to save');

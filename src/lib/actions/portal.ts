@@ -107,6 +107,29 @@ export async function getStudentPortalData(token: string) {
     .reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0);
   const totalTrainingMinutes = coachHours + selfHours;
 
+  // ── Surf hours: split bitácora into Training vs Free Surfing ──
+  // Training = structured mission/drill durations + coach-led planned durations.
+  // Free Surfing = free-surf logs + overflow (water time beyond the mission).
+  let surfTrainingMinutes = 0;
+  let freeSurfMinutes = 0;
+  for (const s of selfSessions) {
+    const dur = s.duration_minutes || 0;
+    const water = s.total_water_minutes || 0;
+    if (s.kind === 'free_surf') {
+      freeSurfMinutes += water || dur;
+    } else {
+      surfTrainingMinutes += dur;
+      if (water > dur) freeSurfMinutes += water - dur;
+    }
+  }
+  // Coach-led sessions: planned durations already summed in coachHours above.
+  surfTrainingMinutes += coachHours;
+  const surfHours = {
+    trainingMinutes: surfTrainingMinutes,
+    freeSurfMinutes,
+    totalMinutes: surfTrainingMinutes + freeSurfMinutes,
+  };
+
   // Drills practiced (unique names from self-training)
   const drillsPracticed = [
     ...new Set(
@@ -238,6 +261,7 @@ export async function getStudentPortalData(token: string) {
     streak,
     selfTrainingCount,
     totalTrainingMinutes,
+    surfHours,
     drillsPracticed,
     recentDrills: topRecentDrills,
     upcomingMultiBlock: upcomingWithBlocks,
@@ -409,11 +433,18 @@ export async function createSelfTrainingSession(
 
 // ─── Complete a self-training session ───
 
-export async function completeSelfTrainingSession(sessionId: string, notes?: string) {
+export async function completeSelfTrainingSession(
+  sessionId: string,
+  notes?: string,
+  totalWaterMinutes?: number
+) {
   const admin = createAdminClient();
 
   const update: Record<string, any> = { completed: true };
   if (notes) update.notes = notes;
+  if (typeof totalWaterMinutes === 'number' && totalWaterMinutes > 0) {
+    update.total_water_minutes = Math.round(totalWaterMinutes);
+  }
 
   const { error } = await admin
     .from('self_training_sessions')
@@ -422,6 +453,46 @@ export async function completeSelfTrainingSession(sessionId: string, notes?: str
 
   if (error) throw new Error(error.message);
   return { success: true };
+}
+
+// ─── Log a pure free-surf session (no mission/drill) ───
+
+export async function logFreeSurf(
+  token: string,
+  minutes: number,
+  dateISO?: string,
+  notes?: string
+) {
+  const admin = createAdminClient();
+
+  const { data: student, error: studentErr } = await admin
+    .from('students')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+
+  if (studentErr || !student) throw new Error('Student not found');
+
+  const mins = Math.round(minutes);
+  if (!mins || mins <= 0) throw new Error('Invalid duration');
+
+  const insertData: Record<string, any> = {
+    student_id: student.id,
+    kind: 'free_surf',
+    duration_minutes: mins,
+    total_water_minutes: mins,
+    completed: true,
+    drill_name: 'Free Surf',
+  };
+  if (notes && notes.trim()) insertData.notes = notes.trim();
+  if (dateISO) insertData.created_at = new Date(dateISO).toISOString();
+
+  const { error } = await admin
+    .from('self_training_sessions')
+    .insert(insertData);
+
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
 
 // ─── Get pending surveys (sessions without survey responses) ───

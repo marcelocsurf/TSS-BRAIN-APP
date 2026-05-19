@@ -18,6 +18,7 @@ import { CourseTab } from '@/components/course/CourseTab';
 import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
+import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import {
   createSelfTrainingSession,
@@ -70,6 +71,7 @@ interface PortalData {
   totalTrainingMinutes: number;
   drillsPracticed: string[];
   recentDrills: { name: string; date: string; source: 'coach' | 'self' }[];
+  surfHours?: { trainingMinutes: number; freeSurfMinutes: number; totalMinutes: number };
   upcomingMultiBlock?: UpcomingMultiBlock[];
   closedMultiBlock?: ClosedMultiBlock[];
   drills: any[];
@@ -397,6 +399,13 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
   const beltLevel = student.belt_level as BeltLevel;
   const upcoming = data.upcomingMultiBlock ?? [];
+  const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
+  const fmtHm = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}m`;
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  };
 
   // Training tip of the day — rotate based on day of year
   const tips = TRAINING_TIPS[beltLevel] || TRAINING_TIPS['white_belt'];
@@ -482,6 +491,39 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
           {tipOfDay}
         </p>
       </div>
+
+      {/* Surf Hours — bitácora split */}
+      <div>
+        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-2" style={{ fontFamily: 'DM Mono, monospace' }}>
+          Surf Hours
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          <div
+            className="rounded-2xl p-3 text-center shadow-sm border"
+            style={{ background: `${BRAND.colors.navy}0D`, borderColor: `${BRAND.colors.navy}26` }}
+          >
+            <p className="text-lg font-bold" style={{ color: BRAND.colors.navy }}>{fmtHm(surf.trainingMinutes)}</p>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Surf Training</p>
+          </div>
+          <div
+            className="rounded-2xl p-3 text-center shadow-sm border"
+            style={{ background: `${BRAND.colors.cyan}1A`, borderColor: `${BRAND.colors.cyan}40` }}
+          >
+            <p className="text-lg font-bold" style={{ color: BRAND.colors.cyan }}>{fmtHm(surf.freeSurfMinutes)}</p>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Free Surfing</p>
+          </div>
+          <div
+            className="rounded-2xl p-3 text-center shadow-sm text-white"
+            style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}, ${BRAND.colors.cyan})` }}
+          >
+            <p className="text-lg font-bold">{fmtHm(surf.totalMinutes)}</p>
+            <p className="text-[9px] uppercase tracking-wide font-semibold mt-0.5 opacity-90" style={{ fontFamily: 'DM Mono, monospace' }}>Total</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Free Surf quick-logger */}
+      <FreeSurfLogger token={data.token} />
 
       {/* Training Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
