@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 interface Props {
-  title: string;
+  title: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }
@@ -12,25 +13,23 @@ export function CollapsibleSection({ title, defaultOpen = false, children }: Pro
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/60 transition-colors"
       >
-        <h3 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h3>
-        <svg
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+        <h3 className="text-sm font-semibold text-[var(--tss-navy)] flex items-center gap-2">
+          {title}
+        </h3>
+        <ChevronDown
+          size={16}
           strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
       {isOpen && (
-        <div className="px-4 py-3 space-y-2">
+        <div className="px-4 py-3 space-y-2 border-t border-gray-100">
           {children}
         </div>
       )}

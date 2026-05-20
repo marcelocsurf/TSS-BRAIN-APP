@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { LevelAccessCard } from '@/components/student/LevelAccessCard';
-import { ProfilePhoto } from '@/components/shared/ProfilePhoto';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection';
 import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton';
@@ -24,6 +23,17 @@ import { ArchiveSessionButton } from '@/components/session/ArchiveSessionButton'
 import type { LearningChannel } from '@/lib/constants/learning-profiles';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import {
+  Hourglass,
+  CircleDot,
+  Star,
+  GraduationCap,
+  Waves,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -42,8 +52,17 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   if (access === 'expired') {
     return (
       <div className="max-w-md mx-auto p-6 text-center mt-8">
-        <p className="text-3xl mb-3">⏳</p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)] mb-2">Access expired</h2>
+        <Hourglass
+          size={36}
+          strokeWidth={1.75}
+          className="mx-auto mb-3 text-[var(--tss-cyan,#5AC3E7)]"
+        />
+        <h2
+          className="text-xl font-bold text-[var(--tss-navy)] mb-2 leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Access expired
+        </h2>
         <p className="text-sm text-gray-600 leading-relaxed">
           You can only view this student during the service window you&apos;re
           assigned to (from the start of the service until 1 day after it
@@ -52,9 +71,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </p>
         <Link
           href="/students"
-          className="inline-block mt-4 text-xs text-blue-600 underline"
+          className="inline-flex items-center gap-1 mt-4 text-xs text-[var(--tss-navy)] hover:underline"
         >
-          ← Back to your students
+          <ArrowLeft size={12} strokeWidth={1.75} />
+          Back to your students
         </Link>
       </div>
     );
@@ -288,52 +308,59 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* --- SUCCESS BANNER (shown after student creation) --- */}
       {justCreated && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-1">
-          <p className="text-sm font-semibold text-green-700">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-1">
+          <p className="text-sm font-semibold text-emerald-700 inline-flex items-center gap-1.5">
+            <CheckCircle2 size={15} strokeWidth={2} />
             Student created successfully!
           </p>
-          <p className="text-xs text-green-600">
+          <p className="text-xs text-emerald-700/80">
             Copy the intake link below and send it to the student to complete their profile and sign the waiver.
           </p>
         </div>
       )}
 
       {/* --- 1. HEADER (always visible) --- */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
-            {/* PhotoUploader already renders the avatar with change/remove
-                actions. The standalone ProfilePhoto above it duplicated
-                the image — removed. */}
+            {/* PhotoUploader renders the avatar + change/remove actions. */}
             <PhotoUploader
               entityType="student"
               entityId={student.id}
               currentPhotoUrl={student.photo_url}
             />
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-[var(--tss-navy)]">
+          <div className="flex-1 min-w-0">
+            <h2
+              className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
+              style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            >
               {fullName}
             </h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
               <span
-                className="text-xs px-2 py-0.5 rounded-full text-white"
+                className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold"
                 style={{ backgroundColor: belt?.color || '#999' }}
               >
                 {belt?.en}
               </span>
               {student.waiver_signed ? (
-                <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full">
-                  Waiver &#10003;
+                <span className="text-[10px] inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                  <CheckCircle2 size={11} strokeWidth={2} />
+                  Waiver
                 </span>
               ) : (
-                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full">
-                  &#9888; No waiver
+                <span className="text-[10px] inline-flex items-center gap-1 bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-semibold">
+                  <AlertTriangle size={11} strokeWidth={2} />
+                  No waiver
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Seq {student.current_sequence_number} / Step {student.current_step_order}
+            <p
+              className="text-[10px] uppercase tracking-wider text-gray-400 mt-1.5"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              Seq {student.current_sequence_number} · Step {student.current_step_order}
             </p>
           </div>
         </div>
@@ -341,23 +368,27 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         <div className="flex flex-wrap gap-2 mt-4">
           <Link
             href={`/sessions/new?student=${student.id}`}
-            className="flex-1 min-w-[110px] text-center py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90"
+            className="flex-1 min-w-[110px] text-center py-2 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
             Start Session
           </Link>
-          <PlanSessionButton studentId={student.id} className="flex-1 min-w-[110px] text-center py-2 bg-emerald-50 text-emerald-700 text-sm rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-50" />
+          <PlanSessionButton
+            studentId={student.id}
+            className="flex-1 min-w-[110px] text-center py-2 bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)] text-sm font-medium rounded-lg hover:bg-[var(--tss-cyan,#5AC3E7)]/25 transition-colors disabled:opacity-50"
+          />
           <Link
             href={`/portal/${student.portal_token}`}
             target="_blank"
-            className="px-3 py-2 bg-amber-50 text-amber-700 text-xs rounded-lg hover:bg-amber-100 transition-colors"
+            className="px-3 py-2 bg-gray-50 text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-gray-100 transition-colors"
           >
             Open Portal
           </Link>
-          <span className={justCreated ? 'ring-2 ring-green-400 ring-offset-1 rounded-lg animate-pulse' : ''}>
+          <span className={justCreated ? 'ring-2 ring-emerald-400 ring-offset-1 rounded-lg animate-pulse' : ''}>
             <CopyIntakeLinkButton portalToken={student.portal_token} />
           </span>
           {!student.email && (
-            <span className="px-3 py-2 bg-red-50 text-red-500 text-xs rounded-lg flex items-center">
+            <span className="px-3 py-2 bg-red-50 text-red-500 text-xs font-medium rounded-lg inline-flex items-center gap-1">
+              <AlertTriangle size={11} strokeWidth={2} />
               No email
             </span>
           )}
@@ -374,14 +405,18 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* --- ACTIVE PLANS (resume CTA, only when there's an unfinished plan) --- */}
       {activeMultiBlock.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700">
-            🟢 Sessions in progress / planned
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 space-y-2">
+          <p
+            className="text-[10px] uppercase tracking-wider text-emerald-700 inline-flex items-center gap-1.5 font-semibold"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            <CircleDot size={12} strokeWidth={2.5} />
+            Sessions in progress / planned
           </p>
           {activeMultiBlock.map((s) => (
             <div
               key={s.id}
-              className="flex items-center justify-between gap-2 bg-white rounded-lg p-3"
+              className="flex items-center justify-between gap-2 bg-white rounded-xl p-3 border border-emerald-100"
             >
               <Link
                 href={`/sessions/plan/${s.id}`}
@@ -395,8 +430,12 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                 </p>
               </Link>
               <div className="flex items-center gap-2 shrink-0">
-                <Link href={`/sessions/plan/${s.id}`} className="text-xs text-emerald-600 font-medium">
-                  Resume →
+                <Link
+                  href={`/sessions/plan/${s.id}`}
+                  className="text-xs text-emerald-700 font-semibold inline-flex items-center gap-0.5"
+                >
+                  Resume
+                  <ArrowRight size={12} strokeWidth={2} />
                 </Link>
                 <ArchiveSessionButton sessionId={s.id} sessionState={s.completion_state} />
               </div>
@@ -438,23 +477,28 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       </Card>
 
-      {/* --- 3a. OFFICIAL STEP EVALUATION (coach gives gold stars per STP) --- */}
-      {coach && (
-        <CollapsibleSection
-          title={`⭐ Official Step Evaluation${
-            officialEvalRows.filter((r: any) => r.coach_rating !== null).length > 0
-              ? ` · ${officialEvalRows.filter((r: any) => r.coach_rating !== null).length} rated`
-              : ''
-          }`}
-          defaultOpen={false}
-        >
-          <OfficialEvaluationPanel
-            studentId={id}
-            coachId={coach.id}
-            rows={officialEvalRows}
-          />
-        </CollapsibleSection>
-      )}
+      {/* --- 3a. OFFICIAL STEP EVALUATION (coach gives cyan stars per STP) --- */}
+      {coach && (() => {
+        const ratedCount = officialEvalRows.filter((r: any) => r.coach_rating !== null).length;
+        return (
+          <CollapsibleSection
+            title={
+              <>
+                <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+                Official Step Evaluation
+                {ratedCount > 0 && <span className="text-gray-400 font-normal">· {ratedCount} rated</span>}
+              </>
+            }
+            defaultOpen={false}
+          >
+            <OfficialEvaluationPanel
+              studentId={id}
+              coachId={coach.id}
+              rows={officialEvalRows}
+            />
+          </CollapsibleSection>
+        );
+      })()}
 
       {/* --- 3b. SEQUENCE EVALUATION (collapsible) --- */}
       <CollapsibleSection title="Sequence Evaluation" defaultOpen={false}>
@@ -469,7 +513,17 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* --- 3c. OCEAN LEVEL EVALUATION (collapsible) --- */}
       <CollapsibleSection
-        title={`Ocean Level${(student as any).ocean_level_provisional ? ' · ⏳ Provisional' : ''}`}
+        title={
+          <>
+            <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Ocean Level
+            {(student as any).ocean_level_provisional && (
+              <span className="inline-flex items-center gap-1 text-amber-700 font-normal">
+                · <Hourglass size={11} strokeWidth={1.75} /> Provisional
+              </span>
+            )}
+          </>
+        }
         defaultOpen={!!(student as any).ocean_level_provisional}
       >
         <OceanLevelPanel
@@ -482,7 +536,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       </CollapsibleSection>
 
       {/* --- 3d. COURSE PROGRESS (collapsible) --- */}
-      <CollapsibleSection title="🎓 White Belt Course Progress" defaultOpen={false}>
+      <CollapsibleSection
+        title={
+          <>
+            <GraduationCap size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            White Belt Course Progress
+          </>
+        }
+        defaultOpen={false}
+      >
         <CourseProgressPanel
           studentId={id}
           hasAccess={(student as any).course_access_white === true}
@@ -490,20 +552,29 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       </CollapsibleSection>
 
       {/* --- 3e. PORTAL ACTIVITY (what the student did on their own) --- */}
-      <CollapsibleSection
-        title={`🌊 Portal Activity${
-          stepRatings.filter((r) => r.current_rating < 3).length > 0
-            ? ` · ${stepRatings.filter((r) => r.current_rating < 3).length} struggling`
-            : ''
-        }`}
-        defaultOpen={stepRatings.filter((r) => r.current_rating < 3).length > 0}
-      >
-        <PortalActivityPanel
-          selfTraining={selfTraining}
-          stepRatings={stepRatings}
-          lessonsCompleted={lessonsCompleted}
-        />
-      </CollapsibleSection>
+      {(() => {
+        const strugglingCount = stepRatings.filter((r) => r.current_rating < 3).length;
+        return (
+          <CollapsibleSection
+            title={
+              <>
+                <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+                Portal Activity
+                {strugglingCount > 0 && (
+                  <span className="text-amber-700 font-normal">· {strugglingCount} struggling</span>
+                )}
+              </>
+            }
+            defaultOpen={strugglingCount > 0}
+          >
+            <PortalActivityPanel
+              selfTraining={selfTraining}
+              stepRatings={stepRatings}
+              lessonsCompleted={lessonsCompleted}
+            />
+          </CollapsibleSection>
+        );
+      })()}
 
       {/* --- COURSES (granted + earmarked + manual grant) --- */}
       <CoursesPanel
@@ -544,9 +615,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       <Card title="Waiver Status">
         {student.waiver_signed ? (
           <div className="flex items-center gap-2 py-1">
-            <span className="text-green-600 text-lg">&#10003;</span>
+            <CheckCircle2 size={20} strokeWidth={1.75} className="text-emerald-600 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-700">Waiver signed</p>
+              <p className="text-sm font-medium text-emerald-700">Waiver signed</p>
               {student.waiver_signed_at && (
                 <p className="text-xs text-gray-400">
                   Signed on {new Date(student.waiver_signed_at).toLocaleDateString()}
@@ -555,8 +626,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2 py-1 bg-red-50 rounded-lg px-3">
-            <span className="text-red-500 text-lg">&#9888;</span>
+          <div className="flex items-center gap-2 py-2 bg-red-50 rounded-lg px-3">
+            <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
             <div>
               <p className="text-sm font-medium text-red-600">Waiver required</p>
               <p className="text-xs text-red-400">Student has not signed the liability waiver</p>
@@ -632,13 +703,21 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
 function Card({ title, children, highlighted }: { title: string; children: React.ReactNode; highlighted?: boolean }) {
   return (
-    <div className={`bg-white rounded-xl border overflow-hidden ${
-      highlighted ? 'border-amber-200 ring-1 ring-amber-100' : 'border-gray-100'
-    }`}>
-      <div className={`px-4 py-3 border-b ${highlighted ? 'border-amber-100 bg-amber-50/30' : 'border-gray-50'}`}>
+    <div
+      className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+        highlighted
+          ? 'border-[var(--tss-cyan,#5AC3E7)]/40 ring-1 ring-[var(--tss-cyan,#5AC3E7)]/20'
+          : 'border-gray-100'
+      }`}
+    >
+      <div
+        className={`px-4 py-3 ${
+          highlighted ? 'bg-[var(--tss-cyan,#5AC3E7)]/8' : ''
+        }`}
+      >
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h3>
       </div>
-      <div className="px-4 py-3 space-y-2">{children}</div>
+      <div className="px-4 pb-4 space-y-2 border-t border-gray-100">{children}</div>
     </div>
   );
 }
@@ -651,8 +730,13 @@ function Row({ label, value, badge, highlight }: {
 }) {
   if (!value) return null;
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-xs text-gray-500 shrink-0">{label}</span>
+    <div className="flex items-start justify-between gap-4 pt-2">
+      <span
+        className="text-[10px] uppercase tracking-wider text-gray-400 shrink-0"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        {label}
+      </span>
       {badge ? (
         <StatusBadge status={value} />
       ) : (
@@ -666,14 +750,14 @@ function Row({ label, value, badge, highlight }: {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    mastered: 'bg-green-50 text-green-700',
-    competent: 'bg-blue-50 text-blue-700',
+    mastered: 'bg-emerald-50 text-emerald-700',
+    competent: 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]',
     partial: 'bg-amber-50 text-amber-700',
     not_yet: 'bg-gray-50 text-gray-600',
     not_achieved: 'bg-gray-50 text-gray-600',
   };
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${styles[status] || 'bg-gray-50 text-gray-600'}`}>
+    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold ${styles[status] || 'bg-gray-50 text-gray-600'}`}>
       {status?.replace(/_/g, ' ')}
     </span>
   );
