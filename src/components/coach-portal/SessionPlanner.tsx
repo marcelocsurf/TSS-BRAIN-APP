@@ -28,6 +28,22 @@ import {
   type ServicePlanBlock,
 } from '@/lib/actions/service-planner';
 import { StarRating } from '@/components/sequence/StarRating';
+import {
+  Waves,
+  Flame,
+  Brain,
+  Users,
+  NotebookPen,
+  Target,
+  ClipboardList,
+  Lock,
+  Check,
+  Pencil,
+  Flag,
+  Wind,
+  Moon,
+  AlertTriangle,
+} from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 
@@ -590,7 +606,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           })()}
 
           {/* 1. VENUE ANALYSIS */}
-          <Section emoji="🌊" title="1. Venue Analysis" subtitle="Read today's conditions before going in">
+          <Section icon={Waves} title="1. Venue Analysis" subtitle="Read today's conditions before going in">
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-2">
                 {(
@@ -706,7 +722,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </Section>
 
           {/* 2. GROUP WARM-UP */}
-          <Section emoji="🔥" title="2. Group Warm-Up" subtitle="Pick from your tools or write your own">
+          <Section icon={Flame} title="2. Group Warm-Up" subtitle="Pick from your tools or write your own">
             <PickerOrCustom
               options={warmupOptions.map((d) => ({
                 id: d.id,
@@ -722,7 +738,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </Section>
 
           {/* 3. MENTAL HACK */}
-          <Section emoji="🧠" title="3. Mental Hack" subtitle="Get them in the zone">
+          <Section icon={Brain} title="3. Mental Hack" subtitle="Get them in the zone">
             <div className="grid grid-cols-3 gap-2">
               {MENTAL_HACK_QUICK.map((opt) => {
                 const isSelected = plan.mental_hack === opt.id;
@@ -758,7 +774,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
           {/* 4. PER-STUDENT PLANNING */}
           <Section
-            emoji="👥"
+            icon={Users}
             title="4. Per Student"
             subtitle="Plan a different mission for each — sequence, drills, objective"
           >
@@ -779,7 +795,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </Section>
 
           {/* 5. GENERAL NOTES */}
-          <Section emoji="📝" title="5. General notes (private)">
+          <Section icon={NotebookPen} title="5. General notes (private)">
             <TextArea
               label=""
               value={plan.notes_general}
@@ -801,7 +817,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           />
 
           <Section
-            emoji="🎯"
+            icon={Target}
             title={isClosed ? 'Student results' : 'Evaluate each student'}
             subtitle={
               isClosed
@@ -929,10 +945,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               type="button"
               onClick={start}
               disabled={pending}
-              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
+              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-1.5"
               style={{ background: BRAND.colors.navy }}
             >
-              🔒 Close the plan → evaluate
+              <Lock size={14} strokeWidth={1.75} />
+              Close the plan → evaluate
             </button>
           )}
 
@@ -944,10 +961,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 setEditingPlan(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
+              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-1.5"
               style={{ background: BRAND.colors.navy }}
             >
-              ✓ Done editing → back to evaluation
+              <Check size={14} strokeWidth={2} />
+              Done editing → back to evaluation
             </button>
           )}
 
@@ -961,26 +979,29 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 disabled={pending}
-                className="py-2.5 px-4 text-sm font-semibold rounded-xl border"
+                className="py-2.5 px-4 text-sm font-semibold rounded-xl border inline-flex items-center gap-1.5"
                 style={{ borderColor: BRAND.colors.navy, color: BRAND.colors.navy }}
               >
-                ✏️ Edit plan
+                <Pencil size={13} strokeWidth={1.75} />
+                Edit plan
               </button>
               <button
                 type="button"
                 onClick={finalize}
                 disabled={pending}
-                className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl"
+                className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-1.5"
                 style={{ background: '#10B981' }}
               >
-                🏁 Finalize ({evaluatedCount}/{students.length})
+                <Flag size={14} strokeWidth={1.75} />
+                Finalize ({evaluatedCount}/{students.length})
               </button>
             </>
           )}
 
           {state === 'closed' && (
-            <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700">
-              🏁 Finalized{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleDateString()}` : ''}
+            <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 inline-flex items-center justify-center gap-1.5">
+              <Flag size={14} strokeWidth={1.75} />
+              Finalized{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleDateString()}` : ''}
             </div>
           )}
         </div>
@@ -1008,15 +1029,15 @@ function GeneralPlanSummary({
       : plan.venue_go_no_go === 'no_go'
       ? '✗ No-Go'
       : '—';
-  const conditions = [
-    plan.venue_wave_size && `🌊 ${plan.venue_wave_size}`,
-    plan.venue_wind && `💨 ${plan.venue_wind}`,
-    plan.venue_tide && `🌙 ${plan.venue_tide}`,
-    plan.venue_hazards && `⚠ ${plan.venue_hazards}`,
-  ].filter(Boolean);
+  const conditions: { Icon: React.ComponentType<any>; value: string }[] = [
+    plan.venue_wave_size ? { Icon: Waves, value: plan.venue_wave_size } : null,
+    plan.venue_wind ? { Icon: Wind, value: plan.venue_wind } : null,
+    plan.venue_tide ? { Icon: Moon, value: plan.venue_tide } : null,
+    plan.venue_hazards ? { Icon: AlertTriangle, value: plan.venue_hazards } : null,
+  ].filter(Boolean) as { Icon: React.ComponentType<any>; value: string }[];
 
   return (
-    <Section emoji="📋" title="Session Plan" subtitle="The plan you set for this class">
+    <Section icon={ClipboardList} title="Session Plan" subtitle="The plan you set for this class">
       <div className="space-y-2.5">
         <SummaryRow label="Venue call" value={goLabel} />
         {conditions.length > 0 && (
@@ -1026,8 +1047,12 @@ function GeneralPlanSummary({
             </p>
             <div className="flex flex-wrap gap-1">
               {conditions.map((c, i) => (
-                <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                  {c}
+                <span
+                  key={i}
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 inline-flex items-center gap-1"
+                >
+                  <c.Icon size={11} strokeWidth={1.75} />
+                  {c.value}
                 </span>
               ))}
             </div>
@@ -1036,20 +1061,31 @@ function GeneralPlanSummary({
         {plan.venue_analysis && (
           <SummaryRow label="Venue read" value={plan.venue_analysis} />
         )}
-        <SummaryRow label="🔥 Warm-up" value={warmUpLabel || '—'} />
-        <SummaryRow label="🧠 Mental hack" value={mentalLabel || '—'} />
+        <SummaryRow
+          label={<><Flame size={11} strokeWidth={1.75} /> Warm-up</>}
+          value={warmUpLabel || '—'}
+        />
+        <SummaryRow
+          label={<><Brain size={11} strokeWidth={1.75} /> Mental hack</>}
+          value={mentalLabel || '—'}
+        />
         {plan.notes_general && (
-          <SummaryRow label="📝 Notes" value={plan.notes_general} />
+          <SummaryRow
+            label={<><NotebookPen size={11} strokeWidth={1.75} /> Notes</>}
+            value={plan.notes_general}
+          />
         )}
       </div>
     </Section>
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function SummaryRow({ label, value }: { label: React.ReactNode; value: string }) {
   return (
     <div>
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{label}</p>
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 inline-flex items-center gap-1">
+        {label}
+      </p>
       <p className="text-sm text-gray-800 mt-0.5 whitespace-pre-wrap">{value}</p>
     </div>
   );
@@ -1059,20 +1095,26 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 function Section({
   emoji,
+  icon: Icon,
   title,
   subtitle,
   children,
 }: {
-  emoji: string;
+  emoji?: string;
+  icon?: React.ComponentType<any>;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-          {emoji} {title}
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 inline-flex items-center gap-1.5">
+          {Icon ? (
+            <Icon size={11} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+          ) : null}
+          {!Icon && emoji ? <span>{emoji}</span> : null}
+          {title}
         </p>
         {subtitle && <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>}
       </div>
