@@ -19,6 +19,14 @@ ALTER TABLE students
 -- portal will fall back to the first owned course at render time if
 -- the value is stale, but the constraint guards against typos when
 -- writing manually via SQL.
-ALTER TABLE students
-  ADD CONSTRAINT IF NOT EXISTS active_course_key_check
-    CHECK (active_course_key IN ('white_belt', 'yellow_belt'));
+-- Postgres doesn't support `IF NOT EXISTS` on ADD CONSTRAINT, so guard manually.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'active_course_key_check'
+  ) THEN
+    ALTER TABLE students
+      ADD CONSTRAINT active_course_key_check
+      CHECK (active_course_key IN ('white_belt', 'yellow_belt'));
+  END IF;
+END $$;
