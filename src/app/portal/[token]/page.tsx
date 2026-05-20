@@ -54,6 +54,20 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   ]);
   const isOwner = COURSE_OWNER_IDS.has(student.id);
 
+  // M49 — Build the list of courses this student owns and resolve the
+  // currently active one. Course owners (TSS founders) see every
+  // course so they can review content; everyone else sees the courses
+  // for which their access flag is true.
+  const { COURSES } = await import('@/lib/constants/courses');
+  const ownedCourses = COURSES.filter((c) =>
+    isOwner ? true : !!(student as any)[c.accessColumn],
+  );
+  // Default to the white belt course; fall back to the first owned one
+  // if the stored active_course_key is stale (e.g. course was revoked).
+  const storedActive = (student as any).active_course_key as string | undefined;
+  const activeCourse =
+    ownedCourses.find((c) => c.key === storedActive) ?? ownedCourses[0] ?? null;
+
   // Build course data
   const courseData = {
     lessons: courseCatalog.lessons,
@@ -62,7 +76,12 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     totalLessons: courseCatalog.totalLessons,
     studentId: student.id,
     studentName: student.first_name || student.display_name || 'student',
-    hasAccess: isOwner || student.course_access_white === true,
+    hasAccess: isOwner || student.course_access_white === true || student.course_access_yellow === true,
+    // M49 — multi-course wiring
+    ownedCourses: ownedCourses.map((c) => ({ key: c.key, label: c.label })),
+    activeCourseKey: activeCourse?.key ?? 'white_belt',
+    portalToken: token,
+    activeCourseBelt: activeCourse?.belt ?? 'white',
   };
 
   // Validate initialTab against allowed tab values

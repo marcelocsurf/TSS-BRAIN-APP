@@ -107,6 +107,10 @@ interface PortalData {
     studentId: string;
     studentName: string;
     hasAccess: boolean;
+    ownedCourses: { key: any; label: string }[];
+    activeCourseKey: any;
+    portalToken: string;
+    activeCourseBelt: string;
   };
   myCoach?: {
     coach: {
@@ -351,7 +355,7 @@ export function PortalTabs({
             <div className="space-y-4">
               <MySequenceTab
                 studentId={student.id}
-                belt={student.belt_level || 'white'}
+                belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
               />
               <button

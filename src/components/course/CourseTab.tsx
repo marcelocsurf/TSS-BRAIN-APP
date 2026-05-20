@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { LessonViewer } from './LessonViewer';
+import { CourseSwitcher } from './CourseSwitcher';
+import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
 import {
   BookOpen, Compass, Award, Trophy, Lock, Unlock, CheckCircle2,
   PlayCircle, Hourglass, ScrollText, Brain, Waves, Handshake,
@@ -45,6 +47,9 @@ interface CourseData {
   studentId: string;
   studentName: string;
   hasAccess: boolean;
+  ownedCourses: { key: CourseKey; label: string }[];
+  activeCourseKey: CourseKey;
+  portalToken: string;
 }
 
 // Pre-Course section icon map (per spec Section C)
@@ -108,27 +113,31 @@ export function CourseTab({ data }: { data: CourseData }) {
     );
   }
 
-  // 3-module canonical structure (per WB canon v1):
-  //   Module 0: Pre-Course (8 PC-PRE-XX items, value: Conciencia)
-  //   Module 1: WB Onboarding (6 ONB-XX items)
-  //   Module 2: WB Sequences (25 STPs in 5 cumulative sequences, value: Humildad)
-  const preCourseLessons = data.lessons.filter(
-    (l) =>
-      l.course_section === 'pre_course_fundamentals' ||
-      l.course_section === 'pre_course_values'
+  // The pre-course is shared across every belt course; the rest is scoped
+  // to whichever course the student selected in CourseSwitcher.
+  const activeCourse =
+    COURSES.find((c) => c.key === data.activeCourseKey) ?? COURSES[0];
+  const onboardingSection = activeCourse.lessonSections[0];
+  const beltSection = activeCourse.lessonSections[1];
+
+  const preCourseLessons = data.lessons.filter((l) =>
+    (SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(l.course_section)
   );
   const onboardingLessons = data.lessons.filter(
-    (l) => l.course_section === 'wb_onboarding'
+    (l) => l.course_section === onboardingSection
   );
-  const whiteBeltLessons = data.lessons.filter(
-    (l) => l.course_section === 'white_belt'
+  const beltLessons = data.lessons.filter(
+    (l) => l.course_section === beltSection
   );
 
   // Group Pre-Course by pc_section_id (canon v1 uses M0 for all 8)
   const pcSections = groupByPcSection(preCourseLessons);
 
-  // Group White Belt by wb_sequence_id (5 cumulative sequences)
-  const wbSequences = groupByWbSequence(whiteBeltLessons);
+  // Group belt lessons by wb_sequence_id (5 cumulative sequences for WB,
+  // and the YB sequences for the yellow course — same column reused).
+  const beltSequences = groupByWbSequence(beltLessons);
+
+  const beltLabelShort = activeCourse.key === 'yellow_belt' ? 'Yellow Belt' : 'White Belt';
 
   const overallPercent =
     data.totalLessons > 0
@@ -137,6 +146,13 @@ export function CourseTab({ data }: { data: CourseData }) {
 
   return (
     <div className="space-y-5">
+      {/* Course switcher — only renders when student owns 2+ courses */}
+      <CourseSwitcher
+        portalToken={data.portalToken}
+        ownedCourses={data.ownedCourses}
+        activeCourseKey={data.activeCourseKey}
+      />
+
       {/* Header */}
       <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5 shadow-lg">
         <div className="flex items-center justify-between mb-2">
@@ -189,24 +205,24 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
-      {/* WB ONBOARDING — Module 1, single block */}
+      {/* ONBOARDING — Module 1, single block */}
       {onboardingLessons.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="px-2">
             <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
               <Compass size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-              WB Onboarding
+              {beltLabelShort} Onboarding
               <span className="text-[11px] font-normal text-gray-500">
                 · Module 1 · {onboardingLessons.length} items
               </span>
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              Conceptual scaffolding before the sequences — your stance, surf identity, the 4 pillars, equipment, venue analysis.
+              Conceptual scaffolding before the sequences.
             </p>
           </div>
 
           <SectionBlock
-            title="WB Onboarding"
+            title={`${beltLabelShort} Onboarding`}
             subtitle="Bridge between awareness (Pre-Course) and action (Sequences)"
             Icon={Compass}
             badge="Module 1"
@@ -218,23 +234,23 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
-      {/* WHITE BELT — 5 cumulative sequences */}
-      {wbSequences.length > 0 && (
+      {/* BELT — cumulative sequences */}
+      {beltSequences.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="px-2">
             <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
               <Award size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-              White Belt
+              {beltLabelShort}
               <span className="text-[11px] font-normal text-gray-500">
-                · 5 sequences · 25 steps · Value: Humildad
+                · {beltSequences.length} sequences
               </span>
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              <strong>Cumulative</strong> — each sequence builds on all previous. Mastery of #5 means mastery of #1–5.
+              <strong>Cumulative</strong> — each sequence builds on all previous.
             </p>
           </div>
 
-          {wbSequences.map((sequence) => {
+          {beltSequences.map((sequence) => {
             const SeqIcon = WB_SEQUENCE_ICON[sequence.id] || BookOpen;
             const cumulative = WB_SEQUENCE_CUMULATIVE[sequence.id];
             const promise = sequence.lessons[0]?.wb_sequence_promise || '';
@@ -257,9 +273,9 @@ export function CourseTab({ data }: { data: CourseData }) {
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (
         <div className="bg-gradient-to-r from-cyan-50 to-sky-100 border border-cyan-300 rounded-xl p-5 text-center">
           <Trophy className="mx-auto mb-2 text-[var(--tss-cyan)]" size={36} strokeWidth={1.75} />
-          <h3 className="font-bold text-lg text-[var(--tss-navy)] mb-1">White Belt Course Complete!</h3>
+          <h3 className="font-bold text-lg text-[var(--tss-navy)] mb-1">{beltLabelShort} Course Complete!</h3>
           <p className="text-sm text-[var(--tss-navy)]/70">
-            You finished the theoretical White Belt course. Talk to your TSS coach to schedule your in-person evaluation.
+            You finished the theoretical {beltLabelShort} course. Talk to your TSS coach to schedule your in-person evaluation.
           </p>
         </div>
       )}

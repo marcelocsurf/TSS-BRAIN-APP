@@ -8,7 +8,15 @@ import { revalidatePath } from 'next/cache';
 
 export type LessonRow = {
   id: string;
-  course_section: 'pre_course_fundamentals' | 'pre_course_values' | 'white_belt';
+  // M49 — yb_onboarding + yellow_belt added so the Course tab can
+  // render Yellow Belt content with the same layout as White Belt.
+  course_section:
+    | 'pre_course_fundamentals'
+    | 'pre_course_values'
+    | 'wb_onboarding'
+    | 'white_belt'
+    | 'yb_onboarding'
+    | 'yellow_belt';
   step_number: number;
   title: string;
   subtitle: string | null;
