@@ -94,7 +94,7 @@ export function PhotoUpload({ entityId, entityType, currentPhotoUrl, displayName
         {/* Overlay on hover */}
         <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <span className="text-white text-xs font-medium">
-            {uploading ? '...' : '📷'}
+            {uploading ? '...' : 'Edit'}
           </span>
         </div>
       </div>

@@ -17,6 +17,7 @@ import {
   type BlockStatus,
 } from '@/lib/actions/multi-block-sessions';
 import { AddBlockModal } from './AddBlockModal';
+import { Target, Waves, ClipboardList, Check } from 'lucide-react';
 
 interface Block {
   id: string;
@@ -165,8 +166,9 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
       <div className="bg-white rounded-xl border border-gray-100">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div>
-            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-              🎯 Session Plan
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+              <Target size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              Session Plan
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
               {blocks.length} block{blocks.length !== 1 ? 's' : ''} ·{' '}
@@ -241,8 +243,9 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
       {/* ── Common (warm-up + mental hack) ── */}
       {!isClosed && (
         <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            🌊 Common (whole session)
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+            <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Common (whole session)
           </h3>
           <FieldRow
             label="Warm-up"
@@ -278,7 +281,10 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
       {/* ── Closed-state report ── */}
       {isClosed && (
         <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">📋 Final Report</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+            <ClipboardList size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Final Report
+          </h3>
           <ReportRow label="Coach feedback" value={session.general_coach_feedback} />
           <ReportRow label="Homework" value={session.general_homework} />
           <ReportRow label="What's next" value={session.general_whats_next} />
@@ -679,7 +685,7 @@ function BlockCard({
           <p className="text-[10px] font-mono text-gray-400 mt-2">Score this block</p>
           <div className="grid grid-cols-3 gap-2">
             <ScoreBtn
-              label="✓ Got it"
+              label="Got it"
               tone="emerald"
               active={block.status === 'achieved'}
               onClick={() => onScore('achieved', notes)}

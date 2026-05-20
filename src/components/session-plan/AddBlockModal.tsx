@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
+import { Star, Waves, Dumbbell } from 'lucide-react';
 import {
   addBlock,
   getDrillsForStep,
@@ -164,8 +165,9 @@ export function AddBlockModal({
               {/* Suggested for this student */}
               {suggested.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1.5">
-                    ⭐ Suggested — student is struggling here
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1.5 inline-flex items-center gap-1">
+                    <Star size={11} strokeWidth={1.75} className="fill-amber-700" />
+                    Suggested — student is struggling here
                   </p>
                   <div className="space-y-1.5">
                     {suggested.slice(0, 3).map((d) => (
@@ -281,8 +283,12 @@ function DrillRow({
           <span className="text-[10px] font-mono text-gray-400 mr-1">{drill.id}</span>
           {drill.title}
         </p>
-        <p className="text-[11px] text-gray-500 truncate">
-          {drill.type === 'mission' ? '🎯 Mission' : '🔧 Drill'}
+        <p className="text-[11px] text-gray-500 truncate inline-flex items-center gap-1">
+          {drill.type === 'mission' ? (
+            <><Waves size={11} strokeWidth={1.75} /> Mission</>
+          ) : (
+            <><Dumbbell size={11} strokeWidth={1.75} /> Drill</>
+          )}
           {drill.time_estimate ? ` · ${drill.time_estimate}` : ''}
           {typeof drill.currentRating === 'number'
             ? ` · self-rating ${'★'.repeat(drill.currentRating)}${'☆'.repeat(5 - drill.currentRating)}`

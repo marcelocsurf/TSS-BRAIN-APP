@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import type { CoachLessonDetail } from '@/lib/actions/coach-portal';
+import { BookOpen, Video, AlertTriangle, CheckCircle2, Dumbbell, Waves, Clock, RotateCcw } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────
 // StpPillarReader — the coach's STP lesson reader, sectioned into
@@ -21,13 +22,15 @@ import type { CoachLessonDetail } from '@/lib/actions/coach-portal';
 
 type Pillar = 'what' | 'deliver' | 'errors' | 'validate' | 'drill' | 'mission';
 
-const PILLARS: { key: Pillar; icon: string; label: string }[] = [
-  { key: 'what', icon: '📘', label: 'What' },
-  { key: 'deliver', icon: '🎬', label: 'Deliver' },
-  { key: 'errors', icon: '⚠', label: 'Errors' },
-  { key: 'validate', icon: '✅', label: 'Validate' },
-  { key: 'drill', icon: '🏋️', label: 'Drill' },
-  { key: 'mission', icon: '🌊', label: 'Mission' },
+type PillarIcon = React.ComponentType<any>;
+
+const PILLARS: { key: Pillar; Icon: PillarIcon; label: string }[] = [
+  { key: 'what',     Icon: BookOpen,      label: 'What' },
+  { key: 'deliver',  Icon: Video,         label: 'Deliver' },
+  { key: 'errors',   Icon: AlertTriangle, label: 'Errors' },
+  { key: 'validate', Icon: CheckCircle2,  label: 'Validate' },
+  { key: 'drill',    Icon: Dumbbell,      label: 'Drill' },
+  { key: 'mission',  Icon: Waves,         label: 'Mission' },
 ];
 
 export function StpPillarReader({ detail }: { detail: CoachLessonDetail }) {
@@ -45,13 +48,13 @@ export function StpPillarReader({ detail }: { detail: CoachLessonDetail }) {
               key={p.key}
               type="button"
               onClick={() => setActive(p.key)}
-              className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
+              className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                 isActive
                   ? 'bg-white text-[var(--tss-navy)] border border-gray-300 shadow-sm'
                   : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <span>{p.icon}</span>
+              <p.Icon size={13} strokeWidth={1.75} className={isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : ''} />
               <span>{p.label}</span>
             </button>
           );
@@ -90,7 +93,7 @@ export function StpPillarReader({ detail }: { detail: CoachLessonDetail }) {
         {active === 'drill' && (
           <LinkedToolBody
             kind="Drill"
-            emoji="🏋️"
+            Icon={Dumbbell}
             tool={linkedDrill}
             empty="No drill indexed for this step yet."
           />
@@ -98,7 +101,7 @@ export function StpPillarReader({ detail }: { detail: CoachLessonDetail }) {
         {active === 'mission' && (
           <LinkedToolBody
             kind="Mission"
-            emoji="🌊"
+            Icon={Waves}
             tool={linkedMission}
             empty="No mission indexed for this step yet."
           />
@@ -134,12 +137,12 @@ function PillarBody({
 
 function LinkedToolBody({
   kind,
-  emoji,
+  Icon,
   tool,
   empty,
 }: {
   kind: string;
-  emoji: string;
+  Icon: React.ComponentType<any>;
   tool: CoachLessonDetail['linkedDrill'];
   empty: string;
 }) {
@@ -148,17 +151,24 @@ function LinkedToolBody({
   }
   return (
     <div>
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-        {emoji} {kind} · {tool.id}
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 inline-flex items-center gap-1">
+        <Icon size={11} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+        {kind} · {tool.id}
         {tool.block_name ? ` · ${tool.block_name}` : ''}
       </p>
       <p className="text-base font-bold text-[var(--tss-navy)] mt-0.5">{tool.title}</p>
       <div className="flex flex-wrap gap-3 mt-1">
         {tool.time_estimate && (
-          <p className="text-[11px] text-gray-500">⏱ {tool.time_estimate}</p>
+          <p className="text-[11px] text-gray-500 inline-flex items-center gap-1">
+            <Clock size={11} strokeWidth={1.75} />
+            {tool.time_estimate}
+          </p>
         )}
         {tool.reps_recommended && (
-          <p className="text-[11px] text-gray-500">🔁 {tool.reps_recommended}</p>
+          <p className="text-[11px] text-gray-500 inline-flex items-center gap-1">
+            <RotateCcw size={11} strokeWidth={1.75} />
+            {tool.reps_recommended}
+          </p>
         )}
       </div>
 

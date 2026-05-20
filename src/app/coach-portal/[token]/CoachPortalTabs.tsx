@@ -125,7 +125,7 @@ function HomeTab({
             className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
             style={{ background: BRAND.colors.navy }}
           >
-            {initials || '🏄'}
+            {initials || <Waves size={18} strokeWidth={1.75} />}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[var(--tss-navy)] text-base truncate">{coach.display_name}</p>
@@ -926,7 +926,7 @@ function PlanTab({
     if (loading) {
       return (
         <div className="text-center py-16">
-          <div className="animate-pulse text-4xl mb-2">📋</div>
+          <ClipboardList size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]" />
           <p className="text-gray-500 text-sm">Loading planner…</p>
         </div>
       );

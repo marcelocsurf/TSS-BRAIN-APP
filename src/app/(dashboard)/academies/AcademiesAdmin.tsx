@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createAcademy, assignCoordinator } from './actions';
 import { actAsAcademy } from '@/lib/actions/auth';
+import { Users } from 'lucide-react';
 
 interface Academy {
   id: string;
@@ -116,7 +117,10 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-gray-500">
-            <span>👥 {a.student_count} students</span>
+            <span className="inline-flex items-center gap-1">
+              <Users size={11} strokeWidth={1.75} />
+              {a.student_count} students
+            </span>
             <div className="flex items-center gap-2">
               <Link
                 href={`/academies/${a.id}`}
