@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+# Run the same type check Vercel runs during build.
+# If this fails, the push is blocked so we don't ship a broken deploy
+# (which would silently keep serving the previous good build).
+
+echo "→ Running tsc --noEmit before push…"
+npx tsc --noEmit || {
+  echo ""
+  echo "✗ TypeScript errors found. Fix them before pushing — Vercel"
+  echo "  will refuse to build and keep serving the old version."
+  exit 1
+}
+echo "✓ Types clean"
