@@ -1946,6 +1946,75 @@ function StudentEvalCard({
       {/* Profile / bitácora — context while evaluating */}
       <StudentProfilePanel student={student} />
 
+      {/* M49 — Session-level Focus + Flow (one per student per day, not
+          per block). Saved on block 0 just like the board fields. */}
+      {blocks.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-3">
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Focus level — how present were they today?
+            </label>
+            <div className="grid grid-cols-5 gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={isClosed}
+                  onClick={() => onCommit(blocks[0].order_index, { focus_level: n })}
+                  className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
+                  style={
+                    blocks[0].focus_level === n
+                      ? { background: BRAND.colors.navy, color: 'white' }
+                      : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+                  }
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between mt-0.5">
+              <span className="text-[9px] text-gray-400">Distracted</span>
+              <span className="text-[9px] text-gray-400">Locked in</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Flow channel — was the demand right today?
+            </label>
+            <div className="grid grid-cols-5 gap-1">
+              {([
+                { n: 1, color: '#3B82F6', label: 'Bored' },
+                { n: 2, color: '#06B6D4', label: 'Easy' },
+                { n: 3, color: '#10B981', label: 'Optimal' },
+                { n: 4, color: '#F59E0B', label: 'Hard' },
+                { n: 5, color: '#EF4444', label: 'Frustrated' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.n}
+                  type="button"
+                  disabled={isClosed}
+                  onClick={() =>
+                    onCommit(blocks[0].order_index, { flow_channel: opt.n })
+                  }
+                  className="py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-70"
+                  style={
+                    blocks[0].flow_channel === opt.n
+                      ? { background: opt.color, color: 'white' }
+                      : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] text-gray-400 mt-0.5 italic text-center">
+              Center is the goal. Extremes mean dial reps + difficulty up or down.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* One eval section per block */}
       {blocks.map((block, i) => (
         <BlockEvalSection
@@ -2059,71 +2128,8 @@ function BlockEvalSection({
         </div>
       </div>
 
-      {/* M47 — Focus level (1-5): how present + engaged was the student? */}
-      <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          Focus level — how present were they?
-        </label>
-        <div className="grid grid-cols-5 gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              disabled={isClosed}
-              onClick={() => onCommit({ focus_level: n })}
-              className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
-              style={
-                block.focus_level === n
-                  ? { background: BRAND.colors.navy, color: 'white' }
-                  : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
-              }
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between mt-0.5">
-          <span className="text-[9px] text-gray-400">Distracted</span>
-          <span className="text-[9px] text-gray-400">Locked in</span>
-        </div>
-      </div>
-
-      {/* M47 — Flow channel (1=bored, 3=optimal, 5=frustrated). The
-          coach's read of where the student sat on Csíkszentmihályi's
-          flow channel. Center is the target; extremes tell us we asked
-          for too little or too much. */}
-      <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          Flow channel — was the demand right?
-        </label>
-        <div className="grid grid-cols-5 gap-1">
-          {([
-            { n: 1, color: '#3B82F6', label: 'Bored' },
-            { n: 2, color: '#06B6D4', label: 'Easy' },
-            { n: 3, color: '#10B981', label: 'Optimal' },
-            { n: 4, color: '#F59E0B', label: 'Hard' },
-            { n: 5, color: '#EF4444', label: 'Frustrated' },
-          ] as const).map((opt) => (
-            <button
-              key={opt.n}
-              type="button"
-              disabled={isClosed}
-              onClick={() => onCommit({ flow_channel: opt.n })}
-              className="py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-70"
-              style={
-                block.flow_channel === opt.n
-                  ? { background: opt.color, color: 'white' }
-                  : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-[9px] text-gray-400 mt-0.5 italic text-center">
-          Center is the goal. Extremes mean dial reps + difficulty up or down.
-        </p>
-      </div>
+      {/* M49 — Focus + Flow moved to the student-level eval card (one
+          per session, not per block). */}
 
       <TextArea
         label="Close note (visible to student)"
