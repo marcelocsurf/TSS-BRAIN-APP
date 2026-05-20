@@ -47,8 +47,16 @@ export default async function DashboardHome() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[var(--tss-navy)] mb-1">Dashboard</h2>
-      <p className="text-xs text-[var(--tss-gray-500)] mb-6" style={{ fontFamily: 'var(--font-mono)' }}>
+      <h2
+        className="text-2xl font-bold text-[var(--tss-navy)] mb-1 leading-tight"
+        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+      >
+        Dashboard
+      </h2>
+      <p
+        className="text-[10px] uppercase tracking-wider text-gray-400 mb-6"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
         {role === 'admin' && 'System Overview'}
         {role === 'coordinator' && 'Coordination Hub'}
         {role === 'coach' && 'Coaching Operating System'}
@@ -67,7 +75,7 @@ export default async function DashboardHome() {
       {drafts.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
               Pending Drafts ({drafts.length})
             </h3>
             <Link href="/sessions/drafts" className="text-xs text-[var(--tss-cyan)] hover:underline">
@@ -103,7 +111,7 @@ export default async function DashboardHome() {
       {role === 'assistant' && <AssistantDashboard />}
 
       {/* Quick actions */}
-      <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'var(--font-mono)' }}>Quick Actions</h3>
+      <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {(role === 'admin' || role === 'coordinator' || role === 'coach') && (
           <QuickAction href="/sessions/new" label="Start Session" desc="6-step coach flow" accentColor="var(--tss-cyan)" />
@@ -151,7 +159,7 @@ async function AdminDashboard() {
     <div className="space-y-6">
       {/* System Stats */}
       <div>
-        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>System Stats</h3>
+        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>System Stats</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           <MiniStat label="Total Students" value={adminData.totalStudents} />
           <MiniStat label="Total Coaches" value={adminData.totalCoaches} />
@@ -165,7 +173,7 @@ async function AdminDashboard() {
       {auditEvents.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Recent Audit</h3>
+            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Recent Audit</h3>
             <Link href="/audit" className="text-xs text-[var(--tss-cyan)] hover:underline">View All</Link>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
@@ -217,7 +225,7 @@ async function CoordinatorDashboard() {
 
       {/* ── Quick actions ── */}
       <div>
-        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Quick Actions</h3>
+        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <Link
             href="/students/new"
@@ -267,7 +275,7 @@ async function CoordinatorDashboard() {
       {/* ── Student Pipeline — needs action ── */}
       {coordData.pendingIntake.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Pending Intake ({coordData.pendingIntake.length})</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Pending Intake ({coordData.pendingIntake.length})</h3>
           <div className="bg-white rounded-xl border border-amber-100 divide-y divide-gray-50 overflow-hidden">
             {coordData.pendingIntake.map((s: any) => (
               <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-amber-50/30 transition-colors">
@@ -281,7 +289,7 @@ async function CoordinatorDashboard() {
 
       {coordData.noWaiver.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Missing Waiver ({coordData.noWaiver.length})</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Missing Waiver ({coordData.noWaiver.length})</h3>
           <div className="bg-white rounded-xl border border-red-100 divide-y divide-gray-50 overflow-hidden">
             {coordData.noWaiver.map((s: any) => (
               <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/30 transition-colors">
@@ -296,7 +304,7 @@ async function CoordinatorDashboard() {
       {/* ── Stuck students — no recent session ── */}
       {coordData.stuckStudents.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
             ⚠️ No session in 30+ days ({coordData.stuckStudentsCount})
           </h3>
           <div className="bg-white rounded-xl border border-orange-100 divide-y divide-gray-50 overflow-hidden">
@@ -328,7 +336,7 @@ async function CoordinatorDashboard() {
 
       {coordData.activeCamps.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Active Camps</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Active Camps</h3>
           <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
             {coordData.activeCamps.map((c: any) => {
               const coachRel = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
@@ -372,7 +380,7 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
     <div className="space-y-6">
       {/* Coach Stats */}
       <div>
-        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>My Overview</h3>
+        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>My Overview</h3>
         <div className="grid grid-cols-2 gap-2">
           <MiniStat label="My Students" value={coachData.myStudentCount} />
           <MiniStat label="Draft Sessions" value={coachData.draftCount} />
@@ -382,7 +390,7 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
       {/* My Next Classes (M3) — upcoming + active services assigned to me */}
       {coachData.upcomingServices && coachData.upcomingServices.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
             ▶ My Next Classes ({coachData.upcomingServices.length})
           </h3>
           <div className="space-y-2">
@@ -430,7 +438,7 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
       {/* Recent Sessions */}
       {coachData.recentSessions.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Recent Sessions</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Recent Sessions</h3>
           <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
             {coachData.recentSessions.map((s: any) => (
               <div key={s.id} className="px-4 py-2.5 flex items-center justify-between">
@@ -481,7 +489,7 @@ async function AssistantDashboard() {
       {/* Medical Alerts */}
       {assistantData.medicalAlerts.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Medical Alerts</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Medical Alerts</h3>
           <div className="bg-white rounded-xl border border-red-100 divide-y divide-gray-50 overflow-hidden">
             {assistantData.medicalAlerts.map((s: any) => (
               <Link key={s.id} href={`/students/${s.id}`} className="block px-4 py-2.5 hover:bg-red-50/30 transition-colors">
@@ -500,7 +508,7 @@ async function AssistantDashboard() {
       {/* Emergency Contacts */}
       {assistantData.emergencyContacts.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Emergency Contacts</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Emergency Contacts</h3>
           <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
             {assistantData.emergencyContacts.map((s: any) => (
               <div key={s.id} className="px-4 py-2.5 flex items-center justify-between">
@@ -524,16 +532,21 @@ async function AssistantDashboard() {
 
 function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
   const borderColors: Record<string, string> = {
-    cyan: 'border-t-[var(--tss-cyan)]',
-    gold: 'border-t-[var(--tss-gold)]',
+    cyan: 'border-t-[var(--tss-cyan,#5AC3E7)]',
+    gold: 'border-t-[var(--tss-cyan,#5AC3E7)]',
     navy: 'border-t-[var(--tss-navy)]',
     warm: 'border-t-[var(--tss-warm)]',
   };
 
   return (
-    <div className={`bg-white rounded-xl p-4 border border-[var(--tss-gray-100)] border-t-[3px] ${borderColors[accent]} shadow-sm`}>
+    <div className={`bg-white rounded-2xl p-4 border border-gray-100 border-t-[3px] ${borderColors[accent]} shadow-sm`}>
       <p className="text-2xl font-bold text-[var(--tss-navy)]">{value}</p>
-      <p className="text-xs text-[var(--tss-gray-500)] mt-1" style={{ fontFamily: 'var(--font-mono)' }}>{label}</p>
+      <p
+        className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        {label}
+      </p>
     </div>
   );
 }
@@ -550,14 +563,19 @@ function MiniStat({
   const isAmber = accent === 'amber';
   return (
     <div
-      className={`rounded-xl p-3 border ${
+      className={`rounded-2xl p-3 border shadow-sm ${
         isAmber ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'
       }`}
     >
       <p className={`text-lg font-bold ${isAmber ? 'text-amber-700' : 'text-[var(--tss-navy)]'}`}>
         {value}
       </p>
-      <p className="text-[10px] text-gray-400" style={{ fontFamily: 'var(--font-mono)' }}>{label}</p>
+      <p
+        className="text-[10px] uppercase tracking-wider text-gray-400"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        {label}
+      </p>
     </div>
   );
 }
@@ -566,7 +584,7 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
   return (
     <Link
       href={href}
-      className="block rounded-xl p-4 bg-white border border-[var(--tss-gray-100)] hover:shadow-md hover:border-[var(--tss-gray-300)] transition-all group"
+      className="block rounded-2xl p-4 bg-white border border-gray-100 shadow-sm hover:shadow hover:border-gray-300 transition-all group"
     >
       <div className="flex items-center gap-3">
         <div
@@ -575,7 +593,7 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
         />
         <div>
           <p className="font-semibold text-sm text-[var(--tss-navy)] group-hover:text-[var(--tss-navy-light)]">{label}</p>
-          <p className="text-xs text-[var(--tss-gray-500)] mt-0.5">{desc}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
         </div>
       </div>
     </Link>
