@@ -9,6 +9,18 @@ import {
 } from '@/lib/actions/dashboard';
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import Link from 'next/link';
+import {
+  UserPlus,
+  GraduationCap,
+  Tent,
+  ClipboardList,
+  Users,
+  AlertTriangle,
+  CircleDot,
+  CalendarDays,
+  Clock,
+  Waves,
+} from 'lucide-react';
 
 export default async function DashboardHome() {
   const supabase = await createClient();
@@ -229,37 +241,37 @@ async function CoordinatorDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <Link
             href="/students/new"
-            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
-            <p className="text-xl mb-1">👤</p>
+            <UserPlus size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">New Student</p>
           </Link>
           <Link
             href="/coaches/new"
-            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
-            <p className="text-xl mb-1">🎓</p>
+            <GraduationCap size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">New Coach</p>
           </Link>
           <Link
             href="/camps/new"
-            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
-            <p className="text-xl mb-1">⛺️</p>
+            <Tent size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">New Camp</p>
           </Link>
           <Link
             href="/students"
-            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
-            <p className="text-xl mb-1">📋</p>
+            <ClipboardList size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">All Students</p>
           </Link>
           <Link
             href="/coaches"
-            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
-            <p className="text-xl mb-1">👥</p>
+            <Users size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">All Coaches</p>
           </Link>
           <Link
@@ -304,8 +316,12 @@ async function CoordinatorDashboard() {
       {/* ── Stuck students — no recent session ── */}
       {coordData.stuckStudents.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
-            ⚠️ No session in 30+ days ({coordData.stuckStudentsCount})
+          <h3
+            className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider inline-flex items-center gap-1.5"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            <AlertTriangle size={14} strokeWidth={1.75} className="text-amber-600" />
+            No session in 30+ days ({coordData.stuckStudentsCount})
           </h3>
           <div className="bg-white rounded-xl border border-orange-100 divide-y divide-gray-50 overflow-hidden">
             {coordData.stuckStudents.map((s: any) => (
@@ -413,9 +429,17 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] font-mono uppercase tracking-wider"
-                       style={{ color: isActive ? '#047857' : startsToday ? '#92400E' : '#9CA3AF' }}>
-                      {isActive ? '🟢 In progress' : startsToday ? '📅 Today' : '⏰ Upcoming'}
+                    <p
+                      className="text-[10px] font-mono uppercase tracking-wider inline-flex items-center gap-1"
+                      style={{ color: isActive ? '#047857' : startsToday ? '#92400E' : '#9CA3AF' }}
+                    >
+                      {isActive ? (
+                        <><CircleDot size={11} strokeWidth={2.5} /> In progress</>
+                      ) : startsToday ? (
+                        <><CalendarDays size={11} strokeWidth={2} /> Today</>
+                      ) : (
+                        <><Clock size={11} strokeWidth={2} /> Upcoming</>
+                      )}
                       {s.service_kind ? ` · ${s.service_kind.replace(/_/g, ' ')}` : ''}
                     </p>
                     <span className="text-[10px] text-gray-400">
@@ -460,8 +484,8 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
       {/* Empty state when nothing scheduled */}
       {(!coachData.upcomingServices || coachData.upcomingServices.length === 0) &&
        coachData.recentSessions.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
-          <p className="text-3xl mb-2">🌊</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
+          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm text-gray-500">No upcoming classes assigned yet.</p>
           <p className="text-[11px] text-gray-400 mt-1">
             When a coordinator assigns you to a service, it shows up here.

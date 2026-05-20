@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Lock, Check } from 'lucide-react';
 
 export function InternalNotesCard({ studentId, notes }: { studentId: string; notes: string | null }) {
   const [value, setValue] = useState(notes || '');
@@ -21,9 +22,12 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
   };
 
   return (
-    <div className="bg-white rounded-xl border border-red-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-red-50 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-red-500">🔒 Internal Coach Notes</h3>
+        <h3 className="text-sm font-semibold text-red-500 inline-flex items-center gap-1.5">
+          <Lock size={13} strokeWidth={1.75} />
+          Internal Coach Notes
+        </h3>
         <span className="text-[10px] text-red-300 bg-red-50 px-2 py-0.5 rounded-full">Never visible to student</span>
       </div>
       <div className="px-4 py-3">
@@ -39,7 +43,12 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
           disabled={saving}
           className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Notes'}
+          {saving ? 'Saving...' : saved ? (
+            <span className="inline-flex items-center gap-1">
+              <Check size={12} strokeWidth={2.5} />
+              Saved
+            </span>
+          ) : 'Save Notes'}
         </button>
       </div>
     </div>

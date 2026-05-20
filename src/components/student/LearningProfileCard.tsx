@@ -7,6 +7,7 @@ import {
   type LearningChannel,
 } from '@/lib/constants/learning-profiles';
 import { setStudentLearningProfile } from '@/lib/actions/students';
+import { Brain } from 'lucide-react';
 
 interface Props {
   studentId: string;
@@ -73,10 +74,11 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
   // ── Empty state ──
   if (!primary && !editing) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            🧠 How they learn
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+            <Brain size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            How they learn
           </h3>
           <button
             type="button"
@@ -105,10 +107,11 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
   // ── Edit state ──
   if (editing) {
     return (
-      <div className="bg-white rounded-xl border border-amber-200 p-4 space-y-3">
+      <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            🧠 Set Learning Profile
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+            <Brain size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Set Learning Profile
           </h3>
           <button
             type="button"
@@ -175,8 +178,9 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <span className="text-2xl shrink-0">{p.icon}</span>
           <div className="min-w-0">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
-              🧠 How they learn
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 inline-flex items-center gap-1">
+              <Brain size={10} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              How they learn
             </p>
             <p
               className="text-base font-bold truncate"

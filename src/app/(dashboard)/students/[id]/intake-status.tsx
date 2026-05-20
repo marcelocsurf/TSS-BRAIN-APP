@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CheckCircle2, Hourglass, Check } from 'lucide-react';
 
 interface Props {
   portalToken: string;
@@ -33,19 +34,21 @@ export function IntakeStatusCard({ portalToken, intakeCompletedAt }: Props) {
   };
 
   return (
-    <div className={`rounded-xl border p-3 ${
+    <div className={`rounded-2xl border p-3 ${
       intakeCompletedAt
-        ? 'bg-green-50 border-green-100'
+        ? 'bg-emerald-50 border-emerald-100'
         : 'bg-amber-50 border-amber-100'
     }`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm shrink-0">
-            {intakeCompletedAt ? '✓' : '⏳'}
-          </span>
+          {intakeCompletedAt ? (
+            <CheckCircle2 size={16} strokeWidth={2} className="text-emerald-700 shrink-0" />
+          ) : (
+            <Hourglass size={16} strokeWidth={1.75} className="text-amber-700 shrink-0" />
+          )}
           <div className="min-w-0">
             <p className={`text-xs font-medium ${
-              intakeCompletedAt ? 'text-green-700' : 'text-amber-700'
+              intakeCompletedAt ? 'text-emerald-700' : 'text-amber-700'
             }`}>
               {intakeCompletedAt
                 ? `Profile completed ${new Date(intakeCompletedAt).toLocaleDateString()}`
@@ -57,13 +60,13 @@ export function IntakeStatusCard({ portalToken, intakeCompletedAt }: Props) {
 
         <button
           onClick={handleCopy}
-          className={`shrink-0 px-3 py-1.5 text-xs rounded-lg font-medium transition-all ${
+          className={`shrink-0 px-3 py-1.5 text-xs rounded-lg font-medium transition-all inline-flex items-center gap-1 ${
             copied
-              ? 'bg-green-600 text-white'
+              ? 'bg-emerald-600 text-white'
               : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
           }`}
         >
-          {copied ? '✓ Copied' : 'Copy Intake Link'}
+          {copied ? (<><Check size={12} strokeWidth={2.5} /> Copied</>) : 'Copy Intake Link'}
         </button>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { evaluateOceanLevel } from '@/lib/actions/evaluations';
 import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
+import { Hourglass } from 'lucide-react';
 
 interface Props {
   studentId: string;
@@ -69,10 +70,11 @@ export function OceanLevelPanel({ studentId, coachId, currentLevel, history, pro
           </span>
           {provisional && (
             <span
-              className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium"
+              className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold inline-flex items-center gap-1"
               title="Auto-assigned by the student's intake quiz. Confirm or adjust to clear this badge."
             >
-              ⏳ Provisional — quiz-assigned
+              <Hourglass size={10} strokeWidth={1.75} />
+              Provisional — quiz-assigned
             </span>
           )}
         </div>

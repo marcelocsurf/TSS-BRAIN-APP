@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Check } from 'lucide-react';
 
 const TSS_CERTIFICATIONS = [
   { key: 'lifeguard', name: 'Lifeguard Certification', category: 'external' },
@@ -99,21 +100,22 @@ function CertRow({ cert, active, saving, saved, onToggle }: {
       active ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)]/5' : 'border-gray-100 bg-white'
     }`}>
       <div>
-        <p className={`text-sm font-medium ${active ? 'text-[var(--tss-navy)]' : 'text-gray-500'}`}>
-          {active ? '✓ ' : ''}{cert.name}
+        <p className={`text-sm font-medium inline-flex items-center gap-1 ${active ? 'text-[var(--tss-navy)]' : 'text-gray-500'}`}>
+          {active && <Check size={13} strokeWidth={2.5} className="text-[var(--tss-cyan,#5AC3E7)]" />}
+          {cert.name}
         </p>
         {cert.desc && <p className="text-xs text-gray-400">{cert.desc}</p>}
       </div>
       <button
         onClick={onToggle}
         disabled={saving}
-        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
+        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all inline-flex items-center gap-1 ${
           active
             ? 'bg-red-50 text-red-500 hover:bg-red-100'
             : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
         } disabled:opacity-50`}
       >
-        {saving ? '...' : saved ? '✓' : active ? 'Revoke' : 'Grant'}
+        {saving ? '...' : saved ? <Check size={12} strokeWidth={2.5} /> : active ? 'Revoke' : 'Grant'}
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 import { getContentInventory } from '@/lib/actions/content';
 import { ContentVideoManager } from '@/components/content/ContentVideoManager';
+import { BarChart3, Scroll, Compass, Waves, GraduationCap, Dumbbell, Video } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -41,14 +42,18 @@ export default async function ContentAdminPage() {
           Manage videos for every lesson, drill, and mission. Paste YouTube or
           Vimeo URLs — they appear instantly on the student portal.
         </p>
-        <p className="text-[11px] text-gray-400 mt-2">
-          📊 {totalVideos} total videos across {lessons.length + drillsMissions.length} items
+        <p
+          className="text-[10px] uppercase tracking-wider text-gray-400 mt-2 inline-flex items-center gap-1.5"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          <BarChart3 size={11} strokeWidth={1.75} />
+          {totalVideos} total videos across {lessons.length + drillsMissions.length} items
         </p>
       </div>
 
       <Section
         title="Pre-Course"
-        emoji="📜"
+        icon={Scroll}
         subtitle="8 items · Module 0"
         items={preCourse}
         kind="lesson"
@@ -56,7 +61,7 @@ export default async function ContentAdminPage() {
 
       <Section
         title="Onboarding"
-        emoji="🧭"
+        icon={Compass}
         subtitle="6 items · Module 1"
         items={onboarding}
         kind="lesson"
@@ -64,7 +69,7 @@ export default async function ContentAdminPage() {
 
       <Section
         title="White Belt Steps"
-        emoji="🏄"
+        icon={Waves}
         subtitle="25 STPs · Module 2"
         items={whiteBelt}
         kind="lesson"
@@ -72,7 +77,7 @@ export default async function ContentAdminPage() {
 
       <Section
         title="Coach Courses"
-        emoji="🎓"
+        icon={GraduationCap}
         subtitle="Coach curriculum (delivery + master canon)"
         items={coachLessons}
         kind="lesson"
@@ -80,7 +85,7 @@ export default async function ContentAdminPage() {
 
       <Section
         title="Drills"
-        emoji="🏋️"
+        icon={Dumbbell}
         subtitle="Land / dry-land training drills"
         items={drills}
         kind="drill_mission"
@@ -88,7 +93,7 @@ export default async function ContentAdminPage() {
 
       <Section
         title="Missions"
-        emoji="🌊"
+        icon={Video}
         subtitle="In-water application missions"
         items={missions}
         kind="drill_mission"
@@ -101,13 +106,13 @@ export default async function ContentAdminPage() {
 
 function Section({
   title,
-  emoji,
+  icon: Icon,
   subtitle,
   items,
   kind,
 }: {
   title: string;
-  emoji: string;
+  icon: React.ComponentType<any>;
   subtitle: string;
   items: any[];
   kind: 'lesson' | 'drill_mission';
@@ -116,12 +121,13 @@ function Section({
   const withVideos = items.filter((i: any) => i.videos.length > 0).length;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-[var(--tss-navy)]">
-              {emoji} {title}
+            <h2 className="text-sm font-bold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+              <Icon size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              {title}
             </h2>
             <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>
           </div>

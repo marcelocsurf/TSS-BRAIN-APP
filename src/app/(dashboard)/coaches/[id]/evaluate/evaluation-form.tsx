@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { CheckCircle2, Lock, Star } from 'lucide-react';
 
 interface Props {
   coachId: string;
@@ -47,9 +48,10 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
 
   if (saved) {
     return (
-      <div className="bg-green-50 rounded-xl p-8 text-center">
-        <p className="text-lg font-semibold text-green-700">✓ Evaluation saved</p>
-        <p className="text-sm text-green-600 mt-1">Redirecting...</p>
+      <div className="bg-emerald-50 rounded-2xl p-8 text-center">
+        <CheckCircle2 size={32} strokeWidth={1.75} className="mx-auto mb-2 text-emerald-600" />
+        <p className="text-lg font-semibold text-emerald-700">Evaluation saved</p>
+        <p className="text-sm text-emerald-600/80 mt-1">Redirecting...</p>
       </div>
     );
   }
@@ -57,8 +59,18 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-mono tracking-widest text-[var(--tss-gold)] uppercase mb-1">Director Evaluation</p>
-        <h2 className="text-xl font-bold text-[var(--tss-navy)]">{coachName}</h2>
+        <p
+          className="text-[10px] font-mono tracking-[0.22em] text-[var(--tss-cyan,#5AC3E7)] uppercase mb-1 font-semibold"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          Director Evaluation
+        </p>
+        <h2
+          className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          {coachName}
+        </h2>
         <p className="text-sm text-gray-400">Score 1–10 in each dimension</p>
       </div>
 
@@ -86,7 +98,10 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-[var(--tss-navy)] mb-1">🔒 Director Notes <span className="text-gray-400 font-normal">(internal only)</span></label>
+          <label className="block text-xs font-medium text-[var(--tss-navy)] mb-1 inline-flex items-center gap-1">
+            <Lock size={12} strokeWidth={1.75} />
+            Director Notes <span className="text-gray-400 font-normal">(internal only)</span>
+          </label>
           <textarea value={form.director_notes} onChange={e => set('director_notes', e.target.value)}
             rows={2} placeholder="Private assessment — not shared with coach..."
             className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-200" />
@@ -96,7 +111,10 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
           <input type="checkbox" checked={form.recommended_for_promotion}
             onChange={e => set('recommended_for_promotion', e.target.checked)}
             className="w-4 h-4 rounded" />
-          <span className="text-sm font-medium text-[var(--tss-navy)]">⭐ Recommend for certification upgrade</span>
+          <span className="text-sm font-medium text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+            <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Recommend for certification upgrade
+          </span>
         </label>
       </div>
 
