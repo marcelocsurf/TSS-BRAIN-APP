@@ -702,8 +702,9 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
               <StatusBadge status={latestResult.status} />
             </div>
 
-            {/* Summary — show if survey completed */}
-            {data.hasSurveyEver && latestResult.student_visible_summary && (
+            {/* M45 — Per-session survey gate: only show feedback for this
+                specific session once the student has filled its survey. */}
+            {data.surveyResultIds.includes(latestResult.id) && latestResult.student_visible_summary && (
               <div className="pt-2 border-t border-gray-50">
                 <p className="text-xs text-gray-400 mb-1">Session Summary</p>
                 <p className="text-sm text-gray-700 whitespace-pre-line">
@@ -990,14 +991,20 @@ function SessionsTab({ data }: { data: PortalData }) {
                         </div>
                       </div>
                     )}
-                    {/* Show summary/feedback if survey ever completed */}
-                    {hasSurveyEver &&
+                    {/* M45 — Per-session survey gate */}
+                    {surveyResultIds.includes(session.id) &&
                       (session.student_visible_summary || session.coach_feedback) && (
                         <div className="pt-1">
                           <p className="text-xs text-gray-400 mb-1">Session Summary</p>
                           <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-2 whitespace-pre-line">
                             {session.student_visible_summary || session.coach_feedback}
                           </p>
+                        </div>
+                      )}
+                    {!surveyResultIds.includes(session.id) &&
+                      (session.student_visible_summary || session.coach_feedback) && (
+                        <div className="pt-1 text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2 italic">
+                          Fill the coach survey for this session to unlock the feedback.
                         </div>
                       )}
                     {session.video_link && (

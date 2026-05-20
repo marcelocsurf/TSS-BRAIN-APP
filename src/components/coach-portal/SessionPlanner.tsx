@@ -1,15 +1,27 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { BRAND } from '@/lib/constants/brand';
+import {
+  BRAND,
+  WAVE_SIZE_OPTIONS,
+  WIND_OPTIONS,
+  TIDE_OPTIONS,
+  HAZARD_OPTIONS,
+  BOARD_TYPE_OPTIONS,
+  BOARD_SIZE_FEET_OPTIONS,
+  BOARD_SIZE_INCHES_OPTIONS,
+} from '@/lib/constants/brand';
 import {
   saveServicePlanHeader,
   saveServicePlanBlock,
   startServicePlan,
   closeServicePlan,
+  saveOfficialStepRatingFromPortal,
   type ServicePlanData,
   type ServicePlanStudent,
 } from '@/lib/actions/service-planner';
+import { StarRating } from '@/components/sequence/StarRating';
+import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
 // can also write a custom one. Keys are stored as service_plans.mental_hack.
@@ -88,6 +100,40 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const commitPlanField = (field: keyof ServicePlanData['plan'], value: any) =>
     commitPlanPatch({ [field]: value } as any);
 
+  // M45 — When the coach rates an STP inline at session close, persist
+  // to student_step_ratings.coach_rating so it shows up cyan in the
+  // student's sequence + portal immediately.
+  const rateStepInline = (studentId: string, stepId: string, rating: number) => {
+    startTransition(async () => {
+      try {
+        await saveOfficialStepRatingFromPortal(
+          token,
+          data.selectedDay.camp_session_id,
+          studentId,
+          stepId,
+          rating,
+        );
+        // Update local stepRatings counts so the UI hint refreshes.
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.student_id === studentId
+              ? {
+                  ...s,
+                  stepRatings: {
+                    ...s.stepRatings,
+                    coachRatedCount: s.stepRatings.coachRatedCount + 1,
+                  },
+                }
+              : s,
+          ),
+        );
+        flash('★ Step rated');
+      } catch (e: any) {
+        alert(e.message || 'Failed to save rating');
+      }
+    });
+  };
+
   const commitStudentBlock = (
     studentId: string,
     patch: Partial<ServicePlanStudent['block']>
@@ -158,7 +204,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           completion_state: 'closed',
           closed_at: new Date().toISOString(),
         }));
-        flash('🏁 Session finalized');
+        flash('🏁 Day finalized');
+        // If this was the last day of the camp, surface the final
+        // official evaluation. The coach rates every STP per student
+        // before the parent camp_instance flips to 'completed'.
+        if (isLastDay) {
+          setShowFinalEval(true);
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e: any) {
         alert(e.message || 'Failed to finalize');
@@ -177,8 +229,34 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const [editingPlan, setEditingPlan] = useState(false);
   const showPlanForm = isPlanning || (state === 'in_progress' && editingPlan);
 
+  // M45 — Final camp evaluation modal. Shown after the coach closes the
+  // LAST day of a multi-day camp (or the only day of a 1-day service).
+  const lastDayNumber = Math.max(
+    ...data.daySummaries.map((d) => d.day_number),
+    data.selectedDay.day_number,
+  );
+  const isLastDay = data.selectedDay.day_number === lastDayNumber;
+  const [showFinalEval, setShowFinalEval] = useState(false);
+
   return (
     <div className="space-y-4 pb-32">
+      {/* M45 — Final official evaluation modal (last day only). */}
+      {showFinalEval && (
+        <FinalCampEvaluation
+          token={token}
+          campInstanceId={data.camp.id}
+          campName={data.camp.camp_name}
+          students={students}
+          stpCatalog={data.stpCatalog}
+          onCancel={() => setShowFinalEval(false)}
+          onCompleted={() => {
+            setShowFinalEval(false);
+            flash('🏁 Camp finalized · official record saved');
+            onBack();
+          }}
+        />
+      )}
+
       {savedFlash && (
         <div
           className="fixed top-2 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-full text-[11px] font-semibold shadow-lg"
@@ -311,10 +389,30 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <SmallField label="Wave size" value={plan.venue_wave_size} onBlur={(v) => commitPlanField('venue_wave_size', v)} placeholder="knee · waist · head" />
-                <SmallField label="Wind" value={plan.venue_wind} onBlur={(v) => commitPlanField('venue_wind', v)} placeholder="offshore 10 kts" />
-                <SmallField label="Tide" value={plan.venue_tide} onBlur={(v) => commitPlanField('venue_tide', v)} placeholder="rising mid" />
-                <SmallField label="Hazards" value={plan.venue_hazards} onBlur={(v) => commitPlanField('venue_hazards', v)} placeholder="rocks · current" />
+                <SelectField
+                  label="Wave size"
+                  value={plan.venue_wave_size}
+                  options={WAVE_SIZE_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_wave_size', v)}
+                />
+                <SelectField
+                  label="Wind"
+                  value={plan.venue_wind}
+                  options={WIND_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_wind', v)}
+                />
+                <SelectField
+                  label="Tide"
+                  value={plan.venue_tide}
+                  options={TIDE_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_tide', v)}
+                />
+                <SelectField
+                  label="Hazards"
+                  value={plan.venue_hazards}
+                  options={HAZARD_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_hazards', v)}
+                />
               </div>
 
               <TextArea
@@ -437,6 +535,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   stpLabel={stpLabel}
                   drillTitle={drillTitle}
                   onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
+                  onRateStep={(stepId, rating) => rateStepInline(s.student_id, stepId, rating)}
                 />
               ))}
             </div>
@@ -641,6 +740,42 @@ function SmallField({
         disabled={disabled}
         className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs disabled:bg-gray-50"
       />
+    </div>
+  );
+}
+
+// M45 — Select with a label that matches SmallField visually.
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: string | null;
+  options: readonly { value: string; label: string }[];
+  onChange: (v: string | null) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+        {label}
+      </label>
+      <select
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+        disabled={disabled}
+        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white disabled:bg-gray-50"
+      >
+        <option value="">—</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -1231,6 +1366,28 @@ function StudentPlanCard({
         placeholder="e.g. 3 clean pop-ups landing in FP2"
       />
 
+      {/* M45 — Board assignment per student per day */}
+      <div className="grid grid-cols-3 gap-2">
+        <SelectField
+          label="Board"
+          value={block.board_type}
+          options={BOARD_TYPE_OPTIONS}
+          onChange={(v) => onCommit({ board_type: v })}
+        />
+        <SelectField
+          label="Feet"
+          value={block.board_size_feet != null ? String(block.board_size_feet) : null}
+          options={BOARD_SIZE_FEET_OPTIONS.map((n) => ({ value: String(n), label: `${n}'` }))}
+          onChange={(v) => onCommit({ board_size_feet: v ? parseInt(v, 10) : null })}
+        />
+        <SelectField
+          label="Inches"
+          value={block.board_size_inches != null ? String(block.board_size_inches) : null}
+          options={BOARD_SIZE_INCHES_OPTIONS.map((n) => ({ value: String(n), label: `${n}"` }))}
+          onChange={(v) => onCommit({ board_size_inches: v ? parseInt(v, 10) : null })}
+        />
+      </div>
+
       {/* Pre-session note */}
       <TextArea
         label="Pre-session note"
@@ -1251,12 +1408,14 @@ function StudentEvalCard({
   stpLabel,
   drillTitle,
   onCommit,
+  onRateStep,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
   stpLabel: (id: string | null) => string | null;
   drillTitle: (id: string | null) => string | null;
   onCommit: (patch: Partial<ServicePlanStudent['block']>) => void;
+  onRateStep: (stepId: string, rating: number) => void;
 }) {
   const { block } = student;
   const land = block.land_drill_id ? drillTitle(block.land_drill_id) : block.land_drill_custom;
@@ -1344,6 +1503,29 @@ function StudentEvalCard({
         rows={2}
         disabled={isClosed}
       />
+
+      {/* M45 — Inline OFFICIAL step rating (TSS cyan). One per step worked
+          today. Writes to student_step_ratings.coach_rating immediately,
+          so the student sees cyan stars in their portal as soon as the
+          session closes. */}
+      {block.step_id && (
+        <div className="bg-[var(--tss-cyan,#5AC3E7)]/10 border border-[var(--tss-cyan,#5AC3E7)]/30 rounded-lg p-2.5">
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1.5">
+            Official step rating · {block.step_id}
+          </label>
+          <StarRating
+            value={null}
+            size="md"
+            variant="official"
+            readOnly={isClosed}
+            onChange={(v) => onRateStep(block.step_id!, v)}
+          />
+          <p className="text-[10px] text-gray-500 mt-1 italic">
+            This rating goes straight to {student.display_name.split(' ')[0]}'s
+            sequence as their official TSS evaluation for {block.step_id}.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

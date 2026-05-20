@@ -113,6 +113,59 @@ export const TRAINING_VENUES = [
 export type TrainingVenue = typeof TRAINING_VENUES[number]['value'];
 
 // ═══════════════════════════════════════
+// VENUE ANALYSIS (M45) — what the coach picks before going in.
+// Coaches were typing free-form text; now they pick from a canonical
+// list so the data is comparable across sessions / academies.
+// ═══════════════════════════════════════
+
+export const WAVE_SIZE_OPTIONS = [
+  { value: 'knee',     label: 'Knee high' },
+  { value: 'waist',    label: 'Waist high' },
+  { value: 'chest',    label: 'Chest high' },
+  { value: 'head',     label: 'Head high' },
+  { value: 'overhead', label: 'Overhead' },
+] as const;
+
+export const WIND_OPTIONS = [
+  { value: 'glassy',           label: 'Glassy' },
+  { value: 'offshore-light',   label: 'Light offshore' },
+  { value: 'offshore-strong',  label: 'Strong offshore' },
+  { value: 'side',             label: 'Side / cross' },
+  { value: 'onshore-light',    label: 'Light onshore' },
+  { value: 'onshore-strong',   label: 'Strong onshore' },
+] as const;
+
+export const TIDE_OPTIONS = [
+  { value: 'low-rising',  label: 'Low rising' },
+  { value: 'mid-rising',  label: 'Mid rising' },
+  { value: 'high',        label: 'High' },
+  { value: 'mid-falling', label: 'Mid falling' },
+  { value: 'low-falling', label: 'Low falling' },
+] as const;
+
+export const HAZARD_OPTIONS = [
+  { value: 'rocks',        label: 'Rocks' },
+  { value: 'current',      label: 'Current' },
+  { value: 'crowd',        label: 'Crowd' },
+  { value: 'shallow',      label: 'Shallow / reef' },
+  { value: 'marine_life',  label: 'Marine life' },
+  { value: 'pollution',    label: 'Pollution' },
+] as const;
+
+// ═══════════════════════════════════════
+// BOARD ASSIGNMENT (M45) — per student per session.
+// ═══════════════════════════════════════
+
+export const BOARD_TYPE_OPTIONS = [
+  { value: 'soft', label: 'Soft top' },
+  { value: 'hard', label: 'Hard top' },
+] as const;
+
+// Whole-foot range commonly used at TSS. Inches are 0-11.
+export const BOARD_SIZE_FEET_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12];
+export const BOARD_SIZE_INCHES_OPTIONS = [0, 2, 4, 6, 8, 10];
+
+// ═══════════════════════════════════════
 // WARM-UP — Section 6.3
 // ═══════════════════════════════════════
 

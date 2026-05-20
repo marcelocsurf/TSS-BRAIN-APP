@@ -681,6 +681,120 @@ export async function saveServicePlanBlock(
   }
 }
 
+// M45 — Mark the entire camp as completed after the FinalCampEvaluation
+// step. All per-day plans should already be closed by this point; this
+// flips the parent camp_instance to 'completed' so it disappears from
+// "upcoming" lists everywhere. Optionally accepts a batch of STP ratings
+// to write in one shot (Final Eval gives the coach a chance to rate every
+// STP of the student's belt level officially).
+export async function closeCampFinal(
+  token: string,
+  campInstanceId: string,
+  ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
+): Promise<void> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, coach_id, head_coach_id')
+    .eq('id', campInstanceId)
+    .single();
+  if (!camp) throw new Error('Service not found.');
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    throw new Error('You are not assigned to this service.');
+  }
+
+  // Batch-write the official STP ratings, if any
+  if (ratings && ratings.length > 0) {
+    const rows = ratings.map((r) => ({
+      student_id: r.student_id,
+      step_id: r.step_id,
+      coach_rating: r.rating,
+      coach_rated_at: new Date().toISOString(),
+      coach_rated_by: coach.id,
+      last_updated: new Date().toISOString(),
+    }));
+    await admin
+      .from('student_step_ratings')
+      .upsert(rows, { onConflict: 'student_id,step_id' });
+  }
+
+  await admin
+    .from('camp_instances')
+    .update({ status: 'completed' })
+    .eq('id', campInstanceId);
+}
+
+// M45 — Save a coach's official STP rating for a student during session
+// close. Uses the portal token + camp_session ownership check (like the
+// other portal actions). Writes to student_step_ratings.coach_rating so
+// the student sees cyan official stars in their portal.
+export async function saveOfficialStepRatingFromPortal(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+  stepId: string,
+  rating: number | null
+): Promise<void> {
+  const admin = createAdminClient();
+
+  if (rating !== null && (rating < 1 || rating > 5)) {
+    throw new Error('Rating must be 1-5 or null to clear.');
+  }
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  // Verify ownership through the session
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) throw new Error('Session not found.');
+  const camp = Array.isArray(session.camp_instances)
+    ? session.camp_instances[0]
+    : session.camp_instances;
+  if (!camp) throw new Error('Service not found.');
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    throw new Error('You are not assigned to this service.');
+  }
+
+  // Confirm student is in the camp
+  const { data: participant } = await admin
+    .from('camp_participants')
+    .select('id')
+    .eq('camp_instance_id', session.camp_instance_id)
+    .eq('student_id', studentId)
+    .maybeSingle();
+  if (!participant) throw new Error('Student not enrolled in this service.');
+
+  await admin
+    .from('student_step_ratings')
+    .upsert(
+      {
+        student_id: studentId,
+        step_id: stepId,
+        coach_rating: rating,
+        coach_rated_at: rating !== null ? new Date().toISOString() : null,
+        coach_rated_by: rating !== null ? coach.id : null,
+        last_updated: new Date().toISOString(),
+      },
+      { onConflict: 'student_id,step_id' }
+    );
+}
+
 // ─── Lifecycle: start + close ──────────────────────────────────────
 
 export async function startServicePlan(token: string, campSessionId: string): Promise<void> {
