@@ -531,7 +531,20 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                           await applyTemplateDayToStudents(
                             token,
                             data.selectedDay.camp_session_id,
-                            todayTpl.blocks,
+                            // M45 template blocks use `block_order`,
+                            // applyTemplateDayToStudents expects `order_index`.
+                            // Map the field name so multi-block apply seeds
+                            // every block (was only seeding 1 because the
+                            // missing field defaulted all rows to order 0).
+                            todayTpl.blocks.map((b) => ({
+                              order_index: b.block_order,
+                              step_id: b.step_id,
+                              drill_id: b.drill_id,
+                              drill_custom: b.drill_custom,
+                              mission_id: b.mission_id,
+                              mission_custom: b.mission_custom,
+                              objective_text: b.evaluation_focus ?? null,
+                            })),
                           );
                           flash('✓ Day re-seeded · refresh to see');
                           onSwitchDay?.(data.selectedDay.day_number);
