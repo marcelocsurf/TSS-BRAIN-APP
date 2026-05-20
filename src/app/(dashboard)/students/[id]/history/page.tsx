@@ -3,6 +3,7 @@ import { getStudent } from '@/lib/actions/students';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import Link from 'next/link';
+import { Lock } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { VideoLinkEditor } from './video-link-editor';
 
@@ -151,7 +152,10 @@ export default async function StudentHistoryPage({ params }: Props) {
                   )}
                   {(session as any).internal_notes && (
                     <div className="bg-red-50 rounded-lg px-3 py-2">
-                      <p className="text-xs text-red-500 font-medium mb-0.5">🔒 Internal Notes</p>
+                      <p className="text-xs text-red-500 font-medium mb-0.5 inline-flex items-center gap-1">
+                        <Lock size={11} strokeWidth={1.75} />
+                        Internal Notes
+                      </p>
                       <p className="text-sm text-gray-700">{(session as any).internal_notes}</p>
                     </div>
                   )}

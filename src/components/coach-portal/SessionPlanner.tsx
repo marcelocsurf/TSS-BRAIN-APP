@@ -43,16 +43,23 @@ import {
   Wind,
   Moon,
   AlertTriangle,
+  ChevronDown,
+  MapPin,
+  Star,
+  User,
+  Zap,
+  Dumbbell,
+  Key,
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
 // can also write a custom one. Keys are stored as service_plans.mental_hack.
-const MENTAL_HACK_QUICK = [
-  { id: 'breathe_reset',     label: 'Breathe + reset', emoji: '🌬' },
-  { id: 'key_words',         label: 'Key words',       emoji: '🔑' },
-  { id: 'visualize_success', label: 'Visualize',       emoji: '🎯' },
+const MENTAL_HACK_QUICK: { id: string; label: string; Icon: React.ComponentType<any> }[] = [
+  { id: 'breathe_reset',     label: 'Breathe + reset', Icon: Wind },
+  { id: 'key_words',         label: 'Key words',       Icon: Key },
+  { id: 'visualize_success', label: 'Visualize',       Icon: Target },
 ];
 
 // ────────────────────────────────────────────────────────────────────
@@ -754,7 +761,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                         : { background: 'white', color: '#374151', borderColor: '#E5E7EB' }
                     }
                   >
-                    <div className="text-base mb-0.5">{opt.emoji}</div>
+                    <opt.Icon size={16} strokeWidth={1.75} className="mx-auto mb-0.5" />
                     <div>{opt.label}</div>
                   </button>
                 );
@@ -1325,7 +1332,7 @@ function StudentAvatar({
       className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
       style={{ background: BRAND.colors.navy }}
     >
-      {initials || '🏄'}
+      {initials || <Waves size={14} strokeWidth={1.75} />}
     </div>
   );
 }
@@ -1399,15 +1406,21 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between px-2.5 py-2 text-left"
       >
-        <span className="text-[11px] font-semibold text-[var(--tss-navy)]">
-          📋 Profile & bitácora
+        <span className="text-[11px] font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+          <ClipboardList size={12} strokeWidth={1.75} />
+          Profile & bitácora
           {hasMedical && (
-            <span className="ml-1.5 text-[10px] text-red-600">⚠ medical</span>
+            <span className="ml-1 text-[10px] text-red-600 inline-flex items-center gap-0.5">
+              <AlertTriangle size={10} strokeWidth={2} />
+              medical
+            </span>
           )}
         </span>
-        <span className={`text-gray-400 text-xs transition ${open ? 'rotate-180' : ''}`}>
-          ▾
-        </span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2}
+          className={`text-gray-400 transition ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
@@ -1428,25 +1441,26 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
 
           {/* Sequence position */}
           {seqPos && (
-            <ProfileLine label="📍 Position" value={seqPos} />
+            <ProfileLine label={<><MapPin size={11} strokeWidth={1.75} /> Position</>} value={seqPos} />
           )}
 
           {/* Self-assessment vs coach rating */}
           {hasRatings && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-                ⭐ Self-assessment
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5 inline-flex items-center gap-1">
+                <Star size={10} strokeWidth={1.75} className="text-amber-500" />
+                Self-assessment
               </p>
               {stepRatings.selfRatedCount > 0 && (
                 <ProfileLine
                   label="Self-rated"
-                  value={`${stepRatings.selfRatedCount} STPs · avg ★${stepRatings.avgSelfRating}`}
+                  value={`${stepRatings.selfRatedCount} STPs · avg ${stepRatings.avgSelfRating}/5`}
                 />
               )}
               {stepRatings.coachRatedCount > 0 && (
                 <ProfileLine
                   label="Coach-rated"
-                  value={`${stepRatings.coachRatedCount} STPs · avg ★${stepRatings.avgCoachRating}`}
+                  value={`${stepRatings.coachRatedCount} STPs · avg ${stepRatings.avgCoachRating}/5`}
                 />
               )}
               {stepRatings.selfRatedCount > 0 &&
@@ -1454,8 +1468,9 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
                 stepRatings.avgSelfRating != null &&
                 stepRatings.avgCoachRating != null &&
                 stepRatings.avgSelfRating - stepRatings.avgCoachRating >= 1 && (
-                  <p className="text-[10px] text-amber-700 mt-0.5">
-                    ⚠ Self-rates noticeably higher than coach — may be over-estimating.
+                  <p className="text-[10px] text-amber-700 mt-0.5 inline-flex items-center gap-1">
+                    <AlertTriangle size={10} strokeWidth={2} />
+                    Self-rates noticeably higher than coach — may be over-estimating.
                   </p>
                 )}
             </div>
@@ -1464,8 +1479,9 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
           {/* Medical & safety — prominent when present */}
           {(hasMedical || hasEmergency) && (
             <div className="rounded-md bg-red-50 border border-red-200 p-2 space-y-1">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-red-700">
-                ⚠ Safety
+              <p className="text-[10px] font-mono uppercase tracking-wider text-red-700 inline-flex items-center gap-1">
+                <AlertTriangle size={10} strokeWidth={2} />
+                Safety
               </p>
               {profile.injuries && <ProfileLine label="Injuries" value={profile.injuries} danger />}
               {profile.allergies && <ProfileLine label="Allergies" value={profile.allergies} danger />}
@@ -1495,7 +1511,13 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
                 <div className="space-y-1">
                   {visibleSessions.map((rs, i) => (
                     <div key={i} className="flex items-start gap-2 text-[11px]">
-                      <span className="shrink-0">{rs.type === 'coach' ? '🏄' : '🧍'}</span>
+                      <span className="shrink-0 text-gray-400">
+                        {rs.type === 'coach' ? (
+                          <Waves size={11} strokeWidth={1.75} />
+                        ) : (
+                          <User size={11} strokeWidth={1.75} />
+                        )}
+                      </span>
                       <span className="shrink-0 text-gray-400 w-14">
                         {rs.date
                           ? new Date(rs.date).toLocaleDateString('en-US', {
@@ -1532,8 +1554,9 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
           {/* Goals */}
           {goals.length > 0 && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-                🎯 Goals
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5 inline-flex items-center gap-1">
+                <Target size={10} strokeWidth={1.75} />
+                Goals
               </p>
               {goals.map(([label, value], i) => (
                 <ProfileLine key={i} label={label} value={value} />
@@ -1544,8 +1567,9 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
           {/* Watch out */}
           {(profile.fears_phobias || profile.biggest_barrier) && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-                ⚡ Watch out
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5 inline-flex items-center gap-1">
+                <Zap size={10} strokeWidth={1.75} />
+                Watch out
               </p>
               {profile.fears_phobias && <ProfileLine label="Fears" value={profile.fears_phobias} />}
               {profile.biggest_barrier && <ProfileLine label="Barrier" value={profile.biggest_barrier} />}
@@ -1582,14 +1606,14 @@ function ProfileLine({
   value,
   danger,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   danger?: boolean;
 }) {
   return (
     <div className="flex gap-2 text-[11px]">
       <span
-        className={`shrink-0 w-20 ${danger ? 'text-red-500' : 'text-gray-400'}`}
+        className={`shrink-0 w-20 inline-flex items-center gap-1 ${danger ? 'text-red-500' : 'text-gray-400'}`}
       >
         {label}
       </span>
@@ -2163,16 +2187,20 @@ function BlockEvalSection({
       <div className="space-y-1">
         <EvalRow label="Sequence" value={stpLabel(block.step_id) || '—'} />
         <EvalRow
-          label="🏋️ Land drill"
+          label={<><Dumbbell size={11} strokeWidth={1.75} /> Land drill</>}
           value={land || '—'}
           onClick={block.land_drill_id ? () => onShowDrill(block.land_drill_id!) : undefined}
         />
         <EvalRow
-          label="🌊 Water mission"
+          label={<><Waves size={11} strokeWidth={1.75} /> Water mission</>}
           value={water || '—'}
           onClick={block.water_drill_id ? () => onShowDrill(block.water_drill_id!) : undefined}
         />
-        <EvalRow label="🎯 Objective" value={block.objective_text || '—'} highlight />
+        <EvalRow
+          label={<><Target size={11} strokeWidth={1.75} /> Objective</>}
+          value={block.objective_text || '—'}
+          highlight
+        />
         {block.notes_pre && <EvalRow label="Pre-note" value={block.notes_pre} />}
       </div>
 
@@ -2238,14 +2266,14 @@ function EvalRow({
   highlight,
   onClick,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   highlight?: boolean;
   onClick?: () => void;
 }) {
   return (
     <div className="flex gap-2 text-xs">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0 w-24 pt-0.5">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0 w-24 pt-0.5 inline-flex items-center gap-1">
         {label}
       </span>
       {onClick ? (

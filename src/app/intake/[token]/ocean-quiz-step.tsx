@@ -12,6 +12,7 @@ import {
 } from '@/lib/constants/ocean-quiz';
 import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
 import { submitOceanQuiz } from '@/lib/actions/intake';
+import { Waves } from 'lucide-react';
 
 interface Props {
   token: string;
@@ -88,8 +89,9 @@ export function OceanQuizStep({ token, initialAnswers, onComplete }: Props) {
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            🌊 Ocean Self-Sufficiency
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
+            <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Ocean Self-Sufficiency
           </h3>
           <p className="text-[11px] text-gray-500 mt-1">
             6 quick questions. Helps your coach know exactly what conditions you
@@ -229,8 +231,8 @@ export function OceanQuizResult({
   const info = OCEAN_LEVEL_INFO[level];
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-100 p-6 text-center space-y-3">
-        <p className="text-3xl">🌊</p>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center space-y-3">
+        <Waves size={36} strokeWidth={1.5} className="mx-auto text-[var(--tss-cyan,#5AC3E7)]" />
         <p className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">
           Provisional Level — {info.short}
         </p>
