@@ -252,7 +252,7 @@ export async function getStudentPortalData(token: string) {
   const today = new Date().toISOString().slice(0, 10);
   const upcomingCamps: any[] = [];
   const pastCamps: any[] = [];
-  for (const p of participations ?? []) {
+  for (const p of (participations ?? []) as any[]) {
     const ci = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;
     if (!ci) continue;
     const tpl = Array.isArray(ci.camp_templates) ? ci.camp_templates[0] : ci.camp_templates;

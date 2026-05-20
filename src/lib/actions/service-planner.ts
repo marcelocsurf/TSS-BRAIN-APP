@@ -1033,9 +1033,10 @@ export async function closeServicePlan(
     .eq('id', campSessionId)
     .single();
   if (!session) throw new Error('Session not found.');
-  const camp = Array.isArray(session.camp_instances)
-    ? session.camp_instances[0]
-    : session.camp_instances;
+  const sessionAny = session as any;
+  const camp = Array.isArray(sessionAny.camp_instances)
+    ? sessionAny.camp_instances[0]
+    : sessionAny.camp_instances;
   if (!camp) throw new Error('Service not found.');
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
@@ -1207,7 +1208,7 @@ export async function closeServicePlan(
       .eq('id', plan.id);
   } else {
     await admin.from('service_plans').insert({
-      camp_instance_id: session.camp_instance_id,
+      camp_instance_id: sessionAny.camp_instance_id,
       camp_session_id: campSessionId,
       completion_state: 'closed',
       closed_at: new Date().toISOString(),

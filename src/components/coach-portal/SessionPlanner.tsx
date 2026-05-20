@@ -174,6 +174,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               board_type: null,
               board_size_feet: null,
               board_size_inches: null,
+              focus_level: null,
+              flow_channel: null,
               ...patch,
             },
           ].sort((a, b) => a.order_index - b.order_index);
@@ -1572,6 +1574,8 @@ function StudentPlanCard({
         board_type: null,
         board_size_feet: null,
         board_size_inches: null,
+        focus_level: null,
+        flow_channel: null,
       } as ServicePlanBlock];
 
   return (
