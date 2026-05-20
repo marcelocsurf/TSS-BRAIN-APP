@@ -20,13 +20,23 @@ export default async function IntakePage({ params }: Props) {
     <div className="min-h-screen bg-[var(--tss-gray-50)]">
       {/* Header */}
       <div style={{ background: BRAND.colors.navy }} className="px-4 py-6 text-center">
-        <h1 className="text-xl font-bold text-white">The Surf Sequence</h1>
-        <p style={{ color: BRAND.colors.gold }} className="text-xs mt-1">Your Profile</p>
+        <h1
+          className="text-2xl font-bold text-white leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          The Surf Sequence
+        </h1>
+        <p
+          className="text-[10px] mt-2 uppercase tracking-[0.22em] font-semibold"
+          style={{ color: BRAND.colors.cyan, fontFamily: 'DM Mono, monospace' }}
+        >
+          Your Profile
+        </p>
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-4">
         {/* Student card */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"

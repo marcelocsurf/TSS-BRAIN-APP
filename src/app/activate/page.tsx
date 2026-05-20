@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import { validateAccessCode, redeemCodeAndCreateStudent } from '@/lib/actions/course';
+import { CheckCircle2 } from 'lucide-react';
 
 type Step = 'enter-code' | 'fill-profile' | 'success';
 
@@ -113,8 +114,8 @@ export default function ActivatePage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
           <div>
             <h1
-              className="text-2xl font-bold mb-1"
-              style={{ color: 'var(--tss-navy, #0d2240)' }}
+              className="text-2xl font-bold mb-1 leading-tight"
+              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'Playfair Display, Georgia, serif' }}
             >
               Activate Your Access
             </h1>
@@ -173,8 +174,8 @@ export default function ActivatePage() {
               Code valid — {PRODUCT_LABEL[productType] ?? productType}
             </div>
             <h1
-              className="text-2xl font-bold mb-1"
-              style={{ color: 'var(--tss-navy, #0d2240)' }}
+              className="text-2xl font-bold mb-1 leading-tight"
+              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'Playfair Display, Georgia, serif' }}
             >
               Create Your Profile
             </h1>
@@ -252,15 +253,15 @@ export default function ActivatePage() {
       {step === 'success' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center space-y-5">
           <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-3xl"
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
             style={{ backgroundColor: 'var(--tss-cyan, #00c2e0)' }}
           >
-            🎉
+            <CheckCircle2 size={32} strokeWidth={1.75} className="text-white" />
           </div>
           <div>
             <h1
-              className="text-2xl font-bold mb-2"
-              style={{ color: 'var(--tss-navy, #0d2240)' }}
+              className="text-2xl font-bold mb-2 leading-tight"
+              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'Playfair Display, Georgia, serif' }}
             >
               Your account is ready!
             </h1>
