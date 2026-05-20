@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { StudentSearch } from './student-search';
 import { StudentFilters } from './student-filters';
 import { Suspense } from 'react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 // All advanced filter keys that map to URL params
 const ADVANCED_KEYS = [
@@ -99,8 +100,18 @@ export default async function StudentRosterPage({ searchParams }: Props) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--tss-navy)]">Students</h2>
-          <p className="text-xs text-[var(--tss-gray-500)] mt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>{total} student{total !== 1 ? 's' : ''} total</p>
+          <h2
+            className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          >
+            Students
+          </h2>
+          <p
+            className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            {total} student{total !== 1 ? 's' : ''} total
+          </p>
         </div>
         <Link
           href="/students/new"
@@ -165,7 +176,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             <Link
               key={s.id}
               href={`/students/${s.id}`}
-              className="flex items-center gap-3 bg-white rounded-xl p-3 border border-[var(--tss-gray-100)] hover:border-[var(--tss-gray-300)] hover:shadow-sm transition-all"
+              className="flex items-center gap-3 bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow transition-all"
               style={{ borderLeftWidth: '3px', borderLeftColor: BELT_DISPLAY[s.belt_level]?.color || '#C8D0DC' }}
             >
               {/* Photo or initials */}
@@ -195,12 +206,12 @@ export default async function StudentRosterPage({ searchParams }: Props) {
                 <div className="flex items-center gap-1.5">
                   {/* Waiver status badge */}
                   {s.waiver_signed ? (
-                    <span className="text-[10px] bg-green-50 text-[var(--tss-success)] px-1.5 py-0.5 rounded-full" title="Waiver signed">
-                      &#10003;
+                    <span className="inline-flex items-center bg-emerald-50 text-emerald-700 p-1 rounded-full" title="Waiver signed">
+                      <CheckCircle2 size={11} strokeWidth={2} />
                     </span>
                   ) : (
-                    <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full" title="Waiver not signed">
-                      &#9888;
+                    <span className="inline-flex items-center bg-amber-50 text-amber-600 p-1 rounded-full" title="Waiver not signed">
+                      <AlertTriangle size={11} strokeWidth={2} />
                     </span>
                   )}
                   {/* Intake tier badge */}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach, isCoordinatorOrAbove, isRealPlatformAdmin } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -43,9 +44,21 @@ export default async function CoachesPage() {
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-xs tracking-widest text-[var(--tss-gold)] uppercase mb-1" style={{ fontFamily: 'var(--font-mono)' }}>TSS Brain</p>
-          <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Team Management</h1>
-          <p className="text-sm text-[var(--tss-gray-500)] mt-0.5">{activeCoaches.length} active · {inactiveCoaches.length} inactive</p>
+          <p
+            className="text-[10px] tracking-[0.22em] text-[var(--tss-cyan,#5AC3E7)] uppercase mb-1 font-semibold"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            TSS Brain
+          </p>
+          <h1
+            className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          >
+            Team Management
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {activeCoaches.length} active · {inactiveCoaches.length} inactive
+          </p>
         </div>
         {canCreateCoach && (
           <Link
@@ -62,16 +75,25 @@ export default async function CoachesPage() {
         {(['admin', 'coordinator', 'coach', 'assistant'] as const).map(role => {
           const colors: Record<string, string> = {
             admin: 'var(--tss-danger)',
-            coordinator: 'var(--tss-gold)',
+            coordinator: 'var(--tss-cyan, #5AC3E7)',
             coach: 'var(--tss-success)',
             assistant: 'var(--tss-gray-500)',
           };
           return (
-            <div key={role} className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-4 text-center border-t-[3px]" style={{ borderTopColor: colors[role] }}>
+            <div
+              key={role}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center border-t-[3px]"
+              style={{ borderTopColor: colors[role] }}
+            >
               <p className="text-2xl font-bold text-[var(--tss-navy)]">
                 {activeCoaches.filter(c => c.role === role).length}
               </p>
-              <p className="text-xs text-[var(--tss-gray-500)] mt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>{ROLE_LABELS[role]}s</p>
+              <p
+                className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                {ROLE_LABELS[role]}s
+              </p>
             </div>
           );
         })}
@@ -86,42 +108,47 @@ export default async function CoachesPage() {
             <Link
               key={coach.id}
               href={`/coaches/${coach.id}`}
-              className="block bg-white rounded-xl border border-[var(--tss-gray-100)] hover:border-[var(--tss-gray-300)] hover:shadow-sm transition-all overflow-hidden"
+              className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow transition-all overflow-hidden"
             >
               <div className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden"
                     style={{
                       backgroundColor: beltColor,
                       color: coach.max_belt_permission === 'white_belt' ? '#333' : 'white'
                     }}
                   >
-                    {coach.first_name?.[0]}{coach.last_name?.[0]}
+                    {coach.photo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={coach.photo_url} alt="" className="w-10 h-10 object-cover" />
+                    ) : (
+                      <>{coach.first_name?.[0]}{coach.last_name?.[0]}</>
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold text-[var(--tss-navy)]">{coach.display_name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                         coach.role === 'admin' ? 'bg-red-50 text-[var(--tss-danger)]' :
-                        coach.role === 'coordinator' ? 'bg-amber-50 text-amber-600' :
-                        coach.role === 'coach' ? 'bg-emerald-50 text-[var(--tss-success)]' :
-                        'bg-[var(--tss-gray-50)] text-[var(--tss-gray-500)]'
+                        coach.role === 'coordinator' ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' :
+                        coach.role === 'coach' ? 'bg-emerald-50 text-emerald-700' :
+                        'bg-gray-50 text-gray-500'
                       }`}>
                         {ROLE_LABELS[coach.role] || coach.role}
                       </span>
-                      <span className="text-[var(--tss-gray-200)]">&middot;</span>
-                      <span className="text-xs text-[var(--tss-gray-500)]">Max: {coach.max_belt_permission?.replace('_', ' ')}</span>
+                      <span className="text-gray-200">·</span>
+                      <span className="text-xs text-gray-500">Max: {coach.max_belt_permission?.replace('_', ' ')}</span>
                       {coach.certification_level && (
                         <>
-                          <span className="text-[var(--tss-gray-200)]">&middot;</span>
-                          <span className="text-xs text-[var(--tss-gray-500)]">{coach.certification_level}</span>
+                          <span className="text-gray-200">·</span>
+                          <span className="text-xs text-gray-500">{coach.certification_level}</span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
-                <span className="text-xs text-[var(--tss-gray-300)]">&rarr;</span>
+                <ChevronRight size={16} strokeWidth={1.75} className="text-gray-300 shrink-0" />
               </div>
             </Link>
           );
@@ -129,20 +156,25 @@ export default async function CoachesPage() {
 
         {inactiveCoaches.length > 0 && (
           <div className="pt-4">
-            <p className="text-xs tracking-widest text-[var(--tss-gray-300)] uppercase mb-3" style={{ fontFamily: 'var(--font-mono)' }}>Inactive</p>
+            <p
+              className="text-[10px] tracking-[0.22em] text-gray-400 uppercase mb-3 font-semibold"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              Inactive
+            </p>
             {inactiveCoaches.map(coach => (
               <Link
                 key={coach.id}
                 href={`/coaches/${coach.id}`}
-                className="block bg-white rounded-xl border border-[var(--tss-gray-100)] opacity-50 hover:opacity-75 transition-opacity mb-2"
+                className="block bg-white rounded-2xl border border-gray-100 opacity-50 hover:opacity-75 transition-opacity mb-2"
               >
                 <div className="px-5 py-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[var(--tss-gray-200)] flex items-center justify-center text-xs font-bold text-[var(--tss-gray-500)]">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
                     {coach.first_name?.[0]}{coach.last_name?.[0]}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[var(--tss-gray-500)]">{coach.display_name}</p>
-                    <p className="text-xs text-[var(--tss-gray-500)]">{coach.email}</p>
+                    <p className="text-sm font-medium text-gray-500">{coach.display_name}</p>
+                    <p className="text-xs text-gray-400">{coach.email}</p>
                   </div>
                 </div>
               </Link>
@@ -152,8 +184,8 @@ export default async function CoachesPage() {
       </div>
 
       {coaches?.length === 0 && (
-        <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-12 text-center">
-          <p className="text-[var(--tss-gray-500)] text-sm">No coaches yet.</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+          <p className="text-gray-500 text-sm">No coaches yet.</p>
           {canCreateCoach && (
             <Link href="/coaches/new" className="mt-3 inline-block px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm rounded-xl hover:brightness-110 transition-all">
               Add First Coach

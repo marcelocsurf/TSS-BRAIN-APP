@@ -13,6 +13,7 @@ import { ToggleCourseAccess } from './toggle-course-access';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Star, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -91,22 +92,26 @@ export default async function CoachProfilePage({ params }: Props) {
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Back Link */}
       <div className="flex items-center gap-3">
-        <Link href="/coaches" className="text-gray-400 hover:text-gray-600 text-sm">
-          &larr; Coaches
+        <Link
+          href="/coaches"
+          className="text-gray-400 hover:text-gray-600 text-sm inline-flex items-center gap-1"
+        >
+          <ArrowLeft size={14} strokeWidth={1.75} />
+          Coaches
         </Link>
       </div>
 
       {/* HEADER SECTION */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             {/* Initials Avatar */}
             <div className="w-14 h-14 rounded-full bg-[var(--tss-navy)] flex items-center justify-center flex-shrink-0">
-              <span className="text-xl font-bold text-[var(--tss-gold)]">{initial}</span>
+              <span className="text-xl font-bold text-[var(--tss-cyan,#5AC3E7)]">{initial}</span>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-mono tracking-widest text-[var(--tss-gold)] uppercase px-2 py-0.5 bg-[var(--tss-gold)]/10 rounded">
+                <span className="text-[10px] font-mono tracking-widest text-[var(--tss-cyan,#5AC3E7)] uppercase px-2 py-0.5 bg-[var(--tss-cyan,#5AC3E7)]/10 rounded">
                   {ROLE_LABELS[coach.role] || coach.role}
                 </span>
                 {certLevelLabel && (
@@ -115,7 +120,12 @@ export default async function CoachProfilePage({ params }: Props) {
                   </span>
                 )}
               </div>
-              <h2 className="text-xl font-bold text-[var(--tss-navy)]">{coach.display_name}</h2>
+              <h2
+                className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
+                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              >
+                {coach.display_name}
+              </h2>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm text-gray-400">
                   Max Belt: {coach.max_belt_permission?.replace('_', ' ')}
@@ -142,10 +152,11 @@ export default async function CoachProfilePage({ params }: Props) {
               <Link
                 href={`/coach-portal/${coach.portal_token}`}
                 target="_blank"
-                className="px-3 py-2 bg-amber-50 text-amber-700 text-xs rounded-lg hover:bg-amber-100"
+                className="px-3 py-2 bg-gray-50 text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-gray-100 inline-flex items-center gap-1"
                 title="Open this coach's personal portal in a new tab"
               >
-                Open Coach Portal ↗
+                Open Coach Portal
+                <ExternalLink size={11} strokeWidth={1.75} />
               </Link>
             )}
           </div>
@@ -183,16 +194,21 @@ export default async function CoachProfilePage({ params }: Props) {
           { label: 'Unique Students', value: stats.unique_students },
           { label: 'This Month', value: stats.sessions_this_month },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+          <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
             <p className="text-2xl font-bold text-[var(--tss-navy)]">{stat.value}</p>
-            <p className="text-[11px] text-gray-400 mt-1">{stat.label}</p>
+            <p
+              className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              {stat.label}
+            </p>
           </div>
         ))}
       </div>
 
       {/* STAR RATING SECTION */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-50">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Student Ratings</h3>
         </div>
         <div className="px-5 py-4">
@@ -205,16 +221,16 @@ export default async function CoachProfilePage({ params }: Props) {
                 </p>
                 <div className="flex gap-0.5 mt-1">
                   {[1, 2, 3, 4, 5].map(star => (
-                    <span
+                    <Star
                       key={star}
-                      className={`text-lg ${
+                      size={18}
+                      strokeWidth={1.75}
+                      className={
                         star <= Math.round(ratingStats.avg_rating)
-                          ? 'text-[var(--tss-gold)]'
+                          ? 'fill-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-cyan,#5AC3E7)]'
                           : 'text-gray-200'
-                      }`}
-                    >
-                      &#9733;
-                    </span>
+                      }
+                    />
                   ))}
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
@@ -235,10 +251,13 @@ export default async function CoachProfilePage({ params }: Props) {
                     : 0;
                   return (
                     <div key={row.stars} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 w-6 text-right">{row.stars}&#9733;</span>
+                      <span className="text-xs text-gray-500 w-8 text-right inline-flex items-center justify-end gap-0.5">
+                        {row.stars}
+                        <Star size={10} strokeWidth={2} className="fill-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-cyan,#5AC3E7)]" />
+                      </span>
                       <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
                         <div
-                          className="bg-[var(--tss-gold)] h-full rounded-full transition-all"
+                          className="bg-[var(--tss-cyan,#5AC3E7)] h-full rounded-full transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -255,8 +274,8 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* STUDENT FEEDBACK SECTION */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-50">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Student Feedback</h3>
         </div>
         <div className="divide-y divide-gray-50">
@@ -267,16 +286,16 @@ export default async function CoachProfilePage({ params }: Props) {
                   <div className="flex items-center gap-2">
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <span
+                        <Star
                           key={star}
-                          className={`text-xs ${
+                          size={12}
+                          strokeWidth={1.75}
+                          className={
                             star <= (fb.coach_rating || 0)
-                              ? 'text-[var(--tss-gold)]'
+                              ? 'fill-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-cyan,#5AC3E7)]'
                               : 'text-gray-200'
-                          }`}
-                        >
-                          &#9733;
-                        </span>
+                          }
+                        />
                       ))}
                     </div>
                     {fb.student_first_name && (
@@ -307,7 +326,7 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* TEACHING RESOURCES SECTION */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Teaching Resources</h3>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -327,9 +346,9 @@ export default async function CoachProfilePage({ params }: Props) {
                     href={res.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-[var(--tss-gold)] hover:underline flex-shrink-0"
+                    className="text-xs text-[var(--tss-cyan,#5AC3E7)] hover:underline flex-shrink-0"
                   >
-                    Open &rarr;
+                    <span className="inline-flex items-center gap-0.5">Open <ArrowRight size={11} strokeWidth={1.75} /></span>
                   </a>
                 ) : (
                   <span className="text-[10px] text-gray-300 flex-shrink-0">Coming soon</span>
@@ -345,7 +364,7 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* CERTIFICATIONS SECTION */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Certifications</h3>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -385,12 +404,12 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* EVALUATION HISTORY */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Director Evaluations</h3>
           <Link
             href={`/coaches/${id}/evaluate`}
-            className="text-xs text-[var(--tss-gold)] hover:underline"
+            className="text-xs text-[var(--tss-cyan,#5AC3E7)] hover:underline"
           >
             + New
           </Link>
@@ -463,9 +482,9 @@ export default async function CoachProfilePage({ params }: Props) {
               <p className="text-xs text-gray-300 italic">No evaluations yet.</p>
               <Link
                 href={`/coaches/${id}/evaluate`}
-                className="mt-2 inline-block text-xs text-[var(--tss-gold)] hover:underline"
+                className="mt-2 inline-block text-xs text-[var(--tss-cyan,#5AC3E7)] hover:underline"
               >
-                Record first evaluation &rarr;
+                <span className="inline-flex items-center gap-0.5">Record first evaluation <ArrowRight size={11} strokeWidth={1.75} /></span>
               </Link>
             </div>
           )}
@@ -473,7 +492,7 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* RECENT SESSIONS */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Recent Sessions</h3>
         </div>
