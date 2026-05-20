@@ -68,6 +68,10 @@ export interface ServicePlanData {
   }>;
   // Canonical STP catalog (for picking sequence focus)
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
+  // M50 — per-(student, step) coach_rating so the cyan StarRating in
+  // BlockEvalSection can show the current value. Empty when no rating
+  // has been given yet.
+  coachRatingByStudentStep: Record<string, Record<string, number>>;
   // M44 — template plan (the recipe the coordinator pre-built).
   // Coach sees this as a reference and can apply blocks to all students
   // with one tap so they don't replan from scratch.
@@ -330,16 +334,23 @@ export async function getServicePlan(
   }
 
   // STP self-rating summary per student (+ official coach ratings)
+  // and a per-(student, step) coach_rating map so the eval UI can
+  // show the current cyan star value the coach already gave.
   const ratingsByStudent: Record<string, { self: number[]; coach: number[] }> = {};
+  const coachRatingByStudentStep: Record<string, Record<string, number>> = {};
   if (studentIds.length > 0) {
     const { data: ratings } = await admin
       .from('student_step_ratings')
-      .select('student_id, current_rating, coach_rating')
+      .select('student_id, step_id, current_rating, coach_rating')
       .in('student_id', studentIds);
     for (const r of ratings ?? []) {
       const e = (ratingsByStudent[r.student_id] ??= { self: [], coach: [] });
       if (r.current_rating && r.current_rating > 0) e.self.push(r.current_rating);
-      if (r.coach_rating && r.coach_rating > 0) e.coach.push(r.coach_rating);
+      if (r.coach_rating && r.coach_rating > 0) {
+        e.coach.push(r.coach_rating);
+        const stepMap = (coachRatingByStudentStep[r.student_id] ??= {});
+        stepMap[r.step_id] = r.coach_rating;
+      }
     }
   }
   const avgOf = (arr: number[]): number | null =>
@@ -534,6 +545,7 @@ export async function getServicePlan(
     students,
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
+    coachRatingByStudentStep,
     templatePlan,
   };
 }

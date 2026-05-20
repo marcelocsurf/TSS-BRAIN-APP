@@ -112,6 +112,15 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // to student_step_ratings.coach_rating so it shows up cyan in the
   // student's sequence + portal immediately.
   const rateStepInline = (studentId: string, stepId: string, rating: number) => {
+    // Optimistic local update so the cyan stars stay coloured immediately
+    // (was previously always rendering null and looked unresponsive).
+    setCoachRatings((prev) => {
+      const next = { ...prev };
+      const stepMap = { ...(next[studentId] ?? {}) };
+      stepMap[stepId] = rating;
+      next[studentId] = stepMap;
+      return next;
+    });
     startTransition(async () => {
       try {
         await saveOfficialStepRatingFromPortal(
@@ -121,10 +130,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           stepId,
           rating,
         );
-        // Update local stepRatings counts so the UI hint refreshes.
+        // Update local stepRatings counts so the UI hint refreshes (only
+        // bump on first rating of this step — re-rating shouldn't inflate).
         setStudents((prev) =>
-          prev.map((s) =>
-            s.student_id === studentId
+          prev.map((s) => {
+            if (s.student_id !== studentId) return s;
+            const wasUnrated = !data.coachRatingByStudentStep[studentId]?.[stepId];
+            return wasUnrated
               ? {
                   ...s,
                   stepRatings: {
@@ -132,8 +144,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     coachRatedCount: s.stepRatings.coachRatedCount + 1,
                   },
                 }
-              : s,
-          ),
+              : s;
+          }),
         );
         flash('★ Step rated');
       } catch (e: any) {
@@ -342,6 +354,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const drillDetail = drillDetailId
     ? data.availableDrills.find((d) => d.id === drillDetailId) ?? null
     : null;
+
+  // M50 — Local mirror of the per-(student, step) coach_rating so the
+  // cyan stars in the eval card stay coloured after the coach taps them.
+  // Initialized from data; updated optimistically when rateStepInline runs.
+  const [coachRatings, setCoachRatings] = useState<Record<string, Record<string, number>>>(
+    data.coachRatingByStudentStep,
+  );
 
   // M48 — Incident reports filed at close. Optional. If no incidents, the
   // coach just hits finalize and we close without writing anything to the
@@ -798,6 +817,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   isClosed={isClosed}
                   stpLabel={stpLabel}
                   drillTitle={drillTitle}
+                  coachRatings={coachRatings[s.student_id] ?? {}}
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onRateStep={(stepId, rating) => rateStepInline(s.student_id, stepId, rating)}
                   onShowDrill={(id) => setDrillDetailId(id)}
@@ -1899,6 +1919,7 @@ function StudentEvalCard({
   isClosed,
   stpLabel,
   drillTitle,
+  coachRatings,
   onCommit,
   onRateStep,
   onShowDrill,
@@ -1907,6 +1928,7 @@ function StudentEvalCard({
   isClosed: boolean;
   stpLabel: (id: string | null) => string | null;
   drillTitle: (id: string | null) => string | null;
+  coachRatings: Record<string, number>;
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onRateStep: (stepId: string, rating: number) => void;
   onShowDrill: (drillId: string) => void;
@@ -2012,6 +2034,18 @@ function StudentEvalCard({
               Center is the goal. Extremes mean dial reps + difficulty up or down.
             </p>
           </div>
+
+          {/* M50 — Close note is ONE per student per session (visible to
+              the student in their portal feedback). Persisted on block 0
+              like board / focus / flow. */}
+          <TextArea
+            label="Close note (visible to student)"
+            value={blocks[0].notes_post}
+            onBlur={(v) => onCommit(blocks[0].order_index, { notes_post: v })}
+            placeholder="What they did well today · what to work on next"
+            rows={3}
+            disabled={isClosed}
+          />
         </div>
       )}
 
@@ -2025,6 +2059,7 @@ function StudentEvalCard({
           isClosed={isClosed}
           stpLabel={stpLabel}
           drillTitle={drillTitle}
+          currentCoachRating={block.step_id ? coachRatings[block.step_id] ?? null : null}
           onCommit={(patch) => onCommit(block.order_index, patch)}
           onRateStep={(rating) => block.step_id && onRateStep(block.step_id, rating)}
           onShowDrill={onShowDrill}
@@ -2041,6 +2076,7 @@ function BlockEvalSection({
   isClosed,
   stpLabel,
   drillTitle,
+  currentCoachRating,
   onCommit,
   onRateStep,
   onShowDrill,
@@ -2051,6 +2087,7 @@ function BlockEvalSection({
   isClosed: boolean;
   stpLabel: (id: string | null) => string | null;
   drillTitle: (id: string | null) => string | null;
+  currentCoachRating: number | null;
   onCommit: (patch: Partial<ServicePlanBlock>) => void;
   onRateStep: (rating: number) => void;
   onShowDrill: (drillId: string) => void;
@@ -2128,17 +2165,8 @@ function BlockEvalSection({
         </div>
       </div>
 
-      {/* M49 — Focus + Flow moved to the student-level eval card (one
-          per session, not per block). */}
-
-      <TextArea
-        label="Close note (visible to student)"
-        value={block.notes_post}
-        onBlur={(v) => onCommit({ notes_post: v })}
-        placeholder="What they did well · what to work on next"
-        rows={2}
-        disabled={isClosed}
-      />
+      {/* M49 — Focus + Flow + Close note moved to the student-level
+          eval card (one per session, not per block). */}
 
       {/* M45 — Inline OFFICIAL step rating (TSS cyan) per block. */}
       {block.step_id && (
@@ -2147,7 +2175,7 @@ function BlockEvalSection({
             Official rating · {block.step_id}
           </label>
           <StarRating
-            value={null}
+            value={currentCoachRating}
             size="md"
             variant="official"
             readOnly={isClosed}
