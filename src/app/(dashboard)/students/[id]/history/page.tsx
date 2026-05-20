@@ -65,7 +65,10 @@ export default async function StudentHistoryPage({ params }: Props) {
           ← Back
         </Link>
         <div>
-          <h2 className="text-lg font-bold text-[var(--tss-navy)]">
+          <h2
+            className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          >
             {student.first_name} {student.last_name}
           </h2>
           <p className="text-xs text-gray-400">{belt?.en} — Session History</p>
@@ -80,7 +83,7 @@ export default async function StudentHistoryPage({ params }: Props) {
           { label: 'Avg Focus', value: avgFocus },
           { label: 'Avg Frustration', value: avgFrustration },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
             <p className="text-xl font-bold text-[var(--tss-navy)]">{s.value}</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
           </div>
@@ -89,7 +92,7 @@ export default async function StudentHistoryPage({ params }: Props) {
 
       {/* Session list */}
       {totalSessions === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <p className="text-gray-400 text-sm">No sessions recorded yet.</p>
           <Link
             href={`/sessions/new?student=${id}`}
@@ -110,7 +113,7 @@ export default async function StudentHistoryPage({ params }: Props) {
             const duration = ss?.duration_minutes;
 
             return (
-              <div key={session.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div key={session.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {/* Session header */}
                 <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                   <div>

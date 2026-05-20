@@ -85,7 +85,12 @@ export default async function AuditDashboardPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h2 className="text-xl font-bold text-[var(--tss-navy)]">Audit Dashboard</h2>
+      <h2
+        className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+      >
+        Audit Dashboard
+      </h2>
 
       {/* Session Metrics */}
       <Section title="Session Metrics">
@@ -145,7 +150,7 @@ export default async function AuditDashboardPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-50">
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h3>
       </div>

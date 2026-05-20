@@ -83,8 +83,13 @@ export default async function CampDayPage({ params }: Props) {
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
       <div>
-        <Link href={`/camps/${id}`} className="text-xs text-gray-400 hover:text-gray-600">&larr; Back to camp</Link>
-        <h2 className="text-xl font-bold text-[var(--tss-navy)] mt-1">Day {dayNum}</h2>
+        <Link href={`/camps/${id}`} className="text-xs text-gray-400 hover:text-gray-600">← Back to camp</Link>
+        <h2
+          className="text-2xl font-bold text-[var(--tss-navy)] mt-2 leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Day {dayNum}
+        </h2>
         {dayInfo?.day_goal && (
           <p className="text-sm text-gray-600 mt-1">{dayInfo.day_goal}</p>
         )}
@@ -97,7 +102,7 @@ export default async function CampDayPage({ params }: Props) {
       <DayNav />
 
       {/* Blocks (the shared plan) */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Session Plan</h3>
         </div>
@@ -176,7 +181,7 @@ export default async function CampDayPage({ params }: Props) {
       )}
 
       {/* Participants evaluation status */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
             Session Evaluation ({existingResults.length}/{participants.length})

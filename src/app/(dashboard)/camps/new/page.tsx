@@ -139,11 +139,16 @@ export default function NewCampPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-xl font-bold text-[var(--tss-navy)] mb-6">Open a New Service</h2>
+      <h2
+        className="text-2xl font-bold text-[var(--tss-navy)] mb-6 leading-tight"
+        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+      >
+        Open a New Service
+      </h2>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Service Template */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Service</h3>
           <select value={form.template_id} onChange={e => setForm(f => ({ ...f, template_id: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
@@ -214,7 +219,7 @@ export default function NewCampPage() {
         </div>
 
         {/* Details */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Details</h3>
           <input type="text" placeholder="Service name *" value={form.camp_name}
             onChange={e => setForm(f => ({ ...f, camp_name: e.target.value }))}
@@ -309,7 +314,7 @@ export default function NewCampPage() {
         </div>
 
         {/* Students */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
               Participants ({form.student_ids.length}

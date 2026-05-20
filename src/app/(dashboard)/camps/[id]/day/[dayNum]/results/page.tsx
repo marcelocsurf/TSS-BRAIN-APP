@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { getCampSession, closeCampSessionResult } from '@/lib/actions/camps';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { SESSION_STATUS_OPTIONS, type SessionStatus } from '@/lib/constants/brand';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function CampResultsPage() {
   const router = useRouter();
@@ -58,10 +59,15 @@ export default function CampResultsPage() {
   if (pendingParticipants.length === 0) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">✓</span>
+        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 size={32} strokeWidth={1.75} className="text-emerald-600" />
         </div>
-        <h2 className="text-xl font-bold text-[var(--tss-navy)]">All Students Evaluated</h2>
+        <h2
+          className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          All Students Evaluated
+        </h2>
         <p className="text-sm text-gray-500 mt-2">Day {dayNum} is complete.</p>
         <button onClick={() => router.push(`/camps/${campId}`)}
           className="mt-4 px-6 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90">
@@ -144,7 +150,7 @@ export default function CampResultsPage() {
       </div>
 
       {/* Evaluation card */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
         {/* Status */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-2">Status *</label>

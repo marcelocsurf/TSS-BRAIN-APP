@@ -9,7 +9,12 @@ export default async function DraftsPage() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold text-[var(--tss-navy)]">Draft Sessions</h2>
+          <h2
+            className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          >
+            Draft Sessions
+          </h2>
           <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
             {drafts.length} draft{drafts.length !== 1 ? 's' : ''} saved
           </p>
@@ -23,7 +28,7 @@ export default async function DraftsPage() {
       </div>
 
       {drafts.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <p className="text-sm text-gray-400">No draft sessions</p>
           <p className="text-xs text-gray-300 mt-1">Drafts are saved when you exit a session before completing it.</p>
         </div>
@@ -32,7 +37,7 @@ export default async function DraftsPage() {
           {drafts.map((draft) => (
             <div
               key={draft.id}
-              className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between gap-3"
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-3"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[var(--tss-navy)] truncate">

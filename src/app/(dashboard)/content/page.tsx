@@ -31,7 +31,12 @@ export default async function ContentAdminPage() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6 pb-12">
       <div>
-        <h1 className="text-xl font-bold text-[var(--tss-navy)]">Course Content</h1>
+        <h1
+          className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Course Content
+        </h1>
         <p className="text-sm text-gray-500 mt-1">
           Manage videos for every lesson, drill, and mission. Paste YouTube or
           Vimeo URLs — they appear instantly on the student portal.

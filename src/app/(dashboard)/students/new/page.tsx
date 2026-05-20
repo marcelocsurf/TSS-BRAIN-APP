@@ -65,7 +65,12 @@ export default function AddStudentPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-[var(--tss-navy)] mb-1">Add Student</h2>
+      <h2
+        className="text-2xl font-bold text-[var(--tss-navy)] mb-1 leading-tight"
+        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+      >
+        Add Student
+      </h2>
       <p className="text-sm text-[var(--tss-gray-500)] mb-6">Complete all required fields to register a new student.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
