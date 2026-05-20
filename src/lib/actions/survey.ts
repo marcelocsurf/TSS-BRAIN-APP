@@ -18,6 +18,10 @@ interface SurveyInput {
   coach_rating: number;
   feedback_clarity: number;
   improvement_value: number;
+  // M47 — student-reported Csíkszentmihályi flow channel (1=bored,
+  // 3=optimal, 5=frustrated). Used to compare against the coach's
+  // own per-block flow_channel evaluation.
+  flow_channel: number;
   open_comment: string;
 }
 
@@ -60,6 +64,7 @@ export async function submitSurvey(input: SurveyInput) {
       q2_feedback: input.feedback_clarity,
       q3_homework_clarity: input.feedback_clarity, // legacy — closest match
       q4_session_value: input.improvement_value,
+      flow_channel: input.flow_channel,
       open_comment: input.open_comment || null,
     });
 

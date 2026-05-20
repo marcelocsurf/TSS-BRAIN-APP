@@ -28,6 +28,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
     coach_rating: 0,
     feedback_clarity: 0,
     improvement_value: 0,
+    flow_channel: 0,
     open_comment: '',
   });
 
@@ -38,9 +39,10 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
     if (
       form.coach_rating === 0 ||
       form.feedback_clarity === 0 ||
-      form.improvement_value === 0
+      form.improvement_value === 0 ||
+      form.flow_channel === 0
     ) {
-      setError('Please rate all 3 questions before submitting.');
+      setError('Please answer all 4 questions before submitting.');
       return;
     }
     setLoading(true);
@@ -52,6 +54,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
         coach_rating: form.coach_rating,
         feedback_clarity: form.feedback_clarity,
         improvement_value: form.improvement_value,
+        flow_channel: form.flow_channel,
         open_comment: form.open_comment.trim() || '',
       });
       setJustUnlocked(!!result.justUnlockedCoachProfile);
@@ -120,6 +123,16 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
           onChange={v => set('improvement_value', v)}
         />
 
+        {/* M47 — Student-reported flow channel. Same 1-5 scale the coach
+            fills on their side; comparing the two lets the academy spot
+            mismatches (coach thought it was optimal, student felt
+            frustrated → next class needs less exigency). */}
+        <FlowChannelQuestion
+          label="4. How did the class feel?"
+          value={form.flow_channel}
+          onChange={v => set('flow_channel', v)}
+        />
+
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
             Comments <span className="text-gray-400 font-normal">(optional)</span>
@@ -182,6 +195,53 @@ function StarQuestion({ label, value, onChange }: {
         <span className="text-[10px] text-gray-300">Poor</span>
         <span className="text-[10px] text-gray-300">Excellent</span>
       </div>
+    </div>
+  );
+}
+
+// M47 — Csíkszentmihályi flow channel self-report. 1 = boring/too easy,
+// 3 = optimal/flow, 5 = frustrating/too hard. Center is the goal.
+function FlowChannelQuestion({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const options = [
+    { n: 1, color: '#3B82F6', label: 'Bored' },
+    { n: 2, color: '#06B6D4', label: 'Easy' },
+    { n: 3, color: '#10B981', label: 'Optimal' },
+    { n: 4, color: '#F59E0B', label: 'Hard' },
+    { n: 5, color: '#EF4444', label: 'Frustrating' },
+  ];
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-700 mb-2 leading-relaxed">
+        {label}
+      </label>
+      <div className="grid grid-cols-5 gap-1">
+        {options.map((opt) => (
+          <button
+            key={opt.n}
+            type="button"
+            onClick={() => onChange(opt.n)}
+            className="py-2 rounded-lg text-[10px] font-bold transition-all"
+            style={
+              value === opt.n
+                ? { background: opt.color, color: 'white' }
+                : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+            }
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-gray-400 mt-1 italic text-center">
+        Honest answers help your coach dial the next class to your level.
+      </p>
     </div>
   );
 }

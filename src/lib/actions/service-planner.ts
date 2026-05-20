@@ -45,7 +45,10 @@ export interface ServicePlanData {
     closed_at: string | null;
   };
   students: ServicePlanStudent[];
-  // Coach's available tools (filtered by max_belt_permission)
+  // Coach's available tools (filtered by max_belt_permission). The
+  // detail fields (description_md, success_criteria, reps_recommended)
+  // power the DrillDetailModal popover the coach taps to read HOW to
+  // teach the drill/mission to the student.
   availableDrills: Array<{
     id: string;
     step_id: string | null;
@@ -55,6 +58,9 @@ export interface ServicePlanData {
     belt: string | null;
     key_words: string[] | null;
     time_estimate: string | null;
+    reps_recommended: string | null;
+    description_md: string | null;
+    success_criteria: string[] | null;
   }>;
   // Canonical STP catalog (for picking sequence focus)
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
@@ -151,6 +157,9 @@ export interface ServicePlanBlock {
   board_type: string | null;
   board_size_feet: number | null;
   board_size_inches: number | null;
+  // M47 — Coach-rated, per-block-per-student (filled at close).
+  focus_level: number | null;   // 1-5, how present + engaged
+  flow_channel: number | null;  // 1=bored, 3=optimal, 5=frustrated
 }
 
 export interface ServicePlanStudent {
@@ -415,6 +424,8 @@ export async function getServicePlan(
         board_type: b.board_type ?? null,
         board_size_feet: b.board_size_feet ?? null,
         board_size_inches: b.board_size_inches ?? null,
+        focus_level: b.focus_level ?? null,
+        flow_channel: b.flow_channel ?? null,
       })),
     };
   });
@@ -427,7 +438,10 @@ export async function getServicePlan(
   const myRank = beltRank[myBeltShort] ?? 6;
   const { data: drillsRaw } = await admin
     .from('drills_missions')
-    .select('id, step_id, title, type, block_name, belt, key_words, time_estimate, display_order')
+    .select(
+      'id, step_id, title, type, block_name, belt, key_words, time_estimate, ' +
+        'reps_recommended, description_md, success_criteria, display_order'
+    )
     .eq('active', true)
     .order('display_order');
   const availableDrills = (drillsRaw ?? []).filter(
@@ -600,6 +614,8 @@ export async function saveServicePlanBlock(
     board_type: string | null;
     board_size_feet: number | null;
     board_size_inches: number | null;
+    focus_level: number | null;
+    flow_channel: number | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
@@ -648,6 +664,8 @@ export async function saveServicePlanBlock(
     'board_type',
     'board_size_feet',
     'board_size_inches',
+    'focus_level',
+    'flow_channel',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {

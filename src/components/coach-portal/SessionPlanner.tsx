@@ -25,6 +25,7 @@ import {
 } from '@/lib/actions/service-planner';
 import { StarRating } from '@/components/sequence/StarRating';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
+import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
 // can also write a custom one. Keys are stored as service_plans.mental_hack.
@@ -317,8 +318,21 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const isLastDay = data.selectedDay.day_number === lastDayNumber;
   const [showFinalEval, setShowFinalEval] = useState(false);
 
+  // M47 — Drill / mission detail modal. Tapping a drill name anywhere in
+  // the planner opens this with the full canonical content (description,
+  // key words, success criteria) so the coach can refresh how to teach it.
+  const [drillDetailId, setDrillDetailId] = useState<string | null>(null);
+  const drillDetail = drillDetailId
+    ? data.availableDrills.find((d) => d.id === drillDetailId) ?? null
+    : null;
+
   return (
     <div className="space-y-4 pb-32">
+      {/* M47 — Drill / mission detail popover. */}
+      {drillDetail && (
+        <DrillDetailModal drill={drillDetail} onClose={() => setDrillDetailId(null)} />
+      )}
+
       {/* M45 — Final official evaluation modal (last day only). */}
       {showFinalEval && (
         <FinalCampEvaluation
@@ -622,6 +636,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onAddBlock={() => addStudentBlock(s.student_id)}
                   onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
+                  onShowDrill={(id) => setDrillDetailId(id)}
                 />
               ))}
             </div>
@@ -668,6 +683,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   drillTitle={drillTitle}
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onRateStep={(stepId, rating) => rateStepInline(s.student_id, stepId, rating)}
+                  onShowDrill={(id) => setDrillDetailId(id)}
                 />
               ))}
             </div>
@@ -1325,6 +1341,7 @@ function StudentPlanCard({
   onCommit,
   onAddBlock,
   onRemoveBlock,
+  onShowDrill,
 }: {
   student: ServicePlanStudent;
   stpCatalog: ServicePlanData['stpCatalog'];
@@ -1332,6 +1349,7 @@ function StudentPlanCard({
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onAddBlock: () => void;
   onRemoveBlock: (orderIndex: number) => void;
+  onShowDrill: (drillId: string) => void;
 }) {
   const blocks = student.blocks.length > 0
     ? student.blocks
@@ -1381,6 +1399,7 @@ function StudentPlanCard({
             availableDrills={availableDrills}
             onCommit={(patch) => onCommit(b.order_index, patch)}
             onRemove={() => onRemoveBlock(b.order_index)}
+            onShowDrill={onShowDrill}
           />
         ))}
       </div>
@@ -1407,6 +1426,7 @@ function BlockEditor({
   availableDrills,
   onCommit,
   onRemove,
+  onShowDrill,
 }: {
   block: ServicePlanBlock;
   blockNumber: number;
@@ -1415,6 +1435,7 @@ function BlockEditor({
   availableDrills: ServicePlanData['availableDrills'];
   onCommit: (patch: Partial<ServicePlanBlock>) => void;
   onRemove: () => void;
+  onShowDrill: (drillId: string) => void;
 }) {
   const [showLandPicker, setShowLandPicker] = useState(false);
   const [showWaterPicker, setShowWaterPicker] = useState(false);
@@ -1470,9 +1491,20 @@ function BlockEditor({
 
       {/* Land drill */}
       <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-          Land drill
-        </label>
+        <div className="flex items-center justify-between mb-0.5">
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            Land drill
+          </label>
+          {block.land_drill_id && (
+            <button
+              type="button"
+              onClick={() => onShowDrill(block.land_drill_id!)}
+              className="text-[10px] text-[var(--tss-cyan,#5AC3E7)] font-semibold hover:underline"
+            >
+              How to teach →
+            </button>
+          )}
+        </div>
         {!showLandPicker ? (
           <button
             type="button"
@@ -1524,9 +1556,20 @@ function BlockEditor({
 
       {/* Water mission */}
       <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-          In-water mission
-        </label>
+        <div className="flex items-center justify-between mb-0.5">
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            In-water mission
+          </label>
+          {block.water_drill_id && (
+            <button
+              type="button"
+              onClick={() => onShowDrill(block.water_drill_id!)}
+              className="text-[10px] text-[var(--tss-cyan,#5AC3E7)] font-semibold hover:underline"
+            >
+              How to teach →
+            </button>
+          )}
+        </div>
         {!showWaterPicker ? (
           <button
             type="button"
@@ -1628,6 +1671,7 @@ function StudentEvalCard({
   drillTitle,
   onCommit,
   onRateStep,
+  onShowDrill,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
@@ -1635,6 +1679,7 @@ function StudentEvalCard({
   drillTitle: (id: string | null) => string | null;
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onRateStep: (stepId: string, rating: number) => void;
+  onShowDrill: (drillId: string) => void;
 }) {
   const blocks = student.blocks;
   const allEvaluated = blocks.length > 0 && blocks.every((b) => b.status);
@@ -1683,6 +1728,7 @@ function StudentEvalCard({
           drillTitle={drillTitle}
           onCommit={(patch) => onCommit(block.order_index, patch)}
           onRateStep={(rating) => block.step_id && onRateStep(block.step_id, rating)}
+          onShowDrill={onShowDrill}
         />
       ))}
     </div>
@@ -1698,6 +1744,7 @@ function BlockEvalSection({
   drillTitle,
   onCommit,
   onRateStep,
+  onShowDrill,
 }: {
   block: ServicePlanBlock;
   blockNumber: number;
@@ -1707,6 +1754,7 @@ function BlockEvalSection({
   drillTitle: (id: string | null) => string | null;
   onCommit: (patch: Partial<ServicePlanBlock>) => void;
   onRateStep: (rating: number) => void;
+  onShowDrill: (drillId: string) => void;
 }) {
   const land = block.land_drill_id ? drillTitle(block.land_drill_id) : block.land_drill_custom;
   const water = block.water_drill_id ? drillTitle(block.water_drill_id) : block.water_drill_custom;
@@ -1736,8 +1784,16 @@ function BlockEvalSection({
       {/* Read-only recap of what was planned */}
       <div className="space-y-1">
         <EvalRow label="Sequence" value={stpLabel(block.step_id) || '—'} />
-        <EvalRow label="🏋️ Land drill" value={land || '—'} />
-        <EvalRow label="🌊 Water mission" value={water || '—'} />
+        <EvalRow
+          label="🏋️ Land drill"
+          value={land || '—'}
+          onClick={block.land_drill_id ? () => onShowDrill(block.land_drill_id!) : undefined}
+        />
+        <EvalRow
+          label="🌊 Water mission"
+          value={water || '—'}
+          onClick={block.water_drill_id ? () => onShowDrill(block.water_drill_id!) : undefined}
+        />
         <EvalRow label="🎯 Objective" value={block.objective_text || '—'} highlight />
         {block.notes_pre && <EvalRow label="Pre-note" value={block.notes_pre} />}
       </div>
@@ -1771,6 +1827,72 @@ function BlockEvalSection({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* M47 — Focus level (1-5): how present + engaged was the student? */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          Focus level — how present were they?
+        </label>
+        <div className="grid grid-cols-5 gap-1">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              disabled={isClosed}
+              onClick={() => onCommit({ focus_level: n })}
+              className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
+              style={
+                block.focus_level === n
+                  ? { background: BRAND.colors.navy, color: 'white' }
+                  : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+              }
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-between mt-0.5">
+          <span className="text-[9px] text-gray-400">Distracted</span>
+          <span className="text-[9px] text-gray-400">Locked in</span>
+        </div>
+      </div>
+
+      {/* M47 — Flow channel (1=bored, 3=optimal, 5=frustrated). The
+          coach's read of where the student sat on Csíkszentmihályi's
+          flow channel. Center is the target; extremes tell us we asked
+          for too little or too much. */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          Flow channel — was the demand right?
+        </label>
+        <div className="grid grid-cols-5 gap-1">
+          {([
+            { n: 1, color: '#3B82F6', label: 'Bored' },
+            { n: 2, color: '#06B6D4', label: 'Easy' },
+            { n: 3, color: '#10B981', label: 'Optimal' },
+            { n: 4, color: '#F59E0B', label: 'Hard' },
+            { n: 5, color: '#EF4444', label: 'Frustrated' },
+          ] as const).map((opt) => (
+            <button
+              key={opt.n}
+              type="button"
+              disabled={isClosed}
+              onClick={() => onCommit({ flow_channel: opt.n })}
+              className="py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-70"
+              style={
+                block.flow_channel === opt.n
+                  ? { background: opt.color, color: 'white' }
+                  : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-[9px] text-gray-400 mt-0.5 italic text-center">
+          Center is the goal. Extremes mean dial reps + difficulty up or down.
+        </p>
       </div>
 
       <TextArea
@@ -1951,23 +2073,37 @@ function EvalRow({
   label,
   value,
   highlight,
+  onClick,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <div className="flex gap-2 text-xs">
       <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0 w-24 pt-0.5">
         {label}
       </span>
-      <span
-        className={`flex-1 whitespace-pre-wrap ${
-          highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-gray-700'
-        }`}
-      >
-        {value}
-      </span>
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className={`flex-1 text-left whitespace-pre-wrap underline decoration-dotted decoration-gray-300 hover:text-[var(--tss-navy)] ${
+            highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-gray-700'
+          }`}
+        >
+          {value}
+        </button>
+      ) : (
+        <span
+          className={`flex-1 whitespace-pre-wrap ${
+            highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-gray-700'
+          }`}
+        >
+          {value}
+        </span>
+      )}
     </div>
   );
 }
