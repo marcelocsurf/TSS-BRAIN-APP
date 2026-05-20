@@ -1595,6 +1595,47 @@ function StudentPlanCard({
       {/* Profile / bitácora — review before planning */}
       <StudentProfilePanel student={student} />
 
+      {/* M49 — Board assignment lives ONCE per student per day. Saved on
+          block 0 so it persists even when the coach adds more blocks. */}
+      {(() => {
+        const firstBlock = blocks[0];
+        return (
+          <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+              Board for today
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <SelectField
+                label="Type"
+                value={firstBlock.board_type}
+                options={BOARD_TYPE_OPTIONS}
+                onChange={(v) => onCommit(firstBlock.order_index, { board_type: v })}
+              />
+              <SelectField
+                label="Feet"
+                value={firstBlock.board_size_feet != null ? String(firstBlock.board_size_feet) : null}
+                options={BOARD_SIZE_FEET_OPTIONS.map((n) => ({ value: String(n), label: `${n}'` }))}
+                onChange={(v) =>
+                  onCommit(firstBlock.order_index, {
+                    board_size_feet: v ? parseInt(v, 10) : null,
+                  })
+                }
+              />
+              <SelectField
+                label="Inches"
+                value={firstBlock.board_size_inches != null ? String(firstBlock.board_size_inches) : null}
+                options={BOARD_SIZE_INCHES_OPTIONS.map((n) => ({ value: String(n), label: `${n}"` }))}
+                onChange={(v) =>
+                  onCommit(firstBlock.order_index, {
+                    board_size_inches: v ? parseInt(v, 10) : null,
+                  })
+                }
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       {/* M45 — One BlockEditor per block; coach can add/remove blocks. */}
       <div className="space-y-3">
         {blocks.map((b, i) => (
@@ -1835,28 +1876,9 @@ function BlockEditor({
         placeholder="e.g. 3 clean pop-ups landing in FP2"
       />
 
-      {/* Board assignment (per block — so a multi-block day can switch
-          boards mid-session, e.g. soft 8' for warm-up, hard 6' for mission) */}
-      <div className="grid grid-cols-3 gap-2">
-        <SelectField
-          label="Board"
-          value={block.board_type}
-          options={BOARD_TYPE_OPTIONS}
-          onChange={(v) => onCommit({ board_type: v })}
-        />
-        <SelectField
-          label="Feet"
-          value={block.board_size_feet != null ? String(block.board_size_feet) : null}
-          options={BOARD_SIZE_FEET_OPTIONS.map((n) => ({ value: String(n), label: `${n}'` }))}
-          onChange={(v) => onCommit({ board_size_feet: v ? parseInt(v, 10) : null })}
-        />
-        <SelectField
-          label="Inches"
-          value={block.board_size_inches != null ? String(block.board_size_inches) : null}
-          options={BOARD_SIZE_INCHES_OPTIONS.map((n) => ({ value: String(n), label: `${n}"` }))}
-          onChange={(v) => onCommit({ board_size_inches: v ? parseInt(v, 10) : null })}
-        />
-      </div>
+      {/* M49 — Board assignment moved to the student-level card (one
+          board per student per day) so the coach picks it once, not
+          per block. */}
 
       {/* Pre-session note */}
       <TextArea
