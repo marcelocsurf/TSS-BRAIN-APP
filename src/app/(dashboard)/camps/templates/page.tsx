@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { TemplateActions } from '@/components/camp/TemplateActions';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 const LEVEL_COLORS: Record<string, string> = {
   Beginner: 'bg-green-50 text-green-700',
@@ -23,12 +24,26 @@ export default async function CampTemplatesPage() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--tss-navy)]">Camp Templates</h2>
-          <p className="text-xs text-gray-500 mt-0.5">{templates.length} template{templates.length !== 1 ? 's' : ''} available</p>
+          <h2
+            className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          >
+            Camp Templates
+          </h2>
+          <p
+            className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            {templates.length} template{templates.length !== 1 ? 's' : ''} available
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/camps" className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">
-            &larr; Camps
+          <Link
+            href="/camps"
+            className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 inline-flex items-center gap-1"
+          >
+            <ArrowLeft size={14} strokeWidth={1.75} />
+            Camps
           </Link>
           <Link
             href="/camps/templates/new"
@@ -40,9 +55,9 @@ export default async function CampTemplatesPage() {
       </div>
 
       {templates.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-500">
           <p className="text-lg">No templates yet</p>
-          <Link href="/camps/templates/new" className="text-sm text-[var(--tss-cyan)] hover:underline mt-2 inline-block">
+          <Link href="/camps/templates/new" className="text-sm text-[var(--tss-cyan,#5AC3E7)] hover:underline mt-2 inline-block">
             Create your first camp template
           </Link>
         </div>
@@ -54,33 +69,34 @@ export default async function CampTemplatesPage() {
             const levelColor = LEVEL_COLORS[t.level_name] || 'bg-gray-50 text-gray-600';
 
             return (
-              <div key={t.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-50">
+              <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm text-[var(--tss-navy)]">{t.template_name}</p>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${levelColor}`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${levelColor}`}>
                           {t.level_name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-gray-400" style={{ fontFamily: 'var(--font-mono)' }}>
-                          {t.duration_days} days
-                        </span>
-                        <span className="text-[10px] text-gray-300">&middot;</span>
-                        <span className="text-[10px] text-gray-400" style={{ fontFamily: 'var(--font-mono)' }}>
-                          {totalBlocks} blocks
-                        </span>
-                        <span className="text-[10px] text-gray-300">&middot;</span>
-                        <span className="text-[10px] text-gray-400 capitalize">{t.modality}</span>
-                        <span className="text-[10px] text-gray-300">&middot;</span>
-                        <span className="text-[10px] text-gray-400">{t.delivery_model}</span>
+                      <div
+                        className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 uppercase tracking-wider"
+                        style={{ fontFamily: 'DM Mono, monospace' }}
+                      >
+                        <span>{t.duration_days} days</span>
+                        <span className="text-gray-300">·</span>
+                        <span>{totalBlocks} blocks</span>
+                        <span className="text-gray-300">·</span>
+                        <span className="capitalize">{t.modality}</span>
+                        <span className="text-gray-300">·</span>
+                        <span>{t.delivery_model}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Link href={`/camps/new?template=${t.id}`}
-                        className="px-3 py-1.5 bg-[var(--tss-navy)] text-white text-xs rounded-lg hover:opacity-90 shrink-0">
+                      <Link
+                        href={`/camps/new?template=${t.id}`}
+                        className="px-3 py-1.5 bg-[var(--tss-navy)] text-white text-xs font-medium rounded-lg hover:opacity-90 shrink-0"
+                      >
                         Use
                       </Link>
                     </div>
