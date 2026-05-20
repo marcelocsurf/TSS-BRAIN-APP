@@ -146,10 +146,45 @@ export const TIDE_OPTIONS = [
 export const HAZARD_OPTIONS = [
   { value: 'rocks',        label: 'Rocks' },
   { value: 'current',      label: 'Current' },
-  { value: 'crowd',        label: 'Crowd' },
   { value: 'shallow',      label: 'Shallow / reef' },
   { value: 'marine_life',  label: 'Marine life' },
   { value: 'pollution',    label: 'Pollution' },
+  { value: 'shorebreak',   label: 'Shorebreak' },
+  { value: 'wind_swell',   label: 'Wind / chop' },
+] as const;
+
+export const CROWD_LEVEL_OPTIONS = [
+  { value: 'empty',    label: 'Empty' },
+  { value: 'light',    label: 'Light' },
+  { value: 'medium',   label: 'Medium' },
+  { value: 'crowded',  label: 'Crowded' },
+  { value: 'packed',   label: 'Packed' },
+] as const;
+
+export const WATER_TEMP_OPTIONS = [
+  { value: 'cold',  label: 'Cold' },
+  { value: 'cool',  label: 'Cool' },
+  { value: 'mild',  label: 'Mild' },
+  { value: 'warm',  label: 'Warm' },
+  { value: 'hot',   label: 'Hot' },
+] as const;
+
+export const SKY_OPTIONS = [
+  { value: 'clear',         label: 'Clear' },
+  { value: 'partly_cloudy', label: 'Partly cloudy' },
+  { value: 'overcast',      label: 'Overcast' },
+  { value: 'rain',          label: 'Rain' },
+  { value: 'storm',         label: 'Storm' },
+] as const;
+
+// M48 — Incident categories for the close-of-class report.
+export const INCIDENT_TYPE_OPTIONS = [
+  { value: 'medical',    label: '🩹 Medical' },
+  { value: 'board',      label: '🏄 Board damage' },
+  { value: 'equipment',  label: '🦺 Equipment' },
+  { value: 'conduct',    label: '⚠ Conduct' },
+  { value: 'venue',      label: '🌊 Venue / weather' },
+  { value: 'other',      label: '📋 Other' },
 ] as const;
 
 // ═══════════════════════════════════════

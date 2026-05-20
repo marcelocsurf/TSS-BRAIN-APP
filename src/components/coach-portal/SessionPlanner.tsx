@@ -7,6 +7,10 @@ import {
   WIND_OPTIONS,
   TIDE_OPTIONS,
   HAZARD_OPTIONS,
+  CROWD_LEVEL_OPTIONS,
+  WATER_TEMP_OPTIONS,
+  SKY_OPTIONS,
+  INCIDENT_TYPE_OPTIONS,
   BOARD_TYPE_OPTIONS,
   BOARD_SIZE_FEET_OPTIONS,
   BOARD_SIZE_INCHES_OPTIONS,
@@ -274,7 +278,18 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     }
     startTransition(async () => {
       try {
-        await closeServicePlan(token, data.selectedDay.camp_session_id);
+        await closeServicePlan(
+          token,
+          data.selectedDay.camp_session_id,
+          incidents
+            .filter((i) => i.student_id && i.incident_type && i.incident_description.trim())
+            .map((i) => ({
+              student_id: i.student_id,
+              incident_type: i.incident_type,
+              incident_description: i.incident_description.trim(),
+              incident_action: i.incident_action.trim() || null,
+            })),
+        );
         setPlan((p) => ({
           ...p,
           completion_state: 'closed',
@@ -325,6 +340,37 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const drillDetail = drillDetailId
     ? data.availableDrills.find((d) => d.id === drillDetailId) ?? null
     : null;
+
+  // M48 — Incident reports filed at close. Optional. If no incidents, the
+  // coach just hits finalize and we close without writing anything to the
+  // incident_* columns. If yes, each entry maps to one student_session_results
+  // row's incident_type / incident_description / incident_action.
+  type IncidentDraft = {
+    id: string;
+    student_id: string;
+    incident_type: string;
+    incident_description: string;
+    incident_action: string;
+  };
+  const [incidents, setIncidents] = useState<IncidentDraft[]>([]);
+  const addIncident = () => {
+    setIncidents((prev) => [
+      ...prev,
+      {
+        id: `inc-${Date.now()}-${prev.length}`,
+        student_id: students[0]?.student_id ?? '',
+        incident_type: 'medical',
+        incident_description: '',
+        incident_action: '',
+      },
+    ]);
+  };
+  const updateIncident = (id: string, patch: Partial<IncidentDraft>) => {
+    setIncidents((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  };
+  const removeIncident = (id: string) => {
+    setIncidents((prev) => prev.filter((i) => i.id !== id));
+  };
 
   return (
     <div className="space-y-4 pb-32">
@@ -552,19 +598,71 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   onChange={(v) => commitPlanField('venue_tide', v)}
                 />
                 <SelectField
-                  label="Hazards"
-                  value={plan.venue_hazards}
-                  options={HAZARD_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_hazards', v)}
+                  label="Crowd"
+                  value={plan.venue_crowd}
+                  options={CROWD_LEVEL_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_crowd', v)}
+                />
+                <SelectField
+                  label="Water temp"
+                  value={plan.venue_water_temp}
+                  options={WATER_TEMP_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_water_temp', v)}
+                />
+                <SelectField
+                  label="Sky"
+                  value={plan.venue_sky}
+                  options={SKY_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_sky', v)}
                 />
               </div>
 
+              {/* M48 — Hazards multi-select. Toggle on/off chips; stored
+                  as a comma-joined string so the existing TEXT column
+                  works without schema change. */}
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                  Hazards (tap any that apply)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {HAZARD_OPTIONS.map((h) => {
+                    const selected = (plan.venue_hazards ?? '')
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                    const isOn = selected.includes(h.value);
+                    return (
+                      <button
+                        key={h.value}
+                        type="button"
+                        onClick={() => {
+                          const next = isOn
+                            ? selected.filter((v) => v !== h.value)
+                            : [...selected, h.value];
+                          commitPlanField(
+                            'venue_hazards',
+                            next.length > 0 ? next.join(', ') : null,
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                          isOn
+                            ? 'bg-[var(--tss-navy)] text-white'
+                            : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {h.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <TextArea
-                label="Full read"
+                label="Extra notes (optional)"
                 value={plan.venue_analysis}
                 onBlur={(v) => commitPlanField('venue_analysis', v)}
-                placeholder="What you see — currents, impact zone, where students should enter…"
-                rows={3}
+                placeholder="Only if there's something the dropdowns above can't capture."
+                rows={2}
               />
             </div>
           </Section>
@@ -688,6 +786,95 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               ))}
             </div>
           </Section>
+
+          {/* M48 — Incident report at close. Optional. Default = no
+              incidents; coach taps '+ Add incident' to file one per
+              affected student. Each incident propagates to
+              student_session_results.incident_* on close. */}
+          {!isClosed && (
+            <Section
+              emoji="🚨"
+              title="Incidents (optional)"
+              subtitle="Anything to log before closing? Broken board, medical, conduct, etc."
+            >
+              <div className="space-y-2">
+                {incidents.length === 0 ? (
+                  <p className="text-[11px] text-gray-500 italic">
+                    No incidents reported. Skip and finalize when ready.
+                  </p>
+                ) : (
+                  incidents.map((inc, idx) => (
+                    <div
+                      key={inc.id}
+                      className="rounded-lg border border-red-200 bg-red-50/50 p-2.5 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-red-700">
+                          Incident #{idx + 1}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => removeIncident(inc.id)}
+                          className="text-[10px] text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                            Student
+                          </label>
+                          <select
+                            value={inc.student_id}
+                            onChange={(e) =>
+                              updateIncident(inc.id, { student_id: e.target.value })
+                            }
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                          >
+                            {students.map((s) => (
+                              <option key={s.student_id} value={s.student_id}>
+                                {s.display_name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <SelectField
+                          label="Type"
+                          value={inc.incident_type}
+                          options={INCIDENT_TYPE_OPTIONS}
+                          onChange={(v) =>
+                            updateIncident(inc.id, { incident_type: v ?? 'other' })
+                          }
+                        />
+                      </div>
+                      <SmallField
+                        label="What happened"
+                        value={inc.incident_description}
+                        onBlur={(v) =>
+                          updateIncident(inc.id, { incident_description: v })
+                        }
+                        placeholder="e.g. Board fin cut on left thigh, ~2cm"
+                      />
+                      <SmallField
+                        label="Action taken"
+                        value={inc.incident_action}
+                        onBlur={(v) => updateIncident(inc.id, { incident_action: v })}
+                        placeholder="e.g. First aid kit, parent contacted, session paused 10 min"
+                      />
+                    </div>
+                  ))
+                )}
+                <button
+                  type="button"
+                  onClick={addIncident}
+                  className="w-full py-2 rounded-lg border-2 border-dashed border-red-200 text-[12px] text-red-600 hover:border-red-400 transition-colors"
+                >
+                  + Report an incident
+                </button>
+              </div>
+            </Section>
+          )}
         </>
       )}
 

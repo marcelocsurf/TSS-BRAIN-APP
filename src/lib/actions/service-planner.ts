@@ -36,6 +36,10 @@ export interface ServicePlanData {
     venue_wind: string | null;
     venue_tide: string | null;
     venue_hazards: string | null;
+    // M48 — extra standardized venue fields
+    venue_crowd: string | null;
+    venue_water_temp: string | null;
+    venue_sky: string | null;
     warm_up_drill_id: string | null;
     warm_up_custom: string | null;
     mental_hack: string | null;
@@ -514,6 +518,9 @@ export async function getServicePlan(
       venue_wind: plan?.venue_wind ?? null,
       venue_tide: plan?.venue_tide ?? null,
       venue_hazards: plan?.venue_hazards ?? null,
+      venue_crowd: plan?.venue_crowd ?? null,
+      venue_water_temp: plan?.venue_water_temp ?? null,
+      venue_sky: plan?.venue_sky ?? null,
       warm_up_drill_id: plan?.warm_up_drill_id ?? null,
       warm_up_custom: plan?.warm_up_custom ?? null,
       mental_hack: plan?.mental_hack ?? null,
@@ -543,6 +550,9 @@ export async function saveServicePlanHeader(
     venue_wind: string | null;
     venue_tide: string | null;
     venue_hazards: string | null;
+    venue_crowd: string | null;
+    venue_water_temp: string | null;
+    venue_sky: string | null;
     warm_up_drill_id: string | null;
     warm_up_custom: string | null;
     mental_hack: string | null;
@@ -992,7 +1002,18 @@ export async function startServicePlan(token: string, campSessionId: string): Pr
 //   5. Flip THIS day's service_plans → closed.
 //   6. camp_instance.status stays in_progress; the FinalCampEvaluation
 //      flow flips it to 'completed' only after the official final eval.
-export async function closeServicePlan(token: string, campSessionId: string): Promise<void> {
+export interface IncidentReport {
+  student_id: string;
+  incident_type: string;       // medical / board / equipment / conduct / venue / other
+  incident_description: string;
+  incident_action: string | null;
+}
+
+export async function closeServicePlan(
+  token: string,
+  campSessionId: string,
+  incidents?: IncidentReport[],
+): Promise<void> {
   const admin = createAdminClient();
 
   const { data: coach } = await admin
@@ -1153,6 +1174,24 @@ export async function closeServicePlan(token: string, campSessionId: string): Pr
       } catch {
         /* non-blocking */
       }
+    }
+  }
+
+  // M48 — Per-student incident reports filed by the coach at close.
+  // Updates the student_session_results row for each affected student
+  // with the incident_* columns (00012 schema).
+  if (incidents && incidents.length > 0) {
+    for (const inc of incidents) {
+      if (!inc.student_id || !inc.incident_type) continue;
+      await admin
+        .from('student_session_results')
+        .update({
+          incident_type: inc.incident_type,
+          incident_description: inc.incident_description ?? null,
+          incident_action: inc.incident_action ?? null,
+        })
+        .eq('camp_session_id', campSession!.id)
+        .eq('student_id', inc.student_id);
     }
   }
 
