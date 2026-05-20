@@ -136,6 +136,23 @@ export interface StepRatingSummary {
   avgCoachRating: number | null;
 }
 
+export interface ServicePlanBlock {
+  id: string | null;
+  order_index: number;
+  step_id: string | null;
+  land_drill_id: string | null;
+  land_drill_custom: string | null;
+  water_drill_id: string | null;
+  water_drill_custom: string | null;
+  objective_text: string | null;
+  notes_pre: string | null;
+  status: 'achieved' | 'partial' | 'not_yet' | null;
+  notes_post: string | null;
+  board_type: string | null;
+  board_size_feet: number | null;
+  board_size_inches: number | null;
+}
+
 export interface ServicePlanStudent {
   student_id: string;
   display_name: string;
@@ -144,25 +161,9 @@ export interface ServicePlanStudent {
   profile: StudentProfileSnapshot;
   recentSessions: RecentSessionEntry[];
   stepRatings: StepRatingSummary;
-  // M45 — block for the SELECTED day only. Switching days reloads.
-  // For multi-block-per-day templates this is the FIRST block (order_index=0)
-  // until SessionPlanner adds multi-block UI. All blocks for the day live
-  // in `allBlocks` if needed.
-  block: {
-    id: string | null;
-    step_id: string | null;
-    land_drill_id: string | null;
-    land_drill_custom: string | null;
-    water_drill_id: string | null;
-    water_drill_custom: string | null;
-    objective_text: string | null;
-    notes_pre: string | null;
-    status: 'achieved' | 'partial' | 'not_yet' | null;
-    notes_post: string | null;
-    board_type: string | null;
-    board_size_feet: number | null;
-    board_size_inches: number | null;
-  };
+  // M45 — all blocks for the SELECTED day, sorted by order_index. A day
+  // can have multiple blocks (multi-mission day, multi-STP focus, etc).
+  blocks: ServicePlanBlock[];
 }
 
 // ─── Load: plan + students + tools ─────────────────────────────────
@@ -260,17 +261,17 @@ export async function getServicePlan(
 
   const studentIds = (participants ?? []).map((p: any) => p.student_id);
 
-  // M45 — Blocks for the SELECTED day only. For now we pick the first block
-  // (order_index=0) per student to feed into the legacy single-block UI; a
-  // future multi-block UI can use the full list.
+  // M45 — All blocks for the SELECTED day, grouped per student.
   const { data: blocks } = await admin
     .from('service_plan_blocks')
     .select('*')
     .eq('camp_session_id', selectedDay.camp_session_id)
     .order('order_index');
-  const blocksByStudent = new Map<string, any>();
+  const blocksByStudent = new Map<string, any[]>();
   for (const b of blocks ?? []) {
-    if (!blocksByStudent.has(b.student_id)) blocksByStudent.set(b.student_id, b);
+    const arr = blocksByStudent.get(b.student_id) ?? [];
+    arr.push(b);
+    blocksByStudent.set(b.student_id, arr);
   }
 
   // Recent training history per student — coach sessions
@@ -346,7 +347,7 @@ export async function getServicePlan(
 
   const students: ServicePlanStudent[] = (participants ?? []).map((p: any) => {
     const s = Array.isArray(p.students) ? p.students[0] : p.students;
-    const block = blocksByStudent.get(p.student_id);
+    const studentBlocks = blocksByStudent.get(p.student_id) ?? [];
     const rr = ratingsByStudent[p.student_id] ?? { self: [], coach: [] };
     return {
       student_id: p.student_id,
@@ -399,21 +400,22 @@ export async function getServicePlan(
         learning_profile_primary: s?.learning_profile_primary ?? null,
         ocean_quiz_score: s?.ocean_quiz_score ?? null,
       },
-      block: {
-        id: block?.id ?? null,
-        step_id: block?.step_id ?? null,
-        land_drill_id: block?.land_drill_id ?? null,
-        land_drill_custom: block?.land_drill_custom ?? null,
-        water_drill_id: block?.water_drill_id ?? null,
-        water_drill_custom: block?.water_drill_custom ?? null,
-        objective_text: block?.objective_text ?? null,
-        notes_pre: block?.notes_pre ?? null,
-        status: block?.status ?? null,
-        notes_post: block?.notes_post ?? null,
-        board_type: block?.board_type ?? null,
-        board_size_feet: block?.board_size_feet ?? null,
-        board_size_inches: block?.board_size_inches ?? null,
-      },
+      blocks: studentBlocks.map((b: any) => ({
+        id: b.id ?? null,
+        order_index: b.order_index ?? 0,
+        step_id: b.step_id ?? null,
+        land_drill_id: b.land_drill_id ?? null,
+        land_drill_custom: b.land_drill_custom ?? null,
+        water_drill_id: b.water_drill_id ?? null,
+        water_drill_custom: b.water_drill_custom ?? null,
+        objective_text: b.objective_text ?? null,
+        notes_pre: b.notes_pre ?? null,
+        status: b.status ?? null,
+        notes_post: b.notes_post ?? null,
+        board_type: b.board_type ?? null,
+        board_size_feet: b.board_size_feet ?? null,
+        board_size_inches: b.board_size_inches ?? null,
+      })),
     };
   });
 
@@ -584,6 +586,7 @@ export async function saveServicePlanBlock(
   token: string,
   campSessionId: string,
   studentId: string,
+  orderIndex: number,
   patch: Partial<{
     step_id: string | null;
     land_drill_id: string | null;
@@ -651,16 +654,13 @@ export async function saveServicePlanBlock(
     if (k in patch) cleanPatch[k] = (patch as any)[k];
   }
 
-  // M45 — block is now per (session, student, order_index). We update the
-  // first block (order_index=0) which the UI surfaces; multi-block UI is
-  // future work.
+  // M45 — block is per (session, student, order_index).
   const { data: existing } = await admin
     .from('service_plan_blocks')
     .select('id')
     .eq('camp_session_id', campSessionId)
     .eq('student_id', studentId)
-    .order('order_index')
-    .limit(1)
+    .eq('order_index', orderIndex)
     .maybeSingle();
 
   if (existing) {
@@ -674,9 +674,129 @@ export async function saveServicePlanBlock(
       camp_instance_id: session.camp_instance_id,
       camp_session_id: campSessionId,
       student_id: studentId,
-      order_index: 0,
+      order_index: orderIndex,
       ...cleanPatch,
     });
+    if (error) throw new Error(error.message);
+  }
+}
+
+// M45 — Delete one block of a student's day. Used by the multi-block UI
+// when the coach removes an extra block. The day always keeps at least
+// one block; UI enforces that.
+export async function deleteServicePlanBlock(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+  orderIndex: number,
+): Promise<void> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) throw new Error('Session not found.');
+  const camp = Array.isArray(session.camp_instances)
+    ? session.camp_instances[0]
+    : session.camp_instances;
+  if (!camp) throw new Error('Service not found.');
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    throw new Error('You are not assigned to this service.');
+  }
+
+  await admin
+    .from('service_plan_blocks')
+    .delete()
+    .eq('camp_session_id', campSessionId)
+    .eq('student_id', studentId)
+    .eq('order_index', orderIndex);
+}
+
+// M45 — Replace ALL of a student's blocks for a given day with the
+// canonical template blocks of that day. Used by the "Apply ALL blocks
+// of this day to every student" button to re-seed an existing camp
+// whose template was empty at creation time, or to reset a day.
+export async function applyTemplateDayToStudents(
+  token: string,
+  campSessionId: string,
+  templateBlocks: Array<{
+    order_index: number;
+    step_id: string | null;
+    drill_id: string | null;
+    drill_custom: string | null;
+    mission_id: string | null;
+    mission_custom: string | null;
+    objective_text?: string | null;
+  }>,
+): Promise<void> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) throw new Error('Session not found.');
+  const camp = Array.isArray(session.camp_instances)
+    ? session.camp_instances[0]
+    : session.camp_instances;
+  if (!camp) throw new Error('Service not found.');
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    throw new Error('You are not assigned to this service.');
+  }
+
+  // Active participants of the parent camp
+  const { data: parts } = await admin
+    .from('camp_participants')
+    .select('student_id')
+    .eq('camp_instance_id', session.camp_instance_id)
+    .eq('enrollment_status', 'active');
+  const studentIds = (parts ?? []).map((p: any) => p.student_id);
+  if (studentIds.length === 0) return;
+
+  // Wipe existing blocks for this session × these students
+  await admin
+    .from('service_plan_blocks')
+    .delete()
+    .eq('camp_session_id', campSessionId)
+    .in('student_id', studentIds);
+
+  // Re-seed from template
+  const rows: any[] = [];
+  for (const studentId of studentIds) {
+    for (const tb of templateBlocks) {
+      rows.push({
+        camp_instance_id: session.camp_instance_id,
+        camp_session_id: campSessionId,
+        student_id: studentId,
+        order_index: tb.order_index,
+        step_id: tb.step_id ?? null,
+        land_drill_id: tb.drill_id ?? null,
+        land_drill_custom: tb.drill_id ? null : tb.drill_custom ?? null,
+        water_drill_id: tb.mission_id ?? null,
+        water_drill_custom: tb.mission_id ? null : tb.mission_custom ?? null,
+        objective_text: tb.objective_text ?? null,
+      });
+    }
+  }
+  if (rows.length > 0) {
+    const { error } = await admin.from('service_plan_blocks').insert(rows);
     if (error) throw new Error(error.message);
   }
 }

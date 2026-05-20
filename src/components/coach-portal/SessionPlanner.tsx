@@ -14,11 +14,14 @@ import {
 import {
   saveServicePlanHeader,
   saveServicePlanBlock,
+  deleteServicePlanBlock,
+  applyTemplateDayToStudents,
   startServicePlan,
   closeServicePlan,
   saveOfficialStepRatingFromPortal,
   type ServicePlanData,
   type ServicePlanStudent,
+  type ServicePlanBlock,
 } from '@/lib/actions/service-planner';
 import { StarRating } from '@/components/sequence/StarRating';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
@@ -136,20 +139,90 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
   const commitStudentBlock = (
     studentId: string,
-    patch: Partial<ServicePlanStudent['block']>
+    orderIndex: number,
+    patch: Partial<ServicePlanBlock>,
   ) => {
     setStudents((prev) =>
-      prev.map((s) =>
-        s.student_id === studentId ? { ...s, block: { ...s.block, ...patch } } : s
-      )
+      prev.map((s) => {
+        if (s.student_id !== studentId) return s;
+        const existing = s.blocks.find((b) => b.order_index === orderIndex);
+        let nextBlocks: ServicePlanBlock[];
+        if (existing) {
+          nextBlocks = s.blocks.map((b) =>
+            b.order_index === orderIndex ? { ...b, ...patch } : b,
+          );
+        } else {
+          nextBlocks = [
+            ...s.blocks,
+            {
+              id: null,
+              order_index: orderIndex,
+              step_id: null,
+              land_drill_id: null,
+              land_drill_custom: null,
+              water_drill_id: null,
+              water_drill_custom: null,
+              objective_text: null,
+              notes_pre: null,
+              status: null,
+              notes_post: null,
+              board_type: null,
+              board_size_feet: null,
+              board_size_inches: null,
+              ...patch,
+            },
+          ].sort((a, b) => a.order_index - b.order_index);
+        }
+        return { ...s, blocks: nextBlocks };
+      }),
     );
     startTransition(async () => {
       try {
-        await saveServicePlanBlock(token, data.selectedDay.camp_session_id, studentId, patch as any);
+        await saveServicePlanBlock(
+          token,
+          data.selectedDay.camp_session_id,
+          studentId,
+          orderIndex,
+          patch as any,
+        );
         const s = students.find((x) => x.student_id === studentId);
         flash(`✓ ${(s?.display_name ?? 'Saved').split(' ')[0]}`);
       } catch (e: any) {
         alert(e.message || 'Save failed');
+      }
+    });
+  };
+
+  // M45 — Add a fresh empty block at the next order_index for one student.
+  const addStudentBlock = (studentId: string) => {
+    const student = students.find((s) => s.student_id === studentId);
+    if (!student) return;
+    const nextIdx = student.blocks.length
+      ? Math.max(...student.blocks.map((b) => b.order_index)) + 1
+      : 0;
+    commitStudentBlock(studentId, nextIdx, {});
+  };
+
+  // M45 — Remove a block (must keep at least one).
+  const removeStudentBlock = (studentId: string, orderIndex: number) => {
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.student_id === studentId
+          ? { ...s, blocks: s.blocks.filter((b) => b.order_index !== orderIndex) }
+          : s,
+      ),
+    );
+    startTransition(async () => {
+      try {
+        await deleteServicePlanBlock(
+          token,
+          data.selectedDay.camp_session_id,
+          studentId,
+          orderIndex,
+        );
+        flash('✓ Block removed');
+      } catch (e: any) {
+        alert(e.message || 'Delete failed');
       }
     });
   };
@@ -175,7 +248,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // Only here does the data sync to each student's profile + the survey
   // request go out. Deliberate + confirmed + irreversible.
   const finalize = () => {
-    const unevaluated = students.filter((s) => !s.block.status);
+    const unevaluated = students.filter(
+      (s) => s.blocks.length === 0 || s.blocks.some((b) => !b.status),
+    );
     if (unevaluated.length > 0) {
       if (
         !confirm(
@@ -222,7 +297,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     (d) => d.block_name?.toLowerCase().includes('warm') || d.step_id === 'STP-002'
   );
 
-  const evaluatedCount = students.filter((s) => s.block.status).length;
+  // M45 — a student counts as "evaluated" once every block of theirs
+  // has a status set.
+  const evaluatedCount = students.filter(
+    (s) => s.blocks.length > 0 && s.blocks.every((b) => b.status),
+  ).length;
 
   // When the plan is in_progress the coach can re-open the editable plan
   // view (the plan stays modifiable until finalize).
@@ -339,25 +418,78 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       {/* ════════════ PLANNING MODE ════════════ */}
       {showPlanForm && (
         <>
-          {/* M45 — Template auto-seeded the per-student blocks below
-              when the coordinator created this service. The reference
-              "Template Plan" panel that used to live here is gone —
-              you can see the recipe right inside each student's card. */}
-          {data.templatePlan.length > 0 &&
-            students.every((s) => !s.block.step_id && !s.block.land_drill_id && !s.block.water_drill_id) && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1">
-                  Template is empty
-                </p>
-                <p className="text-[12px] text-amber-900 leading-snug">
-                  Your coordinator's template for this service doesn't have
-                  step / drill / mission set yet. Open{' '}
-                  <span className="font-mono text-amber-900">/camps/templates</span>{' '}
-                  as Head Coach to fill it in — future services from this
-                  template will arrive pre-planned for every student.
-                </p>
-              </div>
-            )}
+          {/* M45 — Template reference panel for the current day. Shows
+              the canonical recipe + lets the coach apply ALL blocks at
+              once to every student (replaces existing blocks). Useful
+              when a camp was created before its template had content,
+              or to reset a day to the template baseline. */}
+          {(() => {
+            const todayTpl = data.templatePlan.find(
+              (d) => d.day_number === data.selectedDay.day_number,
+            );
+            if (!todayTpl || todayTpl.blocks.length === 0) {
+              const allEmpty = students.every((s) => s.blocks.length === 0 || s.blocks.every((b) => !b.step_id && !b.land_drill_id && !b.water_drill_id));
+              if (data.templatePlan.length > 0 && allEmpty) {
+                return (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1">
+                      Template empty for day {data.selectedDay.day_number}
+                    </p>
+                    <p className="text-[12px] text-amber-900 leading-snug">
+                      Open{' '}
+                      <span className="font-mono">/camps/templates</span> as Head
+                      Coach to define this day's blocks (STP + drill + mission)
+                      so future services arrive pre-planned for every student.
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            }
+            return (
+              <Section emoji="🧭" title="Template plan" subtitle="The recipe your coordinator pre-built for this day">
+                <div className="space-y-2">
+                  {todayTpl.blocks.map((b, i) => {
+                    const stp = data.stpCatalog.find((s) => s.id === b.step_id);
+                    const drill = data.availableDrills.find((d) => d.id === b.drill_id);
+                    const mission = data.availableDrills.find((d) => d.id === b.mission_id);
+                    return (
+                      <div key={i} className="rounded-lg border border-gray-200 bg-white p-2 text-[11px] space-y-0.5">
+                        <p className="font-mono uppercase tracking-wider text-gray-400">Block {b.block_order}</p>
+                        {stp && (<p><span className="text-gray-500">Step · </span>{stp.id} — {stp.title}</p>)}
+                        {(drill || b.drill_custom) && (<p><span className="text-gray-500">Drill · </span>{drill?.title ?? b.drill_custom}</p>)}
+                        {(mission || b.mission_custom) && (<p><span className="text-gray-500">Mission · </span>{mission?.title ?? b.mission_custom}</p>)}
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!confirm(`Replace every student's blocks for Day ${data.selectedDay.day_number} with the ${todayTpl.blocks.length} template block(s)? Existing per-student tweaks for this day will be lost.`)) return;
+                      startTransition(async () => {
+                        try {
+                          await applyTemplateDayToStudents(
+                            token,
+                            data.selectedDay.camp_session_id,
+                            todayTpl.blocks,
+                          );
+                          flash('✓ Day re-seeded · refresh to see');
+                          onSwitchDay?.(data.selectedDay.day_number);
+                        } catch (e: any) {
+                          alert(e.message || 'Apply failed');
+                        }
+                      });
+                    }}
+                    disabled={pending}
+                    className="w-full py-2 text-[12px] font-semibold rounded-lg text-white"
+                    style={{ background: BRAND.colors.navy }}
+                  >
+                    Apply all blocks to every student
+                  </button>
+                </div>
+              </Section>
+            );
+          })()}
 
           {/* 1. VENUE ANALYSIS */}
           <Section emoji="🌊" title="1. Venue Analysis" subtitle="Read today's conditions before going in">
@@ -487,7 +619,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   student={s}
                   stpCatalog={data.stpCatalog}
                   availableDrills={data.availableDrills}
-                  onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
+                  onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
+                  onAddBlock={() => addStudentBlock(s.student_id)}
+                  onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
                 />
               ))}
             </div>
@@ -532,7 +666,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   isClosed={isClosed}
                   stpLabel={stpLabel}
                   drillTitle={drillTitle}
-                  onCommit={(patch) => commitStudentBlock(s.student_id, patch)}
+                  onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onRateStep={(stepId, rating) => rateStepInline(s.student_id, stepId, rating)}
                 />
               ))}
@@ -1189,13 +1323,99 @@ function StudentPlanCard({
   stpCatalog,
   availableDrills,
   onCommit,
+  onAddBlock,
+  onRemoveBlock,
 }: {
   student: ServicePlanStudent;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
-  onCommit: (patch: Partial<ServicePlanStudent['block']>) => void;
+  onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
+  onAddBlock: () => void;
+  onRemoveBlock: (orderIndex: number) => void;
 }) {
-  const { block } = student;
+  const blocks = student.blocks.length > 0
+    ? student.blocks
+    : [{
+        id: null,
+        order_index: 0,
+        step_id: null,
+        land_drill_id: null,
+        land_drill_custom: null,
+        water_drill_id: null,
+        water_drill_custom: null,
+        objective_text: null,
+        notes_pre: null,
+        status: null,
+        notes_post: null,
+        board_type: null,
+        board_size_feet: null,
+        board_size_inches: null,
+      } as ServicePlanBlock];
+
+  return (
+    <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <StudentAvatar url={student.photo_url} name={student.display_name} />
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
+            {student.display_name}
+          </p>
+          <p className="text-[10px] text-gray-500 capitalize">
+            {student.belt_level?.replace(/_/g, ' ')}
+          </p>
+        </div>
+      </div>
+
+      {/* Profile / bitácora — review before planning */}
+      <StudentProfilePanel student={student} />
+
+      {/* M45 — One BlockEditor per block; coach can add/remove blocks. */}
+      <div className="space-y-3">
+        {blocks.map((b, i) => (
+          <BlockEditor
+            key={b.id ?? `new-${b.order_index}`}
+            block={b}
+            blockNumber={i + 1}
+            canRemove={blocks.length > 1}
+            stpCatalog={stpCatalog}
+            availableDrills={availableDrills}
+            onCommit={(patch) => onCommit(b.order_index, patch)}
+            onRemove={() => onRemoveBlock(b.order_index)}
+          />
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={onAddBlock}
+        className="w-full py-2 rounded-lg border-2 border-dashed border-gray-300 text-[12px] text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors"
+      >
+        + Add another block
+      </button>
+    </div>
+  );
+}
+
+// M45 — One block's planning editor (Sequence focus + drill + mission +
+// objective + board + pre-note). Used inside StudentPlanCard, one per
+// block, so a single student can have multiple blocks per day.
+function BlockEditor({
+  block,
+  blockNumber,
+  canRemove,
+  stpCatalog,
+  availableDrills,
+  onCommit,
+  onRemove,
+}: {
+  block: ServicePlanBlock;
+  blockNumber: number;
+  canRemove: boolean;
+  stpCatalog: ServicePlanData['stpCatalog'];
+  availableDrills: ServicePlanData['availableDrills'];
+  onCommit: (patch: Partial<ServicePlanBlock>) => void;
+  onRemove: () => void;
+}) {
   const [showLandPicker, setShowLandPicker] = useState(false);
   const [showWaterPicker, setShowWaterPicker] = useState(false);
 
@@ -1213,21 +1433,21 @@ function StudentPlanCard({
     : null;
 
   return (
-    <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2">
-      <div className="flex items-center gap-2 min-w-0">
-        <StudentAvatar url={student.photo_url} name={student.display_name} />
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
-            {student.display_name}
-          </p>
-          <p className="text-[10px] text-gray-500 capitalize">
-            {student.belt_level?.replace(/_/g, ' ')}
-          </p>
-        </div>
+    <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+          Block {blockNumber}
+        </p>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-[10px] text-red-500 hover:text-red-700"
+          >
+            Remove
+          </button>
+        )}
       </div>
-
-      {/* Profile / bitácora — review before planning */}
-      <StudentProfilePanel student={student} />
 
       {/* Sequence focus */}
       <div>
@@ -1264,7 +1484,7 @@ function StudentPlanCard({
             )}
           </button>
         ) : (
-          <div className="space-y-1.5 bg-white p-2 rounded-lg border border-gray-200">
+          <div className="space-y-1.5 bg-gray-50 p-2 rounded-lg border border-gray-200">
             {stepDrills.length > 0 ? (
               stepDrills.map((d) => (
                 <button
@@ -1274,7 +1494,7 @@ function StudentPlanCard({
                     onCommit({ land_drill_id: d.id, land_drill_custom: null });
                     setShowLandPicker(false);
                   }}
-                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
+                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-white"
                 >
                   <strong>{d.id}</strong> · {d.title}
                 </button>
@@ -1318,7 +1538,7 @@ function StudentPlanCard({
             )}
           </button>
         ) : (
-          <div className="space-y-1.5 bg-white p-2 rounded-lg border border-gray-200">
+          <div className="space-y-1.5 bg-gray-50 p-2 rounded-lg border border-gray-200">
             {stepMissions.length > 0 ? (
               stepMissions.map((d) => (
                 <button
@@ -1328,7 +1548,7 @@ function StudentPlanCard({
                     onCommit({ water_drill_id: d.id, water_drill_custom: null });
                     setShowWaterPicker(false);
                   }}
-                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
+                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-white"
                 >
                   <strong>{d.id}</strong> · {d.title}
                 </button>
@@ -1358,13 +1578,14 @@ function StudentPlanCard({
 
       {/* Objective */}
       <SmallField
-        label="Objective today"
+        label="Objective"
         value={block.objective_text}
         onBlur={(v) => onCommit({ objective_text: v })}
         placeholder="e.g. 3 clean pop-ups landing in FP2"
       />
 
-      {/* M45 — Board assignment per student per day */}
+      {/* Board assignment (per block — so a multi-block day can switch
+          boards mid-session, e.g. soft 8' for warm-up, hard 6' for mission) */}
       <div className="grid grid-cols-3 gap-2">
         <SelectField
           label="Board"
@@ -1388,10 +1609,10 @@ function StudentPlanCard({
 
       {/* Pre-session note */}
       <TextArea
-        label="Pre-session note"
+        label="Pre-block note"
         value={block.notes_pre}
         onBlur={(v) => onCommit({ notes_pre: v })}
-        placeholder="What to watch for with this student today"
+        placeholder="What to watch for in this block"
         rows={2}
       />
     </div>
@@ -1412,16 +1633,15 @@ function StudentEvalCard({
   isClosed: boolean;
   stpLabel: (id: string | null) => string | null;
   drillTitle: (id: string | null) => string | null;
-  onCommit: (patch: Partial<ServicePlanStudent['block']>) => void;
+  onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onRateStep: (stepId: string, rating: number) => void;
 }) {
-  const { block } = student;
-  const land = block.land_drill_id ? drillTitle(block.land_drill_id) : block.land_drill_custom;
-  const water = block.water_drill_id ? drillTitle(block.water_drill_id) : block.water_drill_custom;
+  const blocks = student.blocks;
+  const allEvaluated = blocks.length > 0 && blocks.every((b) => b.status);
 
   return (
     <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2.5">
-      {/* Student header + status pill */}
+      {/* Student header + summary pill */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <StudentAvatar url={student.photo_url} name={student.display_name} />
@@ -1434,9 +1654,72 @@ function StudentEvalCard({
             </p>
           </div>
         </div>
-        {block.status && (
+        {blocks.length > 0 && (
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
+            style={
+              allEvaluated
+                ? { background: '#D1FAE5', color: '#047857' }
+                : { background: '#FEF3C7', color: '#92400E' }
+            }
+          >
+            {blocks.filter((b) => b.status).length} / {blocks.length} evaluated
+          </span>
+        )}
+      </div>
+
+      {/* Profile / bitácora — context while evaluating */}
+      <StudentProfilePanel student={student} />
+
+      {/* One eval section per block */}
+      {blocks.map((block, i) => (
+        <BlockEvalSection
+          key={block.id ?? `eval-${block.order_index}`}
+          block={block}
+          blockNumber={i + 1}
+          studentFirstName={student.display_name.split(' ')[0]}
+          isClosed={isClosed}
+          stpLabel={stpLabel}
+          drillTitle={drillTitle}
+          onCommit={(patch) => onCommit(block.order_index, patch)}
+          onRateStep={(rating) => block.step_id && onRateStep(block.step_id, rating)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function BlockEvalSection({
+  block,
+  blockNumber,
+  studentFirstName,
+  isClosed,
+  stpLabel,
+  drillTitle,
+  onCommit,
+  onRateStep,
+}: {
+  block: ServicePlanBlock;
+  blockNumber: number;
+  studentFirstName: string;
+  isClosed: boolean;
+  stpLabel: (id: string | null) => string | null;
+  drillTitle: (id: string | null) => string | null;
+  onCommit: (patch: Partial<ServicePlanBlock>) => void;
+  onRateStep: (rating: number) => void;
+}) {
+  const land = block.land_drill_id ? drillTitle(block.land_drill_id) : block.land_drill_custom;
+  const water = block.water_drill_id ? drillTitle(block.water_drill_id) : block.water_drill_custom;
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+          Block {blockNumber}
+        </p>
+        {block.status && (
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
             style={
               block.status === 'achieved'
                 ? { background: '#D1FAE5', color: '#047857' }
@@ -1450,11 +1733,8 @@ function StudentEvalCard({
         )}
       </div>
 
-      {/* Profile / bitácora — context while evaluating */}
-      <StudentProfilePanel student={student} />
-
-      {/* The plan that was set — read-only recap */}
-      <div className="bg-white rounded-lg border border-gray-100 p-2.5 space-y-1.5">
+      {/* Read-only recap of what was planned */}
+      <div className="space-y-1">
         <EvalRow label="Sequence" value={stpLabel(block.step_id) || '—'} />
         <EvalRow label="🏋️ Land drill" value={land || '—'} />
         <EvalRow label="🌊 Water mission" value={water || '—'} />
@@ -1462,7 +1742,7 @@ function StudentEvalCard({
         {block.notes_pre && <EvalRow label="Pre-note" value={block.notes_pre} />}
       </div>
 
-      {/* Evaluation controls */}
+      {/* Status buttons */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
           Did they hit the objective?
@@ -1502,25 +1782,21 @@ function StudentEvalCard({
         disabled={isClosed}
       />
 
-      {/* M45 — Inline OFFICIAL step rating (TSS cyan). One per step worked
-          today. Writes to student_step_ratings.coach_rating immediately,
-          so the student sees cyan stars in their portal as soon as the
-          session closes. */}
+      {/* M45 — Inline OFFICIAL step rating (TSS cyan) per block. */}
       {block.step_id && (
-        <div className="bg-[var(--tss-cyan,#5AC3E7)]/10 border border-[var(--tss-cyan,#5AC3E7)]/30 rounded-lg p-2.5">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1.5">
-            Official step rating · {block.step_id}
+        <div className="bg-[var(--tss-cyan,#5AC3E7)]/10 border border-[var(--tss-cyan,#5AC3E7)]/30 rounded-lg p-2">
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
+            Official rating · {block.step_id}
           </label>
           <StarRating
             value={null}
             size="md"
             variant="official"
             readOnly={isClosed}
-            onChange={(v) => onRateStep(block.step_id!, v)}
+            onChange={onRateStep}
           />
-          <p className="text-[10px] text-gray-500 mt-1 italic">
-            This rating goes straight to {student.display_name.split(' ')[0]}'s
-            sequence as their official TSS evaluation for {block.step_id}.
+          <p className="text-[10px] text-gray-500 mt-0.5 italic">
+            Rates {studentFirstName}'s {block.step_id} officially in their sequence.
           </p>
         </div>
       )}
