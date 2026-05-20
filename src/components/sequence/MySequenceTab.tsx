@@ -208,7 +208,7 @@ function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
             // M4: Coach official rating overrides self-rating visually (gold)
             <>
               <StarRating value={item.coach_rating} size="sm" readOnly variant="official" />
-              <div className="text-[9px] text-yellow-700 font-bold uppercase tracking-wider">
+              <div className="text-[9px] text-[var(--tss-cyan,#5AC3E7)] font-bold uppercase tracking-wider">
                 Official {item.coach_rating}/5
               </div>
               {item.rating !== null && item.rating !== item.coach_rating && (

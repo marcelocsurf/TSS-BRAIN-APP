@@ -37,9 +37,13 @@ interface SessionPlannerProps {
   data: ServicePlanData;
   token: string;
   onBack: () => void;
+  // M45 — when the coach taps a different day in the day picker, the
+  // parent re-fetches getServicePlan with that day_number and passes
+  // fresh data back via the data prop.
+  onSwitchDay?: (dayNumber: number) => void;
 }
 
-export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
+export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlannerProps) {
   const [plan, setPlan] = useState(data.plan);
   const [students, setStudents] = useState(data.students);
   const [pending, startTransition] = useTransition();
@@ -74,7 +78,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
     setPlan((p) => ({ ...p, ...patch }));
     startTransition(async () => {
       try {
-        await saveServicePlanHeader(token, data.camp.id, patch as any);
+        await saveServicePlanHeader(token, data.selectedDay.camp_session_id, patch as any);
         flash('✓ Saved');
       } catch (e: any) {
         alert(e.message || 'Save failed');
@@ -95,7 +99,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
     );
     startTransition(async () => {
       try {
-        await saveServicePlanBlock(token, data.camp.id, studentId, patch as any);
+        await saveServicePlanBlock(token, data.selectedDay.camp_session_id, studentId, patch as any);
         const s = students.find((x) => x.student_id === studentId);
         flash(`✓ ${(s?.display_name ?? 'Saved').split(' ')[0]}`);
       } catch (e: any) {
@@ -107,7 +111,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
   const start = () => {
     startTransition(async () => {
       try {
-        await startServicePlan(token, data.camp.id);
+        await startServicePlan(token, data.selectedDay.camp_session_id);
         setPlan((p) => ({
           ...p,
           completion_state: 'in_progress',
@@ -148,7 +152,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
     }
     startTransition(async () => {
       try {
-        await closeServicePlan(token, data.camp.id);
+        await closeServicePlan(token, data.selectedDay.camp_session_id);
         setPlan((p) => ({
           ...p,
           completion_state: 'closed',
@@ -200,7 +204,7 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
         </p>
         <h2 className="text-base font-bold mt-0.5">{data.camp.camp_name}</h2>
         <p className="text-[11px] opacity-80 mt-0.5">
-          {new Date(data.camp.start_date).toLocaleDateString('en-US', {
+          {new Date(data.selectedDay.session_date).toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'short',
             day: 'numeric',
@@ -213,6 +217,46 @@ export function SessionPlanner({ data, token, onBack }: SessionPlannerProps) {
           {!isPlanning && ` · ${evaluatedCount}/${students.length} evaluated`}
         </p>
       </div>
+
+      {/* M45 — Day picker. Only shown when the camp has more than one day. */}
+      {data.daySummaries.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {data.daySummaries.map((d) => {
+            const isActive = d.day_number === data.selectedDay.day_number;
+            const stateColor =
+              d.completion_state === 'closed'
+                ? '#10B981'
+                : d.completion_state === 'in_progress'
+                ? '#F59E0B'
+                : '#9CA3AF';
+            return (
+              <button
+                key={d.camp_session_id}
+                type="button"
+                onClick={() => onSwitchDay?.(d.day_number)}
+                disabled={isActive}
+                className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all border ${
+                  isActive
+                    ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <span className="block">Day {d.day_number}</span>
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full ml-1"
+                  style={{ background: stateColor }}
+                />
+                <span className="block text-[9px] opacity-70 mt-0.5">
+                  {new Date(d.session_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ════════════ PLANNING MODE ════════════ */}
       {showPlanForm && (

@@ -891,12 +891,12 @@ function PlanTab({
   const [planData, setPlanData] = useState<ServicePlanData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const openPlanner = async (campId: string) => {
+  const openPlanner = async (campId: string, dayNumber?: number) => {
     setSelectedCampId(campId);
     setLoading(true);
     setPlanData(null);
     try {
-      const d = await getServicePlan(token, campId);
+      const d = await getServicePlan(token, campId, dayNumber);
       setPlanData(d);
     } catch (e) {
       setPlanData(null);
@@ -907,6 +907,19 @@ function PlanTab({
   const close = () => {
     setSelectedCampId(null);
     setPlanData(null);
+  };
+
+  // M45 — reload the planner for a different day without leaving the screen.
+  const switchDay = async (dayNumber: number) => {
+    if (!selectedCampId) return;
+    setLoading(true);
+    try {
+      const d = await getServicePlan(token, selectedCampId, dayNumber);
+      setPlanData(d);
+    } catch {
+      /* keep prior data */
+    }
+    setLoading(false);
   };
 
   if (selectedCampId) {
@@ -928,7 +941,7 @@ function PlanTab({
         </div>
       );
     }
-    return <SessionPlanner data={planData} token={token} onBack={close} />;
+    return <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} />;
   }
 
   return (

@@ -4,6 +4,15 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
+// M45 — A summary of one day in a multi-day camp. The UI uses this to
+// render the day-picker so the coach can switch between planned days.
+export interface ServiceDaySummary {
+  camp_session_id: string;
+  day_number: number;
+  session_date: string;
+  completion_state: 'planned' | 'in_progress' | 'closed';
+}
+
 export interface ServicePlanData {
   camp: {
     id: string;
@@ -15,6 +24,11 @@ export interface ServicePlanData {
     template_name: string | null;
     service_kind: string | null;
   };
+  // M45 — list of all days (one camp_session per day) so the UI can render
+  // a day picker. `selectedDay` is the day currently loaded in `plan` and
+  // `students[].block` below.
+  daySummaries: ServiceDaySummary[];
+  selectedDay: ServiceDaySummary;
   plan: {
     venue_analysis: string | null;
     venue_go_no_go: 'go' | 'modified' | 'no_go' | null;
@@ -130,7 +144,10 @@ export interface ServicePlanStudent {
   profile: StudentProfileSnapshot;
   recentSessions: RecentSessionEntry[];
   stepRatings: StepRatingSummary;
-  // Their block in this service (one block per student per service for v1)
+  // M45 — block for the SELECTED day only. Switching days reloads.
+  // For multi-block-per-day templates this is the FIRST block (order_index=0)
+  // until SessionPlanner adds multi-block UI. All blocks for the day live
+  // in `allBlocks` if needed.
   block: {
     id: string | null;
     step_id: string | null;
@@ -142,6 +159,9 @@ export interface ServicePlanStudent {
     notes_pre: string | null;
     status: 'achieved' | 'partial' | 'not_yet' | null;
     notes_post: string | null;
+    board_type: string | null;
+    board_size_feet: number | null;
+    board_size_inches: number | null;
   };
 }
 
@@ -149,7 +169,8 @@ export interface ServicePlanStudent {
 
 export async function getServicePlan(
   token: string,
-  campInstanceId: string
+  campInstanceId: string,
+  dayNumberArg?: number
 ): Promise<ServicePlanData | null> {
   const admin = createAdminClient();
 
@@ -173,12 +194,46 @@ export async function getServicePlan(
 
   const tpl = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
 
-  // Service plan (may not exist yet — return blank object if not)
-  const { data: plan } = await admin
+  // M45 — load all days (camp_sessions) for this camp + their service_plans
+  // so the UI can render a day picker. Pick the requested day (or default
+  // to the earliest non-closed day) as the "selected" day to load.
+  const { data: campSessions } = await admin
+    .from('camp_sessions')
+    .select('id, day_number, session_date')
+    .eq('camp_instance_id', campInstanceId)
+    .order('day_number');
+  const sessions = campSessions ?? [];
+  if (sessions.length === 0) return null;
+
+  const sessionIds = sessions.map((s: any) => s.id);
+  const { data: plansForCamp } = await admin
     .from('service_plans')
     .select('*')
-    .eq('camp_instance_id', campInstanceId)
-    .maybeSingle();
+    .in('camp_session_id', sessionIds);
+  const planBySessionId = new Map<string, any>();
+  for (const p of plansForCamp ?? []) planBySessionId.set(p.camp_session_id, p);
+
+  const daySummaries: ServiceDaySummary[] = sessions.map((s: any) => ({
+    camp_session_id: s.id,
+    day_number: s.day_number,
+    session_date: s.session_date,
+    completion_state: (planBySessionId.get(s.id)?.completion_state as any) ?? 'planned',
+  }));
+
+  // Pick the day to load. Order of preference:
+  // 1. The explicit dayNumberArg if it exists
+  // 2. The first non-closed day
+  // 3. Day 1
+  let selectedDay: ServiceDaySummary;
+  if (dayNumberArg) {
+    selectedDay =
+      daySummaries.find((d) => d.day_number === dayNumberArg) ?? daySummaries[0];
+  } else {
+    selectedDay =
+      daySummaries.find((d) => d.completion_state !== 'closed') ?? daySummaries[0];
+  }
+
+  const plan = planBySessionId.get(selectedDay.camp_session_id) ?? null;
 
   // Students enrolled in this camp_instance — pull the full profile
   // snapshot so the coach can review level, goals, fears, injuries,
@@ -205,13 +260,18 @@ export async function getServicePlan(
 
   const studentIds = (participants ?? []).map((p: any) => p.student_id);
 
-  // Existing blocks
+  // M45 — Blocks for the SELECTED day only. For now we pick the first block
+  // (order_index=0) per student to feed into the legacy single-block UI; a
+  // future multi-block UI can use the full list.
   const { data: blocks } = await admin
     .from('service_plan_blocks')
     .select('*')
-    .eq('camp_instance_id', campInstanceId);
+    .eq('camp_session_id', selectedDay.camp_session_id)
+    .order('order_index');
   const blocksByStudent = new Map<string, any>();
-  for (const b of blocks ?? []) blocksByStudent.set(b.student_id, b);
+  for (const b of blocks ?? []) {
+    if (!blocksByStudent.has(b.student_id)) blocksByStudent.set(b.student_id, b);
+  }
 
   // Recent training history per student — coach sessions
   // (student_session_results) + self-training (self_training_sessions),
@@ -350,6 +410,9 @@ export async function getServicePlan(
         notes_pre: block?.notes_pre ?? null,
         status: block?.status ?? null,
         notes_post: block?.notes_post ?? null,
+        board_type: block?.board_type ?? null,
+        board_size_feet: block?.board_size_feet ?? null,
+        board_size_inches: block?.board_size_inches ?? null,
       },
     };
   });
@@ -443,6 +506,8 @@ export async function getServicePlan(
       started_at: plan?.started_at ?? null,
       closed_at: plan?.closed_at ?? null,
     },
+    daySummaries,
+    selectedDay,
     students,
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
@@ -454,7 +519,7 @@ export async function getServicePlan(
 
 export async function saveServicePlanHeader(
   token: string,
-  campInstanceId: string,
+  campSessionId: string,
   patch: Partial<{
     venue_analysis: string | null;
     venue_go_no_go: 'go' | 'modified' | 'no_go' | null;
@@ -470,7 +535,6 @@ export async function saveServicePlanHeader(
 ): Promise<void> {
   const admin = createAdminClient();
 
-  // Verify coach owns this camp_instance
   const { data: coach } = await admin
     .from('coaches')
     .select('id')
@@ -478,33 +542,47 @@ export async function saveServicePlanHeader(
     .single();
   if (!coach) throw new Error('Coach not found.');
 
-  const { data: camp } = await admin
-    .from('camp_instances')
-    .select('id, coach_id, head_coach_id')
-    .eq('id', campInstanceId)
+  // Resolve the camp_instance + ownership through the session.
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
     .single();
+  if (!session) throw new Error('Session not found.');
+  const camp = Array.isArray(session.camp_instances)
+    ? session.camp_instances[0]
+    : session.camp_instances;
   if (!camp) throw new Error('Service not found.');
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
   }
 
-  await admin
+  // Upsert the plan row for this specific day.
+  const { data: existing } = await admin
     .from('service_plans')
-    .upsert(
-      {
-        camp_instance_id: campInstanceId,
-        ...patch,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'camp_instance_id' }
-    );
+    .select('id')
+    .eq('camp_session_id', campSessionId)
+    .maybeSingle();
+  if (existing) {
+    await admin
+      .from('service_plans')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', existing.id);
+  } else {
+    await admin.from('service_plans').insert({
+      camp_instance_id: session.camp_instance_id,
+      camp_session_id: campSessionId,
+      ...patch,
+      completion_state: 'planned',
+    });
+  }
 }
 
 // ─── Save per-student block ────────────────────────────────────────
 
 export async function saveServicePlanBlock(
   token: string,
-  campInstanceId: string,
+  campSessionId: string,
   studentId: string,
   patch: Partial<{
     step_id: string | null;
@@ -516,11 +594,13 @@ export async function saveServicePlanBlock(
     notes_pre: string | null;
     status: 'achieved' | 'partial' | 'not_yet' | null;
     notes_post: string | null;
+    board_type: string | null;
+    board_size_feet: number | null;
+    board_size_inches: number | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
 
-  // Verify coach + service ownership
   const { data: coach } = await admin
     .from('coaches')
     .select('id')
@@ -528,28 +608,30 @@ export async function saveServicePlanBlock(
     .single();
   if (!coach) throw new Error('Coach not found.');
 
-  const { data: camp } = await admin
-    .from('camp_instances')
-    .select('coach_id, head_coach_id')
-    .eq('id', campInstanceId)
+  // Resolve camp_instance through the session for ownership check.
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
     .single();
+  if (!session) throw new Error('Session not found.');
+  const camp = Array.isArray(session.camp_instances)
+    ? session.camp_instances[0]
+    : session.camp_instances;
   if (!camp) throw new Error('Service not found.');
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
   }
 
-  // Verify student is in this camp_instance
+  // Verify student is in this camp_instance.
   const { data: participant } = await admin
     .from('camp_participants')
     .select('id')
-    .eq('camp_instance_id', campInstanceId)
+    .eq('camp_instance_id', session.camp_instance_id)
     .eq('student_id', studentId)
     .maybeSingle();
   if (!participant) throw new Error('Student not enrolled in this service.');
 
-  // Whitelist only the writable columns. The caller may pass the full
-  // block object (including `id`, which must NOT be in the payload —
-  // it's a gen_random_uuid() PK and an explicit null violates NOT NULL).
   const ALLOWED = [
     'step_id',
     'land_drill_id',
@@ -560,18 +642,25 @@ export async function saveServicePlanBlock(
     'notes_pre',
     'status',
     'notes_post',
+    'board_type',
+    'board_size_feet',
+    'board_size_inches',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {
     if (k in patch) cleanPatch[k] = (patch as any)[k];
   }
 
-  // One block per student per service for v1 — update if exists, else insert
+  // M45 — block is now per (session, student, order_index). We update the
+  // first block (order_index=0) which the UI surfaces; multi-block UI is
+  // future work.
   const { data: existing } = await admin
     .from('service_plan_blocks')
     .select('id')
-    .eq('camp_instance_id', campInstanceId)
+    .eq('camp_session_id', campSessionId)
     .eq('student_id', studentId)
+    .order('order_index')
+    .limit(1)
     .maybeSingle();
 
   if (existing) {
@@ -582,8 +671,10 @@ export async function saveServicePlanBlock(
     if (error) throw new Error(error.message);
   } else {
     const { error } = await admin.from('service_plan_blocks').insert({
-      camp_instance_id: campInstanceId,
+      camp_instance_id: session.camp_instance_id,
+      camp_session_id: campSessionId,
       student_id: studentId,
+      order_index: 0,
       ...cleanPatch,
     });
     if (error) throw new Error(error.message);
@@ -592,7 +683,7 @@ export async function saveServicePlanBlock(
 
 // ─── Lifecycle: start + close ──────────────────────────────────────
 
-export async function startServicePlan(token: string, campInstanceId: string): Promise<void> {
+export async function startServicePlan(token: string, campSessionId: string): Promise<void> {
   const admin = createAdminClient();
   const { data: coach } = await admin
     .from('coaches')
@@ -601,32 +692,55 @@ export async function startServicePlan(token: string, campInstanceId: string): P
     .single();
   if (!coach) throw new Error('Coach not found.');
 
-  await admin
+  // Resolve camp_instance through the session
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) throw new Error('Session not found.');
+
+  const { data: existing } = await admin
     .from('service_plans')
-    .upsert(
-      {
-        camp_instance_id: campInstanceId,
+    .select('id')
+    .eq('camp_session_id', campSessionId)
+    .maybeSingle();
+  if (existing) {
+    await admin
+      .from('service_plans')
+      .update({
         completion_state: 'in_progress',
         started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'camp_instance_id' }
-    );
+      })
+      .eq('id', existing.id);
+  } else {
+    await admin.from('service_plans').insert({
+      camp_instance_id: session.camp_instance_id,
+      camp_session_id: campSessionId,
+      completion_state: 'in_progress',
+      started_at: new Date().toISOString(),
+    });
+  }
 }
 
-// Close the service plan AND sync every student's evaluation into the
+// M45 — Close ONE day of the camp + sync per-day evaluations into the
 // unified bitácora (student_session_results) so it shows up in the
-// student portal + their admin profile. Mirrors closeCampSessionResult.
+// student portal + their admin profile.
+//
+// Renamed from closeServicePlan (camp-level) to closeServicePlan (day-level)
+// keeping the same name for backward-compat with existing imports; the
+// argument is now a camp_session_id (a single day), not a camp_instance_id.
 //
 // Steps:
-//   1. Ensure a camp_session exists for this camp_instance (day 1).
-//   2. Wipe + re-insert one student_session_results row per block
-//      (idempotent — re-closing re-syncs cleanly).
-//   3. Call update_student_profile_on_close RPC per student so the
-//      student's last_session_* snapshot updates.
-//   4. Email each student their feedback + survey link (first close only).
-//   5. Flip service_plans → closed and camp_instance → completed.
-export async function closeServicePlan(token: string, campInstanceId: string): Promise<void> {
+//   1. Resolve the day + ownership.
+//   2. Wipe + re-insert one student_session_results row per block of THIS day.
+//   3. RPC update_student_profile_on_close per student.
+//   4. Email each student feedback + survey link (first close only).
+//   5. Flip THIS day's service_plans → closed.
+//   6. camp_instance.status stays in_progress; the FinalCampEvaluation
+//      flow flips it to 'completed' only after the official final eval.
+export async function closeServicePlan(token: string, campSessionId: string): Promise<void> {
   const admin = createAdminClient();
 
   const { data: coach } = await admin
@@ -636,11 +750,19 @@ export async function closeServicePlan(token: string, campInstanceId: string): P
     .single();
   if (!coach) throw new Error('Coach not found.');
 
-  const { data: camp } = await admin
-    .from('camp_instances')
-    .select('id, camp_name, start_date, coach_id, head_coach_id')
-    .eq('id', campInstanceId)
+  // Resolve day + parent camp.
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select(
+      'id, day_number, session_date, camp_instance_id, ' +
+        'camp_instances:camp_instance_id(id, camp_name, start_date, coach_id, head_coach_id)'
+    )
+    .eq('id', campSessionId)
     .single();
+  if (!session) throw new Error('Session not found.');
+  const camp = Array.isArray(session.camp_instances)
+    ? session.camp_instances[0]
+    : session.camp_instances;
   if (!camp) throw new Error('Service not found.');
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
@@ -649,45 +771,22 @@ export async function closeServicePlan(token: string, campInstanceId: string): P
   const { data: plan } = await admin
     .from('service_plans')
     .select('*')
-    .eq('camp_instance_id', campInstanceId)
+    .eq('camp_session_id', campSessionId)
     .maybeSingle();
   const alreadyClosed = plan?.completion_state === 'closed';
 
   const { data: blocks } = await admin
     .from('service_plan_blocks')
     .select('*')
-    .eq('camp_instance_id', campInstanceId);
+    .eq('camp_session_id', campSessionId);
   const allBlocks = blocks ?? [];
 
-  // 1. Ensure a camp_session exists (day 1)
-  let { data: campSession } = await admin
+  // Mark session completed.
+  await admin
     .from('camp_sessions')
-    .select('id')
-    .eq('camp_instance_id', campInstanceId)
-    .eq('day_number', 1)
-    .maybeSingle();
-  if (!campSession) {
-    const { data: created, error: csErr } = await admin
-      .from('camp_sessions')
-      .insert({
-        camp_instance_id: campInstanceId,
-        day_number: 1,
-        session_date: camp.start_date ?? new Date().toISOString().slice(0, 10),
-        venue_actual: plan?.venue_analysis ?? null,
-        common_notes:
-          [plan?.warm_up_custom, plan?.mental_hack].filter(Boolean).join(' · ') || null,
-        session_status: 'completed',
-      })
-      .select('id')
-      .single();
-    if (csErr) throw new Error(csErr.message);
-    campSession = created;
-  } else {
-    await admin
-      .from('camp_sessions')
-      .update({ session_status: 'completed' })
-      .eq('id', campSession.id);
-  }
+    .update({ session_status: 'completed' })
+    .eq('id', campSessionId);
+  const campSession = { id: campSessionId };
 
   // 2. Idempotency — clear prior results for this camp_session
   await admin
@@ -805,21 +904,26 @@ export async function closeServicePlan(token: string, campInstanceId: string): P
     }
   }
 
-  // 5. Flip lifecycle states
-  await admin
-    .from('service_plans')
-    .upsert(
-      {
-        camp_instance_id: campInstanceId,
+  // 5. Flip lifecycle state for THIS day only
+  if (plan) {
+    await admin
+      .from('service_plans')
+      .update({
         completion_state: 'closed',
         closed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'camp_instance_id' }
-    );
+      })
+      .eq('id', plan.id);
+  } else {
+    await admin.from('service_plans').insert({
+      camp_instance_id: session.camp_instance_id,
+      camp_session_id: campSessionId,
+      completion_state: 'closed',
+      closed_at: new Date().toISOString(),
+    });
+  }
 
-  await admin
-    .from('camp_instances')
-    .update({ status: 'completed' })
-    .eq('id', campInstanceId);
+  // camp_instance.status stays in_progress until the FinalCampEvaluation
+  // step flips it to 'completed'. For 1-day services (lessons), Phase 6
+  // will treat day-1 close as the final and trigger the eval inline.
 }

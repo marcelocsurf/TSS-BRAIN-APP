@@ -42,9 +42,10 @@ export function StarRating({
   const display = hover ?? value;
   const cls = SIZES[size];
 
-  // Color tokens by variant
-  const filledColor = variant === 'official' ? 'text-yellow-500' : 'text-amber-400';
-  const emptyColor = variant === 'official' ? 'text-yellow-200' : 'text-gray-300';
+  // Color tokens by variant. M45 — official = TSS cyan (brand color);
+  // self-rating stays amber so the two are visually distinct.
+  const filledColor = variant === 'official' ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-amber-400';
+  const emptyColor = variant === 'official' ? 'text-[var(--tss-cyan,#5AC3E7)]/25' : 'text-gray-300';
 
   return (
     <div className="inline-flex flex-col items-start">
@@ -76,7 +77,7 @@ export function StarRating({
           </span>
         )}
         {variant === 'official' && value !== null && size !== 'sm' && (
-          <span className="ml-1 text-[9px] uppercase tracking-wider text-yellow-700 font-bold">
+          <span className="ml-1 text-[9px] uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] font-bold">
             Official
           </span>
         )}

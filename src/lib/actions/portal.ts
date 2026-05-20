@@ -233,6 +233,108 @@ export async function getStudentPortalData(token: string) {
     blocks: blocksBySession.get(m.id) ?? [],
   }));
 
+  // M45 — pull the student's official services (camp_instances) so the
+  // portal shows what the coordinator programmed. This is the new source
+  // of truth; multi_block_sessions remains as legacy until cleanup.
+  const { data: participations } = await admin
+    .from('camp_participants')
+    .select(
+      'camp_instance_id, ' +
+        'camp_instances:camp_instance_id(' +
+          'id, camp_name, start_date, end_date, status, scheduled_time, ' +
+          'template_id, head_coach_id, coach_id, ' +
+          'camp_templates:template_id(template_name, service_kind), ' +
+          'head_coach:head_coach_id(display_name, photo_url, certification_level, max_belt_permission)' +
+        ')'
+    )
+    .eq('student_id', student.id);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcomingCamps: any[] = [];
+  const pastCamps: any[] = [];
+  for (const p of participations ?? []) {
+    const ci = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;
+    if (!ci) continue;
+    const tpl = Array.isArray(ci.camp_templates) ? ci.camp_templates[0] : ci.camp_templates;
+    const headCoach = Array.isArray(ci.head_coach) ? ci.head_coach[0] : ci.head_coach;
+    const summary = {
+      id: ci.id,
+      camp_name: ci.camp_name,
+      start_date: ci.start_date,
+      end_date: ci.end_date,
+      status: ci.status,
+      scheduled_time: ci.scheduled_time ?? null,
+      template_name: tpl?.template_name ?? null,
+      service_kind: tpl?.service_kind ?? null,
+      coach: headCoach
+        ? {
+            display_name: headCoach.display_name,
+            photo_url: headCoach.photo_url ?? null,
+            certification_level: headCoach.certification_level ?? null,
+            max_belt_permission: headCoach.max_belt_permission ?? null,
+          }
+        : null,
+    };
+    if (ci.end_date && ci.end_date >= today && ci.status !== 'completed') {
+      upcomingCamps.push(summary);
+    } else {
+      pastCamps.push(summary);
+    }
+  }
+  upcomingCamps.sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''));
+  pastCamps.sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? ''));
+
+  // For each upcoming camp, pull its next day's blocks so the student
+  // sees what they'll work on. The "next day" = first camp_session whose
+  // session_date >= today, or day 1 if all are in the past.
+  const upcomingCampIds = upcomingCamps.map((c) => c.id);
+  let upcomingCampPreview: Record<string, any> = {};
+  if (upcomingCampIds.length > 0) {
+    const { data: sessionsForCamps } = await admin
+      .from('camp_sessions')
+      .select('id, camp_instance_id, day_number, session_date')
+      .in('camp_instance_id', upcomingCampIds)
+      .order('day_number');
+    const nextSessionByCamp = new Map<string, any>();
+    for (const s of sessionsForCamps ?? []) {
+      const cur = nextSessionByCamp.get(s.camp_instance_id);
+      const isFuture = !s.session_date || s.session_date >= today;
+      if (!cur && isFuture) nextSessionByCamp.set(s.camp_instance_id, s);
+    }
+    // Fallback to day 1 for camps without any future session date.
+    for (const s of sessionsForCamps ?? []) {
+      if (!nextSessionByCamp.has(s.camp_instance_id) && s.day_number === 1) {
+        nextSessionByCamp.set(s.camp_instance_id, s);
+      }
+    }
+    const nextSessionIds = Array.from(nextSessionByCamp.values()).map((s: any) => s.id);
+    let blocksByCamp: Record<string, any[]> = {};
+    if (nextSessionIds.length > 0) {
+      const { data: previewBlocks } = await admin
+        .from('service_plan_blocks')
+        .select('camp_session_id, step_id, land_drill_id, water_drill_id, objective_text, order_index')
+        .in('camp_session_id', nextSessionIds)
+        .eq('student_id', student.id)
+        .order('order_index');
+      for (const b of previewBlocks ?? []) {
+        // Find which camp this session belongs to
+        const session = Array.from(nextSessionByCamp.values()).find((s: any) => s.id === b.camp_session_id);
+        if (!session) continue;
+        (blocksByCamp[session.camp_instance_id] ??= []).push(b);
+      }
+    }
+    for (const [campId, sess] of nextSessionByCamp.entries()) {
+      upcomingCampPreview[campId] = {
+        next_session: sess,
+        blocks: blocksByCamp[campId] ?? [],
+      };
+    }
+  }
+  const upcomingCampsWithPreview = upcomingCamps.map((c) => ({
+    ...c,
+    ...(upcomingCampPreview[c.id] ?? { next_session: null, blocks: [] }),
+  }));
+
   // M9 — load the student's academy branding so the portal can theme
   // its top bar / hero. Falls back to TSS defaults when missing.
   let academyBranding: {
@@ -266,6 +368,9 @@ export async function getStudentPortalData(token: string) {
     recentDrills: topRecentDrills,
     upcomingMultiBlock: upcomingWithBlocks,
     closedMultiBlock,
+    // M45 — official services (camp_instances). Single source of truth.
+    upcomingCamps: upcomingCampsWithPreview,
+    pastCamps,
     academyBranding,
   };
 }

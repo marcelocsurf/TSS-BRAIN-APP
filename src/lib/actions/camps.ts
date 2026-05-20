@@ -145,7 +145,7 @@ export async function createCampInstance(input: {
 
   // Auto-create camp sessions (one per template day)
   const startDate = new Date(input.start_date);
-  const sessions = days.map((day, i) => {
+  const sessionsToInsert = days.map((day, i) => {
     const sessionDate = new Date(startDate);
     sessionDate.setDate(sessionDate.getDate() + i);
     return {
@@ -156,8 +156,72 @@ export async function createCampInstance(input: {
       session_status: 'planned' as const,
     };
   });
-  const { error: sessErr } = await supabase.from('camp_sessions').insert(sessions);
+  const { data: createdSessions, error: sessErr } = await supabase
+    .from('camp_sessions')
+    .insert(sessionsToInsert)
+    .select('id, template_day_id, day_number');
   if (sessErr) throw new Error(`Failed to create sessions: ${sessErr.message}`);
+
+  // M45 — Auto-seed service_plans + service_plan_blocks from the template.
+  // For every (camp_session × participant × template_block) we create one
+  // block pre-populated with step_id + drill_id + mission_id so the coach
+  // opens the day already armed with the template's recipe per student.
+  if (createdSessions && createdSessions.length > 0 && input.student_ids.length > 0) {
+    const dayIds = days.map((d) => d.id);
+    const { data: tplBlocks } = await supabase
+      .from('camp_template_blocks')
+      .select(
+        'id, template_day_id, block_order, step_id, drill_id, drill_custom, mission_id, mission_custom, evaluation_focus, mission_time'
+      )
+      .in('template_day_id', dayIds)
+      .order('block_order');
+
+    // One service_plans row per camp_session (the coach's plan for that day).
+    const planRows = createdSessions.map((cs) => ({
+      camp_instance_id: instance.id,
+      camp_session_id: cs.id,
+      completion_state: 'planned' as const,
+    }));
+    const { error: planErr } = await supabase.from('service_plans').insert(planRows);
+    if (planErr) throw new Error(`Failed to seed service_plans: ${planErr.message}`);
+
+    // One service_plan_block per (camp_session × student × template_block).
+    const blockRows: any[] = [];
+    for (const cs of createdSessions) {
+      const dayBlocks = (tplBlocks ?? []).filter((b) => b.template_day_id === cs.template_day_id);
+      for (const studentId of input.student_ids) {
+        if (dayBlocks.length === 0) {
+          // No template blocks for this day → still create an empty block so
+          // the coach has a slot to fill manually.
+          blockRows.push({
+            camp_instance_id: instance.id,
+            camp_session_id: cs.id,
+            student_id: studentId,
+            order_index: 0,
+          });
+        } else {
+          dayBlocks.forEach((tb, idx) => {
+            blockRows.push({
+              camp_instance_id: instance.id,
+              camp_session_id: cs.id,
+              student_id: studentId,
+              order_index: tb.block_order ?? idx,
+              step_id: tb.step_id ?? null,
+              land_drill_id: tb.drill_id ?? null,
+              land_drill_custom: tb.drill_custom ?? null,
+              water_drill_id: tb.mission_id ?? null,
+              water_drill_custom: tb.mission_custom ?? null,
+              objective_text: tb.evaluation_focus ?? null,
+            });
+          });
+        }
+      }
+    }
+    if (blockRows.length > 0) {
+      const { error: blkErr } = await supabase.from('service_plan_blocks').insert(blockRows);
+      if (blkErr) throw new Error(`Failed to seed service_plan_blocks: ${blkErr.message}`);
+    }
+  }
 
   revalidatePath('/camps');
   return instance;

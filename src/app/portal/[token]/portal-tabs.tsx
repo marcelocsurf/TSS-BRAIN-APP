@@ -424,6 +424,9 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
   const beltLevel = student.belt_level as BeltLevel;
   const upcoming = data.upcomingMultiBlock ?? [];
+  // M45 — official services (camp_instances) take precedence over legacy
+  // multi_block_sessions. If both exist we show the camp card first.
+  const upcomingCamps = (data as any).upcomingCamps ?? [];
   const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
   const fmtHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -439,8 +442,14 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
 
   return (
     <div className="space-y-4">
-      {/* Upcoming session card — most important thing on Home */}
-      {upcoming.length > 0 && <UpcomingSessionCard upcoming={upcoming[0]} />}
+      {/* M45 — Upcoming camp/service card. Shows the next official service
+          programmed by the academy (camp_instance) with coach profile,
+          day + time, and what the student will work on. */}
+      {upcomingCamps.length > 0 && <UpcomingCampCard camp={upcomingCamps[0]} />}
+      {/* Legacy: upcoming multi-block session card (deprecated). */}
+      {upcomingCamps.length === 0 && upcoming.length > 0 && (
+        <UpcomingSessionCard upcoming={upcoming[0]} />
+      )}
 
       {/* Student Card */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
@@ -1797,7 +1806,104 @@ function StatCard({
 }
 
 // ═══════════════════════════════════════
-// UPCOMING SESSION CARD — shown at the top of Home when coach has planned blocks
+// UPCOMING CAMP CARD — M45 — replaces multi_block UpcomingSessionCard
+// for official services programmed by the academy.
+// ═══════════════════════════════════════
+
+function UpcomingCampCard({ camp }: { camp: any }) {
+  const nextDate = camp.next_session?.session_date ?? camp.start_date;
+  const dateLabel = nextDate
+    ? new Date(nextDate).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+    : '';
+  const dayNumber = camp.next_session?.day_number ?? 1;
+  const totalDays = camp.start_date && camp.end_date
+    ? Math.round(
+        (new Date(camp.end_date).getTime() - new Date(camp.start_date).getTime()) / 86400000
+      ) + 1
+    : 1;
+  const isMultiDay = totalDays > 1;
+  const coach = camp.coach;
+  const previewBlocks = camp.blocks ?? [];
+
+  return (
+    <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[#0a1628] text-white rounded-2xl p-4 shadow-md">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)]">
+          Your next class
+        </p>
+        {isMultiDay && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-semibold">
+            Day {dayNumber} of {totalDays}
+          </span>
+        )}
+      </div>
+      <h2 className="text-lg font-bold leading-tight">{camp.camp_name}</h2>
+      {camp.template_name && (
+        <p className="text-[11px] text-white/70 italic mt-0.5">{camp.template_name}</p>
+      )}
+      <p className="text-sm text-white/85 mt-2">
+        {dateLabel}
+        {camp.scheduled_time && ` · ${camp.scheduled_time}`}
+      </p>
+
+      {/* Coach profile */}
+      {coach && (
+        <div className="mt-3 flex items-center gap-2.5 bg-white/10 rounded-xl px-3 py-2">
+          {coach.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coach.photo_url}
+              alt={coach.display_name}
+              className="w-10 h-10 rounded-full object-cover border border-white/20"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold">
+              {coach.display_name
+                ?.split(' ')
+                .map((p: string) => p[0])
+                .filter(Boolean)
+                .slice(0, 2)
+                .join('')
+                .toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">{coach.display_name}</p>
+            <p className="text-[10px] text-white/60 truncate">
+              {coach.certification_level ?? 'Coach'}
+              {coach.max_belt_permission &&
+                ` · up to ${coach.max_belt_permission.replace(/_/g, ' ')}`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* What you'll work on today */}
+      {previewBlocks.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] mb-1.5">
+            What you'll work on
+          </p>
+          <div className="space-y-1">
+            {previewBlocks.slice(0, 3).map((b: any, i: number) => (
+              <div key={i} className="text-[12px] text-white/90 bg-white/5 rounded-lg px-2.5 py-1.5">
+                {b.step_id && <span className="text-[var(--tss-cyan)] font-mono mr-1.5">{b.step_id}</span>}
+                {b.objective_text ?? 'Coach will define the focus'}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// UPCOMING SESSION CARD — legacy multi_block_sessions card
 // ═══════════════════════════════════════
 
 function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
