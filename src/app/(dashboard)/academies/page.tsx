@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { AcademiesAdmin } from './AcademiesAdmin';
+import { Building2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,12 +55,21 @@ export default async function AcademiesPage() {
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4 pb-12">
       <div>
-        <h1 className="text-xl font-bold text-[var(--tss-navy)]">Academies</h1>
+        <h1
+          className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Academies
+        </h1>
         <p className="text-sm text-gray-500 mt-1">
           Platform admin view. Create academies and assign a coordinator to each.
         </p>
-        <p className="text-[11px] text-gray-400 mt-2">
-          🏫 {normalized.length} academies · {totalStudents ?? 0} total students
+        <p
+          className="text-[10px] uppercase tracking-wider text-gray-400 mt-2 inline-flex items-center gap-1.5"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          <Building2 size={11} strokeWidth={1.75} />
+          {normalized.length} academies · {totalStudents ?? 0} total students
         </p>
       </div>
 
