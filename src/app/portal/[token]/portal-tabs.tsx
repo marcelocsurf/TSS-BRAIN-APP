@@ -183,45 +183,52 @@ const BELT_WELCOME: Record<string, string> = {
 
 // ─── Training Tips by Belt ───
 
+// M51 — One Wave mental cues. The old TRAINING_TIPS were technique
+// reminders; Marcelo asked for mind-side prompts in the style of his
+// "One Wave" book. Same belt-keyed rotation by day-of-year so the
+// student gets a different cue each day.
 const TRAINING_TIPS: Record<string, string[]> = {
   white_belt: [
-    'Eyes forward during pop-up — where you look, you go.',
-    'Starfish every time — make safe dismounts a reflex.',
-    'Find the sweet spot first — check your nose height before every paddle.',
-    'One wave, one cue — pick a single focus for each wave.',
-    'Commit to a direction BEFORE you catch the wave.',
-    'Structure beats bravery — drill the steps until they are automatic.',
+    'One wave at a time. The next one does not exist yet.',
+    'Breathe before you paddle. The wave is already on its way.',
+    'Fear shrinks when you name it. Whisper what scares you, then move.',
+    'Curiosity beats performance. Ask the wave a question, do not demand.',
+    'Mistakes are data, not verdicts. Read them, then let them go.',
+    'Presence is your first technique. Land here before you land on the board.',
   ],
   yellow_belt: [
-    'Chase the pocket — meet the wave at its power source.',
-    'Angle your nose with the wave for an instant directional takeoff.',
-    'Speed 3 then speed 4 — build your paddle progressively.',
-    'Read the wave shape — peeling waves are your friend, avoid close-outs.',
-    'Compress on landing — the impulse generates your first speed.',
-    'Let the kinetic chain flow: eyes, shoulders, hips, board.',
+    'You do not chase the wave — you meet it. Patience is power.',
+    'Trust the rep. Your body remembers what your mind forgets.',
+    'Speed is calm in motion. Tension steals it; flow returns it.',
+    'Pick one cue per wave. Mastery is depth, not breadth.',
+    'Read first, react second. The ocean already knows where the line is.',
+    'Reset between waves. Each one starts at zero.',
   ],
   blue_belt: [
-    'Hold through the bottom turn — patience at the base creates power.',
-    'Project to your target — eyes reach the top of the wave before your board does.',
-    'Complete the circle — every turn has an entry, apex, and exit.',
-    'Rail engagement comes from foot pressure, not body lean.',
-    'Speed is earned from the wave, not from fighting it.',
-    'The Infinite Circle connects all your maneuvers into continuous flow.',
+    'Style is the residue of trust. Stop forcing, start arriving.',
+    'Commit fully or do not commit. Half-effort is the most dangerous line.',
+    'The wave is the teacher. Your job is to listen.',
+    'When in doubt, breathe out. The board will follow your nervous system.',
+    'Quiet the inner commentator. Surfing happens before the thought.',
+    'You are not behind. You are exactly where the wave needed you.',
   ],
   purple_belt: [
-    'Link three maneuvers into one continuous line.',
-    'Use vertical projection to maximize wave face time.',
-    'Aerial awareness starts with reading the lip two seconds ahead.',
+    'Risk is the price of the next door. Pay it on your terms.',
+    'A miss is a rehearsal. Make peace with falling and the ceiling lifts.',
+    'Confidence is built, not summoned. Stack honest reps.',
+    'Read the wave like a sentence. Where is its verb? Surf the verb.',
   ],
   brown_belt: [
-    'Competition readiness means executing under pressure what you drill in calm.',
-    'Tactical wave selection separates good surfers from great ones.',
-    'Full repertoire means every tool is available — pick the right one for the wave.',
+    'Pressure is a privilege. It means the moment matters to you.',
+    'Discipline is freedom. The drill you skip is the wave you lose.',
+    'Surf the surfer. Master your own state before the lineup.',
+    'Repetition without intention is decoration. Train with a why.',
   ],
   black_belt: [
-    'Mastery is repeating the fundamentals at the highest level.',
-    'Innovate from a foundation of structure — never abandon the system.',
-    'Teaching deepens understanding — share what you know.',
+    'You are still the student. The day you stop learning is the day you start sliding back.',
+    'Teach the way you wish someone had taught you.',
+    'Mastery is the courage to do the simple thing one more time.',
+    'The ocean did not change. You did. Keep going.',
   ],
 };
 
@@ -493,46 +500,20 @@ function HomeTab({
         </div>
       </div>
 
-      {/* Your Level Card */}
-      <div
-        className="rounded-2xl border-2 overflow-hidden shadow-sm"
-        style={{ borderColor: `${belt?.color || '#999'}40` }}
-      >
-        <div className="px-4 py-3" style={{ background: `${belt?.color || '#999'}15` }}>
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-              style={{ backgroundColor: belt?.color || '#999' }}
-            >
-              <span className="text-white text-xs font-bold">{belt?.en?.split(' ')[0]?.[0]}</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold" style={{ fontFamily: 'DM Mono, monospace' }}>
-                Your Level
-              </p>
-              <p className="text-sm font-bold text-[var(--tss-navy)]">{belt?.en} — {belt?.levelName}</p>
-            </div>
-          </div>
-        </div>
-        <div className="px-4 py-3 bg-white">
-          <p className="text-xs text-gray-600 leading-relaxed">
-            {BELT_WELCOME[beltLevel] || 'Keep training and progressing through the system.'}
-          </p>
-        </div>
-      </div>
-
-      {/* Belt journey — White Belt to Black Belt */}
+      {/* Belt journey — White Belt to Black Belt.
+          (The redundant "Your Level" card was removed — the timeline
+          already shows the current belt + level name.) */}
       <BeltJourney currentBelt={beltLevel} />
 
-      {/* Training Tip of the Day */}
+      {/* Mental cue of the day — One Wave style */}
       <div
         className="rounded-2xl p-4 shadow-sm"
-        style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}08, ${BRAND.colors.gold}12)`, borderLeft: `3px solid ${BRAND.colors.gold}` }}
+        style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}08, ${BRAND.colors.cyan}15)`, borderLeft: `3px solid ${BRAND.colors.cyan}` }}
       >
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: BRAND.colors.gold, fontFamily: 'DM Mono, monospace' }}>
-          Training Tip of the Day
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: BRAND.colors.cyan, fontFamily: 'DM Mono, monospace' }}>
+          Mental cue of the day
         </p>
-        <p className="text-sm text-[var(--tss-navy)] font-medium leading-relaxed">
+        <p className="text-sm text-[var(--tss-navy)] font-medium leading-relaxed italic">
           {tipOfDay}
         </p>
       </div>
