@@ -339,27 +339,25 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       {/* ════════════ PLANNING MODE ════════════ */}
       {showPlanForm && (
         <>
-          {/* 0. TEMPLATE PLAN — the recipe the coordinator pre-built.
-              Coach sees it as a reference and can apply each block to all
-              students in one tap so they don't replan from scratch. */}
-          {data.templatePlan.length > 0 && (
-            <TemplatePlanPanel
-              templatePlan={data.templatePlan}
-              availableDrills={data.availableDrills}
-              stpCatalog={data.stpCatalog}
-              onApplyToAll={(block) => {
-                students.forEach((s) => {
-                  commitStudentBlock(s.student_id, {
-                    step_id: block.step_id,
-                    land_drill_id: block.drill_id,
-                    land_drill_custom: block.drill_id ? null : block.drill_custom,
-                    water_drill_id: block.mission_id,
-                    water_drill_custom: block.mission_id ? null : block.mission_custom,
-                  });
-                });
-              }}
-            />
-          )}
+          {/* M45 — Template auto-seeded the per-student blocks below
+              when the coordinator created this service. The reference
+              "Template Plan" panel that used to live here is gone —
+              you can see the recipe right inside each student's card. */}
+          {data.templatePlan.length > 0 &&
+            students.every((s) => !s.block.step_id && !s.block.land_drill_id && !s.block.water_drill_id) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1">
+                  Template is empty
+                </p>
+                <p className="text-[12px] text-amber-900 leading-snug">
+                  Your coordinator's template for this service doesn't have
+                  step / drill / mission set yet. Open{' '}
+                  <span className="font-mono text-amber-900">/camps/templates</span>{' '}
+                  as Head Coach to fill it in — future services from this
+                  template will arrive pre-planned for every student.
+                </p>
+              </div>
+            )}
 
           {/* 1. VENUE ANALYSIS */}
           <Section emoji="🌊" title="1. Venue Analysis" subtitle="Read today's conditions before going in">
