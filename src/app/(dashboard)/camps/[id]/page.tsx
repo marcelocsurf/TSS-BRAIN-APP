@@ -6,6 +6,7 @@ import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluation
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -41,11 +42,16 @@ export default async function CampDetailPage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-[var(--tss-navy)]">{instance.camp_name}</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2
+              className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
+              style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            >
+              {instance.camp_name}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
               {(instance as any).camp_templates?.template_name}
             </p>
           </div>
@@ -54,14 +60,22 @@ export default async function CampDetailPage({ params }: Props) {
 
         {/* Head Coach prominently */}
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-gray-500">Head Coach:</span>
+          <span
+            className="text-[10px] uppercase tracking-wider text-gray-400"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            Head Coach
+          </span>
           <span className="text-sm font-medium text-[var(--tss-navy)]">
             {headCoach?.display_name || creatorCoach?.display_name || 'Not assigned'}
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-400">
-          <span>{instance.start_date} &rarr; {instance.end_date}</span>
+        <div
+          className="flex flex-wrap gap-3 mt-2 text-[10px] text-gray-400 uppercase tracking-wider"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          <span>{instance.start_date} → {instance.end_date}</span>
           <span className="capitalize">{instance.modality}</span>
           {creatorCoach?.display_name && headCoach?.display_name !== creatorCoach?.display_name && (
             <span>Created by: {creatorCoach.display_name}</span>
@@ -70,25 +84,26 @@ export default async function CampDetailPage({ params }: Props) {
       </div>
 
       {/* Final Evaluations CTA */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <div className="flex items-center justify-between">
-          <div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Final Evaluations</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-500 mt-1">
               {evaluatedCount} of {totalStudents} students evaluated
             </p>
           </div>
           <Link
             href={`/camps/${id}/evaluate`}
-            className="px-4 py-2 bg-[var(--tss-navy)] text-white text-xs font-medium rounded-lg hover:opacity-90 transition-opacity"
+            className="px-4 py-2 bg-[var(--tss-navy)] text-white text-xs font-medium rounded-lg hover:opacity-90 transition-opacity inline-flex items-center gap-1 shrink-0"
           >
             {evaluatedCount === 0 ? 'Start Evaluations' : evaluatedCount < totalStudents ? 'Continue Evaluations' : 'View Evaluations'}
+            <ArrowRight size={12} strokeWidth={1.75} />
           </Link>
         </div>
         {totalStudents > 0 && (
-          <div className="mt-2 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+          <div className="mt-3 bg-gray-100 rounded-full h-1.5 overflow-hidden">
             <div
-              className="bg-green-500 h-full rounded-full transition-all"
+              className="bg-[var(--tss-cyan,#5AC3E7)] h-full rounded-full transition-all"
               style={{ width: `${(evaluatedCount / totalStudents) * 100}%` }}
             />
           </div>
@@ -114,12 +129,13 @@ export default async function CampDetailPage({ params }: Props) {
 
       {/* Camp Completion */}
       {allFinalEvalsDone && campNotCompleted && (
-        <div className="bg-green-50 rounded-xl border border-green-200 p-4 space-y-3">
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-4 space-y-3">
           <div className="text-center">
-            <p className="text-sm font-medium text-green-700">
+            <p className="text-sm font-semibold text-emerald-700 inline-flex items-center gap-1.5">
+              <CheckCircle2 size={15} strokeWidth={2} />
               All {totalStudents} students have been evaluated.
             </p>
-            <p className="text-xs text-green-600 mt-0.5">
+            <p className="text-xs text-emerald-700/80 mt-0.5">
               Ready to mark this camp as completed.
             </p>
           </div>
@@ -128,13 +144,16 @@ export default async function CampDetailPage({ params }: Props) {
       )}
 
       {instance.status === 'completed' && (
-        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-sm font-medium text-gray-600">This camp has been completed.</p>
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4 text-center">
+          <p className="text-sm font-medium text-gray-600 inline-flex items-center gap-1.5 justify-center">
+            <CheckCircle2 size={15} strokeWidth={2} className="text-gray-500" />
+            This camp has been completed.
+          </p>
         </div>
       )}
 
       {/* Participants with belt levels */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
             Enrolled Students ({participants.length})
@@ -185,21 +204,24 @@ export default async function CampDetailPage({ params }: Props) {
       </div>
 
       {/* Day schedule with session blocks */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-50">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Schedule</h3>
         </div>
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-100">
           {sessions.map((s: any) => {
             const isCompleted = s.session_status === 'completed';
             const isActive = s.session_status === 'active';
             return (
-              <Link key={s.id} href={`/camps/${id}/day/${s.day_number}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+              <Link
+                key={s.id}
+                href={`/camps/${id}/day/${s.day_number}`}
+                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    isCompleted ? 'bg-green-100 text-green-700' :
-                    isActive ? 'bg-blue-100 text-blue-700' :
+                    isCompleted ? 'bg-emerald-100 text-emerald-700' :
+                    isActive ? 'bg-[var(--tss-cyan,#5AC3E7)]/20 text-[var(--tss-navy)]' :
                     'bg-gray-100 text-gray-500'
                   }`}>
                     {s.day_number}
@@ -210,16 +232,16 @@ export default async function CampDetailPage({ params }: Props) {
                       {s.camp_template_days?.day_goal?.slice(0, 60)}
                     </p>
                     {s.camp_template_days?.evaluation_focus && (
-                      <p className="text-[10px] text-purple-500 mt-0.5">
+                      <p className="text-[10px] text-[var(--tss-cyan,#5AC3E7)] mt-0.5 font-medium">
                         Focus: {s.camp_template_days.evaluation_focus.slice(0, 40)}
                       </p>
                     )}
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${
-                    isCompleted ? 'bg-green-50 text-green-600' :
-                    isActive ? 'bg-blue-50 text-blue-600' :
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold ${
+                    isCompleted ? 'bg-emerald-50 text-emerald-700' :
+                    isActive ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' :
                     'bg-gray-50 text-gray-400'
                   }`}>
                     {s.session_status}
@@ -239,14 +261,14 @@ export default async function CampDetailPage({ params }: Props) {
 
 function CampStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    planned: 'bg-blue-50 text-blue-700',
-    active: 'bg-green-50 text-green-700',
+    planned: 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]',
+    active: 'bg-emerald-50 text-emerald-700',
     completed: 'bg-gray-100 text-gray-600',
     draft: 'bg-gray-50 text-gray-500',
     cancelled: 'bg-red-50 text-red-600',
   };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${styles[status] || 'bg-gray-50'}`}>
+    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold shrink-0 ${styles[status] || 'bg-gray-50'}`}>
       {status}
     </span>
   );

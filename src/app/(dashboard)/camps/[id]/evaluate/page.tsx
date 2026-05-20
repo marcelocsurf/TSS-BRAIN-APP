@@ -9,6 +9,7 @@ import {
 } from '@/lib/actions/camps';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
+import { ArrowLeft, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 const OCEAN_LEVELS = ['beginner', 'supervised', 'autonomous', 'advanced'];
 
@@ -155,14 +156,23 @@ export default function CampEvaluatePage() {
       <div>
         <button
           onClick={() => router.push(`/camps/${campId}`)}
-          className="text-xs text-gray-400 hover:text-gray-600"
+          className="text-xs text-gray-400 hover:text-gray-600 inline-flex items-center gap-1"
         >
-          &larr; Back to camp
+          <ArrowLeft size={12} strokeWidth={1.75} />
+          Back to camp
         </button>
-        <h2 className="text-xl font-bold text-[var(--tss-navy)] mt-1">Final Evaluations</h2>
-        <p className="text-sm text-gray-600 mt-0.5">{instance.camp_name}</p>
-        <div className="flex gap-3 mt-1 text-xs text-gray-400">
-          <span>{instance.start_date} &rarr; {instance.end_date}</span>
+        <h2
+          className="text-xl font-bold text-[var(--tss-navy)] mt-2 leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Final Evaluations
+        </h2>
+        <p className="text-sm text-gray-600 mt-1">{instance.camp_name}</p>
+        <div
+          className="flex gap-3 mt-1.5 text-[10px] uppercase tracking-wider text-gray-400"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          <span>{instance.start_date} → {instance.end_date}</span>
           <span>{evaluatedCount}/{totalStudents} evaluated</span>
         </div>
       </div>
@@ -170,7 +180,7 @@ export default function CampEvaluatePage() {
       {/* Progress bar */}
       <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
         <div
-          className="bg-green-500 h-full rounded-full transition-all"
+          className="bg-[var(--tss-cyan,#5AC3E7)] h-full rounded-full transition-all"
           style={{ width: `${totalStudents > 0 ? (evaluatedCount / totalStudents) * 100 : 0}%` }}
         />
       </div>
@@ -190,7 +200,7 @@ export default function CampEvaluatePage() {
         const isSaving = saving === student.id;
 
         return (
-          <div key={student.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div key={student.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {/* Student row */}
             <button
               type="button"
@@ -214,16 +224,18 @@ export default function CampEvaluatePage() {
               </div>
               <div className="flex items-center gap-2">
                 {isSubmitted ? (
-                  <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full">Evaluated</span>
+                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1">
+                    <CheckCircle2 size={10} strokeWidth={2} />
+                    Evaluated
+                  </span>
                 ) : (
-                  <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">Pending</span>
+                  <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Pending</span>
                 )}
-                <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown
+                  size={16}
+                  strokeWidth={2}
+                  className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                />
               </div>
             </button>
 
@@ -241,9 +253,9 @@ export default function CampEvaluatePage() {
                         key={n}
                         type="button"
                         onClick={() => updateEval(student.id, 'overall_rating', n)}
-                        className={`w-10 h-10 rounded-full border text-sm font-medium transition-colors ${
+                        className={`w-10 h-10 rounded-full border text-sm font-semibold transition-colors ${
                           ev.overall_rating >= n
-                            ? 'bg-[var(--tss-gold)] border-[var(--tss-gold)] text-white'
+                            ? 'bg-[var(--tss-cyan,#5AC3E7)] border-[var(--tss-cyan,#5AC3E7)] text-white'
                             : 'border-gray-200 text-gray-400 hover:bg-gray-50'
                         }`}
                       >
