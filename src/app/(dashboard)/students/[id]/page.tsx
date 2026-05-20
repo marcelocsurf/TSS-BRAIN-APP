@@ -302,11 +302,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       <div className="bg-white rounded-xl border border-gray-100 p-4">
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
-            <ProfilePhoto
-              photoUrl={student.photo_url}
-              name={fullName}
-              size="lg"
-            />
+            {/* PhotoUploader already renders the avatar with change/remove
+                actions. The standalone ProfilePhoto above it duplicated
+                the image — removed. */}
             <PhotoUploader
               entityType="student"
               entityId={student.id}
