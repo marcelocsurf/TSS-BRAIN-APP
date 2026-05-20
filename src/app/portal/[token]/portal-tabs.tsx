@@ -319,7 +319,7 @@ export function PortalTabs({
 
       {/* Tab Content */}
       <div className="max-w-lg mx-auto px-4 py-4">
-        {activeTab === 'home' && <HomeTab data={data} belt={belt} />}
+        {activeTab === 'home' && <HomeTab data={data} belt={belt} onGoTo={setActiveTab} />}
         {activeTab === 'course' && data.courseData && <CourseTab data={data.courseData} />}
         {activeTab === 'sequence' && (
           pendingDrillMissionId ? (
@@ -418,7 +418,15 @@ export function PortalTabs({
 // TAB 1: HOME (improved with level card + training tip)
 // ═══════════════════════════════════════
 
-function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
+function HomeTab({
+  data,
+  belt,
+  onGoTo,
+}: {
+  data: PortalData;
+  belt: any;
+  onGoTo: (tab: Tab) => void;
+}) {
   const { student, sessions, totalSessions, streak, selfTrainingCount, totalTrainingMinutes, drillsPracticed, recentDrills } = data;
   const latestResult = sessions[0];
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
@@ -702,15 +710,35 @@ function HomeTab({ data, belt }: { data: PortalData; belt: any }) {
               <StatusBadge status={latestResult.status} />
             </div>
 
-            {/* M45 — Per-session survey gate: only show feedback for this
-                specific session once the student has filled its survey. */}
-            {data.surveyResultIds.includes(latestResult.id) && latestResult.student_visible_summary && (
-              <div className="pt-2 border-t border-gray-50">
-                <p className="text-xs text-gray-400 mb-1">Session Summary</p>
-                <p className="text-sm text-gray-700 whitespace-pre-line">
-                  {latestResult.student_visible_summary || latestResult.coach_feedback}
-                </p>
-              </div>
+            {/* M45 — Per-session survey gate. If the student already
+                filled the survey, show the feedback. Otherwise prompt
+                them to rate the coach so they can unlock it. */}
+            {data.surveyResultIds.includes(latestResult.id) ? (
+              (latestResult.student_visible_summary || latestResult.coach_feedback) && (
+                <div className="pt-2 border-t border-gray-50">
+                  <p className="text-xs text-gray-400 mb-1">Coach feedback</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">
+                    {latestResult.student_visible_summary || latestResult.coach_feedback}
+                  </p>
+                </div>
+              )
+            ) : (
+              latestResult.survey_unlocked && (
+                <div className="pt-2 border-t border-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => onGoTo('feedback')}
+                    className="w-full text-left bg-amber-50 border border-amber-200 rounded-xl p-3 hover:bg-amber-100 transition-colors"
+                  >
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">
+                      Coach feedback waiting
+                    </p>
+                    <p className="text-sm font-semibold text-amber-900">
+                      Rate your coach to unlock the session feedback →
+                    </p>
+                  </button>
+                </div>
+              )
             )}
           </div>
         </div>

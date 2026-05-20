@@ -1035,12 +1035,17 @@ export async function closeServicePlan(
     .single();
   if (!coach) throw new Error('Coach not found.');
 
-  // Resolve day + parent camp.
+  // Resolve day + parent camp. We pull scheduled_time + template service_kind
+  // so we can estimate this session's duration_minutes for the bitácora /
+  // surf hours totals on the student portal.
   const { data: session } = await admin
     .from('camp_sessions')
     .select(
       'id, day_number, session_date, camp_instance_id, ' +
-        'camp_instances:camp_instance_id(id, camp_name, start_date, coach_id, head_coach_id)'
+        'camp_instances:camp_instance_id(' +
+          'id, camp_name, start_date, coach_id, head_coach_id, scheduled_time, ' +
+          'camp_templates:template_id(service_kind)' +
+        ')'
     )
     .eq('id', campSessionId)
     .single();
@@ -1053,6 +1058,30 @@ export async function closeServicePlan(
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
   }
+
+  // Estimate session duration in minutes.
+  // 1. If scheduled_time looks like "HH:MM - HH:MM", subtract.
+  // 2. Otherwise fall back per service_kind: 90 min for surf_lesson,
+  //    120 min for surf_camp days, 60 for anything else.
+  const computeDurationMinutes = (): number => {
+    const st: string | null = camp.scheduled_time ?? null;
+    if (st) {
+      const m = st.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/);
+      if (m) {
+        const start = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+        const end = parseInt(m[3], 10) * 60 + parseInt(m[4], 10);
+        if (end > start) return end - start;
+      }
+    }
+    const tpl = Array.isArray(camp.camp_templates)
+      ? camp.camp_templates[0]
+      : camp.camp_templates;
+    const kind = tpl?.service_kind ?? null;
+    if (kind === 'surf_lesson') return 90;
+    if (kind === 'surf_camp') return 120;
+    return 60;
+  };
+  const sessionDurationMinutes = computeDurationMinutes();
 
   const { data: plan } = await admin
     .from('service_plans')
@@ -1114,32 +1143,58 @@ export async function closeServicePlan(
     not_yet: 'not_yet',
   };
 
-  // 3. One result per block + profile snapshot sync
+  // 3. ONE result per (student, session). Multi-block days used to write
+  // one row per block which double-counted surf hours and split feedback
+  // across multiple bitácora entries. Now we aggregate per student:
+  //   - status: worst across blocks (not_yet > partial > achieved)
+  //   - mission: first block's objective/drill/mission for the label
+  //   - duration_minutes: session-level (credited once per student)
+  //   - coach_feedback: block 0's notes_post (lifted to session level)
+  const blocksByStudent2: Record<string, any[]> = {};
   for (const b of allBlocks) {
-    const stud = studById[b.student_id];
-    const missionTitle =
-      b.objective_text ||
-      (b.water_drill_id ? titleById[b.water_drill_id] : b.water_drill_custom) ||
-      (b.land_drill_id ? titleById[b.land_drill_id] : b.land_drill_custom) ||
-      'Service session';
-    const status = STATUS_MAP[b.status as string] ?? 'partial';
+    (blocksByStudent2[b.student_id] ??= []).push(b);
+  }
+  for (const studentId of Object.keys(blocksByStudent2)) {
+    const studentBlocks = blocksByStudent2[studentId].sort(
+      (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0),
+    );
+    const firstBlock = studentBlocks[0];
+    const stud = studById[studentId];
+
+    // Aggregate status — worst wins (gives the coach an honest summary).
+    const statusOrder: Record<string, number> = { not_yet: 0, partial: 1, achieved: 2 };
+    let worst: any = 'achieved';
+    for (const b of studentBlocks) {
+      if (!b.status) continue;
+      if (statusOrder[b.status] < statusOrder[worst]) worst = b.status;
+    }
+    const status = STATUS_MAP[worst as string] ?? 'partial';
     const achievedText =
-      b.status === 'achieved' ? 'yes' : b.status === 'not_yet' ? 'not yet' : 'partial';
+      worst === 'achieved' ? 'yes' : worst === 'not_yet' ? 'not yet' : 'partial';
+
+    const missionTitle =
+      firstBlock.objective_text ||
+      (firstBlock.water_drill_id ? titleById[firstBlock.water_drill_id] : firstBlock.water_drill_custom) ||
+      (firstBlock.land_drill_id ? titleById[firstBlock.land_drill_id] : firstBlock.land_drill_custom) ||
+      'Service session';
+    const b = firstBlock; // alias for the legacy code below
 
     const { data: result, error: resErr } = await admin
       .from('student_session_results')
       .insert({
         camp_session_id: campSession!.id,
-        student_id: b.student_id,
+        student_id: studentId,
         coach_id: coach.id,
         status,
-        coach_feedback: b.notes_post ?? null,
+        coach_feedback: firstBlock.notes_post ?? null,
         achieved: achievedText,
         whats_next: null,
         homework: null,
         completion_state: 'closed',
         survey_unlocked: true,
         portal_token: stud?.portal_token ?? null,
+        // M50 — surface session hours in the student's portal totals.
+        duration_minutes: sessionDurationMinutes,
       })
       .select('id')
       .single();
