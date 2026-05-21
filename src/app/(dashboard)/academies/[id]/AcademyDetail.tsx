@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateAcademyBranding, deleteAcademy } from '../actions';
 import { actAsAcademy } from '@/lib/actions/auth';
+import { startCoordinatorImpersonation } from '@/lib/actions/impersonate';
 import { BRAND } from '@/lib/constants/brand';
 
 interface Academy {
@@ -99,11 +100,21 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
   const enterAcademy = () => {
     startTransition(async () => {
       try {
-        await actAsAcademy(academy.id);
+        // Route through startCoordinatorImpersonation so the action gets
+        // logged in admin_impersonations on top of setting the act-as cookie.
+        await startCoordinatorImpersonation(academy.id);
         router.push('/dashboard');
         router.refresh();
       } catch (e: any) {
-        alert(e.message || 'Failed to enter academy');
+        // Fall back to plain actAsAcademy if for some reason the admin
+        // check fails (e.g. coordinator entering their own academy directly).
+        try {
+          await actAsAcademy(academy.id);
+          router.push('/dashboard');
+          router.refresh();
+        } catch (err: any) {
+          alert(err.message || e.message || 'Failed to enter academy');
+        }
       }
     });
   };

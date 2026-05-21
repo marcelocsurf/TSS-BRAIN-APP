@@ -2,6 +2,8 @@ import { getStudent, checkCoachAccessToStudent } from '@/lib/actions/students';
 import { getStudentLevelAccess } from '@/lib/actions/access';
 import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/actions/evaluations';
 import { getCurrentCoach } from '@/lib/actions/sessions';
+import { isRealPlatformAdmin } from '@/lib/actions/auth';
+import { OpenAsButton } from '@/components/admin/OpenAsButton';
 import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
@@ -302,6 +304,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   const fullName = `${student.first_name} ${student.last_name}`;
 
   const hasSafetyData = !!(student.allergies || student.injuries || student.medical_notes);
+  const isAdmin = await isRealPlatformAdmin();
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -331,12 +334,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h2
-              className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
-              style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
-            >
-              {fullName}
-            </h2>
+            <div className="flex items-start justify-between gap-2">
+              <h2
+                className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
+                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              >
+                {fullName}
+              </h2>
+              {isAdmin && <OpenAsButton kind="student" studentId={student.id} />}
+            </div>
             <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
               <span
                 className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold"

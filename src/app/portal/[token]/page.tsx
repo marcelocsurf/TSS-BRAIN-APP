@@ -11,6 +11,8 @@ import {
 } from '@/lib/actions/portal';
 import { getCourseCatalog } from '@/lib/actions/course';
 import { validateStudentSession } from '@/lib/actions/student-pin';
+import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
+import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 
 // Always fetch fresh data — no caching of student portal
@@ -26,14 +28,17 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const { token } = await params;
   const { tab, survey, drill } = await searchParams;
 
-  // Single-active-session check — if another device signed in with this
-  // student's PIN, the cookie is now stale and we kick this device.
-  // 'no_session' means the student is browsing via the legacy share-link
-  // (PIN never set or cookie expired). We still let them in for backwards
-  // compat; this gate only enforces a kick when a *newer* session exists.
-  const sessionState = await validateStudentSession(token);
-  if (sessionState.status === 'kicked') {
-    redirect('/?kicked=1');
+  // Skip the anti-sharing check when an admin is impersonating — they
+  // legitimately have multiple "sessions" open across alumnos.
+  const impersonation = await getActiveStudentOrCoachImpersonation();
+  const isImpersonatingThisStudent =
+    impersonation?.kind === 'student' && impersonation.portal_token === token;
+
+  if (!isImpersonatingThisStudent) {
+    const sessionState = await validateStudentSession(token);
+    if (sessionState.status === 'kicked') {
+      redirect('/?kicked=1');
+    }
   }
 
   // Get comprehensive student data
@@ -100,22 +105,27 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
 
   return (
-    <PortalTabs
-      data={{
-        ...portalData,
-        drills,
-        drillsMissions,
-        pendingSurveys,
-        submittedSurveys,
-        materials,
-        token,
-        courseData,
-        myCoach,
-        coachProfileUnlocked: coachUnlocked,
-      }}
-      initialTab={initialTab}
-      initialSurveyId={survey || null}
-      initialDrillId={drill || null}
-    />
+    <>
+      {isImpersonatingThisStudent && impersonation && (
+        <ImpersonateBanner kind="student" name={impersonation.name} />
+      )}
+      <PortalTabs
+        data={{
+          ...portalData,
+          drills,
+          drillsMissions,
+          pendingSurveys,
+          submittedSurveys,
+          materials,
+          token,
+          courseData,
+          myCoach,
+          coachProfileUnlocked: coachUnlocked,
+        }}
+        initialTab={initialTab}
+        initialSurveyId={survey || null}
+        initialDrillId={drill || null}
+      />
+    </>
   );
 }

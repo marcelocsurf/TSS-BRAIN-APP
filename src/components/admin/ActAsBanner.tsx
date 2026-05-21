@@ -3,15 +3,21 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { actAsAcademy } from '@/lib/actions/auth';
+import { endImpersonation } from '@/lib/actions/impersonate';
 
 // M7 — Sticky banner shown only to platform admin while they're acting-as
-// another academy. Clicking Exit clears the cookie and refreshes.
+// another academy. Clicking Exit clears the cookie + closes the audit row.
 export function ActAsBanner({ academyName }: { academyName: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const exit = () => {
     startTransition(async () => {
+      try {
+        await endImpersonation();
+      } catch {
+        // endImpersonation redirects, which throws — that's expected.
+      }
       await actAsAcademy(null);
       router.push('/academies');
       router.refresh();

@@ -3,6 +3,8 @@ import { getCoachPortalData } from '@/lib/actions/coach-portal';
 import { CoachPortalTabs } from './CoachPortalTabs';
 import { resolveAcademyBranding } from '@/lib/branding';
 import { Lock } from 'lucide-react';
+import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
+import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,8 +39,15 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   // M9 — academy branding fallback
   const brand = resolveAcademyBranding(data.academyBranding);
 
+  const impersonation = await getActiveStudentOrCoachImpersonation();
+  const isImpersonatingThisCoach =
+    impersonation?.kind === 'coach' && impersonation.portal_token === token;
+
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
+      {isImpersonatingThisCoach && impersonation && (
+        <ImpersonateBanner kind="coach" name={impersonation.name} />
+      )}
       <div style={{ background: brand.primary }} className="px-4 py-5 text-center">
         {brand.logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element

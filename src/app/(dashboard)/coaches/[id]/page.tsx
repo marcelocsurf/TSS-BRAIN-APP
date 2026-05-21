@@ -11,6 +11,7 @@ import { CertificationManager } from './certification-manager';
 import { ToggleCoachStatus } from './toggle-coach-status';
 import { ToggleCourseAccess } from './toggle-course-access';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
+import { OpenAsButton } from '@/components/admin/OpenAsButton';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Star, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
@@ -158,6 +159,9 @@ export default async function CoachProfilePage({ params }: Props) {
                 Open Coach Portal
                 <ExternalLink size={11} strokeWidth={1.75} />
               </Link>
+            )}
+            {isPlatformAdmin && (
+              <OpenAsButton kind="coach" coachId={id} />
             )}
           </div>
         </div>
