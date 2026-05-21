@@ -5,6 +5,7 @@ import { StudentSearch } from './student-search';
 import { StudentFilters } from './student-filters';
 import { Suspense } from 'react';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import NewLeadModal from './NewLeadModal';
 
 // All advanced filter keys that map to URL params
 const ADVANCED_KEYS = [
@@ -40,9 +41,16 @@ export default async function StudentRosterPage({ searchParams }: Props) {
   const currentPage = Math.max(1, parseInt(params.page || '1', 10));
   const limit = 20;
 
+  // Lifecycle tab. Default to 'member' so the existing dashboard view is
+  // unchanged for coaches who never click into Leads.
+  const lifecycle = params.lifecycle === 'lead' || params.lifecycle === 'inactive'
+    ? params.lifecycle
+    : 'member';
+
   const { students, total } = await listStudents({
     belt_level: params.belt as BeltLevel | undefined,
     status: params.status || 'active',
+    lifecycle_status: lifecycle,
     search: params.q,
     page: currentPage,
     limit,
@@ -113,12 +121,32 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             {total} student{total !== 1 ? 's' : ''} total
           </p>
         </div>
-        <Link
-          href="/students/new"
-          className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
-        >
-          + Add Student
-        </Link>
+        <div className="flex items-center gap-2">
+          <NewLeadModal />
+          <Link
+            href="/students/new"
+            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
+          >
+            + Add Student
+          </Link>
+        </div>
+      </div>
+
+      {/* Lifecycle tabs */}
+      <div className="flex gap-2 mb-4">
+        {(['member', 'lead', 'inactive'] as const).map((lk) => (
+          <Link
+            key={lk}
+            href={`/students?lifecycle=${lk}`}
+            className={`px-3.5 py-1.5 rounded-2xl text-xs font-semibold tracking-wide capitalize ${
+              lifecycle === lk
+                ? 'bg-[var(--tss-navy)] text-white'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {lk === 'member' ? 'Members' : lk === 'lead' ? 'Leads' : 'Inactive'}
+          </Link>
+        ))}
       </div>
 
       {/* Belt filter tabs */}

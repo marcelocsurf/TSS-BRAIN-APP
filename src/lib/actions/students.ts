@@ -80,6 +80,7 @@ export interface StudentRow {
   gender: string | null;
   nationality: string | null;
   status: string;
+  lifecycle_status: string | null;
   photo_url: string | null;
   portal_token: string;
 
@@ -265,6 +266,7 @@ export interface StudentFilters {
   returning?: string;       // 'true' | 'false'
   waiver?: string;          // 'signed' | 'pending'
   ocean_level?: string;
+  lifecycle_status?: string; // 'lead' | 'member' | 'inactive' | 'churned'
 }
 
 export async function listStudents(filters?: StudentFilters): Promise<{ students: StudentRow[]; total: number }> {
@@ -306,6 +308,9 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
   }
   if (filters?.status) {
     query = query.eq('status', filters.status);
+  }
+  if (filters?.lifecycle_status) {
+    query = query.eq('lifecycle_status', filters.lifecycle_status);
   }
   if (filters?.search) {
     query = query.or(
