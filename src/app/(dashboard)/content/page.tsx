@@ -19,6 +19,8 @@ export default async function ContentAdminPage() {
   );
   const onboarding = lessons.filter((l: any) => l.course_section === 'wb_onboarding');
   const whiteBelt = lessons.filter((l: any) => l.course_section === 'white_belt');
+  const ybOnboarding = lessons.filter((l: any) => l.course_section === 'yb_onboarding');
+  const yellowBelt = lessons.filter((l: any) => l.course_section === 'yellow_belt');
   const coachLessons = lessons.filter((l: any) => l.course_section?.startsWith('coach_'));
 
   const drills = drillsMissions.filter((d: any) => d.type === 'drill');
@@ -72,6 +74,22 @@ export default async function ContentAdminPage() {
         icon={Waves}
         subtitle="25 STPs · Module 2"
         items={whiteBelt}
+        kind="lesson"
+      />
+
+      <Section
+        title="Yellow Belt Onboarding"
+        icon={Compass}
+        subtitle="Belt Value · Module 4"
+        items={ybOnboarding}
+        kind="lesson"
+      />
+
+      <Section
+        title="Yellow Belt"
+        icon={Waves}
+        subtitle="8 STPs · Sequence 6.0 + 7.0 · Complete Ride · Exit Test"
+        items={yellowBelt}
         kind="lesson"
       />
 
