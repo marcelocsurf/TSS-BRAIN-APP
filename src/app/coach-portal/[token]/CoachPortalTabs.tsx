@@ -326,39 +326,70 @@ function CoursesTab({
               )}
             </div>
 
-            {/* Videos (if any have been attached via /content admin) */}
-            {detail.videos.length > 0 && (
-              <div className="space-y-2">
-                {detail.videos.map((v) => (
-                  <div key={v.id} className="bg-black rounded-xl overflow-hidden aspect-video">
-                    <iframe
-                      src={embedUrlFor(v.provider, v.url)}
-                      title={v.title || 'Coach video'}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Body — STP lessons get pillar tabs, others plain markdown */}
+            {/* Body — STP-structured lessons get the pillar tab reader
+                (Video · What · Deliver · Errors · Validate · Drill · Mission · Quiz),
+                everything else falls back to plain markdown. */}
             {detail.lesson.coach_what_md ? (
-              <StpPillarReader detail={detail} />
-            ) : detail.lesson.description_md ? (
-              <div className="bg-white rounded-2xl border border-gray-100 px-5 py-6">
-                <MarkdownContent markdown={detail.lesson.description_md} />
-              </div>
-            ) : detail.lesson.lesson_type === 'test' ? null : (
-              <div className="bg-white rounded-2xl border border-gray-100 px-5 py-6 text-sm text-gray-500 italic">
-                No content for this lesson yet.
-              </div>
+              <StpPillarReader
+                detail={detail}
+                videos={detail.videos}
+                hasQuiz={detail.quizzes.length > 0}
+                embedUrlFor={embedUrlFor}
+                quizSlot={
+                  detail.quizzes.length > 0 ? (
+                    <CoachQuizSection
+                      token={token}
+                      lessonId={openLessonId}
+                      quizzes={detail.quizzes}
+                      existingScore={detail.progress?.quiz_score ?? null}
+                      existingAttempts={detail.progress?.quiz_attempts ?? 0}
+                      onPassed={() => {
+                        setReadState((p) => ({
+                          ...p,
+                          [openLessonId]: { completed: true, completed_at: new Date().toISOString() },
+                        }));
+                        setDetail((d) =>
+                          d ? { ...d, progress: { ...(d.progress ?? { quiz_score: null, quiz_attempts: 0 }), completed: true, completed_at: new Date().toISOString() } } : d
+                        );
+                      }}
+                    />
+                  ) : null
+                }
+              />
+            ) : (
+              <>
+                {/* Plain-markdown lessons keep videos inline above the body */}
+                {detail.videos.length > 0 && (
+                  <div className="space-y-2">
+                    {detail.videos.map((v) => (
+                      <div key={v.id} className="bg-black rounded-xl overflow-hidden aspect-video">
+                        <iframe
+                          src={embedUrlFor(v.provider, v.url)}
+                          title={v.title || 'Coach video'}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {detail.lesson.description_md ? (
+                  <div className="bg-white rounded-2xl border border-gray-100 px-5 py-6">
+                    <MarkdownContent markdown={detail.lesson.description_md} />
+                  </div>
+                ) : detail.lesson.lesson_type === 'test' ? null : (
+                  <div className="bg-white rounded-2xl border border-gray-100 px-5 py-6 text-sm text-gray-500 italic">
+                    No content for this lesson yet.
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Quiz (when lesson_type === 'test' with questions attached) */}
-            {/* Padding wrapper for markdown content */}
-            {detail.lesson.lesson_type === 'test' && detail.quizzes.length > 0 ? (
+            {/* Quiz for non-STP lessons (test type with questions) renders
+                outside the pillar reader, keeping the legacy behaviour for
+                Foundations / Pre-Course / Career test lessons. */}
+            {!detail.lesson.coach_what_md && detail.lesson.lesson_type === 'test' && detail.quizzes.length > 0 ? (
               <CoachQuizSection
                 token={token}
                 lessonId={openLessonId}
@@ -376,25 +407,29 @@ function CoursesTab({
                 }}
               />
             ) : (
-              /* Mark as read (for reading-type lessons) */
-              <button
-                type="button"
-                onClick={markRead}
-                disabled={pending || isCompleted}
-                className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${
-                  isCompleted
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                    : 'text-white hover:brightness-110'
-                }`}
-                style={isCompleted ? {} : { background: BRAND.colors.navy }}
-              >
-                {isCompleted ? (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <Check size={15} strokeWidth={1.75} />
-                    Completed
-                  </span>
-                ) : pending ? 'Saving…' : 'Mark as read'}
-              </button>
+              /* Mark as read for any lesson that isn't already completed
+                 via a quiz pass. STP lessons with a quiz inside the pillar
+                 reader handle completion through onPassed instead. */
+              (!detail.lesson.coach_what_md || detail.quizzes.length === 0) && (
+                <button
+                  type="button"
+                  onClick={markRead}
+                  disabled={pending || isCompleted}
+                  className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${
+                    isCompleted
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                      : 'text-white hover:brightness-110'
+                  }`}
+                  style={isCompleted ? {} : { background: BRAND.colors.navy }}
+                >
+                  {isCompleted ? (
+                    <span className="flex items-center justify-center gap-1.5">
+                      <Check size={15} strokeWidth={1.75} />
+                      Completed
+                    </span>
+                  ) : pending ? 'Saving…' : 'Mark as read'}
+                </button>
+              )
             )}
           </>
         )}
