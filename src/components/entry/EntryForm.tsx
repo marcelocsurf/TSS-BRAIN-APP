@@ -184,7 +184,9 @@ function StaffPanel() {
       return;
     }
 
-    router.push('/dashboard');
+    // Go to / so the server-side role routing decides between
+    // /dashboard (admin/coordinator) and /coach-portal/[token] (coach).
+    router.push('/');
     router.refresh();
   };
 
