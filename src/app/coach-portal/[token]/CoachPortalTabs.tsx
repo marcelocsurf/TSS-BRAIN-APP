@@ -117,15 +117,41 @@ function HomeTab({
   upcoming: any[];
 }) {
   const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
+  const profileIncomplete = !coach.intake_completed_at;
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+      {profileIncomplete && (
+        <Link
+          href={`/coach-portal/${coach.portal_token}/profile`}
+          className="block bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:bg-amber-100 transition-colors"
+        >
+          <p className="text-sm font-semibold text-amber-900">Complete your profile</p>
+          <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+            Emergency contact, medical info and waiver. Required before you can teach official TSS sessions.
+          </p>
+          <p className="text-[11px] font-mono uppercase tracking-wider text-amber-700 mt-2">
+            Fill it now →
+          </p>
+        </Link>
+      )}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm relative">
+        <Link
+          href={`/coach-portal/${coach.portal_token}/profile`}
+          className="absolute top-3 right-3 text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] hover:underline"
+        >
+          Edit profile
+        </Link>
         <div className="flex items-center gap-3">
           <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
+            className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-bold shrink-0"
             style={{ background: BRAND.colors.navy }}
           >
-            {initials || <Waves size={18} strokeWidth={1.75} />}
+            {coach.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coach.photo_url} alt={coach.display_name} className="w-full h-full object-cover" />
+            ) : (
+              initials || <Waves size={18} strokeWidth={1.75} />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[var(--tss-navy)] text-base truncate">{coach.display_name}</p>
