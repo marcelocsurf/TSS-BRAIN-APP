@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { setActiveCourseKey } from '@/lib/actions/active-course';
 import type { CourseKey } from '@/lib/constants/courses';
@@ -13,6 +14,7 @@ interface Props {
 
 export function CourseSwitcher({ portalToken, ownedCourses, activeCourseKey }: Props) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   if (ownedCourses.length < 2) return null;
 
   return (
@@ -28,6 +30,7 @@ export function CourseSwitcher({ portalToken, ownedCourses, activeCourseKey }: P
             const next = e.target.value as CourseKey;
             startTransition(async () => {
               await setActiveCourseKey(portalToken, next);
+              router.refresh();
             });
           }}
           className="w-full appearance-none bg-transparent text-sm font-semibold text-[var(--tss-navy)] pr-6 focus:outline-none disabled:opacity-50"
