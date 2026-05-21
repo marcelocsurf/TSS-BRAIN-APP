@@ -4,6 +4,7 @@ import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/action
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { OpenAsButton } from '@/components/admin/OpenAsButton';
+import { PromoteLeadCard } from '@/components/student/PromoteLeadCard';
 import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
@@ -308,6 +309,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
+
+      {/* --- LEAD → MEMBER PROMOTION (only when student is still a Lead) --- */}
+      {(student as any).lifecycle_status === 'lead' && (
+        <PromoteLeadCard studentId={student.id} />
+      )}
 
       {/* --- SUCCESS BANNER (shown after student creation) --- */}
       {justCreated && (
