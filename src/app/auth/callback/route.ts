@@ -14,22 +14,24 @@ export async function GET(request: NextRequest) {
     if (!error && data.user) {
       const admin = createAdminClient();
 
-      // Link auth_user_id to coach record by email
+      // Link auth_user_id to coach record by email (idempotent — usually
+      // the invite endpoint already set it).
       const { data: coach } = await admin
         .from('coaches')
-        .select('id, auth_user_id')
+        .select('id, auth_user_id, password_set_at')
         .eq('email', data.user.email!)
         .single();
 
-      const isFirstLogin = coach && !coach.auth_user_id;
-
-      if (isFirstLogin) {
+      if (coach && !coach.auth_user_id) {
         await admin
           .from('coaches')
           .update({ auth_user_id: data.user.id })
           .eq('id', coach.id);
+      }
 
-        // First time — send to set password
+      // If the coach has never set a password — first invite OR a password
+      // recovery — force them through /set-password before anywhere else.
+      if (coach && !coach.password_set_at) {
         return NextResponse.redirect(`${origin}/set-password`);
       }
 

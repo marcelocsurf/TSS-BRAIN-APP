@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { markCoachPasswordSet } from '@/lib/actions/password';
 
 export default function SetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -37,6 +38,16 @@ export default function SetPasswordPage() {
       setError(updateErr.message);
       setLoading(false);
       return;
+    }
+
+    // Stamp the coach row so /auth/callback doesn't loop them back here
+    // on future invite / magic-link entries.
+    try {
+      await markCoachPasswordSet();
+    } catch (err) {
+      // Non-fatal — the password is set in Supabase auth. Worst case the
+      // coach gets sent through /set-password once more next time.
+      console.error('[set-password] markCoachPasswordSet failed', err);
     }
 
     setDone(true);
