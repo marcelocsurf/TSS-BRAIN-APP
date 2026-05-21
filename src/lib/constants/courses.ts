@@ -10,6 +10,12 @@
 // `lessonSections`— the lessons.course_section values that belong to this
 //                   course. Pre-course sections are shared and surfaced for
 //                   every owned course, so they are NOT listed here.
+// `sharedLessonSections` (optional) — sections owned by an earlier course
+//                   that should ALSO appear in this course's onboarding
+//                   block, rendered with their current completion state.
+//                   For yellow_belt we surface wb_onboarding so a student
+//                   coming from WB sees "Prerequisites from White Belt"
+//                   already marked completed.
 export const COURSES = [
   {
     key: 'white_belt',
@@ -17,6 +23,7 @@ export const COURSES = [
     belt: 'white' as const,
     accessColumn: 'course_access_white' as const,
     lessonSections: ['wb_onboarding', 'white_belt'] as const,
+    sharedLessonSections: [] as readonly string[],
   },
   {
     key: 'yellow_belt',
@@ -24,6 +31,7 @@ export const COURSES = [
     belt: 'yellow' as const,
     accessColumn: 'course_access_yellow' as const,
     lessonSections: ['yb_onboarding', 'yellow_belt'] as const,
+    sharedLessonSections: ['wb_onboarding'] as readonly string[],
   },
 ] as const;
 

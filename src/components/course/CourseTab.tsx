@@ -129,6 +129,13 @@ export function CourseTab({ data }: { data: CourseData }) {
   const beltLessons = data.lessons.filter(
     (l) => l.course_section === beltSection
   );
+  // Lessons belonging to an earlier course (e.g. wb_onboarding when on YB).
+  // Surfaced as a "Prerequisites from White Belt" block so the YB student
+  // who already finished WB sees them ✓ Completed, and a YB-direct student
+  // can complete them on the spot.
+  const sharedOnboardingLessons = data.lessons.filter((l) =>
+    activeCourse.sharedLessonSections.includes(l.course_section),
+  );
 
   // Group Pre-Course by pc_section_id (canon v1 uses M0 for all 8)
   const pcSections = groupByPcSection(preCourseLessons);
@@ -202,6 +209,35 @@ export function CourseTab({ data }: { data: CourseData }) {
               onOpenLesson={(id) => setOpenLessonId(id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* SHARED ONBOARDING (e.g. WB onboarding shown to YB students) */}
+      {sharedOnboardingLessons.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <div className="px-2">
+            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
+              <CheckCircle2 size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+              Prerequisites from White Belt
+              <span className="text-[11px] font-normal text-gray-500">
+                · already completed if you came through WB
+              </span>
+            </h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              The 6 White Belt onboarding concepts carry over to Yellow Belt. If you finished them at WB they're already ✓ Completed; if you came in direct you can do them now.
+            </p>
+          </div>
+
+          <SectionBlock
+            title="White Belt Onboarding (carried over)"
+            subtitle="Foundations shared between WB and YB"
+            Icon={Compass}
+            badge="Shared"
+            lessons={sharedOnboardingLessons.sort(
+              (a, b) => (a.display_order || 0) - (b.display_order || 0)
+            )}
+            onOpenLesson={(id) => setOpenLessonId(id)}
+          />
         </div>
       )}
 
