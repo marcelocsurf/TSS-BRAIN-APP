@@ -182,15 +182,23 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
         <StatTile label="Active services" value={stats.activeServiceCount} />
       </div>
 
-      <button
-        type="button"
-        onClick={enterAcademy}
-        disabled={pending}
-        className="w-full py-3 text-white text-sm font-semibold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
-        style={{ background: effectivePrimary }}
-      >
-        {pending ? 'Working…' : 'Enter as this academy →'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={enterAcademy}
+          disabled={pending}
+          className="flex-1 py-3 text-white text-sm font-semibold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
+          style={{ background: effectivePrimary }}
+        >
+          {pending ? 'Working…' : 'Enter as this academy →'}
+        </button>
+        <a
+          href={`/academies/${academy.id}/billing`}
+          className="px-4 py-3 text-sm font-semibold rounded-xl bg-white border border-gray-200 text-[var(--tss-navy)] hover:bg-gray-50 transition-all shadow-sm"
+        >
+          Billing
+        </a>
+      </div>
 
       {/* Coordinator */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">

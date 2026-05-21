@@ -53,6 +53,11 @@ export async function grantCourseToStudent(
     grantedBy = coach?.id ?? null;
   }
 
+  // Snapshot the course price at grant time so future price changes don't
+  // rewrite history. Falls back to (null, 'USD') if pricing isn't set yet.
+  const { getCoursePriceCents } = await import('./pricing');
+  const priceSnap = await getCoursePriceCents(courseKey);
+
   // Insert grant; ignore conflict on the unique (student_id, course_key) index.
   const { data: inserted, error: insertErr } = await admin
     .from('course_grants')
@@ -64,6 +69,8 @@ export async function grantCourseToStudent(
         granted_by: grantedBy,
         source,
         billable: true,
+        price_cents: priceSnap?.price_cents ?? null,
+        currency: priceSnap?.currency ?? 'USD',
       },
       { onConflict: 'student_id,course_key', ignoreDuplicates: true }
     )

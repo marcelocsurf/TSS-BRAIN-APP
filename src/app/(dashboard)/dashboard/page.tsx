@@ -138,6 +138,7 @@ export default async function DashboardHome() {
           <>
             <QuickAction href="/coaches/new" label="Create Coach" desc="Add team member" accentColor="var(--tss-cyan)" />
             <QuickAction href="/audit" label="View Audit" desc="System audit log" accentColor="var(--tss-warm)" />
+            <QuickAction href="/admin/pricing" label="Pricing & Invoices" desc="Set course prices, generate monthly invoices" accentColor="var(--tss-gold)" />
           </>
         )}
         {role === 'coach' && (
