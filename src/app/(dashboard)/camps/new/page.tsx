@@ -39,7 +39,7 @@ export default function NewCampPage() {
     // Role guard: only coordinators and above can create camps
     getAuthCoach().then(async (authCoach) => {
       if (!authCoach || !(await isCoordinatorOrAbove(authCoach.role))) {
-        router.replace('/');
+        router.replace('/dashboard');
         return;
       }
     });

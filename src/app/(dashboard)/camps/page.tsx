@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default async function CampsPage() {
   const currentCoach = await getCurrentCoach();
-  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/dashboard');
 
   const supabase = await createClient();
 

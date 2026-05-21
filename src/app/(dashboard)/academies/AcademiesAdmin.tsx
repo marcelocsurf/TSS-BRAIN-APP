@@ -31,7 +31,7 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
     startTransition(async () => {
       try {
         await actAsAcademy(academyId);
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       } catch (e: any) {
         setEntering(null);

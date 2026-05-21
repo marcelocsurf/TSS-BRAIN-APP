@@ -1,9 +1,27 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import InstallPWA from '@/components/InstallPWA';
 
 export const metadata: Metadata = {
-  title: 'TSS Brain',
+  title: 'TSS BRAIN',
   description: 'The Surf Sequence — Coaching Operating System',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'TSS BRAIN',
+    statusBarStyle: 'black-translucent',
+  },
+  icons: {
+    icon: '/tss-logo-color.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#5AC3E7',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -21,7 +39,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <InstallPWA />
+      </body>
     </html>
   );
 }

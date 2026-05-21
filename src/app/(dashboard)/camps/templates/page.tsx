@@ -16,7 +16,7 @@ const LEVEL_COLORS: Record<string, string> = {
 
 export default async function CampTemplatesPage() {
   const currentCoach = await getCurrentCoach();
-  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/dashboard');
 
   const templates = await listCampTemplates();
 

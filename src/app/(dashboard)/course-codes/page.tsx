@@ -11,7 +11,7 @@ export default async function CourseCodesPage() {
   if (!currentCoach) redirect('/login');
 
   const allowed = await isCoordinatorOrAbove(currentCoach.role);
-  if (!allowed) redirect('/');
+  if (!allowed) redirect('/dashboard');
 
   const isPlatformAdmin = !!currentCoach.is_platform_admin;
 

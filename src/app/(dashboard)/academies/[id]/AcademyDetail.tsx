@@ -100,7 +100,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
     startTransition(async () => {
       try {
         await actAsAcademy(academy.id);
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       } catch (e: any) {
         alert(e.message || 'Failed to enter academy');

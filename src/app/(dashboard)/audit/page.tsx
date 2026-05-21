@@ -8,7 +8,7 @@ export default async function AuditDashboardPage() {
   // Check role — admin only
   const currentCoach = await getCurrentCoach();
   if (!currentCoach) redirect('/login');
-  if (!isAdmin(currentCoach.role)) redirect('/');
+  if (!isAdmin(currentCoach.role)) redirect('/dashboard');
 
   // ── SESSION METRICS ──
   const { count: totalClosed } = await supabase

@@ -27,19 +27,35 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname.startsWith('/portal') || request.nextUrl.pathname.startsWith('/intake')) {
+  // Public routes — accessible without a Supabase auth session.
+  // Student portal authenticates via portal_token in the URL.
+  // /activate + /lead onboard new students.
+  // / is the universal entry (server component redirects authenticated
+  // coaches to /dashboard; everyone else sees the entry form).
+  // /manifest.webmanifest is served by next/app for PWA.
+  const pathname = request.nextUrl.pathname;
+  const isPublic =
+    pathname === '/' ||
+    pathname.startsWith('/portal') ||
+    pathname.startsWith('/intake') ||
+    pathname.startsWith('/activate') ||
+    pathname.startsWith('/lead') ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/sw.js';
+
+  if (isPublic) {
     return supabaseResponse;
   }
 
-  if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/set-password') {
-    if (user && request.nextUrl.pathname === '/login') {
-      return NextResponse.redirect(new URL('/', request.url));
+  if (pathname === '/login' || pathname === '/set-password') {
+    if (user && pathname === '/login') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return supabaseResponse;
   }
 
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return supabaseResponse;

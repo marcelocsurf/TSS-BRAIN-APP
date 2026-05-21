@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function AcademiesPage() {
   const me = await getCurrentCoach();
   if (!me?.is_platform_admin) {
-    redirect('/');
+    redirect('/dashboard');
   }
 
   const supabase = await createClient();

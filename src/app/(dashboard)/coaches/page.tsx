@@ -22,7 +22,7 @@ const BELT_COLORS: Record<string, string> = {
 
 export default async function CoachesPage() {
   const currentCoach = await getCurrentCoach();
-  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/dashboard');
 
   // Only platform admin (Marcelo) can create new coaches
   const canCreateCoach = await isRealPlatformAdmin();

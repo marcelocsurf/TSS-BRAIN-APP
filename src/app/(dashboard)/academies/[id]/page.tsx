@@ -17,7 +17,7 @@ export default async function AcademyDetailPage({ params }: Props) {
   // admin is in act-as mode (otherwise getCurrentCoach() would lie and
   // kick them out).
   if (!(await isRealPlatformAdmin())) {
-    redirect('/');
+    redirect('/dashboard');
   }
 
   const supabase = await createClient();

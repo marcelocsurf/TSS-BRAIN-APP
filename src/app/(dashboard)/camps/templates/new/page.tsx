@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default async function NewCampTemplatePage() {
   const currentCoach = await getCurrentCoach();
-  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/');
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/dashboard');
 
   return (
     <div className="max-w-2xl mx-auto">
