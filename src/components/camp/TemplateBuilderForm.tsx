@@ -88,6 +88,9 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
   const [modality, setModality] = useState(initialData?.modality || 'individual');
   const [deliveryModel, setDeliveryModel] = useState(initialData?.delivery_model || 'in-person');
   const [description, setDescription] = useState(initialData?.description || '');
+  const [includesCourse, setIncludesCourse] = useState<'white_belt' | 'yellow_belt' | ''>(
+    initialData?.includes_course_key ?? '',
+  );
   const [days, setDays] = useState<TemplateDayInput[]>(
     initialData?.days || [emptyDay(1)]
   );
@@ -195,6 +198,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
         delivery_model: deliveryModel,
         description: description.trim(),
         days,
+        includes_course_key: includesCourse || null,
       };
 
       if (mode === 'edit' && templateId) {
@@ -275,6 +279,24 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+              Includes course
+            </label>
+            <select
+              value={includesCourse}
+              onChange={(e) => setIncludesCourse(e.target.value as 'white_belt' | 'yellow_belt' | '')}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+            >
+              <option value="">— None (lesson only)</option>
+              <option value="white_belt">White Belt course</option>
+              <option value="yellow_belt">Yellow Belt course</option>
+            </select>
+            <p className="text-[10px] text-gray-400 mt-1 leading-tight">
+              Camps that include a course auto-promote enrolled Leads to Members and unlock portal access.
+            </p>
           </div>
 
           <div>

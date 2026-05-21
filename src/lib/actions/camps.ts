@@ -141,6 +141,50 @@ export async function createCampInstance(input: {
     }));
     const { error: partErr } = await supabase.from('camp_participants').insert(participants);
     if (partErr) throw new Error(`Failed to add participants: ${partErr.message}`);
+
+    // M58 — If the camp's template includes a course (e.g. Surf Camp
+    // Beginner includes white_belt), every enrolled participant becomes
+    // a Member and gets the course queued in pending_courses. If the
+    // student has already signed the waiver we grant the course
+    // immediately so their portal unlocks now.
+    const { data: tpl } = await supabase
+      .from('camp_templates')
+      .select('includes_course_key')
+      .eq('id', input.template_id)
+      .single();
+    const courseKey = (tpl?.includes_course_key ?? null) as
+      | 'white_belt' | 'yellow_belt' | null;
+    if (courseKey) {
+      const { grantCourseToStudent } = await import('./course-grants');
+      const { data: existing } = await supabase
+        .from('students')
+        .select('id, lifecycle_status, pending_courses, waiver_signed, course_access_white, course_access_yellow')
+        .in('id', input.student_ids);
+
+      for (const s of existing ?? []) {
+        const already = (s as any)[`course_access_${courseKey.split('_')[0]}`] === true;
+        const pending = Array.isArray(s.pending_courses) ? s.pending_courses : [];
+        if (!pending.includes(courseKey)) pending.push(courseKey);
+
+        const patch: Record<string, unknown> = {
+          lifecycle_status: 'member',
+          pending_courses: pending,
+        };
+        if (s.lifecycle_status === 'lead') {
+          patch.promoted_to_member_at = new Date().toISOString();
+        }
+        await supabase.from('students').update(patch).eq('id', s.id);
+
+        // Auto-grant immediately if waiver already signed and not granted.
+        if (s.waiver_signed && !already) {
+          try {
+            await grantCourseToStudent(s.id, courseKey, 'auto_on_intake');
+          } catch (err) {
+            console.error('[createCampInstance] auto-grant failed', s.id, courseKey, err);
+          }
+        }
+      }
+    }
   }
 
   // Auto-create camp sessions (one per template day)
@@ -717,6 +761,7 @@ export interface CreateTemplateInput {
   delivery_model: string;
   description: string;
   days: TemplateDayInput[];
+  includes_course_key?: 'white_belt' | 'yellow_belt' | null;
 }
 
 export async function createCampTemplate(input: CreateTemplateInput) {
@@ -734,6 +779,7 @@ export async function createCampTemplate(input: CreateTemplateInput) {
       modality: input.modality,
       delivery_model: input.delivery_model,
       description: input.description,
+      includes_course_key: input.includes_course_key ?? null,
       active_status: true,
     })
     .select()
@@ -811,6 +857,7 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
       modality: input.modality,
       delivery_model: input.delivery_model,
       description: input.description,
+      includes_course_key: input.includes_course_key ?? null,
     })
     .eq('id', templateId);
 

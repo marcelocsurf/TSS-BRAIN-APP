@@ -1,5 +1,5 @@
 import { type BeltLevel } from '@/lib/constants/belts';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   getStudentPortalData,
   getStudentMaterials,
@@ -10,6 +10,7 @@ import {
   getMyCoachData,
 } from '@/lib/actions/portal';
 import { getCourseCatalog } from '@/lib/actions/course';
+import { validateStudentSession } from '@/lib/actions/student-pin';
 import { PortalTabs } from './portal-tabs';
 
 // Always fetch fresh data — no caching of student portal
@@ -24,6 +25,16 @@ interface Props {
 export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
   const { tab, survey, drill } = await searchParams;
+
+  // Single-active-session check — if another device signed in with this
+  // student's PIN, the cookie is now stale and we kick this device.
+  // 'no_session' means the student is browsing via the legacy share-link
+  // (PIN never set or cookie expired). We still let them in for backwards
+  // compat; this gate only enforces a kick when a *newer* session exists.
+  const sessionState = await validateStudentSession(token);
+  if (sessionState.status === 'kicked') {
+    redirect('/?kicked=1');
+  }
 
   // Get comprehensive student data
   const portalData = await getStudentPortalData(token);

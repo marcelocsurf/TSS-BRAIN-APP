@@ -5,6 +5,7 @@ import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntake
 import { BRAND } from '@/lib/constants/brand';
 import { OceanQuizStep, OceanQuizResult } from './ocean-quiz-step';
 import type { OceanLevel } from '@/lib/constants/ocean-levels';
+import { PinSetupCard } from '@/components/intake/PinSetupCard';
 
 interface StudentData {
   gender?: string | null;
@@ -156,13 +157,16 @@ export function IntakeForm({ token, student }: Props) {
 
   if (stage === 'all_done') {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-8 text-center space-y-3">
-        <p className="text-3xl">&#129305;</p>
-        <p className="text-lg font-bold text-[var(--tss-navy)]">Profile complete!</p>
-        <p className="text-sm text-gray-500">
-          Your coach will have everything they need to prepare your sessions.
-        </p>
-        <p className="text-xs text-gray-400 mt-4">
+      <div className="space-y-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center space-y-3">
+          <p className="text-3xl">&#129305;</p>
+          <p className="text-lg font-bold text-[var(--tss-navy)]">Profile complete!</p>
+          <p className="text-sm text-gray-500">
+            Your coach will have everything they need to prepare your sessions.
+          </p>
+        </div>
+        <PinSetupCard portalToken={token} hasPin={false} />
+        <p className="text-[11px] text-gray-400 text-center">
           You can close this page. See you in the water.
         </p>
       </div>

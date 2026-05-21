@@ -20,6 +20,7 @@ import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
+import { LogoutButton } from '@/components/portal/LogoutButton';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
@@ -313,7 +314,10 @@ export function PortalTabs({
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
       {/* Header — themed by academy */}
-      <div style={{ background: brand.primary }} className="px-4 py-6 text-center">
+      <div style={{ background: brand.primary }} className="px-4 py-6 text-center relative">
+        <div className="absolute top-2 right-2">
+          <LogoutButton portalToken={data.token} />
+        </div>
         {brand.logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img

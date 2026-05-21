@@ -10,11 +10,12 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Users, GraduationCap } from 'lucide-react';
+import { Users, GraduationCap, AlertTriangle } from 'lucide-react';
+import { loginStudentByPin } from '@/lib/actions/student-pin';
 
 type Tab = 'student' | 'staff';
 
-export default function EntryForm() {
+export default function EntryForm({ kicked = false }: { kicked?: boolean }) {
   const [tab, setTab] = useState<Tab>('student');
 
   return (
@@ -35,6 +36,15 @@ export default function EntryForm() {
             Evolve through play
           </p>
         </div>
+
+        {kicked && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-start gap-2.5">
+            <AlertTriangle size={16} className="text-amber-700 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-900 leading-relaxed">
+              You were logged out because someone signed into your account on another device. Enter your PIN to take this session back.
+            </p>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
@@ -87,26 +97,35 @@ function StudentPanel() {
   const router = useRouter();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const looksLikeCode = /^TSS-/i.test(code.trim());
+  const looksLikePin = /^\d{4,6}$/.test(code.trim());
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     const trimmed = code.trim();
     if (!trimmed) return;
 
     if (looksLikeCode) {
-      // Send them through the existing activation flow.
       router.push(`/activate?code=${encodeURIComponent(trimmed)}`);
       return;
     }
 
-    // PIN flow lands here in Tanda 3 (loginStudentByPin server action).
-    // For now we tell them politely.
-    setError(
-      'PIN login is coming soon. For now, paste the access code your coach sent you (TSS-XXXX-XXXX) or open the portal link from your previous device.',
-    );
+    if (looksLikePin) {
+      setLoading(true);
+      try {
+        const { portalToken } = await loginStudentByPin(trimmed);
+        router.push(`/portal/${portalToken}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not sign in.');
+        setLoading(false);
+      }
+      return;
+    }
+
+    setError('Enter your 4–6 digit PIN, or the access code your coach sent you (TSS-XXXX-XXXX).');
   };
 
   return (
@@ -136,9 +155,10 @@ function StudentPanel() {
 
       <button
         type="submit"
-        className="w-full py-3 bg-[var(--tss-cyan)] text-[var(--tss-navy)] rounded-xl text-sm font-semibold hover:brightness-110 transition-all active:scale-[0.98] shadow-lg shadow-[var(--tss-cyan)]/20"
+        disabled={loading}
+        className="w-full py-3 bg-[var(--tss-cyan)] text-[var(--tss-navy)] rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all active:scale-[0.98] shadow-lg shadow-[var(--tss-cyan)]/20"
       >
-        Continue
+        {loading ? 'Signing in…' : 'Continue'}
       </button>
     </form>
   );
