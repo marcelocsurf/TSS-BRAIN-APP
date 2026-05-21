@@ -175,7 +175,16 @@ function HomeTab({
       <div className="grid grid-cols-2 gap-2">
         <Stat label="Services run" value={stats.totalServicesAsHead.toString()} />
         <Stat label="Upcoming" value={stats.upcomingServicesCount.toString()} />
-        <Stat label="Students worked with" value={stats.studentsWorkedWith.toString()} />
+        <Link
+          href={`/coach-portal/${coach.portal_token}/students`}
+          className="bg-white rounded-2xl border border-gray-100 p-3 hover:border-[var(--tss-cyan)] hover:shadow-sm transition-all flex flex-col justify-between"
+        >
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            Students worked with
+          </p>
+          <p className="text-xl font-bold text-[var(--tss-navy)] mt-1">{stats.studentsWorkedWith}</p>
+          <p className="text-[10px] text-[var(--tss-cyan)] mt-1">View all →</p>
+        </Link>
         <Stat
           label="Avg rating"
           value={stats.avgRating !== null ? `${stats.avgRating}/5` : '—'}
