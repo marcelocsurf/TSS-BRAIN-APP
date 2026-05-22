@@ -260,9 +260,7 @@ function LinkedToolBody({
           <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
             How it works
           </p>
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-            {tool.description_md}
-          </p>
+          <MarkdownContent markdown={tool.description_md} />
         </div>
       )}
 

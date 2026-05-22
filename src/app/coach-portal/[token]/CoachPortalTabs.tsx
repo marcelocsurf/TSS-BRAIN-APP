@@ -925,9 +925,7 @@ function ToolCard({ d, bg }: { d: any; bg: string }) {
               <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
                 How it works
               </p>
-              <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {d.description_md}
-              </p>
+              <MarkdownContent markdown={d.description_md} />
             </div>
           )}
           {d.success_criteria && d.success_criteria.length > 0 && (
