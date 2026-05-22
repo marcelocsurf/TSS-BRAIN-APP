@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { PlayCircle, ImageIcon, Workflow, X } from 'lucide-react';
 import type { StpMedia } from '@/lib/actions/coach-tools';
+import { directImageUrl } from '@/lib/media-url';
 
 // Embed URL helper — duplicated from CoachPortalTabs.embedUrlFor so this
 // component stays self-contained. YouTube/Vimeo → embed URL, everything
@@ -69,7 +70,7 @@ function Thumb({ m }: { m: StpMedia }) {
     return (
       <div className="aspect-video bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={m.url} alt={m.label || ''} className="w-full h-full object-cover" />
+        <img src={directImageUrl(m.url)} alt={m.label || ''} className="w-full h-full object-cover" />
       </div>
     );
   }
@@ -146,7 +147,7 @@ function Lightbox({ media: m, onClose }: { media: StpMedia; onClose: () => void 
           <div className="flex justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={m.url}
+              src={directImageUrl(m.url)}
               alt={m.label || ''}
               className="max-h-[80vh] max-w-full object-contain rounded-lg"
             />

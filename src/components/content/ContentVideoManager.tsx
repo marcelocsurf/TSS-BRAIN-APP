@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { directImageUrl } from '@/lib/media-url';
 import {
   addContentVideo,
   updateContentVideo,
@@ -285,7 +286,7 @@ function VideoRow({
       <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={video.url} alt={video.label || ''} className="w-full h-full object-cover" />
+          <img src={directImageUrl(video.url)} alt={video.label || ''} className="w-full h-full object-cover" />
         ) : (
           <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">VIDEO</span>
         )}
