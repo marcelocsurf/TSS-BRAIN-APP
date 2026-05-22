@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { listCampTemplates, createCampInstance } from '@/lib/actions/camps';
 import { listStudents, type StudentRow } from '@/lib/actions/students';
 import { getCurrentCoach } from '@/lib/actions/sessions';
@@ -11,6 +11,9 @@ import { BELT_DISPLAY } from '@/lib/constants/belts';
 
 export default function NewCampPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Calendar can deep-link with `?date=YYYY-MM-DD` to prefill start_date.
+  const prefillDate = searchParams.get('date') || new Date().toISOString().slice(0, 10);
   const [templates, setTemplates] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [coaches, setCoaches] = useState<CoachForAssignment[]>([]);
@@ -22,7 +25,7 @@ export default function NewCampPage() {
     template_id: '',
     camp_name: '',
     head_coach_id: '',
-    start_date: new Date().toISOString().slice(0, 10),
+    start_date: prefillDate,
     end_date: '',
     modality: 'group' as 'individual' | 'group',
     student_ids: [] as string[],

@@ -12,6 +12,38 @@ import { getCurrentCoach } from '@/lib/actions/auth';
 // LIST TEMPLATES
 // ═══════════════════════════════════════
 
+// ═══════════════════════════════════════
+// LIST CAMPS OVERLAPPING A DATE RANGE
+// Used by the calendar panorama on /camps. Academy-scoped (platform
+// admin sees all). Joins template + head_coach + participant count
+// in one round-trip so each card can render without follow-up queries.
+// ═══════════════════════════════════════
+
+export async function listCampsInRange(startDate: string, endDate: string) {
+  const supabase = await createClient();
+  const currentCoach = await getCurrentCoach();
+  if (!currentCoach) return [];
+
+  // A camp overlaps the window if it starts on/before window.end AND
+  // ends on/after window.start.
+  let query = supabase
+    .from('camp_instances')
+    .select(
+      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), camp_participants(id, enrollment_status)'
+    )
+    .lte('start_date', endDate)
+    .gte('end_date', startDate)
+    .order('start_date', { ascending: true });
+
+  if (!currentCoach.is_platform_admin && currentCoach.academy_id) {
+    query = query.eq('academy_id', currentCoach.academy_id);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function listCampTemplates() {
   const supabase = await createClient();
   const { data, error } = await supabase

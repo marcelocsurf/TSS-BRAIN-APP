@@ -1,29 +1,73 @@
-import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
+import { listCampsInRange } from '@/lib/actions/camps';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { CampCalendar } from '@/components/camps/CampCalendar';
 
-export default async function CampsPage() {
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// ── date helpers (UTC, identical to CampCalendar) ──
+function toUTCDate(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+function fromUTCDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+function addDays(s: string, n: number): string {
+  const d = toUTCDate(s);
+  d.setUTCDate(d.getUTCDate() + n);
+  return fromUTCDate(d);
+}
+function startOfWeek(s: string): string {
+  const d = toUTCDate(s);
+  const dow = d.getUTCDay();
+  const back = dow === 0 ? 6 : dow - 1;
+  d.setUTCDate(d.getUTCDate() - back);
+  return fromUTCDate(d);
+}
+function startOfMonth(s: string): string {
+  const d = toUTCDate(s);
+  d.setUTCDate(1);
+  return fromUTCDate(d);
+}
+function todayIso(): string {
+  return fromUTCDate(new Date());
+}
+
+export default async function CampsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; anchor?: string }>;
+}) {
   const currentCoach = await getCurrentCoach();
-  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/dashboard');
-
-  const supabase = await createClient();
-
-  // M6 — scope camp listing by academy unless platform admin.
-  let query = supabase
-    .from('camp_instances')
-    .select('*, camp_templates(template_name, duration_days), coaches:coach_id(display_name)')
-    .order('created_at', { ascending: false });
-
-  if (!currentCoach.is_platform_admin && currentCoach.academy_id) {
-    query = query.eq('academy_id', currentCoach.academy_id);
+  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) {
+    redirect('/dashboard');
   }
 
-  const { data: camps } = await query;
+  const { view: viewParam, anchor: anchorParam } = await searchParams;
+  const view: 'week' | 'month' = viewParam === 'month' ? 'month' : 'week';
+  const anchor = anchorParam ?? todayIso();
+
+  // Compute the fetch window. Pull a bit of slack on each side so a
+  // multi-day camp that started before the window still shows up.
+  let rangeStart: string;
+  let rangeEnd: string;
+  if (view === 'week') {
+    rangeStart = addDays(startOfWeek(anchor), -7);
+    rangeEnd = addDays(startOfWeek(anchor), 13);
+  } else {
+    const monthStart = startOfMonth(anchor);
+    rangeStart = addDays(startOfWeek(monthStart), -7);
+    rangeEnd = addDays(startOfWeek(monthStart), 49);
+  }
+
+  const camps = await listCampsInRange(rangeStart, rangeEnd);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
           <h2
             className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
@@ -35,7 +79,7 @@ export default async function CampsPage() {
             className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
             style={{ fontFamily: 'DM Mono, monospace' }}
           >
-            {camps?.length ?? 0} camp{(camps?.length ?? 0) !== 1 ? 's' : ''} total
+            {camps.length} service{camps.length !== 1 ? 's' : ''} in view
           </p>
         </div>
         <div className="flex gap-2">
@@ -54,56 +98,7 @@ export default async function CampsPage() {
         </div>
       </div>
 
-      {!camps || camps.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 bg-white rounded-2xl border border-gray-100">
-          <p className="text-lg">No camps yet</p>
-          <Link href="/camps/new" className="text-sm text-[var(--tss-cyan,#5AC3E7)] hover:underline mt-2 inline-block">
-            Create your first camp
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {camps.map((c: any) => (
-            <Link
-              key={c.id}
-              href={`/camps/${c.id}`}
-              className="block bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow transition-all"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium text-sm text-[var(--tss-navy)]">{c.camp_name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {c.camp_templates?.template_name} · {c.coaches?.display_name}
-                  </p>
-                </div>
-                <CampStatusBadge status={c.status} />
-              </div>
-              <div
-                className="flex gap-4 mt-2 text-[10px] text-gray-400 uppercase tracking-wider"
-                style={{ fontFamily: 'DM Mono, monospace' }}
-              >
-                <span>{c.start_date} → {c.end_date}</span>
-                <span>{c.modality}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <CampCalendar camps={camps as any} view={view} anchor={anchor} />
     </div>
-  );
-}
-
-function CampStatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    planned: 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]',
-    active: 'bg-emerald-50 text-emerald-700',
-    completed: 'bg-gray-100 text-gray-700',
-    draft: 'bg-gray-50 text-gray-500',
-    cancelled: 'bg-red-50 text-red-600',
-  };
-  return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold shrink-0 ${styles[status] || 'bg-gray-50'}`}>
-      {status}
-    </span>
   );
 }
