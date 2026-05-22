@@ -1,18 +1,34 @@
 // Visual card for a single camp_instance inside the calendar panorama.
 //
-// Colour rules (locked in with Marcelo):
-//   service_kind='surf_camp'   → cyan base (#00F0FF)
-//   service_kind='surf_lesson' → fucsia base (#EC4899)
-//   service_kind='custom'      → neutral gray
+// Colour rules (locked in with Marcelo — full card colour, no cyan base):
+//   service_kind='surf_camp'    + Beginner   → WHITE   (white-belt camp)
+//   service_kind='surf_camp'    + Novice     → YELLOW  #FFFC00
+//   service_kind='surf_camp'    + Foundation → BLUE    #1E6FBF
+//   service_kind='surf_lesson'                → FUCSIA  #EC4899  (90-min lesson)
+//   service_kind='custom'                     → neutral gray
 //
-// Left stripe (4px) shows the belt level (level_name on the template):
-//   Beginner   → white      (with ring for visibility on cyan)
-//   Novice     → yellow     (#F5C518)
-//   Foundation → blue       (#1E6FBF)
-//   Custom     → none
+// One glance → coordinator knows the belt + the modality.
 
 import Link from 'next/link';
 import { CampStatusBadge } from './CampStatusBadge';
+
+// Pure helper exported so the Month view density dots can stay in sync.
+export function paletteFor(
+  service_kind: 'surf_camp' | 'surf_lesson' | 'custom' | null | undefined,
+  level_name: string | null | undefined,
+): { bg: string; onDark: boolean; ring?: string } {
+  if (service_kind === 'surf_lesson') {
+    return { bg: 'bg-[#EC4899]', onDark: true };
+  }
+  if (service_kind === 'surf_camp') {
+    if (level_name === 'Foundation') return { bg: 'bg-[#1E6FBF]', onDark: true };
+    if (level_name === 'Novice') return { bg: 'bg-[#FFFC00]', onDark: false };
+    // Beginner (default for surf_camp) — white needs an outline ring so it
+    // separates from the surrounding panel background.
+    return { bg: 'bg-white', onDark: false, ring: 'ring-1 ring-gray-200' };
+  }
+  return { bg: 'bg-gray-100', onDark: false };
+}
 
 type ServiceCardProps = {
   camp: {
@@ -36,12 +52,6 @@ type ServiceCardProps = {
   compact?: boolean;
 };
 
-const STRIPE: Record<string, string> = {
-  Beginner: '#FFFFFF',
-  Novice: '#F5C518',
-  Foundation: '#1E6FBF',
-};
-
 export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
   const tpl = camp.camp_templates;
   const kind = tpl?.service_kind ?? 'custom';
@@ -53,20 +63,12 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
   const coachName =
     camp.head_coach?.display_name ?? camp.coaches?.display_name ?? null;
 
-  const bg =
-    kind === 'surf_camp'
-      ? 'bg-[#00F0FF]'
-      : kind === 'surf_lesson'
-      ? 'bg-[#EC4899]'
-      : 'bg-gray-100';
-  const onDark = kind === 'surf_lesson'; // fucsia is dark → use white text accents
-  const stripe = STRIPE[level] ?? 'transparent';
+  const { bg, onDark, ring } = paletteFor(kind, level);
 
   return (
     <Link
       href={`/camps/${camp.id}`}
-      className={`group relative block ${bg} rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all`}
-      style={{ borderLeft: `4px solid ${stripe}` }}
+      className={`group relative block ${bg} ${ring ?? ''} rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all`}
     >
       <div className={compact ? 'p-2.5' : 'p-3'}>
         <div className="flex items-start justify-between gap-2">

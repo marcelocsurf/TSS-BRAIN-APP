@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { ServiceCard } from './ServiceCard';
+import { ServiceCard, paletteFor } from './ServiceCard';
 
 type Camp = Parameters<typeof ServiceCard>[0]['camp'];
 
@@ -262,17 +262,14 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                 </div>
                 <div className="flex flex-wrap gap-0.5">
                   {dayCamps.slice(0, 6).map((c) => {
-                    const kind = c.camp_templates?.service_kind;
-                    const dot =
-                      kind === 'surf_camp'
-                        ? 'bg-[#00F0FF]'
-                        : kind === 'surf_lesson'
-                        ? 'bg-[#EC4899]'
-                        : 'bg-gray-400';
+                    const { bg, ring } = paletteFor(
+                      c.camp_templates?.service_kind,
+                      c.camp_templates?.level_name,
+                    );
                     return (
                       <span
                         key={c.id + d}
-                        className={`block w-1.5 h-1.5 rounded-full ${dot}`}
+                        className={`block w-1.5 h-1.5 rounded-full ${bg} ${ring ?? ''}`}
                       />
                     );
                   })}
