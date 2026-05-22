@@ -25,6 +25,10 @@ function embedUrlFor(url: string): string {
 function thumbForVideo(url: string): string | null {
   const yt = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
   if (yt) return `https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`;
+  const gd = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gd) return `https://lh3.googleusercontent.com/d/${gd[1]}=w800`;
+  const gdOpen = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
+  if (gdOpen) return `https://lh3.googleusercontent.com/d/${gdOpen[1]}=w800`;
   return null;
 }
 
