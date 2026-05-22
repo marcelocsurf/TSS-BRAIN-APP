@@ -475,12 +475,40 @@ function CoursesTab({
     const prereqs: string[] = c.prerequisites ?? [];
     const lockedBy = prereqs.find((id) => !completedSet.has(id));
     const isLocked = !!lockedBy;
-    // Belt-coloured background — WB stays white, YB tints soft amber
-    // so the coach can tell which curriculum a lesson belongs to at a
-    // glance while scrolling the Courses panel.
-    const isYb = c.course_section === 'coach_yb';
-    const beltBg = isYb ? 'bg-[#FFFC00]' : 'bg-white';
-    const beltDefaultBorder = isYb
+    // Content-category background:
+    //   value  → rose      (Belt Values doctrine)
+    //   method → cyan/gray (methodology · framework · pedagogy · career)
+    //   yb     → electric yellow (YB belt content)
+    //   wb     → white     (WB belt content, default)
+    const title = (c.title || '').toLowerCase();
+    const pillar = (c.pillar || '').toLowerCase();
+    const id: string = c.id || '';
+    const isValue =
+      title.includes('belt value') ||
+      title.includes('values doctrine') ||
+      pillar.includes('belt value') ||
+      pillar.includes('values');
+    const isMethod =
+      !isValue && (
+        id.startsWith('COACH-FOUND-') ||
+        id.startsWith('COACH-DIAG-') ||
+        id.startsWith('COACH-CAREER-') ||
+        id === 'COACH-PC-VERIFY' ||
+        id === 'COACH-OB-DELIVERY'
+      );
+    const isYb = !isValue && !isMethod && c.course_section === 'coach_yb';
+    const beltBg = isValue
+      ? 'bg-rose-100'
+      : isMethod
+      ? 'bg-cyan-50'
+      : isYb
+      ? 'bg-[#FFFC00]'
+      : 'bg-white';
+    const beltDefaultBorder = isValue
+      ? 'border-rose-300 hover:border-rose-400'
+      : isMethod
+      ? 'border-gray-300 hover:border-gray-400'
+      : isYb
       ? 'border-[#E5E300] hover:border-[#CCCB00]'
       : 'border-gray-100 hover:border-gray-300';
     return (
