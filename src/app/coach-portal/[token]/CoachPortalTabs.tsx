@@ -479,9 +479,9 @@ function CoursesTab({
     // so the coach can tell which curriculum a lesson belongs to at a
     // glance while scrolling the Courses panel.
     const isYb = c.course_section === 'coach_yb';
-    const beltBg = isYb ? 'bg-amber-100' : 'bg-white';
+    const beltBg = isYb ? 'bg-[#FFFC00]' : 'bg-white';
     const beltDefaultBorder = isYb
-      ? 'border-amber-300 hover:border-amber-400'
+      ? 'border-[#E5E300] hover:border-[#CCCB00]'
       : 'border-gray-100 hover:border-gray-300';
     return (
       <button
