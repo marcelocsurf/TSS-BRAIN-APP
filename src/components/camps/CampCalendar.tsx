@@ -194,14 +194,20 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                   {items.map((c) => (
                     <ServiceCard key={c.id} camp={c} compact />
                   ))}
-                  {items.length === 0 && (
-                    <Link
-                      href={`/camps/new?date=${d}`}
-                      className="block text-center text-[10px] text-gray-300 hover:text-gray-500 py-3 border border-dashed border-gray-200 rounded-lg hover:border-gray-400 transition-colors"
-                    >
-                      <Plus size={12} strokeWidth={2} className="inline" /> Schedule
-                    </Link>
-                  )}
+                  {/* Always-visible "+" so the coordinator can keep stacking
+                      services on the same day. Larger when the column is
+                      empty, smaller chip when items already exist. */}
+                  <Link
+                    href={`/camps/new?date=${d}`}
+                    className={
+                      items.length === 0
+                        ? 'block text-center text-[10px] text-gray-300 hover:text-gray-500 py-3 border border-dashed border-gray-200 rounded-lg hover:border-gray-400 transition-colors'
+                        : 'block text-center text-[10px] text-gray-400 hover:text-[var(--tss-navy)] py-1.5 border border-dashed border-gray-150 rounded-md hover:border-gray-300 transition-colors'
+                    }
+                  >
+                    <Plus size={12} strokeWidth={2} className="inline" />{' '}
+                    {items.length === 0 ? 'Schedule' : 'Add'}
+                  </Link>
                 </div>
               );
             })}
@@ -256,14 +262,19 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                     {items.map((c) => (
                       <ServiceCard key={c.id} camp={c} />
                     ))}
-                    {items.length === 0 && (
-                      <Link
-                        href={`/camps/new?date=${d}`}
-                        className="block text-center text-[11px] text-gray-300 hover:text-gray-500 py-2.5 border border-dashed border-gray-200 rounded-lg"
-                      >
-                        <Plus size={12} strokeWidth={2} className="inline" /> Schedule
-                      </Link>
-                    )}
+                    {/* Always show the add affordance so the coordinator
+                        can keep stacking services on the same day. */}
+                    <Link
+                      href={`/camps/new?date=${d}`}
+                      className={
+                        items.length === 0
+                          ? 'block text-center text-[11px] text-gray-300 hover:text-gray-500 py-2.5 border border-dashed border-gray-200 rounded-lg'
+                          : 'block text-center text-[11px] text-gray-400 hover:text-[var(--tss-navy)] py-1.5 border border-dashed border-gray-150 rounded-lg'
+                      }
+                    >
+                      <Plus size={12} strokeWidth={2} className="inline" />{' '}
+                      {items.length === 0 ? 'Schedule' : 'Add another'}
+                    </Link>
                   </div>
                 </div>
               );
@@ -490,16 +501,16 @@ function CalendarHeader({
           {label}
         </span>
       </div>
-      <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
+      <div className="inline-flex rounded-lg border-2 border-[var(--tss-navy)] overflow-hidden shadow-sm">
         {(['week', 'month'] as const).map((v) => (
           <button
             key={v}
             type="button"
             onClick={() => onChangeView(v)}
-            className={`px-2.5 py-1 text-[11px] uppercase tracking-wider transition-colors ${
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors min-w-[80px] ${
               view === v
                 ? 'bg-[var(--tss-navy)] text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+                : 'bg-white text-[var(--tss-navy)] hover:bg-gray-50'
             }`}
             style={{ fontFamily: 'DM Mono, monospace' }}
           >
