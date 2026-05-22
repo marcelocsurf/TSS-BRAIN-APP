@@ -1,7 +1,7 @@
 -- M62 — Seed quizzes for the 25 COACH-STP-XXX coach lessons.
 --
 -- Source: /1111/_TSS_WHITE_BELT_OFICIAL_v1/COACH_MANUAL_v4_EN/
---         TSS_WB_COACH_MANUAL_v4_EN.md — PART IX Quiz Bank
+--         TSS_WB_COACH_MANUAL_v4_EN.md — Part 9 Quiz Bank
 --
 -- Every question + option set is verbatim from the manual. No invention.
 -- Idempotent: clears existing quizzes for these lesson IDs first.

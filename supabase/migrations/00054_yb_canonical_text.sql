@@ -1,8 +1,8 @@
 -- M54 — Yellow Belt STP descriptions, verbatim from the Unified Student Course.
 --
 -- Source: /Users/marcelocastellanos/Desktop/1111/_TSS_UNIFIED_COURSE_WB_YB_v1/STUDENT_COURSE/TSS_UNIFIED_STUDENT_COURSE_v1.md
---   PART VII — Sequence 6.0 (STP-027, STP-033, STP-028, STP-029, STP-034)
---   PART VIII — Sequence 7.0 (STP-030, STP-031, STP-032)
+--   Part 7 — Sequence 6.0 (STP-027, STP-033, STP-028, STP-029, STP-034)
+--   Part 8 — Sequence 7.0 (STP-030, STP-031, STP-032)
 --
 -- Replaces my paraphrased text from M51/M53 with the canonical content
 -- (English, 2nd person, voice approved by Marcelo, zero invention).

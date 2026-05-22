@@ -6,10 +6,10 @@
 -- coach can tab between — exactly how the student portal sections
 -- Theory / Drill / Mission / Errors.
 --
--- Per the TSS doctrine (Coach Manual Part VI), each STP teaches the
+-- Per the TSS doctrine (Coach Manual Part 6), each STP teaches the
 -- coach 4 things: What to teach · How to deliver (EDPF) · How to
 -- correct (errors + cues) · How to validate (mastery criteria). Plus
--- the Drill (Part VII) and Mission (Part VIII) which are pulled live
+-- the Drill (Part 7) and Mission (Part 8) which are pulled live
 -- from drills_missions via linked_step_id.
 --
 -- New columns are nullable — existing lessons (student STPs, master

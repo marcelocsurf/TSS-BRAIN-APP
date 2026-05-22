@@ -2,9 +2,9 @@
 -- + Module 7 (The Complete Ride) + Module 8 (YB Exit Test).
 --
 -- Source: TSS_UNIFIED_STUDENT_COURSE_v1.md
---   PART VI  — Module 4 — Yellow Belt Belt Value (Proceso / Resiliencia)
---   PART IX  — Module 7 — The Complete Ride
---   PART X   — Module 8 — Yellow Belt Exit Test
+--   Part 6  — Module 4 — Yellow Belt Belt Value (Proceso / Resiliencia)
+--   Part 9  — Module 7 — The Complete Ride
+--   Part 10   — Module 8 — Yellow Belt Exit Test
 --
 -- This migration:
 --   1. Replaces YB-ONB-01 (Belt Value) with the canonical long form.

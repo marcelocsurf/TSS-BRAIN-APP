@@ -14,7 +14,7 @@ import {
 // Mission/Errors/Quiz layout. Used when a coach lesson has structured
 // coach_* columns (the 25 COACH-STP-XXX lessons).
 //
-// Pillars (per TSS Coach Manual Part VI doctrine):
+// Pillars (per TSS Coach Manual Part 6 doctrine):
 //   Video    — videos attached via /dashboard/content
 //   What     — what you teach the student
 //   Deliver  — EDPF delivery for this step
