@@ -279,6 +279,8 @@ function VideoRow({
 
   const isImage = video.media_type === 'image' || video.media_type === 'diagram';
   const typePill = video.media_type ?? 'video';
+  const ytId = !isImage ? video.url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1] : null;
+  const ytThumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
 
   return (
     <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-100 px-3 py-2">
@@ -287,6 +289,9 @@ function VideoRow({
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={directImageUrl(video.url)} alt={video.label || ''} className="w-full h-full object-cover" />
+        ) : ytThumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={ytThumb} alt={video.label || ''} className="w-full h-full object-cover" />
         ) : (
           <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">VIDEO</span>
         )}
