@@ -475,20 +475,28 @@ function CoursesTab({
     const prereqs: string[] = c.prerequisites ?? [];
     const lockedBy = prereqs.find((id) => !completedSet.has(id));
     const isLocked = !!lockedBy;
+    // Belt-coloured background — WB stays white, YB tints soft amber
+    // so the coach can tell which curriculum a lesson belongs to at a
+    // glance while scrolling the Courses panel.
+    const isYb = c.course_section === 'coach_yb';
+    const beltBg = isYb ? 'bg-amber-50' : 'bg-white';
+    const beltDefaultBorder = isYb
+      ? 'border-amber-100 hover:border-amber-200'
+      : 'border-gray-100 hover:border-gray-300';
     return (
       <button
         key={c.id}
         type="button"
         onClick={() => !isLocked && openLesson(c.id)}
         disabled={isLocked}
-        className={`w-full text-left bg-white rounded-2xl border p-4 transition-all shadow-sm ${
+        className={`w-full text-left ${beltBg} rounded-2xl border p-4 transition-all shadow-sm ${
           isLocked
             ? 'border-gray-100 opacity-60 cursor-not-allowed'
             : isCompleted
             ? 'border-emerald-200 hover:border-emerald-300 hover:shadow-sm'
             : isInProgress
             ? 'border-amber-200 hover:border-amber-300 hover:shadow-sm'
-            : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
+            : beltDefaultBorder
         }`}
       >
         <div className="flex items-start justify-between gap-2">
