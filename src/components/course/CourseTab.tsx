@@ -163,7 +163,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* Header */}
       <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5 shadow-lg">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold">TSS Masterclass</h2>
+          <h2 className="text-lg font-bold">The Surf Sequence Method</h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-white/20">
             {overallPercent}% complete
           </span>
