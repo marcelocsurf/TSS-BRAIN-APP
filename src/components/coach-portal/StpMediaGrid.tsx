@@ -13,6 +13,11 @@ function embedUrlFor(url: string): string {
   if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
   const vm = url.match(/vimeo\.com\/(\d+)/);
   if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  // Google Drive: /file/d/ID/view → /file/d/ID/preview (iframe-playable)
+  const gd = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
+  const gdOpen = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
+  if (gdOpen) return `https://drive.google.com/file/d/${gdOpen[1]}/preview`;
   return url;
 }
 

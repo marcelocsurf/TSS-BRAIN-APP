@@ -630,6 +630,11 @@ function embedUrlFor(provider: string, url: string): string {
     const m = url.match(/vimeo\.com\/(\d+)/);
     return m ? `https://player.vimeo.com/video/${m[1]}` : url;
   }
+  // Google Drive shareable link → embeddable preview iframe.
+  const gd = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
+  const gdOpen = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
+  if (gdOpen) return `https://drive.google.com/file/d/${gdOpen[1]}/preview`;
   return url;
 }
 

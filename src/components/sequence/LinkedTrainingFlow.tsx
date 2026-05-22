@@ -1256,5 +1256,9 @@ function toEmbedUrlLocal(url: string): string | null {
   if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
   const vimeo = url.match(/vimeo\.com\/(\d+)/);
   if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  const gd = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
+  const gdOpen = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
+  if (gdOpen) return `https://drive.google.com/file/d/${gdOpen[1]}/preview`;
   return url;
 }

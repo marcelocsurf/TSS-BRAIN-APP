@@ -824,5 +824,9 @@ function toEmbedUrl(url: string): string | null {
   if (vimeoMatch) {
     return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
   }
+  const gd = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
+  const gdOpen = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
+  if (gdOpen) return `https://drive.google.com/file/d/${gdOpen[1]}/preview`;
   return url; // Assume already embed
 }
