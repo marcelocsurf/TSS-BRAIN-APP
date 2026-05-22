@@ -34,7 +34,7 @@ export interface CoachPortalData {
   upcomingServices: any[];
   pastServices: any[];
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
-  courseProgress: Record<string, { completed: boolean; completed_at: string | null }>;
+  courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
   academyBranding: {
     name: string | null;
@@ -158,16 +158,29 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   const upcomingEnriched = (upcomingResult.data ?? []).map(enrich);
   const pastEnriched = (pastResult.data ?? []).map(enrich);
 
-  // Course progress map (coach_lesson_progress for this coach)
+  // Course progress map (coach_lesson_progress for this coach).
+  // "started" = the coach opened the lesson but hasn't completed it yet.
+  // We mark started when there's a row + content_read/video_watched/quiz_attempts
+  // signal, even if completed=false.
   const { data: progressRows } = await admin
     .from('coach_lesson_progress')
-    .select('lesson_id, completed, completed_at')
+    .select('lesson_id, completed, completed_at, started_at, video_watched, content_read, quiz_attempts')
     .eq('coach_id', coach.id);
-  const courseProgress: Record<string, { completed: boolean; completed_at: string | null }> = {};
+  const courseProgress: Record<string, {
+    completed: boolean;
+    completed_at: string | null;
+    started: boolean;
+  }> = {};
   for (const r of progressRows ?? []) {
+    const interacted =
+      !!r.video_watched ||
+      !!r.content_read ||
+      (r.quiz_attempts ?? 0) > 0 ||
+      !!r.started_at;
     courseProgress[r.lesson_id] = {
       completed: !!r.completed,
       completed_at: r.completed_at,
+      started: !r.completed && interacted,
     };
   }
 
@@ -281,6 +294,21 @@ export async function getCoachLessonDetail(
     .eq('content_type', 'lesson')
     .eq('content_id', lessonId)
     .order('display_order');
+
+  // Touch a coach_lesson_progress row on first open so the coach's Courses
+  // list can show "In progress" for lessons they've started reading but
+  // haven't marked as read. The upsert is a no-op for rows that already
+  // exist (so completed lessons stay completed).
+  await admin
+    .from('coach_lesson_progress')
+    .upsert(
+      {
+        coach_id: coach.id,
+        lesson_id: lessonId,
+        started_at: new Date().toISOString(),
+      },
+      { onConflict: 'coach_id,lesson_id', ignoreDuplicates: true },
+    );
 
   const { data: progress } = await admin
     .from('coach_lesson_progress')

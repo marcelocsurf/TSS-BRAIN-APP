@@ -226,7 +226,7 @@ function CoursesTab({
   token,
 }: {
   courses: any[];
-  progress: Record<string, { completed: boolean; completed_at: string | null }>;
+  progress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   coach: any;
   token: string;
 }) {
@@ -269,7 +269,7 @@ function CoursesTab({
         await markCoachLessonRead(token, openLessonId);
         setReadState((prev) => ({
           ...prev,
-          [openLessonId]: { completed: true, completed_at: new Date().toISOString() },
+          [openLessonId]: { completed: true, completed_at: new Date().toISOString(), started: false },
         }));
         // Also reflect in local detail state
         setDetail((d) =>
@@ -346,7 +346,7 @@ function CoursesTab({
                       onPassed={() => {
                         setReadState((p) => ({
                           ...p,
-                          [openLessonId]: { completed: true, completed_at: new Date().toISOString() },
+                          [openLessonId]: { completed: true, completed_at: new Date().toISOString(), started: false },
                         }));
                         setDetail((d) =>
                           d ? { ...d, progress: { ...(d.progress ?? { quiz_score: null, quiz_attempts: 0 }), completed: true, completed_at: new Date().toISOString() } } : d
@@ -399,7 +399,7 @@ function CoursesTab({
                 onPassed={() => {
                   setReadState((p) => ({
                     ...p,
-                    [openLessonId]: { completed: true, completed_at: new Date().toISOString() },
+                    [openLessonId]: { completed: true, completed_at: new Date().toISOString(), started: false },
                   }));
                   setDetail((d) =>
                     d ? { ...d, progress: { ...(d.progress ?? { quiz_score: null, quiz_attempts: 0 }), completed: true, completed_at: new Date().toISOString() } } : d
@@ -454,6 +454,7 @@ function CoursesTab({
 
   const renderCard = (c: any) => {
     const isCompleted = completedSet.has(c.id);
+    const isInProgress = !isCompleted && !!progress[c.id]?.started;
     const prereqs: string[] = c.prerequisites ?? [];
     const lockedBy = prereqs.find((id) => !completedSet.has(id));
     const isLocked = !!lockedBy;
@@ -466,6 +467,10 @@ function CoursesTab({
         className={`w-full text-left bg-white rounded-xl border p-3 transition-all ${
           isLocked
             ? 'border-gray-100 opacity-60 cursor-not-allowed'
+            : isCompleted
+            ? 'border-emerald-200 hover:border-emerald-300 hover:shadow-sm'
+            : isInProgress
+            ? 'border-amber-200 hover:border-amber-300 hover:shadow-sm'
             : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
         }`}
       >
@@ -473,12 +478,32 @@ function CoursesTab({
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-mono text-gray-400">
               {c.id} · ~{c.estimated_minutes ?? '?'} min
-              {isCompleted && ' · ✓ done'}
               {isLocked && ` · locked — finish ${lockedBy} first`}
             </p>
             <p className="text-sm font-medium text-gray-800 mt-0.5">{c.title}</p>
           </div>
-          {!isLocked && <span className="text-gray-400 shrink-0 text-sm">›</span>}
+          <div className="shrink-0 flex items-center">
+            {isCompleted ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                <CheckCircle2 size={11} strokeWidth={2} />
+                Done
+              </span>
+            ) : isInProgress ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                <Clock size={11} strokeWidth={2} />
+                In progress
+              </span>
+            ) : isLocked ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5">
+                <Lock size={11} strokeWidth={2} />
+                Locked
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">
+                Not started
+              </span>
+            )}
+          </div>
         </div>
       </button>
     );
