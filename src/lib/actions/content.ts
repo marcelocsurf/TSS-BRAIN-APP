@@ -10,8 +10,11 @@ export interface ContentVideo {
   id: string;
   lesson_id: string | null;
   drill_mission_id: string | null;
+  step_id: string | null;
   url: string;
   label: string | null;
+  caption: string | null;
+  media_type: 'video' | 'image' | 'diagram';
   display_order: number;
   created_at: string;
   updated_at: string;
@@ -44,6 +47,7 @@ export async function getContentInventory() {
   const videos = (videosQ.data ?? []) as ContentVideo[];
   const videosByLesson = new Map<string, ContentVideo[]>();
   const videosByDrillMission = new Map<string, ContentVideo[]>();
+  const videosByStep = new Map<string, ContentVideo[]>();
   for (const v of videos) {
     if (v.lesson_id) {
       const arr = videosByLesson.get(v.lesson_id) ?? [];
@@ -53,6 +57,10 @@ export async function getContentInventory() {
       const arr = videosByDrillMission.get(v.drill_mission_id) ?? [];
       arr.push(v);
       videosByDrillMission.set(v.drill_mission_id, arr);
+    } else if (v.step_id) {
+      const arr = videosByStep.get(v.step_id) ?? [];
+      arr.push(v);
+      videosByStep.set(v.step_id, arr);
     }
   }
 
@@ -65,7 +73,22 @@ export async function getContentInventory() {
     videos: videosByDrillMission.get(d.id) ?? [],
   }));
 
-  return { lessons, drillsMissions };
+  // STP-level media: the 25 WB STPs + 8 YB STPs. Pulled from lessons
+  // (the STPs are themselves lessons with id 'STP-XXX').
+  const steps = (lessonsQ.data ?? [])
+    .filter((l: any) =>
+      (l.course_section === 'white_belt' || l.course_section === 'yellow_belt')
+      && /^STP-\d+$/.test(l.id))
+    .map((l: any) => ({
+      id: l.id,
+      title: l.title,
+      course_section: l.course_section,
+      step_number: l.step_number,
+      display_order: l.display_order,
+      videos: videosByStep.get(l.id) ?? [],
+    }));
+
+  return { lessons, drillsMissions, steps };
 }
 
 // ─── List videos for a single lesson or drill_mission (used by viewers) ──
@@ -95,13 +118,17 @@ export async function getVideosForDrillMission(drillMissionId: string) {
 export async function addContentVideo(input: {
   lessonId?: string;
   drillMissionId?: string;
+  stepId?: string;
   url: string;
   label?: string;
+  caption?: string;
+  mediaType?: 'video' | 'image' | 'diagram';
 }) {
   const supabase = await createClient();
 
-  if (!!input.lessonId === !!input.drillMissionId) {
-    throw new Error('Provide exactly one of lessonId or drillMissionId.');
+  const parents = [input.lessonId, input.drillMissionId, input.stepId].filter(Boolean);
+  if (parents.length !== 1) {
+    throw new Error('Provide exactly one of lessonId, drillMissionId or stepId.');
   }
   const cleanUrl = input.url.trim();
   if (!cleanUrl) throw new Error('URL is required.');
@@ -109,9 +136,15 @@ export async function addContentVideo(input: {
     throw new Error('URL must start with http:// or https://');
   }
 
+  const mediaType = input.mediaType ?? 'video';
+
   // Compute next display_order for this parent
-  const parentCol = input.lessonId ? 'lesson_id' : 'drill_mission_id';
-  const parentVal = input.lessonId || input.drillMissionId;
+  const parentCol = input.lessonId
+    ? 'lesson_id'
+    : input.drillMissionId
+    ? 'drill_mission_id'
+    : 'step_id';
+  const parentVal = input.lessonId || input.drillMissionId || input.stepId;
   const { data: existing } = await supabase
     .from('content_videos')
     .select('display_order')
@@ -125,8 +158,11 @@ export async function addContentVideo(input: {
     .insert({
       lesson_id: input.lessonId ?? null,
       drill_mission_id: input.drillMissionId ?? null,
+      step_id: input.stepId ?? null,
       url: cleanUrl,
       label: input.label?.trim() || null,
+      caption: input.caption?.trim() || null,
+      media_type: mediaType,
       display_order: nextOrder,
     })
     .select('*')
@@ -134,9 +170,8 @@ export async function addContentVideo(input: {
 
   if (error) throw new Error(error.message);
   revalidatePath('/content');
-  if (input.lessonId) {
-    revalidatePath(`/portal/[token]`, 'layout');
-  }
+  if (input.lessonId) revalidatePath(`/portal/[token]`, 'layout');
+  if (input.stepId) revalidatePath(`/coach-portal/[token]`, 'layout');
   return data as ContentVideo;
 }
 
@@ -144,7 +179,7 @@ export async function addContentVideo(input: {
 
 export async function updateContentVideo(
   id: string,
-  patch: Partial<{ url: string; label: string; display_order: number }>
+  patch: Partial<{ url: string; label: string; caption: string; display_order: number }>
 ) {
   const supabase = await createClient();
 
@@ -158,6 +193,7 @@ export async function updateContentVideo(
     updates.url = clean;
   }
   if (patch.label !== undefined) updates.label = patch.label.trim() || null;
+  if (patch.caption !== undefined) updates.caption = patch.caption.trim() || null;
   if (patch.display_order !== undefined) updates.display_order = patch.display_order;
 
   const { error } = await supabase
@@ -190,8 +226,12 @@ export async function reorderContentVideo(id: string, direction: 'up' | 'down') 
     .single();
   if (!target) throw new Error('Video not found');
 
-  const parentCol = target.lesson_id ? 'lesson_id' : 'drill_mission_id';
-  const parentVal = target.lesson_id || target.drill_mission_id;
+  const parentCol = target.lesson_id
+    ? 'lesson_id'
+    : target.drill_mission_id
+    ? 'drill_mission_id'
+    : 'step_id';
+  const parentVal = target.lesson_id || target.drill_mission_id || target.step_id;
   const cmp = direction === 'up' ? 'lt' : 'gt';
   const order = direction === 'up' ? 'desc' : 'asc';
 

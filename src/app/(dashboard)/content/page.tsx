@@ -10,7 +10,7 @@ export const revalidate = 0;
 // label, and the videos surface immediately on the student portal.
 
 export default async function ContentAdminPage() {
-  const { lessons, drillsMissions } = await getContentInventory();
+  const { lessons, drillsMissions, steps } = await getContentInventory();
 
   const preCourse = lessons.filter(
     (l: any) =>
@@ -52,6 +52,14 @@ export default async function ContentAdminPage() {
           {totalVideos} total videos across {lessons.length + drillsMissions.length} items
         </p>
       </div>
+
+      <Section
+        title="By STP — visual aids"
+        icon={Waves}
+        subtitle="Attach videos, images and diagrams directly to a step (visible in the coach Tools tab)"
+        items={steps}
+        kind="step"
+      />
 
       <Section
         title="Pre-Course"
@@ -133,10 +141,11 @@ function Section({
   icon: React.ComponentType<any>;
   subtitle: string;
   items: any[];
-  kind: 'lesson' | 'drill_mission';
+  kind: 'lesson' | 'drill_mission' | 'step';
 }) {
   if (items.length === 0) return null;
   const withVideos = items.filter((i: any) => i.videos.length > 0).length;
+  const noun = kind === 'step' ? 'have media' : 'have videos';
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -150,7 +159,7 @@ function Section({
             <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>
           </div>
           <span className="text-[10px] font-mono text-gray-400">
-            {withVideos}/{items.length} have videos
+            {withVideos}/{items.length} {noun}
           </span>
         </div>
       </div>
@@ -165,8 +174,9 @@ function Section({
 
 // ─── Single item with collapsible video manager ──
 
-function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' }) {
+function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' | 'step' }) {
   const videoCount = item.videos.length;
+  const noun = kind === 'step' ? 'media' : 'video';
 
   return (
     <details className="group">
@@ -176,6 +186,9 @@ function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' }
             {item.id}
             {kind === 'drill_mission' && item.step_id ? ` · ${item.step_id}` : ''}
             {kind === 'drill_mission' && item.block_name ? ` · ${item.block_name}` : ''}
+            {kind === 'step' && item.course_section
+              ? ` · ${item.course_section.replace('_', ' ')}`
+              : ''}
           </p>
           <p className="text-sm font-medium text-gray-800 truncate">{item.title}</p>
         </div>
@@ -187,7 +200,7 @@ function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' }
                 : 'bg-gray-100 text-gray-400'
             }`}
           >
-            {videoCount} {videoCount === 1 ? 'video' : 'videos'}
+            {videoCount} {videoCount === 1 ? noun : `${noun}s`}
           </span>
           <span className="text-xs text-gray-400 transition group-open:rotate-180">▾</span>
         </div>
@@ -197,6 +210,7 @@ function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' }
           videos={item.videos}
           lessonId={kind === 'lesson' ? item.id : undefined}
           drillMissionId={kind === 'drill_mission' ? item.id : undefined}
+          stepId={kind === 'step' ? item.id : undefined}
         />
       </div>
     </details>
