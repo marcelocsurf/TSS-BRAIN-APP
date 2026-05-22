@@ -4,6 +4,7 @@ import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { actAsAcademy } from '@/lib/actions/auth';
 import { endImpersonation } from '@/lib/actions/impersonate';
+import { Eye } from 'lucide-react';
 
 // M7 — Sticky banner shown only to platform admin while they're acting-as
 // another academy. Clicking Exit clears the cookie + closes the audit row.
@@ -29,8 +30,9 @@ export function ActAsBanner({ academyName }: { academyName: string }) {
       className="sticky top-0 z-50 w-full px-4 py-2 text-xs flex items-center justify-between gap-3"
       style={{ background: '#FEF3C7', borderBottom: '1px solid #F59E0B', color: '#78350F' }}
     >
-      <span className="font-medium truncate">
-        🎭 Acting as <strong>{academyName}</strong> — viewing the app as that academy&apos;s coordinator.
+      <span className="font-medium truncate inline-flex items-center gap-1.5">
+        <Eye size={12} strokeWidth={2} />
+        Acting as <strong>{academyName}</strong> — viewing the app as that academy&apos;s coordinator.
       </span>
       <button
         type="button"

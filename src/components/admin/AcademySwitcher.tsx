@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { actAsAcademy } from '@/lib/actions/auth';
+import { Globe, Eye } from 'lucide-react';
 
 interface AcademyOption {
   id: string;
@@ -61,8 +62,15 @@ export function AcademySwitcher({ academies, currentActAsId }: Props) {
           <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">
             Viewing
           </span>
-          <span className="text-white/90 truncate text-left max-w-[140px]">
-            {current ? `🎭 ${current.name}` : 'Platform · all academies'}
+          <span className="text-white/90 truncate text-left max-w-[140px] inline-flex items-center gap-1.5">
+            {current ? (
+              <>
+                <Eye size={11} strokeWidth={2} />
+                {current.name}
+              </>
+            ) : (
+              'Platform · all academies'
+            )}
           </span>
         </span>
         <span className="text-white/40 shrink-0">▾</span>
@@ -76,7 +84,10 @@ export function AcademySwitcher({ academies, currentActAsId }: Props) {
             disabled={pending}
             className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${!currentActAsId ? 'font-bold' : ''}`}
           >
-            <span className="block">🌐 Platform admin</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Globe size={12} strokeWidth={1.75} />
+              Platform admin
+            </span>
             <span className="block text-[10px] text-gray-500">See all academies</span>
           </button>
 

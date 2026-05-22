@@ -279,7 +279,7 @@ async function CoordinatorDashboard() {
             href="/camps"
             className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
-            <p className="text-xl mb-1">🏕</p>
+            <Tent size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">All Camps</p>
           </Link>
         </div>
