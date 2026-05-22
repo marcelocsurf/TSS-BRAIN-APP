@@ -15,15 +15,15 @@ import {
 // coach_* columns (the 25 COACH-STP-XXX lessons).
 //
 // Pillars (per TSS Coach Manual Part VI doctrine):
-//   ▶ Video    — videos attached via /dashboard/content
-//   📘 What     — what you teach the student
-//   🎬 Deliver  — EDPF delivery for this step
-//   ⚠ Errors   — common errors + corrections + verbal cues
-//   ✅ Validate — mastery criteria, when to promote
-//   🏋️ Drill    — the dry-land practice (from drills_missions)
-//   🌊 Mission  — the in-water application (from drills_missions)
-//   🧠 Quiz     — 80% to pass; quizzes always render when present
-//                (no longer gated on lesson_type === 'test')
+//   Video    — videos attached via /dashboard/content
+//   What     — what you teach the student
+//   Deliver  — EDPF delivery for this step
+//   Errors   — common errors + corrections + verbal cues
+//   Validate — mastery criteria, when to promote
+//   Drill    — the dry-land practice (from drills_missions)
+//   Mission  — the in-water application (from drills_missions)
+//   Quiz     — 80% to pass; quizzes always render when present
+//              (no longer gated on lesson_type === 'test')
 // ────────────────────────────────────────────────────────────────────
 
 type Pillar =

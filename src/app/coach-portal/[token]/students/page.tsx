@@ -23,8 +23,11 @@ export default async function CoachStudentsListPage({ params }: Props) {
         >
           <ArrowLeft size={12} /> Back to portal
         </Link>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Users size={18} strokeWidth={1.75} />
+        <h1
+          className="text-2xl font-bold flex items-center gap-2 leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          <Users size={20} strokeWidth={1.75} />
           Your students
         </h1>
         <p className="text-xs text-white/60 mt-1">

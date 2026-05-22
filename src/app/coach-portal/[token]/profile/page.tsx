@@ -24,8 +24,16 @@ export default async function CoachProfilePage({ params }: Props) {
         >
           <ArrowLeft size={12} /> Back to portal
         </Link>
-        <h1 className="text-xl font-bold">Your coach profile</h1>
-        <p className="text-xs text-white/60 mt-1">
+        <h1
+          className="text-2xl font-bold leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Your coach profile
+        </h1>
+        <p
+          className="text-[10px] text-white/60 mt-1 tracking-[0.2em] uppercase"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
           {coach.intake_completed_at
             ? 'Update your details whenever they change.'
             : 'Complete this profile so the academy has your safety info on file.'}

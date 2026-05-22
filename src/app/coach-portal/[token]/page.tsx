@@ -48,17 +48,25 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
       {isImpersonatingThisCoach && impersonation && (
         <ImpersonateBanner kind="coach" name={impersonation.name} />
       )}
-      <div style={{ background: brand.primary }} className="px-4 py-5 text-center">
+      <div style={{ background: brand.primary }} className="px-4 py-6 text-center">
         {brand.logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={brand.logoUrl}
             alt={brand.name}
-            className="h-10 mx-auto mb-2 object-contain"
+            className="h-12 mx-auto mb-3 object-contain"
           />
         )}
-        <h1 className="text-lg font-bold text-white">{brand.name}</h1>
-        <p style={{ color: brand.accent }} className="text-[10px] mt-0.5 tracking-wide uppercase">
+        <h1
+          className="text-2xl font-bold text-white leading-tight"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          {brand.name}
+        </h1>
+        <p
+          style={{ color: brand.accent, fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] mt-1.5 tracking-[0.2em] uppercase"
+        >
           Coach Portal — {brand.tagline}
         </p>
       </div>

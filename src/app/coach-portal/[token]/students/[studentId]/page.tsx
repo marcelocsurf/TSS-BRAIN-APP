@@ -46,8 +46,16 @@ export default async function CoachStudentDetailPage({ params }: Props) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold truncate">{fullName}</h1>
-            <p className="text-xs text-white/60 mt-0.5">
+            <h1
+              className="text-2xl font-bold truncate leading-tight"
+              style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            >
+              {fullName}
+            </h1>
+            <p
+              className="text-[10px] text-white/60 mt-1 tracking-[0.2em] uppercase"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
               {belt?.en}
               {s.ocean_level ? ` · ${s.ocean_level} ocean` : ''}
               {s.current_sequence_number != null && s.current_step_order != null

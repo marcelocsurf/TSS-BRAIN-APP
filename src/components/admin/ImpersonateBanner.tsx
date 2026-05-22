@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Eye } from 'lucide-react';
 import { endImpersonation } from '@/lib/actions/impersonate';
 
 interface Props {
@@ -24,9 +24,9 @@ export function ImpersonateBanner({ kind, name }: Props) {
 
   return (
     <div className="bg-amber-400 text-amber-950 px-3 py-2 flex items-center justify-between gap-3 text-xs font-semibold">
-      <div className="truncate">
-        <span aria-hidden className="mr-1.5">🟡</span>
-        Viewing as <strong>{name}</strong> ({kind} impersonation)
+      <div className="truncate inline-flex items-center gap-1.5">
+        <Eye size={14} strokeWidth={1.75} aria-hidden />
+        <span>Viewing as <strong>{name}</strong> ({kind} impersonation)</span>
       </div>
       <button
         type="button"

@@ -201,7 +201,7 @@ function HomeTab({
             {upcoming.slice(0, 3).map((s: any) => {
               const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
               return (
-                <div key={s.id} className="bg-white rounded-xl border border-gray-100 p-3">
+                <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
                   <p className="text-[10px] font-mono text-gray-400">
                     {tpl?.service_kind?.replace(/_/g, ' ') || ''} · {s.status}
                   </p>
@@ -314,11 +314,14 @@ function CoursesTab({
 
         {!loading && detail && (
           <>
-            <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[#0a1628] text-white rounded-xl px-5 py-5">
+            <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[#0a1628] text-white rounded-2xl px-5 py-6 shadow-sm">
               <p className="text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">
                 {detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
               </p>
-              <h2 className="text-xl font-bold leading-tight">
+              <h2
+                className="text-2xl font-bold leading-tight"
+                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              >
                 {detail.lesson.title}
               </h2>
               {detail.lesson.subtitle && (
@@ -362,7 +365,7 @@ function CoursesTab({
                 {detail.videos.length > 0 && (
                   <div className="space-y-2">
                     {detail.videos.map((v) => (
-                      <div key={v.id} className="bg-black rounded-xl overflow-hidden aspect-video">
+                      <div key={v.id} className="bg-black rounded-2xl overflow-hidden aspect-video">
                         <iframe
                           src={embedUrlFor(v.provider, v.url)}
                           title={v.title || 'Coach video'}
@@ -464,7 +467,7 @@ function CoursesTab({
         type="button"
         onClick={() => !isLocked && openLesson(c.id)}
         disabled={isLocked}
-        className={`w-full text-left bg-white rounded-xl border p-3 transition-all ${
+        className={`w-full text-left bg-white rounded-2xl border p-4 transition-all shadow-sm ${
           isLocked
             ? 'border-gray-100 opacity-60 cursor-not-allowed'
             : isCompleted
@@ -515,7 +518,7 @@ function CoursesTab({
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
           Coach Courses
         </p>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]">Your certification path</h2>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>Your certification path</h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
           {coach.max_belt_permission?.replace(/_/g, ' ')}
           {coach.certification_level ? ` · ${coach.certification_level}` : ''}.
@@ -719,7 +722,7 @@ function CoachQuizSection({
             return (
               <div
                 key={q.id}
-                className={`bg-white rounded-xl border p-3 ${
+                className={`bg-white rounded-2xl border p-4 shadow-sm ${
                   r?.gotIt ? 'border-emerald-200' : 'border-red-200'
                 }`}
               >
@@ -784,7 +787,7 @@ function CoachQuizSection({
 
       <div className="space-y-3">
         {quizzes.map((q, idx) => (
-          <div key={q.id} className="bg-white rounded-xl border border-gray-100 p-3">
+          <div key={q.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
             <p className="text-[10px] font-mono text-gray-400 mb-1">Q{idx + 1}</p>
             <p className="text-sm text-gray-800 leading-relaxed">{q.question}</p>
             <div className="mt-3 space-y-1.5">
@@ -835,7 +838,7 @@ function ToolsTab({ drills, coach }: { drills: any[]; coach: any }) {
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Tools</p>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]">
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>
           Drills + missions you can teach
         </h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
@@ -884,7 +887,7 @@ function ToolCard({ d, bg }: { d: any; bg: string }) {
     <button
       type="button"
       onClick={() => setOpen((o) => !o)}
-      className={`w-full text-left rounded-xl border ${bg} p-3 transition-all hover:shadow-sm`}
+      className={`w-full text-left rounded-2xl border ${bg} p-4 shadow-sm transition-all hover:shadow-sm`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -1045,7 +1048,7 @@ function PlanTab({
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
           Plan the Session
         </p>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]">
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>
           Your assigned classes
         </h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
@@ -1067,7 +1070,7 @@ function PlanTab({
                   key={s.id}
                   type="button"
                   onClick={() => openPlanner(s.id)}
-                  className="w-full text-left bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 hover:border-emerald-300 transition-colors"
+                  className="w-full text-left bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 hover:border-emerald-300 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -1103,7 +1106,7 @@ function PlanTab({
                 key={s.id}
                 type="button"
                 onClick={() => openPlanner(s.id)}
-                className="w-full text-left bg-white border border-gray-100 rounded-xl p-3 hover:border-gray-300 transition-colors"
+                className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 hover:border-gray-300 transition-colors"
               >
                 <p className="text-sm font-medium text-gray-700">{s.camp_name}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
@@ -1134,7 +1137,7 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Services</p>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]">All services you&apos;ve led</h2>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>All services you&apos;ve led</h2>
       </div>
 
       {upcoming.length > 0 && (
@@ -1146,7 +1149,7 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
             {upcoming.map((s: any) => {
               const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
               return (
-                <div key={s.id} className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3">
+                <div key={s.id} className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4">
                   <p className="text-[10px] font-mono text-emerald-700">
                     {tpl?.service_kind?.replace(/_/g, ' ') || s.status}
                   </p>
@@ -1169,7 +1172,7 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
           </p>
           <div className="space-y-1.5">
             {past.map((s: any) => (
-              <div key={s.id} className="bg-white border border-gray-100 rounded-xl p-3">
+              <div key={s.id} className="bg-white border border-gray-100 rounded-2xl p-4">
                 <p className="text-sm font-medium text-gray-700">{s.camp_name}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
                   {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -1197,7 +1200,7 @@ function RatingTab({ stats }: { stats: any }) {
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Rating</p>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]">From your students</h2>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>From your students</h2>
       </div>
 
       {stats.ratingsCount > 0 ? (
