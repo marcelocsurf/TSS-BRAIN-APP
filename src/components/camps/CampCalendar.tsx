@@ -89,10 +89,40 @@ export function CampCalendar({ camps, view, anchor }: Props) {
   if (view === 'week') {
     const weekStart = startOfWeek(anchor);
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const weekEnd = days[6];
 
-    const campsPerDay = days.map((d) =>
-      camps.filter((c) => isInRange(d, c.start_date, c.end_date)),
-    );
+    // Split camps into multi-day ribbons (surf_camp Mon→Sat blocks) and
+    // single-day chips (surf_lesson / custom). A camp counts as multi-day
+    // when start_date < end_date.
+    const multiDay = camps.filter((c) => c.start_date !== c.end_date);
+    const singleDay = camps.filter((c) => c.start_date === c.end_date);
+
+    // For each multi-day camp, work out which week-columns it occupies.
+    // Camps that started before this week or end after it are clamped at
+    // the week boundary and marked with continuation flags.
+    type Ribbon = {
+      camp: Camp;
+      startCol: number; // 0..6
+      endCol: number;   // 0..6
+      continuesBefore: boolean;
+      continuesAfter: boolean;
+    };
+    const ribbons: Ribbon[] = multiDay
+      .map((c) => {
+        if (c.end_date < days[0] || c.start_date > weekEnd) return null;
+        const startCol = c.start_date < days[0] ? 0 : days.indexOf(c.start_date);
+        const endCol = c.end_date > weekEnd ? 6 : days.indexOf(c.end_date);
+        if (startCol < 0 || endCol < 0) return null;
+        return {
+          camp: c,
+          startCol,
+          endCol,
+          continuesBefore: c.start_date < days[0],
+          continuesAfter: c.end_date > weekEnd,
+        } as Ribbon;
+      })
+      .filter((r): r is Ribbon => r !== null)
+      .sort((a, b) => a.startCol - b.startCol || a.endCol - b.endCol);
 
     return (
       <div className="space-y-3">
@@ -105,101 +135,160 @@ export function CampCalendar({ camps, view, anchor }: Props) {
           onChangeView={(v) => goto({ view: v })}
         />
 
-        {/* Desktop: 7-column grid */}
-        <div className="hidden md:grid grid-cols-7 gap-2">
-          {days.map((d, i) => {
-            const isToday = d === todayIso();
-            return (
-              <div
-                key={d}
-                className={`min-h-[180px] rounded-xl border p-2 bg-white ${
-                  isToday
-                    ? 'border-[var(--tss-cyan,#5AC3E7)] shadow-sm'
-                    : 'border-gray-100'
-                }`}
-              >
+        {/* ── Desktop layout ────────────────────────── */}
+        <div className="hidden md:block bg-white rounded-2xl border border-gray-100 p-3 space-y-2">
+          {/* Day-of-week header */}
+          <div className="grid grid-cols-7 gap-2">
+            {days.map((d) => {
+              const isToday = d === todayIso();
+              return (
                 <div
-                  className={`text-[10px] uppercase tracking-wider mb-2 ${
+                  key={d}
+                  className={`text-[10px] uppercase tracking-wider text-center py-1 rounded-md ${
                     isToday
-                      ? 'text-[var(--tss-cyan,#5AC3E7)] font-bold'
+                      ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-cyan,#5AC3E7)] font-bold'
                       : 'text-gray-400'
                   }`}
                   style={{ fontFamily: 'DM Mono, monospace' }}
                 >
                   {dayLabel(d)} {dayNum(d)}
                 </div>
-                <div className="space-y-1.5">
-                  {campsPerDay[i].map((c) => (
-                    <ServiceCard key={c.id + d} camp={c} compact />
+              );
+            })}
+          </div>
+
+          {/* Multi-day camp ribbons — each track is a 7-col row */}
+          {ribbons.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              {ribbons.map((r) => (
+                <div key={r.camp.id} className="grid grid-cols-7 gap-2">
+                  <div
+                    className="relative"
+                    style={{
+                      gridColumn: `${r.startCol + 1} / ${r.endCol + 2}`,
+                    }}
+                  >
+                    <ServiceCard camp={r.camp} compact />
+                    {r.continuesBefore && (
+                      <span className="absolute -left-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">
+                        ‹
+                      </span>
+                    )}
+                    {r.continuesAfter && (
+                      <span className="absolute -right-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">
+                        ›
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Single-day items per column */}
+          <div className="grid grid-cols-7 gap-2 pt-1">
+            {days.map((d) => {
+              const items = singleDay.filter((c) => c.start_date === d);
+              return (
+                <div key={d} className="min-h-[80px] space-y-1.5">
+                  {items.map((c) => (
+                    <ServiceCard key={c.id} camp={c} compact />
                   ))}
-                  {campsPerDay[i].length === 0 && (
+                  {items.length === 0 && (
                     <Link
                       href={`/camps/new?date=${d}`}
-                      className="block text-center text-[10px] text-gray-300 hover:text-gray-500 py-3 border border-dashed border-gray-150 rounded-lg hover:border-gray-300 transition-colors"
+                      className="block text-center text-[10px] text-gray-300 hover:text-gray-500 py-3 border border-dashed border-gray-200 rounded-lg hover:border-gray-400 transition-colors"
                     >
                       <Plus size={12} strokeWidth={2} className="inline" /> Schedule
                     </Link>
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Mobile: vertical stack */}
-        <div className="md:hidden space-y-3">
-          {days.map((d, i) => {
-            const isToday = d === todayIso();
-            return (
-              <div key={d}>
-                <div
-                  className={`flex items-center justify-between mb-1.5 px-1 ${
-                    isToday ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-500'
-                  }`}
-                >
-                  <span
-                    className="text-[10px] uppercase tracking-wider font-bold"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
-                  >
-                    {dayLabel(d)} {dayNum(d)} {isToday && '· Today'}
-                  </span>
-                  <span
-                    className="text-[10px] text-gray-400"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
-                  >
-                    {campsPerDay[i].length || 'empty'}
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {campsPerDay[i].map((c) => (
-                    <ServiceCard key={c.id + d} camp={c} />
-                  ))}
-                  {campsPerDay[i].length === 0 && (
-                    <Link
-                      href={`/camps/new?date=${d}`}
-                      className="block text-center text-[11px] text-gray-300 hover:text-gray-500 py-2.5 border border-dashed border-gray-200 rounded-lg"
-                    >
-                      <Plus size={12} strokeWidth={2} className="inline" /> Schedule
-                    </Link>
-                  )}
-                </div>
+        {/* ── Mobile layout ─────────────────────────── */}
+        <div className="md:hidden space-y-4">
+          {/* Multi-day camps at top — one card each with the date range */}
+          {ribbons.length > 0 && (
+            <div>
+              <p
+                className="text-[10px] uppercase tracking-wider text-gray-400 mb-1.5 px-1"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                Camps this week ({ribbons.length})
+              </p>
+              <div className="space-y-1.5">
+                {ribbons.map((r) => (
+                  <ServiceCard key={r.camp.id} camp={r.camp} />
+                ))}
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          {/* Per-day lessons / custom services */}
+          <div className="space-y-3">
+            {days.map((d) => {
+              const isToday = d === todayIso();
+              const items = singleDay.filter((c) => c.start_date === d);
+              return (
+                <div key={d}>
+                  <div
+                    className={`flex items-center justify-between mb-1.5 px-1 ${
+                      isToday ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-500'
+                    }`}
+                  >
+                    <span
+                      className="text-[10px] uppercase tracking-wider font-bold"
+                      style={{ fontFamily: 'DM Mono, monospace' }}
+                    >
+                      {dayLabel(d)} {dayNum(d)} {isToday && '· Today'}
+                    </span>
+                    <span
+                      className="text-[10px] text-gray-400"
+                      style={{ fontFamily: 'DM Mono, monospace' }}
+                    >
+                      {items.length || 'empty'}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {items.map((c) => (
+                      <ServiceCard key={c.id} camp={c} />
+                    ))}
+                    {items.length === 0 && (
+                      <Link
+                        href={`/camps/new?date=${d}`}
+                        className="block text-center text-[11px] text-gray-300 hover:text-gray-500 py-2.5 border border-dashed border-gray-200 rounded-lg"
+                      >
+                        <Plus size={12} strokeWidth={2} className="inline" /> Schedule
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
   }
 
   // ── Month view ─────────────────────────────
+  // Render as 6 week-rows. Each week-row is its own grid so multi-day
+  // camps can span horizontally Mon→Sat (visually obvious block) and
+  // single-day items render as colored dots inside their day cell.
   const monthStart = startOfMonth(anchor);
   const monthGridStart = startOfWeek(monthStart);
-  const gridCells = useMemo(() => {
-    // Always render 6 rows × 7 days = 42 cells so the layout is stable.
-    return Array.from({ length: 42 }, (_, i) => addDays(monthGridStart, i));
+  const currentMonth = monthStart.slice(0, 7); // YYYY-MM
+  const weeks = useMemo(() => {
+    return Array.from({ length: 6 }, (_, w) =>
+      Array.from({ length: 7 }, (_, d) => addDays(monthGridStart, w * 7 + d)),
+    );
   }, [monthGridStart]);
 
-  const currentMonth = monthStart.slice(0, 7); // YYYY-MM
+  const monthMultiDay = camps.filter((c) => c.start_date !== c.end_date);
+  const monthSingleDay = camps.filter((c) => c.start_date === c.end_date);
 
   return (
     <div className="space-y-3">
@@ -220,7 +309,7 @@ export function CampCalendar({ camps, view, anchor }: Props) {
         onChangeView={(v) => goto({ view: v })}
       />
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {/* Weekday header */}
         <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
@@ -233,54 +322,120 @@ export function CampCalendar({ camps, view, anchor }: Props) {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
-          {gridCells.map((d, i) => {
-            const dayCamps = camps.filter((c) =>
-              isInRange(d, c.start_date, c.end_date),
-            );
-            const isToday = d === todayIso();
-            const inMonth = d.slice(0, 7) === currentMonth;
-            return (
-              <button
-                key={d + i}
-                type="button"
-                onClick={() => goto({ view: 'week', anchor: d })}
-                className={`min-h-[80px] border-r border-b border-gray-100 p-1.5 text-left transition-colors ${
-                  inMonth ? 'bg-white' : 'bg-gray-50/50'
-                } hover:bg-gray-50`}
-              >
-                <div
-                  className={`text-[11px] mb-1 ${
-                    isToday
-                      ? 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--tss-cyan,#5AC3E7)] text-white font-bold'
-                      : inMonth
-                      ? 'text-gray-700'
-                      : 'text-gray-300'
-                  }`}
-                >
-                  {dayNum(d)}
+
+        {weeks.map((week, wIdx) => {
+          const weekStartIso = week[0];
+          const weekEndIso = week[6];
+
+          // Multi-day camps overlapping THIS week → ribbon spans
+          const weekRibbons = monthMultiDay
+            .map((c) => {
+              if (c.end_date < weekStartIso || c.start_date > weekEndIso) return null;
+              const startCol = c.start_date < weekStartIso ? 0 : week.indexOf(c.start_date);
+              const endCol = c.end_date > weekEndIso ? 6 : week.indexOf(c.end_date);
+              if (startCol < 0 || endCol < 0) return null;
+              return { camp: c, startCol, endCol };
+            })
+            .filter((r): r is { camp: Camp; startCol: number; endCol: number } => r !== null);
+
+          return (
+            <div
+              key={wIdx}
+              className="border-b border-gray-100 last:border-b-0 relative"
+            >
+              {/* Day numbers row */}
+              <div className="grid grid-cols-7">
+                {week.map((d) => {
+                  const isToday = d === todayIso();
+                  const inMonth = d.slice(0, 7) === currentMonth;
+                  const dayLessons = monthSingleDay.filter((c) => c.start_date === d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => goto({ view: 'week', anchor: d })}
+                      className={`min-h-[90px] border-r border-gray-100 p-1.5 text-left transition-colors last:border-r-0 ${
+                        inMonth ? 'bg-white' : 'bg-gray-50/50'
+                      } hover:bg-gray-50`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className={`text-[11px] ${
+                            isToday
+                              ? 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--tss-cyan,#5AC3E7)] text-white font-bold'
+                              : inMonth
+                              ? 'text-gray-700'
+                              : 'text-gray-300'
+                          }`}
+                        >
+                          {dayNum(d)}
+                        </span>
+                      </div>
+                      {/* Spacer for the ribbons that will overlay this row */}
+                      <div style={{ height: weekRibbons.length * 14 }} />
+                      {/* Single-day dots */}
+                      {dayLessons.length > 0 && (
+                        <div className="flex flex-wrap gap-0.5 mt-1">
+                          {dayLessons.slice(0, 6).map((c) => {
+                            const { bg, ring } = paletteFor(
+                              c.camp_templates?.service_kind,
+                              c.camp_templates?.level_name,
+                            );
+                            return (
+                              <span
+                                key={c.id}
+                                className={`block w-2 h-2 rounded-full ${bg} ${ring ?? ''}`}
+                              />
+                            );
+                          })}
+                          {dayLessons.length > 6 && (
+                            <span className="text-[8px] text-gray-400">+{dayLessons.length - 6}</span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Multi-day ribbons overlayed on top of the day grid */}
+              {weekRibbons.length > 0 && (
+                <div className="pointer-events-none absolute inset-0 grid grid-cols-7 px-1.5 pt-7">
+                  <div
+                    className="col-span-7 grid grid-cols-7 gap-1"
+                    style={{ gridTemplateRows: `repeat(${weekRibbons.length}, 12px)` }}
+                  >
+                    {weekRibbons.map((r, i) => {
+                      const { bg, onDark, ring } = paletteFor(
+                        r.camp.camp_templates?.service_kind,
+                        r.camp.camp_templates?.level_name,
+                      );
+                      return (
+                        <Link
+                          key={r.camp.id + wIdx}
+                          href={`/camps/${r.camp.id}`}
+                          className={`${bg} ${ring ?? ''} rounded-sm shadow-sm flex items-center px-1.5 truncate pointer-events-auto hover:brightness-95 transition-all`}
+                          style={{
+                            gridColumn: `${r.startCol + 1} / ${r.endCol + 2}`,
+                            gridRow: i + 1,
+                          }}
+                        >
+                          <span
+                            className={`text-[10px] font-semibold truncate ${
+                              onDark ? 'text-white' : 'text-black/80'
+                            }`}
+                          >
+                            {r.camp.camp_name}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-0.5">
-                  {dayCamps.slice(0, 6).map((c) => {
-                    const { bg, ring } = paletteFor(
-                      c.camp_templates?.service_kind,
-                      c.camp_templates?.level_name,
-                    );
-                    return (
-                      <span
-                        key={c.id + d}
-                        className={`block w-1.5 h-1.5 rounded-full ${bg} ${ring ?? ''}`}
-                      />
-                    );
-                  })}
-                  {dayCamps.length > 6 && (
-                    <span className="text-[8px] text-gray-400">+{dayCamps.length - 6}</span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
