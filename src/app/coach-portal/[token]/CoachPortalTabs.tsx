@@ -455,6 +455,16 @@ function CoursesTab({
   const exitTest = courses.filter((c) => c.id === 'COACH-WB-EXIT-TEST');
   const master = courses.filter((c) => c.course_section === 'coach_wb_master');
 
+  // YB Coach Course tiers (course_section = 'coach_yb').
+  const ybCourses = courses.filter((c) => c.course_section === 'coach_yb');
+  const ybFoundations = ybCourses.filter(
+    (c) => c.id === 'COACH-YB-FOUND-01' || c.id === 'COACH-YB-ONB-01',
+  );
+  const ybStps = ybCourses.filter((c) => /^COACH-STP-0(2[7-9]|3[0-4])$/.test(c.id));
+  const ybIntegration = ybCourses.filter(
+    (c) => c.id === 'COACH-YB-MOD-7' || c.id === 'COACH-YB-MOD-8',
+  );
+
   const renderCard = (c: any) => {
     const isCompleted = completedSet.has(c.id);
     const isInProgress = !isCompleted && !!progress[c.id]?.started;
@@ -588,6 +598,26 @@ function CoursesTab({
             label="Master Manual — Canon Reference"
             sub="Single source of truth. 15 reference lessons (no prerequisites)."
             items={master}
+            render={renderCard}
+          />
+
+          {/* ── YB Coach Course (unlocks after WB Exit Test) ── */}
+          <TierGroup
+            label="YB Tier 1 — Foundations + Belt Value Shift"
+            sub="L1 authorization scope for YB · the mental shift from humility to resilience."
+            items={ybFoundations}
+            render={renderCard}
+          />
+          <TierGroup
+            label="YB Tier 2 — The 8 YB STPs"
+            sub="Sequence 6.0 + 7.0. Each lesson: How to Teach · How to Correct · How to Validate."
+            items={ybStps}
+            render={renderCard}
+          />
+          <TierGroup
+            label="YB Tier 3 — Complete Ride + Exit Test"
+            sub="Coach the 11-stage integration · administer the YB Exit Test with integrity."
+            items={ybIntegration}
             render={renderCard}
           />
         </>
