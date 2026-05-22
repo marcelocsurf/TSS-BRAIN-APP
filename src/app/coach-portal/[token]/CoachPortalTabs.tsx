@@ -498,16 +498,16 @@ function CoursesTab({
       );
     const isYb = !isValue && !isMethod && c.course_section === 'coach_yb';
     const beltBg = isValue
-      ? 'bg-rose-100'
+      ? 'bg-[#EC4899]'
       : isMethod
-      ? 'bg-cyan-50'
+      ? 'bg-[#00F0FF]'
       : isYb
       ? 'bg-[#FFFC00]'
       : 'bg-white';
     const beltDefaultBorder = isValue
-      ? 'border-rose-300 hover:border-rose-400'
+      ? 'border-[#DB2777] hover:border-[#BE185D]'
       : isMethod
-      ? 'border-gray-300 hover:border-gray-400'
+      ? 'border-[#06B6D4] hover:border-[#0891B2]'
       : isYb
       ? 'border-[#E5E300] hover:border-[#CCCB00]'
       : 'border-gray-100 hover:border-gray-300';
