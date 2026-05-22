@@ -594,13 +594,6 @@ function CoursesTab({
             items={tierCareer}
             render={renderCard}
           />
-          <TierGroup
-            label="Master Manual — Canon Reference"
-            sub="Single source of truth. 15 reference lessons (no prerequisites)."
-            items={master}
-            render={renderCard}
-          />
-
           {/* ── YB Coach Course (unlocks after WB Exit Test) ── */}
           <TierGroup
             label="YB Tier 1 — Foundations + Belt Value Shift"
@@ -618,6 +611,13 @@ function CoursesTab({
             label="YB Tier 3 — Complete Ride + Exit Test"
             sub="Coach the 11-stage integration · administer the YB Exit Test with integrity."
             items={ybIntegration}
+            render={renderCard}
+          />
+
+          <TierGroup
+            label="Master Manual — Canon Reference"
+            sub="Single source of truth. 15 reference lessons (no prerequisites)."
+            items={master}
             render={renderCard}
           />
         </>
