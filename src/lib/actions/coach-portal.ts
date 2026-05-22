@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
 
 // Coach Portal — public route accessed via /coach-portal/[token].
 // Mirrors the student portal pattern. No auth required at the route level;
@@ -36,6 +37,7 @@ export interface CoachPortalData {
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
+  stps: StpSummary[];  // STPs grouped by sequence for the Tools tab browser
   academyBranding: {
     name: string | null;
     logo_url: string | null;
@@ -209,6 +211,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     coachCourses: coachCoursesResult.data ?? [],
     courseProgress,
     availableDrills,
+    stps: await listCoachStps(token),
     academyBranding,
   };
 }

@@ -62,7 +62,7 @@ export function CoachPortalTabs({
             token={coach.portal_token}
           />
         )}
-        {activeTab === 'tools' && <ToolsTab drills={data.availableDrills} coach={coach} />}
+        {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} />}
         {activeTab === 'plan' && (
           <PlanTab
             upcoming={data.upcomingServices}
@@ -830,34 +830,93 @@ function CoachQuizSection({
   );
 }
 
-function ToolsTab({ drills, coach }: { drills: any[]; coach: any }) {
-  const drillItems = drills.filter((d) => d.type === 'drill');
-  const missionItems = drills.filter((d) => d.type === 'mission');
+function ToolsTab({ stps, coach }: { stps: any[]; coach: any }) {
+  // Group STPs by sequence (using wb_sequence_* data from lessons).
+  // STPs without sequence info fall into an "Other" bucket at the end.
+  const groups = new Map<string, { name: string; belt: 'white' | 'yellow'; order: number; items: any[] }>();
+  for (const s of stps) {
+    const key = s.sequence_id ?? `_${s.belt}_unsequenced`;
+    const name = s.sequence_name ?? (s.belt === 'yellow' ? 'Yellow Belt' : 'White Belt');
+    if (!groups.has(key)) {
+      groups.set(key, { name, belt: s.belt, order: s.sequence_order ?? 999, items: [] });
+    }
+    groups.get(key)!.items.push(s);
+  }
+  const sequences = Array.from(groups.entries())
+    .sort(([, a], [, b]) => {
+      if (a.belt !== b.belt) return a.belt === 'white' ? -1 : 1;
+      return a.order - b.order;
+    });
 
   return (
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Tools</p>
         <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>
-          Drills + missions you can teach
+          Browse by sequence
         </h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-          Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
-          {' '}{drillItems.length} drills, {missionItems.length} missions available.
+          Pick a step to see its drills, missions and visual aids.
+          {' '}Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
         </p>
       </div>
 
-      {drillItems.length > 0 && (
-        <ToolGroup label="Drills" items={drillItems} accent="amber" />
-      )}
-      {missionItems.length > 0 && (
-        <ToolGroup label="Missions" items={missionItems} accent="blue" />
-      )}
+      {sequences.map(([key, g]) => (
+        <SequenceGroup key={key} group={g} token={coach.portal_token} />
+      ))}
 
-      {drills.length === 0 && (
+      {stps.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
           <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-500">No drills available at your level yet.</p>
+          <p className="text-sm text-gray-500">No steps available yet.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SequenceGroup({
+  group,
+  token,
+}: {
+  group: { name: string; belt: 'white' | 'yellow'; items: any[] };
+  token: string;
+}) {
+  const [open, setOpen] = useState(true);
+  const beltAccent = group.belt === 'yellow' ? 'border-l-amber-300' : 'border-l-sky-300';
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full flex items-center justify-between px-4 py-3 border-l-4 ${beltAccent}`}
+      >
+        <div className="text-left">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            {group.belt === 'yellow' ? 'Yellow Belt' : 'White Belt'}
+          </p>
+          <p className="text-sm font-bold text-[var(--tss-navy)]">{group.name}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] font-mono text-gray-400">{group.items.length} STPs</span>
+          <ChevronDown size={14} className={`text-gray-400 transition ${open ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+      {open && (
+        <div className="divide-y divide-gray-50">
+          {group.items.map((s) => (
+            <Link
+              key={s.id}
+              href={`/coach-portal/${token}/tools/${s.id}`}
+              className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-mono text-gray-400">{s.id}</p>
+                <p className="text-sm font-medium text-gray-800 truncate">{s.title}</p>
+              </div>
+              <ArrowRight size={14} className="text-gray-400 shrink-0" />
+            </Link>
+          ))}
         </div>
       )}
     </div>
