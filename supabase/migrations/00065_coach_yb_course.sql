@@ -7,14 +7,14 @@
 -- This migration mirrors the WB Coach Course structure (course_section =
 -- 'coach_wb' with COACH-* prefixes) and creates the YB Coach Course as
 -- course_section = 'coach_yb'. 11 lessons total:
---   - COACH-YB-FOUND-01  Coach Foundations + Frameworks (PART I+II, YB scope)
---   - COACH-YB-ONB-01    Teaching the YB Belt Value Shift (Module 4, PART VII)
---   - COACH-STP-027..029, 033, 034  Sequence 6.0 teaching layer (PART VIII)
---   - COACH-STP-030..032 Sequence 7.0 teaching layer (PART IX)
---   - COACH-YB-MOD-7     Coaching The Complete Ride (PART X)
---   - COACH-YB-MOD-8     Administering YB Exit Test (PART XI)
+--   - COACH-YB-FOUND-01  Coach Foundations + Frameworks (Part 1+2, YB scope)
+--   - COACH-YB-ONB-01    Teaching the YB Belt Value Shift (Module 4, Part 7)
+--   - COACH-STP-027..029, 033, 034  Sequence 6.0 teaching layer (Part 8)
+--   - COACH-STP-030..032 Sequence 7.0 teaching layer (Part 9)
+--   - COACH-YB-MOD-7     Coaching The Complete Ride (Part 10)
+--   - COACH-YB-MOD-8     Administering YB Exit Test (Part 11)
 --
--- Every description_md is lifted verbatim from PART VIII–XI of the
+-- Every description_md is lifted verbatim from Parts 8–11 of the
 -- Unified Coach Course doc — How to Teach / How to Correct / How to
 -- Validate. Zero invention.
 --
@@ -31,9 +31,9 @@ INSERT INTO lessons (
  'YB Coach Foundations + Frameworks',
  'Authorization, mindset, EDPF · Triad · Five Locations · Safety Override (YB scope)',
  'Coach · Foundations',
- $$# Part I — Coach Foundations (YB scope)
+ $$# Part 1 — Coach Foundations (YB scope)
 
-## I.1 — Your authorization
+## 1.1 — Your authorization
 
 Per Core Canon §D.1, **L1 Foundation Coach** authorizes you to teach:
 - Pre-Course (Module 0)
@@ -48,7 +48,7 @@ Per Core Canon §D.1, **L1 Foundation Coach** authorizes you to teach:
 
 You are NOT authorized to teach Blue Belt or above without further certification.
 
-## I.2 — Coach-Student Ratios
+## 1.2 — Coach-Student Ratios
 
 | Context | L1 Foundation Coach | L2+ |
 |---|---|---|
@@ -58,7 +58,7 @@ You are NOT authorized to teach Blue Belt or above without further certification
 
 YB ratio is tighter because the green-wave environment increases supervision load.
 
-## I.3 — Mindset before any session
+## 1.3 — Mindset before any session
 
 ### 1. The student WILL fail a lot at YB
 This is expected. Your job is not to prevent failure — your job is to **frame failure as information**.
@@ -80,9 +80,9 @@ Memorize these. You'll use them every session.
 
 ---
 
-# Part II — The Teaching Frameworks
+# Part 2 — The Teaching Frameworks
 
-## II.1 — The EDPF Delivery Cycle (Core Canon §C.3)
+## 2.1 — The EDPF Delivery Cycle (Core Canon §C.3)
 
 Every drill, every STP, every session runs on this cycle:
 
@@ -95,7 +95,7 @@ Every drill, every STP, every session runs on this cycle:
 
 > Doctrinal rule: Never technique before decision. *"Why did you choose that line?"* before *"Move your hand here."*
 
-## II.2 — The Triad — Your Decision Tool
+## 2.2 — The Triad — Your Decision Tool
 
 Every decision you make as a coach evaluates 3 variables:
 - **Surfer** — belt level + capacity + state of the day (physical, mental, emotional)
@@ -104,7 +104,7 @@ Every decision you make as a coach evaluates 3 variables:
 
 **Rule:** Adjust the Task to fit what the Surfer and the Ocean allow. Don't force a mission that doesn't match.
 
-## II.3 — The Five Locations
+## 2.3 — The Five Locations
 
 1. **Land** — biomechanics (Classical)
 2. **Surfskate** — carving bridge, intermediate variability
@@ -114,7 +114,7 @@ Every decision you make as a coach evaluates 3 variables:
 
 **For YB:** Small + Challenging Waves dominate, but always have Surfskate/Land available for re-drilling.
 
-## II.4 — Conditions & Safety Override
+## 2.4 — Conditions & Safety Override
 
 | Variable | White Belt | Yellow Belt |
 |---|---|---|
@@ -151,7 +151,7 @@ This is not a technical shift. It's a **mental shift**. You can't teach it in on
 
 **Suggested delivery (1 session, ~45 minutes):**
 
-1. **Read the long form** (from the Student Course PART VI) aloud to the student. Pause between paragraphs.
+1. **Read the long form** (from the Student Course Part 6) aloud to the student. Pause between paragraphs.
 2. **Ask them to reflect** — verbally — on their WB experience. How many waves did they miss? How often did they fall? How did they feel about it?
 3. **Reframe** — *"All those falls were not failures. They were the training. At Yellow Belt, the falls don't stop. What changes is YOUR relationship to them."*
 4. **Read the closing phrase** with them: *"Yellow Belt grows through resilience: accept the fall, return to the wave, play with the sea."*
@@ -426,7 +426,7 @@ This is **the threshold step** — between *"I caught a wave"* and *"I am surfin
 3. Backside Pump
 4. Pocket Proximity (slow wave)
 5. Surfskate (classical bridge)
-6. **Two Lines / Ping-Pong** ⭐ — the killer drill
+6. **Two Lines / Ping-Pong** — the killer drill
 
 The Two Lines drill is **constraint-led pure**. The technique EMERGES from the visual constraint, not from your instruction.
 
@@ -496,7 +496,7 @@ The Two Lines drill is **constraint-led pure**. The technique EMERGES from the v
  'Coaching The Complete Ride',
  'Module 7 — coach the integration, not new content',
  'Coach · Integration',
- $$# Module 7 — Coaching The Complete Ride ⭐
+ $$# Module 7 — Coaching The Complete Ride
 
 **This module is unique to the unified course. Coach approach is different from individual STPs — your job here is to coach the INTEGRATION.**
 
@@ -517,7 +517,7 @@ Module 7 has no new content. Your job is to:
 4. Scan Wave Stages (STP-033)
 5. Identify Pocket (STP-028)
 6. Paddle Speed + Angle (STP-027 + STP-029)
-7. Cobra + Pick Line (STP-034) ⭐
+7. Cobra + Pick Line (STP-034)
 8. Pop-Up + Foot Position (STP-030)
 9. Posture + Up/Down (STP-031) — integration
 10. Out from the Shoulder (STP-032)
@@ -607,7 +607,7 @@ As an L1+ coach, you administer the YB Exit Test. **Your sign-off determines whe
 - [ ] 4.5 Entry/exit points
 - [ ] 4.6 Conditions Go/No-Go
 
-### Category 5 — Sequence Execution with CONSISTENCY ⭐
+### Category 5 — Sequence Execution with CONSISTENCY
 - [ ] 5.1 Executes YB parts with consistency
 - [ ] 5.2 Connects with board consistently
 - [ ] 5.3 Frontside ↔ Backside
@@ -617,9 +617,9 @@ As an L1+ coach, you administer the YB Exit Test. **Your sign-off determines whe
 ## The Threshold (when to sign off)
 
 Student passes when:
-- ✅ ≥1 complete YB sequence executed on a real wave
-- ✅ Categories 2-4 demonstrated across **≥2 different sessions**
-- ✅ Category 5 (consistency) observable wave-after-wave
+- ≥1 complete YB sequence executed on a real wave
+- Categories 2-4 demonstrated across **≥2 different sessions**
+- Category 5 (consistency) observable wave-after-wave
 
 **Not perfection. Consistency.**
 
