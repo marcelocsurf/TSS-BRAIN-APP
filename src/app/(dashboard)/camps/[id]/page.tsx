@@ -3,6 +3,7 @@ import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import { CampHeadCoachManager } from '@/components/camp/CampHeadCoachManager';
+import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import Link from 'next/link';
@@ -66,6 +67,13 @@ export default async function CampDetailPage({ params }: Props) {
           currentHeadCoachName={
             headCoach?.display_name || creatorCoach?.display_name || null
           }
+        />
+
+        {/* Scheduled time — coordinator sets / edits start + end so the
+            coach knows when to show up and run the procedure. */}
+        <CampScheduleManager
+          campInstanceId={instance.id}
+          currentScheduledTime={(instance as any).scheduled_time ?? null}
         />
 
         <div

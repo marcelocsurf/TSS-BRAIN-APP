@@ -38,6 +38,7 @@ type ServiceCardProps = {
     end_date: string;
     status: string;
     modality: string;
+    scheduled_time: string | null;
     capacity_override: number | null;
     camp_templates: {
       template_name: string;
@@ -88,6 +89,16 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
             >
               {camp.camp_name}
             </p>
+            {camp.scheduled_time && (
+              <p
+                className={`text-[10px] mt-0.5 ${
+                  onDark ? 'text-white/90' : 'text-black/65'
+                }`}
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                {camp.scheduled_time}
+              </p>
+            )}
           </div>
           <CampStatusBadge status={camp.status} />
         </div>

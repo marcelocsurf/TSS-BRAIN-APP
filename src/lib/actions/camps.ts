@@ -64,6 +64,27 @@ export async function updateCampHeadCoach(
   revalidatePath('/camps');
 }
 
+// ═══════════════════════════════════════
+// UPDATE SCHEDULED TIME OF AN EXISTING CAMP
+// scheduled_time is a free-form TEXT — we standardise on "HH:MM" or
+// "HH:MM - HH:MM". Passing null clears it.
+// ═══════════════════════════════════════
+
+export async function updateCampSchedule(
+  campInstanceId: string,
+  scheduledTime: string | null,
+) {
+  const supabase = await createClient();
+  const trimmed = (scheduledTime ?? '').trim();
+  const { error } = await supabase
+    .from('camp_instances')
+    .update({ scheduled_time: trimmed ? trimmed : null })
+    .eq('id', campInstanceId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/camps/${campInstanceId}`);
+  revalidatePath('/camps');
+}
+
 export async function listCampTemplates() {
   const supabase = await createClient();
   const { data, error } = await supabase
