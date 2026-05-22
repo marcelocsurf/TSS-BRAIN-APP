@@ -7,24 +7,39 @@ import { LogoutButton } from '@/components/shared/LogoutButton';
 import { getActAsAcademyId, isRealPlatformAdmin } from '@/lib/actions/auth';
 import { ActAsBanner } from '@/components/admin/ActAsBanner';
 import { AcademySwitcher } from '@/components/admin/AcademySwitcher';
+import {
+  Home,
+  Users,
+  Tent,
+  Star,
+  Ticket,
+  Play,
+  Pencil,
+  Building2,
+  Film,
+  ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const NAV_ITEMS = [
-  // \u2500\u2500 Both admin + coordinator \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  { href: '/', label: 'Home', icon: '\u2302', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
-  { href: '/students', label: 'Students', icon: '\u25C9', roles: ['admin', 'coordinator', 'coach', 'assistant'] },
-  { href: '/camps', label: 'Services', icon: '\u26FA', roles: ['admin', 'coordinator'] },
-  { href: '/coaches', label: 'Coaches', icon: '\u2605', roles: ['admin', 'coordinator'] },
-  { href: '/course-codes', label: 'Course Codes', icon: '\u26bf', roles: ['admin', 'coordinator'] },
-  // \u2500\u2500 Coach / assistant \u2014 their session workflow \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  { href: '/sessions/new', label: 'Session', icon: '\u25B6', roles: ['admin', 'coach'] },
-  { href: '/sessions/drafts', label: 'Drafts', icon: '\u270E', roles: ['admin', 'coach'] },
-  // \u2500\u2500 Admin only \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  { href: '/academies', label: 'Academies', icon: '\uD83C\uDFEB', roles: ['admin'] },
-  { href: '/content', label: 'Content', icon: '\u25b7', roles: ['admin'] },
-  { href: '/audit', label: 'Audit', icon: '\u2713', roles: ['admin'] },
+type NavItem = { href: string; label: string; Icon: LucideIcon; roles: string[] };
+
+const NAV_ITEMS: NavItem[] = [
+  // \u2014 Admin + coordinator + coach + assistant \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
+  { href: '/',              label: 'Home',         Icon: Home,        roles: ['admin', 'coordinator', 'coach', 'assistant'] },
+  { href: '/students',      label: 'Students',     Icon: Users,       roles: ['admin', 'coordinator', 'coach', 'assistant'] },
+  { href: '/camps',         label: 'Services',     Icon: Tent,        roles: ['admin', 'coordinator'] },
+  { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
+  { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
+  // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
+  { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
+  { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['admin', 'coach'] },
+  // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
+  { href: '/academies', label: 'Academies', Icon: Building2,   roles: ['admin'] },
+  { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
+  { href: '/audit',     label: 'Audit',     Icon: ShieldCheck, roles: ['admin'] },
 ];
 
 function getNavItemsForRole(role: CoachRole) {
@@ -110,7 +125,7 @@ export default async function DashboardLayout({
               href={item.href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/8 hover:text-white transition-all border-l-2 border-transparent hover:border-[var(--tss-cyan)]"
             >
-              <span className="text-base opacity-70">{item.icon}</span>
+              <item.Icon size={16} strokeWidth={1.75} className="opacity-70" />
               <span style={{ fontFamily: 'var(--font-body)' }}>{item.label}</span>
             </Link>
           ))}
@@ -156,7 +171,7 @@ export default async function DashboardLayout({
             href={item.href}
             className="flex flex-col items-center gap-0.5 text-[var(--tss-gray-500)] hover:text-[var(--tss-navy)] transition-colors"
           >
-            <span className="text-lg">{item.icon}</span>
+            <item.Icon size={20} strokeWidth={1.75} />
             <span className="text-[10px] font-medium" style={{ fontFamily: 'var(--font-body)' }}>{item.label}</span>
           </Link>
         ))}
