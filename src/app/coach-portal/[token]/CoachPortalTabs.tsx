@@ -449,7 +449,11 @@ function CoursesTab({
   const tierPreOnboard = courses.filter(
     (c) => c.id === 'COACH-PC-VERIFY' || c.id === 'COACH-OB-DELIVERY'
   );
-  const tierStps = byPrefix('COACH-STP-');
+  // WB tier 3 = only the 25 WB STPs (001..025). YB STPs (027..034)
+  // belong to their own YB tier even though they share the COACH-STP- prefix.
+  const tierStps = courses.filter(
+    (c) => c.course_section === 'coach_wb' && /^COACH-STP-0(0[1-9]|1\d|2[0-5])$/.test(c.id)
+  );
   const tierDiagnostics = byPrefix('COACH-DIAG-');
   const tierCareer = byPrefix('COACH-CAREER-');
   const exitTest = courses.filter((c) => c.id === 'COACH-WB-EXIT-TEST');
