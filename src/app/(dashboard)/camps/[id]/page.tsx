@@ -2,6 +2,7 @@ import { getCampDetail, getCampEvaluations, getScheduledEvaluations } from '@/li
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
+import { CampHeadCoachManager } from '@/components/camp/CampHeadCoachManager';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import Link from 'next/link';
@@ -58,18 +59,14 @@ export default async function CampDetailPage({ params }: Props) {
           <CampStatusBadge status={instance.status} />
         </div>
 
-        {/* Head Coach prominently */}
-        <div className="mt-3 flex items-center gap-2">
-          <span
-            className="text-[10px] uppercase tracking-wider text-gray-400"
-            style={{ fontFamily: 'DM Mono, monospace' }}
-          >
-            Head Coach
-          </span>
-          <span className="text-sm font-medium text-[var(--tss-navy)]">
-            {headCoach?.display_name || creatorCoach?.display_name || 'Not assigned'}
-          </span>
-        </div>
+        {/* Head Coach — coordinator can swap/assign inline */}
+        <CampHeadCoachManager
+          campInstanceId={instance.id}
+          currentHeadCoachId={(instance as any).head_coach_id ?? null}
+          currentHeadCoachName={
+            headCoach?.display_name || creatorCoach?.display_name || null
+          }
+        />
 
         <div
           className="flex flex-wrap gap-3 mt-2 text-[10px] text-gray-400 uppercase tracking-wider"

@@ -44,6 +44,26 @@ export async function listCampsInRange(startDate: string, endDate: string) {
   return data ?? [];
 }
 
+// ═══════════════════════════════════════
+// UPDATE HEAD COACH OF AN EXISTING CAMP
+// Used by the camp detail page so the coordinator can swap / assign
+// the head coach without re-creating the instance.
+// ═══════════════════════════════════════
+
+export async function updateCampHeadCoach(
+  campInstanceId: string,
+  headCoachId: string | null,
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('camp_instances')
+    .update({ head_coach_id: headCoachId })
+    .eq('id', campInstanceId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/camps/${campInstanceId}`);
+  revalidatePath('/camps');
+}
+
 export async function listCampTemplates() {
   const supabase = await createClient();
   const { data, error } = await supabase

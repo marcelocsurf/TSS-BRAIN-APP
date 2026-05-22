@@ -108,10 +108,13 @@ export default function NewCampPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.template_id || !form.camp_name || form.student_ids.length === 0) {
-      setError('Select a service, name it, and add at least one student.');
+    if (!form.template_id || !form.camp_name) {
+      setError('Select a service and name it.');
       return;
     }
+    // Students are optional at creation — services open empty and fill up
+    // as the coordinator sells spots. They can be added later from the
+    // camp detail page.
     if (form.student_ids.length > effectiveCapacity) {
       setError(
         `This service has a capacity of ${effectiveCapacity}. Remove ${form.student_ids.length - effectiveCapacity} student(s).`
