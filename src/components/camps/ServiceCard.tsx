@@ -61,6 +61,8 @@ type ServiceCardProps = {
       level_name: string;
       service_kind: 'surf_lesson' | 'surf_camp' | 'custom' | null;
       capacity_max: number;
+      duration_days: number | null;
+      session_duration_minutes: number | null;
       card_color: string | null;
       accent_color: string | null;
     } | null;
@@ -111,16 +113,33 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
             >
               {camp.camp_name}
             </p>
-            {camp.scheduled_time && (
-              <p
-                className={`text-[10px] mt-0.5 ${
-                  onDark ? 'text-white/90' : 'text-black/65'
-                }`}
-                style={{ fontFamily: 'DM Mono, monospace' }}
-              >
-                {camp.scheduled_time}
-              </p>
-            )}
+            {(() => {
+              // Compose a small DM-mono meta line: "09:00–10:30 · 1h 30m" /
+              // "6 days · 3h/day" / etc. Falls back gracefully when fields
+              // are missing.
+              const parts: string[] = [];
+              if (camp.scheduled_time) parts.push(camp.scheduled_time);
+              const mins = tpl?.session_duration_minutes ?? null;
+              if (mins != null && mins > 0) {
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                const label = h ? `${h}h${m ? ` ${m}m` : ''}` : `${m}m`;
+                const days = tpl?.duration_days ?? 1;
+                parts.push(days > 1 ? `${days} days · ${label}/day` : label);
+              } else if ((tpl?.duration_days ?? 1) > 1) {
+                parts.push(`${tpl?.duration_days} days`);
+              }
+              return parts.length > 0 ? (
+                <p
+                  className={`text-[10px] mt-0.5 ${
+                    onDark ? 'text-white/90' : 'text-black/65'
+                  }`}
+                  style={{ fontFamily: 'DM Mono, monospace' }}
+                >
+                  {parts.join(' · ')}
+                </p>
+              ) : null;
+            })()}
           </div>
           <CampStatusBadge status={camp.status} />
         </div>

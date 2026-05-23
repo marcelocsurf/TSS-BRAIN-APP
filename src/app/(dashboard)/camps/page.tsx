@@ -1,8 +1,9 @@
 import { getCurrentCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
-import { listCampsInRange } from '@/lib/actions/camps';
+import { listCampsInRange, listCampTemplates } from '@/lib/actions/camps';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CampCalendar } from '@/components/camps/CampCalendar';
+import { CampFilters } from '@/components/camps/CampFilters';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -39,14 +40,26 @@ function todayIso(): string {
 export default async function CampsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; anchor?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    anchor?: string;
+    kind?: string;
+    level?: string;
+    minOpen?: string;
+  }>;
 }) {
   const currentCoach = await getCurrentCoach();
   if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) {
     redirect('/dashboard');
   }
 
-  const { view: viewParam, anchor: anchorParam } = await searchParams;
+  const {
+    view: viewParam,
+    anchor: anchorParam,
+    kind,
+    level,
+    minOpen,
+  } = await searchParams;
   const view: 'week' | 'month' = viewParam === 'month' ? 'month' : 'week';
   const anchor = anchorParam ?? todayIso();
 
@@ -63,7 +76,24 @@ export default async function CampsPage({
     rangeEnd = addDays(startOfWeek(monthStart), 49);
   }
 
-  const camps = await listCampsInRange(rangeStart, rangeEnd);
+  const [campsRaw, templates] = await Promise.all([
+    listCampsInRange(rangeStart, rangeEnd),
+    listCampTemplates(),
+  ]);
+
+  // Apply UI filters server-side so the calendar only renders matches.
+  const camps = (campsRaw as any[]).filter((c) => {
+    if (kind && c.camp_templates?.service_kind !== kind) return false;
+    if (level && c.camp_templates?.level_name !== level) return false;
+    if (minOpen) {
+      const cap = c.capacity_override ?? c.camp_templates?.capacity_max ?? 4;
+      const enrolled = (c.camp_participants ?? []).filter(
+        (p: any) => p.enrollment_status === 'active',
+      ).length;
+      if (cap - enrolled < parseInt(minOpen, 10)) return false;
+    }
+    return true;
+  });
 
   return (
     <div>
@@ -97,6 +127,8 @@ export default async function CampsPage({
           </Link>
         </div>
       </div>
+
+      <CampFilters templates={templates as any} />
 
       <CampCalendar camps={camps as any} view={view} anchor={anchor} />
     </div>
