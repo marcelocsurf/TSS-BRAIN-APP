@@ -85,16 +85,17 @@ export default function NewCampPage() {
     ? form.duration_override
     : selectedTemplate?.duration_days ?? 1;
 
-  // Auto-derived end date
+  // Auto-derived end date.
+  // Rule: end_date = start_date + (effectiveDuration - 1) days, for ALL
+  // template types. Custom templates with duration_days=1 collapse to
+  // the same day. If the user manually set end_date for a custom multi-
+  // day instance, respect that override.
   const derivedEndDate = (() => {
     if (!form.start_date) return '';
-    if (isLesson) return form.start_date; // same day
-    if (isCamp) {
-      const d = new Date(form.start_date);
-      d.setDate(d.getDate() + effectiveDuration - 1);
-      return d.toISOString().slice(0, 10);
-    }
-    return form.end_date;
+    if (form.end_date && form.end_date >= form.start_date) return form.end_date;
+    const d = new Date(form.start_date + 'T00:00:00');
+    d.setDate(d.getDate() + Math.max(0, effectiveDuration - 1));
+    return d.toISOString().slice(0, 10);
   })();
 
   // Formatted scheduled_time to store
@@ -121,8 +122,12 @@ export default function NewCampPage() {
       );
       return;
     }
-    if (!derivedEndDate) {
+    if (!form.start_date) {
       setError('Please select a start date.');
+      return;
+    }
+    if (!derivedEndDate) {
+      setError('Please set both a start date and (for multi-day services) an end date.');
       return;
     }
     setLoading(true);
