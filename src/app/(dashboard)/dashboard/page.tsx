@@ -221,10 +221,24 @@ async function CoordinatorDashboard() {
     return null;
   }
 
+  // Today panel — pull today's services so the coordinator opens the
+  // dashboard and instantly sees what's running. Soft-fail if the query
+  // blows up so the rest of the dashboard keeps working.
+  const { listTodaysCamps } = await import('@/lib/actions/camps');
+  let todaysCamps: any[] = [];
+  try {
+    todaysCamps = (await listTodaysCamps()) as any[];
+  } catch {
+    todaysCamps = [];
+  }
+
   const { stats } = coordData;
 
   return (
     <div className="space-y-6">
+      {/* ── Today's services ── */}
+      <TodayPanel camps={todaysCamps} />
+
       {/* ── Stats at a glance ── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniStat label="Active Students" value={stats.totalStudents} />
@@ -618,5 +632,115 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
         </div>
       </div>
     </Link>
+  );
+}
+
+// ── Today panel ───────────────────────────
+// Coordinator's "what's happening right now" — list of every camp /
+// lesson scheduled for today, with status pill + scheduled_time + a
+// click-through to the detail page. Reuses the ServiceCard's palette
+// so cards look identical to the calendar.
+
+function TodayPanel({ camps }: { camps: any[] }) {
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  if (!camps || camps.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-2">
+          <h3
+            className="text-base font-bold text-[var(--tss-navy)]"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          >
+            Today
+          </h3>
+          <span
+            className="text-[10px] uppercase tracking-wider text-gray-400"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            {todayLabel}
+          </span>
+        </div>
+        <p className="text-sm text-gray-400 italic">No services scheduled for today.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3
+          className="text-base font-bold text-[var(--tss-navy)]"
+          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        >
+          Today · {camps.length} service{camps.length !== 1 ? 's' : ''}
+        </h3>
+        <span
+          className="text-[10px] uppercase tracking-wider text-gray-400"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          {todayLabel}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {camps.map((c: any) => {
+          const cardColor = c.camp_templates?.card_color || '#F3F4F6';
+          const accent = c.camp_templates?.accent_color || '#9CA3AF';
+          const capacity = c.capacity_override ?? c.camp_templates?.capacity_max ?? 4;
+          const enrolled = (c.camp_participants ?? []).filter(
+            (p: any) => p.enrollment_status === 'active',
+          ).length;
+          const coachName =
+            c.head_coach?.display_name ?? c.coaches?.display_name ?? null;
+          return (
+            <Link
+              key={c.id}
+              href={`/camps/${c.id}`}
+              className="block rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
+              style={{
+                backgroundColor: cardColor,
+                borderLeft: `4px solid ${accent}`,
+              }}
+            >
+              <div className="p-3">
+                <p
+                  className="text-[9px] uppercase tracking-wider text-black/55 truncate"
+                  style={{ fontFamily: 'DM Mono, monospace' }}
+                >
+                  {c.camp_templates?.level_name ?? 'Custom'} ·{' '}
+                  {c.camp_templates?.service_kind === 'surf_camp'
+                    ? 'CAMP'
+                    : c.camp_templates?.service_kind === 'surf_lesson'
+                    ? 'LESSON'
+                    : 'CUSTOM'}
+                </p>
+                <p className="text-sm font-semibold text-black/85 leading-snug mt-0.5 truncate">
+                  {c.camp_name}
+                </p>
+                {c.scheduled_time && (
+                  <p
+                    className="text-[10px] text-black/65 mt-0.5"
+                    style={{ fontFamily: 'DM Mono, monospace' }}
+                  >
+                    {c.scheduled_time}
+                  </p>
+                )}
+                <p
+                  className="text-[10px] text-black/55 mt-1"
+                  style={{ fontFamily: 'DM Mono, monospace' }}
+                >
+                  {enrolled}/{capacity} enrolled
+                  {coachName ? ` · ${coachName}` : ''}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }

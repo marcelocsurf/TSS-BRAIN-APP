@@ -102,6 +102,18 @@ export async function cancelCampInstance(campInstanceId: string) {
   revalidatePath('/camps');
 }
 
+// ═══════════════════════════════════════
+// LIST TODAY'S SERVICES (for the coordinator dashboard "Today" panel)
+// Returns every active camp_instance overlapping today's date,
+// academy-scoped, with the same join shape as listCampsInRange so
+// the ServiceCard can render them.
+// ═══════════════════════════════════════
+
+export async function listTodaysCamps() {
+  const today = new Date().toISOString().slice(0, 10);
+  return listCampsInRange(today, today);
+}
+
 // Lists templates visible to the current coach.
 //   • Platform admin → every active template
 //   • Coordinator / coach → templates academy_id = me.academy_id (custom

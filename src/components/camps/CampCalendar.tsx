@@ -12,7 +12,6 @@
 // the back button + shareable links work.
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { ServiceCard, paletteFor } from './ServiceCard';
@@ -459,11 +458,12 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
   const monthStart = startOfMonth(anchor);
   const monthGridStart = startOfWeek(monthStart);
   const currentMonth = monthStart.slice(0, 7); // YYYY-MM
-  const weeks = useMemo(() => {
-    return Array.from({ length: 6 }, (_, w) =>
-      Array.from({ length: 7 }, (_, d) => addDays(monthGridStart, w * 7 + d)),
-    );
-  }, [monthGridStart]);
+  // Plain computation — must NOT use useMemo here because we sit after
+  // the Week + Year early returns and React's rules of hooks forbid a
+  // hook to be called conditionally on render path.
+  const weeks = Array.from({ length: 6 }, (_, w) =>
+    Array.from({ length: 7 }, (_, d) => addDays(monthGridStart, w * 7 + d)),
+  );
 
   const monthMultiDay = camps.filter((c) => c.start_date !== c.end_date);
   const monthSingleDay = camps.filter((c) => c.start_date === c.end_date);
