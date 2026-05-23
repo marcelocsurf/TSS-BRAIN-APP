@@ -331,13 +331,7 @@ export function PortalTabs({
             className="h-12 mx-auto mb-2 object-contain"
           />
         )}
-        <h1
-          className="text-lg font-bold text-white/95 leading-tight"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {brand.name}
-        </h1>
-        <p style={{ color: brand.accent }} className="tss-tagline text-sm mt-1">
+        <p style={{ color: brand.accent }} className="tss-tagline text-sm">
           {brand.tagline}
         </p>
       </div>
