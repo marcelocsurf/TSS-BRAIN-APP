@@ -32,8 +32,11 @@ export function CampScheduleManager({
   const router = useRouter();
   const initial = parse(currentScheduledTime);
   const [open, setOpen] = useState(false);
-  const [start, setStart] = useState(initial.start);
-  const [end, setEnd] = useState(initial.end);
+  // Pre-fill with sensible defaults so Safari / iOS don't strand the
+  // user with a button locked because the time-input only ever shows
+  // a placeholder unless explicitly confirmed.
+  const [start, setStart] = useState(initial.start || '09:00');
+  const [end, setEnd] = useState(initial.end || '10:30');
   const [pending, startTransition] = useTransition();
 
   const save = () => {
@@ -113,7 +116,7 @@ export function CampScheduleManager({
             <button
               type="button"
               onClick={save}
-              disabled={pending || !start}
+              disabled={pending || (!start && !end)}
               className="flex-1 px-3 py-1.5 bg-[var(--tss-navy)] text-white text-xs rounded-md disabled:opacity-50"
             >
               {pending ? 'Saving…' : 'Save'}
