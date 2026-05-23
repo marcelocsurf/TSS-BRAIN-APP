@@ -1,6 +1,9 @@
 'use client';
 
-import { Check } from 'lucide-react';
+// Solid "You are here" card — no horizontal dot timeline. Reads as a
+// textbook progress indicator: big current-level title + linear
+// progress bar (N of 6) + the hour rule for context.
+
 import { BELT_HIERARCHY, BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
 const BELT_ORDER: BeltLevel[] = BELT_HIERARCHY;
@@ -14,92 +17,82 @@ const BELT_HOURS: Record<BeltLevel, string> = {
   black_belt: '10,000 h',
 };
 
-const SWATCH_TEXT: Record<BeltLevel, string> = {
-  white_belt: '#0A1628',
-  yellow_belt: '#0A1628',
-  blue_belt: '#ffffff',
-  purple_belt: '#ffffff',
-  brown_belt: '#ffffff',
-  black_belt: '#ffffff',
-};
-
 export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
   const currentIdx = BELT_ORDER.indexOf(currentBelt);
   const current = BELT_DISPLAY[currentBelt];
+  const next = BELT_ORDER[currentIdx + 1];
+  const nextDisplay = next ? BELT_DISPLAY[next] : null;
+  const stepNumber = currentIdx + 1;
+  const totalSteps = BELT_ORDER.length;
+  const percent = (stepNumber / totalSteps) * 100;
 
   return (
     <div className="bg-[var(--tss-navy)] rounded-2xl p-5 shadow-md">
-      <h3
-        className="text-lg font-bold text-white mb-5 leading-tight"
-        style={{ fontFamily: 'var(--font-heading)' }}
+      <p
+        className="text-[10px] uppercase tracking-[0.2em] text-[var(--tss-cyan)] font-bold"
+        style={{ fontFamily: 'DM Mono, monospace' }}
       >
-        White Belt → Black Belt
+        You are here
+      </p>
+      <h3
+        className="text-2xl text-white leading-tight mt-1"
+        style={{ fontFamily: 'var(--font-heading)', fontWeight: 600 }}
+      >
+        {current.levelName}{' '}
+        <span className="text-white/55 font-normal text-lg">· {current.en}</span>
       </h3>
 
-      {/* Horizontal track */}
-      <div className="relative px-1">
-        {/* Track line */}
-        <div className="absolute left-3 right-3 top-[14px] h-[2px] bg-white/15" />
-        {/* Progress fill */}
-        <div
-          className="absolute left-3 top-[14px] h-[2px] bg-[var(--tss-cyan)] transition-all"
-          style={{
-            width: `calc(${(currentIdx / (BELT_ORDER.length - 1)) * 100}% - ${(currentIdx / (BELT_ORDER.length - 1)) * 24}px)`,
-          }}
-        />
-
-        <div className="relative flex justify-between">
-          {BELT_ORDER.map((belt: BeltLevel, idx: number) => {
-            const d = BELT_DISPLAY[belt];
-            const isCurrent = belt === currentBelt;
-            const isPast = idx < currentIdx;
-
-            return (
-              <div key={belt} className="flex flex-col items-center" style={{ width: 32 }}>
-                <div
-                  className={`relative z-10 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                    isCurrent
-                      ? 'w-7 h-7 ring-2 ring-[var(--tss-cyan)] ring-offset-2 ring-offset-[var(--tss-navy)]'
-                      : 'w-6 h-6'
-                  } ${!isPast && !isCurrent ? 'opacity-50' : ''}`}
-                  style={{
-                    backgroundColor: d.color,
-                    border: belt === 'white_belt' ? '1.5px solid rgba(255,255,255,0.35)' : 'none',
-                  }}
-                >
-                  {isPast && (
-                    <Check
-                      size={12}
-                      strokeWidth={2.5}
-                      style={{ color: SWATCH_TEXT[belt] }}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {/* Linear progress — solid, no dots */}
+      <div className="mt-5">
+        <div className="flex items-center justify-between mb-1.5">
+          <span
+            className="text-[9px] uppercase tracking-wider text-white/55"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            Level {stepNumber} of {totalSteps}
+          </span>
+          <span
+            className="text-[9px] uppercase tracking-wider text-white/55"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            {BELT_HOURS[currentBelt]} this level
+          </span>
+        </div>
+        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full"
+            style={{ width: `${percent}%`, backgroundColor: current.color }}
+          />
         </div>
       </div>
 
-      {/* Current-belt detail panel */}
-      <div className="mt-4 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 flex items-center justify-between">
-        <div className="min-w-0">
-          <p className="text-[9px] uppercase tracking-wider text-[var(--tss-cyan)] font-bold">
-            You are here
-          </p>
-          <p className="text-sm font-bold text-white leading-tight mt-0.5">
-            {current.levelName} <span className="text-white/50 font-normal">· {current.en}</span>
-          </p>
+      {nextDisplay && (
+        <div className="mt-4 border-t border-white/10 pt-3 flex items-center justify-between">
+          <div className="min-w-0">
+            <p
+              className="text-[9px] uppercase tracking-wider text-white/45"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              Next
+            </p>
+            <p
+              className="text-sm text-white mt-0.5"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              {nextDisplay.levelName} · {nextDisplay.en}
+            </p>
+          </div>
+          <span
+            className="inline-block w-3 h-3 rounded-full ring-2 ring-white/25 shrink-0"
+            style={{ backgroundColor: nextDisplay.color }}
+          />
         </div>
-        <p
-          className="text-xs text-white/60 shrink-0 ml-3"
-          style={{ fontFamily: 'DM Mono, monospace' }}
-        >
-          {BELT_HOURS[currentBelt]}
-        </p>
-      </div>
+      )}
 
-      <p className="text-[9px] text-white/35 mt-3 leading-relaxed text-center italic">
+      <p
+        className="text-[9px] text-white/35 mt-4 italic"
+        style={{ fontFamily: 'var(--font-tagline)' }}
+      >
         10,000-hour rule · average water time per level.
       </p>
     </div>

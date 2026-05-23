@@ -43,11 +43,12 @@
   --belt-brown: #7D4E27;
   --belt-black: #111111;
 
-  /* Typography — Brand Manual v4.2 §4 */
-  --font-heading: 'Playfair Display', Georgia, serif;
+  /* Typography — academic, methodical. Lora replaces Playfair Display
+     so headings read sober/textbook instead of editorial-decorative. */
+  --font-heading: 'Lora', Georgia, serif;
   --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'DM Mono', 'SF Mono', 'Fira Code', monospace;
-  --font-tagline: 'Lora', Georgia, serif; /* EXCLUSIVO para el tagline */
+  --font-tagline: 'Lora', Georgia, serif;
 }
 
 /* Tagline — manual §4: siempre Lora Italic, sentence case.
@@ -123,10 +124,10 @@ input:focus, select:focus, textarea:focus {
    of "generic dashboard". ── */
 .tss-stat-number {
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 2rem;
+  font-weight: 600;
+  font-size: 1.875rem;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   color: var(--tss-navy);
 }
 .tss-stat-suffix {

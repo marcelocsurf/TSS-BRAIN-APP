@@ -543,9 +543,8 @@ function HomeTab({
           Mental Cue · Belt {beltLevel.replace('_belt', '').toUpperCase()}
         </p>
         <div
-          className="rounded-2xl px-5 py-5"
+          className="rounded-2xl px-5 py-5 bg-white border border-gray-100"
           style={{
-            background: `linear-gradient(135deg, ${BRAND.colors.navy}06, ${BRAND.colors.cyan}14)`,
             borderLeft: `4px solid ${BRAND.colors.cyan}`,
           }}
         >

@@ -26,8 +26,8 @@ export function FreeSurfLogger({ token }: { token: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full py-3 rounded-2xl text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2"
-        style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}, ${BRAND.colors.cyan})` }}
+        className="w-full py-3 rounded-2xl text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+        style={{ background: BRAND.colors.navy }}
       >
         <Waves size={16} strokeWidth={1.75} />
         Registrar Free Surf
