@@ -26,7 +26,7 @@ export default async function CoachProfilePage({ params }: Props) {
         </Link>
         <h1
           className="text-2xl font-bold leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Your coach profile
         </h1>

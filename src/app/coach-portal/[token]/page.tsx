@@ -44,7 +44,7 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
     impersonation?.kind === 'coach' && impersonation.portal_token === token;
 
   return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
+    <div className="min-h-screen tss-portal-bg pb-20">
       {isImpersonatingThisCoach && impersonation && (
         <ImpersonateBanner kind="coach" name={impersonation.name} />
       )}
@@ -54,20 +54,17 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
           <img
             src={brand.logoUrl}
             alt={brand.name}
-            className="h-12 mx-auto mb-3 object-contain"
+            className="h-12 mx-auto mb-2 object-contain"
           />
         )}
-        <h1
-          className="text-2xl font-bold text-white leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
-        >
-          {brand.name}
-        </h1>
+        <p style={{ color: brand.accent }} className="tss-tagline text-sm">
+          {brand.tagline}
+        </p>
         <p
           style={{ color: brand.accent, fontFamily: 'DM Mono, monospace' }}
-          className="text-[10px] mt-1.5 tracking-[0.2em] uppercase"
+          className="text-[9px] mt-1 tracking-[0.25em] uppercase opacity-70"
         >
-          Coach Portal — {brand.tagline}
+          Coach Portal
         </p>
       </div>
 

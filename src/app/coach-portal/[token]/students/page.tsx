@@ -25,7 +25,7 @@ export default async function CoachStudentsListPage({ params }: Props) {
         </Link>
         <h1
           className="text-2xl font-bold flex items-center gap-2 leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           <Users size={20} strokeWidth={1.75} />
           Your students

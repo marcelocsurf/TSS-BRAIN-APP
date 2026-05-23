@@ -55,7 +55,7 @@ export function TemplateAssignmentPanel({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Building2 size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-          <h3 className="text-sm font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h3 className="text-sm font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
             Assigned academies
           </h3>
         </div>

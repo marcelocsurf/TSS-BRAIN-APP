@@ -64,7 +64,7 @@ export default function CampResultsPage() {
         </div>
         <h2
           className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           All Students Evaluated
         </h2>

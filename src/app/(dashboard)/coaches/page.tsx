@@ -52,7 +52,7 @@ export default async function CoachesPage() {
           </p>
           <h1
             className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
-            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             Team Management
           </h1>

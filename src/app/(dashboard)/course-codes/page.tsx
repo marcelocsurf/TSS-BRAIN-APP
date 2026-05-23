@@ -26,7 +26,7 @@ export default async function CourseCodesPage() {
       <div className="mb-6">
         <h1
           className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Course Access Codes
         </h1>

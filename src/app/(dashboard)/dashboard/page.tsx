@@ -20,6 +20,7 @@ import {
   CalendarDays,
   Clock,
   Waves,
+  BarChart3,
 } from 'lucide-react';
 
 export default async function DashboardHome() {
@@ -61,7 +62,7 @@ export default async function DashboardHome() {
     <div>
       <h2
         className="text-2xl font-bold text-[var(--tss-navy)] mb-1 leading-tight"
-        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        style={{ fontFamily: 'var(--font-heading)' }}
       >
         Dashboard
       </h2>
@@ -75,12 +76,35 @@ export default async function DashboardHome() {
         {role === 'assistant' && 'Safety Reference'}
       </p>
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        <StatCard label="Active Students" value={studentCount ?? 0} accent="cyan" />
-        <StatCard label="Sessions Closed" value={sessionCount ?? 0} accent="gold" />
-        <StatCard label="Active Camps" value={activeCamps ?? 0} accent="navy" />
-        <StatCard label="Pending Surveys" value={pendingSurveys ?? 0} accent="warm" />
+      {/* Quick stats — telemetry strip with consistent Lora numerals */}
+      <p className="tss-section-label">
+        <BarChart3 size={11} strokeWidth={1.75} />
+        Overview
+      </p>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4">
+          {[
+            { label: 'Active Students', value: studentCount ?? 0 },
+            { label: 'Sessions Closed', value: sessionCount ?? 0 },
+            { label: 'Active Camps', value: activeCamps ?? 0 },
+            { label: 'Pending Surveys', value: pendingSurveys ?? 0 },
+          ].map((s, i) => (
+            <div
+              key={s.label}
+              className={`px-4 py-5 text-center ${
+                i > 0 ? 'border-l border-gray-100' : ''
+              } ${i >= 2 ? 'border-t md:border-t-0 border-gray-100' : ''}`}
+            >
+              <p className="tss-stat-number">{s.value}</p>
+              <p
+                className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Pending Drafts (coaches/coordinators/admins) */}
@@ -565,19 +589,14 @@ async function AssistantDashboard() {
 // SHARED COMPONENTS
 // ═══════════════════════════════════════
 
-function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
-  const borderColors: Record<string, string> = {
-    cyan: 'border-t-[var(--tss-cyan,#5AC3E7)]',
-    gold: 'border-t-[var(--tss-cyan,#5AC3E7)]',
-    navy: 'border-t-[var(--tss-navy)]',
-    warm: 'border-t-[var(--tss-warm)]',
-  };
-
+function StatCard({ label, value }: { label: string; value: number; accent?: string }) {
+  // Accent prop kept for backwards-compat; ignored. All cards render
+  // the same editorial-telemetry pattern now (Lora numeral + mono label).
   return (
-    <div className={`bg-white rounded-2xl p-4 border border-gray-100 border-t-[3px] ${borderColors[accent]} shadow-sm`}>
-      <p className="text-2xl font-bold text-[var(--tss-navy)]">{value}</p>
+    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+      <p className="tss-stat-number">{value}</p>
       <p
-        className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
+        className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-2"
         style={{ fontFamily: 'DM Mono, monospace' }}
       >
         {label}
@@ -598,15 +617,18 @@ function MiniStat({
   const isAmber = accent === 'amber';
   return (
     <div
-      className={`rounded-2xl p-3 border shadow-sm ${
+      className={`rounded-2xl p-4 border shadow-sm text-center ${
         isAmber ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'
       }`}
     >
-      <p className={`text-lg font-bold ${isAmber ? 'text-amber-700' : 'text-[var(--tss-navy)]'}`}>
+      <p
+        className={`tss-stat-number ${isAmber ? '!text-amber-700' : ''}`}
+        style={isAmber ? { color: '#b45309' } : undefined}
+      >
         {value}
       </p>
       <p
-        className="text-[10px] uppercase tracking-wider text-gray-400"
+        className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-2"
         style={{ fontFamily: 'DM Mono, monospace' }}
       >
         {label}
@@ -654,7 +676,7 @@ function TodayPanel({ camps }: { camps: any[] }) {
         <div className="flex items-center justify-between mb-2">
           <h3
             className="text-base font-bold text-[var(--tss-navy)]"
-            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             Today
           </h3>
@@ -675,7 +697,7 @@ function TodayPanel({ camps }: { camps: any[] }) {
       <div className="flex items-center justify-between mb-3">
         <h3
           className="text-base font-bold text-[var(--tss-navy)]"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Today · {camps.length} service{camps.length !== 1 ? 's' : ''}
         </h3>

@@ -163,7 +163,7 @@ export default function CampEvaluatePage() {
         </button>
         <h2
           className="text-xl font-bold text-[var(--tss-navy)] mt-2 leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Final Evaluations
         </h2>

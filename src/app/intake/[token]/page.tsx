@@ -22,7 +22,7 @@ export default async function IntakePage({ params }: Props) {
       <div style={{ background: BRAND.colors.navy }} className="px-4 py-6 text-center">
         <h1
           className="text-2xl font-bold text-white leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           The Surf Sequence
         </h1>

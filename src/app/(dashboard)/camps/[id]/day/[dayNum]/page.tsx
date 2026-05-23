@@ -86,7 +86,7 @@ export default async function CampDayPage({ params }: Props) {
         <Link href={`/camps/${id}`} className="text-xs text-gray-400 hover:text-gray-600">← Back to camp</Link>
         <h2
           className="text-2xl font-bold text-[var(--tss-navy)] mt-2 leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Day {dayNum}
         </h2>

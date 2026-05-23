@@ -152,7 +152,7 @@ export default function NewCampPage() {
     <div className="max-w-lg mx-auto">
       <h2
         className="text-2xl font-bold text-[var(--tss-navy)] mb-6 leading-tight"
-        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        style={{ fontFamily: 'var(--font-heading)' }}
       >
         Open a New Service
       </h2>

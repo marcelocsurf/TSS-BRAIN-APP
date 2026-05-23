@@ -665,7 +665,7 @@ function CalendarHeader({
         </button>
         <span
           className="ml-2 text-sm font-semibold text-[var(--tss-navy)]"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           {label}
         </span>

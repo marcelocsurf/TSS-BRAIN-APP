@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ArrowRight,
   Lock,
+  CalendarDays,
 } from 'lucide-react';
 
 type TabIconComponent = typeof Home;
@@ -172,29 +173,46 @@ function HomeTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Stat label="Services run" value={stats.totalServicesAsHead.toString()} />
-        <Stat label="Upcoming" value={stats.upcomingServicesCount.toString()} />
-        <Link
-          href={`/coach-portal/${coach.portal_token}/students`}
-          className="bg-white rounded-2xl border border-gray-100 p-3 hover:border-[var(--tss-cyan)] hover:shadow-sm transition-all flex flex-col justify-between"
-        >
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-            Students worked with
-          </p>
-          <p className="text-xl font-bold text-[var(--tss-navy)] mt-1">{stats.studentsWorkedWith}</p>
-          <p className="text-[10px] text-[var(--tss-cyan)] mt-1">View all →</p>
-        </Link>
-        <Stat
-          label="Avg rating"
-          value={stats.avgRating !== null ? `${stats.avgRating}/5` : '—'}
-          sublabel={stats.ratingsCount > 0 ? `${stats.ratingsCount} survey${stats.ratingsCount > 1 ? 's' : ''}` : 'no surveys yet'}
-        />
+      {/* ── Coaching telemetry — single strip, no boxed tiles ── */}
+      <div>
+        <p className="tss-section-label">
+          <BarChart2 size={11} strokeWidth={1.75} />
+          Coaching Stats
+        </p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-2 sm:grid-cols-4">
+            {[
+              { label: 'Services run', value: stats.totalServicesAsHead.toString() },
+              { label: 'Upcoming', value: stats.upcomingServicesCount.toString() },
+              { label: 'Students', value: stats.studentsWorkedWith.toString() },
+              {
+                label: 'Avg rating',
+                value: stats.avgRating !== null ? `${stats.avgRating}/5` : '—',
+              },
+            ].map((s, i) => (
+              <div
+                key={s.label}
+                className={`px-4 py-5 text-center ${
+                  i > 0 ? 'border-l border-gray-100' : ''
+                } ${i >= 2 ? 'border-t sm:border-t-0 border-gray-100' : ''}`}
+              >
+                <p className="tss-stat-number">{s.value}</p>
+                <p
+                  className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
+                  style={{ fontFamily: 'DM Mono, monospace' }}
+                >
+                  {s.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {upcoming.length > 0 && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1.5">
+          <p className="tss-section-label">
+            <CalendarDays size={11} strokeWidth={1.75} />
             Your next classes
           </p>
           <div className="space-y-1.5">
@@ -202,11 +220,19 @@ function HomeTab({
               const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
               return (
                 <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
-                  <p className="text-[10px] font-mono text-gray-400">
+                  <p className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">
                     {tpl?.service_kind?.replace(/_/g, ' ') || ''} · {s.status}
                   </p>
-                  <p className="text-sm font-medium text-gray-800 mt-0.5">{s.camp_name}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
+                  <p
+                    className="text-base text-[var(--tss-navy)] mt-0.5"
+                    style={{ fontFamily: 'var(--font-heading)', fontWeight: 600 }}
+                  >
+                    {s.camp_name}
+                  </p>
+                  <p
+                    className="text-[11px] text-gray-500 mt-0.5"
+                    style={{ fontFamily: 'DM Mono, monospace' }}
+                  >
                     {new Date(s.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </p>
                 </div>
@@ -314,13 +340,13 @@ function CoursesTab({
 
         {!loading && detail && (
           <>
-            <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[#0a1628] text-white rounded-2xl px-5 py-6 shadow-sm">
+            <div className="bg-[var(--tss-navy)] text-white rounded-2xl px-5 py-6 shadow-md">
               <p className="text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">
                 {detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
               </p>
               <h2
                 className="text-2xl font-bold leading-tight"
-                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 {detail.lesson.title}
               </h2>
@@ -568,7 +594,7 @@ function CoursesTab({
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
           Coach Courses
         </p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>Your certification path</h2>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>Your certification path</h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
           {coach.max_belt_permission?.replace(/_/g, ' ')}
           {coach.certification_level ? ` · ${coach.certification_level}` : ''}.
@@ -927,7 +953,7 @@ function ToolsTab({ stps, coach }: { stps: any[]; coach: any }) {
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Tools</p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
           Browse by sequence
         </h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
@@ -1180,7 +1206,7 @@ function PlanTab({
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
           Plan the Session
         </p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
           Your assigned classes
         </h2>
         <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
@@ -1269,7 +1295,7 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Services</p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>All services you&apos;ve led</h2>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>All services you&apos;ve led</h2>
       </div>
 
       {upcoming.length > 0 && (
@@ -1332,7 +1358,7 @@ function RatingTab({ stats }: { stats: any }) {
     <div className="space-y-4 pb-4">
       <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Rating</p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: "Playfair Display, Georgia, serif" }}>From your students</h2>
+        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>From your students</h2>
       </div>
 
       {stats.ratingsCount > 0 ? (
@@ -1367,9 +1393,14 @@ function Stat({
   sublabel?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center">
-      <p className="text-lg font-bold text-[var(--tss-navy)]">{value}</p>
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">{label}</p>
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center shadow-sm">
+      <p className="tss-stat-number">{value}</p>
+      <p
+        className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        {label}
+      </p>
       {sublabel && <p className="text-[9px] text-gray-400 mt-0.5">{sublabel}</p>}
     </div>
   );

@@ -41,7 +41,7 @@ export function PricingClient({ prices, invoices, year, month }: Props) {
       <header>
         <h1
           className="text-2xl font-bold text-[var(--tss-navy)]"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Pricing & Invoicing
         </h1>

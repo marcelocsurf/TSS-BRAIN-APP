@@ -55,7 +55,7 @@ export default async function AcademyBillingPage({ params }: Props) {
         </Link>
         <h1
           className="text-2xl font-bold text-[var(--tss-navy)]"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Billing — {academy.name}
         </h1>

@@ -123,7 +123,7 @@ export default async function CoachProfilePage({ params }: Props) {
               </div>
               <h2
                 className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
-                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 {coach.display_name}
               </h2>

@@ -218,7 +218,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
         <h1
           key={idx}
           className="text-[22px] font-bold mt-8 mb-3 text-[var(--tss-navy)] leading-tight tracking-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           {renderInline(block.content)}
         </h1>
@@ -228,7 +228,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
         <h2
           key={idx}
           className="text-[18px] font-bold mt-7 mb-2.5 text-[var(--tss-navy)] leading-snug border-b border-gray-100 pb-1.5"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           {renderInline(block.content)}
         </h2>

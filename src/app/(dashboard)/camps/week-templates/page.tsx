@@ -21,7 +21,7 @@ export default async function WeekTemplatesPage() {
         <div>
           <h2
             className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
-            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             Week Templates
           </h2>

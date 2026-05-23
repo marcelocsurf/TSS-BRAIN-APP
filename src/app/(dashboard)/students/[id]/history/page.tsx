@@ -68,7 +68,7 @@ export default async function StudentHistoryPage({ params }: Props) {
         <div>
           <h2
             className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
-            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             {student.first_name} {student.last_name}
           </h2>

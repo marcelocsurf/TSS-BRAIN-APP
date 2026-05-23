@@ -62,7 +62,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         />
         <h2
           className="text-xl font-bold text-[var(--tss-navy)] mb-2 leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           Access expired
         </h2>
@@ -343,7 +343,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             <div className="flex items-start justify-between gap-2">
               <h2
                 className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
-                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 {fullName}
               </h2>

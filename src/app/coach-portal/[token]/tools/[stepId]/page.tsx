@@ -33,7 +33,7 @@ export default async function CoachStpToolsPage({ params }: Props) {
         </p>
         <h1
           className="text-2xl font-bold leading-tight"
-          style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
           {detail.step.title}
         </h1>

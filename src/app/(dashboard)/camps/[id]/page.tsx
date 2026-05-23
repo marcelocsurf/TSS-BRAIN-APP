@@ -61,7 +61,7 @@ export default async function CampDetailPage({ params }: Props) {
           <div className="min-w-0">
             <h2
               className="text-xl font-bold text-[var(--tss-navy)] leading-tight"
-              style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              style={{ fontFamily: 'var(--font-heading)' }}
             >
               {instance.camp_name}
             </h2>

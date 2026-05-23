@@ -67,7 +67,7 @@ export default function AddStudentPage() {
     <div className="max-w-lg mx-auto">
       <h2
         className="text-2xl font-bold text-[var(--tss-navy)] mb-1 leading-tight"
-        style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+        style={{ fontFamily: 'var(--font-heading)' }}
       >
         Add Student
       </h2>

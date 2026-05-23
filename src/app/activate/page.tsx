@@ -115,7 +115,7 @@ export default function ActivatePage() {
           <div>
             <h1
               className="text-2xl font-bold mb-1 leading-tight"
-              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'Playfair Display, Georgia, serif' }}
+              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'var(--font-heading)' }}
             >
               Activate Your Access
             </h1>
@@ -175,7 +175,7 @@ export default function ActivatePage() {
             </div>
             <h1
               className="text-2xl font-bold mb-1 leading-tight"
-              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'Playfair Display, Georgia, serif' }}
+              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'var(--font-heading)' }}
             >
               Create Your Profile
             </h1>
@@ -261,7 +261,7 @@ export default function ActivatePage() {
           <div>
             <h1
               className="text-2xl font-bold mb-2 leading-tight"
-              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'Playfair Display, Georgia, serif' }}
+              style={{ color: 'var(--tss-navy, #0d2240)', fontFamily: 'var(--font-heading)' }}
             >
               Your account is ready!
             </h1>

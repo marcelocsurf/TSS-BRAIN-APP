@@ -48,7 +48,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <div className="flex-1 min-w-0">
             <h1
               className="text-2xl font-bold truncate leading-tight"
-              style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              style={{ fontFamily: 'var(--font-heading)' }}
             >
               {fullName}
             </h1>

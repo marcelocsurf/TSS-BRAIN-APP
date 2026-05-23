@@ -157,7 +157,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
         <div className="flex items-center justify-between">
           <h3
             className="text-sm font-bold text-[var(--tss-navy)]"
-            style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             Slots ({slots.length})
           </h3>
