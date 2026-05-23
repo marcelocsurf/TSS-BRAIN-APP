@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CampCalendar } from '@/components/camps/CampCalendar';
 import { CampFilters } from '@/components/camps/CampFilters';
+import { ApplyWeekTemplateButton } from '@/components/camps/ApplyWeekTemplateButton';
+import { listWeekTemplates } from '@/lib/actions/week-templates';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -76,10 +78,16 @@ export default async function CampsPage({
     rangeEnd = addDays(startOfWeek(monthStart), 49);
   }
 
-  const [campsRaw, templates] = await Promise.all([
+  const [campsRaw, templates, weekTemplates] = await Promise.all([
     listCampsInRange(rangeStart, rangeEnd),
     listCampTemplates(),
+    listWeekTemplates(),
   ]);
+
+  // Monday of the currently-anchored week — used by the Apply launcher.
+  const mondayDate = startOfWeek(anchor);
+  const weekEndDate = addDays(mondayDate, 6);
+  const weekLabel = `${mondayDate} → ${weekEndDate}`;
 
   // Apply UI filters server-side so the calendar only renders matches.
   const camps = (campsRaw as any[]).filter((c) => {
@@ -112,7 +120,18 @@ export default async function CampsPage({
             {camps.length} service{camps.length !== 1 ? 's' : ''} in view
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-center">
+          <ApplyWeekTemplateButton
+            weekTemplates={weekTemplates}
+            mondayDate={mondayDate}
+            weekLabel={weekLabel}
+          />
+          <Link
+            href="/camps/week-templates"
+            className="px-3 py-2.5 border border-gray-200 text-sm rounded-xl hover:bg-gray-50 text-gray-700 transition-all"
+          >
+            Week templates
+          </Link>
           <Link
             href="/camps/templates"
             className="px-3 py-2.5 border border-gray-200 text-sm rounded-xl hover:bg-gray-50 text-gray-700 transition-all"
