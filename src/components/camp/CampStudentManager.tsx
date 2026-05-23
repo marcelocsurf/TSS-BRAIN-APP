@@ -1,24 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { listStudents, type StudentRow } from '@/lib/actions/students';
 import { addStudentToCamp, removeStudentFromCamp } from '@/lib/actions/camps';
+import { createLead } from '@/lib/actions/leads';
+import { sendLeadInvitation } from '@/lib/actions/lead-invitation';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
+import { UserPlus, UserSearch, Copy, Mail, Check } from 'lucide-react';
 
 interface Props {
   campInstanceId: string;
   currentParticipantIds: string[];
 }
 
+type Tab = 'existing' | 'new';
+
 export function CampStudentManager({ campInstanceId, currentParticipantIds }: Props) {
+  const router = useRouter();
   const [showManager, setShowManager] = useState(false);
+  const [tab, setTab] = useState<Tab>('existing');
   const [students, setStudents] = useState<StudentRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
+  // ── Existing tab data ──
   useEffect(() => {
     if (showManager && students.length === 0) {
-      listStudents({ status: 'active', limit: 100 }).then(res => setStudents(res.students));
+      listStudents({ status: 'active', limit: 100 }).then((res) => setStudents(res.students));
     }
   }, [showManager, students.length]);
 
@@ -26,6 +34,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
     setActionId(studentId);
     try {
       await addStudentToCamp(campInstanceId, studentId);
+      router.refresh();
     } catch (err: any) {
       alert(err.message);
     }
@@ -37,13 +46,82 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
     setActionId(studentId);
     try {
       await removeStudentFromCamp(campInstanceId, studentId);
+      router.refresh();
     } catch (err: any) {
       alert(err.message);
     }
     setActionId(null);
   };
 
-  const availableStudents = students.filter(s => !currentParticipantIds.includes(s.id));
+  const availableStudents = students.filter((s) => !currentParticipantIds.includes(s.id));
+
+  // ── New-lead form state ──
+  const [newLead, setNewLead] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+  });
+  const [pending, startTransition] = useTransition();
+  const [justCreated, setJustCreated] = useState<{
+    studentId: string;
+    name: string;
+    url: string;
+    emailed: boolean;
+    reason?: string;
+  } | null>(null);
+  const [emailSending, setEmailSending] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const submitNewLead = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLead.first_name.trim() || !newLead.last_name.trim()) {
+      alert('First and last name are required');
+      return;
+    }
+    startTransition(async () => {
+      try {
+        const lead = await createLead({
+          first_name: newLead.first_name,
+          last_name: newLead.last_name,
+          email: newLead.email || null,
+          phone: newLead.phone || null,
+        });
+        await addStudentToCamp(campInstanceId, lead.studentId);
+        const result = await sendLeadInvitation(lead.studentId);
+        setJustCreated({
+          studentId: lead.studentId,
+          name: `${newLead.first_name} ${newLead.last_name}`,
+          url: result.url,
+          emailed: result.emailed,
+          reason: result.reason,
+        });
+        setNewLead({ first_name: '', last_name: '', email: '', phone: '' });
+        router.refresh();
+      } catch (err: any) {
+        alert(err.message);
+      }
+    });
+  };
+
+  const copyLink = async () => {
+    if (!justCreated) return;
+    await navigator.clipboard.writeText(justCreated.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const resendEmail = async () => {
+    if (!justCreated) return;
+    setEmailSending(true);
+    try {
+      const result = await sendLeadInvitation(justCreated.studentId);
+      setJustCreated({ ...justCreated, emailed: result.emailed, reason: result.reason });
+    } catch (err: any) {
+      alert(err.message);
+    }
+    setEmailSending(false);
+  };
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
@@ -56,54 +134,196 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
       </button>
 
       {showManager && (
-        <div className="mt-3 space-y-3">
-          {/* Remove existing */}
-          {currentParticipantIds.length > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Remove from camp</p>
-              <div className="flex flex-wrap gap-1">
-                {currentParticipantIds.map(pid => {
-                  const s = students.find(st => st.id === pid);
-                  return (
-                    <button
-                      key={pid}
-                      type="button"
-                      onClick={() => handleRemove(pid)}
-                      disabled={actionId === pid}
-                      className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full hover:bg-red-100 disabled:opacity-50"
-                    >
-                      {s ? `${s.first_name} ${s.last_name}` : pid.slice(0, 8)} &times;
-                    </button>
-                  );
-                })}
-              </div>
+        <div className="mt-3">
+          {/* Tabs */}
+          <div className="flex items-center gap-1 mb-3 border-b border-gray-100">
+            <button
+              type="button"
+              onClick={() => setTab('existing')}
+              className={`px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5 border-b-2 transition-colors ${
+                tab === 'existing'
+                  ? 'border-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-navy)]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <UserSearch size={13} strokeWidth={1.75} />
+              Existing student
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('new')}
+              className={`px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5 border-b-2 transition-colors ${
+                tab === 'new'
+                  ? 'border-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-navy)]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <UserPlus size={13} strokeWidth={1.75} />
+              + Create new (Lead)
+            </button>
+          </div>
+
+          {/* ── Existing tab ─────────────────────────── */}
+          {tab === 'existing' && (
+            <div className="space-y-3">
+              {currentParticipantIds.length > 0 && (
+                <div>
+                  <p
+                    className="text-[10px] font-semibold text-gray-400 uppercase mb-1 tracking-wider"
+                    style={{ fontFamily: 'DM Mono, monospace' }}
+                  >
+                    Remove from camp
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {currentParticipantIds.map((pid) => {
+                      const s = students.find((st) => st.id === pid);
+                      return (
+                        <button
+                          key={pid}
+                          type="button"
+                          onClick={() => handleRemove(pid)}
+                          disabled={actionId === pid}
+                          className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full hover:bg-red-100 disabled:opacity-50"
+                        >
+                          {s ? `${s.first_name} ${s.last_name}` : pid.slice(0, 8)} &times;
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {availableStudents.length > 0 ? (
+                <div>
+                  <p
+                    className="text-[10px] font-semibold text-gray-400 uppercase mb-1 tracking-wider"
+                    style={{ fontFamily: 'DM Mono, monospace' }}
+                  >
+                    Add to camp
+                  </p>
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {availableStudents.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleAdd(s.id)}
+                        disabled={actionId === s.id}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-green-50 text-left transition-colors disabled:opacity-50"
+                      >
+                        <div
+                          className="w-5 h-5 rounded-full text-white text-[8px] font-bold flex items-center justify-center"
+                          style={{ backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999' }}
+                        >
+                          {s.first_name[0]}
+                          {s.last_name[0]}
+                        </div>
+                        <span className="text-xs text-gray-700 flex-1">
+                          {s.first_name} {s.last_name}
+                        </span>
+                        <span className="text-[10px] text-green-600">+ Add</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic">No other active students available.</p>
+              )}
             </div>
           )}
 
-          {/* Add new */}
-          {availableStudents.length > 0 && (
+          {/* ── New-lead tab ─────────────────────────── */}
+          {tab === 'new' && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Add to camp</p>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {availableStudents.map(s => (
+              {!justCreated ? (
+                <form onSubmit={submitNewLead} className="space-y-2">
+                  <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
+                    Quick capture for a new client. We create a Lead, enrol them in this service,
+                    and send them the safety form to complete on their own.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      required
+                      placeholder="First name"
+                      value={newLead.first_name}
+                      onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Last name"
+                      value={newLead.last_name}
+                      onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="Email (optional but recommended)"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone (optional)"
+                    value={newLead.phone}
+                    onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
                   <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleAdd(s.id)}
-                    disabled={actionId === s.id}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-green-50 text-left transition-colors disabled:opacity-50"
+                    type="submit"
+                    disabled={pending}
+                    className="w-full py-2 bg-[var(--tss-navy)] text-white text-xs font-semibold rounded-lg hover:opacity-90 disabled:opacity-50"
                   >
-                    <div
-                      className="w-5 h-5 rounded-full text-white text-[8px] font-bold flex items-center justify-center"
-                      style={{ backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999' }}
-                    >
-                      {s.first_name[0]}{s.last_name[0]}
-                    </div>
-                    <span className="text-xs text-gray-700 flex-1">{s.first_name} {s.last_name}</span>
-                    <span className="text-[10px] text-green-600">+ Add</span>
+                    {pending ? 'Creating + enrolling…' : 'Create Lead + Enrol + Send form'}
                   </button>
-                ))}
-              </div>
+                </form>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-3">
+                  <p className="text-xs text-emerald-700 font-medium inline-flex items-center gap-1.5">
+                    <Check size={13} strokeWidth={2} />
+                    {justCreated.name} enrolled as Lead.
+                  </p>
+                  <p className="text-[11px] text-emerald-700">
+                    {justCreated.emailed
+                      ? 'Safety-form email sent. Once they submit, the coach sees waiver + medical info.'
+                      : `Email NOT sent (${justCreated.reason ?? 'no email on file'}). Copy the link below and send via WhatsApp.`}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-800 bg-white border border-emerald-200 rounded-md px-2 py-1.5 truncate">
+                    {justCreated.url}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={copyLink}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white text-[var(--tss-navy)] text-xs font-semibold rounded-md border border-emerald-200 hover:bg-emerald-50 transition-colors"
+                    >
+                      <Copy size={12} strokeWidth={2} />
+                      {copied ? 'Copied!' : 'Copy link'}
+                    </button>
+                    {!justCreated.emailed && (
+                      <button
+                        type="button"
+                        onClick={resendEmail}
+                        disabled={emailSending}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[var(--tss-navy)] text-white text-xs font-semibold rounded-md disabled:opacity-50 transition-colors"
+                      >
+                        <Mail size={12} strokeWidth={2} />
+                        {emailSending ? 'Sending…' : 'Resend email'}
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setJustCreated(null)}
+                    className="w-full text-[11px] text-emerald-700 hover:text-emerald-900 underline"
+                  >
+                    Add another lead
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

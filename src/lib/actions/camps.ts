@@ -458,7 +458,7 @@ export async function getCampDetail(campId: string) {
 
   const { data: participants } = await supabase
     .from('camp_participants')
-    .select('*, students(id, first_name, last_name, belt_level, photo_url)')
+    .select('*, students(id, first_name, last_name, belt_level, photo_url, lifecycle_status, waiver_signed, portal_token, email)')
     .eq('camp_instance_id', campId)
     .eq('enrollment_status', 'active');
 

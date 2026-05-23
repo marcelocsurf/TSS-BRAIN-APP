@@ -4,6 +4,7 @@ import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import { CampHeadCoachManager } from '@/components/camp/CampHeadCoachManager';
 import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
+import { LeadStatusBadge } from '@/components/camp/LeadStatusBadge';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import Link from 'next/link';
@@ -169,31 +170,45 @@ export default async function CampDetailPage({ params }: Props) {
           <div className="space-y-2">
             {participants.map((p: any) => {
               const belt = BELT_DISPLAY[p.students?.belt_level as BeltLevel];
+              const isLead = p.students?.lifecycle_status === 'lead';
+              const intakePending = isLead && !p.students?.waiver_signed;
               return (
-                <Link
+                <div
                   key={p.id}
-                  href={`/students/${p.students?.id}`}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div
-                    className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: belt?.color || '#999' }}
+                  <Link
+                    href={`/students/${p.students?.id}`}
+                    className="flex items-center gap-3 flex-1 min-w-0"
                   >
-                    {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {p.students?.first_name} {p.students?.last_name}
-                    </p>
-                    <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
-                  </div>
-                  <span
-                    className="text-[10px] px-2 py-0.5 rounded-full text-white shrink-0"
-                    style={{ backgroundColor: belt?.color || '#999' }}
-                  >
-                    {belt?.en}
-                  </span>
-                </Link>
+                    <div
+                      className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: belt?.color || '#999' }}
+                    >
+                      {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {p.students?.first_name} {p.students?.last_name}
+                      </p>
+                      <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
+                    </div>
+                  </Link>
+                  {intakePending ? (
+                    <LeadStatusBadge
+                      studentId={p.students.id}
+                      portalToken={p.students.portal_token}
+                      email={p.students.email}
+                    />
+                  ) : (
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full text-white shrink-0"
+                      style={{ backgroundColor: belt?.color || '#999' }}
+                    >
+                      {belt?.en}
+                    </span>
+                  )}
+                </div>
               );
             })}
           </div>
