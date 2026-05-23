@@ -138,12 +138,9 @@ export default async function CampsPage({
           >
             Templates
           </Link>
-          <Link
-            href="/camps/new"
-            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
-          >
-            + New Camp
-          </Link>
+          {/* "+ New Camp" intentionally removed — creation now happens
+              in-context from the calendar's "+ Add service" affordance,
+              so the date is always implicit and the top bar stays clean. */}
         </div>
       </div>
 

@@ -194,19 +194,21 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                   {items.map((c) => (
                     <ServiceCard key={c.id} camp={c} compact />
                   ))}
-                  {/* Always-visible "+" so the coordinator can keep stacking
-                      services on the same day. Larger when the column is
-                      empty, smaller chip when items already exist. */}
+                  {/* Always-visible "+ Add service" so the coordinator can
+                      keep stacking services on the same day. Cyan-tinted
+                      and bigger when the day is empty so it reads as the
+                      primary creation surface; smaller chip when items
+                      already exist. */}
                   <Link
                     href={`/camps/new?date=${d}`}
                     className={
                       items.length === 0
-                        ? 'block text-center text-[10px] text-gray-300 hover:text-gray-500 py-3 border border-dashed border-gray-200 rounded-lg hover:border-gray-400 transition-colors'
-                        : 'block text-center text-[10px] text-gray-400 hover:text-[var(--tss-navy)] py-1.5 border border-dashed border-gray-150 rounded-md hover:border-gray-300 transition-colors'
+                        ? 'block text-center text-xs font-semibold text-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] py-4 border-2 border-dashed border-[var(--tss-cyan,#5AC3E7)]/40 hover:border-[var(--tss-cyan,#5AC3E7)] rounded-lg bg-[var(--tss-cyan,#5AC3E7)]/5 hover:bg-[var(--tss-cyan,#5AC3E7)]/10 transition-all'
+                        : 'block text-center text-[11px] font-medium text-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] py-1.5 border border-dashed border-[var(--tss-cyan,#5AC3E7)]/40 hover:border-[var(--tss-cyan,#5AC3E7)] rounded-md transition-all'
                     }
                   >
-                    <Plus size={12} strokeWidth={2} className="inline" />{' '}
-                    {items.length === 0 ? 'Schedule' : 'Add'}
+                    <Plus size={items.length === 0 ? 14 : 12} strokeWidth={2} className="inline" />{' '}
+                    {items.length === 0 ? 'Add service' : 'Add another'}
                   </Link>
                 </div>
               );
@@ -262,18 +264,18 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                     {items.map((c) => (
                       <ServiceCard key={c.id} camp={c} />
                     ))}
-                    {/* Always show the add affordance so the coordinator
-                        can keep stacking services on the same day. */}
+                    {/* Cyan-tinted creation surface, primary action of
+                        the calendar now that "+ New Camp" left the top bar. */}
                     <Link
                       href={`/camps/new?date=${d}`}
                       className={
                         items.length === 0
-                          ? 'block text-center text-[11px] text-gray-300 hover:text-gray-500 py-2.5 border border-dashed border-gray-200 rounded-lg'
-                          : 'block text-center text-[11px] text-gray-400 hover:text-[var(--tss-navy)] py-1.5 border border-dashed border-gray-150 rounded-lg'
+                          ? 'block text-center text-xs font-semibold text-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] py-3 border-2 border-dashed border-[var(--tss-cyan,#5AC3E7)]/40 hover:border-[var(--tss-cyan,#5AC3E7)] rounded-lg bg-[var(--tss-cyan,#5AC3E7)]/5 hover:bg-[var(--tss-cyan,#5AC3E7)]/10 transition-all'
+                          : 'block text-center text-[11px] font-medium text-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] py-1.5 border border-dashed border-[var(--tss-cyan,#5AC3E7)]/40 hover:border-[var(--tss-cyan,#5AC3E7)] rounded-lg transition-all'
                       }
                     >
-                      <Plus size={12} strokeWidth={2} className="inline" />{' '}
-                      {items.length === 0 ? 'Schedule' : 'Add another'}
+                      <Plus size={items.length === 0 ? 14 : 12} strokeWidth={2} className="inline" />{' '}
+                      {items.length === 0 ? 'Add service' : 'Add another'}
                     </Link>
                   </div>
                 </div>
