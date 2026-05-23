@@ -43,6 +43,30 @@ export const BELT_DISPLAY: Record<BeltLevel, BeltDisplay> = {
   black_belt: { en: 'Black Belt', es: 'Cinta Negra', color: '#111111', levelName: 'Elite' },
 };
 
+// ─── TSS level vocabulary ───
+// Single source of truth for the template editor + filters. Order
+// goes entry → expert. Mirrors the belt progression above.
+export const LEVEL_NAMES = [
+  'Beginner',     // white belt
+  'Novice',       // yellow belt
+  'Foundation',   // blue belt
+  'Emerging',     // purple belt
+  'Pre-Elite',    // brown belt
+  'Elite',        // black belt
+] as const;
+
+export type LevelName = (typeof LEVEL_NAMES)[number];
+
+// Hex belt colour keyed by template's `level_name`.
+export const LEVEL_BELT_COLOR: Record<string, string> = {
+  Beginner: '#E8E8E8',
+  Novice: '#F5C518',
+  Foundation: '#1E6FBF',
+  Emerging: '#7B4FBE',
+  'Pre-Elite': '#7D4E27',
+  Elite: '#111111',
+};
+
 export function getBeltRank(belt: BeltLevel): number {
   return BELT_RANK[belt];
 }

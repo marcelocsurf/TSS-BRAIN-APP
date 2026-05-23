@@ -5,14 +5,20 @@ import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { TemplateActions } from '@/components/camp/TemplateActions';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { LEVEL_BELT_COLOR } from '@/lib/constants/belts';
 
-const LEVEL_COLORS: Record<string, string> = {
-  Beginner: 'bg-green-50 text-green-700',
-  Novice: 'bg-blue-50 text-blue-700',
-  Intermediate: 'bg-amber-50 text-amber-700',
-  Advanced: 'bg-purple-50 text-purple-700',
-  Elite: 'bg-red-50 text-red-700',
-};
+// Render the belt colour itself behind the chip so the template
+// "Beginner" reads white, "Foundation" reads blue, etc. Text colour
+// flips based on luminance so it stays readable on dark belts.
+function isDarkHex(hex: string): boolean {
+  const m = hex.match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+}
 
 export default async function CampTemplatesPage() {
   const currentCoach = await getCurrentCoach();
@@ -66,7 +72,8 @@ export default async function CampTemplatesPage() {
           {templates.map(async (t: any) => {
             const detail = await getTemplateDetail(t.id);
             const totalBlocks = detail.blocks.length;
-            const levelColor = LEVEL_COLORS[t.level_name] || 'bg-gray-50 text-gray-600';
+            const beltHex = LEVEL_BELT_COLOR[t.level_name] || '#E5E7EB';
+            const onDark = isDarkHex(beltHex);
 
             return (
               <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -75,7 +82,12 @@ export default async function CampTemplatesPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm text-[var(--tss-navy)]">{t.template_name}</p>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${levelColor}`}>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border border-black/10 ${
+                            onDark ? 'text-white' : 'text-black/80'
+                          }`}
+                          style={{ backgroundColor: beltHex }}
+                        >
                           {t.level_name}
                         </span>
                       </div>

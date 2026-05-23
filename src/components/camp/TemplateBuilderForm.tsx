@@ -19,7 +19,8 @@ import {
 import { getTemplateCatalog, type TemplateCatalog } from '@/lib/actions/template-catalog';
 import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
 
-const LEVEL_OPTIONS = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'];
+import { LEVEL_NAMES } from '@/lib/constants/belts';
+const LEVEL_OPTIONS = LEVEL_NAMES;
 const MODALITY_OPTIONS = ['individual', 'group'];
 const DELIVERY_OPTIONS = ['in-person', 'online', 'hybrid'];
 const BLOCK_TYPE_OPTIONS = [
