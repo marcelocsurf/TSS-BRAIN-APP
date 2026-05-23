@@ -6,6 +6,7 @@
 // better on top. Templates without colours fall back to neutral gray.
 
 import Link from 'next/link';
+import { Check, AlertTriangle } from 'lucide-react';
 import { CampStatusBadge } from './CampStatusBadge';
 
 const NEUTRAL_BG = '#F3F4F6';
@@ -145,40 +146,72 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
           <CampStatusBadge status={camp.status} />
         </div>
 
-        {/* Capacity bar — 1 dot per spot in capacity_max */}
+        {/* Capacity bar — filled dots turn green so the coordinator
+            can scan how full each service is at a glance. Empty dots
+            stay in the card's text colour (translucent). */}
         <div className="flex items-center gap-1 mt-2">
           {Array.from({ length: capacity }).map((_, i) => (
             <span
               key={i}
-              className={`block w-2 h-2 rounded-full ${
+              className={`block w-2.5 h-2.5 rounded-full ${
                 i < enrolled
-                  ? onDark
-                    ? 'bg-white'
-                    : 'bg-black/80'
+                  ? 'bg-emerald-500 ring-1 ring-emerald-700/30'
                   : onDark
-                  ? 'bg-white/30 ring-1 ring-white/50'
+                  ? 'bg-white/25 ring-1 ring-white/40'
                   : 'bg-black/10 ring-1 ring-black/20'
               }`}
             />
           ))}
           <span
-            className={`text-[10px] ml-1 ${onDark ? 'text-white/85' : 'text-black/55'}`}
+            className={`text-[10px] ml-1 font-semibold ${
+              enrolled === capacity
+                ? 'text-emerald-700'
+                : onDark
+                ? 'text-white/85'
+                : 'text-black/55'
+            }`}
             style={{ fontFamily: 'DM Mono, monospace' }}
           >
             {enrolled}/{capacity}
           </span>
         </div>
 
-        {coachName && (
-          <p
-            className={`text-[10px] mt-1.5 truncate ${
-              onDark ? 'text-white/85' : 'text-black/60'
-            }`}
-            style={{ fontFamily: 'DM Mono, monospace' }}
-          >
-            {coachName}
-          </p>
-        )}
+        {/* Coach signalling — green check + name when assigned,
+            amber alert + "No coach" when missing so a coordinator who
+            scans the calendar instantly spots services without a coach. */}
+        <div className="mt-1.5 flex items-center gap-1 truncate">
+          {coachName ? (
+            <>
+              <Check
+                size={11}
+                strokeWidth={2.5}
+                className="text-emerald-600 shrink-0"
+              />
+              <p
+                className={`text-[10px] truncate ${
+                  onDark ? 'text-white/90' : 'text-black/70'
+                }`}
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                {coachName}
+              </p>
+            </>
+          ) : (
+            <>
+              <AlertTriangle
+                size={11}
+                strokeWidth={2.5}
+                className="text-amber-600 shrink-0"
+              />
+              <p
+                className="text-[10px] font-semibold truncate text-amber-700"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                No coach assigned
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </Link>
   );
