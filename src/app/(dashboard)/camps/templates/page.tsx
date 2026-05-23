@@ -43,7 +43,7 @@ export default async function CampTemplatesPage() {
             className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 inline-flex items-center gap-1"
           >
             <ArrowLeft size={14} strokeWidth={1.75} />
-            Camps
+            Schedule
           </Link>
           <Link
             href="/camps/templates/new"

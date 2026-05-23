@@ -5,11 +5,12 @@ import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import { CampHeadCoachManager } from '@/components/camp/CampHeadCoachManager';
 import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
 import { LeadStatusBadge } from '@/components/camp/LeadStatusBadge';
+import { CancelCampButton } from '@/components/camp/CancelCampButton';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -44,6 +45,16 @@ export default async function CampDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
+      {/* Back link */}
+      <Link
+        href="/camps"
+        className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)] transition-colors"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        <ArrowLeft size={12} strokeWidth={1.75} />
+        Back to schedule
+      </Link>
+
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-start justify-between gap-3">
@@ -58,7 +69,13 @@ export default async function CampDetailPage({ params }: Props) {
               {(instance as any).camp_templates?.template_name}
             </p>
           </div>
-          <CampStatusBadge status={instance.status} />
+          <div className="flex items-start gap-2 shrink-0">
+            <CampStatusBadge status={instance.status} />
+            <CancelCampButton
+              campInstanceId={instance.id}
+              campName={instance.camp_name}
+            />
+          </div>
         </div>
 
         {/* Head Coach — coordinator can swap/assign inline */}

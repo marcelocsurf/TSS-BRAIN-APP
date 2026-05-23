@@ -33,6 +33,7 @@ export async function listCampsInRange(startDate: string, endDate: string) {
     )
     .lte('start_date', endDate)
     .gte('end_date', startDate)
+    .neq('status', 'cancelled')
     .order('start_date', { ascending: true });
 
   if (!currentCoach.is_platform_admin && currentCoach.academy_id) {
@@ -82,6 +83,22 @@ export async function updateCampSchedule(
     .eq('id', campInstanceId);
   if (error) throw new Error(error.message);
   revalidatePath(`/camps/${campInstanceId}`);
+  revalidatePath('/camps');
+}
+
+// ═══════════════════════════════════════
+// CANCEL CAMP INSTANCE (soft delete)
+// Sets status='cancelled' so the calendar hides it but history is
+// preserved (audit, evaluations, course grants stay intact).
+// ═══════════════════════════════════════
+
+export async function cancelCampInstance(campInstanceId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('camp_instances')
+    .update({ status: 'cancelled' })
+    .eq('id', campInstanceId);
+  if (error) throw new Error(error.message);
   revalidatePath('/camps');
 }
 

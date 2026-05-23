@@ -15,7 +15,7 @@ export default async function NewCampTemplatePage() {
             className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"
             style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
           >
-            Create Camp Template
+            Create Template
           </h2>
           <p className="text-xs text-gray-500 mt-1">
             Define the day-by-day structure for a new camp program.
