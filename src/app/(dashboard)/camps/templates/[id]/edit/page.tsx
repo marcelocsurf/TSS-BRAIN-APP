@@ -1,5 +1,7 @@
-import { getTemplateDetail } from '@/lib/actions/camps';
+import { getTemplateDetail, listAllAcademies, listTemplateAssignments } from '@/lib/actions/camps';
+import { getCurrentCoach } from '@/lib/actions/auth';
 import { TemplateBuilderForm } from '@/components/camp/TemplateBuilderForm';
+import { TemplateAssignmentPanel } from '@/components/camp/TemplateAssignmentPanel';
 import type { CreateTemplateInput, TemplateDayInput } from '@/lib/actions/camps';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -20,6 +22,14 @@ export default async function EditCampTemplatePage({ params }: Props) {
 
   const { template, days, blocks } = detail;
   if (!template) notFound();
+
+  const me = await getCurrentCoach();
+  const isAdmin = me?.is_platform_admin ?? false;
+  const isGlobal = template.academy_id == null;
+  const showAssignments = isAdmin && isGlobal;
+  const [academies, assigned] = showAssignments
+    ? await Promise.all([listAllAcademies(), listTemplateAssignments(id)])
+    : [[], []];
 
   // Convert to initialData shape
   const initialData: CreateTemplateInput = {
@@ -112,6 +122,14 @@ export default async function EditCampTemplatePage({ params }: Props) {
           Cancel
         </Link>
       </div>
+
+      {showAssignments && (
+        <TemplateAssignmentPanel
+          templateId={id}
+          academies={academies}
+          initialAssignedIds={assigned}
+        />
+      )}
 
       <TemplateBuilderForm mode="edit" templateId={id} initialData={initialData} />
     </div>

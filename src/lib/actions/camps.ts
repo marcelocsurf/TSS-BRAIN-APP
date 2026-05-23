@@ -85,15 +85,110 @@ export async function updateCampSchedule(
   revalidatePath('/camps');
 }
 
+// Lists templates visible to the current coach.
+//   • Platform admin → every active template
+//   • Coordinator / coach → templates academy_id = me.academy_id (custom
+//     for this academy) UNION globals assigned to me.academy_id via
+//     academy_template_assignments
 export async function listCampTemplates() {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const me = await getCurrentCoach();
+  if (!me) return [];
+
+  if (me.is_platform_admin) {
+    const { data, error } = await supabase
+      .from('camp_templates')
+      .select('*')
+      .eq('active_status', true)
+      .order('template_name');
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  if (!me.academy_id) return [];
+
+  // Own customs
+  const ownPromise = supabase
     .from('camp_templates')
     .select('*')
     .eq('active_status', true)
-    .order('template_name');
+    .eq('academy_id', me.academy_id);
+
+  // Globals assigned to this academy
+  const assignedPromise = supabase
+    .from('academy_template_assignments')
+    .select('camp_templates(*)')
+    .eq('academy_id', me.academy_id);
+
+  const [own, assigned] = await Promise.all([ownPromise, assignedPromise]);
+  if (own.error) throw new Error(own.error.message);
+  if (assigned.error) throw new Error(assigned.error.message);
+
+  const assignedTpls = (assigned.data ?? [])
+    .map((row: any) => row.camp_templates)
+    .filter((t: any) => t && t.active_status);
+
+  const byId = new Map<string, any>();
+  for (const t of [...(own.data ?? []), ...assignedTpls]) byId.set(t.id, t);
+  return Array.from(byId.values()).sort((a, b) =>
+    a.template_name.localeCompare(b.template_name),
+  );
+}
+
+// ═══════════════════════════════════════
+// LIST EVERY ACADEMY (admin only) — used by the assignment multiselect.
+// ═══════════════════════════════════════
+
+export async function listAllAcademies() {
+  const me = await getCurrentCoach();
+  if (!me?.is_platform_admin) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('academies')
+    .select('id, name, slug')
+    .order('name');
+  return data ?? [];
+}
+
+// ═══════════════════════════════════════
+// LIST WHICH ACADEMIES A GLOBAL TEMPLATE IS ASSIGNED TO
+// ═══════════════════════════════════════
+
+export async function listTemplateAssignments(templateId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('academy_template_assignments')
+    .select('academy_id')
+    .eq('template_id', templateId);
   if (error) throw new Error(error.message);
-  return data;
+  return (data ?? []).map((r: any) => r.academy_id as string);
+}
+
+// ═══════════════════════════════════════
+// SET (overwrite) the assignment set for a global template.
+// Admin only. Passing [] removes every assignment.
+// ═══════════════════════════════════════
+
+export async function setTemplateAssignments(
+  templateId: string,
+  academyIds: string[],
+) {
+  const me = await getCurrentCoach();
+  if (!me?.is_platform_admin) throw new Error('Platform admin only');
+  const supabase = await createClient();
+
+  await supabase
+    .from('academy_template_assignments')
+    .delete()
+    .eq('template_id', templateId);
+
+  if (academyIds.length > 0) {
+    const rows = academyIds.map((academy_id) => ({ academy_id, template_id: templateId }));
+    const { error } = await supabase.from('academy_template_assignments').insert(rows);
+    if (error) throw new Error(error.message);
+  }
+  revalidatePath('/camps/templates');
+  revalidatePath(`/camps/templates/${templateId}/edit`);
 }
 
 // ═══════════════════════════════════════
@@ -844,6 +939,16 @@ export interface CreateTemplateInput {
 
 export async function createCampTemplate(input: CreateTemplateInput) {
   const supabase = await createClient();
+  const me = await getCurrentCoach();
+
+  // Scope rule:
+  //   • Platform admin → creates a GLOBAL template (academy_id NULL)
+  //     unless they explicitly pass an academy_id (future-proof).
+  //   • Coordinator → creates a CUSTOM template private to their academy.
+  const scopedAcademyId =
+    me?.is_platform_admin
+      ? null
+      : me?.academy_id ?? null;
 
   // Create template — use text-based ID consistent with seed templates (e.g. TPL-NOVICE-6D)
   const templateId = `TPL-${Date.now()}`;
@@ -851,6 +956,7 @@ export async function createCampTemplate(input: CreateTemplateInput) {
     .from('camp_templates')
     .insert({
       id: templateId,
+      academy_id: scopedAcademyId,
       template_name: input.template_name,
       level_name: input.level_name,
       duration_days: input.duration_days,
