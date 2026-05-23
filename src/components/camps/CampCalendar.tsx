@@ -19,10 +19,19 @@ import { ServiceCard, paletteFor } from './ServiceCard';
 
 type Camp = Parameters<typeof ServiceCard>[0]['camp'];
 
+type Tpl = {
+  id: string;
+  template_name: string;
+  level_name: string | null;
+  service_kind: string | null;
+  card_color: string | null;
+};
+
 type Props = {
   camps: Camp[];
-  view: 'week' | 'month';
-  anchor: string; // YYYY-MM-DD, the Monday for week view or any day in month for month view
+  view: 'week' | 'month' | 'year';
+  anchor: string; // YYYY-MM-DD, the Monday for week view or any day in month/year
+  templates?: Tpl[]; // required only for year view
 };
 
 // ── date helpers (UTC-safe, no Date timezones shenanigans) ──
@@ -74,11 +83,11 @@ function todayIso(): string {
   return fromUTCDate(new Date());
 }
 
-export function CampCalendar({ camps, view, anchor }: Props) {
+export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const goto = (next: { view?: 'week' | 'month'; anchor?: string }) => {
+  const goto = (next: { view?: 'week' | 'month' | 'year'; anchor?: string }) => {
     const params = new URLSearchParams(searchParams.toString());
     if (next.view) params.set('view', next.view);
     if (next.anchor) params.set('anchor', next.anchor);
@@ -287,6 +296,162 @@ export function CampCalendar({ camps, view, anchor }: Props) {
     );
   }
 
+  // ── Year view ──────────────────────────────
+  // Matrix: rows = templates visible to the academy, columns = 52 ISO
+  // weeks of the anchor's year. Each cell shows the count of camp_
+  // instances of that template starting in that week. Click → drill
+  // to that week's Week view.
+  if (view === 'year') {
+    const year = toUTCDate(anchor).getUTCFullYear();
+    // ISO year is approximated by the Monday-of-week-1 anchor: start
+    // from Jan 4 (always in week 1 per ISO) and walk back to Monday.
+    const jan4 = `${year}-01-04`;
+    const yearGridStart = startOfWeek(jan4);
+    const weekStarts = Array.from({ length: 52 }, (_, w) => addDays(yearGridStart, w * 7));
+
+    // Bucket camps into (template_id, weekIndex). A camp counts in the
+    // week of its start_date.
+    const counts = new Map<string, number>();
+    for (const c of camps) {
+      const tplId = c.template_id ?? '';
+      if (!tplId) continue;
+      const idx = weekStarts.findIndex(
+        (ws) => c.start_date >= ws && c.start_date < addDays(ws, 7),
+      );
+      if (idx < 0) continue;
+      const key = `${tplId}:${idx}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+
+    const todayMonday = startOfWeek(todayIso());
+    const todayIdx = weekStarts.indexOf(todayMonday);
+
+    return (
+      <div className="space-y-3">
+        <CalendarHeader
+          label={`Year ${year}`}
+          view={view}
+          onPrev={() => goto({ anchor: `${year - 1}-06-15` })}
+          onNext={() => goto({ anchor: `${year + 1}-06-15` })}
+          onToday={() => goto({ anchor: todayIso() })}
+          onChangeView={(v) => goto({ view: v })}
+        />
+
+        {templates.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center text-sm text-gray-500">
+            No templates available for this academy yet.
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-auto">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `220px repeat(52, 36px) 60px`,
+              }}
+            >
+              {/* Top header — month bands + week numbers */}
+              <div
+                className="sticky left-0 top-0 z-20 bg-white border-b border-r border-gray-100 px-3 py-2 text-[10px] uppercase tracking-wider text-gray-400"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                Service
+              </div>
+              {weekStarts.map((ws, i) => {
+                const monthShort = toUTCDate(ws).toLocaleString('en-US', {
+                  month: 'short',
+                  timeZone: 'UTC',
+                });
+                const day = dayNum(ws);
+                const isFirstOfMonth = i === 0 || toUTCDate(ws).getUTCMonth() !== toUTCDate(weekStarts[i - 1]).getUTCMonth();
+                const isCurrentWeek = i === todayIdx;
+                return (
+                  <button
+                    key={ws}
+                    type="button"
+                    onClick={() => goto({ view: 'week', anchor: ws })}
+                    className={`border-b border-l border-gray-100 px-1 py-1 text-[9px] text-center transition-colors ${
+                      isCurrentWeek
+                        ? 'bg-[var(--tss-cyan,#5AC3E7)]/10 text-[var(--tss-cyan,#5AC3E7)] font-bold'
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    title={`Week ${i + 1} · ${ws}`}
+                  >
+                    <div className={isFirstOfMonth ? 'font-semibold text-gray-700' : 'invisible'}>
+                      {monthShort}
+                    </div>
+                    <div>{day}</div>
+                  </button>
+                );
+              })}
+              <div
+                className="border-b border-l border-gray-100 px-1 py-1 text-[9px] text-center text-gray-400 uppercase tracking-wider"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                Total
+              </div>
+
+              {/* Body rows — one per template */}
+              {templates.map((tpl) => {
+                const rowTotal = weekStarts.reduce(
+                  (acc, _, i) => acc + (counts.get(`${tpl.id}:${i}`) ?? 0),
+                  0,
+                );
+                return (
+                  <YearTemplateRow
+                    key={tpl.id}
+                    template={tpl}
+                    weekStarts={weekStarts}
+                    counts={counts}
+                    rowTotal={rowTotal}
+                    todayIdx={todayIdx}
+                    onCellClick={(ws) => goto({ view: 'week', anchor: ws })}
+                  />
+                );
+              })}
+
+              {/* Bottom totals row */}
+              <div
+                className="sticky left-0 z-10 bg-gray-50 border-r border-t border-gray-100 px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold"
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                Total per week
+              </div>
+              {weekStarts.map((ws, i) => {
+                let weekTotal = 0;
+                for (const tpl of templates) weekTotal += counts.get(`${tpl.id}:${i}`) ?? 0;
+                return (
+                  <div
+                    key={`tot-${ws}`}
+                    className={`border-l border-t border-gray-100 px-1 py-1 text-center text-[10px] font-mono ${
+                      weekTotal > 0 ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-300'
+                    } ${i === todayIdx ? 'bg-[var(--tss-cyan,#5AC3E7)]/10' : 'bg-gray-50'}`}
+                  >
+                    {weekTotal || ''}
+                  </div>
+                );
+              })}
+              <div
+                className="bg-gray-50 border-l border-t border-gray-100 px-1 py-1 text-center text-[10px] font-bold text-[var(--tss-navy)] font-mono"
+              >
+                {templates.reduce(
+                  (acc, tpl) =>
+                    acc +
+                    weekStarts.reduce((a, _, i) => a + (counts.get(`${tpl.id}:${i}`) ?? 0), 0),
+                  0,
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <p className="text-[10px] text-gray-400 italic px-1">
+          Read-only annual panorama · numbers = camp instances · tap any cell or week number to drill into that week.
+        </p>
+      </div>
+    );
+  }
+
   // ── Month view ─────────────────────────────
   // Render as 6 week-rows. Each week-row is its own grid so multi-day
   // camps can span horizontally Mon→Sat (visually obvious block) and
@@ -465,11 +630,11 @@ function CalendarHeader({
   onChangeView,
 }: {
   label: string;
-  view: 'week' | 'month';
+  view: 'week' | 'month' | 'year';
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
-  onChangeView: (v: 'week' | 'month') => void;
+  onChangeView: (v: 'week' | 'month' | 'year') => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -506,7 +671,7 @@ function CalendarHeader({
         </span>
       </div>
       <div className="inline-flex rounded-lg border-2 border-[var(--tss-navy)] overflow-hidden shadow-sm">
-        {(['week', 'month'] as const).map((v) => (
+        {(['week', 'month', 'year'] as const).map((v) => (
           <button
             key={v}
             type="button"
@@ -524,4 +689,92 @@ function CalendarHeader({
       </div>
     </div>
   );
+}
+
+function YearTemplateRow({
+  template,
+  weekStarts,
+  counts,
+  rowTotal,
+  todayIdx,
+  onCellClick,
+}: {
+  template: Tpl;
+  weekStarts: string[];
+  counts: Map<string, number>;
+  rowTotal: number;
+  todayIdx: number;
+  onCellClick: (weekStartIso: string) => void;
+}) {
+  const cardColor = template.card_color || '#F3F4F6';
+  return (
+    <>
+      <div
+        className="sticky left-0 z-10 bg-white border-t border-r border-gray-100 px-3 py-1.5 flex items-center gap-2"
+      >
+        <span
+          className="inline-block w-3 h-3 rounded-sm border border-black/10 shrink-0"
+          style={{ backgroundColor: cardColor }}
+        />
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium text-gray-800 truncate">
+            {template.template_name}
+          </p>
+          {template.level_name && (
+            <p
+              className="text-[9px] uppercase tracking-wider text-gray-400"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              {template.level_name}
+            </p>
+          )}
+        </div>
+      </div>
+      {weekStarts.map((ws, i) => {
+        const n = counts.get(`${template.id}:${i}`) ?? 0;
+        const isCurrentWeek = i === todayIdx;
+        return (
+          <button
+            key={`${template.id}-${ws}`}
+            type="button"
+            onClick={() => onCellClick(ws)}
+            className={`border-t border-l border-gray-100 text-[11px] font-mono text-center transition-colors ${
+              isCurrentWeek ? 'bg-[var(--tss-cyan,#5AC3E7)]/5' : ''
+            } ${n > 0 ? 'hover:brightness-95' : 'hover:bg-gray-50'}`}
+            style={
+              n > 0
+                ? { backgroundColor: cardColor }
+                : undefined
+            }
+            title={`${template.template_name} · week of ${ws} · ${n} instance${n === 1 ? '' : 's'}`}
+          >
+            {n > 0 ? (
+              <span className={isDarkHex(cardColor) ? 'text-white font-bold' : 'text-black/80 font-bold'}>
+                {n}
+              </span>
+            ) : (
+              <span className="text-gray-200">·</span>
+            )}
+          </button>
+        );
+      })}
+      <div
+        className={`border-t border-l border-gray-100 px-1 py-1 text-center text-[10px] font-mono ${
+          rowTotal > 0 ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-300'
+        } bg-gray-50`}
+      >
+        {rowTotal || ''}
+      </div>
+    </>
+  );
+}
+
+function isDarkHex(hex: string): boolean {
+  const m = hex.match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.6;
 }

@@ -56,6 +56,7 @@ type ServiceCardProps = {
     modality: string;
     scheduled_time: string | null;
     capacity_override: number | null;
+    template_id: string | null;
     camp_templates: {
       template_name: string;
       level_name: string;

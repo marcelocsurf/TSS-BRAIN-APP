@@ -62,7 +62,8 @@ export default async function CampsPage({
     level,
     minOpen,
   } = await searchParams;
-  const view: 'week' | 'month' = viewParam === 'month' ? 'month' : 'week';
+  const view: 'week' | 'month' | 'year' =
+    viewParam === 'month' ? 'month' : viewParam === 'year' ? 'year' : 'week';
   const anchor = anchorParam ?? todayIso();
 
   // Compute the fetch window. Pull a bit of slack on each side so a
@@ -72,10 +73,15 @@ export default async function CampsPage({
   if (view === 'week') {
     rangeStart = addDays(startOfWeek(anchor), -7);
     rangeEnd = addDays(startOfWeek(anchor), 13);
-  } else {
+  } else if (view === 'month') {
     const monthStart = startOfMonth(anchor);
     rangeStart = addDays(startOfWeek(monthStart), -7);
     rangeEnd = addDays(startOfWeek(monthStart), 49);
+  } else {
+    // Year view — full calendar year of the anchor.
+    const year = parseInt(anchor.slice(0, 4), 10);
+    rangeStart = `${year}-01-01`;
+    rangeEnd = `${year}-12-31`;
   }
 
   const [campsRaw, templates, weekTemplates] = await Promise.all([
@@ -146,7 +152,12 @@ export default async function CampsPage({
 
       <CampFilters templates={templates as any} />
 
-      <CampCalendar camps={camps as any} view={view} anchor={anchor} />
+      <CampCalendar
+        camps={camps as any}
+        view={view}
+        anchor={anchor}
+        templates={templates as any}
+      />
     </div>
   );
 }
