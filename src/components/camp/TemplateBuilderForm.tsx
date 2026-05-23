@@ -403,18 +403,9 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
-                    Evaluation Focus
-                  </label>
-                  <input
-                    type="text"
-                    value={day.evaluation_focus || ''}
-                    onChange={(e) => updateDay(dayIdx, { evaluation_focus: e.target.value || null })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
-                    placeholder="What to evaluate..."
-                  />
-                </div>
+                {/* Day-level Evaluation Focus removed on purpose — it now
+                    lives only inside each Mission block, where it auto-
+                    populates from the linked step's success criteria. */}
 
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -510,7 +501,26 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
                             stps={catalog.stps}
                             drills={catalog.drills}
                             missions={catalog.missions}
-                            onChange={(patch) => updateBlock(dayIdx, blockIdx, patch)}
+                            onChange={(patch) => {
+                              // Auto-populate Evaluation Focus from the
+                              // linked mission's success_criteria when a
+                              // mission is picked — only if the coordinator
+                              // hasn't typed anything yet so manual edits
+                              // are preserved.
+                              const extra: Record<string, unknown> = {};
+                              if (
+                                'mission_id' in patch &&
+                                patch.mission_id &&
+                                !block.evaluation_focus &&
+                                catalog
+                              ) {
+                                const m = catalog.missions.find((x) => x.id === patch.mission_id);
+                                if (m?.success_criteria && m.success_criteria.length > 0) {
+                                  extra.evaluation_focus = m.success_criteria.join(' · ');
+                                }
+                              }
+                              updateBlock(dayIdx, blockIdx, { ...patch, ...extra } as any);
+                            }}
                           />
                         ) : (
                           <p className="text-[11px] text-gray-400 italic">Loading sequence catalog…</p>

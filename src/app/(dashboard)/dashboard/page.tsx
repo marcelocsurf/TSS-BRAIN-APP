@@ -122,32 +122,33 @@ export default async function DashboardHome() {
       {role === 'coach' && coach && <CoachDashboard coachId={coach.id} />}
       {role === 'assistant' && <AssistantDashboard />}
 
-      {/* Quick actions */}
-      <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {(role === 'admin' || role === 'coordinator' || role === 'coach') && (
-          <QuickAction href="/sessions/new" label="Start Session" desc="6-step coach flow" accentColor="var(--tss-cyan)" />
-        )}
-        {(role === 'admin' || role === 'coordinator') && (
-          <QuickAction href="/students/new" label="Add Student" desc="Quick registration" accentColor="var(--tss-gold)" />
-        )}
-        {(role === 'admin' || role === 'coordinator') && (
-          <QuickAction href="/camps" label="View Camps" desc="Templates & instances" accentColor="var(--tss-navy-light)" />
-        )}
-        {role === 'admin' && (
-          <>
-            <QuickAction href="/coaches/new" label="Create Coach" desc="Add team member" accentColor="var(--tss-cyan)" />
-            <QuickAction href="/audit" label="View Audit" desc="System audit log" accentColor="var(--tss-warm)" />
-            <QuickAction href="/admin/pricing" label="Pricing & Invoices" desc="Set course prices, generate monthly invoices" accentColor="var(--tss-gold)" />
-          </>
-        )}
-        {role === 'coach' && (
-          <QuickAction href="/students" label="My Students" desc="View student list" accentColor="var(--tss-gold)" />
-        )}
-        {role === 'assistant' && (
-          <QuickAction href="/students" label="View Students" desc="Safety & contact info" accentColor="var(--tss-cyan)" />
-        )}
-      </div>
+      {/* Quick actions — only for non-coordinator roles. Coordinator has
+          its own Quick Actions block inside CoordinatorDashboard above. */}
+      {role !== 'coordinator' && (
+        <>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {(role === 'admin' || role === 'coach') && (
+              <QuickAction href="/sessions/new" label="Start Session" desc="6-step coach flow" accentColor="var(--tss-cyan)" />
+            )}
+            {role === 'admin' && (
+              <>
+                <QuickAction href="/students/new" label="Add Student" desc="Quick registration" accentColor="var(--tss-gold)" />
+                <QuickAction href="/camps" label="View Camps" desc="Templates & instances" accentColor="var(--tss-navy-light)" />
+                <QuickAction href="/coaches/new" label="Create Coach" desc="Add team member" accentColor="var(--tss-cyan)" />
+                <QuickAction href="/audit" label="View Audit" desc="System audit log" accentColor="var(--tss-warm)" />
+                <QuickAction href="/admin/pricing" label="Pricing & Invoices" desc="Set course prices, generate monthly invoices" accentColor="var(--tss-gold)" />
+              </>
+            )}
+            {role === 'coach' && (
+              <QuickAction href="/students" label="My Students" desc="View student list" accentColor="var(--tss-gold)" />
+            )}
+            {role === 'assistant' && (
+              <QuickAction href="/students" label="View Students" desc="Safety & contact info" accentColor="var(--tss-cyan)" />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -247,13 +248,8 @@ async function CoordinatorDashboard() {
             <UserPlus size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
             <p className="text-xs font-medium text-gray-700">New Student</p>
           </Link>
-          <Link
-            href="/coaches/new"
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
-          >
-            <GraduationCap size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">New Coach</p>
-          </Link>
+          {/* Coordinator does NOT create coaches — only the TSS head coach
+              (platform admin) assigns them. Card omitted on purpose. */}
           <Link
             href="/camps/new"
             className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"

@@ -24,6 +24,7 @@ export interface CatalogDrill {
   time_estimate: string | null;
   block_name: string | null;
   display_order: number | null;
+  success_criteria: string[] | null;
 }
 
 export interface TemplateCatalog {
@@ -45,7 +46,7 @@ export async function getTemplateCatalog(levelName: string): Promise<TemplateCat
       .order('display_order'),
     supabase
       .from('drills_missions')
-      .select('id, step_id, title, type, belt, key_words, time_estimate, block_name, display_order')
+      .select('id, step_id, title, type, belt, key_words, time_estimate, block_name, display_order, success_criteria')
       .eq('active', true)
       .order('display_order'),
   ]);
