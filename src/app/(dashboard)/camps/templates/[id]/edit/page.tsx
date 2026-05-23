@@ -33,6 +33,8 @@ export default async function EditCampTemplatePage({ params }: Props) {
     service_kind: template.service_kind ?? null,
     capacity_max: template.capacity_max ?? null,
     session_duration_minutes: template.session_duration_minutes ?? null,
+    card_color: template.card_color ?? null,
+    accent_color: template.accent_color ?? null,
     days: days.map((day: any): TemplateDayInput => {
       const dayBlocks = blocks
         .filter((b: any) => b.template_day_id === day.id)

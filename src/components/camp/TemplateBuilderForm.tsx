@@ -102,6 +102,8 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
   const [sessionMinutes, setSessionMinutes] = useState<number>(
     initialMinutes != null ? initialMinutes % 60 : 0,
   );
+  const [cardColor, setCardColor] = useState<string>(initialData?.card_color ?? '');
+  const [accentColor, setAccentColor] = useState<string>(initialData?.accent_color ?? '');
   const [days, setDays] = useState<TemplateDayInput[]>(
     initialData?.days || [emptyDay(1)]
   );
@@ -214,6 +216,8 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
         service_kind: serviceKind || null,
         capacity_max: capacityMax > 0 ? capacityMax : null,
         session_duration_minutes: totalMinutes > 0 ? totalMinutes : null,
+        card_color: cardColor || null,
+        accent_color: accentColor || null,
       };
 
       if (mode === 'edit' && templateId) {
@@ -298,6 +302,72 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
             />
             <p className="text-[10px] text-gray-400 mt-1">
               Number of spots open per instance of this service.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+              Card Colour
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={cardColor || '#F3F4F6'}
+                onChange={(e) => setCardColor(e.target.value)}
+                className="h-9 w-12 rounded-lg border border-gray-200 cursor-pointer"
+              />
+              <input
+                type="text"
+                value={cardColor}
+                onChange={(e) => setCardColor(e.target.value)}
+                placeholder="#FFFC00"
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono"
+              />
+              {cardColor && (
+                <button
+                  type="button"
+                  onClick={() => setCardColor('')}
+                  className="text-[10px] text-gray-500 hover:text-red-600 transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Background of the service card on the calendar.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+              Accent Colour (left stripe)
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={accentColor || '#9CA3AF'}
+                onChange={(e) => setAccentColor(e.target.value)}
+                className="h-9 w-12 rounded-lg border border-gray-200 cursor-pointer"
+              />
+              <input
+                type="text"
+                value={accentColor}
+                onChange={(e) => setAccentColor(e.target.value)}
+                placeholder="#F5C518"
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono"
+              />
+              {accentColor && (
+                <button
+                  type="button"
+                  onClick={() => setAccentColor('')}
+                  className="text-[10px] text-gray-500 hover:text-red-600 transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Belt-level stripe on the left edge.
             </p>
           </div>
 

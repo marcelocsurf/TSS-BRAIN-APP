@@ -29,7 +29,7 @@ export async function listCampsInRange(startDate: string, endDate: string) {
   let query = supabase
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), camp_participants(id, enrollment_status)'
+      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days, card_color, accent_color), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), camp_participants(id, enrollment_status)'
     )
     .lte('start_date', endDate)
     .gte('end_date', startDate)
@@ -838,6 +838,8 @@ export interface CreateTemplateInput {
   service_kind?: 'surf_lesson' | 'surf_camp' | 'custom' | null;
   capacity_max?: number | null;
   session_duration_minutes?: number | null;
+  card_color?: string | null;
+  accent_color?: string | null;
 }
 
 export async function createCampTemplate(input: CreateTemplateInput) {
@@ -859,6 +861,8 @@ export async function createCampTemplate(input: CreateTemplateInput) {
       service_kind: input.service_kind ?? null,
       capacity_max: input.capacity_max ?? null,
       session_duration_minutes: input.session_duration_minutes ?? null,
+      card_color: input.card_color ?? null,
+      accent_color: input.accent_color ?? null,
       active_status: true,
     })
     .select()
@@ -940,6 +944,8 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
       service_kind: input.service_kind ?? null,
       capacity_max: input.capacity_max ?? null,
       session_duration_minutes: input.session_duration_minutes ?? null,
+      card_color: input.card_color ?? null,
+      accent_color: input.accent_color ?? null,
     })
     .eq('id', templateId);
 

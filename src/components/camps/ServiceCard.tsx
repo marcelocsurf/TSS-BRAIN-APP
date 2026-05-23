@@ -1,33 +1,49 @@
 // Visual card for a single camp_instance inside the calendar panorama.
 //
-// Colour rules (locked in with Marcelo — full card colour, no cyan base):
-//   service_kind='surf_camp'    + Beginner   → WHITE   (white-belt camp)
-//   service_kind='surf_camp'    + Novice     → YELLOW  #FFFC00
-//   service_kind='surf_camp'    + Foundation → BLUE    #1E6FBF
-//   service_kind='surf_lesson'                → FUCSIA  #EC4899  (90-min lesson)
-//   service_kind='custom'                     → neutral gray
-//
-// One glance → coordinator knows the belt + the modality.
+// Colours are 100 % template-driven (M72). The platform admin picks
+// card + accent at template authoring time; paletteFor() just reads
+// the two hex strings and decides if dark text or light text reads
+// better on top. Templates without colours fall back to neutral gray.
 
 import Link from 'next/link';
 import { CampStatusBadge } from './CampStatusBadge';
 
-// Pure helper exported so the Month view density dots can stay in sync.
+const NEUTRAL_BG = '#F3F4F6';
+const NEUTRAL_ACCENT = '#9CA3AF';
+
+// Standard relative luminance. Returns true if the colour is dark
+// enough that white text reads better than black.
+function isDark(hex: string): boolean {
+  const m = hex.match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  // sRGB luminance approximation.
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum < 0.6;
+}
+
+export type Palette = {
+  backgroundColor: string;
+  accentColor: string;
+  onDark: boolean;
+};
+
+// Template-driven palette. If either colour is missing, fall back to
+// the neutral gray default seeded by M72 on canonical templates.
 export function paletteFor(
-  service_kind: 'surf_camp' | 'surf_lesson' | 'custom' | null | undefined,
-  level_name: string | null | undefined,
-): { bg: string; onDark: boolean; ring?: string } {
-  if (service_kind === 'surf_lesson') {
-    return { bg: 'bg-[#EC4899]', onDark: true };
-  }
-  if (service_kind === 'surf_camp') {
-    if (level_name === 'Foundation') return { bg: 'bg-[#1E6FBF]', onDark: true };
-    if (level_name === 'Novice') return { bg: 'bg-[#FFFC00]', onDark: false };
-    // Beginner (default for surf_camp) — white needs an outline ring so it
-    // separates from the surrounding panel background.
-    return { bg: 'bg-white', onDark: false, ring: 'ring-1 ring-gray-200' };
-  }
-  return { bg: 'bg-gray-100', onDark: false };
+  card_color: string | null | undefined,
+  accent_color: string | null | undefined,
+): Palette {
+  const backgroundColor = card_color || NEUTRAL_BG;
+  const accentColor = accent_color || NEUTRAL_ACCENT;
+  return {
+    backgroundColor,
+    accentColor,
+    onDark: isDark(backgroundColor),
+  };
 }
 
 type ServiceCardProps = {
@@ -45,6 +61,8 @@ type ServiceCardProps = {
       level_name: string;
       service_kind: 'surf_lesson' | 'surf_camp' | 'custom' | null;
       capacity_max: number;
+      card_color: string | null;
+      accent_color: string | null;
     } | null;
     head_coach: { display_name: string } | null;
     coaches: { display_name: string } | null;
@@ -64,12 +82,16 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
   const coachName =
     camp.head_coach?.display_name ?? camp.coaches?.display_name ?? null;
 
-  const { bg, onDark, ring } = paletteFor(kind, level);
+  const { backgroundColor, accentColor, onDark } = paletteFor(
+    tpl?.card_color,
+    tpl?.accent_color,
+  );
 
   return (
     <Link
       href={`/camps/${camp.id}`}
-      className={`group relative block ${bg} ${ring ?? ''} rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all`}
+      className="group relative block rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
+      style={{ backgroundColor, borderLeft: `4px solid ${accentColor}` }}
     >
       <div className={compact ? 'p-2.5' : 'p-3'}>
         <div className="flex items-start justify-between gap-2">

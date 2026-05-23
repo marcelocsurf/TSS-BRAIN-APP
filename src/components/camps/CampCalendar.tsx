@@ -388,14 +388,15 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                       {dayLessons.length > 0 && (
                         <div className="flex flex-wrap gap-0.5 mt-1">
                           {dayLessons.slice(0, 6).map((c) => {
-                            const { bg, ring } = paletteFor(
-                              c.camp_templates?.service_kind,
-                              c.camp_templates?.level_name,
+                            const { backgroundColor } = paletteFor(
+                              c.camp_templates?.card_color,
+                              c.camp_templates?.accent_color,
                             );
                             return (
                               <span
                                 key={c.id}
-                                className={`block w-2 h-2 rounded-full ${bg} ${ring ?? ''}`}
+                                className="block w-2 h-2 rounded-full ring-1 ring-black/10"
+                                style={{ backgroundColor }}
                               />
                             );
                           })}
@@ -417,16 +418,17 @@ export function CampCalendar({ camps, view, anchor }: Props) {
                     style={{ gridTemplateRows: `repeat(${weekRibbons.length}, 12px)` }}
                   >
                     {weekRibbons.map((r, i) => {
-                      const { bg, onDark, ring } = paletteFor(
-                        r.camp.camp_templates?.service_kind,
-                        r.camp.camp_templates?.level_name,
+                      const { backgroundColor, onDark } = paletteFor(
+                        r.camp.camp_templates?.card_color,
+                        r.camp.camp_templates?.accent_color,
                       );
                       return (
                         <Link
                           key={r.camp.id + wIdx}
                           href={`/camps/${r.camp.id}`}
-                          className={`${bg} ${ring ?? ''} rounded-sm shadow-sm flex items-center px-1.5 truncate pointer-events-auto hover:brightness-95 transition-all`}
+                          className="rounded-sm shadow-sm flex items-center px-1.5 truncate pointer-events-auto hover:brightness-95 transition-all"
                           style={{
+                            backgroundColor,
                             gridColumn: `${r.startCol + 1} / ${r.endCol + 2}`,
                             gridRow: i + 1,
                           }}
