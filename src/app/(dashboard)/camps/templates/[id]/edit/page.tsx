@@ -30,6 +30,9 @@ export default async function EditCampTemplatePage({ params }: Props) {
     delivery_model: template.delivery_model || 'in-person',
     description: template.description || '',
     includes_course_key: template.includes_course_key ?? null,
+    service_kind: template.service_kind ?? null,
+    capacity_max: template.capacity_max ?? null,
+    session_duration_minutes: template.session_duration_minutes ?? null,
     days: days.map((day: any): TemplateDayInput => {
       const dayBlocks = blocks
         .filter((b: any) => b.template_day_id === day.id)

@@ -91,6 +91,17 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
   const [includesCourse, setIncludesCourse] = useState<'white_belt' | 'yellow_belt' | ''>(
     initialData?.includes_course_key ?? '',
   );
+  const [serviceKind, setServiceKind] = useState<'surf_camp' | 'surf_lesson' | 'custom' | ''>(
+    initialData?.service_kind ?? '',
+  );
+  const [capacityMax, setCapacityMax] = useState<number>(initialData?.capacity_max ?? 4);
+  const initialMinutes = initialData?.session_duration_minutes ?? null;
+  const [sessionHours, setSessionHours] = useState<number>(
+    initialMinutes != null ? Math.floor(initialMinutes / 60) : 0,
+  );
+  const [sessionMinutes, setSessionMinutes] = useState<number>(
+    initialMinutes != null ? initialMinutes % 60 : 0,
+  );
   const [days, setDays] = useState<TemplateDayInput[]>(
     initialData?.days || [emptyDay(1)]
   );
@@ -190,6 +201,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
 
     setLoading(true);
     try {
+      const totalMinutes = sessionHours * 60 + sessionMinutes;
       const input: CreateTemplateInput = {
         template_name: templateName.trim(),
         level_name: levelName,
@@ -199,6 +211,9 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
         description: description.trim(),
         days,
         includes_course_key: includesCourse || null,
+        service_kind: serviceKind || null,
+        capacity_max: capacityMax > 0 ? capacityMax : null,
+        session_duration_minutes: totalMinutes > 0 ? totalMinutes : null,
       };
 
       if (mode === 'edit' && templateId) {
@@ -249,6 +264,73 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
                 <option key={l} value={l}>{l}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+              Service Category
+            </label>
+            <select
+              value={serviceKind}
+              onChange={(e) => setServiceKind(e.target.value as 'surf_camp' | 'surf_lesson' | 'custom' | '')}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+            >
+              <option value="">— Unspecified</option>
+              <option value="surf_camp">Surf Camp (multi-day)</option>
+              <option value="surf_lesson">Surf / Skate Lesson (single)</option>
+              <option value="custom">Custom</option>
+            </select>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Drives the colour of the card on the calendar.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+              Capacity (max students)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={capacityMax}
+              onChange={(e) => setCapacityMax(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Number of spots open per instance of this service.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+              Session Duration (per day)
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                max={12}
+                value={sessionHours}
+                onChange={(e) => setSessionHours(Math.max(0, Math.min(12, parseInt(e.target.value, 10) || 0)))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                placeholder="0"
+              />
+              <span className="text-xs text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>h</span>
+              <input
+                type="number"
+                min={0}
+                max={59}
+                step={5}
+                value={sessionMinutes}
+                onChange={(e) => setSessionMinutes(Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                placeholder="0"
+              />
+              <span className="text-xs text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>min</span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              How long each day&apos;s session lasts (e.g. a lesson = 1h 30m).
+            </p>
           </div>
 
           <div>

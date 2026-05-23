@@ -835,6 +835,9 @@ export interface CreateTemplateInput {
   description: string;
   days: TemplateDayInput[];
   includes_course_key?: 'white_belt' | 'yellow_belt' | null;
+  service_kind?: 'surf_lesson' | 'surf_camp' | 'custom' | null;
+  capacity_max?: number | null;
+  session_duration_minutes?: number | null;
 }
 
 export async function createCampTemplate(input: CreateTemplateInput) {
@@ -853,6 +856,9 @@ export async function createCampTemplate(input: CreateTemplateInput) {
       delivery_model: input.delivery_model,
       description: input.description,
       includes_course_key: input.includes_course_key ?? null,
+      service_kind: input.service_kind ?? null,
+      capacity_max: input.capacity_max ?? null,
+      session_duration_minutes: input.session_duration_minutes ?? null,
       active_status: true,
     })
     .select()
@@ -931,6 +937,9 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
       delivery_model: input.delivery_model,
       description: input.description,
       includes_course_key: input.includes_course_key ?? null,
+      service_kind: input.service_kind ?? null,
+      capacity_max: input.capacity_max ?? null,
+      session_duration_minutes: input.session_duration_minutes ?? null,
     })
     .eq('id', templateId);
 
