@@ -24,6 +24,7 @@ export function CampFilters({ templates }: Props) {
   const kind = searchParams.get('kind') ?? '';
   const level = searchParams.get('level') ?? '';
   const minOpen = searchParams.get('minOpen') ?? '';
+  const anchor = searchParams.get('anchor') ?? '';
 
   const levels = Array.from(
     new Set(templates.map((t) => t.level_name).filter(Boolean)),
@@ -36,15 +37,25 @@ export function CampFilters({ templates }: Props) {
     router.push(`/camps?${params.toString()}`);
   };
 
+  // Jumping to a date both sets the anchor (calendar navigates there)
+  // and stays on whatever view (week/month) is currently active.
+  const setDate = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set('anchor', value);
+    else params.delete('anchor');
+    router.push(`/camps?${params.toString()}`);
+  };
+
   const clearAll = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('kind');
     params.delete('level');
     params.delete('minOpen');
+    params.delete('anchor');
     router.push(`/camps?${params.toString()}`);
   };
 
-  const active = !!(kind || level || minOpen);
+  const active = !!(kind || level || minOpen || anchor);
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-3 bg-white rounded-xl border border-gray-100 px-3 py-2">
@@ -55,6 +66,19 @@ export function CampFilters({ templates }: Props) {
         <Filter size={11} strokeWidth={1.75} />
         Filter
       </span>
+
+      <label
+        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gray-500"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        Go to date
+        <input
+          type="date"
+          value={anchor}
+          onChange={(e) => setDate(e.target.value)}
+          className="px-2 py-1 text-xs border border-gray-200 rounded-md bg-white text-gray-700 normal-case"
+        />
+      </label>
 
       <select
         value={kind}
