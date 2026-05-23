@@ -178,13 +178,15 @@ export const SKY_OPTIONS = [
 ] as const;
 
 // M48 — Incident categories for the close-of-class report.
+// Labels are plain text; the consumer maps `value` → a Lucide icon at
+// render time so the UI stays consistent with the rest of the app.
 export const INCIDENT_TYPE_OPTIONS = [
-  { value: 'medical',    label: '🩹 Medical' },
-  { value: 'board',      label: '🏄 Board damage' },
-  { value: 'equipment',  label: '🦺 Equipment' },
-  { value: 'conduct',    label: '⚠ Conduct' },
-  { value: 'venue',      label: '🌊 Venue / weather' },
-  { value: 'other',      label: '📋 Other' },
+  { value: 'medical',    label: 'Medical' },
+  { value: 'board',      label: 'Board damage' },
+  { value: 'equipment',  label: 'Equipment' },
+  { value: 'conduct',    label: 'Conduct' },
+  { value: 'venue',      label: 'Venue / weather' },
+  { value: 'other',      label: 'Other' },
 ] as const;
 
 // ═══════════════════════════════════════

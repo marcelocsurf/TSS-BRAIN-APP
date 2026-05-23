@@ -42,6 +42,10 @@ import {
   Lock,
   Check,
   CornerDownRight,
+  Compass,
+  Clock,
+  BarChart3,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -312,8 +316,9 @@ export function PortalTabs({
   const brand = resolveAcademyBranding((data as any).academyBranding ?? null);
 
   return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
-      {/* Header — themed by academy */}
+    <div className="min-h-screen tss-portal-bg pb-20">
+      {/* Header — themed by academy. Logo locked to a single size so the
+          hero feels solid no matter which academy is loaded. */}
       <div style={{ background: brand.primary }} className="px-4 py-6 text-center relative">
         <div className="absolute top-2 right-2">
           <LogoutButton portalToken={data.token} />
@@ -323,11 +328,16 @@ export function PortalTabs({
           <img
             src={brand.logoUrl}
             alt={brand.name}
-            className="h-14 mx-auto mb-2 object-contain"
+            className="h-12 mx-auto mb-2 object-contain"
           />
         )}
-        <h1 className="text-base font-semibold text-white/90">{brand.name}</h1>
-        <p style={{ color: brand.accent }} className="tss-tagline text-sm mt-0.5">
+        <h1
+          className="text-lg font-bold text-white/95 leading-tight"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
+          {brand.name}
+        </h1>
+        <p style={{ color: brand.accent }} className="tss-tagline text-sm mt-1">
           {brand.tagline}
         </p>
       </div>
@@ -393,31 +403,40 @@ export function PortalTabs({
         {activeTab === 'my-coach' && data.myCoach && <MyCoachTab data={data} />}
       </div>
 
-      {/* Bottom Tab Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      {/* Bottom Tab Bar — active tab gets a 2px cyan rule on top so the
+          state reads instantly without filling the whole tab. */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
         <div className="max-w-lg mx-auto flex">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'text-[var(--tss-navy)]'
-                  : 'text-gray-400'
-              }`}
-            >
-              <tab.icon
-                size={20}
-                strokeWidth={1.75}
-                className="mb-0.5"
-                color={activeTab === tab.key ? 'var(--tss-cyan)' : undefined}
-              />
-              <span>{tab.label}</span>
-              {tab.key === 'feedback' && data.pendingSurveys.length > 0 && (
-                <span className="absolute -top-0.5 right-1/4 w-2 h-2 bg-red-500 rounded-full" />
-              )}
-            </button>
-          ))}
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`relative flex-1 flex flex-col items-center py-2.5 text-[10px] font-semibold transition-colors ${
+                  isActive ? 'text-[var(--tss-navy)]' : 'text-gray-400 hover:text-gray-600'
+                }`}
+                style={{ fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}
+              >
+                {isActive && (
+                  <span
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full"
+                    style={{ background: 'var(--tss-cyan)' }}
+                  />
+                )}
+                <tab.icon
+                  size={19}
+                  strokeWidth={1.75}
+                  className="mb-1"
+                  color={isActive ? 'var(--tss-cyan)' : undefined}
+                />
+                <span className="uppercase">{tab.label}</span>
+                {tab.key === 'feedback' && data.pendingSurveys.length > 0 && (
+                  <span className="absolute top-1 right-1/4 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -508,50 +527,83 @@ function HomeTab({
         </div>
       </div>
 
-      {/* Belt journey — White Belt to Black Belt.
-          (The redundant "Your Level" card was removed — the timeline
-          already shows the current belt + level name.) */}
-      <BeltJourney currentBelt={beltLevel} />
-
-      {/* Mental cue of the day — One Wave style */}
-      <div
-        className="rounded-2xl p-4 shadow-sm"
-        style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}08, ${BRAND.colors.cyan}15)`, borderLeft: `3px solid ${BRAND.colors.cyan}` }}
-      >
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: BRAND.colors.cyan, fontFamily: 'DM Mono, monospace' }}>
-          Mental cue of the day
+      {/* ── Your Journey — Belt Journey hero ── */}
+      <div>
+        <p className="tss-section-label">
+          <Compass size={11} strokeWidth={1.75} />
+          Your Journey
         </p>
-        <p className="text-sm text-[var(--tss-navy)] font-medium leading-relaxed italic">
-          {tipOfDay}
-        </p>
+        <BeltJourney currentBelt={beltLevel} />
       </div>
 
-      {/* Surf Hours — bitácora split */}
+      {/* ── Mental cue of the day — promoted, editorial moment ── */}
       <div>
-        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-2" style={{ fontFamily: 'DM Mono, monospace' }}>
+        <p className="tss-section-label">
+          <Brain size={11} strokeWidth={1.75} />
+          Mental Cue · Belt {beltLevel.replace('_belt', '').toUpperCase()}
+        </p>
+        <div
+          className="rounded-2xl px-5 py-5"
+          style={{
+            background: `linear-gradient(135deg, ${BRAND.colors.navy}06, ${BRAND.colors.cyan}14)`,
+            borderLeft: `4px solid ${BRAND.colors.cyan}`,
+          }}
+        >
+          <p
+            className="text-base text-[var(--tss-navy)] leading-relaxed italic"
+            style={{ fontFamily: 'var(--font-tagline)' }}
+          >
+            “{tipOfDay}”
+          </p>
+        </div>
+      </div>
+
+      {/* ── Surf Hours — three equal cards, editorial numerals ── */}
+      <div>
+        <p className="tss-section-label">
+          <Clock size={11} strokeWidth={1.75} />
           Surf Hours
         </p>
-        <div className="grid grid-cols-3 gap-2">
-          <div
-            className="rounded-2xl p-3 text-center shadow-sm border"
-            style={{ background: `${BRAND.colors.navy}0D`, borderColor: `${BRAND.colors.navy}26` }}
-          >
-            <p className="text-lg font-bold" style={{ color: BRAND.colors.navy }}>{fmtHm(surf.trainingMinutes)}</p>
-            <p className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Surf Training</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center shadow-sm">
+            <p className="tss-stat-number">{fmtHm(surf.trainingMinutes)}</p>
+            <p
+              className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mt-1"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              Surf Training
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center shadow-sm">
+            <p
+              className="tss-stat-number"
+              style={{ color: BRAND.colors.cyan }}
+            >
+              {fmtHm(surf.freeSurfMinutes)}
+            </p>
+            <p
+              className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mt-1"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              Free Surfing
+            </p>
           </div>
           <div
-            className="rounded-2xl p-3 text-center shadow-sm border"
-            style={{ background: `${BRAND.colors.cyan}1A`, borderColor: `${BRAND.colors.cyan}40` }}
+            className="rounded-2xl p-4 text-center shadow-sm text-white"
+            style={{ backgroundColor: BRAND.colors.navy }}
           >
-            <p className="text-lg font-bold" style={{ color: BRAND.colors.cyan }}>{fmtHm(surf.freeSurfMinutes)}</p>
-            <p className="text-[9px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Free Surfing</p>
-          </div>
-          <div
-            className="rounded-2xl p-3 text-center shadow-sm text-white"
-            style={{ background: `linear-gradient(135deg, ${BRAND.colors.navy}, ${BRAND.colors.cyan})` }}
-          >
-            <p className="text-lg font-bold">{fmtHm(surf.totalMinutes)}</p>
-            <p className="text-[9px] uppercase tracking-wide font-semibold mt-0.5 opacity-90" style={{ fontFamily: 'DM Mono, monospace' }}>Total</p>
+            <p
+              className="tss-stat-number"
+              style={{ color: '#FFFFFF' }}
+            >
+              {fmtHm(surf.totalMinutes)}
+            </p>
+            <p
+              className="text-[9px] uppercase tracking-wider font-semibold mt-1 opacity-80"
+              style={{ fontFamily: 'DM Mono, monospace' }}
+            >
+              Total
+            </p>
           </div>
         </div>
       </div>
@@ -559,23 +611,41 @@ function HomeTab({
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />
 
-      {/* Training Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
-          <p className="text-2xl font-bold text-[var(--tss-navy)]">{totalSessions}</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Total Sessions</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
-          <p className="text-2xl font-bold" style={{ color: BRAND.colors.gold }}>{trainingHours}h</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Training Hours</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
-          <p className="text-2xl font-bold text-purple-600">{selfTrainingCount}</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Self-Training</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
-          <p className="text-2xl font-bold" style={{ color: BRAND.colors.gold }}>{streak}</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>Day Streak</p>
+      {/* ── Telemetry strip — four KPIs as one instrument panel ── */}
+      <div>
+        <p className="tss-section-label">
+          <BarChart3 size={11} strokeWidth={1.75} />
+          Training Stats
+        </p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-2 sm:grid-cols-4">
+            {[
+              { label: 'Total Sessions', value: totalSessions, suffix: '' },
+              { label: 'Training Hours', value: trainingHours, suffix: 'h' },
+              { label: 'Self-Training', value: selfTrainingCount, suffix: '' },
+              { label: 'Day Streak', value: streak, suffix: '' },
+            ].map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`px-4 py-5 text-center ${
+                  i > 0 ? 'border-l border-gray-100' : ''
+                } ${
+                  i >= 2 ? 'border-t sm:border-t-0 border-gray-100' : ''
+                }`}
+              >
+                <p className="tss-stat-number">
+                  {stat.value}
+                  {stat.suffix && <span className="tss-stat-suffix">{stat.suffix}</span>}
+                </p>
+                <p
+                  className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
+                  style={{ fontFamily: 'DM Mono, monospace' }}
+                >
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

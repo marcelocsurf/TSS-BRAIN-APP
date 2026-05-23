@@ -95,6 +95,57 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: 0.1em;
 }
 
+/* ── Section grammar — used above every Home tab block.
+   Pattern: [icon] LABEL ──────────  (mono uppercase + thin rule) ── */
+.tss-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tss-gray-500);
+  margin-bottom: 0.75rem;
+}
+.tss-section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--tss-gray-100);
+  margin-left: 0.25rem;
+}
+
+/* ── Editorial display number — used by telemetry stats.
+   Playfair Display weight 700, tight rhythm. Replaces bold-sans
+   on numeric stats so the portal reads "instrument panel" instead
+   of "generic dashboard". ── */
+.tss-stat-number {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--tss-navy);
+}
+.tss-stat-suffix {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tss-gray-500);
+  margin-left: 0.25rem;
+}
+
+/* ── Portal body gradient — very subtle lift so navy hero cards
+   feel like they're floating. ── */
+.tss-portal-bg {
+  background: linear-gradient(180deg, var(--tss-gray-50) 0%, #FFFFFF 60%);
+  min-height: 100vh;
+}
+
 /* ── Scrollbar polish ── */
 ::-webkit-scrollbar {
   width: 6px;

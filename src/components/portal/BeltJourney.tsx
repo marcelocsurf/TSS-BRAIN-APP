@@ -28,14 +28,11 @@ export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
   const current = BELT_DISPLAY[currentBelt];
 
   return (
-    <div className="bg-[var(--tss-navy)] rounded-2xl p-4 shadow-sm">
-      <p
-        className="text-[10px] uppercase tracking-[0.22em] text-[var(--tss-cyan)] mb-1"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+    <div className="bg-[var(--tss-navy)] rounded-2xl p-5 shadow-md">
+      <h3
+        className="text-lg font-bold text-white mb-5 leading-tight"
+        style={{ fontFamily: 'var(--font-heading)' }}
       >
-        Your Journey
-      </p>
-      <h3 className="text-sm font-bold text-white mb-4">
         White Belt → Black Belt
       </h3>
 
