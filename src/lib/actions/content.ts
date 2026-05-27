@@ -14,7 +14,7 @@ export interface ContentVideo {
   url: string;
   label: string | null;
   caption: string | null;
-  media_type: 'video' | 'image' | 'diagram';
+  media_type: 'video' | 'image' | 'diagram' | 'document';
   display_order: number;
   created_at: string;
   updated_at: string;
@@ -122,7 +122,7 @@ export async function addContentVideo(input: {
   url: string;
   label?: string;
   caption?: string;
-  mediaType?: 'video' | 'image' | 'diagram';
+  mediaType?: 'video' | 'image' | 'diagram' | 'document';
 }) {
   const supabase = await createClient();
 

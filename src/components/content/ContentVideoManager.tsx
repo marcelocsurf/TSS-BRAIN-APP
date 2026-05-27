@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { FileText } from 'lucide-react';
 import { directImageUrl } from '@/lib/media-url';
 import {
   addContentVideo,
@@ -23,10 +24,11 @@ interface Props {
   stepId?: string;
 }
 
-const MEDIA_OPTIONS: { value: 'video' | 'image' | 'diagram'; label: string; placeholder: string }[] = [
-  { value: 'video',   label: 'Video',   placeholder: 'https://youtube.com/watch?v=… or https://vimeo.com/…' },
-  { value: 'image',   label: 'Image',   placeholder: 'https://… (imgur, Drive, your CDN — direct image URL)' },
-  { value: 'diagram', label: 'Diagram', placeholder: 'https://… (image URL of the diagram)' },
+const MEDIA_OPTIONS: { value: 'video' | 'image' | 'diagram' | 'document'; label: string; placeholder: string }[] = [
+  { value: 'video',    label: 'Video',    placeholder: 'https://youtube.com/watch?v=… or https://vimeo.com/… or Drive video URL' },
+  { value: 'image',    label: 'Image',    placeholder: 'https://… (imgur, Drive, your CDN — direct image URL)' },
+  { value: 'diagram',  label: 'Diagram',  placeholder: 'https://… (image URL of the diagram)' },
+  { value: 'document', label: 'Document', placeholder: 'PowerPoint / PDF / Google Slides URL — Drive sharing link or docs.google.com/presentation/…' },
 ];
 
 export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId }: Props) {
@@ -35,7 +37,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId }
   const [newUrl, setNewUrl] = useState('');
   const [newLabel, setNewLabel] = useState('');
   const [newCaption, setNewCaption] = useState('');
-  const [newMediaType, setNewMediaType] = useState<'video' | 'image' | 'diagram'>('video');
+  const [newMediaType, setNewMediaType] = useState<'video' | 'image' | 'diagram' | 'document'>('video');
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
 
@@ -278,9 +280,22 @@ function VideoRow({
   }
 
   const isImage = video.media_type === 'image' || video.media_type === 'diagram';
+  const isDocument = video.media_type === 'document';
   const typePill = video.media_type ?? 'video';
-  const ytId = !isImage ? video.url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1] : null;
+  const ytId = !isImage && !isDocument
+    ? video.url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1]
+    : null;
   const ytThumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
+
+  // Pill colour per type so the admin can scan the rows.
+  const pillClass =
+    typePill === 'document'
+      ? 'bg-purple-50 text-purple-700'
+      : typePill === 'video'
+      ? 'bg-red-50 text-red-700'
+      : typePill === 'image'
+      ? 'bg-blue-50 text-blue-700'
+      : 'bg-amber-50 text-amber-700'; // diagram
 
   return (
     <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-100 px-3 py-2">
@@ -289,6 +304,10 @@ function VideoRow({
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={directImageUrl(video.url)} alt={video.label || ''} className="w-full h-full object-cover" />
+        ) : isDocument ? (
+          <div className="w-full h-full flex items-center justify-center bg-purple-50">
+            <FileText size={20} strokeWidth={1.75} className="text-purple-600" />
+          </div>
         ) : ytThumb ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={ytThumb} alt={video.label || ''} className="w-full h-full object-cover" />
@@ -301,7 +320,7 @@ function VideoRow({
           <p className="text-sm font-medium text-gray-800 truncate">
             {video.label || '(no label)'}
           </p>
-          <span className="text-[9px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 flex-shrink-0">
+          <span className={`text-[9px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${pillClass}`}>
             {typePill}
           </span>
         </div>

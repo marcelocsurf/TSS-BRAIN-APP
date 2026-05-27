@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { PlayCircle, ImageIcon, Workflow, X } from 'lucide-react';
+import { PlayCircle, ImageIcon, Workflow, X, FileText } from 'lucide-react';
 import type { StpMedia } from '@/lib/actions/coach-tools';
-import { directImageUrl } from '@/lib/media-url';
+import { directImageUrl, documentEmbedUrl } from '@/lib/media-url';
 
 // Embed URL helper — duplicated from CoachPortalTabs.embedUrlFor so this
 // component stays self-contained. YouTube/Vimeo → embed URL, everything
@@ -83,6 +83,13 @@ function Thumb({ m }: { m: StpMedia }) {
       </div>
     );
   }
+  if (m.media_type === 'document') {
+    return (
+      <div className="aspect-video bg-purple-50 flex items-center justify-center">
+        <FileText size={36} strokeWidth={1.5} className="text-purple-600" />
+      </div>
+    );
+  }
   const ytThumb = thumbForVideo(m.url);
   return (
     <div className="aspect-video bg-black relative">
@@ -103,14 +110,20 @@ function Thumb({ m }: { m: StpMedia }) {
   );
 }
 
-function TypePill({ type }: { type: 'video' | 'image' | 'diagram' }) {
+function TypePill({ type }: { type: 'video' | 'image' | 'diagram' | 'document' }) {
   const styles =
     type === 'video'
       ? 'bg-red-50 text-red-700'
       : type === 'image'
       ? 'bg-blue-50 text-blue-700'
-      : 'bg-purple-50 text-purple-700';
-  const Icon = type === 'video' ? PlayCircle : type === 'image' ? ImageIcon : Workflow;
+      : type === 'diagram'
+      ? 'bg-amber-50 text-amber-700'
+      : 'bg-purple-50 text-purple-700'; // document
+  const Icon =
+    type === 'video' ? PlayCircle
+      : type === 'image' ? ImageIcon
+      : type === 'diagram' ? Workflow
+      : FileText;
   return (
     <span
       className={`inline-flex items-center gap-0.5 text-[9px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded ${styles}`}
@@ -123,6 +136,7 @@ function TypePill({ type }: { type: 'video' | 'image' | 'diagram' }) {
 
 function Lightbox({ media: m, onClose }: { media: StpMedia; onClose: () => void }) {
   const isVideo = m.media_type === 'video';
+  const isDocument = m.media_type === 'document';
 
   return (
     <div
@@ -139,7 +153,7 @@ function Lightbox({ media: m, onClose }: { media: StpMedia; onClose: () => void 
       </button>
 
       <div
-        className="w-full max-w-3xl"
+        className="w-full max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         {isVideo ? (
@@ -149,6 +163,19 @@ function Lightbox({ media: m, onClose }: { media: StpMedia; onClose: () => void 
               title={m.label || 'Coach video'}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        ) : isDocument ? (
+          // Drive /preview + Google Slides /embed both render any
+          // file (PPTX, PDF, Slides, DOCX) inside this iframe. Taller
+          // aspect so multi-slide decks read well.
+          <div className="bg-black" style={{ aspectRatio: '4 / 3' }}>
+            <iframe
+              src={documentEmbedUrl(m.url)}
+              title={m.label || 'Coach document'}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
               allowFullScreen
             />
           </div>

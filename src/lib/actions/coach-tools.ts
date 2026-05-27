@@ -24,7 +24,7 @@ export type StpMedia = {
   url: string;
   label: string | null;
   caption: string | null;
-  media_type: 'video' | 'image' | 'diagram';
+  media_type: 'video' | 'image' | 'diagram' | 'document';
   display_order: number;
 };
 
