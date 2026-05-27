@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getContentInventory } from '@/lib/actions/content';
 import { ContentVideoManager } from '@/components/content/ContentVideoManager';
 import {
@@ -21,8 +22,35 @@ export const revalidate = 0;
 // Marcelo opens this, expands any item, pastes YouTube/Vimeo URLs with a
 // label, and the videos surface immediately on the student portal.
 
-export default async function ContentAdminPage() {
+type Bucket =
+  | 'all'
+  | 'pre_course'
+  | 'white_belt'
+  | 'yellow_belt'
+  | 'visual_aids'
+  | 'coach'
+  | 'tools';
+
+const BUCKETS: { key: Bucket; label: string }[] = [
+  { key: 'pre_course',  label: 'Pre-Course' },
+  { key: 'white_belt',  label: 'White Belt' },
+  { key: 'yellow_belt', label: 'Yellow Belt' },
+  { key: 'visual_aids', label: 'Visual Aids' },
+  { key: 'coach',       label: 'Coach Curriculum' },
+  { key: 'tools',       label: 'Drills + Missions' },
+  { key: 'all',         label: 'All' },
+];
+
+export default async function ContentAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bucket?: string }>;
+}) {
   const { lessons, drillsMissions, steps } = await getContentInventory();
+  const { bucket: bucketParam } = await searchParams;
+  const bucket: Bucket =
+    BUCKETS.find((b) => b.key === bucketParam)?.key ?? 'white_belt';
+  const show = (k: Bucket) => bucket === 'all' || bucket === k;
 
   const preCourse = lessons.filter(
     (l: any) =>
@@ -98,12 +126,30 @@ export default async function ContentAdminPage() {
         </p>
       </div>
 
-      {/* ─── Student curriculum — mirrors the COURSES constant
-          (src/lib/constants/courses.ts) and the CourseTab on the
-          student portal so the upload mental model matches what the
-          student sees. ─── */}
+      {/* ─── Bucket picker — pick the course / area you're uploading to. ── */}
+      <div className="flex flex-wrap gap-1.5 -mx-1 px-1 overflow-x-auto pb-1">
+        {BUCKETS.map((b) => {
+          const isActive = bucket === b.key;
+          return (
+            <Link
+              key={b.key}
+              href={`/content?bucket=${b.key}`}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                isActive
+                  ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+              }`}
+              style={{ fontFamily: 'DM Mono, monospace', letterSpacing: '0.04em' }}
+            >
+              {b.label.toUpperCase()}
+            </Link>
+          );
+        })}
+      </div>
 
-      {/* Pre-Course is shared across every belt course → top level. */}
+      {/* ─── Pre-Course bucket ─── */}
+      {show('pre_course') && (
+        <>
       <SectionHeader title="Pre-Course Fundamentals" subtitle="Shared by every belt course · Module 0" />
       <Section
         title="Pre-Course"
@@ -112,7 +158,12 @@ export default async function ContentAdminPage() {
         items={preCourse}
         kind="lesson"
       />
+        </>
+      )}
 
+      {/* ─── White Belt bucket ─── */}
+      {show('white_belt') && (
+        <>
       <SectionHeader title="Student · White Belt Masterclass" subtitle="course_section = wb_onboarding + white_belt" />
       <Section
         title="White Belt · Onboarding"
@@ -128,7 +179,12 @@ export default async function ContentAdminPage() {
         items={whiteBelt}
         kind="lesson"
       />
+        </>
+      )}
 
+      {/* ─── Yellow Belt bucket ─── */}
+      {show('yellow_belt') && (
+        <>
       <SectionHeader title="Student · Yellow Belt Masterclass" subtitle="course_section = yb_onboarding + yellow_belt" />
       <Section
         title="Yellow Belt · Onboarding"
@@ -144,7 +200,12 @@ export default async function ContentAdminPage() {
         items={yellowBelt}
         kind="lesson"
       />
+        </>
+      )}
 
+      {/* ─── Visual aids bucket ─── */}
+      {show('visual_aids') && (
+        <>
       <SectionHeader title="Visual aids · By STP" subtitle="Media attached directly to a step (appears in the coach Tools tab)" />
       <Section
         title="By STP — visual aids"
@@ -153,8 +214,12 @@ export default async function ContentAdminPage() {
         items={steps}
         kind="step"
       />
+        </>
+      )}
 
-      {/* ─── Coach curriculum, mirrors the coach portal Courses tab ─── */}
+      {/* ─── Coach Curriculum bucket ─── */}
+      {show('coach') && (
+        <>
       <SectionHeader title="Coach Curriculum" subtitle="Same order as the Courses tab in the coach portal" />
       <Section
         title="Coach · Tier 1 — Foundations"
@@ -235,7 +300,12 @@ export default async function ContentAdminPage() {
         items={ybTierIntegration}
         kind="lesson"
       />
+        </>
+      )}
 
+      {/* ─── Tools (drills + missions) bucket ─── */}
+      {show('tools') && (
+        <>
       <SectionHeader title="Tools · Drills + Missions" subtitle="Cross-belt catalog of training drills and in-water missions" />
       <Section
         title="Drills"
@@ -252,6 +322,8 @@ export default async function ContentAdminPage() {
         items={missions}
         kind="drill_mission"
       />
+        </>
+      )}
     </div>
   );
 }
