@@ -98,55 +98,64 @@ export default async function ContentAdminPage() {
         </p>
       </div>
 
-      <Section
-        title="By STP — visual aids"
-        icon={Waves}
-        subtitle="Attach videos, images and diagrams directly to a step (visible in the coach Tools tab)"
-        items={steps}
-        kind="step"
-      />
+      {/* ─── Student curriculum — mirrors the COURSES constant
+          (src/lib/constants/courses.ts) and the CourseTab on the
+          student portal so the upload mental model matches what the
+          student sees. ─── */}
 
+      {/* Pre-Course is shared across every belt course → top level. */}
+      <SectionHeader title="Pre-Course Fundamentals" subtitle="Shared by every belt course · Module 0" />
       <Section
         title="Pre-Course"
         icon={Scroll}
-        subtitle="8 items · Module 0"
+        subtitle="8 items · safety, etiquette, ocean literacy, training mindset"
         items={preCourse}
         kind="lesson"
       />
 
+      <SectionHeader title="Student · White Belt Masterclass" subtitle="course_section = wb_onboarding + white_belt" />
       <Section
-        title="Onboarding"
+        title="White Belt · Onboarding"
         icon={Compass}
         subtitle="6 items · Module 1"
         items={onboarding}
         kind="lesson"
       />
-
       <Section
-        title="White Belt Steps"
+        title="White Belt · Steps"
         icon={Waves}
-        subtitle="25 STPs · Module 2"
+        subtitle="25 STPs · Module 2 · Sequences 1–5"
         items={whiteBelt}
         kind="lesson"
       />
 
+      <SectionHeader title="Student · Yellow Belt Masterclass" subtitle="course_section = yb_onboarding + yellow_belt" />
       <Section
-        title="Yellow Belt Onboarding"
+        title="Yellow Belt · Onboarding"
         icon={Compass}
-        subtitle="Belt Value · Module 4"
+        subtitle="Belt Value Shift · Module 4 · Proceso / Resiliencia"
         items={ybOnboarding}
         kind="lesson"
       />
-
       <Section
-        title="Yellow Belt"
+        title="Yellow Belt · Sequences + Complete Ride + Exit Test"
         icon={Waves}
-        subtitle="8 STPs · Sequence 6.0 + 7.0 · Complete Ride · Exit Test"
+        subtitle="8 STPs · Sequence 6.0 + 7.0 · Module 7 + 8"
         items={yellowBelt}
         kind="lesson"
       />
 
+      <SectionHeader title="Visual aids · By STP" subtitle="Media attached directly to a step (appears in the coach Tools tab)" />
+      <Section
+        title="By STP — visual aids"
+        icon={Waves}
+        subtitle="Attach videos, images, diagrams, or documents to a specific step"
+        items={steps}
+        kind="step"
+      />
+
       {/* ─── Coach curriculum, mirrors the coach portal Courses tab ─── */}
+      <SectionHeader title="Coach Curriculum" subtitle="Same order as the Courses tab in the coach portal" />
       <Section
         title="Coach · Tier 1 — Foundations"
         icon={GraduationCap}
@@ -227,6 +236,7 @@ export default async function ContentAdminPage() {
         kind="lesson"
       />
 
+      <SectionHeader title="Tools · Drills + Missions" subtitle="Cross-belt catalog of training drills and in-water missions" />
       <Section
         title="Drills"
         icon={Dumbbell}
@@ -332,5 +342,24 @@ function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' |
         />
       </div>
     </details>
+  );
+}
+
+// ─── Group header — visually separates "WB Masterclass", "YB Masterclass",
+//     "Coach Curriculum", etc. so the admin scans the page like a TOC. ──
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="pt-4">
+      <p
+        className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[var(--tss-cyan,#5AC3E7)]"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        {title}
+      </p>
+      {subtitle && (
+        <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p>
+      )}
+      <div className="h-px bg-gray-100 mt-2" />
+    </div>
   );
 }
