@@ -11,6 +11,7 @@ export interface ContentVideo {
   lesson_id: string | null;
   drill_mission_id: string | null;
   step_id: string | null;
+  template_day_id: string | null;
   url: string;
   label: string | null;
   caption: string | null;
@@ -119,6 +120,7 @@ export async function addContentVideo(input: {
   lessonId?: string;
   drillMissionId?: string;
   stepId?: string;
+  templateDayId?: string;
   url: string;
   label?: string;
   caption?: string;
@@ -126,9 +128,16 @@ export async function addContentVideo(input: {
 }) {
   const supabase = await createClient();
 
-  const parents = [input.lessonId, input.drillMissionId, input.stepId].filter(Boolean);
+  const parents = [
+    input.lessonId,
+    input.drillMissionId,
+    input.stepId,
+    input.templateDayId,
+  ].filter(Boolean);
   if (parents.length !== 1) {
-    throw new Error('Provide exactly one of lessonId, drillMissionId or stepId.');
+    throw new Error(
+      'Provide exactly one of lessonId, drillMissionId, stepId or templateDayId.',
+    );
   }
   const cleanUrl = input.url.trim();
   if (!cleanUrl) throw new Error('URL is required.');
@@ -143,8 +152,14 @@ export async function addContentVideo(input: {
     ? 'lesson_id'
     : input.drillMissionId
     ? 'drill_mission_id'
-    : 'step_id';
-  const parentVal = input.lessonId || input.drillMissionId || input.stepId;
+    : input.stepId
+    ? 'step_id'
+    : 'template_day_id';
+  const parentVal =
+    input.lessonId ||
+    input.drillMissionId ||
+    input.stepId ||
+    input.templateDayId;
   const { data: existing } = await supabase
     .from('content_videos')
     .select('display_order')
@@ -159,6 +174,7 @@ export async function addContentVideo(input: {
       lesson_id: input.lessonId ?? null,
       drill_mission_id: input.drillMissionId ?? null,
       step_id: input.stepId ?? null,
+      template_day_id: input.templateDayId ?? null,
       url: cleanUrl,
       label: input.label?.trim() || null,
       caption: input.caption?.trim() || null,
@@ -172,7 +188,28 @@ export async function addContentVideo(input: {
   revalidatePath('/content');
   if (input.lessonId) revalidatePath(`/portal/[token]`, 'layout');
   if (input.stepId) revalidatePath(`/coach-portal/[token]`, 'layout');
+  if (input.templateDayId) revalidatePath(`/camps`, 'layout');
   return data as ContentVideo;
+}
+
+// Fetch media attached to one or many template_day_ids. Used by the
+// template edit page (hydration) and the camp reader (per-day strip).
+export async function getMediaForTemplateDays(dayIds: string[]) {
+  if (dayIds.length === 0) return new Map<string, ContentVideo[]>();
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('content_videos')
+    .select('*')
+    .in('template_day_id', dayIds)
+    .order('display_order');
+  const byDay = new Map<string, ContentVideo[]>();
+  for (const v of (data ?? []) as ContentVideo[]) {
+    if (!v.template_day_id) continue;
+    const arr = byDay.get(v.template_day_id) ?? [];
+    arr.push(v);
+    byDay.set(v.template_day_id, arr);
+  }
+  return byDay;
 }
 
 // ─── Update a video (label, url, display_order) ──
@@ -230,8 +267,14 @@ export async function reorderContentVideo(id: string, direction: 'up' | 'down') 
     ? 'lesson_id'
     : target.drill_mission_id
     ? 'drill_mission_id'
-    : 'step_id';
-  const parentVal = target.lesson_id || target.drill_mission_id || target.step_id;
+    : target.step_id
+    ? 'step_id'
+    : 'template_day_id';
+  const parentVal =
+    target.lesson_id ||
+    target.drill_mission_id ||
+    target.step_id ||
+    target.template_day_id;
   const cmp = direction === 'up' ? 'lt' : 'gt';
   const order = direction === 'up' ? 'desc' : 'asc';
 

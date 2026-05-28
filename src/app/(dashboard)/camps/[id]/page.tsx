@@ -1,4 +1,6 @@
 import { getCampDetail, getCampEvaluations, getScheduledEvaluations } from '@/lib/actions/camps';
+import { getCampPlanForRead } from '@/lib/actions/service-planner';
+import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
@@ -28,6 +30,16 @@ export default async function CampDetailPage({ params }: Props) {
       scheduledEvals = await getScheduledEvaluations(id);
     } catch { /* table may not exist yet */ }
   } catch { notFound(); }
+
+  // Read view of the linked template (Plan tab) — pulled here so we can
+  // render it server-side and avoid a client-only round-trip.
+  let planForRead: { templatePlan: any[]; templateMeta: any } = {
+    templatePlan: [],
+    templateMeta: { id: null, name: null, duration_days: null },
+  };
+  try {
+    planForRead = (await getCampPlanForRead(id)) as any;
+  } catch { /* missing template → reader renders empty-state */ }
 
   const { instance, participants, sessions } = camp;
   if (!instance) notFound();
@@ -105,6 +117,15 @@ export default async function CampDetailPage({ params }: Props) {
           )}
         </div>
       </div>
+
+      {/* Read the Plan — coach-facing manual of the linked template */}
+      {planForRead.templatePlan.length > 0 && (
+        <CampPlanReader
+          instanceId={instance.id}
+          templatePlan={planForRead.templatePlan}
+          templateMeta={planForRead.templateMeta}
+        />
+      )}
 
       {/* Final Evaluations CTA */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">

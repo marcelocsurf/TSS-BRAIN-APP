@@ -22,6 +22,7 @@ interface Props {
   lessonId?: string;
   drillMissionId?: string;
   stepId?: string;
+  templateDayId?: string;
 }
 
 const MEDIA_OPTIONS: { value: 'video' | 'image' | 'diagram' | 'document'; label: string; placeholder: string }[] = [
@@ -31,7 +32,7 @@ const MEDIA_OPTIONS: { value: 'video' | 'image' | 'diagram' | 'document'; label:
   { value: 'document', label: 'Document', placeholder: 'PowerPoint / PDF / Google Slides URL — Drive sharing link or docs.google.com/presentation/…' },
 ];
 
-export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId }: Props) {
+export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, templateDayId }: Props) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [newUrl, setNewUrl] = useState('');
@@ -53,6 +54,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId }
           lessonId,
           drillMissionId,
           stepId,
+          templateDayId,
           url: newUrl,
           label: newLabel || undefined,
           caption: newCaption || undefined,

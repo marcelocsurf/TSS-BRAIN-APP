@@ -18,6 +18,8 @@ import {
 } from '@/lib/constants/brand';
 import { getTemplateCatalog, type TemplateCatalog } from '@/lib/actions/template-catalog';
 import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
+import { ContentVideoManager } from '@/components/content/ContentVideoManager';
+import type { ContentVideo } from '@/lib/actions/content';
 
 import { LEVEL_NAMES } from '@/lib/constants/belts';
 const LEVEL_OPTIONS = LEVEL_NAMES;
@@ -76,9 +78,11 @@ interface Props {
   mode: 'create' | 'edit';
   templateId?: string;
   initialData?: CreateTemplateInput;
+  /** Edit mode only — per-day media keyed by template_day_id. */
+  dayMedia?: Record<string, ContentVideo[]>;
 }
 
-export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
+export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -601,6 +605,34 @@ export function TemplateBuilderForm({ mode, templateId, initialData }: Props) {
                   )}
                 </div>
               </div>
+
+              {/* ── SUPPORT MATERIAL (PPT / video / image / diagram) ── */}
+              {day.id ? (
+                <div className="border-t border-gray-100 pt-3">
+                  <h4
+                    className="text-xs font-semibold text-[var(--tss-navy)] mb-2"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  >
+                    Support Material
+                  </h4>
+                  <p className="text-[10px] text-gray-500 mb-2 leading-relaxed">
+                    PowerPoint / Google Slides / videos / images for this day.
+                    The coach sees them inline on /camps/[id] when reading the
+                    plan.
+                  </p>
+                  <ContentVideoManager
+                    templateDayId={day.id}
+                    videos={dayMedia?.[day.id] ?? []}
+                  />
+                </div>
+              ) : (
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-[10px] text-gray-400 italic">
+                    Save this template once to enable per-day support material
+                    upload.
+                  </p>
+                </div>
+              )}
 
               {/* ── BLOCKS ── */}
               <div className="border-t border-gray-100 pt-3">

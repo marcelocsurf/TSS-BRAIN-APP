@@ -939,6 +939,8 @@ export interface TemplateBlockInput {
 }
 
 export interface TemplateDayInput {
+  /** Present only in edit mode — required for the per-day media uploader to attach assets. */
+  id?: string;
   day_number: number;
   venue_default: string | null;
   ocean_condition_target: string | null;

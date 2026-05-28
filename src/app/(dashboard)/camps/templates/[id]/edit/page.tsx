@@ -1,4 +1,5 @@
 import { getTemplateDetail, listAllAcademies, listTemplateAssignments } from '@/lib/actions/camps';
+import { getMediaForTemplateDays, type ContentVideo } from '@/lib/actions/content';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { TemplateBuilderForm } from '@/components/camp/TemplateBuilderForm';
 import { TemplateAssignmentPanel } from '@/components/camp/TemplateAssignmentPanel';
@@ -31,6 +32,11 @@ export default async function EditCampTemplatePage({ params }: Props) {
     ? await Promise.all([listAllAcademies(), listTemplateAssignments(id)])
     : [[], []];
 
+  // Per-day support material (PPT / video / image / diagram). M77 lets
+  // content_videos.template_day_id link assets directly to a day.
+  const dayIds = days.map((d: any) => d.id);
+  const mediaByDay = await getMediaForTemplateDays(dayIds);
+
   // Convert to initialData shape
   const initialData: CreateTemplateInput = {
     template_name: template.template_name || '',
@@ -51,6 +57,7 @@ export default async function EditCampTemplatePage({ params }: Props) {
         .sort((a: any, b: any) => a.block_order - b.block_order);
 
       return {
+        id: day.id,
         day_number: day.day_number,
         venue_default: day.venue_default,
         ocean_condition_target: day.ocean_condition_target,
@@ -131,7 +138,12 @@ export default async function EditCampTemplatePage({ params }: Props) {
         />
       )}
 
-      <TemplateBuilderForm mode="edit" templateId={id} initialData={initialData} />
+      <TemplateBuilderForm
+        mode="edit"
+        templateId={id}
+        initialData={initialData}
+        dayMedia={Object.fromEntries(mediaByDay.entries()) as Record<string, ContentVideo[]>}
+      />
     </div>
   );
 }

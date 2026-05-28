@@ -78,19 +78,59 @@ export interface ServicePlanData {
   templatePlan: Array<{
     day_number: number;
     day_goal: string | null;
+    venue_default: string | null;
+    ocean_condition_target: string | null;
+    evaluation_focus: string | null;
+    day_notes: string | null;
+    // M77 — per-day support material (PPT / video / image / diagram).
+    media: Array<{
+      id: string;
+      url: string;
+      label: string | null;
+      caption: string | null;
+      media_type: 'video' | 'image' | 'diagram' | 'document';
+      display_order: number;
+    }>;
     blocks: Array<{
       block_order: number;
+      pilar: string | null;
+      pilar_part: string | null;
+      block_type: string | null;
+      mission_time: string | null;
+      repetitions_default: number | null;
+      warm_up: string | null;
+      simulation: string | null;
+      mental_hack: string | null;
+      evaluation_focus: string | null;
       step_id: string | null;
+      step_title: string | null;
+      // Resolved drill (canonical via FK, or custom freeform text).
       drill_id: string | null;
       drill_custom: string | null;
+      drill: {
+        title: string;
+        description_md: string | null;
+        key_words: string[] | null;
+        success_criteria: string[] | null;
+        time_estimate: string | null;
+      } | null;
+      // Resolved mission.
       mission_id: string | null;
       mission_custom: string | null;
-      mental_hack: string | null;
-      warm_up: string | null;
-      evaluation_focus: string | null;
-      mission_time: string | null;
+      mission: {
+        title: string;
+        description_md: string | null;
+        key_words: string[] | null;
+        success_criteria: string[] | null;
+        time_estimate: string | null;
+      } | null;
     }>;
   }>;
+  templateMeta: {
+    id: string | null;
+    name: string | null;
+    duration_days: number | null;
+  };
 }
 
 export interface StudentProfileSnapshot {
@@ -203,7 +243,7 @@ export async function getServicePlan(
   const { data: camp } = await admin
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, camp_templates:template_id(template_name, service_kind)'
+      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, camp_templates:template_id(template_name, service_kind, duration_days)'
     )
     .eq('id', campInstanceId)
     .single();
@@ -473,12 +513,18 @@ export async function getServicePlan(
 
   // M44 — load the template plan if there is a template attached.
   // Days come from camp_template_days, blocks from camp_template_blocks
-  // (joined via template_day_id). The UI shows them grouped per day.
+  // (joined via template_day_id). Phase B (read view) needs drill +
+  // mission FULL detail inline so we fetch + merge them here.
   let templatePlan: ServicePlanData['templatePlan'] = [];
+  const templateMeta: ServicePlanData['templateMeta'] = {
+    id: (camp as any).template_id ?? null,
+    name: tpl?.template_name ?? null,
+    duration_days: tpl?.duration_days ?? null,
+  };
   if ((camp as any).template_id) {
     const { data: tplDays } = await admin
       .from('camp_template_days')
-      .select('id, day_number, day_goal')
+      .select('id, day_number, day_goal, venue_default, ocean_condition_target, evaluation_focus, day_notes')
       .eq('template_id', (camp as any).template_id)
       .order('day_number');
     if (tplDays && tplDays.length > 0) {
@@ -486,27 +532,103 @@ export async function getServicePlan(
       const { data: tplBlocks } = await admin
         .from('camp_template_blocks')
         .select(
-          'template_day_id, block_order, step_id, drill_id, drill_custom, mission_id, mission_custom, mental_hack, warm_up, evaluation_focus, mission_time'
+          'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom'
         )
         .in('template_day_id', dayIds)
         .order('block_order');
+
+      // Resolve drill + mission + step titles in one round-trip each.
+      const drillIds = Array.from(new Set((tplBlocks ?? []).map((b: any) => b.drill_id).filter(Boolean)));
+      const missionIds = Array.from(new Set((tplBlocks ?? []).map((b: any) => b.mission_id).filter(Boolean)));
+      const stepIds = Array.from(new Set((tplBlocks ?? []).map((b: any) => b.step_id).filter(Boolean)));
+
+      const drillMap = new Map<string, any>();
+      const missionMap = new Map<string, any>();
+      const stepMap = new Map<string, any>();
+      if (drillIds.length > 0 || missionIds.length > 0) {
+        const { data: dms } = await admin
+          .from('drills_missions')
+          .select('id, title, description_md, key_words, success_criteria, time_estimate, type')
+          .in('id', [...drillIds, ...missionIds]);
+        for (const d of dms ?? []) {
+          if (d.type === 'drill') drillMap.set(d.id, d);
+          else if (d.type === 'mission') missionMap.set(d.id, d);
+        }
+      }
+      if (stepIds.length > 0) {
+        const { data: stps } = await admin
+          .from('lessons')
+          .select('id, title')
+          .in('id', stepIds);
+        for (const s of stps ?? []) stepMap.set(s.id, s);
+      }
+
+      // M77 — per-day support media so the coach portal CampPlanReader
+      // can surface PPT / video / image strips inline.
+      const { data: mediaRows } = await admin
+        .from('content_videos')
+        .select('id, template_day_id, url, label, caption, media_type, display_order')
+        .in('template_day_id', tplDays.map((d: any) => d.id))
+        .order('display_order');
+      const mediaByDay = new Map<string, any[]>();
+      for (const m of mediaRows ?? []) {
+        if (!m.template_day_id) continue;
+        const arr = mediaByDay.get(m.template_day_id) ?? [];
+        arr.push(m);
+        mediaByDay.set(m.template_day_id, arr);
+      }
+
       templatePlan = tplDays.map((d: any) => ({
         day_number: d.day_number,
         day_goal: d.day_goal,
+        venue_default: d.venue_default ?? null,
+        ocean_condition_target: d.ocean_condition_target ?? null,
+        evaluation_focus: d.evaluation_focus ?? null,
+        day_notes: d.day_notes ?? null,
+        media: mediaByDay.get(d.id) ?? [],
         blocks: (tplBlocks ?? [])
           .filter((b: any) => b.template_day_id === d.id)
-          .map((b: any) => ({
-            block_order: b.block_order,
-            step_id: b.step_id ?? null,
-            drill_id: b.drill_id ?? null,
-            drill_custom: b.drill_custom ?? null,
-            mission_id: b.mission_id ?? null,
-            mission_custom: b.mission_custom ?? null,
-            mental_hack: b.mental_hack ?? null,
-            warm_up: b.warm_up ?? null,
-            evaluation_focus: b.evaluation_focus ?? null,
-            mission_time: b.mission_time ?? null,
-          })),
+          .map((b: any) => {
+            const drillRow = b.drill_id ? drillMap.get(b.drill_id) : null;
+            const missionRow = b.mission_id ? missionMap.get(b.mission_id) : null;
+            const stepRow = b.step_id ? stepMap.get(b.step_id) : null;
+            return {
+              block_order: b.block_order,
+              pilar: b.pilar ?? null,
+              pilar_part: b.pilar_part ?? null,
+              block_type: b.block_type ?? null,
+              mission_time: b.mission_time ?? null,
+              repetitions_default: b.repetitions_default ?? null,
+              warm_up: b.warm_up ?? null,
+              simulation: b.simulation ?? null,
+              mental_hack: b.mental_hack ?? null,
+              evaluation_focus: b.evaluation_focus ?? null,
+              step_id: b.step_id ?? null,
+              step_title: stepRow?.title ?? null,
+              drill_id: b.drill_id ?? null,
+              drill_custom: b.drill_custom ?? null,
+              drill: drillRow
+                ? {
+                    title: drillRow.title,
+                    description_md: drillRow.description_md ?? null,
+                    key_words: drillRow.key_words ?? null,
+                    success_criteria: drillRow.success_criteria ?? null,
+                    time_estimate: drillRow.time_estimate ?? null,
+                  }
+                : null,
+              mission_id: b.mission_id ?? null,
+              mission_custom: b.mission_custom ?? null,
+              mission: missionRow
+                ? {
+                    title: missionRow.title,
+                    description_md: missionRow.description_md ?? null,
+                    key_words: missionRow.key_words ?? null,
+                    success_criteria: missionRow.success_criteria ?? null,
+                    time_estimate: missionRow.time_estimate ?? null,
+                  }
+                : null,
+            };
+          }),
       }));
     }
   }
@@ -547,7 +669,150 @@ export async function getServicePlan(
     stpCatalog: (stpRows ?? []) as any[],
     coachRatingByStudentStep,
     templatePlan,
+    templateMeta,
   };
+}
+
+// ─── Lightweight template-plan fetch for read-only surfaces
+// (camp detail page, coach Plan tab). Pulls the same templatePlan +
+// templateMeta as getServicePlan but without needing a coach token /
+// camp session id — just the camp_instance id.
+export async function getCampPlanForRead(
+  campInstanceId: string,
+): Promise<{
+  templatePlan: ServicePlanData['templatePlan'];
+  templateMeta: ServicePlanData['templateMeta'];
+}> {
+  const admin = createAdminClient();
+
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('template_id, camp_templates(template_name, duration_days)')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+
+  const tpl: any = Array.isArray((camp as any)?.camp_templates)
+    ? (camp as any).camp_templates[0]
+    : (camp as any)?.camp_templates;
+
+  const templateMeta: ServicePlanData['templateMeta'] = {
+    id: (camp as any)?.template_id ?? null,
+    name: tpl?.template_name ?? null,
+    duration_days: tpl?.duration_days ?? null,
+  };
+
+  if (!templateMeta.id) return { templatePlan: [], templateMeta };
+
+  const { data: tplDays } = await admin
+    .from('camp_template_days')
+    .select('id, day_number, day_goal, venue_default, ocean_condition_target, evaluation_focus, day_notes')
+    .eq('template_id', templateMeta.id)
+    .order('day_number');
+
+  if (!tplDays || tplDays.length === 0) return { templatePlan: [], templateMeta };
+
+  const dayIds = tplDays.map((d: any) => d.id);
+  const { data: tplBlocks } = await admin
+    .from('camp_template_blocks')
+    .select(
+      'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom',
+    )
+    .in('template_day_id', dayIds)
+    .order('block_order');
+
+  const drillIds = Array.from(new Set((tplBlocks ?? []).map((b: any) => b.drill_id).filter(Boolean)));
+  const missionIds = Array.from(new Set((tplBlocks ?? []).map((b: any) => b.mission_id).filter(Boolean)));
+  const stepIds = Array.from(new Set((tplBlocks ?? []).map((b: any) => b.step_id).filter(Boolean)));
+
+  const drillMap = new Map<string, any>();
+  const missionMap = new Map<string, any>();
+  const stepMap = new Map<string, any>();
+  if (drillIds.length > 0 || missionIds.length > 0) {
+    const { data: dms } = await admin
+      .from('drills_missions')
+      .select('id, title, description_md, key_words, success_criteria, time_estimate, type')
+      .in('id', [...drillIds, ...missionIds]);
+    for (const d of dms ?? []) {
+      if (d.type === 'drill') drillMap.set(d.id, d);
+      else if (d.type === 'mission') missionMap.set(d.id, d);
+    }
+  }
+  if (stepIds.length > 0) {
+    const { data: stps } = await admin
+      .from('lessons')
+      .select('id, title')
+      .in('id', stepIds);
+    for (const s of stps ?? []) stepMap.set(s.id, s);
+  }
+
+  // M77 — per-day support media (PPT / video / image / diagram).
+  const { data: mediaRows } = await admin
+    .from('content_videos')
+    .select('id, template_day_id, url, label, caption, media_type, display_order')
+    .in('template_day_id', dayIds)
+    .order('display_order');
+  const mediaByDay = new Map<string, any[]>();
+  for (const m of mediaRows ?? []) {
+    if (!m.template_day_id) continue;
+    const arr = mediaByDay.get(m.template_day_id) ?? [];
+    arr.push(m);
+    mediaByDay.set(m.template_day_id, arr);
+  }
+
+  const templatePlan: ServicePlanData['templatePlan'] = tplDays.map((d: any) => ({
+    day_number: d.day_number,
+    day_goal: d.day_goal,
+    venue_default: d.venue_default ?? null,
+    ocean_condition_target: d.ocean_condition_target ?? null,
+    evaluation_focus: d.evaluation_focus ?? null,
+    day_notes: d.day_notes ?? null,
+    media: mediaByDay.get(d.id) ?? [],
+    blocks: (tplBlocks ?? [])
+      .filter((b: any) => b.template_day_id === d.id)
+      .map((b: any) => {
+        const drillRow = b.drill_id ? drillMap.get(b.drill_id) : null;
+        const missionRow = b.mission_id ? missionMap.get(b.mission_id) : null;
+        const stepRow = b.step_id ? stepMap.get(b.step_id) : null;
+        return {
+          block_order: b.block_order,
+          pilar: b.pilar ?? null,
+          pilar_part: b.pilar_part ?? null,
+          block_type: b.block_type ?? null,
+          mission_time: b.mission_time ?? null,
+          repetitions_default: b.repetitions_default ?? null,
+          warm_up: b.warm_up ?? null,
+          simulation: b.simulation ?? null,
+          mental_hack: b.mental_hack ?? null,
+          evaluation_focus: b.evaluation_focus ?? null,
+          step_id: b.step_id ?? null,
+          step_title: stepRow?.title ?? null,
+          drill_id: b.drill_id ?? null,
+          drill_custom: b.drill_custom ?? null,
+          drill: drillRow
+            ? {
+                title: drillRow.title,
+                description_md: drillRow.description_md ?? null,
+                key_words: drillRow.key_words ?? null,
+                success_criteria: drillRow.success_criteria ?? null,
+                time_estimate: drillRow.time_estimate ?? null,
+              }
+            : null,
+          mission_id: b.mission_id ?? null,
+          mission_custom: b.mission_custom ?? null,
+          mission: missionRow
+            ? {
+                title: missionRow.title,
+                description_md: missionRow.description_md ?? null,
+                key_words: missionRow.key_words ?? null,
+                success_criteria: missionRow.success_criteria ?? null,
+                time_estimate: missionRow.time_estimate ?? null,
+              }
+            : null,
+        };
+      }),
+  }));
+
+  return { templatePlan, templateMeta };
 }
 
 // ─── Save plan-level (venue + warm-up + mental hack + notes) ──────

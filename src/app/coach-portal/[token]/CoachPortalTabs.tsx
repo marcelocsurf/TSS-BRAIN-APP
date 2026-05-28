@@ -8,6 +8,7 @@ import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/li
 import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
+import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import {
   Home,
@@ -1146,6 +1147,10 @@ function PlanTab({
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
   const [planData, setPlanData] = useState<ServicePlanData | null>(null);
   const [loading, setLoading] = useState(false);
+  // 'read' = the polished day-by-day manual (CampPlanReader). 'run' =
+  // the per-day SessionPlanner (live execution). Default to 'read' so
+  // the coach lands on the full plan with support material first.
+  const [planView, setPlanView] = useState<'read' | 'run'>('read');
 
   const openPlanner = async (campId: string, dayNumber?: number) => {
     setSelectedCampId(campId);
@@ -1163,6 +1168,7 @@ function PlanTab({
   const close = () => {
     setSelectedCampId(null);
     setPlanData(null);
+    setPlanView('read');
   };
 
   // M45 — reload the planner for a different day without leaving the screen.
@@ -1197,7 +1203,48 @@ function PlanTab({
         </div>
       );
     }
-    return <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} />;
+    return (
+      <div className="space-y-3">
+        {/* Mode toggle: Read the Plan (manual) ↔ Run the Session (live editor) */}
+        <div className="flex items-center justify-between gap-2 px-1">
+          <button
+            type="button"
+            onClick={close}
+            className="text-[12px] text-[var(--tss-navy)] hover:underline"
+          >
+            ← Back to services
+          </button>
+          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+            {(['read', 'run'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setPlanView(v)}
+                className={`px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition-colors ${
+                  planView === v
+                    ? 'bg-[var(--tss-navy)] text-white'
+                    : 'bg-white text-gray-500 hover:text-gray-800'
+                }`}
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              >
+                {v === 'read' ? 'Read the Plan' : 'Run the Session'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {planView === 'read' ? (
+          <CampPlanReader
+            instanceId={selectedCampId}
+            coachToken={token}
+            templatePlan={planData.templatePlan}
+            templateMeta={planData.templateMeta}
+          />
+        ) : (
+          <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} />
+        )}
+      </div>
+    );
   }
 
   return (
