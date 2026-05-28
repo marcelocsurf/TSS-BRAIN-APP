@@ -564,18 +564,22 @@ export async function getServicePlan(
       }
 
       // M77 — per-day support media so the coach portal CampPlanReader
-      // can surface PPT / video / image strips inline.
-      const { data: mediaRows } = await admin
-        .from('content_videos')
-        .select('id, template_day_id, url, label, caption, media_type, display_order')
-        .in('template_day_id', tplDays.map((d: any) => d.id))
-        .order('display_order');
+      // can surface PPT / video / image strips inline. Fail-soft.
       const mediaByDay = new Map<string, any[]>();
-      for (const m of mediaRows ?? []) {
-        if (!m.template_day_id) continue;
-        const arr = mediaByDay.get(m.template_day_id) ?? [];
-        arr.push(m);
-        mediaByDay.set(m.template_day_id, arr);
+      try {
+        const { data: mediaRows } = await admin
+          .from('content_videos')
+          .select('id, template_day_id, url, label, caption, media_type, display_order')
+          .in('template_day_id', tplDays.map((d: any) => d.id))
+          .order('display_order');
+        for (const m of mediaRows ?? []) {
+          if (!m.template_day_id) continue;
+          const arr = mediaByDay.get(m.template_day_id) ?? [];
+          arr.push(m);
+          mediaByDay.set(m.template_day_id, arr);
+        }
+      } catch (e) {
+        console.error('[getServicePlan] media fetch failed:', e);
       }
 
       templatePlan = tplDays.map((d: any) => ({
@@ -746,17 +750,23 @@ export async function getCampPlanForRead(
   }
 
   // M77 — per-day support media (PPT / video / image / diagram).
-  const { data: mediaRows } = await admin
-    .from('content_videos')
-    .select('id, template_day_id, url, label, caption, media_type, display_order')
-    .in('template_day_id', dayIds)
-    .order('display_order');
+  // Fail-soft: if the column doesn't exist yet, render the plan without
+  // support material instead of crashing the whole page.
   const mediaByDay = new Map<string, any[]>();
-  for (const m of mediaRows ?? []) {
-    if (!m.template_day_id) continue;
-    const arr = mediaByDay.get(m.template_day_id) ?? [];
-    arr.push(m);
-    mediaByDay.set(m.template_day_id, arr);
+  try {
+    const { data: mediaRows } = await admin
+      .from('content_videos')
+      .select('id, template_day_id, url, label, caption, media_type, display_order')
+      .in('template_day_id', dayIds)
+      .order('display_order');
+    for (const m of mediaRows ?? []) {
+      if (!m.template_day_id) continue;
+      const arr = mediaByDay.get(m.template_day_id) ?? [];
+      arr.push(m);
+      mediaByDay.set(m.template_day_id, arr);
+    }
+  } catch (e) {
+    console.error('[getCampPlanForRead] media fetch failed:', e);
   }
 
   const templatePlan: ServicePlanData['templatePlan'] = tplDays.map((d: any) => ({

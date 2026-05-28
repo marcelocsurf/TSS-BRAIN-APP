@@ -33,9 +33,16 @@ export default async function EditCampTemplatePage({ params }: Props) {
     : [[], []];
 
   // Per-day support material (PPT / video / image / diagram). M77 lets
-  // content_videos.template_day_id link assets directly to a day.
+  // content_videos.template_day_id link assets directly to a day. If
+  // the migration isn't applied yet on this DB, fail soft so the page
+  // still renders without the support-material panel.
   const dayIds = days.map((d: any) => d.id);
-  const mediaByDay = await getMediaForTemplateDays(dayIds);
+  let mediaByDay = new Map<string, ContentVideo[]>();
+  try {
+    mediaByDay = await getMediaForTemplateDays(dayIds);
+  } catch (e) {
+    console.error('[template edit] getMediaForTemplateDays failed:', e);
+  }
 
   // Convert to initialData shape
   const initialData: CreateTemplateInput = {
