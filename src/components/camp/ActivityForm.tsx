@@ -195,7 +195,10 @@ function LandDrillFields({
   const onPick = (patch: Partial<TemplateBlockInput>) => {
     const extra: Partial<TemplateBlockInput> = {};
 
-    // STP picked → seed all 4 EDPF fields from the lesson body.
+    // STP picked → seed EDPF fields from the lesson body. Feedback is
+    // built from positive coach cues aggregated across all drills of
+    // this STP (per canon: "Errors are signals, not failures" — give
+    // cues, not error lists). The errors_md field is NOT used here.
     if ('step_id' in patch && patch.step_id && catalog) {
       const stp = catalog.stps.find((s) => s.id === patch.step_id);
       if (stp) {
@@ -208,24 +211,31 @@ function LandDrillFields({
         if (!block.simulate_md && stp.drill_md) {
           extra.simulate_md = summarize(stp.drill_md, 280);
         }
-        if (!block.feedback_md && stp.errors_md) {
-          // STP's errors_md = common errors → exactly the corrective
-          // feedback the coach should anticipate.
-          extra.feedback_md = summarize(stp.errors_md, 280);
+        if (!block.feedback_md) {
+          // Aggregate top-N key_words across ALL drills of this STP.
+          const drills = catalog.drills.filter((d) => d.step_id === patch.step_id);
+          const cues = uniqueCues(drills);
+          if (cues.length > 0) {
+            extra.feedback_md = formatCues(cues.slice(0, 5));
+          }
         }
       }
     }
 
-    // Canonical drill picked → its description is more specific than
-    // the STP's drill_md, override Simulate. Time + reps also seed.
+    // Canonical drill picked → its description refines Simulate. Its
+    // own key_words refine Feedback (more focused than the aggregate).
+    // Time + reps also seed.
     if ('drill_id' in patch && patch.drill_id && catalog) {
       const drill = catalog.drills.find((d) => d.id === patch.drill_id);
       if (drill) {
         if (drill.description_md) {
-          // Override even if STP body was filled — drill body is more
-          // specific. But keep coach edits: only override if the field
-          // currently holds the STP-derived auto-text or is empty.
           extra.simulate_md = summarize(drill.description_md, 320);
+        }
+        if (drill.key_words && drill.key_words.length > 0) {
+          // Override the STP-aggregated cues with the drill-specific
+          // ones — these are the cues the coach repeats during this
+          // exact drill.
+          extra.feedback_md = formatCues(drill.key_words);
         }
         if (!block.mission_time || block.mission_time === '15') {
           const t = parseTimeEstimate(drill.time_estimate);
@@ -291,7 +301,7 @@ function LandDrillFields({
         />
         <EdpfArea
           label="Feedback"
-          hint="One specific correction · keep positive"
+          hint="Key cues + positive corrections to repeat during the drill (not error lists). Auto-filled from the drill's key_words when picked."
           value={block.feedback_md ?? ''}
           onChange={(v) => onChange({ feedback_md: v })}
         />
@@ -343,6 +353,35 @@ function parseReps(text: string | null | undefined): number | null {
   if (!text) return null;
   const match = text.match(/\d+/);
   return match ? parseInt(match[0], 10) : null;
+}
+
+/**
+ * Aggregate unique key_words across a set of drills, preserving the
+ * first-seen order. Drives the STP-level default for Land Drill's
+ * Feedback field (cues, not errors).
+ */
+function uniqueCues(drills: { key_words: string[] | null }[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const d of drills) {
+    for (const k of d.key_words ?? []) {
+      const trimmed = k.trim();
+      if (!trimmed) continue;
+      const lower = trimmed.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      out.push(trimmed);
+    }
+  }
+  return out;
+}
+
+/**
+ * Render a list of cues as a single bullet line suitable for the
+ * Feedback textarea. Reads as actionable coach prompts.
+ */
+function formatCues(cues: string[]): string {
+  return cues.map((c) => `• ${c}`).join('\n');
 }
 
 // Default time (minutes) when a sub-typed routine is picked. Lets the
