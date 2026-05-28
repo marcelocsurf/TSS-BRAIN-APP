@@ -151,18 +151,23 @@ function WaterMissionFields({
           missions={catalog.missions}
           slots="mission_only"
           onChange={(patch) => {
-            // Auto-populate Eval Focus from the mission's
-            // success_criteria when picked, if not edited.
-            const extra: Record<string, unknown> = {};
-            if (
-              'mission_id' in patch &&
-              patch.mission_id &&
-              !block.evaluation_focus &&
-              catalog
-            ) {
+            // Auto-populate from the canonical mission: eval focus
+            // (success_criteria), time_estimate, reps_recommended.
+            const extra: Partial<TemplateBlockInput> = {};
+            if ('mission_id' in patch && patch.mission_id && catalog) {
               const m = catalog.missions.find((x) => x.id === patch.mission_id);
-              if (m?.success_criteria && m.success_criteria.length > 0) {
-                extra.evaluation_focus = m.success_criteria.join(' · ');
+              if (m) {
+                if (!block.evaluation_focus && m.success_criteria && m.success_criteria.length > 0) {
+                  extra.evaluation_focus = m.success_criteria.join(' · ');
+                }
+                if (!block.mission_time || block.mission_time === '15') {
+                  const t = parseTimeEstimate(m.time_estimate);
+                  if (t) extra.mission_time = t;
+                }
+                if (block.repetitions_default == null) {
+                  const r = parseReps(m.reps_recommended);
+                  if (r != null) extra.repetitions_default = r;
+                }
               }
             }
             onChange({ ...patch, ...extra });
@@ -184,22 +189,55 @@ function LandDrillFields({
   catalog: TemplateCatalog | null;
   onChange: (patch: Partial<TemplateBlockInput>) => void;
 }) {
-  // When the STP changes, auto-fill EDPF fields that are still empty,
-  // using the canonical lesson body. The admin can edit from there.
-  // Manual edits are never overwritten.
+  // When the STP changes, auto-fill EDPF fields that are still empty.
+  // When a canonical drill is picked, its body and time/reps refine the
+  // STP-level defaults. Manual edits are never overwritten.
   const onPick = (patch: Partial<TemplateBlockInput>) => {
     const extra: Partial<TemplateBlockInput> = {};
+
+    // STP picked → seed all 4 EDPF fields from the lesson body.
     if ('step_id' in patch && patch.step_id && catalog) {
       const stp = catalog.stps.find((s) => s.id === patch.step_id);
       if (stp) {
         if (!block.explain_md && stp.description_md) {
           extra.explain_md = summarize(stp.description_md, 280);
         }
+        if (!block.demonstrate_md && stp.video_url) {
+          extra.demonstrate_md = `Demo video: ${stp.video_url}`;
+        }
         if (!block.simulate_md && stp.drill_md) {
           extra.simulate_md = summarize(stp.drill_md, 280);
         }
+        if (!block.feedback_md && stp.errors_md) {
+          // STP's errors_md = common errors → exactly the corrective
+          // feedback the coach should anticipate.
+          extra.feedback_md = summarize(stp.errors_md, 280);
+        }
       }
     }
+
+    // Canonical drill picked → its description is more specific than
+    // the STP's drill_md, override Simulate. Time + reps also seed.
+    if ('drill_id' in patch && patch.drill_id && catalog) {
+      const drill = catalog.drills.find((d) => d.id === patch.drill_id);
+      if (drill) {
+        if (drill.description_md) {
+          // Override even if STP body was filled — drill body is more
+          // specific. But keep coach edits: only override if the field
+          // currently holds the STP-derived auto-text or is empty.
+          extra.simulate_md = summarize(drill.description_md, 320);
+        }
+        if (!block.mission_time || block.mission_time === '15') {
+          const t = parseTimeEstimate(drill.time_estimate);
+          if (t) extra.mission_time = t;
+        }
+        if (block.repetitions_default == null) {
+          const r = parseReps(drill.reps_recommended);
+          if (r != null) extra.repetitions_default = r;
+        }
+      }
+    }
+
     onChange({ ...patch, ...extra });
   };
 
@@ -279,6 +317,50 @@ function summarize(md: string, max: number): string {
   return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
 }
 
+/**
+ * Parse a canonical drill/mission `time_estimate` text ("15 min",
+ * "20-30 min", "30") into the closest MISSION_TIME_OPTIONS value.
+ * Returns null when nothing parseable is found.
+ */
+function parseTimeEstimate(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const match = text.match(/\d+/);
+  if (!match) return null;
+  const n = parseInt(match[0], 10);
+  // MISSION_TIME_OPTIONS values: 10, 15, 20, 30, 45, 60.
+  const options = [10, 15, 20, 30, 45, 60];
+  const closest = options.reduce((best, cur) =>
+    Math.abs(cur - n) < Math.abs(best - n) ? cur : best,
+  );
+  return String(closest);
+}
+
+/**
+ * Parse a `reps_recommended` text ("8 reps", "5-8", "10x") into the
+ * first integer. Returns null when nothing parseable is found.
+ */
+function parseReps(text: string | null | undefined): number | null {
+  if (!text) return null;
+  const match = text.match(/\d+/);
+  return match ? parseInt(match[0], 10) : null;
+}
+
+// Default time (minutes) when a sub-typed routine is picked. Lets the
+// admin land on a sensible duration without typing.
+const SUBTYPE_DEFAULT_TIME: Record<string, string> = {
+  // Warm-Up
+  head_to_toe: '10',
+  kids: '10',
+  specific: '15',
+  flow_motion: '10',
+  // Mental
+  bhastrika: '5',
+  box_breathing: '5',
+  visualization: '5',
+  key_words: '5',
+  focus_stamp: '5',
+};
+
 function EdpfArea({
   label,
   hint,
@@ -316,6 +398,15 @@ function WarmUpFields({
   block: TemplateBlockInput;
   onChange: (patch: Partial<TemplateBlockInput>) => void;
 }) {
+  const pickSubtype = (v: string) => {
+    const patch: Partial<TemplateBlockInput> = { activity_subtype: v || null };
+    // Seed default time when sub-type chosen and admin hasn't set one.
+    const def = SUBTYPE_DEFAULT_TIME[v];
+    if (def && (!block.mission_time || block.mission_time === '15')) {
+      patch.mission_time = def;
+    }
+    onChange(patch);
+  };
   return (
     <div>
       <label
@@ -326,7 +417,7 @@ function WarmUpFields({
       </label>
       <select
         value={block.activity_subtype ?? ''}
-        onChange={(e) => onChange({ activity_subtype: e.target.value || null })}
+        onChange={(e) => pickSubtype(e.target.value)}
         className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
       >
         <option value="">Pick a sub-type…</option>
@@ -356,6 +447,14 @@ function MentalFields({
   block: TemplateBlockInput;
   onChange: (patch: Partial<TemplateBlockInput>) => void;
 }) {
+  const pickSubtype = (v: string) => {
+    const patch: Partial<TemplateBlockInput> = { activity_subtype: v || null };
+    const def = SUBTYPE_DEFAULT_TIME[v];
+    if (def && (!block.mission_time || block.mission_time === '15')) {
+      patch.mission_time = def;
+    }
+    onChange(patch);
+  };
   return (
     <div>
       <label
@@ -366,7 +465,7 @@ function MentalFields({
       </label>
       <select
         value={block.activity_subtype ?? ''}
-        onChange={(e) => onChange({ activity_subtype: e.target.value || null })}
+        onChange={(e) => pickSubtype(e.target.value)}
         className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
       >
         <option value="">Pick a sub-type…</option>

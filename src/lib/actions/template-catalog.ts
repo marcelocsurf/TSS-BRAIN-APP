@@ -12,10 +12,14 @@ export interface CatalogStp {
   title: string;
   pillar: string | null;
   display_order: number;
-  /** Theory body — used to auto-populate the Land Drill "Explain" field. */
+  /** Theory body — auto-populates Land Drill "Explain". */
   description_md: string | null;
-  /** How-to-practice body — used to auto-populate the Land Drill "Simulate / Participate" field. */
+  /** How-to-practice body — auto-populates Land Drill "Simulate" (fallback when no canonical drill picked). */
   drill_md: string | null;
+  /** Common errors — auto-populates Land Drill "Feedback". */
+  errors_md: string | null;
+  /** Reference video — auto-populates Land Drill "Demonstrate". */
+  video_url: string | null;
 }
 
 export interface CatalogDrill {
@@ -26,6 +30,10 @@ export interface CatalogDrill {
   belt: string | null;
   key_words: string[] | null;
   time_estimate: string | null;
+  /** Recommended reps as text ("8 reps", "5-8") — parsed into repetitions_default. */
+  reps_recommended: string | null;
+  /** Drill / mission body — auto-populates Simulate (Land Drill) when a canonical drill is picked. */
+  description_md: string | null;
   block_name: string | null;
   display_order: number | null;
   success_criteria: string[] | null;
@@ -44,13 +52,13 @@ export async function getTemplateCatalog(levelName: string): Promise<TemplateCat
   const [stpRes, drillsRes] = await Promise.all([
     supabase
       .from('lessons')
-      .select('id, title, pillar, display_order, description_md, drill_md')
+      .select('id, title, pillar, display_order, description_md, drill_md, errors_md, video_url')
       .eq('course_section', 'white_belt')
       .eq('active', true)
       .order('display_order'),
     supabase
       .from('drills_missions')
-      .select('id, step_id, title, type, belt, key_words, time_estimate, block_name, display_order, success_criteria')
+      .select('id, step_id, title, type, belt, key_words, time_estimate, reps_recommended, description_md, block_name, display_order, success_criteria')
       .eq('active', true)
       .order('display_order'),
   ]);
