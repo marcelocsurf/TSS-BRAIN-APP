@@ -20,6 +20,8 @@ import { getTemplateCatalog, type TemplateCatalog } from '@/lib/actions/template
 import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
 import { ContentVideoManager } from '@/components/content/ContentVideoManager';
 import type { ContentVideo } from '@/lib/actions/content';
+import { ActivityForm } from '@/components/camp/ActivityForm';
+import { ACTIVITY_TYPES } from '@/lib/constants/brand';
 
 import { LEVEL_NAMES } from '@/lib/constants/belts';
 const LEVEL_OPTIONS = LEVEL_NAMES;
@@ -51,12 +53,20 @@ function emptyBlock(order: number): TemplateBlockInput {
     simulation: null,
     mental_hack: null,
     evaluation_focus: null,
-    block_type: 'mission',
+    block_type: 'water_mission',
     step_id: null,
     drill_id: null,
     drill_custom: null,
     mission_id: null,
     mission_custom: null,
+    // M78 — Activity taxonomy
+    explain_md: null,
+    demonstrate_md: null,
+    simulate_md: null,
+    feedback_md: null,
+    equipment: null,
+    activity_subtype: null,
+    step_ids: null,
   };
 }
 
@@ -192,6 +202,42 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
             }
           : d
       )
+    );
+  };
+
+  // Move a block up (-1) or down (+1). Re-numbers block_order so the
+  // DB write reflects the new order.
+  const moveBlock = (dayIdx: number, blockIdx: number, direction: -1 | 1) => {
+    setDays((prev) =>
+      prev.map((d, di) => {
+        if (di !== dayIdx) return d;
+        const target = blockIdx + direction;
+        if (target < 0 || target >= d.blocks.length) return d;
+        const next = [...d.blocks];
+        [next[blockIdx], next[target]] = [next[target], next[blockIdx]];
+        return {
+          ...d,
+          blocks: next.map((b, i) => ({ ...b, block_order: i + 1 })),
+        };
+      })
+    );
+  };
+
+  // Duplicate a block — copies all fields, inserts right after the
+  // original, re-numbers block_order.
+  const duplicateBlock = (dayIdx: number, blockIdx: number) => {
+    setDays((prev) =>
+      prev.map((d, di) => {
+        if (di !== dayIdx) return d;
+        const original = d.blocks[blockIdx];
+        const copy: TemplateBlockInput = { ...original };
+        const next = [
+          ...d.blocks.slice(0, blockIdx + 1),
+          copy,
+          ...d.blocks.slice(blockIdx + 1),
+        ].map((b, i) => ({ ...b, block_order: i + 1 }));
+        return { ...d, blocks: next };
+      })
     );
   };
 
@@ -634,169 +680,85 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 </div>
               )}
 
-              {/* ── BLOCKS ── */}
+              {/* ── ACTIVITIES (M78) ── */}
               <div className="border-t border-gray-100 pt-3">
-                <h4 className="text-xs font-semibold text-[var(--tss-navy)] mb-2" style={{ fontFamily: 'var(--font-mono)' }}>
-                  Mission Blocks
+                <h4
+                  className="text-xs font-semibold text-[var(--tss-navy)] mb-2"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  Activities
                 </h4>
 
                 <div className="space-y-3">
-                  {day.blocks.map((block, blockIdx) => (
-                    <div
-                      key={blockIdx}
-                      className="border border-gray-100 rounded-xl p-3 bg-gray-50/50"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded bg-[var(--tss-navy)] text-white text-[10px] font-bold flex items-center justify-center">
-                            {block.block_order}
-                          </span>
-                          <select
-                            value={block.block_type}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { block_type: e.target.value })}
-                            className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                          >
-                            {BLOCK_TYPE_OPTIONS.map((bt) => (
-                              <option key={bt.value} value={bt.value}>{bt.label}</option>
-                            ))}
-                          </select>
+                  {day.blocks.map((block, blockIdx) => {
+                    const activityType =
+                      ACTIVITY_TYPES.find((t) => t.value === block.block_type) ??
+                      ACTIVITY_TYPES.find((t) => t.value === 'custom')!;
+                    return (
+                      <div
+                        key={blockIdx}
+                        className="border border-gray-100 rounded-xl p-3 bg-gray-50/50 border-l-4"
+                        style={{ borderLeftColor: activityType.color }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded bg-[var(--tss-navy)] text-white text-[10px] font-bold flex items-center justify-center">
+                              {block.block_order}
+                            </span>
+                            <span
+                              className="text-[10px] uppercase tracking-wider font-semibold"
+                              style={{ fontFamily: 'var(--font-mono)', color: activityType.color }}
+                            >
+                              {activityType.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              title="Move up"
+                              disabled={blockIdx === 0}
+                              onClick={() => moveBlock(dayIdx, blockIdx, -1)}
+                              className="text-[12px] text-gray-400 hover:text-gray-700 disabled:opacity-30 px-1"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              title="Move down"
+                              disabled={blockIdx === day.blocks.length - 1}
+                              onClick={() => moveBlock(dayIdx, blockIdx, 1)}
+                              className="text-[12px] text-gray-400 hover:text-gray-700 disabled:opacity-30 px-1"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              title="Duplicate"
+                              onClick={() => duplicateBlock(dayIdx, blockIdx)}
+                              className="text-[10px] text-gray-400 hover:text-gray-700 px-1"
+                            >
+                              📋
+                            </button>
+                            {day.blocks.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeBlock(dayIdx, blockIdx)}
+                                className="text-[10px] text-red-400 hover:text-red-600 px-1"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        {day.blocks.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeBlock(dayIdx, blockIdx)}
-                            className="text-[10px] text-red-400 hover:text-red-600"
-                          >
-                            Remove
-                          </button>
-                        )}
+
+                        <ActivityForm
+                          block={block}
+                          catalog={catalog}
+                          onChange={(patch) => updateBlock(dayIdx, blockIdx, patch)}
+                        />
                       </div>
-
-                      {/* M44 — Sequence picker: STP → drill → mission, with custom fallback */}
-                      <div className="mb-3">
-                        {catalog ? (
-                          <StepDrillPicker
-                            value={{
-                              step_id: block.step_id ?? null,
-                              drill_id: block.drill_id ?? null,
-                              drill_custom: block.drill_custom ?? null,
-                              mission_id: block.mission_id ?? null,
-                              mission_custom: block.mission_custom ?? null,
-                            }}
-                            stps={catalog.stps}
-                            drills={catalog.drills}
-                            missions={catalog.missions}
-                            onChange={(patch) => {
-                              // Auto-populate Evaluation Focus from the
-                              // linked mission's success_criteria when a
-                              // mission is picked — only if the coordinator
-                              // hasn't typed anything yet so manual edits
-                              // are preserved.
-                              const extra: Record<string, unknown> = {};
-                              if (
-                                'mission_id' in patch &&
-                                patch.mission_id &&
-                                !block.evaluation_focus &&
-                                catalog
-                              ) {
-                                const m = catalog.missions.find((x) => x.id === patch.mission_id);
-                                if (m?.success_criteria && m.success_criteria.length > 0) {
-                                  extra.evaluation_focus = m.success_criteria.join(' · ');
-                                }
-                              }
-                              updateBlock(dayIdx, blockIdx, { ...patch, ...extra } as any);
-                            }}
-                          />
-                        ) : (
-                          <p className="text-[11px] text-gray-400 italic">Loading sequence catalog…</p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Mission Time</label>
-                          <select
-                            value={block.mission_time || '15'}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { mission_time: e.target.value })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                          >
-                            {MISSION_TIME_OPTIONS.map((mt) => (
-                              <option key={mt.value} value={mt.value}>{mt.label}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Repetitions</label>
-                          <input
-                            type="number"
-                            min={0}
-                            value={block.repetitions_default ?? ''}
-                            onChange={(e) =>
-                              updateBlock(dayIdx, blockIdx, {
-                                repetitions_default: e.target.value ? parseInt(e.target.value) : null,
-                              })
-                            }
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                            placeholder="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Warm-up</label>
-                          <select
-                            value={block.warm_up || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { warm_up: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                          >
-                            <option value="">None</option>
-                            {WARMUP_OPTIONS.map((w) => (
-                              <option key={w.value} value={w.value}>{w.label}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Simulation</label>
-                          <select
-                            value={block.simulation || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { simulation: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                          >
-                            <option value="">None</option>
-                            {SIMULATION_OPTIONS.map((s) => (
-                              <option key={s.value} value={s.value}>{s.label}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Mental Hack</label>
-                          <select
-                            value={block.mental_hack || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { mental_hack: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                          >
-                            <option value="">None</option>
-                            {MENTAL_HACK_OPTIONS.map((m) => (
-                              <option key={m.value} value={m.value}>{m.label}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>Eval Focus</label>
-                          <input
-                            type="text"
-                            value={block.evaluation_focus || ''}
-                            onChange={(e) => updateBlock(dayIdx, blockIdx, { evaluation_focus: e.target.value || null })}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
-                            placeholder="What to evaluate..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <button

@@ -93,6 +93,13 @@ export default async function EditCampTemplatePage({ params }: Props) {
               drill_custom: b.drill_custom ?? null,
               mission_id: b.mission_id ?? null,
               mission_custom: b.mission_custom ?? null,
+              explain_md: b.explain_md ?? null,
+              demonstrate_md: b.demonstrate_md ?? null,
+              simulate_md: b.simulate_md ?? null,
+              feedback_md: b.feedback_md ?? null,
+              equipment: b.equipment ?? null,
+              activity_subtype: b.activity_subtype ?? null,
+              step_ids: b.step_ids ?? null,
             }))
           : [
               {

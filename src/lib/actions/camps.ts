@@ -936,6 +936,15 @@ export interface TemplateBlockInput {
   drill_custom?: string | null;
   mission_id?: string | null;
   mission_custom?: string | null;
+  // M78 — Activity taxonomy: EDPF flow for Land Drill, sub-type for
+  // Warm-Up / Mental, multi-STP for Get-in-STP, free-form equipment.
+  explain_md?: string | null;
+  demonstrate_md?: string | null;
+  simulate_md?: string | null;
+  feedback_md?: string | null;
+  equipment?: string | null;
+  activity_subtype?: string | null;
+  step_ids?: string[] | null;
 }
 
 export interface TemplateDayInput {
@@ -1050,6 +1059,14 @@ export async function createCampTemplate(input: CreateTemplateInput) {
         drill_custom: b.drill_custom ?? null,
         mission_id: b.mission_id ?? null,
         mission_custom: b.mission_custom ?? null,
+        // M78 — Activity taxonomy fields
+        explain_md: b.explain_md ?? null,
+        demonstrate_md: b.demonstrate_md ?? null,
+        simulate_md: b.simulate_md ?? null,
+        feedback_md: b.feedback_md ?? null,
+        equipment: b.equipment ?? null,
+        activity_subtype: b.activity_subtype ?? null,
+        step_ids: b.step_ids ?? null,
       }));
 
       const { error: blkErr } = await supabase
@@ -1151,6 +1168,14 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
         drill_custom: b.drill_custom ?? null,
         mission_id: b.mission_id ?? null,
         mission_custom: b.mission_custom ?? null,
+        // M78 — Activity taxonomy fields
+        explain_md: b.explain_md ?? null,
+        demonstrate_md: b.demonstrate_md ?? null,
+        simulate_md: b.simulate_md ?? null,
+        feedback_md: b.feedback_md ?? null,
+        equipment: b.equipment ?? null,
+        activity_subtype: b.activity_subtype ?? null,
+        step_ids: b.step_ids ?? null,
       }));
 
       const { error: blkErr } = await supabase

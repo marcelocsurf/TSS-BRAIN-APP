@@ -296,6 +296,68 @@ export const MENTAL_HACK_OPTIONS = [
 // MISSION TIME — Section 4.2 Step 12
 // ═══════════════════════════════════════
 
+// ═══════════════════════════════════════
+// ACTIVITY TYPES — M78 template Activity taxonomy
+// ═══════════════════════════════════════
+//
+// Each entry in a template day is an "Activity" of one of these types.
+// The TemplateBuilderForm renders a type-specific sub-form. The coach
+// reader (CampPlanReader) renders a type-specific card with icon/color
+// so the coach scans the day plan at a glance.
+
+export const ACTIVITY_TYPES = [
+  { value: 'water_mission',  label: 'Water Mission',  color: '#5AC3E7', description: 'In-water mission tied to an STP and a canonical or custom mission.' },
+  { value: 'land_drill',     label: 'Land Drill',     color: '#F59E0B', description: 'Out-of-water drill — runs the EDPF flow (Explain · Demonstrate · Simulate · Feedback).' },
+  { value: 'warm_up',        label: 'Warm-Up',        color: '#EF4444', description: 'Body-zone activation. Pick a sub-type (Head-to-toe / Kids / Custom).' },
+  { value: 'venue_analysis', label: 'Venue Analysis', color: '#10B981', description: 'Group or student-led venue read (CRT-WB-05).' },
+  { value: 'mental',         label: 'Mental',         color: '#8B5CF6', description: 'Breath, focus, key words. Pick a sub-type (Bhastrika / Box Breathing / Key Words / Focus Stamp / Visualization).' },
+  { value: 'get_in_stp',     label: 'Get-in-STP',     color: '#06B6D4', description: 'Run one STP or a chained sequence of STPs as the focal exercise.' },
+  { value: 'theory',         label: 'Theory',         color: '#6366F1', description: 'Classroom / land theory block.' },
+  { value: 'evaluation',     label: 'Evaluation',     color: '#0EA5E9', description: 'Formal evaluation moment. Links to /camps/[id]/evaluate.' },
+  { value: 'free_practice',  label: 'Free Practice',  color: '#A3A3A3', description: 'Open water time, no specific mission.' },
+  { value: 'custom',         label: 'Custom',         color: '#737373', description: 'Free-form fallback.' },
+  // Legacy alias — pre-M78 blocks were created as 'mission'. The UI
+  // maps them to "Water Mission" without rewriting the row.
+  { value: 'mission',        label: 'Water Mission (legacy)', color: '#5AC3E7', description: 'Pre-M78 Mission Block.' },
+] as const;
+
+export type ActivityType = typeof ACTIVITY_TYPES[number]['value'];
+
+export const WARMUP_SUBTYPES = [
+  { value: 'head_to_toe', label: 'Head to toe (dynamic)' },
+  { value: 'kids',        label: 'Kids (unnatural animal)' },
+  { value: 'specific',    label: 'Specific (per session focus)' },
+  { value: 'flow_motion', label: 'Flow motion simulation' },
+  { value: 'custom',      label: 'Custom' },
+] as const;
+
+export const MENTAL_SUBTYPES = [
+  { value: 'key_words',     label: 'Key Words' },
+  { value: 'bhastrika',     label: 'Bhastrika' },
+  { value: 'box_breathing', label: 'Box Breathing' },
+  { value: 'focus_stamp',   label: 'Focus Stamp' },
+  { value: 'visualization', label: 'Visualization' },
+  { value: 'custom',        label: 'Custom' },
+] as const;
+
+// Per-activity equipment — single text field but seeded with common
+// values so the admin can pick fast.
+export const EQUIPMENT_OPTIONS = [
+  { value: 'surf_board',     label: 'Surf board' },
+  { value: 'skate_board',    label: 'Skate / Surf-skate' },
+  { value: 'mat',            label: 'Mat' },
+  { value: 'cones',          label: 'Cones' },
+  { value: 'chalk_line',     label: 'Chalk line' },
+  { value: 'notebook',       label: 'Notebook' },
+  { value: 'whiteboard',     label: 'Whiteboard / Pizarra' },
+  { value: 'pool',           label: 'Pool' },
+  { value: 'whitewater',     label: 'Whitewater zone' },
+  { value: 'green_wave',     label: 'Green wave zone' },
+  { value: 'leash',          label: 'Leash' },
+  { value: 'video_room',     label: 'Video analysis room' },
+  { value: 'none',           label: 'None / Body-only' },
+] as const;
+
 export const MISSION_TIME_OPTIONS = [
   { value: '10', label: '10 min' },
   { value: '15', label: '15 min' },
