@@ -25,6 +25,11 @@ import {
 } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { StpMediaGrid } from '@/components/coach-portal/StpMediaGrid';
+import {
+  ACTIVITY_TYPES,
+  WARMUP_SUBTYPES,
+  MENTAL_SUBTYPES,
+} from '@/lib/constants/brand';
 import type { ServicePlanData } from '@/lib/actions/service-planner';
 
 type Block = ServicePlanData['templatePlan'][number]['blocks'][number];
@@ -225,19 +230,49 @@ export function CampPlanReader({
   );
 }
 
-// ── A single block, rendered with drill + mission body inline ──
+// ── A single block (Activity), rendered with type-specific visuals ──
 function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | null }) {
+  const activityType =
+    ACTIVITY_TYPES.find((t) => t.value === block.block_type) ??
+    ACTIVITY_TYPES.find((t) => t.value === 'custom')!;
+
+  // Resolve sub-type label (Warm-Up / Mental).
+  const subtypeLabel = (() => {
+    if (!block.activity_subtype) return null;
+    if (activityType.value === 'warm_up') {
+      return WARMUP_SUBTYPES.find((s) => s.value === block.activity_subtype)?.label ?? null;
+    }
+    if (activityType.value === 'mental') {
+      return MENTAL_SUBTYPES.find((s) => s.value === block.activity_subtype)?.label ?? null;
+    }
+    return block.activity_subtype;
+  })();
+
+  // Land Drill is the only type that uses the EDPF stack.
+  const isLandDrill = activityType.value === 'land_drill';
+  const hasEdpf = isLandDrill && (
+    block.explain_md || block.demonstrate_md || block.simulate_md || block.feedback_md
+  );
+
+  // Water Games shows the mission body. Other types use pilar_part /
+  // mission_custom as their freeform body.
+  const isWaterGames =
+    activityType.value === 'water_mission' || activityType.value === 'mission';
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+    <div
+      className="bg-white rounded-xl border border-gray-100 p-4 space-y-3 border-l-4"
+      style={{ borderLeftColor: activityType.color }}
+    >
+      {/* Header — order + activity type label + sub-type chip */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p
-            className="text-[9px] uppercase tracking-wider text-gray-400"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="text-[9px] uppercase tracking-wider"
+            style={{ fontFamily: 'DM Mono, monospace', color: activityType.color }}
           >
-            Block {block.block_order}
-            {block.pilar ? ` · ${block.pilar}` : ''}
-            {block.block_type ? ` · ${block.block_type}` : ''}
+            Block {block.block_order} · {activityType.label}
+            {subtypeLabel ? ` · ${subtypeLabel}` : ''}
           </p>
           {block.pilar_part && (
             <p
@@ -258,18 +293,35 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
         {block.repetitions_default != null && (
           <Chip icon={<Repeat size={11} strokeWidth={1.75} />}>{block.repetitions_default}× reps</Chip>
         )}
-        {block.warm_up && (
-          <Chip icon={<Sparkles size={11} strokeWidth={1.75} />}>Warm-up · {block.warm_up}</Chip>
-        )}
-        {block.simulation && (
-          <Chip icon={<Sparkles size={11} strokeWidth={1.75} />}>Sim · {block.simulation}</Chip>
-        )}
-        {block.mental_hack && (
-          <Chip icon={<Brain size={11} strokeWidth={1.75} />}>Mental · {block.mental_hack}</Chip>
+        {block.equipment && (
+          <Chip icon={<Sparkles size={11} strokeWidth={1.75} />}>{block.equipment}</Chip>
         )}
       </div>
 
-      {/* Drill */}
+      {/* Free-form body / description for non-EDPF, non-Water-Games types */}
+      {!hasEdpf && !isWaterGames && block.mission_custom && (
+        <p className="text-sm text-gray-700 whitespace-pre-wrap">{block.mission_custom}</p>
+      )}
+
+      {/* Land Drill EDPF stack — 4 sections */}
+      {hasEdpf && (
+        <div className="space-y-2">
+          {block.explain_md && (
+            <EdpfSection label="Explain" body={block.explain_md} />
+          )}
+          {block.demonstrate_md && (
+            <EdpfSection label="Demonstrate" body={block.demonstrate_md} />
+          )}
+          {block.simulate_md && (
+            <EdpfSection label="Simulate / Participate" body={block.simulate_md} />
+          )}
+          {block.feedback_md && (
+            <EdpfSection label="Feedback (cues)" body={block.feedback_md} />
+          )}
+        </div>
+      )}
+
+      {/* Canonical drill body — for Land Drill, shown after EDPF */}
       {(block.drill || block.drill_custom) && (
         <Section title="Drill" titleColor="text-amber-700">
           {block.drill ? (
@@ -280,8 +332,8 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
         </Section>
       )}
 
-      {/* Mission */}
-      {(block.mission || block.mission_custom) && (
+      {/* Mission body — Water Games */}
+      {(block.mission || block.mission_custom) && isWaterGames && (
         <Section title="Mission" titleColor="text-emerald-700">
           {block.mission ? (
             <DrillMissionBody item={block.mission} />
@@ -289,6 +341,21 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
             <p className="text-sm text-gray-700">{block.mission_custom}</p>
           )}
         </Section>
+      )}
+
+      {/* Get-in-STP sequence chain */}
+      {block.step_ids && block.step_ids.length > 0 && (
+        <div className="bg-cyan-50 rounded-lg px-3 py-2">
+          <p
+            className="text-[9px] uppercase tracking-wider text-cyan-700 font-bold"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            STP sequence
+          </p>
+          <p className="text-xs text-cyan-900 mt-0.5">
+            {block.step_ids.join(' → ')}
+          </p>
+        </div>
       )}
 
       {/* Linked STP — deep link to coach Tools tab */}
@@ -311,6 +378,21 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
           {block.evaluation_focus}
         </div>
       )}
+    </div>
+  );
+}
+
+// One EDPF phase rendered as a small stacked section inside Land Drill.
+function EdpfSection({ label, body }: { label: string; body: string }) {
+  return (
+    <div className="border-l-2 border-amber-300 pl-3">
+      <p
+        className="text-[9px] uppercase tracking-wider text-amber-700 font-bold mb-0.5"
+        style={{ fontFamily: 'DM Mono, monospace' }}
+      >
+        {label}
+      </p>
+      <p className="text-[12px] text-gray-700 leading-snug whitespace-pre-wrap">{body}</p>
     </div>
   );
 }

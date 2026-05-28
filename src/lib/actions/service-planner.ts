@@ -124,6 +124,14 @@ export interface ServicePlanData {
         success_criteria: string[] | null;
         time_estimate: string | null;
       } | null;
+      // M78 — Activity taxonomy fields.
+      explain_md: string | null;
+      demonstrate_md: string | null;
+      simulate_md: string | null;
+      feedback_md: string | null;
+      equipment: string | null;
+      activity_subtype: string | null;
+      step_ids: string[] | null;
     }>;
   }>;
   templateMeta: {
@@ -532,7 +540,7 @@ export async function getServicePlan(
       const { data: tplBlocks } = await admin
         .from('camp_template_blocks')
         .select(
-          'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom'
+          'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom, explain_md, demonstrate_md, simulate_md, feedback_md, equipment, activity_subtype, step_ids'
         )
         .in('template_day_id', dayIds)
         .order('block_order');
@@ -631,6 +639,14 @@ export async function getServicePlan(
                     time_estimate: missionRow.time_estimate ?? null,
                   }
                 : null,
+              // M78 — Activity taxonomy fields.
+              explain_md: b.explain_md ?? null,
+              demonstrate_md: b.demonstrate_md ?? null,
+              simulate_md: b.simulate_md ?? null,
+              feedback_md: b.feedback_md ?? null,
+              equipment: b.equipment ?? null,
+              activity_subtype: b.activity_subtype ?? null,
+              step_ids: b.step_ids ?? null,
             };
           }),
       }));
@@ -719,7 +735,7 @@ export async function getCampPlanForRead(
   const { data: tplBlocks } = await admin
     .from('camp_template_blocks')
     .select(
-      'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom',
+      'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom, explain_md, demonstrate_md, simulate_md, feedback_md, equipment, activity_subtype, step_ids'
     )
     .in('template_day_id', dayIds)
     .order('block_order');
@@ -818,6 +834,14 @@ export async function getCampPlanForRead(
                 time_estimate: missionRow.time_estimate ?? null,
               }
             : null,
+          // M78 — Activity taxonomy fields.
+          explain_md: b.explain_md ?? null,
+          demonstrate_md: b.demonstrate_md ?? null,
+          simulate_md: b.simulate_md ?? null,
+          feedback_md: b.feedback_md ?? null,
+          equipment: b.equipment ?? null,
+          activity_subtype: b.activity_subtype ?? null,
+          step_ids: b.step_ids ?? null,
         };
       }),
   }));
