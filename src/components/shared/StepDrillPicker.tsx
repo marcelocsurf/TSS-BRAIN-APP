@@ -75,125 +75,157 @@ export function StepDrillPicker({ value, stps, drills, missions, onChange, slots
 
       {/* Drill picker (only if STP is picked) */}
       {value.step_id && showDrill && (
-        <div>
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-            Drill (out-of-water)
-          </label>
-          {!showDrillPicker ? (
-            <button
-              type="button"
-              onClick={() => setShowDrillPicker(true)}
-              className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
-            >
-              {drillLabel || value.drill_custom || (
-                <span className="text-gray-400 italic">— tap to pick or write —</span>
-              )}
-            </button>
-          ) : (
-            <div className="space-y-1.5 bg-white p-2 rounded-lg border border-gray-200">
-              {stepDrills.length > 0 ? (
-                <div className="max-h-40 overflow-y-auto space-y-0.5">
-                  {stepDrills.map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => {
-                        onChange({ drill_id: d.id, drill_custom: null });
-                        setShowDrillPicker(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
-                    >
-                      <strong>{d.id}</strong> · {d.title}
-                      {d.key_words && d.key_words.length > 0 && (
-                        <span className="text-gray-400"> · {d.key_words.slice(0, 3).join(' · ')}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[10px] text-gray-400 italic px-1">
-                  No canonical drills for this STP — write your own below.
-                </p>
-              )}
-              <CustomInput
-                value={value.drill_custom}
-                placeholder="Or write your own drill"
-                onCommit={(v) => {
-                  onChange({ drill_custom: v, drill_id: null });
-                  setShowDrillPicker(false);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowDrillPicker(false)}
-                className="text-[10px] text-gray-500 hover:text-gray-700"
-              >
-                cancel
-              </button>
-            </div>
-          )}
-        </div>
+        <CatalogSlot
+          label="Drill (out-of-water)"
+          options={stepDrills}
+          selectedId={value.drill_id}
+          selectedLabel={drillLabel}
+          customText={value.drill_custom}
+          open={showDrillPicker}
+          setOpen={setShowDrillPicker}
+          onPickCanon={(id) => onChange({ drill_id: id, drill_custom: null })}
+          onPickCustom={(text) => onChange({ drill_custom: text, drill_id: null })}
+          emptyMessage="No canonical drills for this STP — write your own below."
+          customPlaceholder="Or write your own drill"
+        />
       )}
 
       {/* Mission picker (only if STP is picked) */}
       {value.step_id && showMission && (
-        <div>
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-            Mission (in-water)
-          </label>
-          {!showMissionPicker ? (
-            <button
-              type="button"
-              onClick={() => setShowMissionPicker(true)}
-              className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
-            >
-              {missionLabel || value.mission_custom || (
-                <span className="text-gray-400 italic">— tap to pick or write —</span>
-              )}
-            </button>
-          ) : (
-            <div className="space-y-1.5 bg-white p-2 rounded-lg border border-gray-200">
-              {stepMissions.length > 0 ? (
-                <div className="max-h-40 overflow-y-auto space-y-0.5">
-                  {stepMissions.map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => {
-                        onChange({ mission_id: d.id, mission_custom: null });
-                        setShowMissionPicker(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
-                    >
-                      <strong>{d.id}</strong> · {d.title}
-                      {d.key_words && d.key_words.length > 0 && (
-                        <span className="text-gray-400"> · {d.key_words.slice(0, 3).join(' · ')}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[10px] text-gray-400 italic px-1">
-                  No canonical missions for this STP — write your own below.
-                </p>
-              )}
-              <CustomInput
-                value={value.mission_custom}
-                placeholder="Or write your own mission"
-                onCommit={(v) => {
-                  onChange({ mission_custom: v, mission_id: null });
-                  setShowMissionPicker(false);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowMissionPicker(false)}
-                className="text-[10px] text-gray-500 hover:text-gray-700"
-              >
-                cancel
-              </button>
-            </div>
+        <CatalogSlot
+          label="Mission (in-water)"
+          options={stepMissions}
+          selectedId={value.mission_id}
+          selectedLabel={missionLabel}
+          customText={value.mission_custom}
+          open={showMissionPicker}
+          setOpen={setShowMissionPicker}
+          onPickCanon={(id) => onChange({ mission_id: id, mission_custom: null })}
+          onPickCustom={(text) => onChange({ mission_custom: text, mission_id: null })}
+          emptyMessage="No canonical missions for this STP — write your own below."
+          customPlaceholder="Or write your own mission"
+        />
+      )}
+    </div>
+  );
+}
+
+// Shared catalog slot — used for both drill and mission. Includes a
+// search box that appears when 5+ options exist, so the admin can
+// type to filter instead of scrolling.
+function CatalogSlot({
+  label,
+  options,
+  selectedId,
+  selectedLabel,
+  customText,
+  open,
+  setOpen,
+  onPickCanon,
+  onPickCustom,
+  emptyMessage,
+  customPlaceholder,
+}: {
+  label: string;
+  options: CatalogDrill[];
+  selectedId: string | null;
+  selectedLabel: string | null | undefined;
+  customText: string | null;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  onPickCanon: (id: string) => void;
+  onPickCustom: (text: string) => void;
+  emptyMessage: string;
+  customPlaceholder: string;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = search.trim()
+    ? options.filter((d) => {
+        const s = search.toLowerCase();
+        return (
+          d.title.toLowerCase().includes(s) ||
+          d.id.toLowerCase().includes(s) ||
+          (d.key_words ?? []).some((k) => k.toLowerCase().includes(s))
+        );
+      })
+    : options;
+
+  return (
+    <div>
+      <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+        {label}
+      </label>
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
+        >
+          {selectedLabel || customText || (
+            <span className="text-gray-400 italic">— tap to pick or write —</span>
           )}
+        </button>
+      ) : (
+        <div className="space-y-1.5 bg-white p-2 rounded-lg border border-gray-200">
+          {options.length >= 5 && (
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${options.length} options…`}
+              autoFocus
+              className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-[11px]"
+            />
+          )}
+          {filtered.length > 0 ? (
+            <div className="max-h-40 overflow-y-auto space-y-0.5">
+              {filtered.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => {
+                    onPickCanon(d.id);
+                    setSearch('');
+                    setOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-gray-50"
+                >
+                  <strong>{d.id}</strong> · {d.title}
+                  {d.key_words && d.key_words.length > 0 && (
+                    <span className="text-gray-400">
+                      {' · '}
+                      {d.key_words.slice(0, 3).join(' · ')}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : options.length === 0 ? (
+            <p className="text-[10px] text-gray-400 italic px-1">{emptyMessage}</p>
+          ) : (
+            <p className="text-[10px] text-gray-400 italic px-1">
+              No matches for &ldquo;{search}&rdquo;
+            </p>
+          )}
+          <CustomInput
+            value={customText}
+            placeholder={customPlaceholder}
+            onCommit={(v) => {
+              onPickCustom(v);
+              setSearch('');
+              setOpen(false);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setOpen(false);
+            }}
+            className="text-[10px] text-gray-500 hover:text-gray-700"
+          >
+            cancel
+          </button>
         </div>
       )}
     </div>
