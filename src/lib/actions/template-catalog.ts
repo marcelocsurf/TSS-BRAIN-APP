@@ -12,6 +12,10 @@ export interface CatalogStp {
   title: string;
   pillar: string | null;
   display_order: number;
+  /** Theory body — used to auto-populate the Land Drill "Explain" field. */
+  description_md: string | null;
+  /** How-to-practice body — used to auto-populate the Land Drill "Simulate / Participate" field. */
+  drill_md: string | null;
 }
 
 export interface CatalogDrill {
@@ -40,7 +44,7 @@ export async function getTemplateCatalog(levelName: string): Promise<TemplateCat
   const [stpRes, drillsRes] = await Promise.all([
     supabase
       .from('lessons')
-      .select('id, title, pillar, display_order')
+      .select('id, title, pillar, display_order, description_md, drill_md')
       .eq('course_section', 'white_belt')
       .eq('active', true)
       .order('display_order'),

@@ -21,12 +21,16 @@ export interface StepBlockValue {
 interface Props {
   value: StepBlockValue;
   stps: CatalogStp[];
-  drills: CatalogDrill[];     // type='drill'
-  missions: CatalogDrill[];   // type='mission'
+  drills: CatalogDrill[];     // type='drill' (out-of-water)
+  missions: CatalogDrill[];   // type='mission' (in-water)
   onChange: (patch: Partial<StepBlockValue>) => void;
+  /** Which slots to render below the STP picker. Default 'both'. */
+  slots?: 'both' | 'drill_only' | 'mission_only';
 }
 
-export function StepDrillPicker({ value, stps, drills, missions, onChange }: Props) {
+export function StepDrillPicker({ value, stps, drills, missions, onChange, slots = 'both' }: Props) {
+  const showDrill = slots === 'both' || slots === 'drill_only';
+  const showMission = slots === 'both' || slots === 'mission_only';
   const stepDrills = drills.filter((d) => d.step_id === value.step_id);
   const stepMissions = missions.filter((d) => d.step_id === value.step_id);
   const drillLabel = value.drill_id
@@ -70,10 +74,10 @@ export function StepDrillPicker({ value, stps, drills, missions, onChange }: Pro
       </div>
 
       {/* Drill picker (only if STP is picked) */}
-      {value.step_id && (
+      {value.step_id && showDrill && (
         <div>
           <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-            Drill
+            Drill (out-of-water)
           </label>
           {!showDrillPicker ? (
             <button
@@ -132,7 +136,7 @@ export function StepDrillPicker({ value, stps, drills, missions, onChange }: Pro
       )}
 
       {/* Mission picker (only if STP is picked) */}
-      {value.step_id && (
+      {value.step_id && showMission && (
         <div>
           <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
             Mission (in-water)

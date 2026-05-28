@@ -181,24 +181,42 @@ function LandDrillFields({
   catalog: TemplateCatalog | null;
   onChange: (patch: Partial<TemplateBlockInput>) => void;
 }) {
+  // When the STP changes, auto-fill EDPF fields that are still empty,
+  // using the canonical lesson body. The admin can edit from there.
+  // Manual edits are never overwritten.
+  const onPick = (patch: Partial<TemplateBlockInput>) => {
+    const extra: Partial<TemplateBlockInput> = {};
+    if ('step_id' in patch && patch.step_id && catalog) {
+      const stp = catalog.stps.find((s) => s.id === patch.step_id);
+      if (stp) {
+        if (!block.explain_md && stp.description_md) {
+          extra.explain_md = summarize(stp.description_md, 280);
+        }
+        if (!block.simulate_md && stp.drill_md) {
+          extra.simulate_md = summarize(stp.drill_md, 280);
+        }
+      }
+    }
+    onChange({ ...patch, ...extra });
+  };
+
   return (
     <div className="space-y-3">
-      {/* STP + drill picker (mission slot ignored — land drills don't have water mission). */}
+      {/* STP + drill picker only — Land Drill has no water mission slot. */}
       {catalog ? (
         <StepDrillPicker
           value={{
             step_id: block.step_id ?? null,
             drill_id: block.drill_id ?? null,
             drill_custom: block.drill_custom ?? null,
-            // Suppress mission picker for Land Drill — pass null so the
-            // picker still renders the STP + drill slots only.
             mission_id: null,
             mission_custom: null,
           }}
           stps={catalog.stps}
           drills={catalog.drills}
           missions={catalog.missions}
-          onChange={(patch) => onChange(patch)}
+          slots="drill_only"
+          onChange={onPick}
         />
       ) : (
         <p className="text-[11px] text-gray-400 italic">Loading sequence catalog…</p>
@@ -213,32 +231,49 @@ function LandDrillFields({
           EDPF Flow
         </p>
         <EdpfArea
-          label="Explicar"
-          hint="Lo que el coach va a decir (≤30s)"
+          label="Explain"
+          hint="What the coach will say (≤30s). Auto-filled from the STP theory when you pick a step — edit freely."
           value={block.explain_md ?? ''}
           onChange={(v) => onChange({ explain_md: v })}
         />
         <EdpfArea
-          label="Demostrar"
-          hint="Demo física + opcional URL de video de referencia"
+          label="Demonstrate"
+          hint="Physical demo + optional reference video URL"
           value={block.demonstrate_md ?? ''}
           onChange={(v) => onChange({ demonstrate_md: v })}
         />
         <EdpfArea
-          label="Simular / Participar"
-          hint="Lo que hacen los alumnos en ambiente controlado"
+          label="Simulate / Participate"
+          hint="Out-of-water practice (skate, mat, chalk line, gym). Auto-filled from the STP drill body."
           value={block.simulate_md ?? ''}
           onChange={(v) => onChange({ simulate_md: v })}
         />
         <EdpfArea
           label="Feedback"
-          hint="Una corrección específica · mantener positivo"
+          hint="One specific correction · keep positive"
           value={block.feedback_md ?? ''}
           onChange={(v) => onChange({ feedback_md: v })}
         />
       </div>
     </div>
   );
+}
+
+/**
+ * Tight summary helper for auto-populating EDPF text from a markdown
+ * body. Strips heading hashes, collapses whitespace, and truncates to
+ * `max` chars at a word boundary.
+ */
+function summarize(md: string, max: number): string {
+  const cleaned = md
+    .replace(/^#+\s+/gm, '') // headings
+    .replace(/[*_`>]/g, '') // basic md noise
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (cleaned.length <= max) return cleaned;
+  const cut = cleaned.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
 }
 
 function EdpfArea({
