@@ -72,7 +72,7 @@ export function ActivityForm({ block, catalog, onChange }: Props) {
       )}
 
       {/* ── Shared meta (time + reps + equipment + eval focus) ── */}
-      <MetaFields block={block} onChange={onChange} />
+      <MetaFields block={block} type={type} onChange={onChange} />
     </div>
   );
 }
@@ -139,14 +139,17 @@ function WaterMissionFields({
         <StepDrillPicker
           value={{
             step_id: block.step_id ?? null,
-            drill_id: block.drill_id ?? null,
-            drill_custom: block.drill_custom ?? null,
+            // No drill slot for Water Games — pass nulls so the picker
+            // never renders the drill UI even by accident.
+            drill_id: null,
+            drill_custom: null,
             mission_id: block.mission_id ?? null,
             mission_custom: block.mission_custom ?? null,
           }}
           stps={catalog.stps}
           drills={catalog.drills}
           missions={catalog.missions}
+          slots="mission_only"
           onChange={(patch) => {
             // Auto-populate Eval Focus from the mission's
             // success_criteria when picked, if not edited.
@@ -441,39 +444,59 @@ function GetInStpFields({
   };
 
   return (
-    <div className="space-y-2">
-      <label
-        className="block text-[10px] text-gray-500"
-        style={{ fontFamily: 'var(--font-mono)' }}
-      >
-        Pick one or more STPs in sequence
-      </label>
-      {stps.length === 0 ? (
-        <p className="text-[11px] text-gray-400 italic">Loading STPs…</p>
-      ) : (
-        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
-          {stps.map((s) => (
-            <label
-              key={s.id}
-              className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer text-xs"
-            >
-              <input
-                type="checkbox"
-                checked={selected.includes(s.id)}
-                onChange={() => toggle(s.id)}
-                className="rounded border-gray-300"
-              />
-              <span className="font-mono text-[10px] text-gray-500">{s.id}</span>
-              <span className="flex-1 text-gray-700 truncate">{s.title}</span>
-            </label>
-          ))}
-        </div>
-      )}
-      {selected.length > 0 && (
-        <p className="text-[10px] text-cyan-700">
-          Selected sequence: {selected.join(' → ')}
-        </p>
-      )}
+    <div className="space-y-3">
+      {/* Activity title + description */}
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={block.pilar_part ?? ''}
+          onChange={(e) => onChange({ pilar_part: e.target.value || null })}
+          placeholder="Activity title (e.g. Full pop-up chain)"
+          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+        />
+        <textarea
+          value={block.mission_custom ?? ''}
+          onChange={(e) => onChange({ mission_custom: e.target.value || null })}
+          rows={3}
+          placeholder="What will the students do? What is this activity about?"
+          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+        />
+      </div>
+
+      <div>
+        <label
+          className="block text-[10px] text-gray-500 mb-1"
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          Pick one or more STPs in sequence
+        </label>
+        {stps.length === 0 ? (
+          <p className="text-[11px] text-gray-400 italic">Loading STPs…</p>
+        ) : (
+          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+            {stps.map((s) => (
+              <label
+                key={s.id}
+                className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer text-xs"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.includes(s.id)}
+                  onChange={() => toggle(s.id)}
+                  className="rounded border-gray-300"
+                />
+                <span className="font-mono text-[10px] text-gray-500">{s.id}</span>
+                <span className="flex-1 text-gray-700 truncate">{s.title}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        {selected.length > 0 && (
+          <p className="text-[10px] text-cyan-700 mt-1">
+            Selected sequence: {selected.join(' → ')}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -575,13 +598,29 @@ function CustomFields({
   );
 }
 
+// Activity types where capturing an "evaluation focus" makes pedagogical
+// sense. Warm-Up / Mental / Theory / Free Practice / Venue Analysis are
+// supportive routines, not directly evaluable.
+const TYPES_WITH_EVAL_FOCUS: ActivityType[] = [
+  'water_mission',
+  'mission', // legacy
+  'land_drill',
+  'get_in_stp',
+  'evaluation',
+  'custom',
+];
+
 function MetaFields({
   block,
+  type,
   onChange,
 }: {
   block: TemplateBlockInput;
+  type: ActivityType;
   onChange: (patch: Partial<TemplateBlockInput>) => void;
 }) {
+  const showEvalFocus = TYPES_WITH_EVAL_FOCUS.includes(type);
+
   return (
     <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
       <div>
@@ -647,21 +686,23 @@ function MetaFields({
         </datalist>
       </div>
 
-      <div className="col-span-2">
-        <label
-          className="block text-[10px] text-gray-500 mb-0.5"
-          style={{ fontFamily: 'var(--font-mono)' }}
-        >
-          Evaluation Focus
-        </label>
-        <input
-          type="text"
-          value={block.evaluation_focus ?? ''}
-          onChange={(e) => onChange({ evaluation_focus: e.target.value || null })}
-          placeholder="What to evaluate / observe"
-          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
-        />
-      </div>
+      {showEvalFocus && (
+        <div className="col-span-2">
+          <label
+            className="block text-[10px] text-gray-500 mb-0.5"
+            style={{ fontFamily: 'var(--font-mono)' }}
+          >
+            Evaluation Focus
+          </label>
+          <input
+            type="text"
+            value={block.evaluation_focus ?? ''}
+            onChange={(e) => onChange({ evaluation_focus: e.target.value || null })}
+            placeholder="What to evaluate / observe"
+            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+          />
+        </div>
+      )}
     </div>
   );
 }

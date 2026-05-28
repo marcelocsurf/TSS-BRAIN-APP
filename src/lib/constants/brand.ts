@@ -306,7 +306,7 @@ export const MENTAL_HACK_OPTIONS = [
 // so the coach scans the day plan at a glance.
 
 export const ACTIVITY_TYPES = [
-  { value: 'water_mission',  label: 'Water Mission',  color: '#5AC3E7', description: 'In-water mission tied to an STP and a canonical or custom mission.' },
+  { value: 'water_mission',  label: 'Water Games',    color: '#5AC3E7', description: 'In-water mission / game tied to an STP. Pick a canonical mission from the catalog or write a custom one.' },
   { value: 'land_drill',     label: 'Land Drill',     color: '#F59E0B', description: 'Out-of-water drill — runs the EDPF flow (Explain · Demonstrate · Simulate · Feedback).' },
   { value: 'warm_up',        label: 'Warm-Up',        color: '#EF4444', description: 'Body-zone activation. Pick a sub-type (Head-to-toe / Kids / Custom).' },
   { value: 'venue_analysis', label: 'Venue Analysis', color: '#10B981', description: 'Group or student-led venue read (CRT-WB-05).' },
@@ -317,8 +317,8 @@ export const ACTIVITY_TYPES = [
   { value: 'free_practice',  label: 'Free Practice',  color: '#A3A3A3', description: 'Open water time, no specific mission.' },
   { value: 'custom',         label: 'Custom',         color: '#737373', description: 'Free-form fallback.' },
   // Legacy alias — pre-M78 blocks were created as 'mission'. The UI
-  // maps them to "Water Mission" without rewriting the row.
-  { value: 'mission',        label: 'Water Mission (legacy)', color: '#5AC3E7', description: 'Pre-M78 Mission Block.' },
+  // maps them to "Water Games" without rewriting the row.
+  { value: 'mission',        label: 'Water Games (legacy)', color: '#5AC3E7', description: 'Pre-M78 Mission Block.' },
 ] as const;
 
 export type ActivityType = typeof ACTIVITY_TYPES[number]['value'];
