@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { sendCoachInviteEmail } from '@/lib/actions/email';
 
 // M6 — Coach invite now supports academy_id scoping.
 //
@@ -77,38 +78,74 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Validate the target academy exists
+    // Validate the target academy exists + grab its display name for the
+    // welcome email.
     const { data: targetAcademy } = await admin
       .from('academies')
-      .select('id')
+      .select('id, name')
       .eq('id', targetAcademyId)
       .single();
     if (!targetAcademy) {
       return NextResponse.json({ error: 'Target academy not found.' }, { status: 400 });
     }
 
-    // Check if email already exists in coaches
+    // If the email already exists, MOVE the existing coach to the
+    // target academy + role instead of rejecting. Mirrors the
+    // assignCoordinator() behaviour so the admin has a single "add
+    // coach" affordance regardless of new-vs-existing.
+    const normalizedEmail = email.trim().toLowerCase();
     const { data: existingCoach } = await admin
       .from('coaches')
-      .select('id')
-      .eq('email', email.trim().toLowerCase())
-      .single();
+      .select('id, academy_id, role, password_set_at')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
 
     if (existingCoach) {
-      return NextResponse.json({ error: 'A coach with this email already exists.' }, { status: 400 });
+      const { error: moveErr } = await admin
+        .from('coaches')
+        .update({
+          academy_id: targetAcademyId,
+          role,
+          active_status: true,
+        })
+        .eq('id', existingCoach.id);
+
+      if (moveErr) throw new Error(moveErr.message);
+
+      return NextResponse.json({
+        success: true,
+        email: normalizedEmail,
+        coach_id: existingCoach.id,
+        academy_id: targetAcademyId,
+        reassigned: true,
+        previous_academy_id: existingCoach.academy_id,
+        previous_role: existingCoach.role,
+      });
     }
 
-    // Create auth user and send invite email
-    const { data: authData, error: authErr } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: {
-        first_name,
-        last_name,
-        role,
-      },
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app'}/auth/callback?next=/`,
-    });
+    // Create auth user via generateLink — same as inviteUserByEmail but
+    // DOES NOT send Supabase's default email. We send our own branded
+    // email via Resend right below.
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+    const redirectTo = `${appUrl}/auth/callback?next=/`;
 
-    if (authErr) throw new Error(authErr.message);
+    const { data: linkData, error: linkErr } =
+      await admin.auth.admin.generateLink({
+        type: 'invite',
+        email: email.trim().toLowerCase(),
+        options: {
+          data: { first_name, last_name, role },
+          redirectTo,
+        },
+      });
+
+    if (linkErr || !linkData?.user || !linkData?.properties?.action_link) {
+      throw new Error(linkErr?.message || 'Could not generate invite link.');
+    }
+
+    const authData = { user: linkData.user };
+    const inviteLink = linkData.properties.action_link;
 
     // Create coach record (now with academy_id)
     const display_name = `${first_name} ${last_name}`;
@@ -139,11 +176,24 @@ export async function POST(req: NextRequest) {
       throw new Error(coachErr?.message || 'Failed to create coach record');
     }
 
+    // Send our own branded welcome email with the generateLink result.
+    // Non-fatal: if email send fails the coach still exists; the admin
+    // can resend from /coaches.
+    const emailRes = await sendCoachInviteEmail({
+      toEmail: email.trim().toLowerCase(),
+      firstName: first_name.trim(),
+      role,
+      academyName: targetAcademy.name,
+      inviteLink,
+    });
+
     return NextResponse.json({
       success: true,
       email,
       coach_id: newCoach.id,
       academy_id: targetAcademyId,
+      email_sent: emailRes.success,
+      email_error: emailRes.success ? undefined : emailRes.error,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

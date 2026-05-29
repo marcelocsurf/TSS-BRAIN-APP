@@ -322,15 +322,20 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
       <div className="bg-white rounded-xl border border-gray-100 p-4">
         <div className="flex items-center justify-between">
           <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
-            Coaches ({coaches.length})
+            Team Members ({coaches.length})
           </p>
           <Link
-            href="/coaches/new"
+            href={`/coaches/new?academy_id=${academy.id}`}
             className="text-[11px] text-[var(--tss-navy)] hover:underline"
           >
-            + Add coach
+            + Invite new coach
           </Link>
         </div>
+        <p className="text-[10px] text-gray-400 mt-1">
+          To move an existing coach to this academy, use the same form —
+          if the email already exists, the system upgrades + reassigns
+          that coach automatically.
+        </p>
         {coaches.length === 0 ? (
           <p className="text-xs text-gray-400 italic mt-2">No coaches yet.</p>
         ) : (

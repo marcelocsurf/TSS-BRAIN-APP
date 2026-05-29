@@ -3,6 +3,7 @@ import { getCurrentCoach, isCoordinatorOrAbove, isRealPlatformAdmin } from '@/li
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { ResendInviteButton } from './ResendInviteButton';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -103,6 +104,17 @@ export default async function CoachesPage() {
       <div className="space-y-3">
         {activeCoaches.map(coach => {
           const beltColor = BELT_COLORS[coach.max_belt_permission] || '#999';
+          // Onboarding status — drives the status pill + Resend button.
+          //   • activated: password_set_at not null  → "Active"
+          //   • invited  : auth_user_id present, no password_set_at  → "Invited"
+          //   • no-auth  : auth_user_id null (legacy)  → "No auth"
+          const activated = !!coach.password_set_at;
+          const hasAuth = !!coach.auth_user_id;
+          const onboarding: 'active' | 'invited' | 'no_auth' = activated
+            ? 'active'
+            : hasAuth
+            ? 'invited'
+            : 'no_auth';
 
           return (
             <Link
@@ -128,7 +140,7 @@ export default async function CoachesPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-[var(--tss-navy)]">{coach.display_name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                         coach.role === 'admin' ? 'bg-red-50 text-[var(--tss-danger)]' :
                         coach.role === 'coordinator' ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' :
@@ -137,12 +149,38 @@ export default async function CoachesPage() {
                       }`}>
                         {ROLE_LABELS[coach.role] || coach.role}
                       </span>
+                      {/* Onboarding status pill — only Admin sees the
+                          "Resend" affordance via canCreateCoach. */}
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider ${
+                          onboarding === 'active'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : onboarding === 'invited'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}
+                        title={
+                          onboarding === 'active'
+                            ? 'Account activated · password set'
+                            : onboarding === 'invited'
+                            ? 'Invite sent · waiting for activation'
+                            : 'No auth user — legacy record'
+                        }
+                      >
+                        {onboarding === 'active' ? '● Active' : onboarding === 'invited' ? '○ Invited' : '· No auth'}
+                      </span>
                       <span className="text-gray-200">·</span>
                       <span className="text-xs text-gray-500">Max: {coach.max_belt_permission?.replace('_', ' ')}</span>
                       {coach.certification_level && (
                         <>
                           <span className="text-gray-200">·</span>
                           <span className="text-xs text-gray-500">{coach.certification_level}</span>
+                        </>
+                      )}
+                      {canCreateCoach && onboarding !== 'active' && coach.email && (
+                        <>
+                          <span className="text-gray-200">·</span>
+                          <ResendInviteButton coachId={coach.id} coachEmail={coach.email} />
                         </>
                       )}
                     </div>
