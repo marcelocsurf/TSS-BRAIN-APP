@@ -102,6 +102,18 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existingCoach) {
+      // If the coach is currently the assigned_coordinator of some OTHER
+      // academy, null that out first — otherwise the partial unique
+      // index (uq_academies_coordinator) leaves a stale reference and
+      // makes the future assignCoordinator() call on the new academy
+      // throw. The admin can re-claim them as coordinator after the
+      // move via /academies/[id] if desired.
+      await admin
+        .from('academies')
+        .update({ assigned_coordinator_id: null })
+        .eq('assigned_coordinator_id', existingCoach.id)
+        .neq('id', targetAcademyId);
+
       const { error: moveErr } = await admin
         .from('coaches')
         .update({
@@ -218,8 +230,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (coachErr || !newCoach) {
-      // Rollback auth user if coach record fails
-      await admin.auth.admin.deleteUser(authData.user.id);
+      // Rollback only if WE created the auth user. If the helper fell
+      // back to 'magiclink' the auth.users row already existed before
+      // this request — deleting it could nuke an unrelated account.
+      if (linkRes.linkType === 'invite') {
+        await admin.auth.admin.deleteUser(authData.user.id);
+      }
       throw new Error(coachErr?.message || 'Failed to create coach record');
     }
 

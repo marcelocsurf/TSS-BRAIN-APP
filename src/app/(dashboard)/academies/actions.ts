@@ -82,6 +82,16 @@ export async function assignCoordinator(input: {
   let coachPasswordSetAt: string | null = null;
 
   if (existingCoach) {
+    // If the coach is currently assigned_coordinator of any OTHER
+    // academy, clear that link first. The partial unique index on
+    // academies.assigned_coordinator_id would otherwise reject the
+    // UPDATE at the bottom of this function with a cryptic SQL error.
+    await admin
+      .from('academies')
+      .update({ assigned_coordinator_id: null })
+      .eq('assigned_coordinator_id', existingCoach.id)
+      .neq('id', input.academy_id);
+
     // Re-use the existing coach record. Move them into this academy and
     // upgrade their role to coordinator. (Marcelo promoting an existing
     // coach to coordinator of a new academy.)
@@ -137,8 +147,12 @@ export async function assignCoordinator(input: {
       .single();
 
     if (coachErr || !newCoach) {
-      // Rollback auth user
-      await admin.auth.admin.deleteUser(linkRes.user.id);
+      // Rollback only if WE created the auth user (linkType='invite').
+      // If the helper fell back to 'magiclink' the auth.users row
+      // pre-existed and is not ours to delete.
+      if (linkRes.linkType === 'invite') {
+        await admin.auth.admin.deleteUser(linkRes.user.id);
+      }
       throw new Error(coachErr?.message || 'Failed to create coordinator coach record.');
     }
     coachId = newCoach.id;

@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Coach not found.' }, { status: 404 });
     }
 
+    if (!coach.email) {
+      return NextResponse.json(
+        { error: 'This coach has no email on record. Edit the coach to add one before re-sending.' },
+        { status: 400 },
+      );
+    }
+
     // Don't regenerate an invite link if the coach has already activated
     // their account — that would let anyone with admin access reset
     // their password silently. They should use the password-reset flow
