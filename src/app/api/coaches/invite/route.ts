@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { sendCoachInviteEmail } from '@/lib/actions/email';
+import { generateCoachInviteLink } from '@/lib/utils/coach-invite-link';
 
 // M6 — Coach invite now supports academy_id scoping.
 //
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = email.trim().toLowerCase();
     const { data: existingCoach } = await admin
       .from('coaches')
-      .select('id, academy_id, role, password_set_at')
+      .select('id, academy_id, role, password_set_at, auth_user_id')
       .eq('email', normalizedEmail)
       .maybeSingle();
 
@@ -113,34 +114,45 @@ export async function POST(req: NextRequest) {
       if (moveErr) throw new Error(moveErr.message);
 
       // If the coach hasn't activated their account yet, regenerate
-      // a fresh magic link and re-send the welcome email so they can
-      // finally log in. Activated coaches already have a password —
-      // they just see the role change next time they log in.
+      // a fresh login link and re-send the welcome email so they can
+      // finally log in. Picks 'magiclink' for existing auth users
+      // (the 'invite' type FAILS when an auth user already exists)
+      // or 'invite' for legacy coaches without an auth row yet.
       let emailResent = false;
       let emailError: string | undefined;
       if (!existingCoach.password_set_at) {
         const appUrlReassign =
           process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
         const redirectToReassign = `${appUrlReassign}/auth/callback?next=/`;
-        const { data: relinkData, error: relinkErr } =
-          await admin.auth.admin.generateLink({
-            type: 'invite',
-            email: normalizedEmail,
-            options: { redirectTo: redirectToReassign },
-          });
-        if (!relinkErr && relinkData?.properties?.action_link) {
+        const linkRes = await generateCoachInviteLink({
+          admin,
+          email: normalizedEmail,
+          hasExistingAuthUser: !!existingCoach.auth_user_id,
+          redirectTo: redirectToReassign,
+          userMetadata: { first_name, last_name, role },
+        });
+        if (linkRes.inviteLink) {
+          // Link the auth user back to the coach row if generateLink
+          // ('invite') just created a fresh one and coach.auth_user_id
+          // was null.
+          if (!existingCoach.auth_user_id && linkRes.user?.id) {
+            await admin
+              .from('coaches')
+              .update({ auth_user_id: linkRes.user.id })
+              .eq('id', existingCoach.id);
+          }
           const r = await sendCoachInviteEmail({
             toEmail: normalizedEmail,
             firstName: first_name.trim(),
             role,
             academyName: targetAcademy.name,
-            inviteLink: relinkData.properties.action_link,
+            inviteLink: linkRes.inviteLink,
             isResend: true,
           });
           emailResent = r.success;
           if (!r.success) emailError = r.error;
-        } else if (relinkErr) {
-          emailError = relinkErr.message;
+        } else {
+          emailError = linkRes.error ?? 'Could not regenerate invite link.';
         }
       }
 
@@ -157,29 +169,30 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create auth user via generateLink — same as inviteUserByEmail but
-    // DOES NOT send Supabase's default email. We send our own branded
-    // email via Resend right below.
+    // Create auth user via generateLink — same effect as
+    // inviteUserByEmail (creates the row + returns the activation
+    // link) but DOES NOT send Supabase's default email. We send our
+    // own branded email via Resend right below.
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
     const redirectTo = `${appUrl}/auth/callback?next=/`;
 
-    const { data: linkData, error: linkErr } =
-      await admin.auth.admin.generateLink({
-        type: 'invite',
-        email: email.trim().toLowerCase(),
-        options: {
-          data: { first_name, last_name, role },
-          redirectTo,
-        },
-      });
+    // No coach row exists yet. The helper tries 'invite' first and
+    // auto-falls back to 'magiclink' if there's an orphaned auth user.
+    const linkRes = await generateCoachInviteLink({
+      admin,
+      email: normalizedEmail,
+      hasExistingAuthUser: false,
+      redirectTo,
+      userMetadata: { first_name, last_name, role },
+    });
 
-    if (linkErr || !linkData?.user || !linkData?.properties?.action_link) {
-      throw new Error(linkErr?.message || 'Could not generate invite link.');
+    if (!linkRes.inviteLink || !linkRes.user) {
+      throw new Error(linkRes.error ?? 'Could not generate invite link.');
     }
 
-    const authData = { user: linkData.user };
-    const inviteLink = linkData.properties.action_link;
+    const authData = { user: linkRes.user };
+    const inviteLink = linkRes.inviteLink;
 
     // Create coach record (now with academy_id)
     const display_name = `${first_name} ${last_name}`;

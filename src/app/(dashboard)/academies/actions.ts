@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { getCurrentCoach } from '@/lib/actions/auth';
+import { generateCoachInviteLink } from '@/lib/utils/coach-invite-link';
+import { sendCoachInviteEmail } from '@/lib/actions/email';
 
 export async function createAcademy(input: {
   name: string;
@@ -63,20 +65,26 @@ export async function assignCoordinator(input: {
     .single();
   if (!academy) throw new Error('Academy not found.');
 
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+  const redirectTo = `${appUrl}/auth/callback?next=/`;
+
   // Email must be unique across coaches
   const { data: existingCoach } = await admin
     .from('coaches')
-    .select('id, academy_id')
-    .eq('email', input.email.trim().toLowerCase())
+    .select('id, academy_id, auth_user_id, password_set_at')
+    .eq('email', normalizedEmail)
     .maybeSingle();
 
   let coachId: string;
+  let coachHadAuthUser = false;
+  let coachPasswordSetAt: string | null = null;
 
   if (existingCoach) {
     // Re-use the existing coach record. Move them into this academy and
-    // upgrade their role to coordinator. (This handles the case where
-    // Marcelo wants to promote an existing coach to be coordinator of a
-    // new academy.)
+    // upgrade their role to coordinator. (Marcelo promoting an existing
+    // coach to coordinator of a new academy.)
     const { error: updErr } = await admin
       .from('coaches')
       .update({
@@ -86,31 +94,38 @@ export async function assignCoordinator(input: {
       .eq('id', existingCoach.id);
     if (updErr) throw new Error(updErr.message);
     coachId = existingCoach.id;
+    coachHadAuthUser = !!existingCoach.auth_user_id;
+    coachPasswordSetAt = existingCoach.password_set_at;
   } else {
-    // Invite a brand-new coach.
-    const { data: authData, error: authErr } = await admin.auth.admin.inviteUserByEmail(
-      input.email.trim().toLowerCase(),
-      {
-        data: {
-          first_name: input.first_name,
-          last_name: input.last_name,
-          role: 'coordinator',
-        },
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app'}/auth/callback?next=/`,
-      }
-    );
-    if (authErr) throw new Error(authErr.message);
+    // Brand-new coach. Get the activation link via the shared helper
+    // (tries 'invite' then falls back to 'magiclink' on orphaned auth
+    // users) — Supabase WILL NOT send its default email; we send our
+    // own branded one below.
+    const linkRes = await generateCoachInviteLink({
+      admin,
+      email: normalizedEmail,
+      hasExistingAuthUser: false,
+      redirectTo,
+      userMetadata: {
+        first_name: input.first_name,
+        last_name: input.last_name,
+        role: 'coordinator',
+      },
+    });
+    if (!linkRes.inviteLink || !linkRes.user) {
+      throw new Error(linkRes.error ?? 'Could not generate invite link.');
+    }
 
     const display_name = `${input.first_name.trim()} ${input.last_name.trim()}`;
     const { data: newCoach, error: coachErr } = await admin
       .from('coaches')
       .insert({
-        auth_user_id: authData.user.id,
+        auth_user_id: linkRes.user.id,
         academy_id: input.academy_id,
         first_name: input.first_name.trim(),
         last_name: input.last_name.trim(),
         display_name,
-        email: input.email.trim().toLowerCase(),
+        email: normalizedEmail,
         phone: input.phone?.trim() || null,
         role: 'coordinator',
         max_belt_permission: 'black_belt',
@@ -123,10 +138,46 @@ export async function assignCoordinator(input: {
 
     if (coachErr || !newCoach) {
       // Rollback auth user
-      await admin.auth.admin.deleteUser(authData.user.id);
+      await admin.auth.admin.deleteUser(linkRes.user.id);
       throw new Error(coachErr?.message || 'Failed to create coordinator coach record.');
     }
     coachId = newCoach.id;
+
+    // Send our own branded welcome email.
+    await sendCoachInviteEmail({
+      toEmail: normalizedEmail,
+      firstName: input.first_name.trim(),
+      role: 'coordinator',
+      academyName: academy.name,
+      inviteLink: linkRes.inviteLink,
+    });
+  }
+
+  // For an existing coach who hasn't activated yet, also send a fresh
+  // welcome email pointing at the new academy + new role.
+  if (existingCoach && !coachPasswordSetAt) {
+    const linkRes = await generateCoachInviteLink({
+      admin,
+      email: normalizedEmail,
+      hasExistingAuthUser: coachHadAuthUser,
+      redirectTo,
+    });
+    if (linkRes.inviteLink) {
+      if (!coachHadAuthUser && linkRes.user?.id) {
+        await admin
+          .from('coaches')
+          .update({ auth_user_id: linkRes.user.id })
+          .eq('id', coachId);
+      }
+      await sendCoachInviteEmail({
+        toEmail: normalizedEmail,
+        firstName: input.first_name.trim(),
+        role: 'coordinator',
+        academyName: academy.name,
+        inviteLink: linkRes.inviteLink,
+        isResend: true,
+      });
+    }
   }
 
   // If this academy already had a coordinator, demote that one (set their

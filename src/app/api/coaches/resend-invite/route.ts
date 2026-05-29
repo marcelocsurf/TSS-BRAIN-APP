@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { sendCoachInviteEmail } from '@/lib/actions/email';
+import { generateCoachInviteLink } from '@/lib/utils/coach-invite-link';
 
 // Re-issues the magic link for a coach that hasn't activated yet and
 // re-sends the branded invite email. Only the platform admin can call
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
     const { data: coach, error: coachErr } = await admin
       .from('coaches')
-      .select('id, email, first_name, role, academy_id, password_set_at, academies(name)')
+      .select('id, email, first_name, role, academy_id, password_set_at, auth_user_id, academies(name)')
       .eq('id', coach_id)
       .single();
     if (coachErr || !coach) {
@@ -60,18 +61,27 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
     const redirectTo = `${appUrl}/auth/callback?next=/`;
 
-    const { data: linkData, error: linkErr } =
-      await admin.auth.admin.generateLink({
-        type: 'invite',
-        email: coach.email,
-        options: { redirectTo },
-      });
+    const linkRes = await generateCoachInviteLink({
+      admin,
+      email: coach.email,
+      hasExistingAuthUser: !!coach.auth_user_id,
+      redirectTo,
+    });
 
-    if (linkErr || !linkData?.properties?.action_link) {
+    if (!linkRes.inviteLink) {
       return NextResponse.json(
-        { error: linkErr?.message || 'Could not regenerate invite link.' },
+        { error: linkRes.error ?? 'Could not regenerate invite link.' },
         { status: 500 },
       );
+    }
+
+    // If we just created the auth user via the fallback path, link it
+    // back to the coach row.
+    if (!coach.auth_user_id && linkRes.user?.id) {
+      await admin
+        .from('coaches')
+        .update({ auth_user_id: linkRes.user.id })
+        .eq('id', coach.id);
     }
 
     const academyName = Array.isArray(coach.academies)
@@ -83,7 +93,7 @@ export async function POST(req: NextRequest) {
       firstName: coach.first_name ?? 'there',
       role: coach.role as any,
       academyName,
-      inviteLink: linkData.properties.action_link,
+      inviteLink: linkRes.inviteLink,
       isResend: true,
     });
 

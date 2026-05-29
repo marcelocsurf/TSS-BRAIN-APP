@@ -82,6 +82,18 @@ export async function sendCoachInviteEmail(
   }
 }
 
+// Minimal HTML escape — protects against XSS / accidental tag injection
+// when user-supplied strings (firstName, academyName, email) are
+// embedded into the email HTML. Resend treats `html` as raw HTML.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildCoachInviteHtml(data: CoachInviteEmailData): string {
   const roleLabel =
     data.role === 'coordinator'
@@ -91,6 +103,13 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
       : data.role === 'admin'
       ? 'Admin'
       : 'Coach';
+
+  const firstName = escapeHtml(data.firstName);
+  const academyName = escapeHtml(data.academyName);
+  const toEmail = escapeHtml(data.toEmail);
+  // inviteLink is a Supabase-generated URL — safe to embed in href but
+  // escape just for &/" sanity if any query param ever contained them.
+  const inviteLink = escapeHtml(data.inviteLink);
 
   return `<!DOCTYPE html>
 <html>
@@ -106,18 +125,18 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
     <!-- Body -->
     <div style="background:white;padding:28px 24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
       <p style="margin:0 0 16px;font-size:15px;color:#111827;">
-        Hi <strong>${data.firstName}</strong>,
+        Hi <strong>${firstName}</strong>,
       </p>
       <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;">
         ${data.isResend ? 'A reminder — you were' : 'You\'ve been'} added to
-        <strong>${data.academyName}</strong> on ${BRAND.name} as
+        <strong>${academyName}</strong> on ${BRAND.name} as
         <strong>${roleLabel}</strong>.
       </p>
 
       <!-- Credentials block -->
       <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:20px;border:1px solid #E5E7EB;">
         <p style="margin:0 0 6px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Your login email</p>
-        <p style="margin:0;font-size:14px;color:#111827;font-weight:600;font-family:monospace;">${data.toEmail}</p>
+        <p style="margin:0;font-size:14px;color:#111827;font-weight:600;font-family:monospace;">${toEmail}</p>
       </div>
 
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
@@ -126,7 +145,7 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
       </p>
 
       <!-- CTA: Activate account -->
-      <a href="${data.inviteLink}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+      <a href="${inviteLink}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
         Activate my account &amp; set password
       </a>
 
