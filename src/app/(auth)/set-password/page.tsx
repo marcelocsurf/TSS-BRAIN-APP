@@ -52,7 +52,10 @@ export default function SetPasswordPage() {
 
     setDone(true);
     setTimeout(() => {
-      router.push('/dashboard');
+      // Land on '/' (universal entry) — the root page resolves the
+      // correct destination based on coach role: line coaches go to
+      // /coach-portal/[token], admin/coordinator to /dashboard.
+      router.push('/');
       router.refresh();
     }, 2000);
   };

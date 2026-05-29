@@ -35,11 +35,25 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
     const { data: coach, error: coachErr } = await admin
       .from('coaches')
-      .select('id, email, first_name, role, academy_id, academies(name)')
+      .select('id, email, first_name, role, academy_id, password_set_at, academies(name)')
       .eq('id', coach_id)
       .single();
     if (coachErr || !coach) {
       return NextResponse.json({ error: 'Coach not found.' }, { status: 404 });
+    }
+
+    // Don't regenerate an invite link if the coach has already activated
+    // their account — that would let anyone with admin access reset
+    // their password silently. They should use the password-reset flow
+    // instead.
+    if (coach.password_set_at) {
+      return NextResponse.json(
+        {
+          error:
+            'This coach has already activated their account. Use the password reset flow if they forgot their password.',
+        },
+        { status: 400 },
+      );
     }
 
     const appUrl =

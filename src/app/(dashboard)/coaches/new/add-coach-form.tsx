@@ -43,6 +43,9 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [reassigned, setReassigned] = useState(false);
+  const [emailSent, setEmailSent] = useState(true);
+  const [emailError, setEmailError] = useState('');
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
@@ -84,8 +87,11 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create coach');
 
+      setReassigned(!!data.reassigned);
+      setEmailSent(data.email_sent !== false); // undefined → assume ok
+      setEmailError(data.email_error || '');
       setSuccess(true);
-      setTimeout(() => router.push('/coaches'), 2000);
+      setTimeout(() => router.push('/coaches'), data.email_sent === false ? 4000 : 2000);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -98,11 +104,33 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
         <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-2xl text-[var(--tss-success)]">{'\u2713'}</span>
         </div>
-        <h2 className="text-2xl font-bold text-[var(--tss-navy)]">Coach Created</h2>
+        <h2 className="text-2xl font-bold text-[var(--tss-navy)]">
+          {reassigned ? 'Coach Reassigned' : 'Coach Created'}
+        </h2>
         <p className="text-sm text-[var(--tss-gray-500)] mt-2">
-          {form.first_name} {form.last_name} has been added as {form.role}.
+          {reassigned
+            ? `${form.first_name} ${form.last_name} was moved here as ${form.role}. Their existing TSS account is preserved.`
+            : `${form.first_name} ${form.last_name} has been added as ${form.role}.`}
         </p>
-        <p className="text-xs text-[var(--tss-gray-500)] mt-1" style={{ fontFamily: 'var(--font-mono)' }}>Redirecting to coaches...</p>
+        {!emailSent && (
+          <div className="mt-4 mx-auto max-w-md bg-amber-50 border border-amber-200 rounded-xl p-3 text-left">
+            <p className="text-xs font-semibold text-amber-800">
+              \u26a0 Invite email did NOT send
+            </p>
+            <p className="text-[11px] text-amber-700 mt-1">
+              The coach record was created. You can re-try sending from the
+              Coaches list via the &ldquo;Resend invite&rdquo; button.
+            </p>
+            {emailError && (
+              <p className="text-[10px] text-amber-700 mt-1 font-mono break-all">
+                {emailError}
+              </p>
+            )}
+          </div>
+        )}
+        <p className="text-xs text-[var(--tss-gray-500)] mt-3" style={{ fontFamily: 'var(--font-mono)' }}>
+          Redirecting to coaches...
+        </p>
       </div>
     );
   }

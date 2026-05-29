@@ -112,6 +112,38 @@ export async function POST(req: NextRequest) {
 
       if (moveErr) throw new Error(moveErr.message);
 
+      // If the coach hasn't activated their account yet, regenerate
+      // a fresh magic link and re-send the welcome email so they can
+      // finally log in. Activated coaches already have a password —
+      // they just see the role change next time they log in.
+      let emailResent = false;
+      let emailError: string | undefined;
+      if (!existingCoach.password_set_at) {
+        const appUrlReassign =
+          process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+        const redirectToReassign = `${appUrlReassign}/auth/callback?next=/`;
+        const { data: relinkData, error: relinkErr } =
+          await admin.auth.admin.generateLink({
+            type: 'invite',
+            email: normalizedEmail,
+            options: { redirectTo: redirectToReassign },
+          });
+        if (!relinkErr && relinkData?.properties?.action_link) {
+          const r = await sendCoachInviteEmail({
+            toEmail: normalizedEmail,
+            firstName: first_name.trim(),
+            role,
+            academyName: targetAcademy.name,
+            inviteLink: relinkData.properties.action_link,
+            isResend: true,
+          });
+          emailResent = r.success;
+          if (!r.success) emailError = r.error;
+        } else if (relinkErr) {
+          emailError = relinkErr.message;
+        }
+      }
+
       return NextResponse.json({
         success: true,
         email: normalizedEmail,
@@ -120,6 +152,8 @@ export async function POST(req: NextRequest) {
         reassigned: true,
         previous_academy_id: existingCoach.academy_id,
         previous_role: existingCoach.role,
+        email_sent: emailResent,
+        email_error: emailError,
       });
     }
 
