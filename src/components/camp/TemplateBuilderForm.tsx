@@ -23,7 +23,7 @@ import type { ContentVideo } from '@/lib/actions/content';
 import { ActivityForm } from '@/components/camp/ActivityForm';
 import { ACTIVITY_TYPES } from '@/lib/constants/brand';
 
-import { LEVEL_NAMES } from '@/lib/constants/belts';
+import { LEVEL_NAMES, LEVEL_BELT_COLOR, LEVEL_BELT_LABEL } from '@/lib/constants/belts';
 const LEVEL_OPTIONS = LEVEL_NAMES;
 const MODALITY_OPTIONS = ['individual', 'group'];
 const DELIVERY_OPTIONS = ['in-person', 'online', 'hybrid'];
@@ -310,15 +310,31 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
             <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Level
             </label>
-            <select
-              value={levelName}
-              onChange={(e) => setLevelName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
-            >
-              {LEVEL_OPTIONS.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
+            {/* Belt swatch + select. Native <select> can't render
+                colored chips inside <option>, so we surface the belt
+                colour as a 4px stripe attached to the field and append
+                the belt name to each option label. */}
+            <div className="flex items-stretch gap-2">
+              <div
+                className="w-1.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: LEVEL_BELT_COLOR[levelName] ?? '#E8E8E8',
+                  border: levelName === 'Beginner' ? '1px solid #D1D5DB' : 'none',
+                }}
+                aria-hidden
+              />
+              <select
+                value={levelName}
+                onChange={(e) => setLevelName(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              >
+                {LEVEL_OPTIONS.map((l) => (
+                  <option key={l} value={l}>
+                    {l} ({LEVEL_BELT_LABEL[l] ?? 'Belt'})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>

@@ -67,6 +67,35 @@ export const LEVEL_BELT_COLOR: Record<string, string> = {
   Elite: '#111111',
 };
 
+// Human belt label per level. Used in the template-builder Level
+// dropdown so the admin sees "Novice (Yellow Belt)" instead of just
+// "Novice".
+export const LEVEL_BELT_LABEL: Record<string, string> = {
+  Beginner: 'White Belt',
+  Novice: 'Yellow Belt',
+  Foundation: 'Blue Belt',
+  Emerging: 'Purple Belt',
+  'Pre-Elite': 'Brown Belt',
+  Elite: 'Black Belt',
+};
+
+// `lessons.course_section` values that belong to each level. A Novice
+// template should see ITS OWN section AND every lower section so the
+// admin can reuse foundational STPs from earlier belts. Used by the
+// template-catalog server action.
+const LEVEL_COURSE_SECTIONS: Record<string, string[]> = {
+  Beginner: ['white_belt'],
+  Novice: ['white_belt', 'yellow_belt'],
+  Foundation: ['white_belt', 'yellow_belt', 'blue_belt'],
+  Emerging: ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'],
+  'Pre-Elite': ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt'],
+  Elite: ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'],
+};
+
+export function levelToCourseSections(levelName: string): string[] {
+  return LEVEL_COURSE_SECTIONS[levelName] ?? ['white_belt'];
+}
+
 export function getBeltRank(belt: BeltLevel): number {
   return BELT_RANK[belt];
 }

@@ -6,6 +6,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { filterDrillsByBelt, levelNameToBelt } from '@/lib/utils/belts';
+import { levelToCourseSections } from '@/lib/constants/belts';
 
 export interface CatalogStp {
   id: string;
@@ -48,12 +49,16 @@ export interface TemplateCatalog {
 export async function getTemplateCatalog(levelName: string): Promise<TemplateCatalog> {
   const supabase = await createClient();
   const belt = levelNameToBelt(levelName);
+  // STPs come from any belt-level course_section up to and including
+  // the template's level. So a Novice template sees both white_belt
+  // and yellow_belt STPs; a Foundation template adds blue_belt; etc.
+  const sections = levelToCourseSections(levelName);
 
   const [stpRes, drillsRes] = await Promise.all([
     supabase
       .from('lessons')
       .select('id, title, pillar, display_order, description_md, drill_md, errors_md, video_url')
-      .eq('course_section', 'white_belt')
+      .in('course_section', sections)
       .eq('active', true)
       .order('display_order'),
     supabase
