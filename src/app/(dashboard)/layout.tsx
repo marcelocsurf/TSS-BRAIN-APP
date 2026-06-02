@@ -18,6 +18,7 @@ import {
   Building2,
   Film,
   ShieldCheck,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -37,7 +38,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
   { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['admin', 'coach'] },
   // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
-  { href: '/academies', label: 'Academies', Icon: Building2,   roles: ['admin'] },
+  { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
+  { href: '/admin/billing', label: 'Billing',   Icon: Receipt,     roles: ['admin'] },
   { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
   { href: '/audit',     label: 'Audit',     Icon: ShieldCheck, roles: ['admin'] },
 ];

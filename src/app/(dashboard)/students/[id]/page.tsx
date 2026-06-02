@@ -595,6 +595,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         pendingCourses={pendingCourses}
         intakeComplete={intakeComplete}
         canManage={canManageCourses}
+        isPlatformAdmin={!!coach?.is_platform_admin}
+        isDirectPurchase={!(student as any).academy_id}
       />
 
       {/* Level Access */}
