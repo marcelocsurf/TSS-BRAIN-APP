@@ -373,9 +373,12 @@ export async function createCampInstance(input: {
         await supabase.from('students').update(patch).eq('id', s.id);
 
         // Auto-grant immediately if waiver already signed and not granted.
+        // Tag the source as 'auto_on_camp_enrol' so the billing
+        // dashboard can distinguish "granted because the student
+        // joined a camp" from "granted because they finished intake".
         if (s.waiver_signed && !already) {
           try {
-            await grantCourseToStudent(s.id, courseKey, 'auto_on_intake');
+            await grantCourseToStudent(s.id, courseKey, 'auto_on_camp_enrol');
           } catch (err) {
             console.error('[createCampInstance] auto-grant failed', s.id, courseKey, err);
           }

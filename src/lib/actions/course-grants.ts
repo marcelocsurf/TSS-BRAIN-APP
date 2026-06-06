@@ -81,6 +81,19 @@ export async function grantCourseToStudent(
     };
   }
 
+  // Direct purchases bypass the waiver gate AND skip academy billing,
+  // so only the platform admin can initiate them — coordinators could
+  // otherwise mark grants as "not their academy's bill".
+  if (source === 'direct_purchase') {
+    const callerForDirect = await getCurrentCoach();
+    if (!callerForDirect?.is_platform_admin) {
+      return {
+        ok: false,
+        error: 'Direct purchase grants are restricted to platform administrators.',
+      };
+    }
+  }
+
   // Resolve current coach (null for auto-grants / unauthenticated).
   let grantedBy: string | null = null;
   if (source === 'manual' || source === 'direct_purchase' || source === 'override') {
@@ -103,12 +116,26 @@ export async function grantCourseToStudent(
     effectiveSource === 'direct_purchase' ? null : student.academy_id ?? null;
   const billable = !options?.nonBillable && effectiveSource !== 'direct_purchase';
 
-  // Insert grant; ignore conflict on the partial unique index that
-  // only counts non-revoked rows, so re-granting after revoke is OK.
-  const { data: inserted, error: insertErr } = await admin
+  // M82 — the unique index is now PARTIAL (only active rows). Postgres'
+  // ON CONFLICT can't target a partial index without an explicit
+  // index_predicate, which the Supabase JS client doesn't expose. So
+  // we replace the previous upsert with a check-then-insert: detect
+  // the active grant manually, INSERT only if none. Re-granting after
+  // a previous revoke produces a brand-new row (correct audit trail).
+  const { data: existing } = await admin
     .from('course_grants')
-    .upsert(
-      {
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('course_key', courseKey)
+    .is('revoked_at', null)
+    .maybeSingle();
+
+  const alreadyGranted = !!existing;
+
+  if (!alreadyGranted) {
+    const { error: insertErr } = await admin
+      .from('course_grants')
+      .insert({
         student_id: studentId,
         academy_id: student.academy_id ?? null,
         academy_id_at_grant: academyIdAtGrant,
@@ -118,14 +145,9 @@ export async function grantCourseToStudent(
         billable,
         price_cents: priceSnap?.price_cents ?? null,
         currency: priceSnap?.currency ?? 'USD',
-      },
-      { onConflict: 'student_id,course_key', ignoreDuplicates: true }
-    )
-    .select('id');
-
-  if (insertErr) return { ok: false, error: insertErr.message };
-
-  const alreadyGranted = !inserted || inserted.length === 0;
+      });
+    if (insertErr) return { ok: false, error: insertErr.message };
+  }
 
   // Always ensure the access column is set (idempotent).
   const { error: updateErr } = await admin
