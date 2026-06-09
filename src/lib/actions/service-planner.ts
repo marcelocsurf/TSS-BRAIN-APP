@@ -1431,7 +1431,7 @@ export async function closeServicePlan(
   if (studentIds.length > 0) {
     const { data: studs } = await admin
       .from('students')
-      .select('id, first_name, email, portal_token, belt_level')
+      .select('id, first_name, email, portal_token, belt_level, course_access_white, course_access_yellow')
       .in('id', studentIds);
     for (const s of studs ?? []) studById[s.id] = s;
   }
@@ -1495,7 +1495,7 @@ export async function closeServicePlan(
         // M50 — surface session hours in the student's portal totals.
         duration_minutes: sessionDurationMinutes,
       })
-      .select('id')
+      .select('id, feedback_token')
       .single();
     if (resErr) throw new Error(resErr.message);
 
@@ -1521,6 +1521,12 @@ export async function closeServicePlan(
     if (!alreadyClosed && stud?.email && result) {
       try {
         const { sendSessionEmail } = await import('@/lib/actions/email');
+        // M86 — pick the right feedback URL based on whether the
+        // student has any course access. Leads land on the standalone
+        // /feedback/[token] page; Members get the full portal.
+        const hasCourseAccess =
+          !!(stud as any).course_access_white ||
+          !!(stud as any).course_access_yellow;
         await sendSessionEmail({
           studentName: stud.first_name,
           studentEmail: stud.email,
@@ -1533,6 +1539,9 @@ export async function closeServicePlan(
           homework: '',
           whatsNext: '',
           beltLevel: stud.belt_level || 'white_belt',
+          sessionResultId: result.id,
+          feedbackToken: (result as any).feedback_token ?? undefined,
+          studentHasCourseAccess: hasCourseAccess,
         });
         await admin
           .from('student_session_results')

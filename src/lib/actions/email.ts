@@ -20,15 +20,28 @@ interface SessionEmailData {
   beltLevel: BeltLevel;
   /** student_session_results.id — used to deep-link directly to this survey. */
   sessionResultId?: string;
+  /** student_session_results.feedback_token — when set, sends Leads to the
+   *  standalone /feedback/[token] page instead of the full portal. */
+  feedbackToken?: string;
+  /** Whether the student has ANY course access (white_belt OR yellow_belt).
+   *  Leads = false → standalone feedback page. Members = true → full portal. */
+  studentHasCourseAccess?: boolean;
 }
 
 export async function sendSessionEmail(data: SessionEmailData): Promise<{ success: boolean; error?: string }> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const portalUrl = `${appUrl}/portal/${data.portalToken}`;
   const belt = BELT_DISPLAY[data.beltLevel];
-  const feedbackUrl = data.sessionResultId
-    ? `${portalUrl}?tab=feedback&survey=${data.sessionResultId}`
-    : `${portalUrl}?tab=feedback`;
+
+  // Route Leads (no course access) to the standalone /feedback/[token]
+  // page so they never see the full portal. Members keep the full
+  // portal experience that lands on the feedback tab.
+  const useStandalone = data.feedbackToken && data.studentHasCourseAccess === false;
+  const feedbackUrl = useStandalone
+    ? `${appUrl}/feedback/${data.feedbackToken}`
+    : data.sessionResultId
+      ? `${portalUrl}?tab=feedback&survey=${data.sessionResultId}`
+      : `${portalUrl}?tab=feedback`;
 
   try {
     await resend.emails.send({
