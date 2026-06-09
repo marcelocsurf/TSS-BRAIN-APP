@@ -1551,6 +1551,26 @@ export async function closeServicePlan(
         /* non-blocking */
       }
     }
+
+    // M-audit — log session_closed per student. Same shape that
+    // sessions.ts + multi-block-sessions.ts use, so the audit feed at
+    // /audit treats every closure consistently regardless of which
+    // close-path created it. Non-blocking.
+    if (!alreadyClosed && result) {
+      try {
+        await admin.from('audit_log').insert({
+          actor_type: 'coach',
+          actor_id: coach.id,
+          actor_name: coach.display_name,
+          event_type: 'session_closed',
+          status_before: 'draft',
+          status_after: 'closed',
+          note: `Service session closed for ${stud?.first_name ?? 'student'}. Overall: ${status}.`,
+        });
+      } catch {
+        /* non-blocking — audit is best-effort */
+      }
+    }
   }
 
   // M48 — Per-student incident reports filed by the coach at close.
