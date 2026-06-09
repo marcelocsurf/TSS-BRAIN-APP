@@ -157,6 +157,26 @@ export async function grantCourseToStudent(
 
   if (updateErr) return { ok: false, error: updateErr.message };
 
+  // Auto-sync Level Access — a course grant should always come with
+  // the matching belt's practice library unlocked. Without this the
+  // admin would have to click "Grant" twice in two different cards.
+  // Idempotent: upsert by (student_id, access_type, level_key).
+  // course.key is the same string as the belt's level_key (white_belt,
+  // yellow_belt, …) so we can reuse it directly.
+  await admin
+    .from('student_level_access')
+    .upsert(
+      {
+        student_id: studentId,
+        access_type: 'level',
+        level_key: course.key,
+        source: 'auto_from_course',
+        granted_by: grantedBy,
+        active: true,
+      },
+      { onConflict: 'student_id,access_type,level_key' },
+    );
+
   revalidatePath('/students/' + studentId);
 
   if (alreadyGranted) return { ok: true, alreadyGranted: true };

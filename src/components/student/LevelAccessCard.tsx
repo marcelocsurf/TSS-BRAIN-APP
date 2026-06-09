@@ -16,7 +16,15 @@ export function LevelAccessCard({
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-50">
-        <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Level Access</h3>
+        <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+          Practice Library (no billing)
+        </h3>
+        <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+          Unlocks drills + missions in the portal&apos;s self-training tab.
+          <strong className="text-gray-700"> Granting a Course above auto-unlocks the matching belt here.</strong>
+          {' '}Use this card only when you want to give practice access
+          <em> without</em> selling the full course (no academy invoice).
+        </p>
       </div>
       <div className="px-4 py-3 space-y-1">
         {BELT_HIERARCHY.map((beltKey) => {
@@ -40,9 +48,6 @@ export function LevelAccessCard({
             </div>
           );
         })}
-        <p className="text-xs text-gray-400 pt-3 border-t border-gray-50 mt-2">
-          Unlocked levels appear in the student portal library.
-        </p>
       </div>
     </div>
   );
