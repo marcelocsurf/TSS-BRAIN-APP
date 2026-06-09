@@ -30,11 +30,18 @@ export default async function CoachesPage() {
 
   const supabase = await createClient();
 
-  const { data: coaches } = await supabase
+  // Defense in depth: also filter by academy on the JS layer so we
+  // never depend solely on RLS staying enabled. Mirrors what the
+  // students + camps pages already do. Platform admin sees all.
+  let query = supabase
     .from('coaches')
     .select('*')
     .order('role', { ascending: true })
     .order('display_name', { ascending: true });
+  if (!currentCoach.is_platform_admin && currentCoach.academy_id) {
+    query = query.eq('academy_id', currentCoach.academy_id);
+  }
+  const { data: coaches } = await query;
 
   const activeCoaches = coaches?.filter(c => c.active_status) || [];
   const inactiveCoaches = coaches?.filter(c => !c.active_status) || [];
