@@ -246,6 +246,7 @@ export async function markVideoWatched(studentId: string, lessonId: string) {
       video_watched: true,
     }, { onConflict: 'student_id,lesson_id' });
 
+  if (!error) revalidatePath('/portal/[token]', 'layout');
   return { ok: !error, error: error?.message };
 }
 
@@ -262,6 +263,7 @@ export async function markContentRead(studentId: string, lessonId: string) {
       content_read: true,
     }, { onConflict: 'student_id,lesson_id' });
 
+  if (!error) revalidatePath('/portal/[token]', 'layout');
   return { ok: !error, error: error?.message };
 }
 
@@ -380,6 +382,7 @@ export async function submitQuiz(
     }
   }
 
+  revalidatePath('/portal/[token]', 'layout');
   return {
     ok: true,
     score,
@@ -429,6 +432,7 @@ export async function saveLessonForm(
       .eq('id', studentId);
   }
 
+  revalidatePath('/portal/[token]', 'layout');
   return { ok: true };
 }
 
