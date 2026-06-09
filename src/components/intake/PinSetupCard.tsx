@@ -81,7 +81,8 @@ export function PinSetupCard({
       <input
         type="password"
         inputMode="numeric"
-        pattern="\\d{4,6}"
+        minLength={4}
+        maxLength={6}
         value={pin}
         onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
         placeholder="PIN"
@@ -91,7 +92,8 @@ export function PinSetupCard({
       <input
         type="password"
         inputMode="numeric"
-        pattern="\\d{4,6}"
+        minLength={4}
+        maxLength={6}
         value={confirm}
         onChange={(e) => setConfirm(e.target.value.replace(/\D/g, '').slice(0, 6))}
         placeholder="Confirm PIN"
