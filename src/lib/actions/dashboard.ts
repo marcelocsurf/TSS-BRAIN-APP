@@ -87,6 +87,11 @@ export async function getRecentAuditEvents(limit: number = 5) {
 export async function getCoachDashboardData(coachId: string) {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
+  const me = await getCurrentCoach();
+  const academyId: string | null = me?.is_platform_admin ? null : me?.academy_id ?? null;
+
+  let myStudentsQ = supabase.from('students').select('*', { count: 'exact', head: true });
+  if (academyId) myStudentsQ = myStudentsQ.eq('academy_id', academyId);
 
   const [
     { count: myStudentCount },
@@ -94,7 +99,7 @@ export async function getCoachDashboardData(coachId: string) {
     { count: draftCount },
     upcomingServicesResult,
   ] = await Promise.all([
-    supabase.from('students').select('*', { count: 'exact', head: true }),
+    myStudentsQ,
     supabase
       .from('cascade_sessions')
       .select('id, mission, session_date, students:student_id(first_name, last_name)')
@@ -288,22 +293,30 @@ export async function getCoordinatorDashboardData() {
 
 export async function getAssistantDashboardData() {
   const supabase = await createClient();
+  const me = await getCurrentCoach();
+  const academyId: string | null = me?.is_platform_admin ? null : me?.academy_id ?? null;
+
+  let medicalQ = supabase
+    .from('students')
+    .select('id, first_name, last_name, allergies, injuries, medical_notes')
+    .eq('status', 'active')
+    .or('allergies.neq.,injuries.neq.,medical_notes.neq.')
+    .order('first_name')
+    .limit(20);
+  if (academyId) medicalQ = medicalQ.eq('academy_id', academyId);
+
+  let emergencyQ = supabase
+    .from('students')
+    .select('id, first_name, last_name, emergency_contact_name, emergency_contact_phone')
+    .eq('status', 'active')
+    .not('emergency_contact_phone', 'is', null)
+    .order('first_name')
+    .limit(20);
+  if (academyId) emergencyQ = emergencyQ.eq('academy_id', academyId);
 
   const [medicalAlertsResult, emergencyResult] = await Promise.all([
-    supabase
-      .from('students')
-      .select('id, first_name, last_name, allergies, injuries, medical_notes')
-      .eq('status', 'active')
-      .or('allergies.neq.,injuries.neq.,medical_notes.neq.')
-      .order('first_name')
-      .limit(20),
-    supabase
-      .from('students')
-      .select('id, first_name, last_name, emergency_contact_name, emergency_contact_phone')
-      .eq('status', 'active')
-      .not('emergency_contact_phone', 'is', null)
-      .order('first_name')
-      .limit(20),
+    medicalQ,
+    emergencyQ,
   ]);
 
   return {

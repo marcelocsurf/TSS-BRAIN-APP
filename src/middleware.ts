@@ -40,6 +40,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/intake') ||
     pathname.startsWith('/activate') ||
     pathname.startsWith('/lead') ||
+    pathname.startsWith('/coach-portal') ||  // token-gated coach portal
+    pathname.startsWith('/feedback') ||       // token-gated standalone survey
+    pathname === '/forgot-password' ||        // password recovery (unauthenticated)
     pathname === '/manifest.webmanifest' ||
     pathname === '/sw.js';
 

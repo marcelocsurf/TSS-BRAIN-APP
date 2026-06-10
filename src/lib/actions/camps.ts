@@ -920,8 +920,6 @@ export async function updateEnrollmentPayment(input: {
   if (input.amount_cents !== undefined) updates.amount_cents = input.amount_cents;
   if (input.payment_method !== undefined) updates.payment_method = input.payment_method;
   if (input.is_refresher !== undefined) updates.is_refresher = input.is_refresher;
-  // Stamp the seller if not already attributed.
-  if (me?.id) updates.sold_by = updates.sold_by ?? undefined;
 
   const { data: row, error } = await admin
     .from('camp_participants')
