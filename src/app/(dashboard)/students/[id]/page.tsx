@@ -413,6 +413,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         primary={(student as any).learning_profile_primary as LearningChannel | null}
         secondary={(student as any).learning_profile_secondary as LearningChannel | null}
         portalToken={student.portal_token}
+        intakeLearningStyle={(student as any).learning_style as string | null}
       />
 
       {/* --- ACTIVE PLANS (resume CTA, only when there's an unfinished plan) --- */}

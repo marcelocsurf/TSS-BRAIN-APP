@@ -14,6 +14,19 @@ interface Props {
   primary: LearningChannel | null;
   secondary: LearningChannel | null;
   portalToken: string;
+  /** The raw "How do you learn best?" answer captured during intake. */
+  intakeLearningStyle?: string | null;
+}
+
+// Map the simple intake answer to a VAKR channel so the coach gets a
+// useful provisional read before any formal quiz is recorded.
+function channelFromIntake(style: string | null | undefined): LearningChannel | null {
+  if (!style) return null;
+  const s = style.toLowerCase();
+  if (s.includes('watch') || s.includes('visual')) return 'V';
+  if (s.includes('doing') || s.includes('kinesthetic')) return 'K';
+  if (s.includes('hearing') || s.includes('explanation')) return 'A';
+  return null;
 }
 
 // Coach-facing card on /students/[id]. Shows the student's VAKR learning
@@ -22,7 +35,7 @@ interface Props {
 // (Marcelo records the result the student told him from the GitHub Pages
 // quiz: https://marcelocsurf.github.io/learning-quiz/).
 
-export function LearningProfileCard({ studentId, primary, secondary, portalToken }: Props) {
+export function LearningProfileCard({ studentId, primary, secondary, portalToken, intakeLearningStyle }: Props) {
   const [editing, setEditing] = useState(false);
   const [pickPrimary, setPickPrimary] = useState<LearningChannel | null>(primary);
   const [pickSecondary, setPickSecondary] = useState<LearningChannel | null>(secondary);
@@ -71,7 +84,58 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
     });
   };
 
-  // ── Empty state ──
+  // ── Provisional state — no formal profile yet, but intake captured a hint ──
+  const intakeChannel = channelFromIntake(intakeLearningStyle);
+  if (!primary && !editing && intakeChannel) {
+    const ip = LEARNING_PROFILES[intakeChannel];
+    return (
+      <div className={`rounded-xl border ${ip.border} ${ip.bg} p-4`}>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <span className="text-2xl shrink-0">{ip.icon}</span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 inline-flex items-center gap-1">
+                <Brain size={10} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+                How they learn
+              </p>
+              <p className="text-base font-bold truncate" style={{ color: ip.color }}>
+                {ip.name}
+              </p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                From intake — tap <strong>Set</strong> to confirm or refine
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs px-2.5 py-1 rounded-lg bg-[var(--tss-navy)] text-white shrink-0"
+          >
+            Set
+          </button>
+        </div>
+
+        <p className="text-[12px] text-gray-700 leading-relaxed mb-3">
+          {ip.description}
+        </p>
+
+        <div className="bg-white/60 rounded-lg p-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5">
+            Coach — how to teach this student
+          </p>
+          <ul className="space-y-1">
+            {ip.coachTips.map((tip, i) => (
+              <li key={i} className="text-[12px] text-gray-700 leading-snug">
+                • {tip}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Empty state — nothing from intake either ──
   if (!primary && !editing) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -89,16 +153,9 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
           </button>
         </div>
         <p className="text-[11px] text-gray-500 leading-relaxed">
-          No learning profile yet. Ask the student to take the quiz at{' '}
-          <a
-            href="https://marcelocsurf.github.io/learning-quiz/"
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 underline"
-          >
-            marcelocsurf.github.io/learning-quiz
-          </a>
-          {' '}and tell you the result — then tap <strong>Set</strong> to record it.
+          No learning profile yet. It appears automatically once the student
+          answers &ldquo;how I learn best&rdquo; in their intake — or tap{' '}
+          <strong>Set</strong> to record it manually.
         </p>
       </div>
     );
