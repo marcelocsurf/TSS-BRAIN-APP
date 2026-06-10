@@ -19,6 +19,12 @@ interface StudentData {
   board_type?: string | null;
   other_sports?: string | null;
   learning_style?: string | null;
+  board_familiarity?: string | null;
+  water_comfort?: string | null;
+  comfort_wave_size?: string | null;
+  maneuvers_current?: string[] | null;
+  surf_injuries?: string | null;
+  ocean_quiz_answers?: { P0?: string | null } | null;
   goal_short_term?: string | null;
   goal_mid_term?: string | null;
   goal_long_term?: string | null;
@@ -65,6 +71,14 @@ export function IntakeForm({ token, student }: Props) {
   const [error, setError] = useState('');
   const [extendedStep, setExtendedStep] = useState(0);
 
+  // Adaptive branch: true if the student has never surfed outside whitewater
+  // (ocean_quiz P0 short-circuit). Seeded from the saved quiz answer on
+  // reload; overwritten when the quiz is completed in this session.
+  const p0Saved = student.ocean_quiz_answers?.P0 ?? null;
+  const [isBeginner, setIsBeginner] = useState<boolean>(
+    p0Saved === 'never' || p0Saved === 'whitewater_only',
+  );
+
   // ── Basic intake form state ──
   const [basicForm, setBasicForm] = useState<BasicIntakeInput>({
     emergency_contact_name: student.emergency_contact_name || '',
@@ -88,6 +102,11 @@ export function IntakeForm({ token, student }: Props) {
     board_type: student.board_type || '',
     other_sports: student.other_sports || '',
     learning_style: student.learning_style || '',
+    board_familiarity: student.board_familiarity || '',
+    water_comfort: student.water_comfort || '',
+    comfort_wave_size: student.comfort_wave_size || '',
+    maneuvers_current: student.maneuvers_current || [],
+    surf_injuries: student.surf_injuries || '',
     goal_short_term: student.goal_short_term || '',
     goal_mid_term: student.goal_mid_term || '',
     goal_long_term: student.goal_long_term || '',
@@ -103,7 +122,7 @@ export function IntakeForm({ token, student }: Props) {
   const setBasic = (field: keyof BasicIntakeInput, value: string | boolean) =>
     setBasicForm((prev) => ({ ...prev, [field]: value }));
 
-  const setExt = (field: keyof IntakeFormInput, value: string | boolean) =>
+  const setExt = (field: keyof IntakeFormInput, value: string | boolean | string[]) =>
     setExtForm((prev) => ({ ...prev, [field]: value }));
 
   // ── Submit Stage 1 (Basic) ──
@@ -217,8 +236,9 @@ export function IntakeForm({ token, student }: Props) {
         <StageIndicator current={0} />
         <OceanQuizStep
           token={token}
-          onComplete={(level) => {
+          onComplete={(level, beginner) => {
             setOceanLevelResult(level);
+            setIsBeginner(beginner);
             setStage('ocean_quiz_done');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
@@ -344,7 +364,7 @@ export function IntakeForm({ token, student }: Props) {
 
   const EXT_STEPS = [
     { title: 'About You', icon: '\u{1F464}' },
-    { title: 'Surf Experience', icon: '\u{1F3C4}' },
+    { title: isBeginner ? 'Your Starting Point' : 'Your Surf Today', icon: '\u{1F3C4}' },
     { title: 'Your Goals', icon: '\u{1F3AF}' },
     { title: 'Final Details', icon: '\u2713' },
   ];
@@ -442,47 +462,14 @@ export function IntakeForm({ token, student }: Props) {
             </>
           )}
 
-          {/* ── STEP 1: SURF EXPERIENCE ── */}
-          {extendedStep === 1 && (
+          {/* ── STEP 1: SURF EXPERIENCE (adaptive) ── */}
+          {extendedStep === 1 && isBeginner && (
             <>
-              <OptionGroup
-                label="What's your stance?"
-                value={(extForm.stance as string) || ''}
-                onChange={(v) => setExt('stance', v)}
-                options={['Regular', 'Goofy', 'Not sure']}
-              />
-              <Select
-                label="Surf experience"
-                value={(extForm.surf_experience_years as string) || ''}
-                onChange={(v) => setExt('surf_experience_years', v)}
-                options={[
-                  '', 'Never surfed', 'Less than 1 year',
-                  '1-3 years', '3-5 years', '5+ years',
-                ]}
-              />
-              <Select
-                label="How often do you surf?"
-                value={(extForm.surf_frequency as string) || ''}
-                onChange={(v) => setExt('surf_frequency', v)}
-                options={[
-                  '', 'This is my first time', 'A few times a year',
-                  'Monthly', 'Weekly',
-                ]}
-              />
-              <Select
-                label="What board do you usually ride?"
-                value={(extForm.board_type as string) || ''}
-                onChange={(v) => setExt('board_type', v)}
-                options={[
-                  '', 'Never surfed', 'Foamie / Soft top',
-                  'Funboard', 'Shortboard', 'Longboard', 'Other',
-                ]}
-              />
               <Field
                 label="Other sports you practice"
                 value={(extForm.other_sports as string) || ''}
                 onChange={(v) => setExt('other_sports', v)}
-                placeholder="e.g. Skateboarding, swimming, BJJ"
+                placeholder="e.g. Skateboarding, swimming, soccer"
               />
               <OptionGroup
                 label="How do you learn best?"
@@ -495,23 +482,131 @@ export function IntakeForm({ token, student }: Props) {
                   'Not sure',
                 ]}
               />
+              <OptionGroup
+                label="Have you ever tried standing on a board? (skate, snow, foam surf)"
+                value={(extForm.board_familiarity as string) || ''}
+                onChange={(v) => setExt('board_familiarity', v)}
+                options={['Yes', 'A little', 'No']}
+              />
+              <OptionGroup
+                label="How comfortable do you feel in the ocean?"
+                value={(extForm.water_comfort as string) || ''}
+                onChange={(v) => setExt('water_comfort', v)}
+                options={['Very comfortable', 'Somewhat', 'It makes me nervous']}
+              />
             </>
           )}
 
-          {/* ── STEP 2: GOALS ── */}
-          {extendedStep === 2 && (
+          {extendedStep === 1 && !isBeginner && (
+            <>
+              <OptionGroup
+                label="What's your stance?"
+                value={(extForm.stance as string) || ''}
+                onChange={(v) => setExt('stance', v)}
+                options={['Regular', 'Goofy', 'Not sure']}
+              />
+              <Select
+                label="How long have you been surfing?"
+                value={(extForm.surf_experience_years as string) || ''}
+                onChange={(v) => setExt('surf_experience_years', v)}
+                options={[
+                  '', 'Less than 1 year', '1-3 years', '3-5 years', '5+ years',
+                ]}
+              />
+              <Select
+                label="How often do you surf?"
+                value={(extForm.surf_frequency as string) || ''}
+                onChange={(v) => setExt('surf_frequency', v)}
+                options={[
+                  '', 'A few times a year', 'Monthly', 'Weekly', 'Almost daily',
+                ]}
+              />
+              <Select
+                label="What board(s) do you ride?"
+                value={(extForm.board_type as string) || ''}
+                onChange={(v) => setExt('board_type', v)}
+                options={[
+                  '', 'Foamie / Soft top', 'Funboard',
+                  'Shortboard', 'Longboard', 'Several',
+                ]}
+              />
+              <OptionGroup
+                label="What wave size are you comfortable with today?"
+                value={(extForm.comfort_wave_size as string) || ''}
+                onChange={(v) => setExt('comfort_wave_size', v)}
+                options={['Up to waist', 'Up to chest', 'Up to head', 'Overhead']}
+              />
+              <MultiOptionGroup
+                label="Which maneuvers can you already do?"
+                values={(extForm.maneuvers_current as string[]) || []}
+                onChange={(vals) => setExt('maneuvers_current', vals)}
+                options={[
+                  'Paddle & stand up',
+                  'Cross the wall (trim)',
+                  'Bottom turn',
+                  'Top turn',
+                  'Cutback',
+                  'Tube / barrel',
+                ]}
+              />
+              <OptionGroup
+                label="How do you learn best?"
+                value={(extForm.learning_style as string) || ''}
+                onChange={(v) => setExt('learning_style', v)}
+                options={[
+                  'Watching (visual)',
+                  'Doing (kinesthetic)',
+                  'Hearing explanations',
+                  'Not sure',
+                ]}
+              />
+              <Field
+                label="Other sports you practice"
+                value={(extForm.other_sports as string) || ''}
+                onChange={(v) => setExt('other_sports', v)}
+                placeholder="e.g. Skateboarding, swimming, BJJ"
+              />
+            </>
+          )}
+
+          {/* ── STEP 2: GOALS (adaptive) ── */}
+          {extendedStep === 2 && isBeginner && (
             <>
               <TextArea
-                label="What do you want to achieve this trip?"
+                label="What would you like to achieve in this trip/course?"
                 value={(extForm.goal_short_term as string) || ''}
                 onChange={(v) => setExt('goal_short_term', v)}
-                placeholder="e.g. Stand up consistently, catch my own waves"
+                placeholder="e.g. Stand up for the first time, catch my first wave"
+              />
+              <TextArea
+                label="What's your dream with surfing?"
+                value={(extForm.goal_long_term as string) || ''}
+                onChange={(v) => setExt('goal_long_term', v)}
+                placeholder="e.g. Surf with confidence, lose my fear of the ocean"
+              />
+              <TextArea
+                label="Any fears related to the ocean or surfing?"
+                value={(extForm.fears_phobias as string) || ''}
+                onChange={(v) => setExt('fears_phobias', v)}
+                placeholder="Be honest \u2014 it helps us take care of you"
+                hint="This is confidential. Only your coach team sees it."
+              />
+            </>
+          )}
+
+          {extendedStep === 2 && !isBeginner && (
+            <>
+              <TextArea
+                label="What do you want to achieve this trip/course?"
+                value={(extForm.goal_short_term as string) || ''}
+                onChange={(v) => setExt('goal_short_term', v)}
+                placeholder="e.g. Start turning, surf bigger waves"
               />
               <TextArea
                 label="Where do you want to be in 3-6 months?"
                 value={(extForm.goal_mid_term as string) || ''}
                 onChange={(v) => setExt('goal_mid_term', v)}
-                placeholder="e.g. Surf unbroken waves, start turning"
+                placeholder="e.g. Surf unbroken waves consistently, cutbacks"
               />
               <TextArea
                 label="What's your dream with surfing? (1-3 years)"
@@ -520,10 +615,10 @@ export function IntakeForm({ token, student }: Props) {
                 placeholder="e.g. Surf confidently anywhere I travel"
               />
               <TextArea
-                label="What has held you back so far?"
+                label="What has held you back, or what bad habits do you want to fix?"
                 value={(extForm.biggest_barrier as string) || ''}
                 onChange={(v) => setExt('biggest_barrier', v)}
-                placeholder="e.g. Fear of big waves, no consistency, bad habits"
+                placeholder="e.g. Fear of big waves, bad positioning, inconsistency"
               />
               <TextArea
                 label="Any fears related to the ocean or surfing?"
@@ -531,6 +626,12 @@ export function IntakeForm({ token, student }: Props) {
                 onChange={(v) => setExt('fears_phobias', v)}
                 placeholder="Be honest \u2014 it helps us coach you better"
                 hint="This is confidential. Only your coach team sees it."
+              />
+              <TextArea
+                label="Any previous surf injuries?"
+                value={(extForm.surf_injuries as string) || ''}
+                onChange={(v) => setExt('surf_injuries', v)}
+                placeholder="e.g. Shoulder, knee, none"
               />
             </>
           )}
@@ -734,6 +835,39 @@ function OptionGroup({ label, value, onChange, options }: {
             {opt}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function MultiOptionGroup({ label, values, onChange, options }: {
+  label: string; values: string[]; onChange: (v: string[]) => void; options: string[];
+}) {
+  const toggle = (opt: string) => {
+    onChange(values.includes(opt) ? values.filter((v) => v !== opt) : [...values, opt]);
+  };
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-2">{label}</label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = values.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggle(opt)}
+              className={`px-3 py-2 text-xs rounded-lg border transition-all ${
+                active
+                  ? 'border-transparent text-white'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
+              }`}
+              style={active ? { background: BRAND.colors.navy } : {}}
+            >
+              {opt}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

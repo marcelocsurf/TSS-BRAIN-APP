@@ -37,6 +37,15 @@ export interface IntakeFormInput {
   other_sports?: string;
   learning_style?: string;
 
+  // Adaptive — beginner branch
+  board_familiarity?: string;
+  water_comfort?: string;
+
+  // Adaptive — experienced branch
+  comfort_wave_size?: string;
+  maneuvers_current?: string[];
+  surf_injuries?: string;
+
   // Goals
   goal_short_term?: string;
   goal_mid_term?: string;

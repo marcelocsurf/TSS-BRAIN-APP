@@ -17,8 +17,10 @@ import { Waves } from 'lucide-react';
 interface Props {
   token: string;
   initialAnswers?: OceanQuizAnswers | null;
-  /** Called once the quiz is submitted successfully. Passes the resolved level. */
-  onComplete: (level: OceanLevel) => void;
+  /** Called once the quiz is submitted successfully. Passes the resolved
+   * level and whether the student is a true beginner (never surfed outside
+   * whitewater — P0 short-circuit). */
+  onComplete: (level: OceanLevel, isBeginner: boolean) => void;
 }
 
 export function OceanQuizStep({ token, initialAnswers, onComplete }: Props) {
@@ -77,7 +79,9 @@ export function OceanQuizStep({ token, initialAnswers, onComplete }: Props) {
     try {
       const { level } = scoreOceanQuiz(answers);
       await submitOceanQuiz(token, answers);
-      onComplete(level);
+      const p0 = OCEAN_QUIZ[0].options.find((o) => o.value === answers.P0);
+      const isBeginner = !!p0?.shortCircuitTo;
+      onComplete(level, isBeginner);
     } catch (err: any) {
       setError(err.message || 'Failed to submit quiz. Please try again.');
     } finally {
