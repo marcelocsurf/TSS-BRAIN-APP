@@ -63,6 +63,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+    // Exclude Next internals, the API, and static asset files in /public
+    // (images, fonts, etc.) — otherwise unauthenticated requests for
+    // /tss-logo-white.png get redirected to / and render as broken images.
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|otf|mp4|webmanifest)$).*)',
   ],
 };
