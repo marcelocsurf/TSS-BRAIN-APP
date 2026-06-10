@@ -2,6 +2,7 @@ import { getCurrentCoach } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import { getStudentAnalytics } from '@/lib/actions/analytics';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
+import { ExportBitacoraButton } from '@/components/admin/ExportBitacoraButton';
 import Link from 'next/link';
 import {
   Users,
@@ -28,13 +29,14 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Analytics</h1>
           <p className="text-sm text-gray-500 mt-1">
             Platform-wide student + engagement metrics
           </p>
         </div>
+        <ExportBitacoraButton />
       </header>
 
       {/* Hero stats */}
