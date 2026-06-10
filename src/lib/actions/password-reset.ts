@@ -28,7 +28,10 @@ export async function requestPasswordReset(
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
-  const redirectTo = `${appUrl}/auth/callback?next=/set-password`;
+  // Same redirect the invite flow uses (proven to be in Supabase's
+  // allow-list). The callback itself routes to /set-password because
+  // we clear password_set_at below.
+  const redirectTo = `${appUrl}/auth/callback?next=/`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: 'recovery',
