@@ -7,6 +7,7 @@ import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import { CampHeadCoachManager } from '@/components/camp/CampHeadCoachManager';
 import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
 import { LeadStatusBadge } from '@/components/camp/LeadStatusBadge';
+import { EnrollmentPaymentControl } from '@/components/camp/EnrollmentPaymentControl';
 import { CancelCampButton } from '@/components/camp/CancelCampButton';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
@@ -234,6 +235,15 @@ export default async function CampDetailPage({ params }: Props) {
                       <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
                     </div>
                   </Link>
+                  <EnrollmentPaymentControl
+                    participantId={p.id}
+                    campInstanceId={id}
+                    studentId={p.students?.id}
+                    paymentStatus={p.payment_status ?? null}
+                    amountCents={p.amount_cents ?? null}
+                    currency={p.currency ?? 'USD'}
+                    isRefresher={!!p.is_refresher}
+                  />
                   {intakePending ? (
                     <LeadStatusBadge
                       studentId={p.students.id}

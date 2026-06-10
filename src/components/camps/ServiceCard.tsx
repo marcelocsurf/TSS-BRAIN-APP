@@ -70,7 +70,7 @@ type ServiceCardProps = {
     } | null;
     head_coach: { display_name: string } | null;
     coaches: { display_name: string } | null;
-    camp_participants: { id: string; enrollment_status: string }[];
+    camp_participants: { id: string; enrollment_status: string; payment_status?: string | null }[];
   };
   compact?: boolean;
 };
@@ -80,9 +80,10 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
   const kind = tpl?.service_kind ?? 'custom';
   const level = tpl?.level_name ?? 'Custom';
   const capacity = camp.capacity_override ?? tpl?.capacity_max ?? 4;
-  const enrolled = camp.camp_participants.filter(
-    (p) => p.enrollment_status === 'active',
-  ).length;
+  const active = camp.camp_participants.filter((p) => p.enrollment_status === 'active');
+  const enrolled = active.length;
+  const paidCount = active.filter((p) => p.payment_status === 'paid').length;
+  const reservedCount = enrolled - paidCount;
   const coachName =
     camp.head_coach?.display_name ?? camp.coaches?.display_name ?? null;
 
@@ -146,22 +147,27 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
           <CampStatusBadge status={camp.status} />
         </div>
 
-        {/* Capacity bar — filled dots turn green so the coordinator
-            can scan how full each service is at a glance. Empty dots
-            stay in the card's text colour (translucent). */}
+        {/* Capacity bar — 🟢 paid · 🟡 reserved (unpaid) · ⚪ open.
+            Lets a seller scan at a glance how full AND how paid each
+            service is. */}
         <div className="flex items-center gap-1 mt-2">
-          {Array.from({ length: capacity }).map((_, i) => (
-            <span
-              key={i}
-              className={`block w-2.5 h-2.5 rounded-full ${
-                i < enrolled
-                  ? 'bg-emerald-500 ring-1 ring-emerald-700/30'
-                  : onDark
-                  ? 'bg-white/25 ring-1 ring-white/40'
-                  : 'bg-black/10 ring-1 ring-black/20'
-              }`}
-            />
-          ))}
+          {Array.from({ length: capacity }).map((_, i) => {
+            const state = i < paidCount ? 'paid' : i < enrolled ? 'reserved' : 'open';
+            return (
+              <span
+                key={i}
+                className={`block w-2.5 h-2.5 rounded-full ${
+                  state === 'paid'
+                    ? 'bg-emerald-500 ring-1 ring-emerald-700/30'
+                    : state === 'reserved'
+                    ? 'bg-amber-400 ring-1 ring-amber-600/40'
+                    : onDark
+                    ? 'bg-white/25 ring-1 ring-white/40'
+                    : 'bg-black/10 ring-1 ring-black/20'
+                }`}
+              />
+            );
+          })}
           <span
             className={`text-[10px] ml-1 font-semibold ${
               enrolled === capacity
@@ -173,6 +179,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
             style={{ fontFamily: 'DM Mono, monospace' }}
           >
             {enrolled}/{capacity}
+            {reservedCount > 0 ? ` · ${reservedCount} unpaid` : ''}
           </span>
         </div>
 

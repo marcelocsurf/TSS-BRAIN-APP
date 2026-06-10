@@ -29,7 +29,7 @@ export async function listCampsInRange(startDate: string, endDate: string) {
   let query = supabase
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days, session_duration_minutes, card_color, accent_color), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), camp_participants(id, enrollment_status)'
+      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days, session_duration_minutes, card_color, accent_color), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), head_coach_status, camp_participants(id, enrollment_status, payment_status)'
     )
     .lte('start_date', endDate)
     .gte('end_date', startDate)
@@ -840,6 +840,7 @@ export async function closeCampSessionResult(input: {
 
 export async function addStudentToCamp(campInstanceId: string, studentId: string) {
   const supabase = await createClient();
+  const me = await getCurrentCoach();
 
   // Check if already enrolled
   const { data: existing } = await supabase
@@ -849,8 +850,31 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
     .eq('student_id', studentId)
     .single();
 
+  // Detect a refresher: the student already holds the course this service
+  // grants (same level), so they're repeating without buying a new course
+  // → flagged for the 50%-of-course refresher price.
+  let isRefresher = false;
+  try {
+    const admin = createAdminClient();
+    const { data: camp } = await admin
+      .from('camp_instances')
+      .select('template_id, camp_templates:template_id(includes_course_key)')
+      .eq('id', campInstanceId)
+      .single();
+    const courseKey = (camp as any)?.camp_templates?.includes_course_key as string | null;
+    if (courseKey) {
+      const { data: grant } = await admin
+        .from('course_grants')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('course_key', courseKey)
+        .is('revoked_at', null)
+        .maybeSingle();
+      isRefresher = !!grant;
+    }
+  } catch { /* non-blocking */ }
+
   if (existing) {
-    // Re-activate if was removed
     await supabase
       .from('camp_participants')
       .update({ enrollment_status: 'active' })
@@ -860,12 +884,98 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
       camp_instance_id: campInstanceId,
       student_id: studentId,
       enrollment_status: 'active',
+      payment_status: 'reserved',
+      sold_by: me?.id ?? null,
+      is_refresher: isRefresher,
+      reserved_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
   }
 
   revalidatePath(`/camps/${campInstanceId}`);
+  revalidatePath('/camps');
+  return { success: true, isRefresher };
+}
+
+// Update the payment state of an enrolment — reserve amount/method, or
+// mark paid (closes the sale). Used by the seller/coordinator on the
+// service detail.
+export async function updateEnrollmentPayment(input: {
+  participantId: string;
+  payment_status?: 'reserved' | 'paid';
+  amount_cents?: number | null;
+  payment_method?: string | null;
+  is_refresher?: boolean;
+}) {
+  const admin = createAdminClient();
+  const me = await getCurrentCoach();
+
+  const updates: Record<string, unknown> = {};
+  if (input.payment_status) {
+    updates.payment_status = input.payment_status;
+    if (input.payment_status === 'paid') {
+      updates.paid_at = new Date().toISOString();
+    }
+  }
+  if (input.amount_cents !== undefined) updates.amount_cents = input.amount_cents;
+  if (input.payment_method !== undefined) updates.payment_method = input.payment_method;
+  if (input.is_refresher !== undefined) updates.is_refresher = input.is_refresher;
+  // Stamp the seller if not already attributed.
+  if (me?.id) updates.sold_by = updates.sold_by ?? undefined;
+
+  const { data: row, error } = await admin
+    .from('camp_participants')
+    .update(updates)
+    .eq('id', input.participantId)
+    .select('camp_instance_id, sold_by')
+    .single();
+  if (error) throw new Error(error.message);
+
+  // Backfill seller attribution if missing.
+  if (row && !row.sold_by && me?.id) {
+    await admin.from('camp_participants').update({ sold_by: me.id }).eq('id', input.participantId);
+  }
+
+  if (row?.camp_instance_id) {
+    revalidatePath(`/camps/${row.camp_instance_id}`);
+  }
+  revalidatePath('/camps');
   return { success: true };
+}
+
+// Suggested price for an enrolment: the academy/global course price for
+// the service's course, halved if the student is a refresher.
+export async function getSuggestedEnrollmentPrice(
+  campInstanceId: string,
+  studentId: string,
+): Promise<{ amount_cents: number | null; currency: string; is_refresher: boolean }> {
+  const admin = createAdminClient();
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('academy_id, camp_templates:template_id(includes_course_key)')
+    .eq('id', campInstanceId)
+    .single();
+  const courseKey = (camp as any)?.camp_templates?.includes_course_key as string | null;
+  if (!courseKey) return { amount_cents: null, currency: 'USD', is_refresher: false };
+
+  const { getCoursePriceCents } = await import('./pricing');
+  const price = await getCoursePriceCents(courseKey, (camp as any)?.academy_id ?? null);
+  if (!price) return { amount_cents: null, currency: 'USD', is_refresher: false };
+
+  const { data: grant } = await admin
+    .from('course_grants')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('course_key', courseKey)
+    .is('revoked_at', null)
+    .maybeSingle();
+  const isRefresher = !!grant;
+
+  return {
+    amount_cents: isRefresher ? Math.round(price.price_cents / 2) : price.price_cents,
+    currency: price.currency,
+    is_refresher: isRefresher,
+  };
 }
 
 // ═══════════════════════════════════════
