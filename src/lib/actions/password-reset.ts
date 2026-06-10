@@ -28,24 +28,27 @@ export async function requestPasswordReset(
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
-  // Same redirect the invite flow uses (proven to be in Supabase's
-  // allow-list). The callback itself routes to /set-password because
-  // we clear password_set_at below.
-  const redirectTo = `${appUrl}/auth/callback?next=/`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: 'recovery',
     email: normalized,
-    options: { redirectTo },
   });
 
-  if (error || !data?.properties?.action_link) {
+  if (error || !data?.properties?.hashed_token) {
     console.error('[password-reset] generateLink failed', error);
     return { success: false, error: 'Could not generate reset link.' };
   }
 
-  // Clear password_set_at so the callback routes through /set-password
-  // even if the user clicks an old session link from another device.
+  // Build the link ourselves using the one-time token_hash → /auth/confirm
+  // runs verifyOtp server-side (no PKCE code_verifier needed). This is the
+  // documented pattern for admin-generated email links; the PKCE `?code=`
+  // action_link silently fails because the browser has no code_verifier.
+  const resetLink =
+    `${appUrl}/auth/confirm` +
+    `?token_hash=${encodeURIComponent(data.properties.hashed_token)}` +
+    `&type=recovery&next=/set-password`;
+
+  // Clear password_set_at so /auth/confirm routes through /set-password.
   await admin
     .from('coaches')
     .update({ password_set_at: null })
@@ -54,7 +57,7 @@ export async function requestPasswordReset(
   const sendResult = await sendPasswordResetEmail({
     toEmail: coach.email,
     firstName: coach.first_name || 'there',
-    resetLink: data.properties.action_link,
+    resetLink,
   });
 
   if (!sendResult.success) {
