@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateAcademyBranding, deleteAcademy } from '../actions';
 import { actAsAcademy } from '@/lib/actions/auth';
 import { startCoordinatorImpersonation } from '@/lib/actions/impersonate';
 import { BRAND } from '@/lib/constants/brand';
+import { createClient } from '@/lib/supabase/client';
 
 interface Academy {
   id: string;
@@ -72,6 +73,51 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
   const [tagline, setTagline] = useState(academy.tagline ?? '');
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Logo must be under 5 MB.');
+      return;
+    }
+    setUploadingLogo(true);
+    setError('');
+    try {
+      const supabase = createClient();
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `academies/${academy.id}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      const freshUrl = `${publicUrl}?t=${Date.now()}`;
+      // Persist immediately so the logo sticks without a separate Save.
+      await updateAcademyBranding({
+        academy_id: academy.id,
+        name: name.trim() || academy.name,
+        country: country.trim() || null,
+        logo_url: freshUrl,
+        primary_color: primary.trim() || null,
+        accent_color: accent.trim() || null,
+        tagline: tagline.trim() || null,
+      });
+      setLogoUrl(freshUrl);
+      setSavedAt(Date.now());
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message || 'Logo upload failed.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const effectivePrimary = primary || BRAND.colors.navy;
   const effectiveAccent = accent || BRAND.colors.gold;
@@ -259,16 +305,47 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
         </Field>
 
         <Field
-          label="Logo URL"
-          hint="PNG or SVG. Square preferred. Leave blank to show initial."
+          label="Academy logo"
+          hint="PNG or SVG, square preferred, under 5 MB. Upload straight from your photo library."
         >
-          <input
-            type="url"
-            value={logoUrl}
-            onChange={(e) => setLogoUrl(e.target.value)}
-            placeholder="https://yourcdn.com/logo.png"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-          />
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-gray-400 text-xl font-bold">
+                  {name.charAt(0).toUpperCase() || 'A'}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+                className="px-3 py-2 bg-[var(--tss-navy)] text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+              >
+                {uploadingLogo ? 'Uploading…' : logoUrl ? 'Change logo' : 'Upload logo'}
+              </button>
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setLogoUrl('')}
+                  className="text-[11px] text-red-500 hover:underline text-left"
+                >
+                  Remove (then Save)
+                </button>
+              )}
+            </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+          </div>
         </Field>
 
         <Field label="Tagline" hint="Short italic line under the academy name.">

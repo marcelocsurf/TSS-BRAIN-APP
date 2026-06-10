@@ -62,7 +62,7 @@ export default async function DashboardLayout({
 
   const { data: coach, error: coachError } = await supabase
     .from('coaches')
-    .select('display_name, role')
+    .select('display_name, role, academy_id')
     .eq('auth_user_id', user.id)
     .single();
 
@@ -97,6 +97,23 @@ export default async function DashboardLayout({
     }
   }
 
+  // Branding academy: the one whose logo should brand the chrome. For an
+  // admin acting-as, that's the act-as academy; for a real coordinator,
+  // their own academy. The TSS lineage logo stays as the fallback + a
+  // small "lineage" line beneath the academy logo.
+  const brandingAcademyId = actAsId ?? (!isAdmin ? coach?.academy_id ?? null : null);
+  let academyLogoUrl: string | null = null;
+  let academyName: string | null = null;
+  if (brandingAcademyId) {
+    const { data: ac } = await supabase
+      .from('academies')
+      .select('name, logo_url')
+      .eq('id', brandingAcademyId)
+      .maybeSingle();
+    academyLogoUrl = ac?.logo_url ?? null;
+    academyName = ac?.name ?? null;
+  }
+
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0" style={{ paddingLeft: '0' }}>
       {actAsAcademyName && <ActAsBanner academyName={actAsAcademyName} />}
@@ -107,14 +124,28 @@ export default async function DashboardLayout({
         <div className="h-[3px] bg-[var(--tss-cyan)] w-full shrink-0" />
 
         <div className="p-4 border-b border-white/10">
-          <Image
-            src="/tss-logo-white.png"
-            alt="The Surf Sequence"
-            width={170}
-            height={85}
-            className="opacity-95"
-            priority
-          />
+          {academyLogoUrl ? (
+            <div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={academyLogoUrl}
+                alt={academyName || 'Academy'}
+                className="max-h-14 w-auto object-contain"
+              />
+              <p className="text-[9px] text-white/40 mt-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+                Lineage · The Surf Sequence
+              </p>
+            </div>
+          ) : (
+            <Image
+              src="/tss-logo-white.png"
+              alt="The Surf Sequence"
+              width={170}
+              height={85}
+              className="opacity-95"
+              priority
+            />
+          )}
           <p className="text-xs text-[var(--tss-gold)] mt-2 font-medium" style={{ fontFamily: 'var(--font-mono)' }}>
             {coach?.display_name || 'Coach'}
           </p>
@@ -145,14 +176,23 @@ export default async function DashboardLayout({
         {/* Cyan accent line */}
         <div className="h-[2px] bg-[var(--tss-cyan)] w-full" />
         <div className="px-4 py-3 flex items-center justify-between">
-          <Image
-            src="/tss-logo-white.png"
-            alt="The Surf Sequence"
-            width={132}
-            height={66}
-            className="opacity-95"
-            priority
-          />
+          {academyLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={academyLogoUrl}
+              alt={academyName || 'Academy'}
+              className="max-h-9 w-auto object-contain"
+            />
+          ) : (
+            <Image
+              src="/tss-logo-white.png"
+              alt="The Surf Sequence"
+              width={132}
+              height={66}
+              className="opacity-95"
+              priority
+            />
+          )}
           <div className="flex items-center gap-3">
             <span className="text-xs text-[var(--tss-gold)]" style={{ fontFamily: 'var(--font-mono)' }}>{coach?.display_name || 'Coach'}</span>
             <LogoutButton />
