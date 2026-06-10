@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -100,6 +101,16 @@ export default function LoginPage() {
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+
+          <p className="text-center pt-1">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-[var(--tss-gray-500)] hover:text-[var(--tss-navy)] tracking-wide"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              Forgot your password?
+            </Link>
+          </p>
         </form>
 
         <p

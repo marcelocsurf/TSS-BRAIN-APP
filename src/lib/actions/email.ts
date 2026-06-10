@@ -177,6 +177,77 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
 </html>`;
 }
 
+// ─── Password reset email — branded recovery link ────────────────────
+
+interface PasswordResetEmailData {
+  toEmail: string;
+  firstName: string;
+  /** Supabase recovery link (generateLink type:'recovery') — exchanges
+   * the code for a session and lands on /set-password via callback next. */
+  resetLink: string;
+}
+
+export async function sendPasswordResetEmail(
+  data: PasswordResetEmailData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `Reset your ${BRAND.name} password`,
+      html: buildPasswordResetHtml(data),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Password reset email send failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+function buildPasswordResetHtml(data: PasswordResetEmailData): string {
+  const firstName = escapeHtml(data.firstName);
+  const toEmail = escapeHtml(data.toEmail);
+  const resetLink = escapeHtml(data.resetLink);
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
+    <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:28px 24px;text-align:center;">
+      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;letter-spacing:-0.01em;">${BRAND.name}</h1>
+      <p style="margin:6px 0 0;color:${BRAND.colors.cyan};font-size:12px;letter-spacing:0.02em;">${BRAND.tagline}</p>
+    </div>
+    <div style="background:white;padding:28px 24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
+      <p style="margin:0 0 16px;font-size:15px;color:#111827;">
+        Hi <strong>${firstName}</strong>,
+      </p>
+      <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;">
+        We received a request to reset the password for your ${BRAND.name} account.
+      </p>
+      <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:20px;border:1px solid #E5E7EB;">
+        <p style="margin:0 0 6px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Account email</p>
+        <p style="margin:0;font-size:14px;color:#111827;font-weight:600;font-family:monospace;">${toEmail}</p>
+      </div>
+      <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+        Click the button below to set a new password.
+      </p>
+      <a href="${resetLink}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+        Reset my password
+      </a>
+      <p style="margin:14px 0 0;font-size:11px;color:#9CA3AF;text-align:center;line-height:1.5;">
+        This link is one-time use and expires in 1 hour.<br/>
+        If you didn't request a password reset, you can safely ignore this email.
+      </p>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">
+      ${BRAND.name}® · ${BRAND.tagline}
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
 function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUrl: string; beltColor: string }): string {
   return `<!DOCTYPE html>
 <html>
