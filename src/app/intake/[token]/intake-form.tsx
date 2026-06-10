@@ -536,17 +536,16 @@ export function IntakeForm({ token, student }: Props) {
                 onChange={(v) => setExt('comfort_wave_size', v)}
                 options={['Up to waist', 'Up to chest', 'Up to head', 'Overhead']}
               />
-              <MultiOptionGroup
-                label="Which maneuvers can you already do?"
-                values={(extForm.maneuvers_current as string[]) || []}
-                onChange={(vals) => setExt('maneuvers_current', vals)}
+              <OptionGroup
+                label="How would you describe your surfing today?"
+                value={(extForm.surf_self_level as string) || ''}
+                onChange={(v) => setExt('surf_self_level', v)}
                 options={[
-                  'Paddle & stand up',
-                  'Cross the wall (trim)',
-                  'Bottom turn',
-                  'Top turn',
-                  'Cutback',
-                  'Tube / barrel',
+                  'I catch whitewater / foam',
+                  'I catch green (unbroken) waves going straight',
+                  'I can angle and ride along the wave',
+                  'I do basic turns (bottom / top turn)',
+                  'I surf fluidly with linked turns',
                 ]}
               />
               <OptionGroup
@@ -835,39 +834,6 @@ function OptionGroup({ label, value, onChange, options }: {
             {opt}
           </button>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function MultiOptionGroup({ label, values, onChange, options }: {
-  label: string; values: string[]; onChange: (v: string[]) => void; options: string[];
-}) {
-  const toggle = (opt: string) => {
-    onChange(values.includes(opt) ? values.filter((v) => v !== opt) : [...values, opt]);
-  };
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-2">{label}</label>
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => {
-          const active = values.includes(opt);
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => toggle(opt)}
-              className={`px-3 py-2 text-xs rounded-lg border transition-all ${
-                active
-                  ? 'border-transparent text-white'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
-              }`}
-              style={active ? { background: BRAND.colors.navy } : {}}
-            >
-              {opt}
-            </button>
-          );
-        })}
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ export interface IntakeFormInput {
 
   // Adaptive — experienced branch
   comfort_wave_size?: string;
+  surf_self_level?: string;
   maneuvers_current?: string[];
   surf_injuries?: string;
 
