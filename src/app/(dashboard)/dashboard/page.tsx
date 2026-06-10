@@ -28,27 +28,52 @@ export default async function DashboardHome() {
   const coach = await getCurrentCoach();
   const role = coach?.role || 'assistant';
 
-  // Quick stats (shared across roles)
-  const { count: studentCount } = await supabase
+  // Quick stats — scoped to the academy in context. getCurrentCoach()
+  // honors the act-as cookie, so a platform admin viewing an academy
+  // sees that academy's numbers; a real platform admin with no academy
+  // context sees platform-wide totals. RLS lets the admin see everything,
+  // so this app-level filter is what keeps the overview tenant-correct.
+  const academyId = coach?.academy_id ?? null;
+
+  let studentQ = supabase
     .from('students')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'active');
+  if (academyId) studentQ = studentQ.eq('academy_id', academyId);
+  const { count: studentCount } = await studentQ;
 
-  const { count: sessionCount } = await supabase
-    .from('student_session_results')
-    .select('*', { count: 'exact', head: true })
-    .eq('completion_state', 'closed');
+  let sessionQ = academyId
+    ? supabase
+        .from('student_session_results')
+        .select('*, students!inner(academy_id)', { count: 'exact', head: true })
+        .eq('completion_state', 'closed')
+        .eq('students.academy_id', academyId)
+    : supabase
+        .from('student_session_results')
+        .select('*', { count: 'exact', head: true })
+        .eq('completion_state', 'closed');
+  const { count: sessionCount } = await sessionQ;
 
-  const { count: activeCamps } = await supabase
+  let campsQ = supabase
     .from('camp_instances')
     .select('*', { count: 'exact', head: true })
     .in('status', ['planned', 'active']);
+  if (academyId) campsQ = campsQ.eq('academy_id', academyId);
+  const { count: activeCamps } = await campsQ;
 
-  const { count: pendingSurveys } = await supabase
-    .from('student_session_results')
-    .select('*', { count: 'exact', head: true })
-    .eq('completion_state', 'closed')
-    .eq('survey_unlocked', true);
+  let surveyQ = academyId
+    ? supabase
+        .from('student_session_results')
+        .select('*, students!inner(academy_id)', { count: 'exact', head: true })
+        .eq('completion_state', 'closed')
+        .eq('survey_unlocked', true)
+        .eq('students.academy_id', academyId)
+    : supabase
+        .from('student_session_results')
+        .select('*', { count: 'exact', head: true })
+        .eq('completion_state', 'closed')
+        .eq('survey_unlocked', true);
+  const { count: pendingSurveys } = await surveyQ;
 
   // Drafts for coaches/coordinators/admins
   let drafts: any[] = [];
