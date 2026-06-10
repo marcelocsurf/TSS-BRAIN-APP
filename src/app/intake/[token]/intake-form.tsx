@@ -653,11 +653,6 @@ export function IntakeForm({ token, student }: Props) {
                   'Travel agency', 'Returning student', 'Other',
                 ]}
               />
-              <Checkbox
-                label="I've been to Puro Surf before"
-                checked={extForm.returning_student || false}
-                onChange={(v) => setExt('returning_student', v)}
-              />
             </>
           )}
         </div>

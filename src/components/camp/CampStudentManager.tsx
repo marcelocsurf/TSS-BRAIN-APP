@@ -80,12 +80,13 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
       return;
     }
     startTransition(async () => {
-      try {
+      const doCreate = async (allowDuplicate: boolean) => {
         const lead = await createLead({
           first_name: newLead.first_name,
           last_name: newLead.last_name,
           email: newLead.email || null,
           phone: newLead.phone || null,
+          allowDuplicate,
         });
         await addStudentToCamp(campInstanceId, lead.studentId);
         const result = await sendLeadInvitation(lead.studentId);
@@ -98,8 +99,30 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
         });
         setNewLead({ first_name: '', last_name: '', email: '', phone: '' });
         router.refresh();
+      };
+
+      try {
+        await doCreate(false);
       } catch (err: any) {
-        alert(err.message);
+        const msg: string = err?.message ?? '';
+        if (msg.startsWith('DUPLICATE::')) {
+          const [, , name, matchedOn] = msg.split('::');
+          const field = matchedOn === 'email' ? 'email' : 'phone';
+          const ok = window.confirm(
+            `A student named "${name}" already exists with the same ${field}. ` +
+              `They may already be in the system — consider enrolling the existing ` +
+              `profile instead.\n\nCreate a new separate student anyway?`,
+          );
+          if (ok) {
+            try {
+              await doCreate(true);
+            } catch (e: any) {
+              alert(e?.message ?? 'Could not create student.');
+            }
+          }
+        } else {
+          alert(msg || 'Could not create student.');
+        }
       }
     });
   };

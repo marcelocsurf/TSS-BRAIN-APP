@@ -35,15 +35,36 @@ export default function NewLeadModal() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    try {
+    const create = async (allowDuplicate: boolean) => {
       const { leadFormUrl } = await createLead({
         first_name: first,
         last_name: last,
         phone: phone || null,
+        allowDuplicate,
       });
       setCreatedUrl(leadFormUrl);
+    };
+    try {
+      await create(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create lead');
+      const msg = err instanceof Error ? err.message : 'Failed to create lead';
+      if (msg.startsWith('DUPLICATE::')) {
+        const [, , name, matchedOn] = msg.split('::');
+        const field = matchedOn === 'email' ? 'email' : 'phone';
+        const ok = window.confirm(
+          `A student named "${name}" already exists with the same ${field}. ` +
+            `Create a new separate student anyway?`,
+        );
+        if (ok) {
+          try {
+            await create(true);
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to create lead');
+          }
+        }
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

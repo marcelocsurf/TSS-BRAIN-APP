@@ -21,7 +21,53 @@ type CreateLeadInput = {
   phone?: string | null;
   email?: string | null;
   academy_id?: string | null;
+  /** Skip the duplicate-detection guard (caller confirmed it's a new person). */
+  allowDuplicate?: boolean;
 };
+
+export type DuplicateMatch = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  matched_on: 'email' | 'phone';
+};
+
+// Look for an existing active student with the same email or phone in the
+// same academy. Returns matches so the caller can decide to reuse the
+// existing profile instead of creating a duplicate in the bitácora.
+export async function findDuplicateStudents(input: {
+  email?: string | null;
+  phone?: string | null;
+  academy_id?: string | null;
+}): Promise<DuplicateMatch[]> {
+  const me = await getCurrentCoach();
+  if (!me) throw new Error('Not authenticated');
+  const admin = createAdminClient();
+  const academyId = input.academy_id ?? me.academy_id ?? null;
+
+  const email = input.email?.trim().toLowerCase() || null;
+  const phone = input.phone?.trim() || null;
+  if (!email && !phone) return [];
+
+  let q = admin
+    .from('students')
+    .select('id, first_name, last_name, email, phone')
+    .eq('status', 'active');
+  if (academyId) q = q.eq('academy_id', academyId);
+
+  const { data } = await q;
+  const matches: DuplicateMatch[] = [];
+  for (const s of data ?? []) {
+    if (email && s.email && s.email.trim().toLowerCase() === email) {
+      matches.push({ ...s, matched_on: 'email' });
+    } else if (phone && s.phone && s.phone.trim() === phone) {
+      matches.push({ ...s, matched_on: 'phone' });
+    }
+  }
+  return matches;
+}
 
 export async function createLead(input: CreateLeadInput): Promise<{
   studentId: string;
@@ -38,6 +84,23 @@ export async function createLead(input: CreateLeadInput): Promise<{
 
   // Default academy to the coach's own academy when not specified.
   const academyId = input.academy_id ?? me.academy_id ?? null;
+
+  // Duplicate guard — block creating a second record for someone who
+  // already exists (same email/phone in this academy) unless the caller
+  // explicitly confirmed it's a different person.
+  if (!input.allowDuplicate) {
+    const dupes = await findDuplicateStudents({
+      email: input.email,
+      phone: input.phone,
+      academy_id: academyId,
+    });
+    if (dupes.length > 0) {
+      const d = dupes[0];
+      throw new Error(
+        `DUPLICATE::${d.id}::${d.first_name} ${d.last_name}::${d.matched_on}`,
+      );
+    }
+  }
 
   const portalToken = randomUUID();
 
