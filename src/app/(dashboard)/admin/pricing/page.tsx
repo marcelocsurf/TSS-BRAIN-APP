@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
-import { listCoursePrices } from '@/lib/actions/pricing';
+import { listCoursePrices, listAcademyCoursePrices } from '@/lib/actions/pricing';
 import { listInvoicesForPeriod } from '@/lib/actions/invoices';
+import { listAllAcademies } from '@/lib/actions/camps';
 import { PricingClient } from './PricingClient';
 
 export const dynamic = 'force-dynamic';
@@ -19,9 +20,11 @@ export default async function AdminPricingPage({ searchParams }: Props) {
   const year = params.year ? parseInt(params.year, 10) : now.getUTCFullYear();
   const month = params.month ? parseInt(params.month, 10) : now.getUTCMonth() + 1;
 
-  const [prices, periodInvoices] = await Promise.all([
+  const [prices, periodInvoices, academies, academyOverrides] = await Promise.all([
     listCoursePrices(),
     listInvoicesForPeriod(year, month),
+    listAllAcademies(),
+    listAcademyCoursePrices(),
   ]);
 
   return (
@@ -30,6 +33,8 @@ export default async function AdminPricingPage({ searchParams }: Props) {
       invoices={periodInvoices}
       year={year}
       month={month}
+      academies={academies}
+      academyOverrides={academyOverrides}
     />
   );
 }

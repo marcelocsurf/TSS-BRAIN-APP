@@ -2,8 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { DollarSign, FileText, CheckCircle2, Send, Ban } from 'lucide-react';
-import { updateCoursePrice, type CoursePrice } from '@/lib/actions/pricing';
+import { DollarSign, FileText, CheckCircle2, Send, Ban, Building2, Plus, Trash2 } from 'lucide-react';
+import {
+  updateCoursePrice,
+  upsertAcademyCoursePrice,
+  deleteAcademyCoursePrice,
+  type CoursePrice,
+  type AcademyCoursePrice,
+} from '@/lib/actions/pricing';
 import {
   generateMonthlyInvoices,
   markInvoiceStatus,
@@ -15,6 +21,8 @@ interface Props {
   invoices: AcademyInvoiceWithGrants[];
   year: number;
   month: number;
+  academies: Array<{ id: string; name: string }>;
+  academyOverrides: AcademyCoursePrice[];
 }
 
 const COURSE_LABELS: Record<string, string> = {
@@ -33,7 +41,7 @@ function formatCents(cents: number | null | undefined, currency: string): string
   return `${currency} ${amount}`;
 }
 
-export function PricingClient({ prices, invoices, year, month }: Props) {
+export function PricingClient({ prices, invoices, year, month, academies, academyOverrides }: Props) {
   const router = useRouter();
 
   return (
@@ -63,6 +71,23 @@ export function PricingClient({ prices, invoices, year, month }: Props) {
         </ul>
         <p className="px-5 py-3 text-[11px] text-gray-400 leading-relaxed">
           New course grants snapshot the current price into <code>course_grants.price_cents</code>. Existing grants keep their original price.
+        </p>
+      </section>
+
+      {/* ── Per-academy overrides ── */}
+      <section className="bg-white border border-gray-100 rounded-2xl shadow-sm">
+        <header className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+          <Building2 size={16} className="text-[var(--tss-cyan)]" />
+          <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Per-academy price overrides</h2>
+        </header>
+        <AcademyOverridesEditor
+          prices={prices}
+          academies={academies}
+          overrides={academyOverrides}
+          onChange={() => router.refresh()}
+        />
+        <p className="px-5 py-3 text-[11px] text-gray-400 leading-relaxed">
+          Overrides take priority over global pricing when granting a course to a student of that academy. Leaving an academy without an override uses the global price.
         </p>
       </section>
 
@@ -288,5 +313,147 @@ function InvoiceRow({
         </button>
       )}
     </li>
+  );
+}
+
+function AcademyOverridesEditor({
+  prices,
+  academies,
+  overrides,
+  onChange,
+}: {
+  prices: CoursePrice[];
+  academies: Array<{ id: string; name: string }>;
+  overrides: AcademyCoursePrice[];
+  onChange: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [academyId, setAcademyId] = useState('');
+  const [courseKey, setCourseKey] = useState(prices[0]?.course_key || 'white_belt');
+  const [amount, setAmount] = useState('99.00');
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState('');
+
+  const academyName = (id: string) =>
+    academies.find((a) => a.id === id)?.name || 'Unknown';
+
+  const add = () => {
+    setError('');
+    if (!academyId) { setError('Pick an academy.'); return; }
+    const cents = Math.round(Number(amount) * 100);
+    if (!Number.isInteger(cents) || cents < 0) { setError('Invalid amount.'); return; }
+    startTransition(async () => {
+      try {
+        await upsertAcademyCoursePrice(academyId, courseKey, cents, 'USD');
+        setAdding(false);
+        setAcademyId('');
+        setAmount('99.00');
+        onChange();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not save.');
+      }
+    });
+  };
+
+  const remove = (aid: string, ck: string) => {
+    startTransition(async () => {
+      await deleteAcademyCoursePrice(aid, ck);
+      onChange();
+    });
+  };
+
+  return (
+    <div>
+      {overrides.length === 0 && !adding ? (
+        <p className="px-5 py-4 text-xs text-gray-400">
+          No overrides yet — every academy uses the global price.
+        </p>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {overrides.map((o) => (
+            <li key={`${o.academy_id}-${o.course_key}`} className="px-5 py-3 flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">{academyName(o.academy_id)}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {COURSE_LABELS[o.course_key] ?? o.course_key} · {formatCents(o.price_cents, o.currency)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => remove(o.academy_id, o.course_key)}
+                disabled={pending}
+                className="text-xs text-gray-400 hover:text-red-600 transition-colors p-1.5"
+                aria-label="Remove override"
+              >
+                <Trash2 size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {adding ? (
+        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={academyId}
+              onChange={(e) => setAcademyId(e.target.value)}
+              className="px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+            >
+              <option value="">— Academy —</option>
+              {academies.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+            <select
+              value={courseKey}
+              onChange={(e) => setCourseKey(e.target.value)}
+              className="px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+            >
+              {prices.map((p) => (
+                <option key={p.course_key} value={p.course_key}>
+                  {COURSE_LABELS[p.course_key] ?? p.course_key}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-gray-500">USD</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+            />
+            <button
+              type="button"
+              onClick={add}
+              disabled={pending}
+              className="px-3 py-1.5 bg-[var(--tss-navy)] text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+            >
+              {pending ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAdding(false); setError(''); }}
+              className="px-2 py-1.5 text-xs text-gray-500 hover:text-[var(--tss-navy)]"
+            >
+              Cancel
+            </button>
+          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+      ) : (
+        <div className="px-5 py-3 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[var(--tss-navy)] hover:text-[var(--tss-cyan)] transition-colors"
+          >
+            <Plus size={14} /> Add override
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

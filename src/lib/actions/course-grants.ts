@@ -104,7 +104,7 @@ export async function grantCourseToStudent(
   // Snapshot the course price at grant time so future price changes don't
   // rewrite history. Falls back to (null, 'USD') if pricing isn't set yet.
   const { getCoursePriceCents } = await import('./pricing');
-  const priceSnap = await getCoursePriceCents(courseKey);
+  const priceSnap = await getCoursePriceCents(courseKey, student.academy_id ?? null);
 
   // Coerce the source if the caller passed manual+override.
   const effectiveSource: GrantSource =
