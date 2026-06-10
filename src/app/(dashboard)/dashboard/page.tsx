@@ -8,6 +8,8 @@ import {
   getRecentAuditEvents,
 } from '@/lib/actions/dashboard';
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
+import { getMyNotifications } from '@/lib/actions/notifications';
+import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -75,6 +77,12 @@ export default async function DashboardHome() {
         .eq('survey_unlocked', true);
   const { count: pendingSurveys } = await surveyQ;
 
+  // In-app notifications (assignment responses, etc.)
+  let notifications: Awaited<ReturnType<typeof getMyNotifications>> = [];
+  try {
+    notifications = await getMyNotifications();
+  } catch { /* non-blocking */ }
+
   // Drafts for coaches/coordinators/admins
   let drafts: any[] = [];
   if (role === 'admin' || role === 'coordinator' || role === 'coach') {
@@ -100,6 +108,8 @@ export default async function DashboardHome() {
         {role === 'coach' && 'Coaching Operating System'}
         {role === 'assistant' && 'Safety Reference'}
       </p>
+
+      <NotificationsPanel notifications={notifications} />
 
       {/* Quick stats — telemetry strip with consistent Lora numerals */}
       <p className="tss-section-label">

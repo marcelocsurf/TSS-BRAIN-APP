@@ -13,12 +13,16 @@ interface Props {
   campInstanceId: string;
   currentHeadCoachId: string | null;
   currentHeadCoachName: string | null;
+  currentStatus?: string | null;
+  responseNote?: string | null;
 }
 
 export function CampHeadCoachManager({
   campInstanceId,
   currentHeadCoachId,
   currentHeadCoachName,
+  currentStatus,
+  responseNote,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -55,6 +59,9 @@ export function CampHeadCoachManager({
         <span className="text-sm font-medium text-[var(--tss-navy)]">
           {currentHeadCoachName || 'Not assigned'}
         </span>
+        {currentHeadCoachId && currentStatus && (
+          <StatusChip status={currentStatus} />
+        )}
       </div>
       <button
         type="button"
@@ -121,6 +128,27 @@ export function CampHeadCoachManager({
           })}
         </div>
       )}
+
+      {currentStatus === 'rejected' && responseNote && (
+        <p className="w-full text-[11px] text-rose-600 mt-1">
+          Declined: {responseNote}
+        </p>
+      )}
     </div>
+  );
+}
+
+function StatusChip({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    pending: { label: 'Pending confirmation', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    accepted: { label: 'Accepted ✓', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    rejected: { label: 'Declined', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+  };
+  const s = map[status];
+  if (!s) return null;
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${s.cls}`}>
+      {s.label}
+    </span>
   );
 }

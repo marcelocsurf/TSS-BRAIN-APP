@@ -97,6 +97,8 @@ export default async function CampDetailPage({ params }: Props) {
           currentHeadCoachName={
             headCoach?.display_name || creatorCoach?.display_name || null
           }
+          currentStatus={(instance as any).head_coach_status ?? null}
+          responseNote={(instance as any).head_coach_response_note ?? null}
         />
 
         {/* Scheduled time — coordinator sets / edits start + end so the

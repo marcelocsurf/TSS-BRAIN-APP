@@ -56,13 +56,143 @@ export async function updateCampHeadCoach(
   headCoachId: string | null,
 ) {
   const supabase = await createClient();
+  const me = await getCurrentCoach();
+
+  // Assigning a coach resets the accept/reject lifecycle to pending and
+  // records who assigned it (so we can notify them back on response).
+  const updates: Record<string, unknown> = { head_coach_id: headCoachId };
+  if (headCoachId) {
+    updates.head_coach_status = 'pending';
+    updates.head_coach_responded_at = null;
+    updates.head_coach_response_note = null;
+    updates.head_coach_assigned_by = me?.id ?? null;
+  } else {
+    updates.head_coach_status = null;
+  }
+
   const { error } = await supabase
     .from('camp_instances')
-    .update({ head_coach_id: headCoachId })
+    .update(updates)
     .eq('id', campInstanceId);
   if (error) throw new Error(error.message);
+
+  // Notify the assigned coach (in-app + email). Best-effort, never blocks.
+  if (headCoachId) {
+    try {
+      const admin = createAdminClient();
+      const [{ data: camp }, { data: coach }] = await Promise.all([
+        admin.from('camp_instances').select('camp_name, start_date, end_date').eq('id', campInstanceId).single(),
+        admin.from('coaches').select('id, first_name, email, portal_token').eq('id', headCoachId).single(),
+      ]);
+      if (camp && coach) {
+        const dateRange = camp.start_date === camp.end_date
+          ? camp.start_date
+          : `${camp.start_date} → ${camp.end_date}`;
+        const { createNotification } = await import('./notifications');
+        await createNotification({
+          recipientCoachId: coach.id,
+          type: 'assignment',
+          title: `New service to confirm: ${camp.camp_name}`,
+          body: `${dateRange} — accept or decline so your coordinator knows.`,
+          link: coach.portal_token ? `/coach-portal/${coach.portal_token}` : null,
+          metadata: { campInstanceId },
+        });
+        if (coach.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+          const { sendAssignmentEmail } = await import('./email');
+          await sendAssignmentEmail({
+            toEmail: coach.email,
+            coachFirstName: coach.first_name || 'Coach',
+            serviceName: camp.camp_name,
+            dateRange,
+            portalUrl: coach.portal_token ? `${appUrl}/coach-portal/${coach.portal_token}` : appUrl,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[updateCampHeadCoach] notify failed', err);
+    }
+  }
+
   revalidatePath(`/camps/${campInstanceId}`);
   revalidatePath('/camps');
+}
+
+// Coach accepts or rejects a head-coach assignment. Identified by portal
+// token (public coach portal). Notifies the assigner back either way.
+export async function respondToAssignment(input: {
+  token: string;
+  campInstanceId: string;
+  response: 'accepted' | 'rejected';
+  note?: string | null;
+}) {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id, display_name')
+    .eq('portal_token', input.token)
+    .maybeSingle();
+  if (!coach) throw new Error('Invalid coach link.');
+
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, head_coach_id, head_coach_assigned_by')
+    .eq('id', input.campInstanceId)
+    .single();
+  if (!camp) throw new Error('Service not found.');
+  if (camp.head_coach_id !== coach.id) {
+    throw new Error('This service is not assigned to you.');
+  }
+
+  const { error } = await admin
+    .from('camp_instances')
+    .update({
+      head_coach_status: input.response,
+      head_coach_responded_at: new Date().toISOString(),
+      head_coach_response_note: input.note?.trim() || null,
+    })
+    .eq('id', input.campInstanceId);
+  if (error) throw new Error(error.message);
+
+  // Notify the coordinator who assigned it.
+  if (camp.head_coach_assigned_by) {
+    try {
+      const { data: assigner } = await admin
+        .from('coaches')
+        .select('id, first_name, email')
+        .eq('id', camp.head_coach_assigned_by)
+        .single();
+      if (assigner) {
+        const accepted = input.response === 'accepted';
+        const { createNotification } = await import('./notifications');
+        await createNotification({
+          recipientCoachId: assigner.id,
+          type: 'assignment_response',
+          title: `${coach.display_name} ${accepted ? 'accepted' : 'declined'}: ${camp.camp_name}`,
+          body: input.note?.trim() || (accepted ? 'Service confirmed.' : 'You may want to assign another coach.'),
+          link: `/camps/${camp.id}`,
+          metadata: { campInstanceId: camp.id, response: input.response },
+        });
+        if (assigner.email) {
+          const { sendAssignmentResponseEmail } = await import('./email');
+          await sendAssignmentResponseEmail({
+            toEmail: assigner.email,
+            coordinatorFirstName: assigner.first_name || 'there',
+            coachName: coach.display_name,
+            serviceName: camp.camp_name,
+            accepted,
+            note: input.note?.trim() || null,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[respondToAssignment] notify failed', err);
+    }
+  }
+
+  revalidatePath('/camps');
+  return { success: true };
 }
 
 // ═══════════════════════════════════════

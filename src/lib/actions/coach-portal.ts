@@ -33,6 +33,7 @@ export interface CoachPortalData {
     ratingsCount: number;
   };
   upcomingServices: any[];
+  pendingAssignments: any[];
   pastServices: any[];
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
@@ -76,7 +77,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   ] = await Promise.all([
     admin
       .from('camp_instances')
-      .select('id, camp_name, start_date, end_date, status, scheduled_time, camp_templates:template_id(service_kind, template_name, capacity_max)')
+      .select('id, camp_name, start_date, end_date, status, scheduled_time, head_coach_id, head_coach_status, camp_templates:template_id(service_kind, template_name, capacity_max)')
       .or(`coach_id.eq.${coach.id},head_coach_id.eq.${coach.id}`)
       .in('status', ['planned', 'active'])
       .gte('end_date', today)
@@ -207,6 +208,9 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       ratingsCount: ratings.length,
     },
     upcomingServices: upcomingEnriched,
+    pendingAssignments: upcomingEnriched.filter(
+      (s: any) => s.head_coach_id === coach.id && s.head_coach_status === 'pending',
+    ),
     pastServices: pastEnriched,
     coachCourses: coachCoursesResult.data ?? [],
     courseProgress,

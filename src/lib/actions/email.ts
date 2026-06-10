@@ -57,6 +57,94 @@ export async function sendSessionEmail(data: SessionEmailData): Promise<{ succes
   }
 }
 
+// ─── Service assignment emails ───────────────────────────────────────
+
+function escapeHtmlBasic(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
+    <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:24px;text-align:center;">
+      <h1 style="margin:0;color:white;font-size:20px;font-weight:700;">${BRAND.name}</h1>
+      <p style="margin:4px 0 0;color:${BRAND.colors.cyan};font-size:12px;">${BRAND.tagline}</p>
+    </div>
+    <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
+      <h2 style="margin:0 0 14px;font-size:16px;color:#111827;">${title}</h2>
+      ${bodyHtml}
+      ${cta ? `<a href="${cta.url}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:13px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;margin-top:18px;">${cta.label}</a>` : ''}
+    </div>
+    <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">${BRAND.name}® · ${BRAND.tagline}</p>
+  </div>
+</body></html>`;
+}
+
+export async function sendAssignmentEmail(data: {
+  toEmail: string;
+  coachFirstName: string;
+  serviceName: string;
+  dateRange: string;
+  portalUrl: string;
+}): Promise<void> {
+  try {
+    const body = `
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.coachFirstName)}</strong>,</p>
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">You've been assigned as head coach for:</p>
+      <div style="background:#F9FAFB;border-radius:8px;padding:14px;margin-bottom:8px;border:1px solid #E5E7EB;">
+        <p style="margin:0;font-size:15px;color:#111827;font-weight:700;">${escapeHtmlBasic(data.serviceName)}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#6B7280;">${escapeHtmlBasic(data.dateRange)}</p>
+      </div>
+      <p style="margin:12px 0 0;font-size:13px;color:#374151;line-height:1.6;">Please open your portal to <strong>accept or decline</strong> this assignment so your coordinator knows.</p>`;
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `New service assigned — please confirm`,
+      html: assignmentEmailShell('You have a new service to confirm', body, { url: data.portalUrl, label: 'Open my portal' }),
+    });
+  } catch (err: any) {
+    console.error('Assignment email failed:', err.message);
+  }
+}
+
+export async function sendAssignmentResponseEmail(data: {
+  toEmail: string;
+  coordinatorFirstName: string;
+  coachName: string;
+  serviceName: string;
+  accepted: boolean;
+  note?: string | null;
+}): Promise<void> {
+  try {
+    const verb = data.accepted ? 'accepted' : 'declined';
+    const color = data.accepted ? '#059669' : '#DC2626';
+    const body = `
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.coordinatorFirstName)}</strong>,</p>
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">
+        <strong>${escapeHtmlBasic(data.coachName)}</strong> has
+        <strong style="color:${color};">${verb}</strong> the service:</p>
+      <div style="background:#F9FAFB;border-radius:8px;padding:14px;border:1px solid #E5E7EB;">
+        <p style="margin:0;font-size:15px;color:#111827;font-weight:700;">${escapeHtmlBasic(data.serviceName)}</p>
+      </div>
+      ${data.note ? `<p style="margin:12px 0 0;font-size:13px;color:#6B7280;line-height:1.6;"><strong>Note:</strong> ${escapeHtmlBasic(data.note)}</p>` : ''}
+      ${!data.accepted ? `<p style="margin:12px 0 0;font-size:13px;color:#DC2626;line-height:1.6;">You may want to assign another coach.</p>` : ''}`;
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `${data.coachName} ${verb} — ${data.serviceName}`,
+      html: assignmentEmailShell(`Service ${verb}`, body),
+    });
+  } catch (err: any) {
+    console.error('Assignment response email failed:', err.message);
+  }
+}
+
 // ─── Coach invite email — sent on coach creation OR re-send ──────────
 //
 // Replaces Supabase's default invite email so we control the branding,

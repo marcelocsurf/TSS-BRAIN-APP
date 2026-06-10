@@ -7,6 +7,7 @@ import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-por
 import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/lib/actions/coach-portal';
 import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
+import { PendingAssignments } from './PendingAssignments';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
@@ -55,7 +56,12 @@ export function CoachPortalTabs({
   return (
     <>
       <div className="max-w-lg mx-auto px-4 py-4">
-        {activeTab === 'home' && <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} />}
+        {activeTab === 'home' && (
+          <>
+            <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
+            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} />
+          </>
+        )}
         {activeTab === 'courses' && (
           <CoursesTab
             courses={data.coachCourses}
