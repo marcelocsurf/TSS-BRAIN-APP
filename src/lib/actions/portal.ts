@@ -634,7 +634,7 @@ export async function getSubmittedSurveys(studentId: string) {
 
   const { data: surveys } = await admin
     .from('survey_responses')
-    .select('*, student_session_results(created_at, status, standalone_sessions(mission))')
+    .select('*, student_session_results(created_at, status, coach_feedback, student_visible_summary, homework, whats_next, coaches:coach_id(display_name), standalone_sessions(mission))')
     .eq('student_id', studentId)
     .order('submitted_at', { ascending: false });
 

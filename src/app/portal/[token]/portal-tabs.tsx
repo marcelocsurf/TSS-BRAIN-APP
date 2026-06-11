@@ -487,41 +487,8 @@ function HomeTab({
         <UpcomingSessionCard upcoming={upcoming[0]} />
       )}
 
-      {/* Student Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 ring-2 ring-white shadow-md"
-            style={{ backgroundColor: belt?.color || '#999' }}
-          >
-            {student.photo_url ? (
-              <img
-                src={student.photo_url}
-                alt=""
-                className="w-14 h-14 rounded-full object-cover"
-              />
-            ) : (
-              `${student.first_name[0]}${student.last_name?.[0] || ''}`
-            )}
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-[var(--tss-navy)] text-base">
-              {student.first_name} {student.last_name}
-            </p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span
-                className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-                style={{ backgroundColor: belt?.color || '#999' }}
-              >
-                {belt?.en}
-              </span>
-              <span className="text-[10px] text-gray-400">{belt?.levelName}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Your Journey — Belt Journey hero ── */}
+      {/* ── Your Journey — Belt Journey hero (carries the student's belt
+          identity, so no separate identity card is needed) ── */}
       <div>
         <p className="tss-section-label">
           <Compass size={11} strokeWidth={1.75} />
@@ -1664,50 +1631,78 @@ function FeedbackTab({
             <p className="text-gray-400 text-sm">No feedback submitted yet.</p>
           </div>
         ) : (
-          submittedSurveys.map((survey: any) => (
-            <div
-              key={survey.id}
-              className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {survey.student_session_results?.standalone_sessions?.mission ||
-                      'Session'}
+          submittedSurveys.map((survey: any) => {
+            const ssr = survey.student_session_results;
+            const coachName = ssr?.coaches?.display_name;
+            const coachFeedback = ssr?.student_visible_summary || ssr?.coach_feedback;
+            return (
+              <div
+                key={survey.id}
+                className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3"
+              >
+                {/* Header: session + the stars you gave */}
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {ssr?.standalone_sessions?.mission || 'Session'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      {new Date(ssr?.created_at || survey.created_at).toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric',
+                      })}
+                      {coachName && ` · ${coachName}`}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm tracking-tight" style={{ color: BRAND.colors.gold }}>
+                      {'★'.repeat(survey.coach_rating)}<span className="text-gray-200">{'★'.repeat(5 - survey.coach_rating)}</span>
+                    </div>
+                    <p className="text-[9px] text-gray-400 mt-0.5">You rated</p>
+                  </div>
+                </div>
+
+                {/* The coach's feedback for YOU — the real value */}
+                {coachFeedback ? (
+                  <div className="rounded-xl bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2.5">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                      Your coach&apos;s feedback
+                    </p>
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                      {coachFeedback}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-gray-400 italic">
+                    Your coach didn&apos;t leave written feedback for this session.
                   </p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">
-                    {new Date(
-                      survey.student_session_results?.created_at || survey.created_at
-                    ).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                )}
+
+                {/* Homework + what's next */}
+                {(ssr?.homework || ssr?.whats_next) && (
+                  <div className="grid grid-cols-1 gap-2">
+                    {ssr?.homework && (
+                      <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">Homework</p>
+                        <p className="text-xs text-amber-900 leading-relaxed">{ssr.homework}</p>
+                      </div>
+                    )}
+                    {ssr?.whats_next && (
+                      <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-0.5">What&apos;s next</p>
+                        <p className="text-xs text-gray-700 leading-relaxed">{ssr.whats_next}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {survey.open_comment && (
+                  <p className="text-[11px] text-gray-400 italic">
+                    Your note: &ldquo;{survey.open_comment}&rdquo;
                   </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400">Rating:</span>
-                  <span className="text-sm font-semibold text-[var(--tss-navy)]">
-                    {survey.coach_rating}/5
-                  </span>
-                </div>
+                )}
               </div>
-              {(survey.q2_feedback || survey.open_comment) && (
-                <div className="mt-2 pt-2 border-t border-gray-50">
-                  {survey.q2_feedback && (
-                    <p className="text-xs text-gray-600">{survey.q2_feedback}</p>
-                  )}
-                  {survey.open_comment && (
-                    <p className="text-xs text-gray-500 mt-1">{survey.open_comment}</p>
-                  )}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 mt-2 text-green-600">
-                <Check size={12} strokeWidth={2.25} />
-                <span className="text-[10px] font-medium">Submitted</span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -1914,10 +1909,14 @@ function UpcomingCampCard({ camp }: { camp: any }) {
     : 1;
   const isMultiDay = totalDays > 1;
   const coach = camp.coach;
-  const previewBlocks = camp.blocks ?? [];
+  // Only show real, coach-defined objectives — never the "Coach will define
+  // the focus" placeholder (it reads as broken/unfinished).
+  const previewBlocks = (camp.blocks ?? []).filter(
+    (b: any) => b.objective_text && b.objective_text.trim(),
+  );
 
   return (
-    <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[#0a1628] text-white rounded-2xl p-4 shadow-md">
+    <div className="bg-[var(--tss-navy)] text-white rounded-2xl p-5 shadow-md">
       <div className="flex items-center justify-between gap-2 mb-2">
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)]">
           Your next class
@@ -1961,9 +1960,7 @@ function UpcomingCampCard({ camp }: { camp: any }) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold truncate">{coach.display_name}</p>
             <p className="text-[10px] text-white/60 truncate">
-              {coach.certification_level ?? 'Coach'}
-              {coach.max_belt_permission &&
-                ` · up to ${coach.max_belt_permission.replace(/_/g, ' ')}`}
+              Your coach{coach.certification_level ? ` · ${coach.certification_level}` : ''}
             </p>
           </div>
         </div>
