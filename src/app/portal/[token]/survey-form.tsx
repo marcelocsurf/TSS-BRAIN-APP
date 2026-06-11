@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { submitSurvey } from '@/lib/actions/survey';
 import { BRAND } from '@/lib/constants/brand';
-import { ThumbsUp, Lock } from 'lucide-react';
+import { ThumbsUp, Lock, MessageSquare } from 'lucide-react';
 
 interface Props {
   resultId: string;
@@ -19,6 +20,7 @@ interface Props {
 // the server action backfills the obsolete columns with coach_rating so
 // existing aggregates keep working without a migration.
 export function SurveyForm({ resultId, studentId, token: _token }: Props) {
+  const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,6 +61,10 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
       });
       setJustUnlocked(!!result.justUnlockedCoachProfile);
       setSubmitted(true);
+      // Re-fetch the server components so the pending badge, the red dot,
+      // and the now-unlocked coach feedback all update. router.refresh()
+      // keeps this client component's "submitted" state intact.
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Failed to submit survey');
       setLoading(false);
@@ -72,21 +78,35 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
           <ThumbsUp size={24} strokeWidth={1.75} className="mx-auto mb-2 text-green-600" />
           <p className="text-sm font-semibold text-green-700">Thanks for rating your coach!</p>
           <p className="text-xs text-green-600 mt-1">
-            Your feedback is part of their official record.
+            Your honest feedback becomes part of their record.
+          </p>
+        </div>
+        {/* The real reward: the coach's written feedback for this session
+            is now unlocked. */}
+        <div
+          className="rounded-xl p-5 text-center border-2"
+          style={{ background: '#ECFDF5', borderColor: '#10B981' }}
+        >
+          <MessageSquare size={26} strokeWidth={1.75} className="mx-auto mb-1 text-emerald-700" />
+          <p className="text-sm font-bold text-emerald-900">
+            Your session feedback is unlocked
+          </p>
+          <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
+            Open the <strong>Sessions</strong> tab to read what your coach wrote
+            for you — feedback, homework, and what&apos;s next.
           </p>
         </div>
         {justUnlocked && (
           <div
-            className="rounded-xl p-5 text-center border-2"
+            className="rounded-xl p-4 text-center border"
             style={{ background: '#FEF3C7', borderColor: BRAND.colors.gold }}
           >
-            <Lock size={28} strokeWidth={1.75} className="mx-auto mb-1 text-amber-700" />
-            <p className="text-sm font-bold text-amber-900">
-              You just unlocked your coach&apos;s profile
+            <Lock size={20} strokeWidth={1.75} className="mx-auto mb-1 text-amber-700" />
+            <p className="text-xs font-semibold text-amber-900">
+              Bonus: the <strong>My Coach</strong> tab is now open
             </p>
-            <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-              Open the new <strong>My Coach</strong> tab to see their rating,
-              certifications, and your session history together.
+            <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+              See your coach&apos;s rating, certifications, and your history together.
             </p>
           </div>
         )}
