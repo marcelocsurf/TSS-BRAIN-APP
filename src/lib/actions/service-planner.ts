@@ -347,7 +347,7 @@ export async function getServicePlan(
     const [coachSessRes, selfSessRes] = await Promise.all([
       admin
         .from('student_session_results')
-        .select('student_id, created_at, status, standalone_sessions(mission)')
+        .select('student_id, created_at, status, coach_feedback, standalone_sessions(mission)')
         .in('student_id', studentIds)
         .order('created_at', { ascending: false }),
       admin
@@ -360,10 +360,16 @@ export async function getServicePlan(
       const ss = Array.isArray(r.standalone_sessions)
         ? r.standalone_sessions[0]
         : r.standalone_sessions;
+      // Camp/service sessions have no standalone_sessions row, so fall back
+      // to a snippet of the coach's written feedback so the coach sees what
+      // the last in-person class actually covered (not a generic label).
+      const fbSnippet = r.coach_feedback
+        ? r.coach_feedback.replace(/\s+/g, ' ').trim().slice(0, 60)
+        : null;
       (recentByStudent[r.student_id] ??= []).push({
         date: r.created_at,
         type: 'coach',
-        label: ss?.mission || 'Coach session',
+        label: ss?.mission || fbSnippet || 'Coach session',
         status: r.status,
       });
     }

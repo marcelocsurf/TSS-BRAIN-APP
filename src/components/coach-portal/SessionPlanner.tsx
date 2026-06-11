@@ -1363,7 +1363,7 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
     profile.swim_level && `swim: ${profile.swim_level}`,
     profile.board_type && `🛹 ${profile.board_type}`,
     profile.favorite_wave_size && `fav wave: ${profile.favorite_wave_size}`,
-    profile.ocean_quiz_score != null && `ocean quiz: ${profile.ocean_quiz_score}`,
+    profile.ocean_level && `ocean: ${String(profile.ocean_level).replace(/_/g, ' ')}`,
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
   ].filter(Boolean) as string[];
