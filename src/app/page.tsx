@@ -22,12 +22,9 @@ export default async function EntryPage({ searchParams }: Props) {
   const params = await searchParams;
   const kicked = params.kicked === '1';
 
-  // Student PWA fast path — cookie persisted on this device.
-  if (!kicked) {
-    const portalToken = await getActiveStudentPortalToken();
-    if (portalToken) redirect(`/portal/${portalToken}`);
-  }
-
+  // Staff (admin/coordinator/coach) takes priority over any lingering
+  // student-portal cookie. Otherwise an admin who once tested as a student
+  // on this device would keep getting bounced into that student portal.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
@@ -46,6 +43,12 @@ export default async function EntryPage({ searchParams }: Props) {
       redirect(`/coach-portal/${coach.portal_token}`);
     }
     redirect('/dashboard');
+  }
+
+  // Student PWA fast path — only when no staff session is present.
+  if (!kicked) {
+    const portalToken = await getActiveStudentPortalToken();
+    if (portalToken) redirect(`/portal/${portalToken}`);
   }
 
   return <EntryForm kicked={kicked} />;

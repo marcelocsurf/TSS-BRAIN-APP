@@ -33,24 +33,37 @@ interface Props {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 type SlotDraft = {
-  weekday: number;
+  weekdays: number[];
   service_template_id: string;
   scheduled_time: string;
   default_head_coach_id: string;
 };
 
+// Group the stored one-weekday-per-row slots back into multi-day drafts
+// (same service + time + coach → one row with several days selected).
+function groupInitialSlots(initial?: WeekTemplateRow): SlotDraft[] {
+  if (!initial?.slots?.length) return [];
+  const map = new Map<string, SlotDraft>();
+  for (const s of initial.slots) {
+    const key = `${s.service_template_id}|${s.scheduled_time ?? ''}|${s.default_head_coach_id ?? ''}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        weekdays: [],
+        service_template_id: s.service_template_id,
+        scheduled_time: s.scheduled_time ?? '',
+        default_head_coach_id: s.default_head_coach_id ?? '',
+      });
+    }
+    map.get(key)!.weekdays.push(s.weekday);
+  }
+  return Array.from(map.values()).map((d) => ({ ...d, weekdays: d.weekdays.sort((a, b) => a - b) }));
+}
+
 export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Props) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
-  const [slots, setSlots] = useState<SlotDraft[]>(
-    initial?.slots.map((s) => ({
-      weekday: s.weekday,
-      service_template_id: s.service_template_id,
-      scheduled_time: s.scheduled_time ?? '',
-      default_head_coach_id: s.default_head_coach_id ?? '',
-    })) ?? [],
-  );
+  const [slots, setSlots] = useState<SlotDraft[]>(groupInitialSlots(initial));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
 
@@ -58,7 +71,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
     setSlots((s) => [
       ...s,
       {
-        weekday: 0,
+        weekdays: [0],
         service_template_id: campTemplates[0]?.id ?? '',
         scheduled_time: '',
         default_head_coach_id: '',
@@ -67,6 +80,18 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
 
   const updateSlot = (i: number, patch: Partial<SlotDraft>) =>
     setSlots((s) => s.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
+  const toggleDay = (i: number, day: number) =>
+    setSlots((s) =>
+      s.map((row, idx) => {
+        if (idx !== i) return row;
+        const has = row.weekdays.includes(day);
+        const weekdays = has
+          ? row.weekdays.filter((d) => d !== day)
+          : [...row.weekdays, day].sort((a, b) => a - b);
+        return { ...row, weekdays };
+      }),
+    );
 
   const removeSlot = (i: number) => setSlots((s) => s.filter((_, idx) => idx !== i));
 
@@ -77,18 +102,34 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
       setError('Name is required');
       return;
     }
+    if (slots.some((s) => s.weekdays.length === 0)) {
+      setError('Each slot needs at least one day selected.');
+      return;
+    }
+    if (slots.some((s) => !s.service_template_id)) {
+      setError('Each slot needs a service picked.');
+      return;
+    }
     startTransition(async () => {
       try {
+        // Expand each multi-day draft into one stored slot per weekday.
+        const expanded: WeekTemplateSlotInput[] = [];
+        let order = 0;
+        for (const s of slots) {
+          for (const day of s.weekdays) {
+            expanded.push({
+              weekday: day,
+              service_template_id: s.service_template_id,
+              scheduled_time: s.scheduled_time || null,
+              default_head_coach_id: s.default_head_coach_id || null,
+              display_order: order++,
+            });
+          }
+        }
         const payload = {
           name: name.trim(),
           description: description.trim() || null,
-          slots: slots.map((s, i): WeekTemplateSlotInput => ({
-            weekday: s.weekday,
-            service_template_id: s.service_template_id,
-            scheduled_time: s.scheduled_time || null,
-            default_head_coach_id: s.default_head_coach_id || null,
-            display_order: i,
-          })),
+          slots: expanded,
         };
         if (mode === 'edit' && initial) {
           await updateWeekTemplate(initial.id, payload);
@@ -177,66 +218,76 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
         ) : (
           <div className="space-y-2">
             {slots.map((slot, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-xl p-2"
-              >
-                <select
-                  value={slot.weekday}
-                  onChange={(e) => updateSlot(i, { weekday: parseInt(e.target.value, 10) })}
-                  className="col-span-2 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
-                >
-                  {WEEKDAYS.map((d, idx) => (
-                    <option key={d} value={idx}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={slot.service_template_id}
-                  onChange={(e) =>
-                    updateSlot(i, { service_template_id: e.target.value })
-                  }
-                  className="col-span-4 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
-                  required
-                >
-                  <option value="">— Pick service —</option>
-                  {campTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.template_name}
-                      {t.level_name ? ` (${t.level_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="time"
-                  value={slot.scheduled_time}
-                  onChange={(e) => updateSlot(i, { scheduled_time: e.target.value })}
-                  className="col-span-2 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
-                  placeholder="Time"
-                />
-                <select
-                  value={slot.default_head_coach_id}
-                  onChange={(e) =>
-                    updateSlot(i, { default_head_coach_id: e.target.value })
-                  }
-                  className="col-span-3 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
-                >
-                  <option value="">No default coach</option>
-                  {coaches.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.display_name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => removeSlot(i)}
-                  className="col-span-1 text-red-500 hover:text-red-700 flex items-center justify-center"
-                  aria-label="Remove slot"
-                >
-                  <X size={14} strokeWidth={2} />
-                </button>
+              <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2.5">
+                {/* Day chips — pick one or many */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {WEEKDAYS.map((d, idx) => {
+                    const on = slot.weekdays.includes(idx);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleDay(i, idx)}
+                        className={`w-9 py-1 text-[11px] rounded-lg border transition-colors ${
+                          on
+                            ? 'bg-[var(--tss-navy)] text-white border-transparent'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => removeSlot(i)}
+                    className="ml-auto text-red-500 hover:text-red-700 flex items-center justify-center p-1"
+                    aria-label="Remove slot"
+                  >
+                    <X size={14} strokeWidth={2} />
+                  </button>
+                </div>
+                {/* Service + time + coach */}
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <select
+                    value={slot.service_template_id}
+                    onChange={(e) => updateSlot(i, { service_template_id: e.target.value })}
+                    className="col-span-6 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                    required
+                  >
+                    <option value="">— Pick service —</option>
+                    {campTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.template_name}
+                        {t.level_name ? ` (${t.level_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="time"
+                    value={slot.scheduled_time}
+                    onChange={(e) => updateSlot(i, { scheduled_time: e.target.value })}
+                    className="col-span-3 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                    placeholder="Time"
+                  />
+                  <select
+                    value={slot.default_head_coach_id}
+                    onChange={(e) => updateSlot(i, { default_head_coach_id: e.target.value })}
+                    className="col-span-3 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                  >
+                    <option value="">No coach</option>
+                    {coaches.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.display_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {slot.weekdays.length > 1 && (
+                  <p className="text-[10px] text-gray-400">
+                    Creates {slot.weekdays.length} services — one per selected day.
+                  </p>
+                )}
               </div>
             ))}
           </div>
