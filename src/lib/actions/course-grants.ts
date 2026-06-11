@@ -234,6 +234,17 @@ export async function revokeCourseGrant(
         .from('students')
         .update({ [course.accessColumn]: false })
         .eq('id', grant.student_id);
+
+      // Also close the auto-synced practice library for that belt — otherwise
+      // the portal keeps showing "materials unlocked" while the lessons are
+      // gated, which looks broken. Only the auto-from-course access is closed;
+      // a manually-granted level access is left untouched.
+      await admin
+        .from('student_level_access')
+        .update({ active: false })
+        .eq('student_id', grant.student_id)
+        .eq('level_key', grant.course_key)
+        .eq('source', 'auto_from_course');
     }
   }
 
@@ -323,12 +334,17 @@ export async function getBillingForMonth(
   const start = new Date(Date.UTC(y, m - 1, 1)).toISOString();
   const end = new Date(Date.UTC(y, m, 1)).toISOString();
 
-  const [grantsRes, academiesRes] = await Promise.all([
+  const [grantsRes, refresherRes, academiesRes] = await Promise.all([
     admin
       .from('course_grants')
       .select('academy_id_at_grant, course_key, source, billable, price_cents, currency, revoked_at')
       .gte('granted_at', start)
       .lt('granted_at', end),
+    admin
+      .from('refresher_charges')
+      .select('academy_id, course_key, price_cents, currency')
+      .gte('created_at', start)
+      .lt('created_at', end),
     admin.from('academies').select('id, name'),
   ]);
 
@@ -366,6 +382,30 @@ export async function getBillingForMonth(
       // admin sees the volume, but contributes 0 to total_cents.
       cur.count += 1;
     }
+    buckets.set(key, cur);
+  }
+
+  // Refresher charges — repeaters billed at 50%. Shown as a 'refresher'
+  // source line per academy/course so the admin sees them distinctly.
+  for (const rc of refresherRes.data ?? []) {
+    const academyKey = rc.academy_id ?? '__direct__';
+    const key = `${academyKey}|${rc.course_key}|refresher`;
+    const cur =
+      buckets.get(key) ?? {
+        academy_id: rc.academy_id ?? null,
+        academy_name:
+          rc.academy_id && academyMap.get(rc.academy_id)
+            ? academyMap.get(rc.academy_id)!
+            : 'TSS Direct',
+        course_key: rc.course_key,
+        source: 'refresher',
+        count: 0,
+        total_cents: 0,
+        currency: rc.currency ?? 'USD',
+        revoked_count: 0,
+      };
+    cur.count += 1;
+    cur.total_cents += rc.price_cents ?? 0;
     buckets.set(key, cur);
   }
 

@@ -37,7 +37,7 @@ export async function getFeedbackByToken(
   const { data: row } = await admin
     .from('student_session_results')
     .select(
-      `id, student_id, created_at, achieved, status, coach_feedback,
+      `id, student_id, created_at, achieved, status, mission, coach_feedback,
        homework, whats_next,
        coach:coaches(display_name),
        student:students(first_name)`,
@@ -67,7 +67,7 @@ export async function getFeedbackByToken(
     studentFirstName: student?.first_name ?? 'there',
     coachName: coach?.display_name ?? 'Your coach',
     sessionDate: row.created_at,
-    mission: row.achieved ?? null,
+    mission: (row as any).mission ?? null,
     status: row.status ?? null,
     coachFeedback: row.coach_feedback ?? null,
     homework: row.homework ?? null,

@@ -506,15 +506,39 @@ export async function createCampInstance(input: {
         }
         await supabase.from('students').update(patch).eq('id', s.id);
 
-        // Auto-grant immediately if waiver already signed and not granted.
-        // Tag the source as 'auto_on_camp_enrol' so the billing
-        // dashboard can distinguish "granted because the student
-        // joined a camp" from "granted because they finished intake".
-        if (s.waiver_signed && !already) {
+        if (!already) {
+          // First time on this course → grant access (the billable event).
+          // Course/lesson access isn't gated by the waiver (the waiver gates
+          // in-water sessions), so we grant on enrolment regardless.
           try {
             await grantCourseToStudent(s.id, courseKey, 'auto_on_camp_enrol');
           } catch (err) {
             console.error('[createCampInstance] auto-grant failed', s.id, courseKey, err);
+          }
+        } else {
+          // Repeater: already holds the course but is doing the level again.
+          // No new access grant — instead log a refresher charge at 50% of
+          // the course price (internal billing only).
+          try {
+            const { getCoursePriceCents } = await import('./pricing');
+            const price = await getCoursePriceCents(courseKey, academyId);
+            if (price) {
+              const admin = createAdminClient();
+              await admin.from('refresher_charges').upsert(
+                {
+                  student_id: s.id,
+                  academy_id: academyId,
+                  course_key: courseKey,
+                  camp_instance_id: instance.id,
+                  price_cents: Math.round(price.price_cents / 2),
+                  currency: price.currency,
+                  created_by: me?.id ?? null,
+                },
+                { onConflict: 'student_id,camp_instance_id,course_key', ignoreDuplicates: true },
+              );
+            }
+          } catch (err) {
+            console.error('[createCampInstance] refresher charge failed', s.id, courseKey, err);
           }
         }
       }

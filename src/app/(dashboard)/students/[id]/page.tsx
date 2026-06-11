@@ -120,7 +120,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     supabase
       .from('student_session_results')
       .select(`
-        id, status, focus_rating,
+        id, status, focus_rating, mission,
         coach_feedback, homework, whats_next, created_at, coach_id,
         standalone_sessions(mission, training_venue, session_date, pilar, duration_minutes),
         coaches:coach_id(display_name)
@@ -193,9 +193,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     source: 'standalone' as const,
     date: r.standalone_sessions?.session_date || r.created_at,
     coachName: r.coaches?.display_name || null,
-    // Camp/service session results have no standalone_sessions row — label
-    // them so they still read as a real session in the log.
-    mission: r.standalone_sessions?.mission || (r.coach_feedback ? 'Camp session' : 'Camp session'),
+    // Camp/service session results store their focus in `mission`;
+    // standalone sessions store it on the joined row.
+    mission: r.standalone_sessions?.mission || r.mission || 'Camp session',
     pilar: r.standalone_sessions?.pilar || null,
     status: r.status,
     coachFeedback: r.coach_feedback || null,

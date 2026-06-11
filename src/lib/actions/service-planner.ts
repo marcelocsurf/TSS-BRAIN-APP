@@ -347,7 +347,7 @@ export async function getServicePlan(
     const [coachSessRes, selfSessRes] = await Promise.all([
       admin
         .from('student_session_results')
-        .select('student_id, created_at, status, coach_feedback, standalone_sessions(mission)')
+        .select('student_id, created_at, status, mission, coach_feedback, standalone_sessions(mission)')
         .in('student_id', studentIds)
         .order('created_at', { ascending: false }),
       admin
@@ -369,7 +369,7 @@ export async function getServicePlan(
       (recentByStudent[r.student_id] ??= []).push({
         date: r.created_at,
         type: 'coach',
-        label: ss?.mission || fbSnippet || 'Coach session',
+        label: ss?.mission || r.mission || fbSnippet || 'Coach session',
         status: r.status,
       });
     }
@@ -1491,6 +1491,7 @@ export async function closeServicePlan(
         student_id: studentId,
         coach_id: coach.id,
         status,
+        mission: missionTitle,
         coach_feedback: firstBlock.notes_post ?? null,
         achieved: achievedText,
         whats_next: null,

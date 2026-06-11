@@ -237,5 +237,17 @@ export async function promoteLeadToMember(
 
   if (error) throw new Error(error.message);
 
+  // Grant the course immediately — enrolling in a course IS the billable
+  // event for the academy. Course (lesson) access isn't gated behind the
+  // waiver (the waiver gates in-water sessions, not online content). This
+  // closes the gap where a promoted member sat with pending_courses that
+  // never activated unless they happened to finish the extended intake.
+  try {
+    const { activatePendingCoursesForStudent } = await import('./course-grants');
+    await activatePendingCoursesForStudent(studentId);
+  } catch (e) {
+    console.error('[promoteLeadToMember] course activation failed', e);
+  }
+
   revalidatePath('/dashboard/students');
 }
