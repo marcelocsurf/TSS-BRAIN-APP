@@ -1507,9 +1507,13 @@ export async function closeServicePlan(
           p_session_result_id: result.id,
           p_session_date: new Date().toISOString(),
           p_mission: missionTitle,
-          p_pilar: b.step_id ?? null,
+          // p_pilar is the `pilar` enum (technical/physical/tactical/mental).
+          // step_id ("STP-002") is NOT a pilar — passing it made the RPC
+          // throw on the enum cast and silently skip the snapshot update,
+          // leaving last_session_* null. Pass null instead.
+          p_pilar: null,
           p_status: status,
-          p_homework: null,
+          p_homework: firstBlock.notes_post ?? null,
           p_whats_next: null,
         });
       } catch {

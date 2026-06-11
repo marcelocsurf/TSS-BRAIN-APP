@@ -127,7 +127,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       `)
       .eq('student_id', id)
       .eq('completion_state', 'closed')
-      .not('standalone_session_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(50),
     // Cascade session results
@@ -194,7 +193,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     source: 'standalone' as const,
     date: r.standalone_sessions?.session_date || r.created_at,
     coachName: r.coaches?.display_name || null,
-    mission: r.standalone_sessions?.mission || null,
+    // Camp/service session results have no standalone_sessions row — label
+    // them so they still read as a real session in the log.
+    mission: r.standalone_sessions?.mission || (r.coach_feedback ? 'Camp session' : 'Camp session'),
     pilar: r.standalone_sessions?.pilar || null,
     status: r.status,
     coachFeedback: r.coach_feedback || null,
@@ -457,7 +458,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       )}
 
-      {/* --- 2. LAST SESSION (always visible, highlighted) --- */}
+      {/* --- 2. LAST SESSION (always visible, highlighted) ---
+          Prefer the student snapshot; fall back to the most recent entry in
+          the unified history so camp/service sessions (which don't update the
+          snapshot) still surface here. */}
       <Card title="Last Session" highlighted>
         {student.last_session_date ? (
           <div className="space-y-2">
@@ -467,6 +471,16 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             <Row label="Status" value={student.last_session_status} badge />
             <Row label="Homework" value={student.last_homework} highlight />
             <Row label="Next Focus" value={student.next_recommended_focus} highlight />
+          </div>
+        ) : allSessions.length > 0 ? (
+          <div className="space-y-2">
+            <Row label="Date" value={new Date(allSessions[0].date).toLocaleDateString()} />
+            <Row label="Mission" value={allSessions[0].mission} />
+            <Row label="Coach" value={allSessions[0].coachName} />
+            <Row label="Status" value={allSessions[0].status} badge />
+            <Row label="Feedback" value={allSessions[0].coachFeedback} highlight />
+            <Row label="Homework" value={allSessions[0].homework} highlight />
+            <Row label="Next Focus" value={allSessions[0].whatsNext} highlight />
           </div>
         ) : (
           <p className="text-sm text-gray-400 py-4 text-center">No sessions recorded yet</p>
