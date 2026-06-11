@@ -10,6 +10,7 @@ import {
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
+import { TideWidget } from '@/components/dashboard/TideWidget';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -180,6 +181,13 @@ export default async function DashboardHome() {
       {role === 'coordinator' && <CoordinatorDashboard />}
       {role === 'coach' && coach && <CoachDashboard coachId={coach.id} />}
       {role === 'assistant' && <AssistantDashboard />}
+
+      {/* Tides — for whoever schedules / runs whitewater lessons */}
+      {(role === 'admin' || role === 'coordinator' || role === 'coach') && (
+        <div className="mt-6">
+          <TideWidget isAdmin={role === 'admin'} />
+        </div>
+      )}
 
       {/* Quick actions — only for non-coordinator roles. Coordinator has
           its own Quick Actions block inside CoordinatorDashboard above. */}
