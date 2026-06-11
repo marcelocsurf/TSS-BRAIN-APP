@@ -53,7 +53,7 @@ export async function listWeekTemplates(): Promise<WeekTemplateRow[]> {
   let query = supabase
     .from('week_templates')
     .select(
-      'id, academy_id, name, description, active_status, week_template_slots(id, weekday, service_template_id, scheduled_time, default_head_coach_id, display_order, camp_templates(template_name, level_name, service_kind, card_color), coaches:default_head_coach_id(display_name))',
+      'id, academy_id, name, description, active_status, week_template_slots(id, weekday, service_template_id, scheduled_time, default_head_coach_id, display_order, camp_templates(template_name, level_name, service_kind, card_color, duration_days), coaches:default_head_coach_id(display_name))',
     )
     .eq('active_status', true)
     .order('name');
@@ -199,6 +199,12 @@ export async function applyWeekTemplate(
   let created = 0;
   for (const slot of wt.slots) {
     const start = addDays(mondayDate, slot.weekday);
+    // Multi-day camps must span their full duration. createCampInstance
+    // does NOT recompute end_date — it persists what we pass — so compute
+    // it here from the service template's duration_days (same as the
+    // manual /camps/new path).
+    const duration = (slot as any).camp_templates?.duration_days || 1;
+    const end = addDays(start, duration - 1);
     try {
       await createCampInstance({
         template_id: slot.service_template_id,
@@ -206,7 +212,7 @@ export async function applyWeekTemplate(
         head_coach_id: slot.default_head_coach_id || me.id,
         coach_id: me.id,
         start_date: start,
-        end_date: start, // createCampInstance recalculates from template
+        end_date: end,
         modality: 'group',
         student_ids: [],
         scheduled_time: slot.scheduled_time ?? undefined,
