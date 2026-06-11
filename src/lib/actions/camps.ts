@@ -151,6 +151,10 @@ export async function respondToAssignment(input: {
       head_coach_status: input.response,
       head_coach_responded_at: new Date().toISOString(),
       head_coach_response_note: input.note?.trim() || null,
+      // On decline, free the slot so the coordinator can reassign. The
+      // 'rejected' status + note stay as the signal that it needs a new
+      // coach; reassigning (updateCampHeadCoach) resets it to 'pending'.
+      ...(input.response === 'rejected' ? { head_coach_id: null } : {}),
     })
     .eq('id', input.campInstanceId);
   if (error) throw new Error(error.message);
