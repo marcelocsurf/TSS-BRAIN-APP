@@ -2101,15 +2101,22 @@ function StudentEvalCard({
             </p>
           </div>
 
-          {/* M50 — Close note is ONE per student per session (visible to
-              the student in their portal feedback). Persisted on block 0
-              like board / focus / flow. */}
+          {/* Two close fields per student (visible to the student + the next
+              coach for continuity). Persisted on block 0 like board/focus. */}
           <TextArea
-            label="Close note (visible to student)"
+            label="Coach feedback (what they did well)"
             value={blocks[0].notes_post}
             onBlur={(v) => onCommit(blocks[0].order_index, { notes_post: v })}
-            placeholder="What they did well today · what to work on next"
+            placeholder="e.g. Great pop-up, much steadier stance today"
             rows={3}
+            disabled={isClosed}
+          />
+          <TextArea
+            label="What to work on next"
+            value={(blocks[0] as any).whats_next ?? ''}
+            onBlur={(v) => onCommit(blocks[0].order_index, { whats_next: v } as any)}
+            placeholder="e.g. Next session: angle take-offs, look down the line"
+            rows={2}
             disabled={isClosed}
           />
         </div>

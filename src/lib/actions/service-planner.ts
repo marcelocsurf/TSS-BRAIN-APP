@@ -490,6 +490,7 @@ export async function getServicePlan(
         notes_pre: b.notes_pre ?? null,
         status: b.status ?? null,
         notes_post: b.notes_post ?? null,
+        whats_next: b.whats_next ?? null,
         board_type: b.board_type ?? null,
         board_size_feet: b.board_size_feet ?? null,
         board_size_inches: b.board_size_inches ?? null,
@@ -943,6 +944,7 @@ export async function saveServicePlanBlock(
     board_size_inches: number | null;
     focus_level: number | null;
     flow_channel: number | null;
+    whats_next: string | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
@@ -993,6 +995,7 @@ export async function saveServicePlanBlock(
     'board_size_inches',
     'focus_level',
     'flow_channel',
+    'whats_next',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {
@@ -1494,7 +1497,7 @@ export async function closeServicePlan(
         mission: missionTitle,
         coach_feedback: firstBlock.notes_post ?? null,
         achieved: achievedText,
-        whats_next: null,
+        whats_next: firstBlock.whats_next ?? null,
         homework: null,
         completion_state: 'closed',
         survey_unlocked: true,
@@ -1520,8 +1523,8 @@ export async function closeServicePlan(
           // leaving last_session_* null. Pass null instead.
           p_pilar: null,
           p_status: status,
-          p_homework: firstBlock.notes_post ?? null,
-          p_whats_next: null,
+          p_homework: null,
+          p_whats_next: firstBlock.whats_next ?? null,
         });
       } catch {
         /* non-blocking — profile snapshot is best-effort */
