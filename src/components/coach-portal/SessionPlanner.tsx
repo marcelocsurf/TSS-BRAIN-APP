@@ -591,7 +591,18 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               drill_custom: b.drill_custom,
                               mission_id: b.mission_id,
                               mission_custom: b.mission_custom,
-                              objective_text: b.evaluation_focus ?? null,
+                              // Carry the block's actual content as the
+                              // objective so EVERY activity type (incl. land
+                              // drills / warm-ups with no mission) shows what
+                              // to do — not just evaluation_focus (often empty).
+                              objective_text:
+                                b.pilar_part ||
+                                b.mission_custom ||
+                                b.mission?.title ||
+                                b.drill_custom ||
+                                b.drill?.title ||
+                                b.evaluation_focus ||
+                                null,
                             })),
                           );
                           flash('✓ Day re-seeded · refresh to see');
