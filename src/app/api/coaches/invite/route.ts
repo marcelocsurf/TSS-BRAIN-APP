@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
           redirectTo: redirectToReassign,
           userMetadata: { first_name, last_name, role },
         });
-        if (linkRes.inviteLink) {
+        if (linkRes.hashedToken && linkRes.linkType) {
           // Link the auth user back to the coach row if generateLink
           // ('invite') just created a fresh one and coach.auth_user_id
           // was null.
@@ -153,12 +153,16 @@ export async function POST(req: NextRequest) {
               .update({ auth_user_id: linkRes.user.id })
               .eq('id', existingCoach.id);
           }
+          const reassignLink =
+            `${appUrlReassign}/auth/confirm` +
+            `?token_hash=${encodeURIComponent(linkRes.hashedToken)}` +
+            `&type=${linkRes.linkType}&next=/set-password`;
           const r = await sendCoachInviteEmail({
             toEmail: normalizedEmail,
             firstName: first_name.trim(),
             role,
             academyName: targetAcademy.name,
-            inviteLink: linkRes.inviteLink,
+            inviteLink: reassignLink,
             isResend: true,
           });
           emailResent = r.success;
@@ -199,12 +203,17 @@ export async function POST(req: NextRequest) {
       userMetadata: { first_name, last_name, role },
     });
 
-    if (!linkRes.inviteLink || !linkRes.user) {
+    if (!linkRes.hashedToken || !linkRes.linkType || !linkRes.user) {
       throw new Error(linkRes.error ?? 'Could not generate invite link.');
     }
 
     const authData = { user: linkRes.user };
-    const inviteLink = linkRes.inviteLink;
+    // token_hash link → /auth/confirm (server-side verifyOtp). The PKCE
+    // action_link silently fails for admin-generated links.
+    const inviteLink =
+      `${appUrl}/auth/confirm` +
+      `?token_hash=${encodeURIComponent(linkRes.hashedToken)}` +
+      `&type=${linkRes.linkType}&next=/set-password`;
 
     // Create coach record (now with academy_id)
     const display_name = `${first_name} ${last_name}`;

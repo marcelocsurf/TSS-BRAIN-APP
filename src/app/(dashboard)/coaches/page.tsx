@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentCoach, isCoordinatorOrAbove, isRealPlatformAdmin } from '@/lib/actions/auth';
+import { getCurrentCoach, isRealPlatformAdmin } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
@@ -23,7 +23,11 @@ const BELT_COLORS: Record<string, string> = {
 
 export default async function CoachesPage() {
   const currentCoach = await getCurrentCoach();
-  if (!currentCoach || !(await isCoordinatorOrAbove(currentCoach.role))) redirect('/dashboard');
+  // Team management is admin-only. Coordinators manage students + schedule,
+  // never the coaching staff (that authority stays with the platform admin).
+  if (!currentCoach || (currentCoach.role !== 'admin' && !currentCoach.is_platform_admin)) {
+    redirect('/dashboard');
+  }
 
   // Only platform admin (Marcelo) can create new coaches
   const canCreateCoach = await isRealPlatformAdmin();

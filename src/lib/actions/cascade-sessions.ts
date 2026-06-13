@@ -34,10 +34,14 @@ export async function getCoachesForAssignment(): Promise<CoachForAssignment[]> {
   // admin not in act-as mode → academyId null → all coaches.
   const academyId = await getCurrentAcademyId();
 
+  // Only people who actually lead sessions are assignable: coaches,
+  // assistants, and admins. Coordinators manage the schedule — they are
+  // never head-coach / session-coach options.
   let query = supabase
     .from('coaches')
     .select('id, display_name, role, max_belt_permission')
     .eq('active_status', true)
+    .neq('role', 'coordinator')
     .order('display_name');
   if (academyId) query = query.eq('academy_id', academyId);
 

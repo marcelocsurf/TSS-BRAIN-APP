@@ -33,6 +33,10 @@ interface Args {
 interface Result {
   user: { id: string; email?: string | null } | null;
   inviteLink: string | null;
+  /** The one-time token_hash — used to build a /auth/confirm URL that
+   * verifies server-side (the PKCE action_link silently fails for
+   * admin-generated links). */
+  hashedToken: string | null;
   /** Which link type Supabase actually generated. */
   linkType: 'invite' | 'magiclink' | null;
   error: string | null;
@@ -52,6 +56,7 @@ async function generateMagic(
     return {
       user: null,
       inviteLink: null,
+      hashedToken: null,
       linkType: null,
       error: error?.message ?? 'magiclink failed',
     };
@@ -59,6 +64,7 @@ async function generateMagic(
   return {
     user: data.user ? { id: data.user.id, email: data.user.email } : null,
     inviteLink: data.properties.action_link,
+    hashedToken: data.properties.hashed_token ?? null,
     linkType: 'magiclink',
     error: null,
   };
@@ -90,6 +96,7 @@ export async function generateCoachInviteLink({
     return {
       user: { id: data.user.id, email: data.user.email },
       inviteLink: data.properties.action_link,
+      hashedToken: data.properties.hashed_token ?? null,
       linkType: 'invite',
       error: null,
     };
@@ -110,6 +117,7 @@ export async function generateCoachInviteLink({
   return {
     user: null,
     inviteLink: null,
+    hashedToken: null,
     linkType: null,
     error: error?.message ?? 'Could not generate invite link.',
   };

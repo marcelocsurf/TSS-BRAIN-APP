@@ -75,12 +75,20 @@ export async function POST(req: NextRequest) {
       redirectTo,
     });
 
-    if (!linkRes.inviteLink) {
+    if (!linkRes.hashedToken || !linkRes.linkType) {
       return NextResponse.json(
         { error: linkRes.error ?? 'Could not regenerate invite link.' },
         { status: 500 },
       );
     }
+
+    // Build a token_hash link → /auth/confirm verifies server-side via
+    // verifyOtp. The raw PKCE action_link silently fails for admin-
+    // generated links (no browser code_verifier), so we never use it.
+    const inviteLink =
+      `${appUrl}/auth/confirm` +
+      `?token_hash=${encodeURIComponent(linkRes.hashedToken)}` +
+      `&type=${linkRes.linkType}&next=/set-password`;
 
     // If we just created the auth user via the fallback path, link it
     // back to the coach row.
@@ -100,7 +108,7 @@ export async function POST(req: NextRequest) {
       firstName: coach.first_name ?? 'there',
       role: coach.role as any,
       academyName,
-      inviteLink: linkRes.inviteLink,
+      inviteLink,
       isResend: true,
     });
 
