@@ -246,11 +246,13 @@ export default function NewCampPage() {
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             >
               <option value="">Select head coach...</option>
-              {coaches.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.display_name} ({c.role})
-                </option>
-              ))}
+              {coaches
+                .filter(c => c.role === 'coach' || c.role === 'assistant')
+                .map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.display_name} ({c.role})
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -384,7 +386,7 @@ export default function NewCampPage() {
             className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600">Cancel</button>
           <button type="submit" disabled={loading}
             className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-medium disabled:opacity-50">
-            {loading ? 'Creating...' : 'Create Camp'}
+            {loading ? 'Creating...' : 'Create Service'}
           </button>
         </div>
       </form>
