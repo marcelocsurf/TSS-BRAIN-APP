@@ -463,6 +463,18 @@ export async function createCampInstance(input: {
 
   if (instErr) throw new Error(instErr.message);
 
+  // If the coordinator explicitly assigned a head coach, run the same
+  // accept/reject + notify flow as a later reassignment (sets status to
+  // 'pending' and emails/notifies the coach to confirm). When no head
+  // coach was picked it defaults to the creator and needs no confirmation.
+  if (input.head_coach_id && input.head_coach_id !== input.coach_id) {
+    try {
+      await updateCampHeadCoach(instance.id, input.head_coach_id);
+    } catch (err) {
+      console.error('[createCampInstance] head-coach assign/notify failed', err);
+    }
+  }
+
   // Add participants
   if (input.student_ids.length > 0) {
     const participants = input.student_ids.map(sid => ({

@@ -558,15 +558,28 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               >
                 <div className="space-y-2">
                   {todayTpl.blocks.map((b, i) => {
-                    const stp = data.stpCatalog.find((s) => s.id === b.step_id);
-                    const drill = data.availableDrills.find((d) => d.id === b.drill_id);
-                    const mission = data.availableDrills.find((d) => d.id === b.mission_id);
+                    const stepTitle = b.step_title || (b.step_id ? data.stpCatalog.find((s) => s.id === b.step_id)?.title : null);
+                    const drillTitle = b.drill?.title || b.drill_custom || (b.drill_id ? data.availableDrills.find((d) => d.id === b.drill_id)?.title : null);
+                    const missionTitle = b.mission?.title || b.mission_custom || (b.mission_id ? data.availableDrills.find((d) => d.id === b.mission_id)?.title : null);
+                    const heading = b.block_type
+                      ? String(b.block_type).replace(/_/g, ' ')
+                      : b.pilar_part || 'Activity';
+                    const edpf = b.explain_md || b.demonstrate_md || b.simulate_md;
                     return (
                       <div key={i} className="rounded-lg border border-gray-200 bg-white p-2 text-[11px] space-y-0.5">
-                        <p className="font-mono uppercase tracking-wider text-gray-400">Block {b.block_order}</p>
-                        {stp && (<p><span className="text-gray-500">Step · </span>{stp.id} — {stp.title}</p>)}
-                        {(drill || b.drill_custom) && (<p><span className="text-gray-500">Drill · </span>{drill?.title ?? b.drill_custom}</p>)}
-                        {(mission || b.mission_custom) && (<p><span className="text-gray-500">Mission · </span>{mission?.title ?? b.mission_custom}</p>)}
+                        <p className="font-mono uppercase tracking-wider text-gray-400">
+                          Block {b.block_order}{heading ? ` · ${heading}` : ''}
+                        </p>
+                        {b.pilar_part && b.pilar_part !== heading && (
+                          <p className="text-gray-700">{b.pilar_part}</p>
+                        )}
+                        {stepTitle && (<p><span className="text-gray-500">Step · </span>{b.step_id} — {stepTitle}</p>)}
+                        {missionTitle && (<p><span className="text-gray-500">Mission · </span>{missionTitle}</p>)}
+                        {drillTitle && (<p><span className="text-gray-500">Drill · </span>{drillTitle}</p>)}
+                        {!stepTitle && !missionTitle && !drillTitle && edpf && (
+                          <p className="text-gray-600 leading-snug">{String(edpf).slice(0, 90)}</p>
+                        )}
+                        {b.mission_time && (<p className="text-gray-400">{b.mission_time} min{b.equipment ? ` · ${b.equipment}` : ''}</p>)}
                       </div>
                     );
                   })}
