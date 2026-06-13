@@ -131,11 +131,18 @@ export default async function CampTemplatesPage() {
                       <div key={day.id} className="mt-2 first:mt-0">
                         <p className="text-xs font-medium text-gray-700">Day {day.day_number}: {day.day_goal?.slice(0, 80)}</p>
                         <div className="flex gap-1 mt-1 flex-wrap">
-                          {dayBlocks.map((b: any) => (
-                            <span key={b.id} className="text-[10px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded">
-                              {b.pilar ? (PILAR_LABELS[b.pilar as Pilar]?.split(' ')[0] || b.pilar) : 'Safety'}: {b.pilar_part?.slice(0, 30)}
-                            </span>
-                          ))}
+                          {dayBlocks.map((b: any) => {
+                            // Show what the activity actually is — its mission/
+                            // drill/objective — not a repeated pilar prefix.
+                            const label =
+                              b.mission || b.mission_custom || b.drill_name ||
+                              b.drill_custom || b.pilar_part || b.block_type || 'Activity';
+                            return (
+                              <span key={b.id} className="text-[10px] bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded">
+                                {String(label).slice(0, 32)}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
                     );
