@@ -91,8 +91,11 @@ export default function NewCampPage() {
   // template types. Custom templates with duration_days=1 collapse to
   // the same day. If the user manually set end_date for a custom multi-
   // day instance, respect that override.
+  // Any 1-day service is same-day: end always equals start, no override.
+  const isSingleDay = effectiveDuration <= 1;
   const derivedEndDate = (() => {
     if (!form.start_date) return '';
+    if (isSingleDay) return form.start_date;
     if (form.end_date && form.end_date >= form.start_date) return form.end_date;
     const d = new Date(form.start_date + 'T00:00:00');
     d.setDate(d.getDate() + Math.max(0, effectiveDuration - 1));
@@ -257,13 +260,15 @@ export default function NewCampPage() {
           </div>
 
           {/* ── Dates: smart per service type ── */}
-          {isLesson ? (
+          {isSingleDay ? (
             <div>
               <label className="block text-xs text-gray-500 mb-1">Date</label>
               <input type="date" value={form.start_date}
                 onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <p className="text-[10px] text-gray-400 mt-1">Individual lesson — same-day service.</p>
+              <p className="text-[10px] text-gray-400 mt-1">
+                {isLesson ? 'Individual lesson' : 'Single-day service'} — runs on this date.
+              </p>
             </div>
           ) : isCamp ? (
             <div className="grid grid-cols-2 gap-3">
