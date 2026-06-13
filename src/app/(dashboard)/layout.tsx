@@ -33,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/',              label: 'Home',         Icon: Home,        roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/students',      label: 'Students',     Icon: Users,       roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/camps',         label: 'Services',     Icon: Tent,        roles: ['admin', 'coordinator'] },
-  { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin'] },
+  { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
