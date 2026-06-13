@@ -819,18 +819,25 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             subtitle="Plan a different mission for each — sequence, drills, objective"
           >
             <div className="space-y-3">
-              {students.map((s) => (
-                <StudentPlanCard
-                  key={s.student_id}
-                  student={s}
-                  stpCatalog={data.stpCatalog}
-                  availableDrills={data.availableDrills}
-                  onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
-                  onAddBlock={() => addStudentBlock(s.student_id)}
-                  onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
-                  onShowDrill={(id) => setDrillDetailId(id)}
-                />
-              ))}
+              {(() => {
+                const dayTpl = data.templatePlan.find(
+                  (d) => d.day_number === data.selectedDay?.day_number,
+                );
+                const tplBlocks = dayTpl?.blocks ?? [];
+                return students.map((s) => (
+                  <StudentPlanCard
+                    key={s.student_id}
+                    student={s}
+                    stpCatalog={data.stpCatalog}
+                    availableDrills={data.availableDrills}
+                    templateBlocks={tplBlocks}
+                    onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
+                    onAddBlock={() => addStudentBlock(s.student_id)}
+                    onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
+                    onShowDrill={(id) => setDrillDetailId(id)}
+                  />
+                ));
+              })()}
             </div>
           </Section>
 
@@ -1663,6 +1670,7 @@ function StudentPlanCard({
   student,
   stpCatalog,
   availableDrills,
+  templateBlocks,
   onCommit,
   onAddBlock,
   onRemoveBlock,
@@ -1671,6 +1679,7 @@ function StudentPlanCard({
   student: ServicePlanStudent;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
+  templateBlocks: ServicePlanData['templatePlan'][number]['blocks'];
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onAddBlock: () => void;
   onRemoveBlock: (orderIndex: number) => void;
@@ -1765,6 +1774,7 @@ function StudentPlanCard({
             canRemove={blocks.length > 1}
             stpCatalog={stpCatalog}
             availableDrills={availableDrills}
+            templateBlock={templateBlocks.find((tb) => tb.block_order === b.order_index) ?? null}
             onCommit={(patch) => onCommit(b.order_index, patch)}
             onRemove={() => onRemoveBlock(b.order_index)}
             onShowDrill={onShowDrill}
@@ -1792,6 +1802,7 @@ function BlockEditor({
   canRemove,
   stpCatalog,
   availableDrills,
+  templateBlock,
   onCommit,
   onRemove,
   onShowDrill,
@@ -1801,12 +1812,14 @@ function BlockEditor({
   canRemove: boolean;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
+  templateBlock: ServicePlanData['templatePlan'][number]['blocks'][number] | null;
   onCommit: (patch: Partial<ServicePlanBlock>) => void;
   onRemove: () => void;
   onShowDrill: (drillId: string) => void;
 }) {
   const [showLandPicker, setShowLandPicker] = useState(false);
   const [showWaterPicker, setShowWaterPicker] = useState(false);
+  const [showAdjust, setShowAdjust] = useState(false);
 
   const stepDrills = availableDrills.filter(
     (d) => d.type === 'drill' && d.step_id === block.step_id
@@ -1837,6 +1850,58 @@ function BlockEditor({
           </button>
         )}
       </div>
+
+      {/* Read-only plan from the template — the WHAT. The coach reads this
+          and evaluates; tweaking is optional under "Adjust". */}
+      {templateBlock && (
+        <div className="rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2 space-y-1">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">
+            {templateBlock.block_type
+              ? String(templateBlock.block_type).replace(/_/g, ' ')
+              : 'Plan'}
+            {templateBlock.mission_time ? ` · ${templateBlock.mission_time} min` : ''}
+          </p>
+          {templateBlock.pilar_part && (
+            <p className="text-[12px] font-medium text-gray-800">{templateBlock.pilar_part}</p>
+          )}
+          {(templateBlock.step_title || templateBlock.step_id) && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Step · </span>{templateBlock.step_id}{templateBlock.step_title ? ` — ${templateBlock.step_title}` : ''}</p>
+          )}
+          {(templateBlock.mission?.title || templateBlock.mission_custom) && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Mission · </span>{templateBlock.mission?.title ?? templateBlock.mission_custom}</p>
+          )}
+          {(templateBlock.drill?.title || templateBlock.drill_custom) && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Drill · </span>{templateBlock.drill?.title ?? templateBlock.drill_custom}</p>
+          )}
+          {templateBlock.explain_md && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Explain · </span>{templateBlock.explain_md}</p>
+          )}
+          {templateBlock.demonstrate_md && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Demonstrate · </span>{templateBlock.demonstrate_md}</p>
+          )}
+          {templateBlock.simulate_md && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Simulate · </span>{templateBlock.simulate_md}</p>
+          )}
+          {templateBlock.feedback_md && (
+            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Feedback · </span>{templateBlock.feedback_md}</p>
+          )}
+          {templateBlock.equipment && (
+            <p className="text-[10px] text-gray-400">{templateBlock.equipment}</p>
+          )}
+        </div>
+      )}
+
+      {/* Optional per-student adjustment — collapsed by default so the
+          common case (follow the plan + evaluate) stays clean. */}
+      <button
+        type="button"
+        onClick={() => setShowAdjust((v) => !v)}
+        className="text-[10px] text-gray-400 hover:text-[var(--tss-navy)]"
+      >
+        {showAdjust ? '▴ Hide adjustments' : '▾ Adjust for this student (optional)'}
+      </button>
+
+      {showAdjust && (<>
 
       {/* Sequence focus */}
       <div>
@@ -2007,6 +2072,8 @@ function BlockEditor({
         placeholder="What to watch for in this block"
         rows={2}
       />
+
+      </>)}
     </div>
   );
 }
