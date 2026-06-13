@@ -8,6 +8,7 @@ import { getCurrentCoach } from '@/lib/actions/sessions';
 import { getCurrentCoach as getAuthCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
 import { getCoachesForAssignment, type CoachForAssignment } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
+import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 
 export default function NewCampPage() {
   const router = useRouter();
@@ -311,6 +312,13 @@ export default function NewCampPage() {
               className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
             />
           </div>
+
+          {/* Tide reference for the selected start date — tapping a mid-tide
+              time sets it as the service start time. */}
+          <TidePlannerHint
+            date={form.start_date}
+            onPickTime={(hhmm) => setForm(f => ({ ...f, start_time: hhmm }))}
+          />
 
           <div className="flex gap-2">
             {(['group', 'individual'] as const).map(m => (
