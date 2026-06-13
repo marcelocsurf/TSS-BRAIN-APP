@@ -22,13 +22,22 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
   const [tab, setTab] = useState<Tab>('existing');
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [searching, setSearching] = useState(false);
 
-  // ── Existing tab data ──
+  // ── Existing tab data — server-side search by name (scales past 100s
+  // of students). Debounced so we don't query on every keystroke. ──
   useEffect(() => {
-    if (showManager && students.length === 0) {
-      listStudents({ status: 'active', limit: 100 }).then((res) => setStudents(res.students));
-    }
-  }, [showManager, students.length]);
+    if (!showManager) return;
+    const term = search.trim();
+    setSearching(true);
+    const t = setTimeout(() => {
+      listStudents({ status: 'active', limit: 50, search: term || undefined })
+        .then((res) => setStudents(res.students))
+        .finally(() => setSearching(false));
+    }, term ? 280 : 0);
+    return () => clearTimeout(t);
+  }, [showManager, search]);
 
   const handleAdd = async (studentId: string) => {
     setActionId(studentId);
@@ -189,6 +198,14 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
           {/* ── Existing tab ─────────────────────────── */}
           {tab === 'existing' && (
             <div className="space-y-3">
+              {/* Search by name — server-side, scales to a big roster */}
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or last name…"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+              />
               {currentParticipantIds.length > 0 && (
                 <div>
                   <p
@@ -249,7 +266,13 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 italic">No other active students available.</p>
+                <p className="text-xs text-gray-400 italic">
+                  {searching
+                    ? 'Searching…'
+                    : search.trim()
+                    ? `No students match "${search.trim()}".`
+                    : 'No other active students available.'}
+                </p>
               )}
             </div>
           )}
