@@ -5,9 +5,12 @@
 // the two hex strings and decides if dark text or light text reads
 // better on top. Templates without colours fall back to neutral gray.
 
-import Link from 'next/link';
+'use client';
+
+import { useState } from 'react';
 import { Check, AlertTriangle } from 'lucide-react';
 import { CampStatusBadge } from './CampStatusBadge';
+import { ServiceQuickPanel } from './ServiceQuickPanel';
 
 const NEUTRAL_BG = '#F3F4F6';
 const NEUTRAL_ACCENT = '#9CA3AF';
@@ -69,8 +72,9 @@ type ServiceCardProps = {
       accent_color: string | null;
     } | null;
     head_coach: { display_name: string } | null;
+    head_coach_id?: string | null;
     coaches: { display_name: string } | null;
-    camp_participants: { id: string; enrollment_status: string; payment_status?: string | null }[];
+    camp_participants: { id: string; enrollment_status: string; payment_status?: string | null; student_id?: string | null }[];
   };
   compact?: boolean;
 };
@@ -92,10 +96,15 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
     tpl?.accent_color,
   );
 
+  const [panelOpen, setPanelOpen] = useState(false);
+
   return (
-    <Link
-      href={`/camps/${camp.id}`}
-      className="group relative block rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
+    <>
+    {panelOpen && <ServiceQuickPanel camp={camp} onClose={() => setPanelOpen(false)} />}
+    <button
+      type="button"
+      onClick={() => setPanelOpen(true)}
+      className="group relative block w-full text-left rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
       style={{ backgroundColor, borderLeft: `4px solid ${accentColor}` }}
     >
       <div className={compact ? 'p-2.5' : 'p-3'}>
@@ -220,6 +229,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
           )}
         </div>
       </div>
-    </Link>
+    </button>
+    </>
   );
 }
