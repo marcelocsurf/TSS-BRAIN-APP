@@ -597,26 +597,35 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                             // Map the field name so multi-block apply seeds
                             // every block (was only seeding 1 because the
                             // missing field defaulted all rows to order 0).
-                            todayTpl.blocks.map((b) => ({
-                              order_index: b.block_order,
-                              step_id: b.step_id,
-                              drill_id: b.drill_id,
-                              drill_custom: b.drill_custom,
-                              mission_id: b.mission_id,
-                              mission_custom: b.mission_custom,
-                              // Carry the block's actual content as the
-                              // objective so EVERY activity type (incl. land
-                              // drills / warm-ups with no mission) shows what
-                              // to do — not just evaluation_focus (often empty).
-                              objective_text:
+                            todayTpl.blocks.map((b) => {
+                              // The coach block model is narrower than the
+                              // template's activity taxonomy, so compose a full
+                              // objective: "<Activity type> · <content>" — this
+                              // way Warm-Up / Venue-Analysis / etc. (no mission)
+                              // never apply blank.
+                              const typeLabel = b.block_type
+                                ? String(b.block_type).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                                : null;
+                              const content =
                                 b.pilar_part ||
                                 b.mission_custom ||
                                 b.mission?.title ||
                                 b.drill_custom ||
                                 b.drill?.title ||
+                                (b.explain_md ? String(b.explain_md).slice(0, 80) : null) ||
                                 b.evaluation_focus ||
-                                null,
-                            })),
+                                null;
+                              const objective = [typeLabel, content].filter(Boolean).join(' · ') || null;
+                              return {
+                                order_index: b.block_order,
+                                step_id: b.step_id,
+                                drill_id: b.drill_id,
+                                drill_custom: b.drill_custom,
+                                mission_id: b.mission_id,
+                                mission_custom: b.mission_custom,
+                                objective_text: objective,
+                              };
+                            })
                           );
                           flash('✓ Day re-seeded · refresh to see');
                           onSwitchDay?.(data.selectedDay.day_number);
