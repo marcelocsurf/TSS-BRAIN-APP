@@ -7,7 +7,21 @@ import {
   type LearningChannel,
 } from '@/lib/constants/learning-profiles';
 import { setStudentLearningProfile } from '@/lib/actions/students';
-import { Brain } from 'lucide-react';
+import { Brain, Eye, Hand, HeartHandshake } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+// Brand-aligned Lucide icons per learning channel (no emoji).
+const CHANNEL_ICON: Record<string, LucideIcon> = {
+  eye: Eye,
+  hand: Hand,
+  brain: Brain,
+  'heart-handshake': HeartHandshake,
+};
+
+function ChannelIcon({ name, color, size = 20 }: { name: string; color: string; size?: number }) {
+  const Icon = CHANNEL_ICON[name] ?? Brain;
+  return <Icon size={size} strokeWidth={1.75} style={{ color }} />;
+}
 
 interface Props {
   studentId: string;
@@ -92,7 +106,12 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
       <div className={`rounded-xl border ${ip.border} ${ip.bg} p-4`}>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <span className="text-2xl shrink-0">{ip.icon}</span>
+            <span
+              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${ip.color}1A` }}
+            >
+              <ChannelIcon name={ip.iconName} color={ip.color} />
+            </span>
             <div className="min-w-0">
               <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 inline-flex items-center gap-1">
                 <Brain size={10} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
@@ -233,7 +252,12 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
     <div className={`rounded-xl border ${p.border} ${p.bg} p-4`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <span className="text-2xl shrink-0">{p.icon}</span>
+          <span
+            className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: `${p.color}1A` }}
+          >
+            <ChannelIcon name={p.iconName} color={p.color} />
+          </span>
           <div className="min-w-0">
             <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 inline-flex items-center gap-1">
               <Brain size={10} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
@@ -247,7 +271,9 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
             </p>
             {s && (
               <p className="text-[11px] text-gray-600 mt-0.5">
-                Secondary: <span className="font-medium">{s.icon} {s.shortName}</span>
+                Secondary: <span className="font-medium inline-flex items-center gap-1">
+                  <ChannelIcon name={s.iconName} color={s.color} size={12} /> {s.shortName}
+                </span>
               </p>
             )}
           </div>
@@ -320,7 +346,7 @@ function ChannelPicker({
               style={selected && !isExcluded ? { background: info.color } : {}}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-base">{info.icon}</span>
+                <ChannelIcon name={info.iconName} color={selected && !isExcluded ? '#fff' : info.color} size={16} />
                 <span className="text-xs font-medium">{info.shortName}</span>
               </div>
             </button>

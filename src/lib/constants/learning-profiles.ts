@@ -11,6 +11,8 @@ export type LearningChannel = 'V' | 'K' | 'A' | 'R';
 export interface LearningProfileInfo {
   channel: LearningChannel;
   icon: string;
+  /** Lucide icon name (outline) — brand-aligned, no emoji. */
+  iconName: 'eye' | 'hand' | 'brain' | 'heart-handshake';
   name: string;
   shortName: string;
   color: string;
@@ -25,6 +27,7 @@ export const LEARNING_PROFILES: Record<LearningChannel, LearningProfileInfo> = {
   V: {
     channel: 'V',
     icon: '👁',
+    iconName: 'eye',
     name: 'Visual Learner',
     shortName: 'Visual',
     color: '#00897B',
@@ -43,6 +46,7 @@ export const LEARNING_PROFILES: Record<LearningChannel, LearningProfileInfo> = {
   K: {
     channel: 'K',
     icon: '🤲',
+    iconName: 'hand',
     name: 'Kinesthetic Learner',
     shortName: 'Kinesthetic',
     color: '#43A047',
@@ -61,6 +65,7 @@ export const LEARNING_PROFILES: Record<LearningChannel, LearningProfileInfo> = {
   A: {
     channel: 'A',
     icon: '🧠',
+    iconName: 'brain',
     name: 'Analytical Learner',
     shortName: 'Analytical',
     color: '#7B1FA2',
@@ -79,6 +84,7 @@ export const LEARNING_PROFILES: Record<LearningChannel, LearningProfileInfo> = {
   R: {
     channel: 'R',
     icon: '❤️',
+    iconName: 'heart-handshake',
     name: 'Relational Learner',
     shortName: 'Relational',
     color: '#E53935',
