@@ -55,6 +55,7 @@ export default function VideoPanel({
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [panMode, setPanMode] = useState(false);
+  const [mirrored, setMirrored] = useState(false);
   const panDrag = useRef<{ x: number; y: number } | null>(null);
 
   // Keep the overlay the same pixel size as the rendered <video>.
@@ -90,6 +91,7 @@ export default function VideoPanel({
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setPanMode(false);
+    setMirrored(false);
   }
 
   // Zoom around the panel center so the focus point stays put.
@@ -219,7 +221,9 @@ export default function VideoPanel({
               className="h-full w-full object-contain"
               style={{
                 transformOrigin: "top left",
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                // Mirror flips around the left edge, so shift back by the
+                // scaled width to keep the video in view.
+                transform: `translate(${pan.x + (mirrored ? size.w * zoom : 0)}px, ${pan.y}px) scale(${mirrored ? -zoom : zoom}, ${zoom})`,
               }}
               onLoadedMetadata={() => setMissing(false)}
               onTimeUpdate={onTimeUpdate}
@@ -303,6 +307,13 @@ export default function VideoPanel({
                 title="Mover el video (paneo)"
               >
                 ✋
+              </button>
+              <button
+                className={`${btn} ${mirrored ? "bg-cyan-500" : "bg-white/10"}`}
+                onClick={() => setMirrored((v) => !v)}
+                title="Espejo — voltear la imagen horizontalmente"
+              >
+                ⇄
               </button>
               <button className={`${btn} bg-white/10`} onClick={resetView}>
                 Reset
