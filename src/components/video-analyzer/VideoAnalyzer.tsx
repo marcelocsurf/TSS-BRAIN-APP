@@ -211,7 +211,9 @@ export default function VideoAnalyzer() {
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
       <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2 pr-24">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/tss-logo-white.png" alt="The Surf Sequence" className="h-8 w-auto shrink-0" />
+        {/* ?v cache-bust: Safari cached the pre-middleware-fix 307 redirect
+            for this path, showing a broken image. New URL forces a re-fetch. */}
+        <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-8 w-auto shrink-0" />
         <h1
           className="text-lg font-bold tracking-tight"
           style={{ fontFamily: 'var(--font-heading, Playfair Display), serif' }}

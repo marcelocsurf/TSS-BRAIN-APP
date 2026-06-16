@@ -138,7 +138,7 @@ export default async function DashboardLayout({
             </div>
           ) : (
             <Image
-              src="/tss-logo-white.png"
+              src="/tss-logo-white.png?v=2"
               alt="The Surf Sequence"
               width={170}
               height={85}
@@ -185,7 +185,7 @@ export default async function DashboardLayout({
             />
           ) : (
             <Image
-              src="/tss-logo-white.png"
+              src="/tss-logo-white.png?v=2"
               alt="The Surf Sequence"
               width={132}
               height={66}

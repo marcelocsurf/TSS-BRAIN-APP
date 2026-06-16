@@ -6,7 +6,7 @@ export function BrandSplash() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[var(--tss-navy)] gap-5">
       <Image
-        src="/tss-logo-white.png"
+        src="/tss-logo-white.png?v=2"
         alt="The Surf Sequence"
         width={200}
         height={100}

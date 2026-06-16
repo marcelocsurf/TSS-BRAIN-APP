@@ -68,7 +68,7 @@ export const config = {
   matcher: [
     // Exclude Next internals, the API, and static asset files in /public
     // (images, fonts, etc.) — otherwise unauthenticated requests for
-    // /tss-logo-white.png get redirected to / and render as broken images.
+    // /tss-logo-white.png?v=2 get redirected to / and render as broken images.
     '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|otf|mp4|webmanifest)$).*)',
   ],
 };

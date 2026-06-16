@@ -31,7 +31,7 @@ export function resolveAcademyBranding(
     accent: academy?.accent_color || BRAND.colors.cyan,
     // Fall back to the official TSS white wordmark when the academy has
     // not uploaded its own logo — the header always sits on a dark bg.
-    logoUrl: academy?.logo_url || '/tss-logo-white.png',
+    logoUrl: academy?.logo_url || '/tss-logo-white.png?v=2',
     tagline: academy?.tagline || BRAND.tagline,
     name: academy?.name || 'The Surf Sequence',
   };

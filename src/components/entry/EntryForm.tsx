@@ -25,7 +25,7 @@ export default function EntryForm({ kicked = false }: { kicked?: boolean }) {
       <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
           <Image
-            src="/tss-logo-white.png"
+            src="/tss-logo-white.png?v=2"
             alt="The Surf Sequence"
             width={220}
             height={110}

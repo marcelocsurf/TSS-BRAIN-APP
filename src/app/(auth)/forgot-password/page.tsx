@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-10">
           <Image
-            src="/tss-logo-white.png"
+            src="/tss-logo-white.png?v=2"
             alt="The Surf Sequence"
             width={240}
             height={120}
