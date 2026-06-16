@@ -1166,7 +1166,7 @@ export async function closeCampFinal(
   token: string,
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
-  notes?: Array<{ student_id: string; student_visible_note: string; coach_private_note: string }>,
+  results?: Array<{ student_id: string; approved: boolean; student_visible_note: string; coach_private_note: string }>,
 ): Promise<void> {
   const admin = createAdminClient();
 
@@ -1202,20 +1202,24 @@ export async function closeCampFinal(
       .upsert(rows, { onConflict: 'student_id,step_id' });
   }
 
-  // Per-student written notes from the final evaluation. One row per
-  // (camp, student) in camp_final_evaluations: student_visible_note shows
-  // in the student portal; coach_private_note is coach/bitácora-only.
-  if (notes && notes.length > 0) {
-    const noteRows = notes.map((n) => ({
+  // Per-student "acta" from the final evaluation. One row per (camp,
+  // student) in camp_final_evaluations: approved + finalized_at is the
+  // frozen graduation record; student_visible_note shows in the student
+  // portal; coach_private_note is coach/bitácora-only.
+  if (results && results.length > 0) {
+    const finalizedAt = new Date().toISOString();
+    const rows = results.map((r) => ({
       camp_instance_id: campInstanceId,
-      student_id: n.student_id,
+      student_id: r.student_id,
       coach_id: coach.id,
-      student_visible_note: n.student_visible_note || null,
-      coach_private_note: n.coach_private_note || null,
+      approved: r.approved,
+      finalized_at: finalizedAt,
+      student_visible_note: r.student_visible_note || null,
+      coach_private_note: r.coach_private_note || null,
     }));
     await admin
       .from('camp_final_evaluations')
-      .upsert(noteRows, { onConflict: 'camp_instance_id,student_id' });
+      .upsert(rows, { onConflict: 'camp_instance_id,student_id' });
   }
 
   await admin

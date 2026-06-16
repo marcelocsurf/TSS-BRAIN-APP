@@ -579,10 +579,23 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <div className="space-y-4">
             {campNotes.map((n) => (
               <div key={n.camp_instance_id} className="rounded-xl border border-gray-100 p-3">
-                <p className="text-sm font-semibold text-[var(--tss-navy)]">{n.camp_name || 'Camp'}</p>
-                {n.created_at && (
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-[var(--tss-navy)]">{n.camp_name || 'Camp'}</p>
+                  {n.approved != null && (
+                    n.approved ? (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                        In progress
+                      </span>
+                    )
+                  )}
+                </div>
+                {(n.finalized_at || n.created_at) && (
                   <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2" style={{ fontFamily: 'DM Mono, monospace' }}>
-                    {n.created_at.slice(0, 10)}
+                    {(n.finalized_at || n.created_at)!.slice(0, 10)}
                   </p>
                 )}
                 {n.student_visible_note && (
