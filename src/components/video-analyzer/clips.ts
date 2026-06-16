@@ -23,11 +23,19 @@ export function makeThumb(url: string): Promise<string | undefined> {
     v.playsInline = true;
     v.preload = "auto";
 
+    let settled = false;
     const done = (val: string | undefined) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       v.removeAttribute("src");
       v.load();
       resolve(val);
     };
+
+    // iPad/Safari can leave a decoder stuck when several videos load at
+    // once — bail after 8s so the slot frees and the clip still lists.
+    const timer = setTimeout(() => done(undefined), 8000);
 
     v.onloadeddata = () => {
       try {

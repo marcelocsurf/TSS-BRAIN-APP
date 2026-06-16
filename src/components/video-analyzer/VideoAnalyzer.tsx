@@ -81,10 +81,13 @@ export default function VideoAnalyzer() {
           name: f.name,
           url: URL.createObjectURL(f),
         }));
-        // Generate thumbnails asynchronously and patch them in.
-        added.forEach((clip) => {
-          makeThumb(clip.url).then((thumb) => {
-            if (!thumb) return;
+        // Generate thumbnails ONE AT A TIME — iPad/Safari can only decode a
+        // few videos concurrently, so firing all at once made some clips
+        // (and the player) fail to load. Sequential keeps every clip stable.
+        (async () => {
+          for (const clip of added) {
+            const thumb = await makeThumb(clip.url);
+            if (!thumb) continue;
             setGroups((cur) =>
               cur.map((gg) => ({
                 ...gg,
@@ -93,8 +96,8 @@ export default function VideoAnalyzer() {
                 ),
               }))
             );
-          });
-        });
+          }
+        })();
         return { ...g, clips: [...g.clips, ...added] };
       })
     );
