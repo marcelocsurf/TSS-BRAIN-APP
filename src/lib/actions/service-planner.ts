@@ -152,6 +152,9 @@ export interface StudentProfileSnapshot {
   surf_frequency: string | null;
   swim_level: string | null;
   board_type: string | null;
+  board_length_feet: string | null;
+  board_length_inches: string | null;
+  board_volume_liters: string | null;
   favorite_wave_size: string | null;
   progression_status: string | null;
   current_sequence_number: number | null;
@@ -312,7 +315,8 @@ export async function getServicePlan(
       'student_id, students:student_id(' +
         'id, first_name, last_name, belt_level, photo_url, age, date_of_birth, weight, height, ocean_level, ' +
         'ocean_quiz_score, stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
-        'board_type, favorite_wave_size, progression_status, ' +
+        'board_type, board_length_feet, board_length_inches, board_volume_liters, ' +
+        'favorite_wave_size, progression_status, ' +
         'current_sequence_number, current_step_order, ' +
         'emergency_contact_name, emergency_contact_phone, ' +
         'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
@@ -451,6 +455,9 @@ export async function getServicePlan(
         surf_frequency: s?.surf_frequency ?? null,
         swim_level: s?.swim_level ?? null,
         board_type: s?.board_type ?? null,
+        board_length_feet: s?.board_length_feet ?? null,
+        board_length_inches: s?.board_length_inches ?? null,
+        board_volume_liters: s?.board_volume_liters ?? null,
         favorite_wave_size: s?.favorite_wave_size ?? null,
         progression_status: s?.progression_status ?? null,
         current_sequence_number: s?.current_sequence_number ?? null,

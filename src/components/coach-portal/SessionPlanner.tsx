@@ -1734,16 +1734,30 @@ function StudentPlanCard({
                 Board for today
               </p>
               {/* Reference from intake: the board the student said they
-                  usually ride. Blank when they've never surfed / didn't
-                  fill it — coach then picks based on level + needs. */}
-              {student.profile.board_type && (
-                <p className="text-[10px] text-gray-400 truncate">
-                  Usa normalmente:{' '}
-                  <span className="font-semibold text-[var(--tss-navy)]">
-                    {student.profile.board_type}
-                  </span>
-                </p>
-              )}
+                  usually ride (type + exact size + volume). Blank when
+                  they've never surfed / didn't fill it — coach then picks
+                  based on level + needs. */}
+              {(() => {
+                const p = student.profile;
+                const feet = p.board_length_feet;
+                const inches = p.board_length_inches;
+                const size = feet
+                  ? `${feet}'${inches && inches !== '0' ? inches + '"' : ''}`
+                  : null;
+                const vol = p.board_volume_liters
+                  ? `${p.board_volume_liters}L`
+                  : null;
+                const ref = [p.board_type, size, vol].filter(Boolean).join(' · ');
+                if (!ref) return null;
+                return (
+                  <p className="text-[10px] text-gray-400 truncate">
+                    Usa normalmente:{' '}
+                    <span className="font-semibold text-[var(--tss-navy)]">
+                      {ref}
+                    </span>
+                  </p>
+                );
+              })()}
             </div>
             <div className="grid grid-cols-3 gap-2">
               <SelectField

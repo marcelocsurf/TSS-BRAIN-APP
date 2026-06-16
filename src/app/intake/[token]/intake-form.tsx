@@ -17,6 +17,9 @@ interface StudentData {
   surf_experience_years?: string | null;
   surf_frequency?: string | null;
   board_type?: string | null;
+  board_length_feet?: string | null;
+  board_length_inches?: string | null;
+  board_volume_liters?: string | null;
   other_sports?: string | null;
   learning_style?: string | null;
   board_familiarity?: string | null;
@@ -100,6 +103,9 @@ export function IntakeForm({ token, student }: Props) {
     surf_experience_years: student.surf_experience_years || '',
     surf_frequency: student.surf_frequency || '',
     board_type: student.board_type || '',
+    board_length_feet: student.board_length_feet || '',
+    board_length_inches: student.board_length_inches || '',
+    board_volume_liters: student.board_volume_liters || '',
     other_sports: student.other_sports || '',
     learning_style: student.learning_style || '',
     board_familiarity: student.board_familiarity || '',
@@ -529,6 +535,28 @@ export function IntakeForm({ token, student }: Props) {
                   '', 'Foamie / Soft top', 'Funboard',
                   'Shortboard', 'Longboard', 'Several',
                 ]}
+              />
+              {/* Exact board size + volume — optional reference for the coach
+                  when choosing today's board. Leave blank if you don't know. */}
+              <FormRow>
+                <Select
+                  label="Board length (feet)"
+                  value={(extForm.board_length_feet as string) || ''}
+                  onChange={(v) => setExt('board_length_feet', v)}
+                  options={['', '5', '6', '7', '8', '9', '10', '11', '12']}
+                />
+                <Select
+                  label="Inches"
+                  value={(extForm.board_length_inches as string) || ''}
+                  onChange={(v) => setExt('board_length_inches', v)}
+                  options={['', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']}
+                />
+              </FormRow>
+              <Field
+                label="Board volume (liters) — if you know it"
+                value={(extForm.board_volume_liters as string) || ''}
+                onChange={(v) => setExt('board_volume_liters', v)}
+                placeholder="e.g. 32"
               />
               <OptionGroup
                 label="What wave size are you comfortable with today?"

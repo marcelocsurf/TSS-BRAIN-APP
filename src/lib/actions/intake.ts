@@ -34,6 +34,9 @@ export interface IntakeFormInput {
   surf_experience_years?: string;
   surf_frequency?: string;
   board_type?: string;
+  board_length_feet?: string;
+  board_length_inches?: string;
+  board_volume_liters?: string;
   other_sports?: string;
   learning_style?: string;
 
