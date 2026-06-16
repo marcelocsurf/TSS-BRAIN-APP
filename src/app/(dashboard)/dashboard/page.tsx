@@ -11,6 +11,7 @@ import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
+import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -238,6 +239,9 @@ async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Video Analyzer — quick clip analysis tool (client-only, lazy) */}
+      <VideoAnalyzerLauncher variant="card" />
+
       {/* System Stats */}
       <div>
         <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>System Stats</h3>

@@ -11,6 +11,7 @@ import { PendingAssignments } from './PendingAssignments';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
+import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import {
   Home,
   BookOpen,
@@ -968,6 +969,9 @@ function ToolsTab({ stps, coach }: { stps: any[]; coach: any }) {
           {' '}Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
         </p>
       </div>
+
+      {/* Video Analyzer — draw on a student clip (client-only, lazy) */}
+      <VideoAnalyzerLauncher variant="card" />
 
       {sequences.map(([key, g]) => (
         <SequenceGroup key={key} group={g} token={coach.portal_token} />
