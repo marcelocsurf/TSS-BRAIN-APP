@@ -206,7 +206,7 @@ export default function VideoAnalyzer() {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
-      <header className="flex items-center gap-3 px-3 py-2">
+      <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2">
         <h1 className="text-base font-extrabold tracking-tight">
           TSS Quick Video Analyzer
         </h1>
@@ -238,7 +238,7 @@ export default function VideoAnalyzer() {
 
       <div className="flex min-h-0 flex-1">
         {showLibrary && (
-          <aside className="flex w-64 shrink-0 flex-col border-r border-white/10">
+          <aside className="flex w-44 shrink-0 flex-col border-r border-white/10">
             <div className="flex gap-1 p-2">
               <button
                 onClick={() => setSidebarTab("students")}

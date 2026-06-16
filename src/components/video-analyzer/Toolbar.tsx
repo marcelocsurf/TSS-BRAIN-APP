@@ -33,7 +33,7 @@ export default function Toolbar({
   const btn = "rounded-xl px-3 py-3 text-sm font-semibold active:scale-95 transition";
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-white/10 bg-black/60 p-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 bg-black/60 p-2">
       <span className="px-1 text-xs text-white/50">Dibujar en: {activeLabel}</span>
 
       <div className="flex gap-1">
