@@ -207,8 +207,11 @@ export default function VideoAnalyzer() {
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
       <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2 pr-24">
-        <h1 className="text-base font-extrabold tracking-tight">
-          TSS Quick Video Analyzer
+        <h1
+          className="text-lg font-bold tracking-tight"
+          style={{ fontFamily: 'var(--font-heading, Playfair Display), serif' }}
+        >
+          Video Analyzer
         </h1>
         {/* Layout toggle: 2 panels, only student, or only model */}
         <div className="ml-auto flex gap-1">
@@ -278,7 +281,7 @@ export default function VideoAnalyzer() {
         )}
 
         <main
-          className={`grid min-h-0 flex-1 gap-2 p-2 ${
+          className={`grid min-h-0 flex-1 gap-2 p-2 [grid-template-rows:minmax(0,1fr)] ${
             layout === "dual" ? "grid-cols-2" : "grid-cols-1"
           }`}
         >
