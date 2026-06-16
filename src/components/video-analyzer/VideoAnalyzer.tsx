@@ -207,12 +207,20 @@ export default function VideoAnalyzer() {
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
       <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2 pr-24">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/tss-logo-white.png" alt="The Surf Sequence" className="h-6 w-auto" />
         <h1
           className="text-lg font-bold tracking-tight"
           style={{ fontFamily: 'var(--font-heading, Playfair Display), serif' }}
         >
           Video Analyzer
         </h1>
+        <span
+          className="hidden sm:inline text-[10px] uppercase tracking-[0.15em] text-[#5AC3E7]"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          The Surf Sequence
+        </span>
         {/* Layout toggle: 2 panels, only student, or only model */}
         <div className="ml-auto flex gap-1">
           {([
