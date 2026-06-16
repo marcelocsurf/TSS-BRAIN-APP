@@ -44,19 +44,24 @@ export function VideoAnalyzerLauncher({
       )}
 
       {open && (
-        <div className="fixed inset-0 z-[100] bg-white flex flex-col">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 shrink-0">
-            <p className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
-              <Video size={15} strokeWidth={1.75} /> Video Analyzer
-            </p>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)] px-2 py-1"
-            >
-              <X size={15} /> Close
-            </button>
-          </div>
+        <div
+          className="fixed inset-0 z-[100] bg-[#0B1B2B] flex flex-col"
+          style={{
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          {/* Floating close — no full header bar, so the analyzer gets the
+              full height (matters on iPad landscape). */}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="absolute right-3 z-[110] inline-flex items-center gap-1 rounded-lg bg-black/50 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur"
+            style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
+            aria-label="Close video analyzer"
+          >
+            <X size={15} /> Close
+          </button>
           <div className="flex-1 min-h-0">
             <VideoAnalyzer />
           </div>

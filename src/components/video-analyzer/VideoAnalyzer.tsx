@@ -206,7 +206,7 @@ export default function VideoAnalyzer() {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
-      <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2">
+      <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2 pr-24">
         <h1 className="text-base font-extrabold tracking-tight">
           TSS Quick Video Analyzer
         </h1>

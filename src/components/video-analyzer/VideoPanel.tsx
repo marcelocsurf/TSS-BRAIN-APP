@@ -199,7 +199,7 @@ export default function VideoPanel({
 
       <div
         ref={wrapRef}
-        className="relative flex-1 overflow-hidden bg-black"
+        className="relative min-h-0 flex-1 overflow-hidden bg-black"
         onPointerDown={onActivate}
       >
         {src ? (
@@ -258,7 +258,7 @@ export default function VideoPanel({
       </div>
 
       {src && (
-        <div className="space-y-2 p-2">
+        <div className="shrink-0 space-y-2 p-2">
           <input
             type="range"
             min={0}
