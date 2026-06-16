@@ -463,6 +463,8 @@ function HomeTab({
   // M45 — official services (camp_instances) take precedence over legacy
   // multi_block_sessions. If both exist we show the camp card first.
   const upcomingCamps = (data as any).upcomingCamps ?? [];
+  // Most recent past camp where the coach left a final-evaluation note.
+  const campWithNote = ((data as any).pastCamps ?? []).find((c: any) => c.coach_final_note);
   const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
   const fmtHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -485,6 +487,24 @@ function HomeTab({
       {/* Legacy: upcoming multi-block session card (deprecated). */}
       {upcomingCamps.length === 0 && upcoming.length > 0 && (
         <UpcomingSessionCard upcoming={upcoming[0]} />
+      )}
+
+      {/* Coach's final-evaluation note for the student (camp graduation) */}
+      {campWithNote && (
+        <div>
+          <p className="tss-section-label">
+            <Brain size={11} strokeWidth={1.75} />
+            Your Coach's Note · {campWithNote.camp_name}
+          </p>
+          <div
+            className="rounded-2xl px-5 py-4 bg-white border border-gray-100"
+            style={{ borderLeft: `4px solid ${BRAND.colors.cyan}` }}
+          >
+            <p className="text-sm text-[var(--tss-navy)] leading-relaxed whitespace-pre-line">
+              {campWithNote.coach_final_note}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* ── Your Journey — Belt Journey hero (carries the student's belt

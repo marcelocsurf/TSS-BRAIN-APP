@@ -1167,6 +1167,40 @@ export async function submitFinalEvaluation(
   return data;
 }
 
+// Coach/bitácora-only: final-evaluation notes for a student across their
+// camps, including the PRIVATE coach note (never exposed to the student
+// portal). Verifies the caller is an authenticated coach before reading.
+export async function getCampNotesForStudent(studentId: string): Promise<Array<{
+  camp_instance_id: string;
+  camp_name: string | null;
+  student_visible_note: string | null;
+  coach_private_note: string | null;
+  created_at: string | null;
+}>> {
+  const coach = await getCurrentCoach();
+  if (!coach) return [];
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_final_evaluations')
+    .select('camp_instance_id, student_visible_note, coach_private_note, created_at, camp_instances(camp_name)')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: false });
+
+  return (data ?? [])
+    .map((r: any) => {
+      const ci = Array.isArray(r.camp_instances) ? r.camp_instances[0] : r.camp_instances;
+      return {
+        camp_instance_id: r.camp_instance_id,
+        camp_name: ci?.camp_name ?? null,
+        student_visible_note: r.student_visible_note ?? null,
+        coach_private_note: r.coach_private_note ?? null,
+        created_at: r.created_at ?? null,
+      };
+    })
+    .filter((r) => r.student_visible_note || r.coach_private_note);
+}
+
 export async function getFinalEvaluation(campId: string, studentId: string) {
   const supabase = await createClient();
 

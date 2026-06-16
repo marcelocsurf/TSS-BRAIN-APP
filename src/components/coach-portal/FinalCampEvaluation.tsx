@@ -35,6 +35,9 @@ export function FinalCampEvaluation({
   onCompleted,
 }: Props) {
   const [ratings, setRatings] = useState<RatingsMap>({});
+  // Per-student written notes: one the student sees in their portal, one
+  // private (coach + bitácora/profile only).
+  const [notes, setNotes] = useState<Record<string, { visible: string; private: string }>>({});
   const [pending, startTransition] = useTransition();
   const [openStudent, setOpenStudent] = useState<string | null>(students[0]?.student_id ?? null);
 
@@ -42,6 +45,17 @@ export function FinalCampEvaluation({
     setRatings((prev) => ({
       ...prev,
       [studentId]: { ...(prev[studentId] ?? {}), [stepId]: rating },
+    }));
+  };
+
+  const setNote = (studentId: string, field: 'visible' | 'private', value: string) => {
+    setNotes((prev) => ({
+      ...prev,
+      [studentId]: {
+        visible: prev[studentId]?.visible ?? '',
+        private: prev[studentId]?.private ?? '',
+        [field]: value,
+      },
     }));
   };
 
@@ -63,9 +77,17 @@ export function FinalCampEvaluation({
       }
     }
 
+    const notesPayload = Object.keys(notes)
+      .map((studentId) => ({
+        student_id: studentId,
+        student_visible_note: notes[studentId]?.visible?.trim() ?? '',
+        coach_private_note: notes[studentId]?.private?.trim() ?? '',
+      }))
+      .filter((n) => n.student_visible_note || n.coach_private_note);
+
     startTransition(async () => {
       try {
-        await closeCampFinal(token, campInstanceId, payload);
+        await closeCampFinal(token, campInstanceId, payload, notesPayload);
         onCompleted();
       } catch (e: any) {
         alert(e.message || 'Failed to finalize camp.');
@@ -74,10 +96,10 @@ export function FinalCampEvaluation({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--tss-navy)]/80 backdrop-blur-sm overflow-y-auto">
-      <div className="max-w-lg mx-auto min-h-screen bg-[var(--tss-gray-50,#F6F7F9)] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-[var(--tss-navy)]/80 backdrop-blur-sm">
+      <div className="max-w-lg mx-auto h-[100dvh] bg-[var(--tss-gray-50,#F6F7F9)] flex flex-col">
         <div
-          className="text-white px-4 py-5 sticky top-0 z-10"
+          className="text-white px-4 py-5 shrink-0"
           style={{ background: BRAND.colors.navy }}
         >
           <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">
@@ -93,7 +115,7 @@ export function FinalCampEvaluation({
           </p>
         </div>
 
-        <div className="flex-1 p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {students.map((s) => {
             const isOpen = openStudent === s.student_id;
             const rated = studentRatedCount(s.student_id);
@@ -159,6 +181,34 @@ export function FinalCampEvaluation({
                         </div>
                       );
                     })}
+
+                    {/* Written notes — one the student sees, one private */}
+                    <div className="pt-3 mt-1 border-t border-gray-100 space-y-3">
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
+                          Note for {s.display_name.split(' ')[0]} (they will see this)
+                        </label>
+                        <textarea
+                          value={notes[s.student_id]?.visible ?? ''}
+                          onChange={(e) => setNote(s.student_id, 'visible', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                          placeholder="What they achieved, what to keep working on — shows in the student's portal."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-500 mb-1">
+                          🔒 Private coach note (bitácora / profile only)
+                        </label>
+                        <textarea
+                          value={notes[s.student_id]?.private ?? ''}
+                          onChange={(e) => setNote(s.student_id, 'private', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)] bg-gray-50"
+                          placeholder="Only the coach and those with profile/bitácora access see this. The student never sees it."
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -166,7 +216,7 @@ export function FinalCampEvaluation({
           })}
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-3 flex gap-2">
+        <div className="shrink-0 bg-white border-t border-gray-200 p-3 flex gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={onCancel}

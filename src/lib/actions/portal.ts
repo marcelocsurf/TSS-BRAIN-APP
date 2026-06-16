@@ -284,6 +284,24 @@ export async function getStudentPortalData(token: string) {
   upcomingCamps.sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''));
   pastCamps.sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? ''));
 
+  // Final-evaluation note the coach wrote for this student (student-visible
+  // only — coach_private_note is intentionally NOT selected here). Attach to
+  // each past camp so the portal can show "your coach's note".
+  if (pastCamps.length > 0) {
+    const { data: finalNotes } = await admin
+      .from('camp_final_evaluations')
+      .select('camp_instance_id, student_visible_note')
+      .eq('student_id', student.id)
+      .in('camp_instance_id', pastCamps.map((c) => c.id));
+    const noteByCamp = new Map<string, string>();
+    for (const n of finalNotes ?? []) {
+      if (n.student_visible_note) noteByCamp.set(n.camp_instance_id, n.student_visible_note);
+    }
+    for (const c of pastCamps) {
+      c.coach_final_note = noteByCamp.get(c.id) ?? null;
+    }
+  }
+
   // For each upcoming camp, pull its next day's blocks so the student
   // sees what they'll work on. The "next day" = first camp_session whose
   // session_date >= today, or day 1 if all are in the past.

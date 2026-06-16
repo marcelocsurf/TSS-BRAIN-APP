@@ -1166,6 +1166,7 @@ export async function closeCampFinal(
   token: string,
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
+  notes?: Array<{ student_id: string; student_visible_note: string; coach_private_note: string }>,
 ): Promise<void> {
   const admin = createAdminClient();
 
@@ -1199,6 +1200,22 @@ export async function closeCampFinal(
     await admin
       .from('student_step_ratings')
       .upsert(rows, { onConflict: 'student_id,step_id' });
+  }
+
+  // Per-student written notes from the final evaluation. One row per
+  // (camp, student) in camp_final_evaluations: student_visible_note shows
+  // in the student portal; coach_private_note is coach/bitácora-only.
+  if (notes && notes.length > 0) {
+    const noteRows = notes.map((n) => ({
+      camp_instance_id: campInstanceId,
+      student_id: n.student_id,
+      coach_id: coach.id,
+      student_visible_note: n.student_visible_note || null,
+      coach_private_note: n.coach_private_note || null,
+    }));
+    await admin
+      .from('camp_final_evaluations')
+      .upsert(noteRows, { onConflict: 'camp_instance_id,student_id' });
   }
 
   await admin

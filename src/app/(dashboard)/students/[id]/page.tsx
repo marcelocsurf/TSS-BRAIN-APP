@@ -19,6 +19,7 @@ import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { CoursesPanel } from '@/components/student/CoursesPanel';
 import { listStudentCourseGrants } from '@/lib/actions/course-grants';
+import { getCampNotesForStudent } from '@/lib/actions/camps';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
 import { LearningProfileCard } from '@/components/student/LearningProfileCard';
 import { OfficialEvaluationPanel } from '@/components/student/OfficialEvaluationPanel';
@@ -102,6 +103,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   } catch {
     // Not a coach — evaluation buttons won't show
   }
+
+  // Final-evaluation camp notes (coach/bitácora only — includes the private note)
+  const campNotes = await getCampNotesForStudent(id);
 
   const [
     levelAccess,
@@ -560,6 +564,44 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           provisional={!!(student as any).ocean_level_provisional}
         />
       </CollapsibleSection>
+
+      {/* --- 3c-bis. CAMP FINAL-EVALUATION NOTES (collapsible) --- */}
+      {campNotes.length > 0 && (
+        <CollapsibleSection
+          title={
+            <>
+              <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              Camp Evaluation Notes
+            </>
+          }
+          defaultOpen={false}
+        >
+          <div className="space-y-4">
+            {campNotes.map((n) => (
+              <div key={n.camp_instance_id} className="rounded-xl border border-gray-100 p-3">
+                <p className="text-sm font-semibold text-[var(--tss-navy)]">{n.camp_name || 'Camp'}</p>
+                {n.created_at && (
+                  <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2" style={{ fontFamily: 'DM Mono, monospace' }}>
+                    {n.created_at.slice(0, 10)}
+                  </p>
+                )}
+                {n.student_visible_note && (
+                  <div className="mb-2 rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Student sees this</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{n.student_visible_note}</p>
+                  </div>
+                )}
+                {n.coach_private_note && (
+                  <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">🔒 Private — coach only</p>
+                    <p className="text-sm text-amber-900 whitespace-pre-line">{n.coach_private_note}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {/* --- 3d. COURSE PROGRESS (collapsible) --- */}
       <CollapsibleSection
