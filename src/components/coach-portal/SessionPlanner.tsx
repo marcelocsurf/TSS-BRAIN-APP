@@ -1729,9 +1729,22 @@ function StudentPlanCard({
         const firstBlock = blocks[0];
         return (
           <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
-              Board for today
-            </p>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+                Board for today
+              </p>
+              {/* Reference from intake: the board the student said they
+                  usually ride. Blank when they've never surfed / didn't
+                  fill it — coach then picks based on level + needs. */}
+              {student.profile.board_type && (
+                <p className="text-[10px] text-gray-400 truncate">
+                  Usa normalmente:{' '}
+                  <span className="font-semibold text-[var(--tss-navy)]">
+                    {student.profile.board_type}
+                  </span>
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <SelectField
                 label="Type"
