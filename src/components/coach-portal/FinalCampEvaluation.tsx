@@ -19,11 +19,18 @@ interface Props {
   campName: string;
   students: ServicePlanStudent[];
   stpCatalog: ServicePlanData['stpCatalog'];
+  // Coach ratings already given across the camp days (student → step →
+  // rating). Pre-loaded so the final evaluation reflects daily progress
+  // and the coach only adjusts what changed.
+  initialRatings?: RatingsMap;
   onCancel: () => void;
   onCompleted: () => void;
 }
 
 type RatingsMap = Record<string, Record<string, number>>; // student → step → rating
+
+// A student is approved when EVERY part of the sequence has >= 4 stars.
+const PASS_THRESHOLD = 4;
 
 export function FinalCampEvaluation({
   token,
@@ -31,10 +38,19 @@ export function FinalCampEvaluation({
   campName,
   students,
   stpCatalog,
+  initialRatings,
   onCancel,
   onCompleted,
 }: Props) {
-  const [ratings, setRatings] = useState<RatingsMap>({});
+  // Seed from the ratings already given during the camp days so they show
+  // up here (deep-copied so edits don't mutate the parent's map).
+  const [ratings, setRatings] = useState<RatingsMap>(() => {
+    const seed: RatingsMap = {};
+    for (const sid of Object.keys(initialRatings ?? {})) {
+      seed[sid] = { ...(initialRatings![sid] ?? {}) };
+    }
+    return seed;
+  });
   // Per-student written notes: one the student sees in their portal, one
   // private (coach + bitácora/profile only).
   const [notes, setNotes] = useState<Record<string, { visible: string; private: string }>>({});
@@ -60,10 +76,22 @@ export function FinalCampEvaluation({
   };
 
   const studentRatedCount = (studentId: string): number =>
-    Object.keys(ratings[studentId] ?? {}).length;
+    stpCatalog.filter((stp) => (ratings[studentId]?.[stp.id] ?? 0) > 0).length;
+
+  // Steps that are rated but below the pass threshold (i.e. blocking approval).
+  const studentWeakCount = (studentId: string): number =>
+    stpCatalog.filter((stp) => {
+      const r = ratings[studentId]?.[stp.id] ?? 0;
+      return r > 0 && r < PASS_THRESHOLD;
+    }).length;
+
+  // Approved = every part of the sequence rated AND all >= 4 stars.
+  const studentApproved = (studentId: string): boolean =>
+    stpCatalog.every((stp) => (ratings[studentId]?.[stp.id] ?? 0) >= PASS_THRESHOLD);
 
   const totalRated = students.reduce((sum, s) => sum + studentRatedCount(s.student_id), 0);
   const totalNeeded = students.length * stpCatalog.length;
+  const approvedCount = students.filter((s) => studentApproved(s.student_id)).length;
 
   const submit = () => {
     const payload: Array<{ student_id: string; step_id: string; rating: number }> = [];
@@ -110,8 +138,16 @@ export function FinalCampEvaluation({
             Rate every step of the sequence for every student. These cyan
             stars become the official TSS record in their portal.
           </p>
-          <p className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] mt-2 font-semibold">
-            {totalRated} / {totalNeeded} steps rated
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold">
+              {totalRated} / {totalNeeded} steps rated
+            </p>
+            <p className="text-[11px] text-white/80 font-semibold">
+              {approvedCount} / {students.length} approved
+            </p>
+          </div>
+          <p className="text-[10px] text-white/50 mt-1">
+            Approved = at least {PASS_THRESHOLD}★ on every part of the sequence.
           </p>
         </div>
 
@@ -157,20 +193,37 @@ export function FinalCampEvaluation({
                       </p>
                     </div>
                   </div>
-                  <span className={`text-gray-400 text-xs transition ${isOpen ? 'rotate-180' : ''}`}>
-                    ▾
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {studentApproved(s.student_id) ? (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
+                        {rated < stpCatalog.length
+                          ? `${stpCatalog.length - rated} unrated`
+                          : `${studentWeakCount(s.student_id)} below ${PASS_THRESHOLD}★`}
+                      </span>
+                    )}
+                    <span className={`text-gray-400 text-xs transition ${isOpen ? 'rotate-180' : ''}`}>
+                      ▾
+                    </span>
+                  </div>
                 </button>
 
                 {isOpen && (
                   <div className="p-3 border-t border-gray-100 space-y-2.5">
                     {stpCatalog.map((stp) => {
                       const current = ratings[s.student_id]?.[stp.id] ?? null;
+                      const weak = current != null && current < PASS_THRESHOLD;
                       return (
                         <div key={stp.id} className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-mono text-gray-400">{stp.id}</p>
-                            <p className="text-[12px] text-gray-800 truncate">{stp.title}</p>
+                            <p className="text-[11px] font-mono text-gray-400">
+                              {stp.id}
+                              {weak && <span className="ml-1 text-amber-600">· below {PASS_THRESHOLD}★</span>}
+                            </p>
+                            <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
                           </div>
                           <StarRating
                             value={current}
