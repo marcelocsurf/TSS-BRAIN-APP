@@ -12,6 +12,7 @@ import { BRAND } from '@/lib/constants/brand';
 import { StarRating } from '@/components/sequence/StarRating';
 import { closeCampFinal } from '@/lib/actions/service-planner';
 import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-planner';
+import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 
 interface Props {
   token: string;
@@ -23,6 +24,9 @@ interface Props {
   // rating). Pre-loaded so the final evaluation reflects daily progress
   // and the coach only adjusts what changed.
   initialRatings?: RatingsMap;
+  // Belt this camp graduates students into (e.g. 'yellow_belt'). When an
+  // approved student is below it, the coach is offered a promotion.
+  targetBelt?: string | null;
   onCancel: () => void;
   onCompleted: () => void;
 }
@@ -39,6 +43,7 @@ export function FinalCampEvaluation({
   students,
   stpCatalog,
   initialRatings,
+  targetBelt,
   onCancel,
   onCompleted,
 }: Props) {
@@ -94,6 +99,18 @@ export function FinalCampEvaluation({
   const totalNeeded = students.length * stpCatalog.length;
   const approvedCount = students.filter((s) => studentApproved(s.student_id)).length;
 
+  // Belt promotion: offered for approved students whose current belt is
+  // below the camp's target belt. Coach confirms (default on).
+  const targetBeltValid = !!targetBelt && targetBelt in BELT_RANK;
+  const targetBeltLabel = targetBeltValid ? BELT_DISPLAY[targetBelt as BeltLevel]?.en : null;
+  const canPromote = (s: ServicePlanStudent): boolean => {
+    if (!targetBeltValid || !studentApproved(s.student_id)) return false;
+    const cur = s.belt_level ? BELT_RANK[s.belt_level as BeltLevel] ?? 0 : 0;
+    return BELT_RANK[targetBelt as BeltLevel] > cur;
+  };
+  const [promote, setPromote] = useState<Record<string, boolean>>({});
+  const willPromote = (s: ServicePlanStudent) => canPromote(s) && (promote[s.student_id] ?? true);
+
   const submit = () => {
     const payload: Array<{ student_id: string; step_id: string; rating: number }> = [];
     for (const studentId of Object.keys(ratings)) {
@@ -114,9 +131,13 @@ export function FinalCampEvaluation({
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
     }));
 
+    const promotionsPayload = students
+      .filter((s) => willPromote(s))
+      .map((s) => ({ student_id: s.student_id, belt_level: targetBelt as string }));
+
     startTransition(async () => {
       try {
-        await closeCampFinal(token, campInstanceId, payload, resultsPayload);
+        await closeCampFinal(token, campInstanceId, payload, resultsPayload, promotionsPayload);
         onCompleted();
       } catch (e: any) {
         alert(e.message || 'Failed to finalize camp.');
@@ -305,19 +326,35 @@ export function FinalCampEvaluation({
               {students.map((s) => {
                 const ok = studentApproved(s.student_id);
                 const rated = studentRatedCount(s.student_id);
+                const promotable = canPromote(s);
                 return (
-                  <div key={s.student_id} className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-gray-800 truncate">{s.display_name}</p>
-                    {ok ? (
-                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                        Approved
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                        {rated < stpCatalog.length
-                          ? `${stpCatalog.length - rated} unrated`
-                          : `${studentWeakCount(s.student_id)} below ${PASS_THRESHOLD}★`}
-                      </span>
+                  <div key={s.student_id} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm text-gray-800 truncate">{s.display_name}</p>
+                      {ok ? (
+                        <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                          Approved
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                          {rated < stpCatalog.length
+                            ? `${stpCatalog.length - rated} unrated`
+                            : `${studentWeakCount(s.student_id)} below ${PASS_THRESHOLD}★`}
+                        </span>
+                      )}
+                    </div>
+                    {promotable && (
+                      <label className="flex items-center gap-2 pl-1 text-[12px] text-[var(--tss-navy)] cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={promote[s.student_id] ?? true}
+                          onChange={(e) =>
+                            setPromote((prev) => ({ ...prev, [s.student_id]: e.target.checked }))
+                          }
+                          className="accent-[var(--tss-cyan,#5AC3E7)]"
+                        />
+                        Promote to {targetBeltLabel}
+                      </label>
                     )}
                   </div>
                 );

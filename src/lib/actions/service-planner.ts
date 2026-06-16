@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ export interface ServicePlanData {
     scheduled_time: string | null;
     template_name: string | null;
     service_kind: string | null;
+    target_belt: string | null;
   };
   // M45 — list of all days (one camp_session per day) so the UI can render
   // a day picker. `selectedDay` is the day currently loaded in `plan` and
@@ -254,7 +256,7 @@ export async function getServicePlan(
   const { data: camp } = await admin
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, camp_templates:template_id(template_name, service_kind, duration_days)'
+      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key)'
     )
     .eq('id', campInstanceId)
     .single();
@@ -677,6 +679,7 @@ export async function getServicePlan(
       scheduled_time: camp.scheduled_time ?? null,
       template_name: tpl?.template_name ?? null,
       service_kind: tpl?.service_kind ?? null,
+      target_belt: tpl?.includes_course_key ?? null,
     },
     plan: {
       venue_analysis: plan?.venue_analysis ?? null,
@@ -1167,6 +1170,7 @@ export async function closeCampFinal(
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
   results?: Array<{ student_id: string; approved: boolean; student_visible_note: string; coach_private_note: string }>,
+  promotions?: Array<{ student_id: string; belt_level: string }>,
 ): Promise<void> {
   const admin = createAdminClient();
 
@@ -1220,6 +1224,27 @@ export async function closeCampFinal(
     await admin
       .from('camp_final_evaluations')
       .upsert(rows, { onConflict: 'camp_instance_id,student_id' });
+  }
+
+  // Belt promotions — coach-confirmed. Only promote UP (never demote): set
+  // the new belt when its rank is higher than the student's current belt.
+  if (promotions && promotions.length > 0) {
+    for (const p of promotions) {
+      const newBelt = p.belt_level as BeltLevel;
+      if (!(newBelt in BELT_RANK)) continue;
+      const { data: stu } = await admin
+        .from('students')
+        .select('belt_level')
+        .eq('id', p.student_id)
+        .single();
+      const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
+      if (BELT_RANK[newBelt] > currentRank) {
+        await admin
+          .from('students')
+          .update({ belt_level: newBelt })
+          .eq('id', p.student_id);
+      }
+    }
   }
 
   await admin
