@@ -208,12 +208,13 @@ export default function VideoPanel({
               ref={videoRef}
               src={src}
               playsInline
-              preload="metadata"
+              preload="auto"
               className="h-full w-full object-contain"
               style={{
                 transformOrigin: "top left",
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               }}
+              onLoadedMetadata={() => setMissing(false)}
               onTimeUpdate={onTimeUpdate}
               onEnded={() => setPlaying(false)}
               onError={() => setMissing(true)}
@@ -241,7 +242,7 @@ export default function VideoPanel({
                 onPointerLeave={panEnd}
               />
             )}
-            {missing && (
+            {missing && !src.startsWith('blob:') && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-4 text-center text-sm text-amber-300">
                 No se pudo cargar este video modelo.
                 <br />
@@ -256,7 +257,7 @@ export default function VideoPanel({
         )}
       </div>
 
-      {src && !missing && (
+      {src && (
         <div className="space-y-2 p-2">
           <input
             type="range"
