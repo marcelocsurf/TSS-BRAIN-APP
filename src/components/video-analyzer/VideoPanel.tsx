@@ -79,6 +79,13 @@ export default function VideoPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
+  // Picking any drawing tool exits pan mode — otherwise the transparent
+  // pan layer stays on top of the canvas and swallows the draw gestures,
+  // so the coach "can't draw" after using the hand tool.
+  useEffect(() => {
+    setPanMode(false);
+  }, [settings.tool]);
+
   function resetView() {
     setZoom(1);
     setPan({ x: 0, y: 0 });
