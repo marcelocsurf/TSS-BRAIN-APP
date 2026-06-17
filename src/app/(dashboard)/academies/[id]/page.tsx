@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
+import { getCurrentCoach } from '@/lib/actions/auth';
 import { AcademyDetail } from './AcademyDetail';
 import { listBoards } from '@/lib/actions/boards';
 import Link from 'next/link';
@@ -14,10 +15,13 @@ interface Props {
 export default async function AcademyDetailPage({ params }: Props) {
   const { id } = await params;
 
-  // Use isRealPlatformAdmin() so the page stays accessible even when the
-  // admin is in act-as mode (otherwise getCurrentCoach() would lie and
-  // kick them out).
-  if (!(await isRealPlatformAdmin())) {
+  // Platform admin can manage any academy. A coordinator/admin of THIS
+  // academy can manage their own (branding, emergency plan, board inventory).
+  const viewerIsPlatformAdmin = await isRealPlatformAdmin();
+  const me = await getCurrentCoach();
+  const managesOwnAcademy =
+    (me?.role === 'coordinator' || me?.role === 'admin') && me?.academy_id === id;
+  if (!viewerIsPlatformAdmin && !managesOwnAcademy) {
     redirect('/dashboard');
   }
 
@@ -78,7 +82,7 @@ export default async function AcademyDetailPage({ params }: Props) {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-4 pb-12">
       <div className="flex items-center gap-2 text-xs text-gray-500">
-        <Link href="/academies" className="hover:text-[var(--tss-navy)]">← Academies</Link>
+        <Link href={viewerIsPlatformAdmin ? '/academies' : '/dashboard'} className="hover:text-[var(--tss-navy)]">← {viewerIsPlatformAdmin ? 'Academies' : 'Dashboard'}</Link>
         <span className="text-gray-300">/</span>
         <span className="text-[var(--tss-navy)] font-semibold">{academy.name}</span>
       </div>
@@ -120,6 +124,7 @@ export default async function AcademyDetailPage({ params }: Props) {
         coaches={(coachesList.data ?? []) as any[]}
         activeServices={(activeServicesList.data ?? []) as any[]}
         boards={boards}
+        viewerIsPlatformAdmin={viewerIsPlatformAdmin}
       />
     </div>
   );

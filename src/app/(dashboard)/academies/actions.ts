@@ -229,8 +229,11 @@ export async function updateAcademyBranding(input: {
   tagline: string | null;
 }) {
   const me = await getCurrentCoach();
-  if (!me?.is_platform_admin) {
-    throw new Error('Only the platform admin can edit academy branding.');
+  const isOwnAcademyLead =
+    (me?.role === 'coordinator' || me?.role === 'admin') &&
+    me?.academy_id === input.academy_id;
+  if (!me?.is_platform_admin && !isOwnAcademyLead) {
+    throw new Error('Only the platform admin or this academy’s coordinator can edit branding.');
   }
 
   const admin = createAdminClient();

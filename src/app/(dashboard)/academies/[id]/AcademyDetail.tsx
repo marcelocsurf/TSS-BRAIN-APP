@@ -67,9 +67,11 @@ interface Props {
   coaches: Coach[];
   activeServices: Service[];
   boards: Board[];
+  /** Platform admin sees admin-only controls (assign coordinator, invite coach, delete). */
+  viewerIsPlatformAdmin?: boolean;
 }
 
-export function AcademyDetail({ academy, coordinator, stats, coaches, activeServices, boards }: Props) {
+export function AcademyDetail({ academy, coordinator, stats, coaches, activeServices, boards, viewerIsPlatformAdmin = false }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -284,7 +286,8 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
         </a>
       </div>
 
-      {/* Coordinator */}
+      {/* Coordinator — admin-only management */}
+      {viewerIsPlatformAdmin && (
       <div className="bg-white rounded-xl border border-gray-100 p-4">
         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
           Coordinator
@@ -316,6 +319,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           </div>
         )}
       </div>
+      )}
 
       {/* Branding editor */}
       <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
@@ -490,12 +494,14 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
             Team Members ({coaches.length})
           </p>
-          <Link
-            href={`/coaches/new?academy_id=${academy.id}`}
-            className="text-[11px] text-[var(--tss-navy)] hover:underline"
-          >
-            + Invite new coach
-          </Link>
+          {viewerIsPlatformAdmin && (
+            <Link
+              href={`/coaches/new?academy_id=${academy.id}`}
+              className="text-[11px] text-[var(--tss-navy)] hover:underline"
+            >
+              + Invite new coach
+            </Link>
+          )}
         </div>
         <p className="text-[10px] text-gray-400 mt-1">
           To move an existing coach to this academy, use the same form —
@@ -567,7 +573,8 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
         )}
       </div>
 
-      {/* Danger zone */}
+      {/* Danger zone — admin only */}
+      {viewerIsPlatformAdmin && (
       <div className="bg-red-50 rounded-xl border border-red-200 p-4 space-y-2">
         <p className="text-[10px] uppercase tracking-wider text-red-600 font-mono">
           Danger zone
@@ -585,6 +592,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           Delete academy
         </button>
       </div>
+      )}
     </div>
   );
 }
