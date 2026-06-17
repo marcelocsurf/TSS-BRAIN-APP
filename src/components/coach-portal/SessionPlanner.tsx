@@ -834,6 +834,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     stpCatalog={data.stpCatalog}
                     availableDrills={data.availableDrills}
                     availableBoards={data.availableBoards}
+                    boardConflictIds={data.boardConflictIds}
                     templateBlocks={tplBlocks}
                     onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                     onAddBlock={() => addStudentBlock(s.student_id)}
@@ -1675,6 +1676,7 @@ function StudentPlanCard({
   stpCatalog,
   availableDrills,
   availableBoards,
+  boardConflictIds,
   templateBlocks,
   onCommit,
   onAddBlock,
@@ -1685,6 +1687,7 @@ function StudentPlanCard({
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
   availableBoards: ServicePlanData['availableBoards'];
+  boardConflictIds: string[];
   templateBlocks: ServicePlanData['templatePlan'][number]['blocks'];
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onAddBlock: () => void;
@@ -1771,11 +1774,14 @@ function StudentPlanCard({
                 set type/size by hand (no inventory). */}
             {availableBoards.length > 0 && (() => {
               const picked = availableBoards.find((b) => b.id === firstBlock.board_id);
+              const conflicts = new Set(boardConflictIds);
               const options = availableBoards
-                .filter((b) => b.status === 'available' || b.id === firstBlock.board_id)
+                // Date-aware: hide repair boards + boards already booked by
+                // another service THAT day. Always keep the current pick.
+                .filter((b) => b.id === firstBlock.board_id || (b.status !== 'in_repair' && !conflicts.has(b.id)))
                 .map((b) => ({
                   value: b.id,
-                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}${b.status !== 'available' ? ' · (en uso)' : ''}`,
+                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}${b.status === 'in_repair' ? ' · (reparación)' : ''}`,
                 }));
               return (
                 <div>

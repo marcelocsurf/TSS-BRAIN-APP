@@ -75,6 +75,11 @@ export interface ServicePlanData {
   graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
   // Academy board inventory available for assignment (M108).
   availableBoards: Array<{ id: string; code: string; board_type: string | null; shape: string | null; length_feet: number | null; length_inches: number | null; volume_liters: string | null; status: string }>;
+  // M108 Fase 4 — board ids already taken by ANOTHER service on the selected
+  // day's date (same academy). The picker hides/disables these to prevent
+  // double-booking. Date-aware, so a board free today isn't blocked by an
+  // unclosed plan on another date.
+  boardConflictIds: string[];
   // M50 — per-(student, step) coach_rating so the cyan StarRating in
   // BlockEvalSection can show the current value. Empty when no rating
   // has been given yet.
@@ -694,6 +699,7 @@ export async function getServicePlan(
 
   // Board inventory for the camp's academy (not retired) — for the planner picker.
   let availableBoards: ServicePlanData['availableBoards'] = [];
+  let boardConflictIds: string[] = [];
   if ((camp as any).academy_id) {
     const { data: boardRows } = await admin
       .from('boards')
@@ -702,6 +708,25 @@ export async function getServicePlan(
       .neq('status', 'retired')
       .order('code');
     availableBoards = (boardRows ?? []) as any[];
+
+    // Fase 4 — boards already booked by ANOTHER service on the same date.
+    if (selectedDay.session_date) {
+      const { data: sameDay } = await admin
+        .from('camp_sessions')
+        .select('id, camp_instances:camp_instance_id!inner(academy_id)')
+        .eq('session_date', selectedDay.session_date)
+        .eq('camp_instances.academy_id', (camp as any).academy_id)
+        .neq('id', selectedDay.camp_session_id);
+      const otherSessionIds = (sameDay ?? []).map((s: any) => s.id);
+      if (otherSessionIds.length > 0) {
+        const { data: takenRows } = await admin
+          .from('service_plan_blocks')
+          .select('board_id')
+          .in('camp_session_id', otherSessionIds)
+          .not('board_id', 'is', null);
+        boardConflictIds = Array.from(new Set((takenRows ?? []).map((r: any) => r.board_id)));
+      }
+    }
   }
 
   return {
@@ -741,6 +766,7 @@ export async function getServicePlan(
     stpCatalog: (stpRows ?? []) as any[],
     graduationCatalog: (gradRows ?? stpRows ?? []) as any[],
     availableBoards,
+    boardConflictIds,
     coachRatingByStudentStep,
     templatePlan,
     templateMeta,
@@ -1007,7 +1033,7 @@ export async function saveServicePlanBlock(
   // Resolve camp_instance through the session for ownership check.
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id, academy_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) throw new Error('Session not found.');
@@ -1017,6 +1043,29 @@ export async function saveServicePlanBlock(
   if (!camp) throw new Error('Service not found.');
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
+  }
+
+  // Fase 4 — date-aware double-booking guard. A board can't be on two
+  // services the same day (same academy).
+  if ('board_id' in patch && patch.board_id && (session as any).session_date && (camp as any).academy_id) {
+    const { data: sameDay } = await admin
+      .from('camp_sessions')
+      .select('id, camp_instances:camp_instance_id!inner(academy_id)')
+      .eq('session_date', (session as any).session_date)
+      .eq('camp_instances.academy_id', (camp as any).academy_id)
+      .neq('id', campSessionId);
+    const otherIds = (sameDay ?? []).map((s: any) => s.id);
+    if (otherIds.length > 0) {
+      const { data: clash } = await admin
+        .from('service_plan_blocks')
+        .select('id')
+        .eq('board_id', patch.board_id)
+        .in('camp_session_id', otherIds)
+        .limit(1);
+      if (clash && clash.length > 0) {
+        throw new Error('Esa tabla ya está asignada a otro servicio ese día. Elegí otra.');
+      }
+    }
   }
 
   // Verify student is in this camp_instance.
