@@ -8,10 +8,16 @@ import { INCIDENT_TYPE_OPTIONS } from '@/lib/constants/brand';
 // fin/leash, fight in the water, mishandled frustration, misunderstanding, or
 // anything general about the session) lands in the coordinator + admin
 // dashboard so everyone stays informed and it's on record.
-export function IncidentReporter({ token }: { token: string }) {
+export function IncidentReporter({
+  token,
+  students = [],
+}: {
+  token: string;
+  students?: { id: string; name: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState('');
-  const [studentName, setStudentName] = useState('');
+  const [studentId, setStudentId] = useState('');
   const [description, setDescription] = useState('');
   const [action, setAction] = useState('');
   const [pending, startTransition] = useTransition();
@@ -27,12 +33,13 @@ export function IncidentReporter({ token }: { token: string }) {
         await reportIncident({
           token,
           incident_type: type,
-          student_name: studentName.trim() || null,
+          student_id: studentId || null,
+          student_name: students.find((s) => s.id === studentId)?.name || null,
           description,
           action_taken: action.trim() || null,
         });
         setDone(true);
-        setType(''); setStudentName(''); setDescription(''); setAction('');
+        setType(''); setStudentId(''); setDescription(''); setAction('');
         setTimeout(() => { setDone(false); setOpen(false); }, 1800);
       } catch (e: any) {
         setError(e.message || 'No se pudo guardar el incidente.');
@@ -71,12 +78,16 @@ export function IncidentReporter({ token }: { token: string }) {
           </div>
           <div>
             <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Alumno involucrado (opcional)</label>
-            <input
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="Dejar vacío si fue algo general de la sesión"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300"
-            />
+            <select
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+            >
+              <option value="">General — sin alumno específico</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Qué pasó *</label>

@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 export async function reportIncident(input: {
   token: string;
   incident_type: string;
+  student_id?: string | null;
   student_name?: string | null;
   description: string;
   action_taken?: string | null;
@@ -27,6 +28,7 @@ export async function reportIncident(input: {
   const { error } = await admin.from('session_incidents').insert({
     academy_id: coach.academy_id ?? null,
     coach_id: coach.id,
+    student_id: input.student_id || null,
     student_name: input.student_name?.trim() || null,
     incident_type: input.incident_type,
     description: input.description.trim(),
@@ -80,6 +82,7 @@ export interface CoachPortalData {
     accent_color: string | null;
     tagline: string | null;
   } | null;
+  myStudents: { id: string; name: string }[];
   emergencyPlan: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -187,15 +190,20 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     ...(pastResult.data ?? []).map((s: any) => s.id),
   ];
   const participantCounts: Record<string, number> = {};
+  const myStudentsMap = new Map<string, string>(); // id → display name
   if (allCampIds.length > 0) {
     const { data: pCounts } = await admin
       .from('camp_participants')
-      .select('camp_instance_id')
+      .select('camp_instance_id, student_id, students:student_id(first_name, last_name)')
       .in('camp_instance_id', allCampIds)
       .eq('enrollment_status', 'active');
     for (const p of pCounts ?? []) {
       participantCounts[p.camp_instance_id] =
         (participantCounts[p.camp_instance_id] || 0) + 1;
+      const stu: any = Array.isArray((p as any).students) ? (p as any).students[0] : (p as any).students;
+      if ((p as any).student_id && stu) {
+        myStudentsMap.set((p as any).student_id, `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim());
+      }
     }
   }
   const enrich = (s: any) => ({ ...s, participant_count: participantCounts[s.id] || 0 });
@@ -270,6 +278,9 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     courseProgress,
     availableDrills,
     stps: await listCoachStps(token),
+    myStudents: Array.from(myStudentsMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
     academyBranding,
     emergencyPlan,
   };
