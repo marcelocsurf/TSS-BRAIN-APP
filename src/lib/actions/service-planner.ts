@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
+import { GRADUATION_RULES } from '@/lib/constants/graduation';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -537,18 +538,21 @@ export async function getServicePlan(
     .eq('active', true)
     .order('display_order');
 
-  // Graduation catalog — belt-aware. The FINAL evaluation rates the sequence
-  // of the belt this camp graduates into: a Yellow Belt camp rates the 8 YB
-  // STPs (027-034); everything else uses the 25 White Belt STPs.
-  const gradSection = tpl?.includes_course_key === 'yellow_belt' ? 'yellow_belt' : 'white_belt';
-  const { data: gradRows } = gradSection === 'white_belt'
-    ? { data: stpRows }
-    : await admin
-        .from('lessons')
-        .select('id, title, pillar, display_order')
-        .eq('course_section', gradSection)
-        .eq('active', true)
-        .order('display_order');
+  // Graduation catalog — belt-aware. The FINAL evaluation rates the full
+  // sequence the belt requires: White Belt = the 25 WB STPs; Yellow Belt =
+  // White + Yellow (33 STPs) so all fundamentals are re-confirmed. Driven
+  // by the belt's GRADUATION_RULES.sections.
+  const gradRule = tpl?.includes_course_key ? GRADUATION_RULES[tpl.includes_course_key] : undefined;
+  const gradSections = gradRule?.sections ?? ['white_belt'];
+  const { data: gradRows } =
+    gradSections.length === 1 && gradSections[0] === 'white_belt'
+      ? { data: stpRows }
+      : await admin
+          .from('lessons')
+          .select('id, title, pillar, display_order')
+          .in('course_section', gradSections)
+          .eq('active', true)
+          .order('display_order');
 
   // M44 — load the template plan if there is a template attached.
   // Days come from camp_template_days, blocks from camp_template_blocks
@@ -1185,7 +1189,7 @@ export async function closeCampFinal(
   token: string,
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
-  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; student_visible_note: string; coach_private_note: string }>,
+  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1234,6 +1238,7 @@ export async function closeCampFinal(
       coach_id: coach.id,
       approved: r.approved,
       readiness_summary: r.readiness_summary || null,
+      ocean_level_recommendation: r.ocean_level || null,
       finalized_at: finalizedAt,
       student_visible_note: r.student_visible_note || null,
       coach_private_note: r.coach_private_note || null,
@@ -1241,6 +1246,31 @@ export async function closeCampFinal(
     await admin
       .from('camp_final_evaluations')
       .upsert(rows, { onConflict: 'camp_instance_id,student_id' });
+
+    // In-water level assessment — write it the same way the bitácora's
+    // Ocean Level evaluation does (history row + student update) so it shows
+    // up in the student's profile and carries to the next camp.
+    for (const r of results) {
+      if (!r.ocean_level) continue;
+      const { data: stu } = await admin
+        .from('students')
+        .select('ocean_level')
+        .eq('id', r.student_id)
+        .single();
+      if (stu?.ocean_level === r.ocean_level) continue; // no change
+      await admin.from('ocean_level_evaluations').insert({
+        student_id: r.student_id,
+        evaluated_by: coach.id,
+        previous_level: stu?.ocean_level ?? null,
+        new_level: r.ocean_level,
+        method: 'evaluation',
+        notes: 'Camp final evaluation',
+      });
+      await admin
+        .from('students')
+        .update({ ocean_level: r.ocean_level, ocean_level_provisional: false })
+        .eq('id', r.student_id);
+    }
   }
 
   // Belt promotions — coach-confirmed. Only promote UP (never demote): set

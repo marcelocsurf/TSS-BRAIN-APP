@@ -14,6 +14,7 @@ import { closeCampFinal } from '@/lib/actions/service-planner';
 import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-planner';
 import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduation';
+import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
 
 interface Props {
   token: string;
@@ -71,6 +72,17 @@ export function FinalCampEvaluation({
     }));
   };
 
+  // In-water level the coach assesses (per student). Seeded from the
+  // student's current ocean level. Written to the bitácora on finalize.
+  const [oceanLevel, setOceanLevel] = useState<Record<string, string>>(() => {
+    const seed: Record<string, string> = {};
+    for (const s of students) {
+      const lvl = (s.profile as any)?.ocean_level;
+      if (lvl) seed[s.student_id] = lvl;
+    }
+    return seed;
+  });
+
   // Canon-principle checkboxes (per student → principle index → met).
   const [principles, setPrinciples] = useState<Record<string, Record<number, boolean>>>({});
   const togglePrinciple = (studentId: string, idx: number, val: boolean) => {
@@ -85,6 +97,7 @@ export function FinalCampEvaluation({
   const rule: GraduationRule =
     (targetBelt && GRADUATION_RULES[targetBelt]) || {
       beltLabel: (targetBelt && BELT_DISPLAY[targetBelt as BeltLevel]?.en) || 'Next level',
+      sections: [],
       stpThreshold: PASS_THRESHOLD,
       minStps: stpCatalog.length,
       principles: [],
@@ -159,6 +172,7 @@ export function FinalCampEvaluation({
       student_id: s.student_id,
       approved: studentApproved(s.student_id),
       readiness_summary: readinessSummary(s.student_id),
+      ocean_level: oceanLevel[s.student_id] || '',
       student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
     }));
@@ -310,6 +324,32 @@ export function FinalCampEvaluation({
                         </div>
                       </div>
                     )}
+
+                    {/* In-water level — coach assessment for the bitácora */}
+                    <div className="pt-3 mt-1 border-t border-gray-100">
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-500 mb-1">
+                        In-water level (self-sufficiency)
+                      </label>
+                      <select
+                        value={oceanLevel[s.student_id] ?? ''}
+                        onChange={(e) =>
+                          setOceanLevel((prev) => ({ ...prev, [s.student_id]: e.target.value }))
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                      >
+                        <option value="">— Select —</option>
+                        {OCEAN_LEVELS.map((lvl) => (
+                          <option key={lvl} value={lvl}>
+                            {OCEAN_LEVEL_INFO[lvl].short} · {OCEAN_LEVEL_INFO[lvl].name}
+                          </option>
+                        ))}
+                      </select>
+                      {oceanLevel[s.student_id] && (
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {OCEAN_LEVEL_INFO[oceanLevel[s.student_id] as keyof typeof OCEAN_LEVEL_INFO]?.cleared}
+                        </p>
+                      )}
+                    </div>
 
                     {/* Written notes — one the student sees, one private */}
                     <div className="pt-3 mt-1 border-t border-gray-100 space-y-3">
