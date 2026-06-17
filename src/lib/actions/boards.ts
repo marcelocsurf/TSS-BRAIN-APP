@@ -10,6 +10,8 @@ export interface Board {
   id: string;
   academy_id: string;
   code: string;
+  brand: string | null;
+  model: string | null;
   board_type: string | null;
   shape: string | null;
   length_feet: number | null;
@@ -17,6 +19,10 @@ export interface Board {
   volume_liters: string | null;
   status: BoardStatus;
   notes: string | null;
+  // Usage stats (computed in listBoards) — board lifespan.
+  uses?: number;
+  first_used?: string | null;
+  last_used?: string | null;
 }
 
 // Only the platform admin or the academy's own coordinator/admin can manage
@@ -37,7 +43,30 @@ export async function listBoards(academyId: string): Promise<Board[]> {
     .select('*')
     .eq('academy_id', academyId)
     .order('code');
-  return (data ?? []) as Board[];
+  const boards = (data ?? []) as Board[];
+  if (boards.length === 0) return boards;
+
+  // Attach usage stats (total uses + first/last) per board.
+  const { data: usages } = await admin
+    .from('board_usages')
+    .select('board_id, session_date, created_at')
+    .in('board_id', boards.map((b) => b.id));
+  const byBoard = new Map<string, { count: number; dates: string[] }>();
+  for (const u of usages ?? []) {
+    const e = byBoard.get((u as any).board_id) ?? { count: 0, dates: [] };
+    e.count += 1;
+    const d = (u as any).session_date ?? ((u as any).created_at ? String((u as any).created_at).slice(0, 10) : null);
+    if (d) e.dates.push(d);
+    byBoard.set((u as any).board_id, e);
+  }
+  for (const b of boards) {
+    const e = byBoard.get(b.id);
+    b.uses = e?.count ?? 0;
+    const sorted = (e?.dates ?? []).sort();
+    b.first_used = sorted[0] ?? null;
+    b.last_used = sorted[sorted.length - 1] ?? null;
+  }
+  return boards;
 }
 
 // Suggest a readable, unique code: e.g. SOFT-7.2-03 / HARD-6-01.
@@ -70,6 +99,8 @@ async function suggestCode(
 
 export async function createBoard(input: {
   academy_id: string;
+  brand?: string | null;
+  model?: string | null;
   board_type: string | null;
   shape: string | null;
   length_feet: number | null;
@@ -90,6 +121,8 @@ export async function createBoard(input: {
     .insert({
       academy_id: input.academy_id,
       code,
+      brand: input.brand?.trim() || null,
+      model: input.model?.trim() || null,
       board_type: input.board_type,
       shape: input.shape,
       length_feet: input.length_feet,
@@ -107,7 +140,7 @@ export async function createBoard(input: {
 
 export async function updateBoard(
   id: string,
-  patch: Partial<Pick<Board, 'code' | 'board_type' | 'shape' | 'length_feet' | 'length_inches' | 'volume_liters' | 'status' | 'notes'>>,
+  patch: Partial<Pick<Board, 'code' | 'brand' | 'model' | 'board_type' | 'shape' | 'length_feet' | 'length_inches' | 'volume_liters' | 'status' | 'notes'>>,
 ): Promise<void> {
   const admin = createAdminClient();
   const { data: existing } = await admin.from('boards').select('academy_id').eq('id', id).single();

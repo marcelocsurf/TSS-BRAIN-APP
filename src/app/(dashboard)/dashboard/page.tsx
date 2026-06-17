@@ -96,6 +96,22 @@ export default async function DashboardHome() {
     } catch { /* non-blocking */ }
   }
 
+  // Coordinator academy setup checklist — nudge to fill emergency plan +
+  // board inventory right after being assigned.
+  let academySetup: { emergencyMissing: boolean; boardsMissing: boolean } | null = null;
+  if (role === 'coordinator' && academyId) {
+    try {
+      const [{ data: aca }, { count: boardCount }] = await Promise.all([
+        supabase.from('academies').select('emergency_numbers, nearest_hospital, emergency_address').eq('id', academyId).single(),
+        supabase.from('boards').select('*', { count: 'exact', head: true }).eq('academy_id', academyId),
+      ]);
+      academySetup = {
+        emergencyMissing: !(aca?.emergency_numbers || aca?.nearest_hospital || aca?.emergency_address),
+        boardsMissing: (boardCount ?? 0) === 0,
+      };
+    } catch { /* non-blocking */ }
+  }
+
   // Drafts for coaches/coordinators/admins
   let drafts: any[] = [];
   if (role === 'admin' || role === 'coordinator' || role === 'coach') {
@@ -123,6 +139,22 @@ export default async function DashboardHome() {
       </p>
 
       <NotificationsPanel notifications={notifications} />
+
+      {/* Academy setup checklist — coordinator, until filled */}
+      {academySetup && (academySetup.emergencyMissing || academySetup.boardsMissing) && (
+        <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wider inline-flex items-center gap-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+              <AlertTriangle size={14} strokeWidth={1.75} /> Configuración pendiente de tu academia
+            </h3>
+            <Link href="/my-academy" className="text-xs text-amber-800 font-semibold hover:underline shrink-0">Completar →</Link>
+          </div>
+          <ul className="space-y-1 text-[13px] text-amber-900">
+            {academySetup.emergencyMissing && <li>• Plan de emergencia (números, hospital, punto de encuentro)</li>}
+            {academySetup.boardsMissing && <li>• Inventario de tablas</li>}
+          </ul>
+        </div>
+      )}
 
       {/* Incident reports — coordinator + admin. Red so it can't be missed. */}
       {incidents.length > 0 && (

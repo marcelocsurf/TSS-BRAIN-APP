@@ -37,6 +37,8 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
   const [bFeet, setBFeet] = useState('7');
   const [bInches, setBInches] = useState('2');
   const [bVolume, setBVolume] = useState('');
+  const [bBrand, setBBrand] = useState('');
+  const [bModel, setBModel] = useState('');
 
   const add = () => {
     setError('');
@@ -44,6 +46,8 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
       try {
         await createBoard({
           academy_id: academyId,
+          brand: bBrand.trim() || null,
+          model: bModel.trim() || null,
           board_type: bType,
           shape: bShape,
           length_feet: bFeet ? parseInt(bFeet, 10) : null,
@@ -51,7 +55,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
           volume_liters: bVolume.trim() || null,
           notes: null,
         });
-        setBVolume('');
+        setBVolume(''); setBBrand(''); setBModel('');
         setAdding(false);
         router.refresh();
       } catch (e: any) {
@@ -112,6 +116,14 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
               <input value={bVolume} onChange={(e) => setBVolume(e.target.value)} placeholder="ej. 42" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Mini label="Marca (opcional)">
+              <input value={bBrand} onChange={(e) => setBBrand(e.target.value)} placeholder="ej. Torq" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+            </Mini>
+            <Mini label="Modelo (opcional)">
+              <input value={bModel} onChange={(e) => setBModel(e.target.value)} placeholder="ej. Mod Fish" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+            </Mini>
+          </div>
           <button onClick={add} disabled={pending} className="w-full py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 bg-[var(--tss-navy)]">
             {pending ? 'Guardando…' : 'Agregar al inventario'}
           </button>
@@ -129,8 +141,20 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
               <div className="min-w-0">
                 <p className="text-sm font-mono font-semibold text-[var(--tss-navy)]">{b.code}</p>
                 <p className="text-[11px] text-gray-500">
-                  {[b.board_type, b.shape, b.length_feet ? `${b.length_feet}'${b.length_inches || ''}` : null, b.volume_liters ? `${b.volume_liters}L` : null].filter(Boolean).join(' · ')}
+                  {[
+                    [b.brand, b.model].filter(Boolean).join(' ') || null,
+                    b.board_type, b.shape,
+                    b.length_feet ? `${b.length_feet}'${b.length_inches || ''}` : null,
+                    b.volume_liters ? `${b.volume_liters}L` : null,
+                  ].filter(Boolean).join(' · ')}
                 </p>
+                {(b.uses ?? 0) > 0 && (
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    Usada {b.uses} {b.uses === 1 ? 'vez' : 'veces'}
+                    {b.first_used ? ` · desde ${b.first_used}` : ''}
+                    {b.last_used && b.last_used !== b.first_used ? ` · última ${b.last_used}` : ''}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <select

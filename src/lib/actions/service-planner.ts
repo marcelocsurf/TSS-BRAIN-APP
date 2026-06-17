@@ -1601,6 +1601,17 @@ export async function closeServicePlan(
       .update({ status: 'available' })
       .in('id', usedBoardIds)
       .neq('status', 'in_repair');
+
+    // Log usage (one row per board per day) so we can later compute each
+    // board's total uses + lifespan. Idempotent via UNIQUE(board_id, camp_session_id).
+    const usageRows = usedBoardIds.map((bid) => ({
+      board_id: bid,
+      camp_session_id: campSession!.id,
+      session_date: (session as any).session_date ?? null,
+    }));
+    await admin
+      .from('board_usages')
+      .upsert(usageRows, { onConflict: 'board_id,camp_session_id', ignoreDuplicates: true });
   }
 
   // 2. Idempotency — clear prior results for this camp_session
