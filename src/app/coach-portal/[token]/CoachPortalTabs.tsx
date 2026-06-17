@@ -61,7 +61,7 @@ export function CoachPortalTabs({
         {activeTab === 'home' && (
           <>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
-            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} />
+            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />
           </>
         )}
         {activeTab === 'courses' && (
@@ -132,11 +132,13 @@ function HomeTab({
   upcoming,
   emergencyPlan,
   students,
+  boards,
 }: {
   coach: any;
   stats: any;
   upcoming: any[];
   students?: { id: string; name: string }[];
+  boards?: { id: string; code: string }[];
   emergencyPlan?: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -182,7 +184,7 @@ function HomeTab({
         </div>
       </details>
 
-      <IncidentReporter token={coach.portal_token} students={students} />
+      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
       {profileIncomplete && (
         <Link
           href={`/coach-portal/${coach.portal_token}/profile`}

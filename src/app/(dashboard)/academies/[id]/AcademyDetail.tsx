@@ -4,6 +4,8 @@ import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateAcademyBranding, deleteAcademy, updateAcademyEmergencyPlan } from '../actions';
+import { BoardInventory } from '@/components/academy/BoardInventory';
+import type { Board } from '@/lib/actions/boards';
 import { actAsAcademy } from '@/lib/actions/auth';
 import { startCoordinatorImpersonation } from '@/lib/actions/impersonate';
 import { BRAND } from '@/lib/constants/brand';
@@ -64,9 +66,10 @@ interface Props {
   stats: Stats;
   coaches: Coach[];
   activeServices: Service[];
+  boards: Board[];
 }
 
-export function AcademyDetail({ academy, coordinator, stats, coaches, activeServices }: Props) {
+export function AcademyDetail({ academy, coordinator, stats, coaches, activeServices, boards }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -477,6 +480,9 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           {pending ? 'Guardando…' : 'Guardar plan de emergencia'}
         </button>
       </div>
+
+      {/* Board inventory */}
+      <BoardInventory academyId={academy.id} boards={boards} />
 
       {/* Coaches list */}
       <div className="bg-white rounded-xl border border-gray-100 p-4">

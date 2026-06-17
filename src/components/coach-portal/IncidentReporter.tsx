@@ -11,13 +11,16 @@ import { INCIDENT_TYPE_OPTIONS } from '@/lib/constants/brand';
 export function IncidentReporter({
   token,
   students = [],
+  boards = [],
 }: {
   token: string;
   students?: { id: string; name: string }[];
+  boards?: { id: string; code: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [boardId, setBoardId] = useState('');
   const [description, setDescription] = useState('');
   const [action, setAction] = useState('');
   const [pending, startTransition] = useTransition();
@@ -35,11 +38,12 @@ export function IncidentReporter({
           incident_type: type,
           student_id: studentId || null,
           student_name: students.find((s) => s.id === studentId)?.name || null,
+          board_id: boardId || null,
           description,
           action_taken: action.trim() || null,
         });
         setDone(true);
-        setType(''); setStudentId(''); setDescription(''); setAction('');
+        setType(''); setStudentId(''); setBoardId(''); setDescription(''); setAction('');
         setTimeout(() => { setDone(false); setOpen(false); }, 1800);
       } catch (e: any) {
         setError(e.message || 'No se pudo guardar el incidente.');
@@ -89,6 +93,21 @@ export function IncidentReporter({
               ))}
             </select>
           </div>
+          {boards.length > 0 && (type === 'board' || type === 'equipment') && (
+            <div>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Tabla afectada (la marca en reparación)</label>
+              <select
+                value={boardId}
+                onChange={(e) => setBoardId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+              >
+                <option value="">— Ninguna / no aplica —</option>
+                {boards.map((b) => (
+                  <option key={b.id} value={b.id}>{b.code}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Qué pasó *</label>
             <textarea

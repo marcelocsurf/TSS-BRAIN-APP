@@ -209,6 +209,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               board_type: null,
               board_size_feet: null,
               board_size_inches: null,
+              board_id: null,
               focus_level: null,
               flow_channel: null,
               ...patch,
@@ -832,6 +833,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     student={s}
                     stpCatalog={data.stpCatalog}
                     availableDrills={data.availableDrills}
+                    availableBoards={data.availableBoards}
                     templateBlocks={tplBlocks}
                     onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                     onAddBlock={() => addStudentBlock(s.student_id)}
@@ -1672,6 +1674,7 @@ function StudentPlanCard({
   student,
   stpCatalog,
   availableDrills,
+  availableBoards,
   templateBlocks,
   onCommit,
   onAddBlock,
@@ -1681,6 +1684,7 @@ function StudentPlanCard({
   student: ServicePlanStudent;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
+  availableBoards: ServicePlanData['availableBoards'];
   templateBlocks: ServicePlanData['templatePlan'][number]['blocks'];
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onAddBlock: () => void;
@@ -1704,6 +1708,7 @@ function StudentPlanCard({
         board_type: null,
         board_size_feet: null,
         board_size_inches: null,
+        board_id: null,
         focus_level: null,
         flow_channel: null,
       } as ServicePlanBlock];
@@ -1761,6 +1766,39 @@ function StudentPlanCard({
                 );
               })()}
             </div>
+            {/* Inventory picker — pick a real board from the academy fleet.
+                Picking one auto-fills type/size below. Leave on "Manual" to
+                set type/size by hand (no inventory). */}
+            {availableBoards.length > 0 && (() => {
+              const picked = availableBoards.find((b) => b.id === firstBlock.board_id);
+              const options = availableBoards
+                .filter((b) => b.status === 'available' || b.id === firstBlock.board_id)
+                .map((b) => ({
+                  value: b.id,
+                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}${b.status !== 'available' ? ' · (en uso)' : ''}`,
+                }));
+              return (
+                <div>
+                  <SelectField
+                    label="Tabla del inventario"
+                    value={firstBlock.board_id}
+                    options={options}
+                    onChange={(v) => {
+                      const b = availableBoards.find((x) => x.id === v);
+                      onCommit(firstBlock.order_index, {
+                        board_id: v,
+                        board_type: b?.board_type ?? firstBlock.board_type,
+                        board_size_feet: b?.length_feet ?? firstBlock.board_size_feet,
+                        board_size_inches: b?.length_inches ?? firstBlock.board_size_inches,
+                      });
+                    }}
+                  />
+                  {picked && (
+                    <p className="text-[10px] text-gray-400 mt-0.5">Asignada: {picked.code}</p>
+                  )}
+                </div>
+              );
+            })()}
             <div className="grid grid-cols-3 gap-2">
               <SelectField
                 label="Type"

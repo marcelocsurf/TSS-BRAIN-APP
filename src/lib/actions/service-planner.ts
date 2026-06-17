@@ -73,6 +73,8 @@ export interface ServicePlanData {
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
   // Belt-specific sequence rated in the FINAL evaluation (graduation check).
   graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
+  // Academy board inventory available for assignment (M108).
+  availableBoards: Array<{ id: string; code: string; board_type: string | null; shape: string | null; length_feet: number | null; length_inches: number | null; volume_liters: string | null; status: string }>;
   // M50 — per-(student, step) coach_rating so the cyan StarRating in
   // BlockEvalSection can show the current value. Empty when no rating
   // has been given yet.
@@ -221,6 +223,7 @@ export interface ServicePlanBlock {
   board_type: string | null;
   board_size_feet: number | null;
   board_size_inches: number | null;
+  board_id: string | null;  // linked inventory board (M108)
   // M47 — Coach-rated, per-block-per-student (filled at close).
   focus_level: number | null;   // 1-5, how present + engaged
   flow_channel: number | null;  // 1=bored, 3=optimal, 5=frustrated
@@ -259,7 +262,7 @@ export async function getServicePlan(
   const { data: camp } = await admin
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key)'
+      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, academy_id, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key)'
     )
     .eq('id', campInstanceId)
     .single();
@@ -506,6 +509,7 @@ export async function getServicePlan(
         board_type: b.board_type ?? null,
         board_size_feet: b.board_size_feet ?? null,
         board_size_inches: b.board_size_inches ?? null,
+        board_id: b.board_id ?? null,
         focus_level: b.focus_level ?? null,
         flow_channel: b.flow_channel ?? null,
       })),
@@ -688,6 +692,18 @@ export async function getServicePlan(
     }
   }
 
+  // Board inventory for the camp's academy (not retired) — for the planner picker.
+  let availableBoards: ServicePlanData['availableBoards'] = [];
+  if ((camp as any).academy_id) {
+    const { data: boardRows } = await admin
+      .from('boards')
+      .select('id, code, board_type, shape, length_feet, length_inches, volume_liters, status')
+      .eq('academy_id', (camp as any).academy_id)
+      .neq('status', 'retired')
+      .order('code');
+    availableBoards = (boardRows ?? []) as any[];
+  }
+
   return {
     camp: {
       id: camp.id,
@@ -724,6 +740,7 @@ export async function getServicePlan(
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
     graduationCatalog: (gradRows ?? stpRows ?? []) as any[],
+    availableBoards,
     coachRatingByStudentStep,
     templatePlan,
     templateMeta,
@@ -972,6 +989,7 @@ export async function saveServicePlanBlock(
     board_type: string | null;
     board_size_feet: number | null;
     board_size_inches: number | null;
+    board_id: string | null;
     focus_level: number | null;
     flow_channel: number | null;
     whats_next: string | null;
@@ -1023,6 +1041,7 @@ export async function saveServicePlanBlock(
     'board_type',
     'board_size_feet',
     'board_size_inches',
+    'board_id',
     'focus_level',
     'flow_channel',
     'whats_next',
@@ -1035,11 +1054,22 @@ export async function saveServicePlanBlock(
   // M45 — block is per (session, student, order_index).
   const { data: existing } = await admin
     .from('service_plan_blocks')
-    .select('id')
+    .select('id, board_id')
     .eq('camp_session_id', campSessionId)
     .eq('student_id', studentId)
     .eq('order_index', orderIndex)
     .maybeSingle();
+
+  // Board inventory status flip: when the assigned board changes, free the
+  // old one and mark the new one in use. Skipped boards stay available.
+  if ('board_id' in patch) {
+    const oldId = existing?.board_id ?? null;
+    const newId = patch.board_id ?? null;
+    if (oldId !== newId) {
+      if (oldId) await admin.from('boards').update({ status: 'available' }).eq('id', oldId);
+      if (newId) await admin.from('boards').update({ status: 'in_use' }).eq('id', newId);
+    }
+  }
 
   if (existing) {
     const { error } = await admin
@@ -1510,6 +1540,19 @@ export async function closeServicePlan(
     .update({ session_status: 'completed' })
     .eq('id', campSessionId);
   const campSession = { id: campSessionId };
+
+  // Board inventory: boards used today return to 'available' on close, unless
+  // they were flagged 'in_repair' (e.g. by a damage incident). Phase 3.
+  const usedBoardIds = Array.from(
+    new Set(allBlocks.map((b: any) => b.board_id).filter(Boolean)),
+  );
+  if (usedBoardIds.length > 0) {
+    await admin
+      .from('boards')
+      .update({ status: 'available' })
+      .in('id', usedBoardIds)
+      .neq('status', 'in_repair');
+  }
 
   // 2. Idempotency — clear prior results for this camp_session
   await admin

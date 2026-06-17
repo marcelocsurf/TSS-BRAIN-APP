@@ -12,6 +12,7 @@ export async function reportIncident(input: {
   incident_type: string;
   student_id?: string | null;
   student_name?: string | null;
+  board_id?: string | null;       // optional: a board that was damaged
   description: string;
   action_taken?: string | null;
 }): Promise<void> {
@@ -35,6 +36,11 @@ export async function reportIncident(input: {
     action_taken: input.action_taken?.trim() || null,
   });
   if (error) throw new Error(error.message);
+
+  // A damaged board goes to the repair shelf so it stops being offered.
+  if (input.board_id) {
+    await admin.from('boards').update({ status: 'in_repair' }).eq('id', input.board_id);
+  }
 
   revalidatePath('/dashboard');
 }
@@ -83,6 +89,7 @@ export interface CoachPortalData {
     tagline: string | null;
   } | null;
   myStudents: { id: string; name: string }[];
+  boards: { id: string; code: string }[];
   emergencyPlan: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -239,6 +246,16 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   // M9 — coach portal also themed by academy.
   let academyBranding: CoachPortalData['academyBranding'] = null;
   let emergencyPlan: CoachPortalData['emergencyPlan'] = null;
+  let boards: CoachPortalData['boards'] = [];
+  if (coach.academy_id) {
+    const { data: boardRows } = await admin
+      .from('boards')
+      .select('id, code')
+      .eq('academy_id', coach.academy_id)
+      .neq('status', 'retired')
+      .order('code');
+    boards = (boardRows ?? []) as any[];
+  }
   if (coach.academy_id) {
     const { data: aca } = await admin
       .from('academies')
@@ -281,6 +298,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     myStudents: Array.from(myStudentsMap.entries())
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
+    boards,
     academyBranding,
     emergencyPlan,
   };

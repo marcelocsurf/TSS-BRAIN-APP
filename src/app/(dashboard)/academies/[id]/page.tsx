@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { AcademyDetail } from './AcademyDetail';
+import { listBoards } from '@/lib/actions/boards';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,8 @@ export default async function AcademyDetailPage({ params }: Props) {
       .limit(10),
   ]);
 
+  const boards = await listBoards(id);
+
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-4 pb-12">
       <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -116,6 +119,7 @@ export default async function AcademyDetailPage({ params }: Props) {
         }}
         coaches={(coachesList.data ?? []) as any[]}
         activeServices={(activeServicesList.data ?? []) as any[]}
+        boards={boards}
       />
     </div>
   );
