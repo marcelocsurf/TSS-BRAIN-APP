@@ -430,7 +430,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           campInstanceId={data.camp.id}
           campName={data.camp.camp_name}
           students={students}
-          stpCatalog={data.stpCatalog}
+          stpCatalog={data.graduationCatalog}
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
           onCancel={() => setShowFinalEval(false)}

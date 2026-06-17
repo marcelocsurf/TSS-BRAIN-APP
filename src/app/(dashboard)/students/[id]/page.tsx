@@ -594,9 +594,12 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                   )}
                 </div>
                 {(n.finalized_at || n.created_at) && (
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2" style={{ fontFamily: 'DM Mono, monospace' }}>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
                     {(n.finalized_at || n.created_at)!.slice(0, 10)}
                   </p>
+                )}
+                {n.readiness_summary && (
+                  <p className="text-[11px] text-gray-600 mb-2">{n.readiness_summary}</p>
                 )}
                 {n.student_visible_note && (
                   <div className="mb-2 rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">

@@ -1174,6 +1174,7 @@ export async function getCampNotesForStudent(studentId: string): Promise<Array<{
   camp_instance_id: string;
   camp_name: string | null;
   approved: boolean | null;
+  readiness_summary: string | null;
   finalized_at: string | null;
   student_visible_note: string | null;
   coach_private_note: string | null;
@@ -1185,7 +1186,7 @@ export async function getCampNotesForStudent(studentId: string): Promise<Array<{
   const admin = createAdminClient();
   const { data } = await admin
     .from('camp_final_evaluations')
-    .select('camp_instance_id, approved, finalized_at, student_visible_note, coach_private_note, created_at, camp_instances(camp_name)')
+    .select('camp_instance_id, approved, readiness_summary, finalized_at, student_visible_note, coach_private_note, created_at, camp_instances(camp_name)')
     .eq('student_id', studentId)
     .order('created_at', { ascending: false });
 
@@ -1196,6 +1197,7 @@ export async function getCampNotesForStudent(studentId: string): Promise<Array<{
         camp_instance_id: r.camp_instance_id,
         camp_name: ci?.camp_name ?? null,
         approved: r.approved ?? null,
+        readiness_summary: r.readiness_summary ?? null,
         finalized_at: r.finalized_at ?? null,
         student_visible_note: r.student_visible_note ?? null,
         coach_private_note: r.coach_private_note ?? null,

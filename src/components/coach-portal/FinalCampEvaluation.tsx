@@ -13,6 +13,7 @@ import { StarRating } from '@/components/sequence/StarRating';
 import { closeCampFinal } from '@/lib/actions/service-planner';
 import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-planner';
 import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
+import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduation';
 
 interface Props {
   token: string;
@@ -70,6 +71,26 @@ export function FinalCampEvaluation({
     }));
   };
 
+  // Canon-principle checkboxes (per student → principle index → met).
+  const [principles, setPrinciples] = useState<Record<string, Record<number, boolean>>>({});
+  const togglePrinciple = (studentId: string, idx: number, val: boolean) => {
+    setPrinciples((prev) => ({
+      ...prev,
+      [studentId]: { ...(prev[studentId] ?? {}), [idx]: val },
+    }));
+  };
+
+  // Level-based graduation rule (the "complete evaluation"). Falls back to
+  // "all sequence parts at >= 4 stars" when the camp has no specific belt.
+  const rule: GraduationRule =
+    (targetBelt && GRADUATION_RULES[targetBelt]) || {
+      beltLabel: (targetBelt && BELT_DISPLAY[targetBelt as BeltLevel]?.en) || 'Next level',
+      stpThreshold: PASS_THRESHOLD,
+      minStps: stpCatalog.length,
+      principles: [],
+      minPrinciples: 0,
+    };
+
   const setNote = (studentId: string, field: 'visible' | 'private', value: string) => {
     setNotes((prev) => ({
       ...prev,
@@ -84,16 +105,26 @@ export function FinalCampEvaluation({
   const studentRatedCount = (studentId: string): number =>
     stpCatalog.filter((stp) => (ratings[studentId]?.[stp.id] ?? 0) > 0).length;
 
-  // Steps that are rated but below the pass threshold (i.e. blocking approval).
-  const studentWeakCount = (studentId: string): number =>
-    stpCatalog.filter((stp) => {
-      const r = ratings[studentId]?.[stp.id] ?? 0;
-      return r > 0 && r < PASS_THRESHOLD;
-    }).length;
+  // STPs demonstrated = rated at or above the rule's threshold.
+  const studentStpsOk = (studentId: string): number =>
+    stpCatalog.filter((stp) => (ratings[studentId]?.[stp.id] ?? 0) >= rule.stpThreshold).length;
 
-  // Approved = every part of the sequence rated AND all >= 4 stars.
+  const studentPrinciplesMet = (studentId: string): number =>
+    rule.principles.length
+      ? rule.principles.filter((_, i) => principles[studentId]?.[i]).length
+      : 0;
+
+  // Ready for the next level = enough STPs demonstrated AND enough principles.
   const studentApproved = (studentId: string): boolean =>
-    stpCatalog.every((stp) => (ratings[studentId]?.[stp.id] ?? 0) >= PASS_THRESHOLD);
+    studentStpsOk(studentId) >= rule.minStps &&
+    studentPrinciplesMet(studentId) >= rule.minPrinciples;
+
+  // Compact verdict, e.g. "6/8 STPs ≥4★ · 3/5 principles".
+  const readinessSummary = (studentId: string): string => {
+    const stp = `${studentStpsOk(studentId)}/${stpCatalog.length} STPs ≥${rule.stpThreshold}★`;
+    if (!rule.principles.length) return stp;
+    return `${stp} · ${studentPrinciplesMet(studentId)}/${rule.principles.length} principles`;
+  };
 
   const totalRated = students.reduce((sum, s) => sum + studentRatedCount(s.student_id), 0);
   const totalNeeded = students.length * stpCatalog.length;
@@ -127,6 +158,7 @@ export function FinalCampEvaluation({
     const resultsPayload = students.map((s) => ({
       student_id: s.student_id,
       approved: studentApproved(s.student_id),
+      readiness_summary: readinessSummary(s.student_id),
       student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
     }));
@@ -169,7 +201,8 @@ export function FinalCampEvaluation({
             </p>
           </div>
           <p className="text-[10px] text-white/50 mt-1">
-            Approved = at least {PASS_THRESHOLD}★ on every part of the sequence.
+            {rule.beltLabel} ready = ≥{rule.minStps}/{stpCatalog.length} STPs at {rule.stpThreshold}★
+            {rule.principles.length > 0 && ` + ≥${rule.minPrinciples}/${rule.principles.length} principles`}.
           </p>
         </div>
 
@@ -211,20 +244,18 @@ export function FinalCampEvaluation({
                         {s.display_name}
                       </p>
                       <p className="text-[10px] text-gray-500">
-                        {rated}/{stpCatalog.length} steps rated
+                        {readinessSummary(s.student_id)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {studentApproved(s.student_id) ? (
                       <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
-                        Approved
+                        Ready
                       </span>
                     ) : (
                       <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
-                        {rated < stpCatalog.length
-                          ? `${stpCatalog.length - rated} unrated`
-                          : `${studentWeakCount(s.student_id)} below ${PASS_THRESHOLD}★`}
+                        In progress
                       </span>
                     )}
                     <span className={`text-gray-400 text-xs transition ${isOpen ? 'rotate-180' : ''}`}>
@@ -237,13 +268,13 @@ export function FinalCampEvaluation({
                   <div className="p-3 border-t border-gray-100 space-y-2.5">
                     {stpCatalog.map((stp) => {
                       const current = ratings[s.student_id]?.[stp.id] ?? null;
-                      const weak = current != null && current < PASS_THRESHOLD;
+                      const weak = current != null && current < rule.stpThreshold;
                       return (
                         <div key={stp.id} className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="text-[11px] font-mono text-gray-400">
                               {stp.id}
-                              {weak && <span className="ml-1 text-amber-600">· below {PASS_THRESHOLD}★</span>}
+                              {weak && <span className="ml-1 text-amber-600">· below {rule.stpThreshold}★</span>}
                             </p>
                             <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
                           </div>
@@ -256,6 +287,29 @@ export function FinalCampEvaluation({
                         </div>
                       );
                     })}
+
+                    {/* Canon principles — part of the level graduation check */}
+                    {rule.principles.length > 0 && (
+                      <div className="pt-3 mt-1 border-t border-gray-100">
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-gray-500 mb-1.5">
+                          Canon principles · {studentPrinciplesMet(s.student_id)}/{rule.principles.length}
+                          {' '}(need {rule.minPrinciples})
+                        </p>
+                        <div className="space-y-1.5">
+                          {rule.principles.map((p, i) => (
+                            <label key={i} className="flex items-start gap-2 text-[12px] text-gray-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={principles[s.student_id]?.[i] ?? false}
+                                onChange={(e) => togglePrinciple(s.student_id, i, e.target.checked)}
+                                className="mt-0.5 accent-[var(--tss-cyan,#5AC3E7)]"
+                              />
+                              <span>{p}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Written notes — one the student sees, one private */}
                     <div className="pt-3 mt-1 border-t border-gray-100 space-y-3">
@@ -319,30 +373,22 @@ export function FinalCampEvaluation({
             <div className="px-4 py-4 shrink-0 border-b border-gray-100">
               <h3 className="text-base font-bold text-[var(--tss-navy)]">Finalize {campName}?</h3>
               <p className="text-[12px] text-gray-500 mt-0.5">
-                {approvedCount} of {students.length} approved · Approved = ≥{PASS_THRESHOLD}★ on every part.
+                {approvedCount} of {students.length} ready for {rule.beltLabel}.
               </p>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {students.map((s) => {
                 const ok = studentApproved(s.student_id);
-                const rated = studentRatedCount(s.student_id);
                 const promotable = canPromote(s);
                 return (
                   <div key={s.student_id} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm text-gray-800 truncate">{s.display_name}</p>
-                      {ok ? (
-                        <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                          Approved
-                        </span>
-                      ) : (
-                        <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                          {rated < stpCatalog.length
-                            ? `${stpCatalog.length - rated} unrated`
-                            : `${studentWeakCount(s.student_id)} below ${PASS_THRESHOLD}★`}
-                        </span>
-                      )}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${ok ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {ok ? `Ready · ${rule.beltLabel}` : 'In progress'}
+                      </span>
                     </div>
+                    <p className="text-[11px] text-gray-500 pl-1">{readinessSummary(s.student_id)}</p>
                     {promotable && (
                       <label className="flex items-center gap-2 pl-1 text-[12px] text-[var(--tss-navy)] cursor-pointer">
                         <input

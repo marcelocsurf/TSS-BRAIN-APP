@@ -70,6 +70,8 @@ export interface ServicePlanData {
   }>;
   // Canonical STP catalog (for picking sequence focus)
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
+  // Belt-specific sequence rated in the FINAL evaluation (graduation check).
+  graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
   // M50 — per-(student, step) coach_rating so the cyan StarRating in
   // BlockEvalSection can show the current value. Empty when no rating
   // has been given yet.
@@ -527,13 +529,26 @@ export async function getServicePlan(
     (d: any) => (beltRank[d.belt] ?? 1) <= myRank
   );
 
-  // STP catalog for sequence focus picker (white belt 25 STPs)
+  // STP catalog for the planner's sequence-focus picker (white belt 25 STPs).
   const { data: stpRows } = await admin
     .from('lessons')
     .select('id, title, pillar, display_order')
     .eq('course_section', 'white_belt')
     .eq('active', true)
     .order('display_order');
+
+  // Graduation catalog — belt-aware. The FINAL evaluation rates the sequence
+  // of the belt this camp graduates into: a Yellow Belt camp rates the 8 YB
+  // STPs (027-034); everything else uses the 25 White Belt STPs.
+  const gradSection = tpl?.includes_course_key === 'yellow_belt' ? 'yellow_belt' : 'white_belt';
+  const { data: gradRows } = gradSection === 'white_belt'
+    ? { data: stpRows }
+    : await admin
+        .from('lessons')
+        .select('id, title, pillar, display_order')
+        .eq('course_section', gradSection)
+        .eq('active', true)
+        .order('display_order');
 
   // M44 — load the template plan if there is a template attached.
   // Days come from camp_template_days, blocks from camp_template_blocks
@@ -704,6 +719,7 @@ export async function getServicePlan(
     students,
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
+    graduationCatalog: (gradRows ?? stpRows ?? []) as any[],
     coachRatingByStudentStep,
     templatePlan,
     templateMeta,
@@ -1169,7 +1185,7 @@ export async function closeCampFinal(
   token: string,
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
-  results?: Array<{ student_id: string; approved: boolean; student_visible_note: string; coach_private_note: string }>,
+  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; student_visible_note: string; coach_private_note: string }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1217,6 +1233,7 @@ export async function closeCampFinal(
       student_id: r.student_id,
       coach_id: coach.id,
       approved: r.approved,
+      readiness_summary: r.readiness_summary || null,
       finalized_at: finalizedAt,
       student_visible_note: r.student_visible_note || null,
       coach_private_note: r.coach_private_note || null,
