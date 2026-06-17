@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
+import { getAcceptedAssistantCampIds } from '@/lib/actions/service-staff';
 import { revalidatePath } from 'next/cache';
 
 // Coach reports an incident (general or student-specific) from their portal.
@@ -117,6 +118,12 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // Services where this coach is an accepted assistant (read-only access).
+  const assistantCampIds = await getAcceptedAssistantCampIds(coach.id);
+  const svcOr = `coach_id.eq.${coach.id},head_coach_id.eq.${coach.id}${
+    assistantCampIds.length ? `,id.in.(${assistantCampIds.join(',')})` : ''
+  }`;
+
   // 2. Pull everything in parallel
   const [
     upcomingResult,
@@ -129,14 +136,14 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     admin
       .from('camp_instances')
       .select('id, camp_name, start_date, end_date, status, scheduled_time, head_coach_id, head_coach_status, camp_templates:template_id(service_kind, template_name, capacity_max)')
-      .or(`coach_id.eq.${coach.id},head_coach_id.eq.${coach.id}`)
+      .or(svcOr)
       .in('status', ['planned', 'active'])
       .gte('end_date', today)
       .order('start_date'),
     admin
       .from('camp_instances')
       .select('id, camp_name, start_date, end_date, status')
-      .or(`coach_id.eq.${coach.id},head_coach_id.eq.${coach.id}`)
+      .or(svcOr)
       .lt('end_date', today)
       .order('end_date', { ascending: false })
       .limit(10),

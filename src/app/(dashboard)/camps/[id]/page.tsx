@@ -5,6 +5,8 @@ import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { CampStudentManager } from '@/components/camp/CampStudentManager';
 import { CampHeadCoachManager } from '@/components/camp/CampHeadCoachManager';
+import { ServiceStaffManager } from '@/components/camp/ServiceStaffManager';
+import { listServiceStaff, listAssignableCoaches, listStaffMembers } from '@/lib/actions/service-staff';
 import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
 import { LeadStatusBadge } from '@/components/camp/LeadStatusBadge';
 import { EnrollmentPaymentControl } from '@/components/camp/EnrollmentPaymentControl';
@@ -46,6 +48,11 @@ export default async function CampDetailPage({ params }: Props) {
   if (!instance) notFound();
 
   const coach = await getCurrentCoach();
+  const [serviceStaff, assignableCoaches, academyStaffMembers] = await Promise.all([
+    listServiceStaff(id).catch(() => []),
+    listAssignableCoaches().catch(() => []),
+    listStaffMembers().catch(() => []),
+  ]);
   const headCoach = (instance as any).head_coach;
   const creatorCoach = (instance as any).coaches;
   const evaluatedCount = evaluations.length;
@@ -120,6 +127,14 @@ export default async function CampDetailPage({ params }: Props) {
           )}
         </div>
       </div>
+
+      {/* Staff — assistants + photographer/filmmaker with accept/reject */}
+      <ServiceStaffManager
+        campInstanceId={instance.id}
+        staff={serviceStaff}
+        coaches={assignableCoaches}
+        staffMembers={academyStaffMembers}
+      />
 
       {/* Read the Plan — coach-facing manual of the linked template */}
       {planForRead.templatePlan.length > 0 && (

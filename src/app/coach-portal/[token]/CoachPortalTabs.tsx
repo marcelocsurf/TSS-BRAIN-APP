@@ -1280,26 +1280,32 @@ function PlanTab({
           >
             ← Back to services
           </button>
-          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
-            {(['read', 'run'] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setPlanView(v)}
-                className={`px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition-colors ${
-                  planView === v
-                    ? 'bg-[var(--tss-navy)] text-white'
-                    : 'bg-white text-gray-500 hover:text-gray-800'
-                }`}
-                style={{ fontFamily: 'DM Mono, monospace' }}
-              >
-                {v === 'read' ? 'Read the Plan' : 'Run the Session'}
-              </button>
-            ))}
-          </div>
+          {planData.readOnly ? (
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 px-3 py-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+              View only · Assistant
+            </span>
+          ) : (
+            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+              {(['read', 'run'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setPlanView(v)}
+                  className={`px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition-colors ${
+                    planView === v
+                      ? 'bg-[var(--tss-navy)] text-white'
+                      : 'bg-white text-gray-500 hover:text-gray-800'
+                  }`}
+                  style={{ fontFamily: 'DM Mono, monospace' }}
+                >
+                  {v === 'read' ? 'Read the Plan' : 'Run the Session'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {planView === 'read' ? (
+        {planView === 'read' || planData.readOnly ? (
           <CampPlanReader
             instanceId={selectedCampId}
             coachToken={token}

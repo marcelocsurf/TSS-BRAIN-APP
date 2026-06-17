@@ -75,6 +75,8 @@ export interface ServicePlanData {
   graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
   // Academy board inventory available for assignment (M108).
   availableBoards: Array<{ id: string; code: string; board_type: string | null; shape: string | null; length_feet: number | null; length_inches: number | null; volume_liters: string | null; status: string }>;
+  // True when the viewer is an accepted assistant (view-only, no edits).
+  readOnly: boolean;
   // M108 Fase 4 — board ids already taken by ANOTHER service on the selected
   // day's date (same academy). The picker hides/disables these to prevent
   // double-booking. Date-aware, so a board free today isn't blocked by an
@@ -272,7 +274,22 @@ export async function getServicePlan(
     .eq('id', campInstanceId)
     .single();
   if (!camp) return null;
-  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) return null;
+  // Owner (coach/head coach) gets full edit. An accepted assistant gets
+  // read-only access (can view the plan + student info, cannot modify).
+  const isOwner = camp.coach_id === coach.id || camp.head_coach_id === coach.id;
+  let readOnly = false;
+  if (!isOwner) {
+    const { data: asg } = await admin
+      .from('service_staff')
+      .select('id')
+      .eq('camp_instance_id', campInstanceId)
+      .eq('coach_id', coach.id)
+      .eq('role', 'assistant')
+      .eq('status', 'accepted')
+      .maybeSingle();
+    if (!asg) return null;
+    readOnly = true;
+  }
 
   const tpl = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
 
@@ -767,6 +784,7 @@ export async function getServicePlan(
     graduationCatalog: (gradRows ?? stpRows ?? []) as any[],
     availableBoards,
     boardConflictIds,
+    readOnly,
     coachRatingByStudentStep,
     templatePlan,
     templateMeta,
