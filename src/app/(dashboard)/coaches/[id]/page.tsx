@@ -6,6 +6,7 @@ import {
   getCoachStudentFeedback,
   getCoachTeachingResources,
   getCoachRecentSessions,
+  getCoachServices,
 } from '@/lib/actions/coach-dashboard';
 import { CertificationManager } from './certification-manager';
 import { ToggleCoachStatus } from './toggle-coach-status';
@@ -14,7 +15,7 @@ import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { OpenAsButton } from '@/components/admin/OpenAsButton';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Star, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
+import { Star, ArrowLeft, ArrowRight, ExternalLink, Phone, Languages, ShieldAlert, HeartPulse, Briefcase, CheckCircle2, AlertTriangle, Calendar } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -76,13 +77,17 @@ export default async function CoachProfilePage({ params }: Props) {
   const isPlatformAdmin = await isRealPlatformAdmin();
 
   // Fetch dashboard data in parallel
-  const [stats, ratingStats, feedback, resources, recentSessions] = await Promise.all([
+  const [stats, ratingStats, feedback, resources, recentSessions, services] = await Promise.all([
     getCoachStats(id),
     getCoachRatingStats(id),
     getCoachStudentFeedback(id),
     getCoachTeachingResources(id),
     getCoachRecentSessions(id),
+    getCoachServices(id),
   ]);
+
+  // Onboarding completeness — show admin if the coach finished their ficha.
+  const intakeDone = !!coach.intake_completed_at;
 
   const initial = (coach.display_name || 'C').charAt(0).toUpperCase();
   const certLevelLabel = coach.certification_level
@@ -106,10 +111,19 @@ export default async function CoachProfilePage({ params }: Props) {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            {/* Initials Avatar */}
-            <div className="w-14 h-14 rounded-full bg-[var(--tss-navy)] flex items-center justify-center flex-shrink-0">
-              <span className="text-xl font-bold text-[var(--tss-cyan,#5AC3E7)]">{initial}</span>
-            </div>
+            {/* Avatar — real photo if the coach uploaded one, else initials */}
+            {coach.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coach.photo_url}
+                alt={coach.display_name || 'Coach'}
+                className="w-14 h-14 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-[var(--tss-navy)] flex items-center justify-center flex-shrink-0">
+                <span className="text-xl font-bold text-[var(--tss-cyan,#5AC3E7)]">{initial}</span>
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] font-mono tracking-widest text-[var(--tss-cyan,#5AC3E7)] uppercase px-2 py-0.5 bg-[var(--tss-cyan,#5AC3E7)]/10 rounded">
@@ -209,6 +223,109 @@ export default async function CoachProfilePage({ params }: Props) {
           </div>
         ))}
       </div>
+
+      {/* ONBOARDING STATUS */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
+        {intakeDone ? (
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+            <CheckCircle2 size={13} strokeWidth={2} /> Ficha completa
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+            <AlertTriangle size={13} strokeWidth={2} /> Ficha pendiente
+          </span>
+        )}
+        {coach.waiver_signed ? (
+          <span className="text-[11px] text-gray-500">Waiver firmado{coach.waiver_signed_at ? ` · ${String(coach.waiver_signed_at).slice(0, 10)}` : ''}</span>
+        ) : (
+          <span className="text-[11px] text-amber-700">Waiver sin firmar</span>
+        )}
+        {!intakeDone && coach.portal_token && (
+          <Link
+            href={`/coach-portal/${coach.portal_token}/profile`}
+            target="_blank"
+            className="ml-auto text-[11px] text-[var(--tss-navy)] hover:underline"
+          >
+            Abrir ficha del coach →
+          </Link>
+        )}
+      </div>
+
+      {/* CONTACT + EMERGENCY */}
+      {(coach.phone || coach.languages || coach.emergency_contact_name || coach.emergency_contact_phone) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Contacto</p>
+            <div className="space-y-1.5 text-sm text-gray-700">
+              {coach.phone && <p className="flex items-center gap-2"><Phone size={13} className="text-gray-400" /> {coach.phone}</p>}
+              {coach.languages && <p className="flex items-center gap-2"><Languages size={13} className="text-gray-400" /> {coach.languages}</p>}
+              {coach.email && <p className="flex items-center gap-2"><ExternalLink size={13} className="text-gray-400" /> {coach.email}</p>}
+              {!coach.phone && !coach.languages && <p className="text-gray-400 italic text-xs">Sin datos de contacto.</p>}
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5"><ShieldAlert size={12} /> Contacto de emergencia</p>
+            {coach.emergency_contact_name || coach.emergency_contact_phone ? (
+              <div className="text-sm text-[var(--tss-navy)]">
+                <p className="font-semibold">{coach.emergency_contact_name || '—'}</p>
+                <p className="text-gray-700">{coach.emergency_contact_phone || '—'}</p>
+              </div>
+            ) : (
+              <p className="text-gray-400 italic text-xs">No registrado — pedir al coach completar su ficha.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MEDICAL / SAFETY */}
+      {(coach.allergies || coach.injuries || coach.medical_notes) && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><HeartPulse size={12} /> Médico / Seguridad</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            {coach.allergies && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Alergias</p><p className="text-gray-700">{coach.allergies}</p></div>}
+            {coach.injuries && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Lesiones</p><p className="text-gray-700">{coach.injuries}</p></div>}
+            {coach.medical_notes && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Notas médicas</p><p className="text-gray-700">{coach.medical_notes}</p></div>}
+          </div>
+        </div>
+      )}
+
+      {/* PROFESSIONAL BACKGROUND */}
+      {(coach.years_coaching != null || coach.years_surfing != null || coach.specialty_area || coach.other_certifications || coach.bio_short) && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Briefcase size={12} /> Trayectoria</p>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {coach.years_coaching != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_coaching} años entrenando</span>}
+            {coach.years_surfing != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_surfing} años surfeando</span>}
+            {coach.specialty_area && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.specialty_area}</span>}
+          </div>
+          {coach.other_certifications && <p className="text-[12px] text-gray-600"><span className="text-gray-400">Otras certificaciones:</span> {coach.other_certifications}</p>}
+          {coach.bio_short && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{coach.bio_short}</p>}
+        </div>
+      )}
+
+      {/* SERVICES LED */}
+      {services.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)] flex items-center gap-1.5"><Calendar size={14} /> Services led ({services.length})</h3>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {services.slice(0, 12).map((s) => (
+              <Link key={s.id} href={`/camps/${s.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-gray-50">
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-800 truncate">{s.camp_name || s.template_name || 'Service'}</p>
+                  <p className="text-[11px] text-gray-400">
+                    {s.start_date ? String(s.start_date).slice(0, 10) : '—'}
+                    {' · '}{s.participant_count} student{s.participant_count === 1 ? '' : 's'}
+                    {' · '}{s.role === 'head_coach' ? 'Head coach' : 'Coach'}
+                  </p>
+                </div>
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 shrink-0">{s.status}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* STAR RATING SECTION */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -316,8 +433,25 @@ export default async function CoachProfilePage({ params }: Props) {
                     })}
                   </span>
                 </div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+                  Coach overall · {fb.coach_rating || 0}/5
+                </p>
+                {/* What the student actually rated — context for the stars */}
+                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                  {fb.feedback_clarity != null && (
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Feedback clarity {fb.feedback_clarity}/5</span>
+                  )}
+                  {fb.improvement_value != null && (
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Helped me improve {fb.improvement_value}/5</span>
+                  )}
+                  {fb.flow_channel != null && (
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">
+                      Class felt: {['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrating'][fb.flow_channel - 1] ?? fb.flow_channel}
+                    </span>
+                  )}
+                </div>
                 {fb.open_comment && (
-                  <p className="text-xs text-gray-600">{fb.open_comment}</p>
+                  <p className="text-xs text-gray-600 italic">“{fb.open_comment}”</p>
                 )}
               </div>
             ))
@@ -513,10 +647,12 @@ export default async function CoachProfilePage({ params }: Props) {
                       className={`text-[10px] px-1.5 py-0.5 rounded ${
                         s.source === 'cascade'
                           ? 'bg-blue-50 text-blue-500'
-                          : 'bg-gray-50 text-gray-400'
+                          : s.source === 'camp'
+                            ? 'bg-cyan-50 text-cyan-600'
+                            : 'bg-gray-50 text-gray-400'
                       }`}
                     >
-                      {s.source === 'cascade' ? 'Cascade' : 'Standalone'}
+                      {s.source === 'cascade' ? 'Cascade' : s.source === 'camp' ? 'Camp' : 'Standalone'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
