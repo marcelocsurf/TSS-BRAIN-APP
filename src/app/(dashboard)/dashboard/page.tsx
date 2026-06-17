@@ -9,6 +9,7 @@ import {
   getRecentIncidents,
 } from '@/lib/actions/dashboard';
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
+import { incidentTypeLabel } from '@/lib/constants/brand';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
@@ -130,27 +131,44 @@ export default async function DashboardHome() {
             <AlertTriangle size={14} strokeWidth={1.75} /> Incident reports ({incidents.length})
           </h3>
           <div className="bg-white rounded-xl border border-red-200 divide-y divide-red-50 overflow-hidden">
-            {incidents.map((inc) => (
-              <div key={inc.id} className="px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
-                    {inc.incident_type || 'incident'}
-                  </span>
-                  <span className="text-[10px] text-gray-400">
-                    {inc.created_at ? new Date(inc.created_at).toLocaleDateString() : ''}
-                  </span>
+            {incidents.map((inc) => {
+              const body = (
+                <div className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+                      {incidentTypeLabel(inc.incident_type)}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      {inc.created_at ? new Date(inc.created_at).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[var(--tss-navy)] mt-1">
+                    {inc.is_general ? (
+                      <span className="text-gray-500 italic">General (sin alumno específico)</span>
+                    ) : (
+                      inc.student_name || 'Alumno'
+                    )}
+                    {inc.coach_name ? ` · ${inc.coach_name}` : ''}
+                  </p>
+                  {inc.incident_description && (
+                    <p className="text-xs text-gray-600 mt-0.5">{inc.incident_description}</p>
+                  )}
+                  {inc.incident_action && (
+                    <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Acción:</span> {inc.incident_action}</p>
+                  )}
+                  {inc.student_id && (
+                    <p className="text-[10px] text-[var(--tss-cyan)] mt-1">Ver alumno →</p>
+                  )}
                 </div>
-                <p className="text-sm text-[var(--tss-navy)] mt-1">
-                  {inc.student_name || 'Student'}{inc.coach_name ? ` · ${inc.coach_name}` : ''}
-                </p>
-                {inc.incident_description && (
-                  <p className="text-xs text-gray-600 mt-0.5">{inc.incident_description}</p>
-                )}
-                {inc.incident_action && (
-                  <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Action:</span> {inc.incident_action}</p>
-                )}
-              </div>
-            ))}
+              );
+              return inc.student_id ? (
+                <Link key={inc.id} href={`/students/${inc.student_id}`} className="block hover:bg-red-50/40 transition-colors">
+                  {body}
+                </Link>
+              ) : (
+                <div key={inc.id}>{body}</div>
+              );
+            })}
           </div>
         </div>
       )}

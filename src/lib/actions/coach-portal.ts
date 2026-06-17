@@ -2,6 +2,40 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
+import { revalidatePath } from 'next/cache';
+
+// Coach reports an incident (general or student-specific) from their portal.
+// Token-gated like the rest of the coach portal. Lands in session_incidents
+// so the coordinator + admin see it on their dashboard.
+export async function reportIncident(input: {
+  token: string;
+  incident_type: string;
+  student_name?: string | null;
+  description: string;
+  action_taken?: string | null;
+}): Promise<void> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id, academy_id')
+    .eq('portal_token', input.token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+  if (!input.incident_type) throw new Error('Incident type is required.');
+  if (!input.description?.trim()) throw new Error('A short description is required.');
+
+  const { error } = await admin.from('session_incidents').insert({
+    academy_id: coach.academy_id ?? null,
+    coach_id: coach.id,
+    student_name: input.student_name?.trim() || null,
+    incident_type: input.incident_type,
+    description: input.description.trim(),
+    action_taken: input.action_taken?.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/dashboard');
+}
 
 // Coach Portal — public route accessed via /coach-portal/[token].
 // Mirrors the student portal pattern. No auth required at the route level;

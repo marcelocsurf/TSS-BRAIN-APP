@@ -14,39 +14,78 @@ export interface IncidentAlert {
   incident_action: string | null;
   created_at: string | null;
   student_name: string | null;
+  student_id: string | null;   // for click-through to the student profile
   coach_name: string | null;
+  is_general: boolean;         // true = not tied to a specific student
+  source: 'reported' | 'session';
 }
 
-// Recent incidents a coach flagged on session close. Scoped to the academy
-// in context (platform admin with no academy sees all). Surfaced as a red
-// panel on the coordinator + admin dashboards.
-export async function getRecentIncidents(academyId: string | null, limit = 10): Promise<IncidentAlert[]> {
+// Recent incidents — merged from the dedicated session_incidents log
+// (coach-reported, general or student-specific) AND the legacy per-student
+// incidents on student_session_results. Scoped to the academy in context
+// (platform admin with no academy sees all). Surfaced as a red panel on the
+// coordinator + admin dashboards.
+export async function getRecentIncidents(academyId: string | null, limit = 15): Promise<IncidentAlert[]> {
   const supabase = await createClient();
 
-  let q = supabase
+  // 1) Dedicated incident log
+  let iq = supabase
+    .from('session_incidents')
+    .select('id, incident_type, description, action_taken, created_at, student_id, student_name, coach_id, academy_id, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (academyId) iq = iq.eq('academy_id', academyId);
+
+  // 2) Legacy per-student incidents on session results
+  let sq = supabase
     .from('student_session_results')
-    .select('id, incident_type, incident_description, incident_action, created_at, students!inner(first_name, last_name, academy_id), coaches:coach_id(display_name)')
+    .select('id, incident_type, incident_description, incident_action, created_at, student_id, students!inner(first_name, last_name, academy_id), coaches:coach_id(display_name)')
     .not('incident_type', 'is', null)
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (academyId) q = q.eq('students.academy_id', academyId);
+  if (academyId) sq = sq.eq('students.academy_id', academyId);
 
-  const { data, error } = await q;
-  if (error || !data) return [];
+  const [{ data: rep }, { data: ses }] = await Promise.all([iq, sq]);
 
-  return (data as any[]).map((r) => {
+  const out: IncidentAlert[] = [];
+
+  for (const r of (rep as any[]) ?? []) {
+    const co = Array.isArray(r.coaches) ? r.coaches[0] : r.coaches;
+    const stu = Array.isArray(r.students) ? r.students[0] : r.students;
+    const name = stu ? `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim() : (r.student_name ?? null);
+    out.push({
+      id: `rep-${r.id}`,
+      incident_type: r.incident_type ?? null,
+      incident_description: r.description ?? null,
+      incident_action: r.action_taken ?? null,
+      created_at: r.created_at ?? null,
+      student_name: name || null,
+      student_id: r.student_id ?? null,
+      coach_name: co?.display_name ?? null,
+      is_general: !r.student_id && !r.student_name,
+      source: 'reported',
+    });
+  }
+
+  for (const r of (ses as any[]) ?? []) {
     const stu = Array.isArray(r.students) ? r.students[0] : r.students;
     const co = Array.isArray(r.coaches) ? r.coaches[0] : r.coaches;
-    return {
-      id: r.id,
+    out.push({
+      id: `ses-${r.id}`,
       incident_type: r.incident_type ?? null,
       incident_description: r.incident_description ?? null,
       incident_action: r.incident_action ?? null,
       created_at: r.created_at ?? null,
       student_name: stu ? `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim() : null,
+      student_id: r.student_id ?? null,
       coach_name: co?.display_name ?? null,
-    };
-  });
+      is_general: false,
+      source: 'session',
+    });
+  }
+
+  out.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+  return out.slice(0, limit);
 }
 
 // ═══════════════════════════════════════

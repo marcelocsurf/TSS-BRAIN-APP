@@ -10,6 +10,7 @@ import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
+import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import {
@@ -178,6 +179,8 @@ function HomeTab({
           )}
         </div>
       </details>
+
+      <IncidentReporter token={coach.portal_token} />
       {profileIncomplete && (
         <Link
           href={`/coach-portal/${coach.portal_token}/profile`}
