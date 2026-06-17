@@ -89,6 +89,12 @@ export default async function CoachProfilePage({ params }: Props) {
   // Onboarding completeness — show admin if the coach finished their ficha.
   const intakeDone = !!coach.intake_completed_at;
 
+  // Emergency contact + medical info are sensitive — admin / coordinator only.
+  const canSeePrivate =
+    currentCoach?.role === 'admin' ||
+    currentCoach?.role === 'coordinator' ||
+    isPlatformAdmin;
+
   const initial = (coach.display_name || 'C').charAt(0).toUpperCase();
   const certLevelLabel = coach.certification_level
     ? CERT_LEVEL_LABELS[coach.certification_level] || coach.certification_level
@@ -263,22 +269,24 @@ export default async function CoachProfilePage({ params }: Props) {
               {!coach.phone && !coach.languages && <p className="text-gray-400 italic text-xs">Sin datos de contacto.</p>}
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-4">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5"><ShieldAlert size={12} /> Contacto de emergencia</p>
-            {coach.emergency_contact_name || coach.emergency_contact_phone ? (
-              <div className="text-sm text-[var(--tss-navy)]">
-                <p className="font-semibold">{coach.emergency_contact_name || '—'}</p>
-                <p className="text-gray-700">{coach.emergency_contact_phone || '—'}</p>
-              </div>
-            ) : (
-              <p className="text-gray-400 italic text-xs">No registrado — pedir al coach completar su ficha.</p>
-            )}
-          </div>
+          {canSeePrivate && (
+            <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-4">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5"><ShieldAlert size={12} /> Contacto de emergencia</p>
+              {coach.emergency_contact_name || coach.emergency_contact_phone ? (
+                <div className="text-sm text-[var(--tss-navy)]">
+                  <p className="font-semibold">{coach.emergency_contact_name || '—'}</p>
+                  <p className="text-gray-700">{coach.emergency_contact_phone || '—'}</p>
+                </div>
+              ) : (
+                <p className="text-gray-400 italic text-xs">No registrado — pedir al coach completar su ficha.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* MEDICAL / SAFETY */}
-      {(coach.allergies || coach.injuries || coach.medical_notes) && (
+      {/* MEDICAL / SAFETY — admin/coordinator only */}
+      {canSeePrivate && (coach.allergies || coach.injuries || coach.medical_notes) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><HeartPulse size={12} /> Médico / Seguridad</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
