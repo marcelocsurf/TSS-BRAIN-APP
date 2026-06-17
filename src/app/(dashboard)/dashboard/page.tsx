@@ -123,7 +123,7 @@ export default async function DashboardHome() {
           {[
             { label: 'Active Students', value: studentCount ?? 0 },
             { label: 'Sessions Closed', value: sessionCount ?? 0 },
-            { label: 'Active Camps', value: activeCamps ?? 0 },
+            { label: 'Active Services', value: activeCamps ?? 0 },
             { label: 'Pending Surveys', value: pendingSurveys ?? 0 },
           ].map((s, i) => (
             <div
@@ -202,7 +202,7 @@ export default async function DashboardHome() {
             {role === 'admin' && (
               <>
                 <QuickAction href="/students/new" label="Add Student" desc="Quick registration" accentColor="var(--tss-gold)" />
-                <QuickAction href="/camps" label="View Camps" desc="Templates & instances" accentColor="var(--tss-navy-light)" />
+                <QuickAction href="/camps" label="View Services" desc="Calendar & templates" accentColor="var(--tss-navy-light)" />
                 <QuickAction href="/coaches/new" label="Create Coach" desc="Add team member" accentColor="var(--tss-cyan)" />
                 <QuickAction href="/audit" label="View Audit" desc="System audit log" accentColor="var(--tss-warm)" />
                 <QuickAction href="/admin/pricing" label="Pricing & Invoices" desc="Set course prices, generate monthly invoices" accentColor="var(--tss-gold)" />
@@ -245,12 +245,11 @@ async function AdminDashboard() {
       {/* System Stats */}
       <div>
         <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>System Stats</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <MiniStat label="Total Students" value={adminData.totalStudents} />
           <MiniStat label="Total Coaches" value={adminData.totalCoaches} />
           <MiniStat label="Total Sessions" value={adminData.totalSessions} />
-          <MiniStat label="Total Camps" value={adminData.totalCamps} />
-          <MiniStat label="Active Camps" value={adminData.activeCamps} />
+          <MiniStat label="Total Services" value={adminData.totalCamps} />
         </div>
       </div>
 
@@ -314,7 +313,7 @@ async function CoordinatorDashboard() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniStat label="Active Students" value={stats.totalStudents} />
         <MiniStat label="Active Coaches" value={stats.totalCoaches} />
-        <MiniStat label="Active Camps" value={stats.activeCamps} />
+        <MiniStat label="Active Services" value={stats.activeCamps} />
         <MiniStat
           label="Pending Actions"
           value={stats.pendingActions}
@@ -340,7 +339,7 @@ async function CoordinatorDashboard() {
             className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
             <Tent size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">New Camp</p>
+            <p className="text-xs font-medium text-gray-700">New Service</p>
           </Link>
           <Link
             href="/students"
@@ -358,10 +357,10 @@ async function CoordinatorDashboard() {
           </Link>
           <Link
             href="/camps"
-            className="bg-white rounded-xl border border-gray-100 p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
           >
             <Tent size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">All Camps</p>
+            <p className="text-xs font-medium text-gray-700">All Services</p>
           </Link>
         </div>
       </div>
@@ -434,7 +433,7 @@ async function CoordinatorDashboard() {
 
       {coordData.activeCamps.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Active Camps</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Active Services</h3>
           <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
             {coordData.activeCamps.map((c: any) => {
               const coachRel = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
