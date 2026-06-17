@@ -253,6 +253,42 @@ export async function updateAcademyBranding(input: {
   revalidatePath(`/academies/${input.academy_id}`);
 }
 
+// Emergency Plan — location-specific emergency info every coach can pull up.
+// Editable by the platform admin OR the academy's own coordinator/admin.
+export async function updateAcademyEmergencyPlan(input: {
+  academy_id: string;
+  emergency_numbers: string | null;
+  nearest_hospital: string | null;
+  lifeguard_contact: string | null;
+  emergency_address: string | null;
+  emergency_protocol: string | null;
+}) {
+  const me = await getCurrentCoach();
+  const isOwnAcademyLead =
+    (me?.role === 'coordinator' || me?.role === 'admin') &&
+    me?.academy_id === input.academy_id;
+  if (!me?.is_platform_admin && !isOwnAcademyLead) {
+    throw new Error('Only the platform admin or this academy’s coordinator can edit the emergency plan.');
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('academies')
+    .update({
+      emergency_numbers: input.emergency_numbers?.trim() || null,
+      nearest_hospital: input.nearest_hospital?.trim() || null,
+      lifeguard_contact: input.lifeguard_contact?.trim() || null,
+      emergency_address: input.emergency_address?.trim() || null,
+      emergency_protocol: input.emergency_protocol?.trim() || null,
+      emergency_updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.academy_id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/academies/${input.academy_id}`);
+  revalidatePath('/academies');
+}
+
 // M8 — Delete academy. Only allowed when no students / coaches / camps
 // exist for the academy. Refuses with a friendly error otherwise.
 export async function deleteAcademy(academyId: string) {

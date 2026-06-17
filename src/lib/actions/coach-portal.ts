@@ -46,6 +46,13 @@ export interface CoachPortalData {
     accent_color: string | null;
     tagline: string | null;
   } | null;
+  emergencyPlan: {
+    emergency_numbers: string | null;
+    nearest_hospital: string | null;
+    lifeguard_contact: string | null;
+    emergency_address: string | null;
+    emergency_protocol: string | null;
+  } | null;
 }
 
 export async function getCoachPortalData(token: string): Promise<CoachPortalData | null> {
@@ -189,13 +196,26 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
 
   // M9 — coach portal also themed by academy.
   let academyBranding: CoachPortalData['academyBranding'] = null;
+  let emergencyPlan: CoachPortalData['emergencyPlan'] = null;
   if (coach.academy_id) {
     const { data: aca } = await admin
       .from('academies')
-      .select('name, logo_url, primary_color, accent_color, tagline')
+      .select('name, logo_url, primary_color, accent_color, tagline, emergency_numbers, nearest_hospital, lifeguard_contact, emergency_address, emergency_protocol')
       .eq('id', coach.academy_id)
       .single();
-    academyBranding = aca ?? null;
+    if (aca) {
+      academyBranding = {
+        name: aca.name, logo_url: aca.logo_url, primary_color: aca.primary_color,
+        accent_color: aca.accent_color, tagline: aca.tagline,
+      };
+      emergencyPlan = {
+        emergency_numbers: aca.emergency_numbers ?? null,
+        nearest_hospital: aca.nearest_hospital ?? null,
+        lifeguard_contact: aca.lifeguard_contact ?? null,
+        emergency_address: aca.emergency_address ?? null,
+        emergency_protocol: aca.emergency_protocol ?? null,
+      };
+    }
   }
 
   return {
@@ -217,6 +237,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     availableDrills,
     stps: await listCoachStps(token),
     academyBranding,
+    emergencyPlan,
   };
 }
 

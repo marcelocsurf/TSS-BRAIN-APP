@@ -60,7 +60,7 @@ export function CoachPortalTabs({
         {activeTab === 'home' && (
           <>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
-            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} />
+            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} />
           </>
         )}
         {activeTab === 'courses' && (
@@ -116,19 +116,68 @@ export function CoachPortalTabs({
 
 // ───────────────────────────────────────
 
+function EmRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 w-20 shrink-0 pt-0.5">{label}</span>
+      <span className="text-gray-800 flex-1 whitespace-pre-line">{value}</span>
+    </div>
+  );
+}
+
 function HomeTab({
   coach,
   stats,
   upcoming,
+  emergencyPlan,
 }: {
   coach: any;
   stats: any;
   upcoming: any[];
+  emergencyPlan?: {
+    emergency_numbers: string | null;
+    nearest_hospital: string | null;
+    lifeguard_contact: string | null;
+    emergency_address: string | null;
+    emergency_protocol: string | null;
+  } | null;
 }) {
   const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
   const profileIncomplete = !coach.intake_completed_at;
+  const hasEmergency = !!emergencyPlan && (
+    emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
+    emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address ||
+    emergencyPlan.emergency_protocol
+  );
   return (
     <div className="space-y-4">
+      {/* Emergency plan — always at hand for the coach */}
+      <details className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden">
+        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+          <span className="text-sm font-bold text-red-700">🚨 Plan de emergencia</span>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-red-400">{hasEmergency ? 'Ver' : 'No definido'}</span>
+        </summary>
+        <div className="px-4 pb-4 space-y-2 border-t border-red-50 pt-3">
+          {hasEmergency ? (
+            <>
+              {emergencyPlan!.emergency_numbers && <EmRow label="Números" value={emergencyPlan!.emergency_numbers} />}
+              {emergencyPlan!.nearest_hospital && <EmRow label="Hospital" value={emergencyPlan!.nearest_hospital} />}
+              {emergencyPlan!.lifeguard_contact && <EmRow label="Salvavidas" value={emergencyPlan!.lifeguard_contact} />}
+              {emergencyPlan!.emergency_address && <EmRow label="Ubicación" value={emergencyPlan!.emergency_address} />}
+              {emergencyPlan!.emergency_protocol && (
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Protocolo</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{emergencyPlan!.emergency_protocol}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-gray-500 italic">
+              Tu academia aún no cargó el plan de emergencia. Pedile al coordinador que lo complete.
+            </p>
+          )}
+        </div>
+      </details>
       {profileIncomplete && (
         <Link
           href={`/coach-portal/${coach.portal_token}/profile`}

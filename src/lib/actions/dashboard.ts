@@ -4,6 +4,52 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from './auth';
 
 // ═══════════════════════════════════════
+// INCIDENT REPORTS — alerts for coordinator + admin
+// ═══════════════════════════════════════
+
+export interface IncidentAlert {
+  id: string;
+  incident_type: string | null;
+  incident_description: string | null;
+  incident_action: string | null;
+  created_at: string | null;
+  student_name: string | null;
+  coach_name: string | null;
+}
+
+// Recent incidents a coach flagged on session close. Scoped to the academy
+// in context (platform admin with no academy sees all). Surfaced as a red
+// panel on the coordinator + admin dashboards.
+export async function getRecentIncidents(academyId: string | null, limit = 10): Promise<IncidentAlert[]> {
+  const supabase = await createClient();
+
+  let q = supabase
+    .from('student_session_results')
+    .select('id, incident_type, incident_description, incident_action, created_at, students!inner(first_name, last_name, academy_id), coaches:coach_id(display_name)')
+    .not('incident_type', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (academyId) q = q.eq('students.academy_id', academyId);
+
+  const { data, error } = await q;
+  if (error || !data) return [];
+
+  return (data as any[]).map((r) => {
+    const stu = Array.isArray(r.students) ? r.students[0] : r.students;
+    const co = Array.isArray(r.coaches) ? r.coaches[0] : r.coaches;
+    return {
+      id: r.id,
+      incident_type: r.incident_type ?? null,
+      incident_description: r.incident_description ?? null,
+      incident_action: r.incident_action ?? null,
+      created_at: r.created_at ?? null,
+      student_name: stu ? `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim() : null,
+      coach_name: co?.display_name ?? null,
+    };
+  });
+}
+
+// ═══════════════════════════════════════
 // ADMIN DASHBOARD DATA
 // ═══════════════════════════════════════
 

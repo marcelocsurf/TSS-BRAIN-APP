@@ -6,6 +6,7 @@ import {
   getCoordinatorDashboardData,
   getAssistantDashboardData,
   getRecentAuditEvents,
+  getRecentIncidents,
 } from '@/lib/actions/dashboard';
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { getMyNotifications } from '@/lib/actions/notifications';
@@ -85,6 +86,15 @@ export default async function DashboardHome() {
     notifications = await getMyNotifications();
   } catch { /* non-blocking */ }
 
+  // Incident reports — alert coordinator + admin so a flagged incident
+  // never goes unseen. Scoped to the academy in context.
+  let incidents: Awaited<ReturnType<typeof getRecentIncidents>> = [];
+  if (role === 'admin' || role === 'coordinator') {
+    try {
+      incidents = await getRecentIncidents(academyId);
+    } catch { /* non-blocking */ }
+  }
+
   // Drafts for coaches/coordinators/admins
   let drafts: any[] = [];
   if (role === 'admin' || role === 'coordinator' || role === 'coach') {
@@ -112,6 +122,38 @@ export default async function DashboardHome() {
       </p>
 
       <NotificationsPanel notifications={notifications} />
+
+      {/* Incident reports — coordinator + admin. Red so it can't be missed. */}
+      {incidents.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-red-700 mb-3 uppercase tracking-wider inline-flex items-center gap-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+            <AlertTriangle size={14} strokeWidth={1.75} /> Incident reports ({incidents.length})
+          </h3>
+          <div className="bg-white rounded-xl border border-red-200 divide-y divide-red-50 overflow-hidden">
+            {incidents.map((inc) => (
+              <div key={inc.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+                    {inc.incident_type || 'incident'}
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {inc.created_at ? new Date(inc.created_at).toLocaleDateString() : ''}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--tss-navy)] mt-1">
+                  {inc.student_name || 'Student'}{inc.coach_name ? ` · ${inc.coach_name}` : ''}
+                </p>
+                {inc.incident_description && (
+                  <p className="text-xs text-gray-600 mt-0.5">{inc.incident_description}</p>
+                )}
+                {inc.incident_action && (
+                  <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Action:</span> {inc.incident_action}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick stats — telemetry strip with consistent Lora numerals */}
       <p className="tss-section-label">

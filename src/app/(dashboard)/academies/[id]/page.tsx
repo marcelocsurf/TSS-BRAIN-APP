@@ -25,7 +25,7 @@ export default async function AcademyDetailPage({ params }: Props) {
   const { data: academy } = await supabase
     .from('academies')
     .select(
-      'id, name, slug, country, created_at, logo_url, primary_color, accent_color, tagline, assigned_coordinator_id, coaches:assigned_coordinator_id(id, display_name, email, role, certification_level)'
+      'id, name, slug, country, created_at, logo_url, primary_color, accent_color, tagline, assigned_coordinator_id, emergency_numbers, nearest_hospital, lifeguard_contact, emergency_address, emergency_protocol, emergency_updated_at, coaches:assigned_coordinator_id(id, display_name, email, role, certification_level)'
     )
     .eq('id', id)
     .single();
@@ -91,6 +91,12 @@ export default async function AcademyDetailPage({ params }: Props) {
           primary_color: academy.primary_color ?? null,
           accent_color: academy.accent_color ?? null,
           tagline: academy.tagline ?? null,
+          emergency_numbers: (academy as any).emergency_numbers ?? null,
+          nearest_hospital: (academy as any).nearest_hospital ?? null,
+          lifeguard_contact: (academy as any).lifeguard_contact ?? null,
+          emergency_address: (academy as any).emergency_address ?? null,
+          emergency_protocol: (academy as any).emergency_protocol ?? null,
+          emergency_updated_at: (academy as any).emergency_updated_at ?? null,
         }}
         coordinator={
           co

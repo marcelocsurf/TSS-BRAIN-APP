@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { updateAcademyBranding, deleteAcademy } from '../actions';
+import { updateAcademyBranding, deleteAcademy, updateAcademyEmergencyPlan } from '../actions';
 import { actAsAcademy } from '@/lib/actions/auth';
 import { startCoordinatorImpersonation } from '@/lib/actions/impersonate';
 import { BRAND } from '@/lib/constants/brand';
@@ -19,6 +19,12 @@ interface Academy {
   primary_color: string | null;
   accent_color: string | null;
   tagline: string | null;
+  emergency_numbers: string | null;
+  nearest_hospital: string | null;
+  lifeguard_contact: string | null;
+  emergency_address: string | null;
+  emergency_protocol: string | null;
+  emergency_updated_at: string | null;
 }
 
 interface Coordinator {
@@ -73,6 +79,35 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
   const [tagline, setTagline] = useState(academy.tagline ?? '');
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
+
+  // Emergency plan form state
+  const [emNumbers, setEmNumbers] = useState(academy.emergency_numbers ?? '');
+  const [emHospital, setEmHospital] = useState(academy.nearest_hospital ?? '');
+  const [emLifeguard, setEmLifeguard] = useState(academy.lifeguard_contact ?? '');
+  const [emAddress, setEmAddress] = useState(academy.emergency_address ?? '');
+  const [emProtocol, setEmProtocol] = useState(academy.emergency_protocol ?? '');
+  const [emSavedAt, setEmSavedAt] = useState<number | null>(null);
+  const [emError, setEmError] = useState('');
+
+  const saveEmergencyPlan = () => {
+    setEmError('');
+    startTransition(async () => {
+      try {
+        await updateAcademyEmergencyPlan({
+          academy_id: academy.id,
+          emergency_numbers: emNumbers.trim() || null,
+          nearest_hospital: emHospital.trim() || null,
+          lifeguard_contact: emLifeguard.trim() || null,
+          emergency_address: emAddress.trim() || null,
+          emergency_protocol: emProtocol.trim() || null,
+        });
+        setEmSavedAt(Date.now());
+        router.refresh();
+      } catch (e: any) {
+        setEmError(e.message || 'Could not save the emergency plan.');
+      }
+    });
+  };
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -392,6 +427,54 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           style={{ background: BRAND.colors.navy }}
         >
           {pending ? 'Saving…' : 'Save branding'}
+        </button>
+      </div>
+
+      {/* Emergency plan — location-specific, shown to every coach */}
+      <div className="bg-white rounded-xl border border-red-100 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-wider text-red-600 font-mono font-semibold">
+            🚨 Emergency plan
+          </p>
+          {!academy.emergency_numbers && !academy.nearest_hospital && (
+            <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Pendiente de llenar</span>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-500 -mt-1">
+          Específico del lugar donde opera la academia. Lo ve cada coach en su portal — debe estar siempre a la mano.
+        </p>
+        <Field label="Números de emergencia (911 · ambulancia · policía)">
+          <input value={emNumbers} onChange={(e) => setEmNumbers(e.target.value)} placeholder="911 · Cruz Roja 2222-5155 · PNC 911" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        </Field>
+        <Field label="Hospital / clínica más cercana (nombre · dirección · teléfono)">
+          <input value={emHospital} onChange={(e) => setEmHospital(e.target.value)} placeholder="Hospital ___ · Calle ___ · 2222-0000" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        </Field>
+        <Field label="Salvavidas / guardacostas">
+          <input value={emLifeguard} onChange={(e) => setEmLifeguard(e.target.value)} placeholder="Torre de salvavidas / contacto" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        </Field>
+        <Field label="Punto exacto / dirección para dar a los servicios de emergencia">
+          <input value={emAddress} onChange={(e) => setEmAddress(e.target.value)} placeholder="Playa ___, frente a ___ (coordenadas / referencia)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        </Field>
+        <div>
+          <label className="block text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-1">Protocolo / pasos</label>
+          <textarea
+            value={emProtocol}
+            onChange={(e) => setEmProtocol(e.target.value)}
+            rows={4}
+            placeholder="Qué hacer en una emergencia: quién llama, dónde está el botiquín, punto de reunión, etc."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-300"
+          />
+        </div>
+        {emError && <p className="text-xs text-red-600">{emError}</p>}
+        {emSavedAt && <p className="text-xs text-emerald-600">✓ Guardado · {new Date(emSavedAt).toLocaleTimeString()}</p>}
+        <button
+          type="button"
+          onClick={saveEmergencyPlan}
+          disabled={pending}
+          className="w-full py-2.5 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
+          style={{ background: BRAND.colors.navy }}
+        >
+          {pending ? 'Guardando…' : 'Guardar plan de emergencia'}
         </button>
       </div>
 
