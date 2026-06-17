@@ -167,6 +167,11 @@ interface CoachInviteEmailData {
 export async function sendCoachInviteEmail(
   data: CoachInviteEmailData,
 ): Promise<{ success: boolean; error?: string }> {
+  // Fail clearly (not cryptically) if the email service isn't configured.
+  if (!process.env.RESEND_API_KEY) {
+    console.error('sendCoachInviteEmail: RESEND_API_KEY is not set.');
+    return { success: false, error: 'Email service not configured (RESEND_API_KEY missing).' };
+  }
   try {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',

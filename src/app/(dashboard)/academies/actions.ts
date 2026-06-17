@@ -80,6 +80,7 @@ export async function assignCoordinator(input: {
   let coachId: string;
   let coachHadAuthUser = false;
   let coachPasswordSetAt: string | null = null;
+  let emailResult: { success: boolean; error?: string } | null = null;
 
   if (existingCoach) {
     // If the coach is currently assigned_coordinator of any OTHER
@@ -157,8 +158,9 @@ export async function assignCoordinator(input: {
     }
     coachId = newCoach.id;
 
-    // Send our own branded welcome email.
-    await sendCoachInviteEmail({
+    // Send our own branded welcome email. Capture the result so the caller
+    // can warn the admin if delivery failed (coordinator is still created).
+    emailResult = await sendCoachInviteEmail({
       toEmail: normalizedEmail,
       firstName: input.first_name.trim(),
       role: 'coordinator',
@@ -213,7 +215,12 @@ export async function assignCoordinator(input: {
   if (academyErr) throw new Error(academyErr.message);
 
   revalidatePath('/academies');
-  return { success: true, coach_id: coachId };
+  return {
+    success: true,
+    coach_id: coachId,
+    emailSent: emailResult ? emailResult.success : null,
+    emailError: emailResult && !emailResult.success ? emailResult.error : null,
+  };
 }
 
 // M8 — Branding editor. Updates the 4 brand columns on academies.
