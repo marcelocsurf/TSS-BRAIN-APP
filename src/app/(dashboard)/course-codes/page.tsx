@@ -31,7 +31,9 @@ export default async function CourseCodesPage() {
           Course Access Codes
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Generate single-use codes to give students access to the TSS White Belt Masterclass.
+          Vouchers de un solo uso para vender o regalar el <strong>curso online</strong> (Masterclass)
+          a personas fuera de un camp. Quien lo canjea crea su cuenta y obtiene el curso al instante;
+          cada canje queda contado en facturación a tu academia.
         </p>
       </div>
 

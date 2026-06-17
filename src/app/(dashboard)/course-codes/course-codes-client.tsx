@@ -76,6 +76,7 @@ export function CourseCodesClient({
   const [batchLabel, setBatchLabel] = useState('');
   const [quantity, setQuantity] = useState(10);
   const [productType, setProductType] = useState('white_belt');
+  const [expiresInDays, setExpiresInDays] = useState('');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedBatch, setGeneratedBatch] = useState<string[] | null>(null);
@@ -92,7 +93,13 @@ export function CourseCodesClient({
     setError(null);
     setGeneratedBatch(null);
 
-    const res = await generateAccessCodeBatch(quantity, productType, batchLabel.trim());
+    const res = await generateAccessCodeBatch(
+      quantity,
+      productType,
+      batchLabel.trim(),
+      undefined,
+      expiresInDays ? parseInt(expiresInDays, 10) : null,
+    );
     setGenerating(false);
 
     if (!res.ok) {
@@ -213,6 +220,18 @@ export function CourseCodesClient({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-700 mb-1">Expira en (días) — opcional</label>
+          <input
+            type="number"
+            value={expiresInDays}
+            min={1}
+            onChange={(e) => setExpiresInDays(e.target.value)}
+            placeholder="ej. 90 · vacío = sin vencimiento"
+            className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+          />
         </div>
 
         <button

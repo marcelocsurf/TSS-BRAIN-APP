@@ -533,7 +533,8 @@ export async function generateAccessCodeBatch(
   count: number,
   productType: string = 'white_belt',
   batchLabel: string,
-  notes?: string
+  notes?: string,
+  expiresInDays?: number | null,
 ): Promise<{ ok: true; codes: string[] } | { ok: false; error: string }> {
   if (count < 1 || count > 50) {
     return { ok: false, error: 'Count must be between 1 and 50' };
@@ -557,6 +558,11 @@ export async function generateAccessCodeBatch(
     generatedCodes.push(codeData as string);
   }
 
+  const expiresAt =
+    expiresInDays && expiresInDays > 0
+      ? new Date(Date.now() + expiresInDays * 86400000).toISOString()
+      : null;
+
   const rows = generatedCodes.map((code) => ({
     code,
     product_type: productType,
@@ -564,6 +570,7 @@ export async function generateAccessCodeBatch(
     notes: notes || null,
     academy_id: coach.academy_id || null,
     created_by: coach.id,
+    expires_at: expiresAt,
   }));
 
   const { error: insertErr } = await admin.from('access_codes').insert(rows);
@@ -753,6 +760,16 @@ export async function redeemCodeAndCreateStudent(
     // Roll back student creation on failure
     await admin.from('students').delete().eq('id', newStudent.id);
     return { ok: false, error: consumeResult.error || 'Failed to activate code' };
+  }
+
+  // Record a billable course grant so the redemption shows up in
+  // /admin/billing for the academy, priced at that academy's course price.
+  // Best-effort — the student already has access via the boolean flag.
+  try {
+    const { grantCourseToStudent } = await import('@/lib/actions/course-grants');
+    await grantCourseToStudent(newStudent.id, codeRow.product_type, 'access_code');
+  } catch (e) {
+    console.error('access_code grant (billing) failed:', e);
   }
 
   return { ok: true, portalToken: newStudent.portal_token as string };

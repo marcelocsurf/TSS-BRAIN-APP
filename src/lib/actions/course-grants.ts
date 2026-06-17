@@ -29,6 +29,7 @@ export type GrantSource =
   | 'auto_on_intake'
   | 'auto_on_camp_enrol'
   | 'direct_purchase'
+  | 'access_code'
   | 'override';
 
 // ─── Grant a course to a student ───
