@@ -177,6 +177,36 @@ export function CampPlanReader({
                 </span>
               </button>
 
+              {/* Collapsed preview — list the day's activities at a glance so
+                  the plan reads as "full" without expanding every day. */}
+              {!isOpen && d.blocks.length > 0 && (
+                <ul className="px-5 pb-4 -mt-1 space-y-1">
+                  {d.blocks.map((b) => {
+                    const title =
+                      b.pilar_part ||
+                      b.mission_custom ||
+                      b.mission?.title ||
+                      b.drill_custom ||
+                      b.drill?.title ||
+                      (b.block_type ? String(b.block_type).replace(/_/g, ' ') : 'Activity');
+                    return (
+                      <li
+                        key={b.block_order}
+                        className="flex items-start gap-2 text-[12px] text-gray-600 leading-snug"
+                      >
+                        <span className="text-[var(--tss-cyan)] shrink-0">·</span>
+                        <span className="truncate">{title}</span>
+                        {b.mission_time && (
+                          <span className="ml-auto shrink-0 text-[10px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+                            {b.mission_time}m
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
               {/* Day body — visible in detail mode or when expanded */}
               {isOpen && (
                 <div className="border-t border-gray-100 px-5 py-4 space-y-4 bg-gray-50/30">
