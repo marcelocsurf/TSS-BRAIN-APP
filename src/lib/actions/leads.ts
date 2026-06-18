@@ -235,6 +235,10 @@ export async function promoteLeadToMember(
     .from('students')
     .update({
       lifecycle_status: 'member',
+      // A promoted member is no longer a one-time drop-in. Flipping the type
+      // re-opens the full intake (level quiz, goals, etc.) — a drop-in intake
+      // stops at the basic safety step and never asks for level.
+      student_type: 'member',
       promoted_to_member_at: student.lifecycle_status === 'lead'
         ? new Date().toISOString()
         : undefined,
