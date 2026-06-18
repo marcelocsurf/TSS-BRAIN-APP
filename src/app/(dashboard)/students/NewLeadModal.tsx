@@ -16,6 +16,7 @@ export default function NewLeadModal() {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [phone, setPhone] = useState('');
+  const [studentType, setStudentType] = useState<'member' | 'dropin'>('member');
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function NewLeadModal() {
         first_name: first,
         last_name: last,
         phone: phone || null,
+        student_type: studentType,
         allowDuplicate,
       });
       setCreatedUrl(leadFormUrl);
@@ -134,6 +136,22 @@ export default function NewLeadModal() {
                     placeholder="+503 7000 0000"
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
                   />
+                </Field>
+
+                <Field label="Tipo">
+                  <div className="grid grid-cols-2 gap-2">
+                    {([['member', 'Miembro', 'Academia · portal + curso'], ['dropin', 'Drop-in', 'Clase suelta · solo waiver']] as const).map(([val, label, desc]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setStudentType(val)}
+                        className={`text-left rounded-xl border px-3 py-2 transition-colors ${studentType === val ? 'border-[var(--tss-cyan)] bg-cyan-50/40' : 'border-gray-200 hover:border-gray-300'}`}
+                      >
+                        <p className="text-sm font-semibold text-[var(--tss-navy)]">{label}</p>
+                        <p className="text-[10px] text-gray-500">{desc}</p>
+                      </button>
+                    ))}
+                  </div>
                 </Field>
 
                 {error && (

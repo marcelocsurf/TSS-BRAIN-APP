@@ -21,6 +21,8 @@ type CreateLeadInput = {
   phone?: string | null;
   email?: string | null;
   academy_id?: string | null;
+  /** 'member' (academy, portal+course) | 'dropin' (single service, no portal/course). */
+  student_type?: 'member' | 'dropin';
   /** Skip the duplicate-detection guard (caller confirmed it's a new person). */
   allowDuplicate?: boolean;
 };
@@ -114,6 +116,7 @@ export async function createLead(input: CreateLeadInput): Promise<{
       academy_id: academyId,
       portal_token: portalToken,
       lifecycle_status: 'lead',
+      student_type: input.student_type ?? 'member',
       // Leads start with NO course access; they only get it once promoted.
       course_access_white: false,
       course_access_yellow: false,

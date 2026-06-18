@@ -7,6 +7,7 @@ import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
 
 interface StudentData {
+  student_type?: string | null;
   gender?: string | null;
   nationality?: string | null;
   languages?: string | null;
@@ -211,21 +212,31 @@ export function IntakeForm({ token, student }: Props) {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-3">
-          <p className="text-sm text-gray-600 font-medium">Want to help your coach even more?</p>
-          <p className="text-xs text-gray-400">
-            Add your surf experience, goals, and personal details. Takes about 3 minutes.
-          </p>
-          <button
-            type="button"
-            onClick={() => setStage('extended')}
-            className="w-full py-3 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
-            style={{ background: BRAND.colors.navy }}
-          >
-            Continue to Extended Profile
-          </button>
-          <p className="text-[10px] text-gray-400">You can also do this later from the same link.</p>
-        </div>
+        {/* Extended profile (goals etc.) is for MEMBERS. Drop-in students
+            (single service) finish here — no goals, no portal, no course. */}
+        {student.student_type === 'dropin' ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-2">
+            <p className="text-2xl">🤙</p>
+            <p className="text-sm font-semibold text-[var(--tss-navy)]">¡Todo listo!</p>
+            <p className="text-xs text-gray-500">Ya podés cerrar esta página. Nos vemos en el agua.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-3">
+            <p className="text-sm text-gray-600 font-medium">Want to help your coach even more?</p>
+            <p className="text-xs text-gray-400">
+              Add your surf experience, goals, and personal details. Takes about 3 minutes.
+            </p>
+            <button
+              type="button"
+              onClick={() => setStage('extended')}
+              className="w-full py-3 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
+              style={{ background: BRAND.colors.navy }}
+            >
+              Continue to Extended Profile
+            </button>
+            <p className="text-[10px] text-gray-400">You can also do this later from the same link.</p>
+          </div>
+        )}
       </div>
     );
   }
