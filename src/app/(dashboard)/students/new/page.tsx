@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { createLead } from '@/lib/actions/leads';
 import { ArrowLeft } from 'lucide-react';
+import { HowToAddStudent } from '@/components/students/HowToAddStudent';
 
 // Phase 5 — single onboarding funnel. Creating a student is now create-minimal
 // (name + contact + type); ALL the real data (level quiz, basics, medical,
@@ -59,6 +60,8 @@ export default function AddStudentPage() {
       <Link href="/students" className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)]">
         <ArrowLeft size={12} /> Students
       </Link>
+
+      <HowToAddStudent />
 
       {!createdUrl ? (
         <form onSubmit={(e) => submit(e)} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
