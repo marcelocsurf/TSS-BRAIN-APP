@@ -554,18 +554,9 @@ export function IntakeForm({ token, student }: Props) {
                 onChange={(v) => setExt('comfort_wave_size', v)}
                 options={['Up to waist', 'Up to chest', 'Up to head', 'Overhead']}
               />
-              <OptionGroup
-                label="How would you describe your surfing today?"
-                value={(extForm.surf_self_level as string) || ''}
-                onChange={(v) => setExt('surf_self_level', v)}
-                options={[
-                  'I catch whitewater / foam',
-                  'I catch green (unbroken) waves going straight',
-                  'I can angle and ride along the wave',
-                  'I do basic turns (bottom / top turn)',
-                  'I surf fluidly with linked turns',
-                ]}
-              />
+              {/* "How would you describe your surfing today?" removed —
+                  the surf-level quiz (Step 1) already determines this. No
+                  duplicate self-rating. */}
               <OptionGroup
                 label="How do you learn best?"
                 value={(extForm.learning_style as string) || ''}
