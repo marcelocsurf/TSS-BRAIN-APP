@@ -274,18 +274,19 @@ export default async function DashboardHome() {
         </div>
       )}
 
+      {/* Tides — surfaced high up: whoever schedules/runs sessions needs it
+          at a glance alongside today's plan. */}
+      {(role === 'admin' || role === 'coordinator' || role === 'coach') && (
+        <div className="mb-6">
+          <TideWidget isAdmin={role === 'admin'} />
+        </div>
+      )}
+
       {/* Role-specific content */}
       {role === 'admin' && <AdminDashboard />}
       {role === 'coordinator' && <CoordinatorDashboard />}
       {role === 'coach' && coach && <CoachDashboard coachId={coach.id} />}
       {role === 'assistant' && <AssistantDashboard />}
-
-      {/* Tides — for whoever schedules / runs whitewater lessons */}
-      {(role === 'admin' || role === 'coordinator' || role === 'coach') && (
-        <div className="mt-6">
-          <TideWidget isAdmin={role === 'admin'} />
-        </div>
-      )}
 
       {/* Quick actions — only for non-coordinator roles. Coordinator has
           its own Quick Actions block inside CoordinatorDashboard above. */}
