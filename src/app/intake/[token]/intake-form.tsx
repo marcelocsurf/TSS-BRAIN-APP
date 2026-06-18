@@ -714,7 +714,7 @@ export function IntakeForm({ token, student }: Props) {
 
 function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   const steps: { label: string }[] = [
-    { label: 'Ocean Quiz' },
+    { label: 'Your Level' },
     { label: 'Safety & Waiver' },
     { label: 'Extended Profile' },
   ];
