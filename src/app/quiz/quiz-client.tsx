@@ -13,10 +13,10 @@ const DEEP = '#0a1628';
 type Screen = 'intro' | 'gate' | 'quiz' | 'result';
 
 const GATE = [
-  { emoji: '🏖️', txt: 'Nunca he surfeado — o solo probé una o dos veces de vacaciones' },
-  { emoji: '🌊', txt: 'Estoy aprendiendo — a veces me paro pero sigo con lo básico' },
-  { emoji: '🏄', txt: 'Surfeo olas verdes — corro la pared y hago algunos giros' },
-  { emoji: '⚡', txt: 'Surfeo con potencia — hago maniobras, pego al labio, en condiciones variadas' },
+  { emoji: '🏖️', txt: "I've never surfed — or only tried once or twice on vacation" },
+  { emoji: '🌊', txt: "I'm learning — I stand up sometimes but I'm still on the basics" },
+  { emoji: '🏄', txt: 'I surf green waves — I ride the face and do some turns' },
+  { emoji: '⚡', txt: 'I surf with power — maneuvers, hitting the lip, varied conditions' },
 ];
 
 export function QuizClient({ academySlug }: { academySlug: string | null }) {
@@ -81,14 +81,14 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
 
         {screen === 'intro' && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <span style={chip}>⚡ Test de 60 segundos</span>
+            <span style={chip}>⚡ 60-second assessment</span>
             <h1 style={{ fontFamily: 'Instrument Serif, Playfair Display, serif', fontSize: '2.6rem', lineHeight: 1.1, margin: '20px 0' }}>
-              ¿Cuál es tu <em style={{ color: ACCENT }}>nivel real</em> de surf?
+              What&apos;s your <em style={{ color: ACCENT }}>real</em> surf level?
             </h1>
             <p style={{ color: '#c4d9e8', opacity: 0.8, lineHeight: 1.5, maxWidth: 380, margin: '0 auto 28px' }}>
-              La mayoría se cree 1-2 niveles por encima de donde está. Saber tu nivel real es el atajo más rápido para mejorar. Usamos escenarios reales, no auto-calificación.
+              Most surfers think they&apos;re 1-2 levels above where they actually are. Knowing your real level is the fastest shortcut to improving. We use real scenarios, not self-rating.
             </p>
-            <button style={btnPrimary} onClick={() => setScreen('gate')}>Encontrar mi nivel →</button>
+            <button style={btnPrimary} onClick={() => setScreen('gate')}>Find my level →</button>
           </div>
         )}
 
@@ -96,9 +96,9 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ fontSize: '2.2rem' }}>🌊</div>
             <h2 style={{ fontFamily: 'Instrument Serif, Playfair Display, serif', fontSize: '1.7rem', margin: '10px 0 6px' }}>
-              ¿Dónde estás en tu camino?
+              Where are you in your journey?
             </h2>
-            <p style={{ color: '#c4d9e8', opacity: 0.7, marginBottom: 20 }}>Elegí la opción más honesta.</p>
+            <p style={{ color: '#c4d9e8', opacity: 0.7, marginBottom: 20 }}>Pick the most honest one.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {GATE.map((g, i) => (
                 <button key={i} onClick={() => gateSelect(i)} style={gateOpt}>
@@ -145,7 +145,7 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
               <span style={{ fontSize: '.6rem', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.4 }}>/ {MAX_SCORE}</span>
             </div>
             <div style={{ fontFamily: 'Instrument Serif, Playfair Display, serif', fontSize: '2rem', color: level.color }}>{level.name}</div>
-            <p style={{ color: '#c4d9e8', opacity: 0.65, fontSize: '.85rem', marginTop: 4 }}>Tu nivel de entrada (lo confirma tu coach)</p>
+            <p style={{ color: '#c4d9e8', opacity: 0.65, fontSize: '.85rem', marginTop: 4 }}>Your entry level (your coach confirms it)</p>
 
             {/* skill map */}
             <div style={{ maxWidth: 400, margin: '20px auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -163,26 +163,26 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
             {!saved ? (
               <div style={{ maxWidth: 400, margin: '0 auto', textAlign: 'left' }}>
                 <p style={{ fontSize: '.85rem', color: '#c4d9e8', opacity: 0.8, marginBottom: 10, textAlign: 'center' }}>
-                  Dejá tus datos y te armamos tu camino desde el nivel <strong style={{ color: level.color }}>{level.name}</strong>.
+                  Leave your details and we&apos;ll build your path from <strong style={{ color: level.color }}>{level.name}</strong>.
                 </p>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" style={inp} />
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={inp} />
                 <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inp} />
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono / WhatsApp" style={inp} />
+                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp" style={inp} />
                 {err && <p style={{ color: '#ff6b6b', fontSize: '.8rem', margin: '6px 0' }}>{err}</p>}
                 <button onClick={submitLead} disabled={saving} style={{ ...btnPrimary, width: '100%', marginTop: 6 }}>
-                  {saving ? 'Guardando…' : 'Quiero mi camino →'}
+                  {saving ? 'Saving…' : 'Build my path →'}
                 </button>
               </div>
             ) : (
               <div style={{ maxWidth: 400, margin: '0 auto' }}>
-                <p style={{ fontSize: '1rem', fontWeight: 700, color: ACCENT }}>¡Listo! 🤙</p>
+                <p style={{ fontSize: '1rem', fontWeight: 700, color: ACCENT }}>Done! 🤙</p>
                 <p style={{ fontSize: '.85rem', color: '#c4d9e8', opacity: 0.8, marginTop: 6 }}>
-                  Te vamos a contactar para empezar tu camino desde {level.name}.
+                  We&apos;ll reach out to start your path from {level.name}.
                 </p>
               </div>
             )}
 
-            <p style={{ fontSize: '.65rem', color: '#c4d9e8', opacity: 0.25, marginTop: 24 }}>Basado en la metodología The Surf Sequence™</p>
+            <p style={{ fontSize: '.65rem', color: '#c4d9e8', opacity: 0.25, marginTop: 24 }}>Based on The Surf Sequence™ methodology</p>
           </div>
         )}
       </div>

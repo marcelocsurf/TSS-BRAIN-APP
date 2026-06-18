@@ -138,9 +138,9 @@ export default function NewLeadModal() {
                   />
                 </Field>
 
-                <Field label="Tipo">
+                <Field label="Type">
                   <div className="grid grid-cols-2 gap-2">
-                    {([['member', 'Miembro', 'Academia · portal + curso'], ['dropin', 'Drop-in', 'Clase suelta · solo waiver']] as const).map(([val, label, desc]) => (
+                    {([['member', 'Member', 'Academy · portal + course'], ['dropin', 'Drop-in', 'Single class · waiver only']] as const).map(([val, label, desc]) => (
                       <button
                         key={val}
                         type="button"

@@ -1761,7 +1761,7 @@ function StudentPlanCard({
                 if (!ref) return null;
                 return (
                   <p className="text-[10px] text-gray-400 truncate">
-                    Usa normalmente:{' '}
+                    Usually rides:{' '}
                     <span className="font-semibold text-[var(--tss-navy)]">
                       {ref}
                     </span>
@@ -1781,12 +1781,12 @@ function StudentPlanCard({
                 .filter((b) => b.id === firstBlock.board_id || (b.status !== 'in_repair' && !conflicts.has(b.id)))
                 .map((b) => ({
                   value: b.id,
-                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}${b.status === 'in_repair' ? ' · (reparación)' : ''}`,
+                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}${b.status === 'in_repair' ? ' · (in repair)' : ''}`,
                 }));
               return (
                 <div>
                   <SelectField
-                    label="Tabla del inventario"
+                    label="Inventory board"
                     value={firstBlock.board_id}
                     options={options}
                     onChange={(v) => {

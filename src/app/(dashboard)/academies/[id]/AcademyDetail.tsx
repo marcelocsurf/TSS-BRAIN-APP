@@ -444,36 +444,36 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             🚨 Emergency plan
           </p>
           {!academy.emergency_numbers && !academy.nearest_hospital && (
-            <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Pendiente de llenar</span>
+            <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Pending</span>
           )}
         </div>
         <p className="text-[11px] text-gray-500 -mt-1">
-          Específico del lugar donde opera la academia. Lo ve cada coach en su portal — debe estar siempre a la mano.
+          Specific to where the academy operates. Every coach sees it in their portal — keep it always at hand.
         </p>
-        <Field label="Números de emergencia (911 · ambulancia · policía)">
-          <input value={emNumbers} onChange={(e) => setEmNumbers(e.target.value)} placeholder="911 · Cruz Roja 2222-5155 · PNC 911" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        <Field label="Emergency numbers (911 · ambulance · police)">
+          <input value={emNumbers} onChange={(e) => setEmNumbers(e.target.value)} placeholder="911 · Red Cross 2222-5155 · Police 911" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
-        <Field label="Hospital / clínica más cercana (nombre · dirección · teléfono)">
-          <input value={emHospital} onChange={(e) => setEmHospital(e.target.value)} placeholder="Hospital ___ · Calle ___ · 2222-0000" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        <Field label="Nearest hospital / clinic (name · address · phone)">
+          <input value={emHospital} onChange={(e) => setEmHospital(e.target.value)} placeholder="Hospital ___ · St ___ · 2222-0000" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
-        <Field label="Salvavidas / guardacostas">
-          <input value={emLifeguard} onChange={(e) => setEmLifeguard(e.target.value)} placeholder="Torre de salvavidas / contacto" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        <Field label="Lifeguard / coast guard">
+          <input value={emLifeguard} onChange={(e) => setEmLifeguard(e.target.value)} placeholder="Lifeguard tower / contact" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
-        <Field label="Punto exacto / dirección para dar a los servicios de emergencia">
-          <input value={emAddress} onChange={(e) => setEmAddress(e.target.value)} placeholder="Playa ___, frente a ___ (coordenadas / referencia)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+        <Field label="Exact spot / address to give emergency services">
+          <input value={emAddress} onChange={(e) => setEmAddress(e.target.value)} placeholder="___ Beach, in front of ___ (coords / reference)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
         <div>
-          <label className="block text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-1">Protocolo / pasos</label>
+          <label className="block text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-1">Protocol / steps</label>
           <textarea
             value={emProtocol}
             onChange={(e) => setEmProtocol(e.target.value)}
             rows={4}
-            placeholder="Qué hacer en una emergencia: quién llama, dónde está el botiquín, punto de reunión, etc."
+            placeholder="What to do in an emergency: who calls, where the first-aid kit is, meeting point, etc."
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-300"
           />
         </div>
         {emError && <p className="text-xs text-red-600">{emError}</p>}
-        {emSavedAt && <p className="text-xs text-emerald-600">✓ Guardado · {new Date(emSavedAt).toLocaleTimeString()}</p>}
+        {emSavedAt && <p className="text-xs text-emerald-600">✓ Saved · {new Date(emSavedAt).toLocaleTimeString()}</p>}
         <button
           type="button"
           onClick={saveEmergencyPlan}
@@ -481,7 +481,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           className="w-full py-2.5 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
           style={{ background: BRAND.colors.navy }}
         >
-          {pending ? 'Guardando…' : 'Guardar plan de emergencia'}
+          {pending ? 'Saving…' : 'Save emergency plan'}
         </button>
       </div>
 

@@ -29,8 +29,8 @@ export function IncidentReporter({
 
   const submit = () => {
     setError('');
-    if (!type) { setError('Elegí el tipo de incidente.'); return; }
-    if (!description.trim()) { setError('Escribí una breve descripción.'); return; }
+    if (!type) { setError('Pick the incident type.'); return; }
+    if (!description.trim()) { setError('Write a short description.'); return; }
     startTransition(async () => {
       try {
         await reportIncident({
@@ -46,7 +46,7 @@ export function IncidentReporter({
         setType(''); setStudentId(''); setBoardId(''); setDescription(''); setAction('');
         setTimeout(() => { setDone(false); setOpen(false); }, 1800);
       } catch (e: any) {
-        setError(e.message || 'No se pudo guardar el incidente.');
+        setError(e.message || 'Could not save the incident.');
       }
     });
   };
@@ -58,36 +58,36 @@ export function IncidentReporter({
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
       >
-        <span className="text-sm font-semibold text-[var(--tss-navy)]">🚩 Reportar incidente</span>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{open ? 'Cerrar' : 'Abrir'}</span>
+        <span className="text-sm font-semibold text-[var(--tss-navy)]">🚩 Report incident</span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{open ? 'Close' : 'Open'}</span>
       </button>
 
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-gray-50 space-y-3">
           <p className="text-[11px] text-gray-500">
-            Cualquier cosa que pasó en la sesión — con un alumno o general. El coordinador y el admin lo verán.
+            Anything that happened in the session — with a student or general. The coordinator and admin will see it.
           </p>
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Tipo *</label>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Type *</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
             >
-              <option value="">— Elegir —</option>
+              <option value="">— Choose —</option>
               {INCIDENT_TYPE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Alumno involucrado (opcional)</label>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Student involved (optional)</label>
             <select
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
             >
-              <option value="">General — sin alumno específico</option>
+              <option value="">General — no specific student</option>
               {students.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -95,13 +95,13 @@ export function IncidentReporter({
           </div>
           {boards.length > 0 && (type === 'board' || type === 'equipment') && (
             <div>
-              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Tabla afectada (la marca en reparación)</label>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Board affected (marks it in repair)</label>
               <select
                 value={boardId}
                 onChange={(e) => setBoardId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
               >
-                <option value="">— Ninguna / no aplica —</option>
+                <option value="">— None / N/A —</option>
                 {boards.map((b) => (
                   <option key={b.id} value={b.id}>{b.code}</option>
                 ))}
@@ -109,7 +109,7 @@ export function IncidentReporter({
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Qué pasó *</label>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">What happened *</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -118,7 +118,7 @@ export function IncidentReporter({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Acción tomada (opcional)</label>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Action taken (optional)</label>
             <input
               value={action}
               onChange={(e) => setAction(e.target.value)}
@@ -126,7 +126,7 @@ export function IncidentReporter({
             />
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
-          {done && <p className="text-xs text-emerald-600">✓ Incidente reportado.</p>}
+          {done && <p className="text-xs text-emerald-600">✓ Incident reported.</p>}
           <button
             type="button"
             onClick={submit}
@@ -134,7 +134,7 @@ export function IncidentReporter({
             className="w-full py-2.5 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
             style={{ background: '#B91C1C' }}
           >
-            {pending ? 'Enviando…' : 'Reportar'}
+            {pending ? 'Sending…' : 'Report'}
           </button>
         </div>
       )}

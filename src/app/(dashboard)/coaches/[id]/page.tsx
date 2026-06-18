@@ -234,17 +234,17 @@ export default async function CoachProfilePage({ params }: Props) {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
         {intakeDone ? (
           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-            <CheckCircle2 size={13} strokeWidth={2} /> Ficha completa
+            <CheckCircle2 size={13} strokeWidth={2} /> Profile complete
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
-            <AlertTriangle size={13} strokeWidth={2} /> Ficha pendiente
+            <AlertTriangle size={13} strokeWidth={2} /> Profile pending
           </span>
         )}
         {coach.waiver_signed ? (
-          <span className="text-[11px] text-gray-500">Waiver firmado{coach.waiver_signed_at ? ` · ${String(coach.waiver_signed_at).slice(0, 10)}` : ''}</span>
+          <span className="text-[11px] text-gray-500">Waiver signed{coach.waiver_signed_at ? ` · ${String(coach.waiver_signed_at).slice(0, 10)}` : ''}</span>
         ) : (
-          <span className="text-[11px] text-amber-700">Waiver sin firmar</span>
+          <span className="text-[11px] text-amber-700">Waiver not signed</span>
         )}
         {!intakeDone && coach.portal_token && (
           <Link
@@ -252,7 +252,7 @@ export default async function CoachProfilePage({ params }: Props) {
             target="_blank"
             className="ml-auto text-[11px] text-[var(--tss-navy)] hover:underline"
           >
-            Abrir ficha del coach →
+            Open coach profile form →
           </Link>
         )}
       </div>
@@ -261,24 +261,24 @@ export default async function CoachProfilePage({ params }: Props) {
       {(coach.phone || coach.languages || coach.emergency_contact_name || coach.emergency_contact_phone) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Contacto</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Contact</p>
             <div className="space-y-1.5 text-sm text-gray-700">
               {coach.phone && <p className="flex items-center gap-2"><Phone size={13} className="text-gray-400" /> {coach.phone}</p>}
               {coach.languages && <p className="flex items-center gap-2"><Languages size={13} className="text-gray-400" /> {coach.languages}</p>}
               {coach.email && <p className="flex items-center gap-2"><ExternalLink size={13} className="text-gray-400" /> {coach.email}</p>}
-              {!coach.phone && !coach.languages && <p className="text-gray-400 italic text-xs">Sin datos de contacto.</p>}
+              {!coach.phone && !coach.languages && <p className="text-gray-400 italic text-xs">No contact info.</p>}
             </div>
           </div>
           {canSeePrivate && (
             <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-4">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5"><ShieldAlert size={12} /> Contacto de emergencia</p>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5"><ShieldAlert size={12} /> Emergency contact</p>
               {coach.emergency_contact_name || coach.emergency_contact_phone ? (
                 <div className="text-sm text-[var(--tss-navy)]">
                   <p className="font-semibold">{coach.emergency_contact_name || '—'}</p>
                   <p className="text-gray-700">{coach.emergency_contact_phone || '—'}</p>
                 </div>
               ) : (
-                <p className="text-gray-400 italic text-xs">No registrado — pedir al coach completar su ficha.</p>
+                <p className="text-gray-400 italic text-xs">Not on file — ask the coach to complete their profile.</p>
               )}
             </div>
           )}
@@ -288,11 +288,11 @@ export default async function CoachProfilePage({ params }: Props) {
       {/* MEDICAL / SAFETY — admin/coordinator only */}
       {canSeePrivate && (coach.allergies || coach.injuries || coach.medical_notes) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><HeartPulse size={12} /> Médico / Seguridad</p>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><HeartPulse size={12} /> Medical / Safety</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-            {coach.allergies && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Alergias</p><p className="text-gray-700">{coach.allergies}</p></div>}
-            {coach.injuries && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Lesiones</p><p className="text-gray-700">{coach.injuries}</p></div>}
-            {coach.medical_notes && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Notas médicas</p><p className="text-gray-700">{coach.medical_notes}</p></div>}
+            {coach.allergies && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Allergies</p><p className="text-gray-700">{coach.allergies}</p></div>}
+            {coach.injuries && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Injuries</p><p className="text-gray-700">{coach.injuries}</p></div>}
+            {coach.medical_notes && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Medical notes</p><p className="text-gray-700">{coach.medical_notes}</p></div>}
           </div>
         </div>
       )}
@@ -300,13 +300,13 @@ export default async function CoachProfilePage({ params }: Props) {
       {/* PROFESSIONAL BACKGROUND */}
       {(coach.years_coaching != null || coach.years_surfing != null || coach.specialty_area || coach.other_certifications || coach.bio_short) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Briefcase size={12} /> Trayectoria</p>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Briefcase size={12} /> Background</p>
           <div className="flex flex-wrap gap-2 mb-2">
-            {coach.years_coaching != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_coaching} años entrenando</span>}
-            {coach.years_surfing != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_surfing} años surfeando</span>}
+            {coach.years_coaching != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_coaching} yrs coaching</span>}
+            {coach.years_surfing != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_surfing} yrs surfing</span>}
             {coach.specialty_area && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.specialty_area}</span>}
           </div>
-          {coach.other_certifications && <p className="text-[12px] text-gray-600"><span className="text-gray-400">Otras certificaciones:</span> {coach.other_certifications}</p>}
+          {coach.other_certifications && <p className="text-[12px] text-gray-600"><span className="text-gray-400">Other certifications:</span> {coach.other_certifications}</p>}
           {coach.bio_short && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{coach.bio_short}</p>}
         </div>
       )}

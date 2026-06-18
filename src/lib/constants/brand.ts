@@ -181,15 +181,15 @@ export const SKY_OPTIONS = [
 // Labels are plain text; the consumer maps `value` → a Lucide icon at
 // render time so the UI stays consistent with the rest of the app.
 export const INCIDENT_TYPE_OPTIONS = [
-  { value: 'medical',          label: 'Accidente / lesión' },
-  { value: 'board',            label: 'Tabla rota o golpeada' },
-  { value: 'equipment',        label: 'Quilla / leash / equipo' },
-  { value: 'altercation',      label: 'Pleito en el agua' },
-  { value: 'frustration',      label: 'Frustración mal manejada' },
-  { value: 'misunderstanding', label: 'Malentendido con alumno' },
-  { value: 'conduct',          label: 'Conducta' },
-  { value: 'venue',            label: 'Lugar / clima' },
-  { value: 'other',            label: 'Otro' },
+  { value: 'medical',          label: 'Accident / injury' },
+  { value: 'board',            label: 'Board broken or dinged' },
+  { value: 'equipment',        label: 'Fin / leash / equipment' },
+  { value: 'altercation',      label: 'Fight in the water' },
+  { value: 'frustration',      label: 'Mishandled frustration' },
+  { value: 'misunderstanding', label: 'Misunderstanding with student' },
+  { value: 'conduct',          label: 'Conduct' },
+  { value: 'venue',            label: 'Venue / weather' },
+  { value: 'other',            label: 'Other' },
 ] as const;
 
 // Human label for an incident type value (falls back to the raw value).

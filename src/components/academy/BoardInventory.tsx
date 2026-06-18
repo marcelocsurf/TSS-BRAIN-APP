@@ -14,10 +14,10 @@ const SHAPE_OPTIONS = [
   { value: 'long', label: 'Long' },
 ];
 const STATUS_LABEL: Record<BoardStatus, string> = {
-  available: 'Disponible',
-  in_use: 'En uso',
-  in_repair: 'En reparación',
-  retired: 'Retirada',
+  available: 'Available',
+  in_use: 'In use',
+  in_repair: 'In repair',
+  retired: 'Retired',
 };
 const STATUS_COLOR: Record<BoardStatus, string> = {
   available: 'bg-emerald-50 text-emerald-700',
@@ -59,7 +59,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
         setAdding(false);
         router.refresh();
       } catch (e: any) {
-        setError(e.message || 'No se pudo crear la tabla.');
+        setError(e.message || 'Could not create the board.');
       }
     });
   };
@@ -72,7 +72,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
   };
 
   const remove = (id: string, code: string) => {
-    if (!confirm(`¿Eliminar la tabla ${code} del inventario?`)) return;
+    if (!confirm(`Remove board ${code} from the inventory?`)) return;
     startTransition(async () => {
       try { await deleteBoard(id); router.refresh(); }
       catch (e: any) { setError(e.message || 'No se pudo eliminar.'); }
@@ -83,14 +83,14 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
     <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono font-semibold">
-          🏄 Inventario de tablas ({boards.length})
+          🏄 Board inventory ({boards.length})
         </p>
         <button onClick={() => setAdding((v) => !v)} className="text-[11px] text-[var(--tss-navy)] hover:underline">
-          {adding ? 'Cancelar' : '+ Agregar tabla'}
+          {adding ? 'Cancel' : '+ Add board'}
         </button>
       </div>
       <p className="text-[11px] text-gray-500 -mt-1">
-        El código se sugiere solo. El coach elige estas tablas al planear; el cierre las devuelve a disponible.
+        The code is auto-suggested. Coaches pick these boards when planning; closing the day returns them to available.
       </p>
 
       {adding && (
@@ -101,31 +101,31 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
                 {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Mini>
-            <Mini label="Forma">
+            <Mini label="Shape">
               <select value={bShape} onChange={(e) => setBShape(e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
                 {SHAPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Mini>
-            <Mini label="Pies">
+            <Mini label="Feet">
               <input value={bFeet} onChange={(e) => setBFeet(e.target.value)} inputMode="numeric" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
-            <Mini label="Pulg.">
+            <Mini label="Inch">
               <input value={bInches} onChange={(e) => setBInches(e.target.value)} inputMode="numeric" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
-            <Mini label="Litraje">
+            <Mini label="Volume (L)">
               <input value={bVolume} onChange={(e) => setBVolume(e.target.value)} placeholder="ej. 42" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Mini label="Marca (opcional)">
+            <Mini label="Brand (optional)">
               <input value={bBrand} onChange={(e) => setBBrand(e.target.value)} placeholder="ej. Torq" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
-            <Mini label="Modelo (opcional)">
+            <Mini label="Model (optional)">
               <input value={bModel} onChange={(e) => setBModel(e.target.value)} placeholder="ej. Mod Fish" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
           </div>
           <button onClick={add} disabled={pending} className="w-full py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 bg-[var(--tss-navy)]">
-            {pending ? 'Guardando…' : 'Agregar al inventario'}
+            {pending ? 'Saving…' : 'Add to inventory'}
           </button>
         </div>
       )}
@@ -133,7 +133,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {boards.length === 0 ? (
-        <p className="text-xs text-gray-400 italic">Sin tablas aún. Agregá la primera.</p>
+        <p className="text-xs text-gray-400 italic">No boards yet. Add the first one.</p>
       ) : (
         <ul className="divide-y divide-gray-100">
           {boards.map((b) => (
@@ -150,9 +150,9 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
                 </p>
                 {(b.uses ?? 0) > 0 && (
                   <p className="text-[10px] text-gray-400 mt-0.5">
-                    Usada {b.uses} {b.uses === 1 ? 'vez' : 'veces'}
-                    {b.first_used ? ` · desde ${b.first_used}` : ''}
-                    {b.last_used && b.last_used !== b.first_used ? ` · última ${b.last_used}` : ''}
+                    Used {b.uses} {b.uses === 1 ? 'time' : 'times'}
+                    {b.first_used ? ` · since ${b.first_used}` : ''}
+                    {b.last_used && b.last_used !== b.first_used ? ` · last ${b.last_used}` : ''}
                   </p>
                 )}
               </div>

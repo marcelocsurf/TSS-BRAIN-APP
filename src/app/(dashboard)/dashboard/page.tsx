@@ -145,13 +145,13 @@ export default async function DashboardHome() {
         <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
           <div className="flex items-center justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wider inline-flex items-center gap-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
-              <AlertTriangle size={14} strokeWidth={1.75} /> Configuración pendiente de tu academia
+              <AlertTriangle size={14} strokeWidth={1.75} /> Your academy setup is pending
             </h3>
-            <Link href="/my-academy" className="text-xs text-amber-800 font-semibold hover:underline shrink-0">Completar →</Link>
+            <Link href="/my-academy" className="text-xs text-amber-800 font-semibold hover:underline shrink-0">Complete →</Link>
           </div>
           <ul className="space-y-1 text-[13px] text-amber-900">
-            {academySetup.emergencyMissing && <li>• Plan de emergencia (números, hospital, punto de encuentro)</li>}
-            {academySetup.boardsMissing && <li>• Inventario de tablas</li>}
+            {academySetup.emergencyMissing && <li>• Emergency plan (numbers, hospital, meeting point)</li>}
+            {academySetup.boardsMissing && <li>• Board inventory</li>}
           </ul>
         </div>
       )}
@@ -176,9 +176,9 @@ export default async function DashboardHome() {
                   </div>
                   <p className="text-sm text-[var(--tss-navy)] mt-1">
                     {inc.is_general ? (
-                      <span className="text-gray-500 italic">General (sin alumno específico)</span>
+                      <span className="text-gray-500 italic">General (no specific student)</span>
                     ) : (
-                      inc.student_name || 'Alumno'
+                      inc.student_name || 'Student'
                     )}
                     {inc.coach_name ? ` · ${inc.coach_name}` : ''}
                   </p>
@@ -186,10 +186,10 @@ export default async function DashboardHome() {
                     <p className="text-xs text-gray-600 mt-0.5">{inc.incident_description}</p>
                   )}
                   {inc.incident_action && (
-                    <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Acción:</span> {inc.incident_action}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Action:</span> {inc.incident_action}</p>
                   )}
                   {inc.student_id && (
-                    <p className="text-[10px] text-[var(--tss-cyan)] mt-1">Ver alumno →</p>
+                    <p className="text-[10px] text-[var(--tss-cyan)] mt-1">View student →</p>
                   )}
                 </div>
               );
@@ -827,23 +827,23 @@ function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
-        Mi academia
+        My Academy
       </h3>
       {/* One stats home: academy metrics + operational KPIs (no duplication) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
-        <MiniStat label="Alumnos" value={t.students} />
-        <MiniStat label="Activos 30d" value={t.active30d} />
-        <MiniStat label="Sesiones 30d" value={t.sessions30d} />
+        <MiniStat label="Students" value={t.students} />
+        <MiniStat label="Active 30d" value={t.active30d} />
+        <MiniStat label="Sessions 30d" value={t.sessions30d} />
         {stats && <MiniStat label="Coaches" value={stats.totalCoaches} />}
-        {stats && <MiniStat label="Servicios" value={stats.activeCamps} />}
-        {stats && <MiniStat label="Acciones pend." value={stats.pendingActions} accent={stats.pendingActions > 0 ? 'amber' : undefined} />}
+        {stats && <MiniStat label="Services" value={stats.activeCamps} />}
+        {stats && <MiniStat label="Pending" value={stats.pendingActions} accent={stats.pendingActions > 0 ? 'amber' : undefined} />}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Belt distribution */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Distribución por cinturón</p>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Belt distribution</p>
           {data.beltDistribution.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">Sin datos.</p>
+            <p className="text-xs text-gray-400 italic">No data yet.</p>
           ) : (
             <div className="space-y-2">
               {data.beltDistribution.map((b: any) => {
@@ -865,13 +865,13 @@ function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
         {/* Top active + rating */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Más activos (30d)</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Most active (30d)</p>
             <p className="text-[10px] text-gray-400">
               Rating {data.surveyStats.avgRating != null ? `${data.surveyStats.avgRating}★ · ${data.surveyStats.totalResponses}` : '—'}
             </p>
           </div>
           {data.topStudents.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">Sin sesiones en los últimos 30 días.</p>
+            <p className="text-xs text-gray-400 italic">No sessions in the last 30 days.</p>
           ) : (
             <ul className="space-y-1.5">
               {data.topStudents.slice(0, 5).map((s: any, i: number) => (

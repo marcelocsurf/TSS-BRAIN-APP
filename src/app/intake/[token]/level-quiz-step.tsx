@@ -7,10 +7,10 @@ import {
 import { submitLevelQuiz } from '@/lib/actions/intake';
 
 const GATE = [
-  { emoji: '🏖️', txt: 'Nunca he surfeado — o solo probé una o dos veces' },
-  { emoji: '🌊', txt: 'Estoy aprendiendo — a veces me paro pero sigo con lo básico' },
-  { emoji: '🏄', txt: 'Surfeo olas verdes — corro la pared y hago algunos giros' },
-  { emoji: '⚡', txt: 'Surfeo con potencia — maniobras, pego al labio, condiciones variadas' },
+  { emoji: '🏖️', txt: "I've never surfed — or only tried once or twice" },
+  { emoji: '🌊', txt: "I'm learning — I stand up sometimes but I'm still on the basics" },
+  { emoji: '🏄', txt: 'I surf green waves — I ride the face and do some turns' },
+  { emoji: '⚡', txt: 'I surf with power — maneuvers, hitting the lip, varied conditions' },
 ];
 
 type Phase = 'gate' | 'tech' | 'ocean';
@@ -45,7 +45,7 @@ export function LevelQuizStep({
       });
       onComplete(lvl.belt);
     } catch (e: any) {
-      setError(e.message || 'No se pudo guardar.');
+      setError(e.message || 'Could not save.');
       setSaving(false);
     }
   };
@@ -80,16 +80,16 @@ export function LevelQuizStep({
     }, 200);
   };
 
-  const label = phase === 'gate' ? 'Tu nivel' : phase === 'tech' ? 'Nivel técnico' : 'Conocimiento del océano';
+  const label = phase === 'gate' ? 'Your level' : phase === 'tech' ? 'Technical level' : 'Ocean knowledge';
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">Paso 1 · {label}</p>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">Step 1 · {label}</p>
         <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
-          Encontremos tu nivel real
+          Let&apos;s find your real level
         </h2>
-        <p className="text-xs text-gray-500 mt-0.5">Escenarios reales, sin auto-calificarte. Tu coach lo confirma después.</p>
+        <p className="text-xs text-gray-500 mt-0.5">Real scenarios, no self-rating. Your coach confirms it later.</p>
       </div>
 
       {phase === 'gate' && (
@@ -123,7 +123,7 @@ export function LevelQuizStep({
               ))}
             </div>
             {techCur > techStart && (
-              <button onClick={() => setTechCur(techCur - 1)} className="text-xs text-gray-500 hover:text-[var(--tss-navy)]">← Atrás</button>
+              <button onClick={() => setTechCur(techCur - 1)} className="text-xs text-gray-500 hover:text-[var(--tss-navy)]">← Back</button>
             )}
           </div>
         );
@@ -145,7 +145,7 @@ export function LevelQuizStep({
                 </button>
               ))}
             </div>
-            {saving && <p className="text-xs text-gray-400">Guardando tu nivel…</p>}
+            {saving && <p className="text-xs text-gray-400">Saving your level…</p>}
           </div>
         );
       })()}

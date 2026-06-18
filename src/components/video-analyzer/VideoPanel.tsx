@@ -311,7 +311,7 @@ export default function VideoPanel({
               <button
                 className={`${btn} ${mirrored ? "bg-cyan-500" : "bg-white/10"}`}
                 onClick={() => setMirrored((v) => !v)}
-                title="Espejo — voltear la imagen horizontalmente"
+                title="Mirror — flip the image horizontally"
               >
                 ⇄
               </button>

@@ -217,8 +217,8 @@ export function IntakeForm({ token, student }: Props) {
         {student.student_type === 'dropin' ? (
           <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-2">
             <p className="text-2xl">🤙</p>
-            <p className="text-sm font-semibold text-[var(--tss-navy)]">¡Todo listo!</p>
-            <p className="text-xs text-gray-500">Ya podés cerrar esta página. Nos vemos en el agua.</p>
+            <p className="text-sm font-semibold text-[var(--tss-navy)]">You&apos;re all set!</p>
+            <p className="text-xs text-gray-500">You can close this page. See you in the water.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-3">
