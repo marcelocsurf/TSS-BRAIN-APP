@@ -394,6 +394,16 @@ async function CoordinatorDashboard() {
     todaysCamps = [];
   }
 
+  // Academy-scoped analytics (same metrics as admin, just this academy).
+  const me = await getCurrentCoach();
+  let academyAnalytics: Awaited<ReturnType<typeof import('@/lib/actions/analytics').getAcademyAnalytics>> | null = null;
+  if (me?.academy_id) {
+    try {
+      const { getAcademyAnalytics } = await import('@/lib/actions/analytics');
+      academyAnalytics = await getAcademyAnalytics(me.academy_id);
+    } catch { /* non-blocking */ }
+  }
+
   const { stats } = coordData;
 
   return (
@@ -412,6 +422,9 @@ async function CoordinatorDashboard() {
           accent={stats.pendingActions > 0 ? 'amber' : undefined}
         />
       </div>
+
+      {/* ── Academy analytics (scoped to this coordinator's academy) ── */}
+      {academyAnalytics && <AcademyAnalyticsPanel data={academyAnalytics} />}
 
       {/* ── Quick actions ── */}
       <div>
@@ -792,6 +805,80 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
         </div>
       </div>
     </Link>
+  );
+}
+
+// ── Academy analytics panel (coordinator) ─────────────────
+const BELT_META: Record<string, { label: string; color: string }> = {
+  white_belt: { label: 'White Belt', color: '#D1D5DB' },
+  yellow_belt: { label: 'Yellow Belt', color: '#F5C518' },
+  blue_belt: { label: 'Blue Belt', color: '#3B82F6' },
+  purple_belt: { label: 'Purple Belt', color: '#8B5CF6' },
+  brown_belt: { label: 'Brown Belt', color: '#92400E' },
+  black_belt: { label: 'Black Belt', color: '#111827' },
+};
+
+function AcademyAnalyticsPanel({ data }: { data: any }) {
+  const t = data.totals;
+  const maxBelt = Math.max(1, ...data.beltDistribution.map((b: any) => b.count));
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
+        Analytics · tu academia
+      </h3>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+        <MiniStat label="Alumnos" value={t.students} />
+        <MiniStat label="Activos 30d" value={t.active30d} />
+        <MiniStat label="Sesiones 30d" value={t.sessions30d} />
+        <MiniStat label="Miembros" value={t.members} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Belt distribution */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Distribución por cinturón</p>
+          {data.beltDistribution.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">Sin datos.</p>
+          ) : (
+            <div className="space-y-2">
+              {data.beltDistribution.map((b: any) => {
+                const meta = BELT_META[b.belt_level] ?? { label: b.belt_level, color: '#9CA3AF' };
+                return (
+                  <div key={b.belt_level}>
+                    <div className="flex justify-between text-[11px] text-gray-600 mb-0.5">
+                      <span>{meta.label}</span><span>{b.count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${(b.count / maxBelt) * 100}%`, background: meta.color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {/* Top active + rating */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Más activos (30d)</p>
+            <p className="text-[10px] text-gray-400">
+              Rating {data.surveyStats.avgRating != null ? `${data.surveyStats.avgRating}★ · ${data.surveyStats.totalResponses}` : '—'}
+            </p>
+          </div>
+          {data.topStudents.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">Sin sesiones en los últimos 30 días.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {data.topStudents.slice(0, 5).map((s: any, i: number) => (
+                <li key={s.id} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700 truncate">{i + 1}. {s.name}</span>
+                  <span className="font-semibold text-[var(--tss-navy)]">{s.sessions_count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -39,6 +39,78 @@ export interface StudentAnalytics {
   };
 }
 
+export interface AcademyAnalytics {
+  totals: { students: number; members: number; leads: number; active30d: number; sessions30d: number };
+  beltDistribution: BeltCount[];
+  topStudents: TopStudent[];
+  surveyStats: { totalResponses: number; avgRating: number | null };
+}
+
+// Same metrics as the admin analytics but scoped to ONE academy. The
+// coordinator (or admin of that academy) sees only their own numbers.
+export async function getAcademyAnalytics(academyId: string): Promise<AcademyAnalytics> {
+  const me = await getCurrentCoach();
+  const allowed = me?.is_platform_admin ||
+    ((me?.role === 'coordinator' || me?.role === 'admin') && me?.academy_id === academyId);
+  if (!allowed) throw new Error('Forbidden.');
+
+  const admin = createAdminClient();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data: students }, { data: sessions }, { data: surveys }] = await Promise.all([
+    admin
+      .from('students')
+      .select('id, first_name, last_name, belt_level, lifecycle_status, last_session_date')
+      .eq('status', 'active')
+      .eq('academy_id', academyId),
+    admin
+      .from('student_session_results')
+      .select('student_id, created_at, students!inner(academy_id)')
+      .gte('created_at', thirtyDaysAgo)
+      .eq('students.academy_id', academyId),
+    admin
+      .from('survey_responses')
+      .select('coach_rating, students!inner(academy_id)')
+      .eq('students.academy_id', academyId),
+  ]);
+
+  const list = students ?? [];
+  const sess = sessions ?? [];
+  const total = list.length;
+  const leads = list.filter((s) => s.lifecycle_status === 'lead').length;
+  const active30d = list.filter((s) => s.last_session_date && s.last_session_date >= thirtyDaysAgo).length;
+
+  const beltMap = new Map<string, number>();
+  for (const s of list) { const k = s.belt_level || 'unknown'; beltMap.set(k, (beltMap.get(k) || 0) + 1); }
+  const beltDistribution = Array.from(beltMap.entries())
+    .map(([belt_level, count]) => ({ belt_level, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const sessionsByStudent = new Map<string, number>();
+  for (const s of sess) sessionsByStudent.set(s.student_id, (sessionsByStudent.get(s.student_id) || 0) + 1);
+  const topStudents: TopStudent[] = list
+    .map((s) => ({
+      id: s.id,
+      name: `${s.first_name} ${s.last_name}`.trim(),
+      academy_name: null,
+      sessions_count: sessionsByStudent.get(s.id) || 0,
+      belt_level: s.belt_level || 'white_belt',
+    }))
+    .filter((s) => s.sessions_count > 0)
+    .sort((a, b) => b.sessions_count - a.sessions_count)
+    .slice(0, 10);
+
+  const ratings = (surveys ?? []).map((r: any) => Number(r.coach_rating)).filter((n) => !isNaN(n) && n > 0);
+  const avgRating = ratings.length ? Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10 : null;
+
+  return {
+    totals: { students: total, members: total - leads, leads, active30d, sessions30d: sess.length },
+    beltDistribution,
+    topStudents,
+    surveyStats: { totalResponses: ratings.length, avgRating },
+  };
+}
+
 export async function getStudentAnalytics(): Promise<StudentAnalytics> {
   const coach = await getCurrentCoach();
   if (!coach?.is_platform_admin) {
