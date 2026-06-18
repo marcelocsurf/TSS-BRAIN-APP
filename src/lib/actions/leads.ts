@@ -133,7 +133,11 @@ export async function createLead(input: CreateLeadInput): Promise<{
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to create lead');
 
-  revalidatePath('/students');
+  // NOTE: intentionally NO revalidatePath here. The (dashboard) layout is
+  // force-dynamic, so a revalidate would trigger a router refresh that
+  // re-mounts the New Student page and wipes the "link ready" state the user
+  // is looking at. The /students list is dynamic (revalidate=0) and refetches
+  // on navigation anyway.
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
   return {
