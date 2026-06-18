@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createLead } from '@/lib/actions/leads';
 import { ArrowLeft } from 'lucide-react';
@@ -20,6 +20,14 @@ export default function AddStudentPage() {
   const [error, setError] = useState('');
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const successRef = useRef<HTMLDivElement | null>(null);
+
+  // When the link is ready, scroll the success card into view so it's never
+  // hidden below the fold (the form swaps out and it can look like nothing
+  // happened, especially on tablet).
+  useEffect(() => {
+    if (createdUrl) successRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [createdUrl]);
 
   const submit = async (e: React.FormEvent, allowDuplicate = false) => {
     e.preventDefault();
@@ -46,7 +54,9 @@ export default function AddStudentPage() {
         }
         setError('Cancelled — that contact already exists.');
       } else {
-        setError(msg || 'Could not create.');
+        // Always surface SOMETHING so a failure never looks like a silent freeze.
+        console.error('createLead failed:', err);
+        setError(msg || 'Could not create the student. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -92,7 +102,7 @@ export default function AddStudentPage() {
           </button>
         </form>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3 text-center">
+        <div ref={successRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3 text-center">
           <p className="text-2xl">✅</p>
           <p className="text-sm font-semibold text-[var(--tss-navy)]">Profile created</p>
           <p className="text-xs text-gray-500">Send this link to the student to complete their intake (level + details + waiver).</p>

@@ -133,7 +133,7 @@ export async function createLead(input: CreateLeadInput): Promise<{
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to create lead');
 
-  revalidatePath('/dashboard/students');
+  revalidatePath('/students');
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
   return {
@@ -201,7 +201,7 @@ export async function submitLeadForm(
 
   if (error) throw new Error(error.message);
 
-  revalidatePath('/dashboard/students');
+  revalidatePath('/students');
 }
 
 // Coach action: promote a Lead to Member when they enroll in a course.
@@ -252,5 +252,5 @@ export async function promoteLeadToMember(
     console.error('[promoteLeadToMember] course activation failed', e);
   }
 
-  revalidatePath('/dashboard/students');
+  revalidatePath('/students');
 }
