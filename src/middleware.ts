@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/coach-portal') ||  // token-gated coach portal
     pathname.startsWith('/feedback') ||       // token-gated standalone survey
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
+    pathname.startsWith('/quiz') ||           // public surf-level lead magnet
     pathname === '/forgot-password' ||        // password recovery (unauthenticated)
     pathname === '/manifest.webmanifest' ||
     pathname === '/sw.js';
