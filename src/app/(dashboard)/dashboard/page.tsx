@@ -205,36 +205,41 @@ export default async function DashboardHome() {
         </div>
       )}
 
-      {/* Quick stats — telemetry strip with consistent Lora numerals */}
-      <p className="tss-section-label">
-        <BarChart3 size={11} strokeWidth={1.75} />
-        Overview
-      </p>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4">
-          {[
-            { label: 'Active Students', value: studentCount ?? 0 },
-            { label: 'Sessions Closed', value: sessionCount ?? 0 },
-            { label: 'Active Services', value: activeCamps ?? 0 },
-            { label: 'Pending Surveys', value: pendingSurveys ?? 0 },
-          ].map((s, i) => (
-            <div
-              key={s.label}
-              className={`px-4 py-5 text-center ${
-                i > 0 ? 'border-l border-gray-100' : ''
-              } ${i >= 2 ? 'border-t md:border-t-0 border-gray-100' : ''}`}
-            >
-              <p className="tss-stat-number">{s.value}</p>
-              <p
-                className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
-                style={{ fontFamily: 'DM Mono, monospace' }}
-              >
-                {s.label}
-              </p>
+      {/* Quick stats — telemetry strip. Hidden for coordinators, whose own
+          dashboard has a richer academy-scoped stats block (no duplication). */}
+      {role !== 'coordinator' && (
+        <>
+          <p className="tss-section-label">
+            <BarChart3 size={11} strokeWidth={1.75} />
+            Overview
+          </p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4">
+              {[
+                { label: 'Active Students', value: studentCount ?? 0 },
+                { label: 'Sessions Closed', value: sessionCount ?? 0 },
+                { label: 'Active Services', value: activeCamps ?? 0 },
+                { label: 'Pending Surveys', value: pendingSurveys ?? 0 },
+              ].map((s, i) => (
+                <div
+                  key={s.label}
+                  className={`px-4 py-5 text-center ${
+                    i > 0 ? 'border-l border-gray-100' : ''
+                  } ${i >= 2 ? 'border-t md:border-t-0 border-gray-100' : ''}`}
+                >
+                  <p className="tss-stat-number">{s.value}</p>
+                  <p
+                    className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
+                    style={{ fontFamily: 'DM Mono, monospace' }}
+                  >
+                    {s.label}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Pending Drafts (coaches/coordinators/admins) */}
       {drafts.length > 0 && (
@@ -411,20 +416,17 @@ async function CoordinatorDashboard() {
       {/* ── Today's services ── */}
       <TodayPanel camps={todaysCamps} />
 
-      {/* ── Stats at a glance ── */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <MiniStat label="Active Students" value={stats.totalStudents} />
-        <MiniStat label="Active Coaches" value={stats.totalCoaches} />
-        <MiniStat label="Active Services" value={stats.activeCamps} />
-        <MiniStat
-          label="Pending Actions"
-          value={stats.pendingActions}
-          accent={stats.pendingActions > 0 ? 'amber' : undefined}
-        />
-      </div>
-
-      {/* ── Academy analytics (scoped to this coordinator's academy) ── */}
-      {academyAnalytics && <AcademyAnalyticsPanel data={academyAnalytics} />}
+      {/* ── Mi academia — single stats home (analytics + operational KPIs) ── */}
+      {academyAnalytics ? (
+        <AcademyAnalyticsPanel data={academyAnalytics} stats={stats} />
+      ) : (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <MiniStat label="Active Students" value={stats.totalStudents} />
+          <MiniStat label="Active Coaches" value={stats.totalCoaches} />
+          <MiniStat label="Active Services" value={stats.activeCamps} />
+          <MiniStat label="Pending Actions" value={stats.pendingActions} accent={stats.pendingActions > 0 ? 'amber' : undefined} />
+        </div>
+      )}
 
       {/* ── Quick actions ── */}
       <div>
@@ -818,19 +820,22 @@ const BELT_META: Record<string, { label: string; color: string }> = {
   black_belt: { label: 'Black Belt', color: '#111827' },
 };
 
-function AcademyAnalyticsPanel({ data }: { data: any }) {
+function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
   const t = data.totals;
   const maxBelt = Math.max(1, ...data.beltDistribution.map((b: any) => b.count));
   return (
     <div>
       <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
-        Analytics · tu academia
+        Mi academia
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+      {/* One stats home: academy metrics + operational KPIs (no duplication) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
         <MiniStat label="Alumnos" value={t.students} />
         <MiniStat label="Activos 30d" value={t.active30d} />
         <MiniStat label="Sesiones 30d" value={t.sessions30d} />
-        <MiniStat label="Miembros" value={t.members} />
+        {stats && <MiniStat label="Coaches" value={stats.totalCoaches} />}
+        {stats && <MiniStat label="Servicios" value={stats.activeCamps} />}
+        {stats && <MiniStat label="Acciones pend." value={stats.pendingActions} accent={stats.pendingActions > 0 ? 'amber' : undefined} />}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Belt distribution */}
