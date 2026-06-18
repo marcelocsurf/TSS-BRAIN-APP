@@ -145,6 +145,40 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
 // SUBMIT EXTENDED INTAKE (Stage 2)
 // ═══════════════════════════════════════
 
+// Stage 1 — surf-level quiz result. Sets a PROVISIONAL belt (coach confirms
+// later) + ocean_level + the skill map. Replaces the old self-rating ocean
+// quiz as the single level engine.
+export async function submitLevelQuiz(token: string, input: {
+  belt: string;
+  score: number;
+  skillmap: { name: string; pct: number }[];
+  ocean_level: string;
+}) {
+  const admin = createAdminClient();
+  const { data: student } = await admin
+    .from('students')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!student) throw new Error('Invalid link. Please contact your coordinator.');
+
+  const { error } = await admin
+    .from('students')
+    .update({
+      belt_level: input.belt,
+      belt_provisional: true,
+      level_quiz_score: input.score,
+      level_quiz_skillmap: input.skillmap,
+      level_quiz_completed_at: new Date().toISOString(),
+      ocean_level: input.ocean_level,
+      ocean_level_provisional: true,
+      ocean_quiz_completed_at: new Date().toISOString(),
+    })
+    .eq('id', student.id);
+  if (error) throw new Error(error.message);
+  return { success: true, belt: input.belt };
+}
+
 export async function submitIntake(token: string, input: IntakeFormInput) {
   const admin = createAdminClient();
 

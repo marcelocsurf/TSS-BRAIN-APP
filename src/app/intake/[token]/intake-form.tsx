@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
 import { BRAND } from '@/lib/constants/brand';
-import { OceanQuizStep, OceanQuizResult } from './ocean-quiz-step';
-import type { OceanLevel } from '@/lib/constants/ocean-levels';
+import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
 
 interface StudentData {
@@ -69,7 +68,6 @@ export function IntakeForm({ token, student }: Props) {
     : 'ocean_quiz';
 
   const [stage, setStage] = useState<Stage>(initialStage);
-  const [oceanLevelResult, setOceanLevelResult] = useState<OceanLevel | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [extendedStep, setExtendedStep] = useState(0);
@@ -240,30 +238,11 @@ export function IntakeForm({ token, student }: Props) {
     return (
       <div className="space-y-4">
         <StageIndicator current={0} />
-        <OceanQuizStep
+        <LevelQuizStep
           token={token}
-          onComplete={(level, beginner) => {
-            setOceanLevelResult(level);
-            setIsBeginner(beginner);
-            setStage('ocean_quiz_done');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════
-  // STAGE 0.5: OCEAN QUIZ RESULT
-  // ═══════════════════════════════════════
-
-  if (stage === 'ocean_quiz_done' && oceanLevelResult) {
-    return (
-      <div className="space-y-4">
-        <StageIndicator current={0} />
-        <OceanQuizResult
-          level={oceanLevelResult}
-          onContinue={() => {
+          onComplete={(belt) => {
+            // Beginner branch for the extended form = entry belt white_belt.
+            setIsBeginner(belt === 'white_belt');
             setStage('basic');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}

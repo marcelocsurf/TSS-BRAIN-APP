@@ -69,6 +69,50 @@ export const LEVELS: QuizLevel[] = [
 export const SKILLS = ['Paddle Out', 'Takeoff', 'Wave Riding', 'Speed', 'Power', 'Flow', 'Finishing'];
 export const MAX_SCORE = 70;
 
+// ── Ocean knowledge (autonomy) — feeds ocean_level, separate from technique ──
+// Each option carries the ocean_level it implies. We take the LOWEST level
+// across answers (safety-first: a gap anywhere caps autonomy).
+export interface OceanOption { t: string; level: string }
+export interface OceanQuestion { phase: string; scenario: string; prompt: string; opts: OceanOption[] }
+
+export const OCEAN_QUESTIONS: OceanQuestion[] = [
+  { phase: 'Currents', scenario: 'You paddle out and realize you’re drifting sideways down the beach, away from where you started.', prompt: 'What’s going on and what do you do?',
+    opts: [
+      { t: 'I wouldn’t notice until I was far away — I’d feel lost', level: 'beginner' },
+      { t: 'I notice but I’d panic a bit / need someone to guide me back', level: 'supervised' },
+      { t: 'It’s a current; I paddle parallel to shore to get out of it, then back in', level: 'semi_autonomous' },
+      { t: 'I read currents before entering and use them to my advantage', level: 'autonomous' }] },
+  { phase: 'Priority & Etiquette', scenario: 'A surfer is already up and riding toward you on the same wave you’re about to take.', prompt: 'What do you do?',
+    opts: [
+      { t: 'I don’t really know the rules yet', level: 'beginner' },
+      { t: 'I know I shouldn’t drop in but I’m not always sure who has priority', level: 'supervised' },
+      { t: 'They have priority (closest to the peak) — I pull back and don’t drop in', level: 'semi_autonomous' },
+      { t: 'I read the lineup, know the priority order, and communicate clearly', level: 'autonomous' }] },
+  { phase: 'Self-Rescue', scenario: 'You lose your board, you’re past where you can stand, and you’re a bit tired.', prompt: 'What’s your plan?',
+    opts: [
+      { t: 'I’d be in trouble — I rely on having someone close by', level: 'beginner' },
+      { t: 'I can manage in small/calm conditions only, with supervision', level: 'supervised' },
+      { t: 'I stay calm, signal if needed, and can swim/float back in known spots', level: 'semi_autonomous' },
+      { t: 'I’m comfortable self-rescuing in head-high+ conditions alone', level: 'autonomous' }] },
+];
+
+const OCEAN_ORDER = ['beginner', 'supervised', 'semi_autonomous', 'autonomous', 'advanced'];
+
+// Lowest (most conservative) ocean level across answers.
+export function oceanLevelFromAnswers(answers: number[]): string {
+  let worstIdx = OCEAN_ORDER.length - 1;
+  let any = false;
+  for (let i = 0; i < OCEAN_QUESTIONS.length; i++) {
+    const a = answers[i];
+    if (typeof a !== 'number' || a < 0) continue;
+    any = true;
+    const lvl = OCEAN_QUESTIONS[i].opts[a]?.level;
+    const idx = OCEAN_ORDER.indexOf(lvl);
+    if (idx >= 0 && idx < worstIdx) worstIdx = idx;
+  }
+  return any ? OCEAN_ORDER[worstIdx] : 'beginner';
+}
+
 export function scoreFromAnswers(answers: number[]): number {
   let score = 0;
   for (let i = 0; i < QUESTIONS.length; i++) {
