@@ -24,12 +24,12 @@ export const QUESTIONS: QuizQuestion[] = [
       { t: 'I angle along the face a little but I can’t do proper turns', s: 3 },
       { t: 'I ride the open face, turn both directions, and link a few maneuvers', s: 7 },
       { t: 'I carve confidently with speed, reading the wave and adjusting my line in real time', s: 10 }] },
-  { phase: 'Generating Speed', scenario: "You're riding along and the wave starts to flatten out. You need speed to make the next section.", prompt: 'What do you do?',
+  { phase: 'Speed', scenario: "You're up and riding, but the wave gets slow and mushy ahead of you.", prompt: 'What happens?',
     opts: [
-      { t: 'I don’t know how to generate speed — I ride what the wave gives me', s: 0 },
-      { t: 'I try pumping but slow down and the wave catches up', s: 3 },
-      { t: 'I pump effectively and generate speed — I keep up with most sections', s: 7 },
-      { t: 'I project speed naturally between maneuvers and rarely get caught behind', s: 10 }] },
+      { t: 'I slow down and the wave dies — I don’t know how to keep going', s: 0 },
+      { t: 'I try to keep moving but I usually lose the wave', s: 3 },
+      { t: 'I move my board side to side to keep my speed and stay with the wave', s: 7 },
+      { t: 'I generate speed easily and stay ahead of the slow section', s: 10 }] },
   { phase: 'Power Surfing', scenario: "You're coming off a fast bottom turn on a head-high wave. The lip is pitching above you.", prompt: 'What can you realistically do?',
     opts: [
       { t: 'I wouldn’t be here — I don’t surf waves this size or do bottom turns', s: 0 },

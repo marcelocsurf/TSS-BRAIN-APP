@@ -52,9 +52,11 @@ export function LevelQuizStep({
 
   const gateSelect = (g: number) => {
     if (g === 0) {
-      // Never surfed → Beginner, skip technical; still capture ocean knowledge.
+      // Never surfed → Beginner. No more questions — we already know.
       const t = new Array(QUESTIONS.length).fill(-1);
-      setTech(t); setPhase('ocean'); setOceanCur(0);
+      const o = new Array(OCEAN_QUESTIONS.length).fill(-1);
+      setTech(t); setOcean(o);
+      finish(t, o);
       return;
     }
     const t = new Array(QUESTIONS.length).fill(-1);
