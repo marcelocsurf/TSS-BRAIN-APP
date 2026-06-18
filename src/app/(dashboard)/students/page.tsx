@@ -5,7 +5,6 @@ import { StudentSearch } from './student-search';
 import { StudentFilters } from './student-filters';
 import { Suspense } from 'react';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
-import NewLeadModal from './NewLeadModal';
 
 // All advanced filter keys that map to URL params
 const ADVANCED_KEYS = [
@@ -122,7 +121,6 @@ export default async function StudentRosterPage({ searchParams }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <NewLeadModal />
           <Link
             href="/students/new"
             className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
