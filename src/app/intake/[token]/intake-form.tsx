@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { submitBasicIntake, submitIntake, submitLevelQuiz, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
+import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
 import { BRAND } from '@/lib/constants/brand';
 import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
@@ -63,11 +63,9 @@ interface Props {
 type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done';
 
 export function IntakeForm({ token, student }: Props) {
-  // New 3-part order: Profile & Safety (ficha) FIRST → Level quiz (members who
-  // surf) → Goals. A drop-in stops after the ficha. A member who has never
-  // surfed skips the quiz (auto White Belt) and jumps to goals.
-  const neverSurfed =
-    student.surf_self_level === 'Never' || student.surf_self_level === 'Once or twice';
+  // New 3-part order: Profile & Safety (ficha) FIRST → Level quiz (members) →
+  // Goals. A drop-in stops after the ficha. Members ALWAYS take the level quiz
+  // (it handles the never-surfed case internally) — it is never skipped.
   const isDropin = student.student_type === 'dropin';
   const basicDone =
     student.intake_tier === 'basic' ||
@@ -77,7 +75,7 @@ export function IntakeForm({ token, student }: Props) {
     student.intake_tier === 'extended' ? 'all_done'
     : !basicDone ? 'basic'
     : isDropin ? 'basic_done'
-    : neverSurfed || student.ocean_quiz_completed_at ? 'extended'
+    : student.ocean_quiz_completed_at ? 'extended'
     : 'ocean_quiz';
 
   const [stage, setStage] = useState<Stage>(initialStage);
@@ -90,7 +88,7 @@ export function IntakeForm({ token, student }: Props) {
   // reload; overwritten when the quiz is completed in this session.
   const p0Saved = student.ocean_quiz_answers?.P0 ?? null;
   const [isBeginner, setIsBeginner] = useState<boolean>(
-    neverSurfed || student.belt_level === 'white_belt' || p0Saved === 'never' || p0Saved === 'whitewater_only',
+    student.belt_level === 'white_belt' || p0Saved === 'never' || p0Saved === 'whitewater_only',
   );
 
   // ── Basic intake form state (the "ficha" — identity + safety) ──
@@ -99,7 +97,6 @@ export function IntakeForm({ token, student }: Props) {
     nationality: student.nationality || '',
     languages: student.languages || '',
     gender: student.gender || '',
-    surf_self_level: student.surf_self_level || '',
     height: student.height || '',
     weight: student.weight || '',
     emergency_contact_name: student.emergency_contact_name || '',
@@ -153,10 +150,6 @@ export function IntakeForm({ token, student }: Props) {
       setError('Date of birth is required.');
       return;
     }
-    if (!basicForm.surf_self_level) {
-      setError('Please tell us if you have surfed before.');
-      return;
-    }
     if (!basicForm.swim_level) {
       setError('Please select your swim level.');
       return;
@@ -176,28 +169,15 @@ export function IntakeForm({ token, student }: Props) {
 
     setLoading(true);
     setError('');
-    const memberNeverSurfed =
-      basicForm.surf_self_level === 'Never' || basicForm.surf_self_level === 'Once or twice';
     try {
       await submitBasicIntake(token, basicForm);
 
       // Drop-in: single service, no level/goals — finish here.
+      // Member: ALWAYS take the level quiz next (its own first question handles
+      // the never-surfed case → White Belt). The quiz is never skipped.
       if (student.student_type === 'dropin') {
         setStage('basic_done');
-      } else if (memberNeverSurfed) {
-        // Member who has never surfed → White Belt beginner (provisional).
-        // Skip the level quiz and go straight to beginner goals.
-        await submitLevelQuiz(token, {
-          belt: 'white_belt',
-          score: 0,
-          skillmap: [],
-          ocean_level: 'beginner',
-        });
-        setIsBeginner(true);
-        setExtendedStep(0);
-        setStage('extended');
       } else {
-        // Member who surfs → take the level quiz.
         setStage('ocean_quiz');
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -354,12 +334,6 @@ export function IntakeForm({ token, student }: Props) {
               value={basicForm.gender || ''}
               onChange={(v) => setBasic('gender', v)}
               options={['', 'Male', 'Female', 'Other', 'Prefer not to say']}
-            />
-            <OptionGroup
-              label="Have you surfed before? *"
-              value={basicForm.surf_self_level || ''}
-              onChange={(v) => setBasic('surf_self_level', v)}
-              options={['Never', 'Once or twice', 'Yes, I surf']}
             />
             <FormRow>
               <Field
