@@ -497,137 +497,159 @@ function HomeTab({
 
   return (
     <div className="space-y-4">
-      {/* Notifications — compact alerts for any new service or message,
-          replacing the space-heavy hero cards. Tap a row to see detail. */}
-      <PortalAlerts
-        upcomingCamp={upcomingCamps[0] ?? null}
-        legacyUpcoming={upcomingCamps.length === 0 ? (upcoming[0] ?? null) : null}
-        campWithNote={campWithNote ?? null}
-        latestResult={latestResult ?? null}
-        onGoTo={onGoTo}
-      />
-
-      {/* ── Your Journey — Belt Journey hero (carries the student's belt
-          identity, so no separate identity card is needed) ── */}
-      <div>
-        <p className="tss-section-label">
-          <Compass size={11} strokeWidth={1.75} />
-          Your Journey
-        </p>
-        <BeltJourney currentBelt={beltLevel} />
-      </div>
-
-      {/* ── Mental cue of the day — promoted, editorial moment ── */}
-      <div>
-        <p className="tss-section-label">
-          <Brain size={11} strokeWidth={1.75} />
-          Mental Cue · Belt {beltLevel.replace('_belt', '').toUpperCase()}
-        </p>
+      {/* ── Dark "cockpit" hero — TSS Ocean Navy, Garmin-style telemetry ── */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
+        {/* Header with the official TSS wordmark */}
         <div
-          className="rounded-2xl px-5 py-5 bg-white border border-gray-100"
-          style={{
-            borderLeft: `4px solid ${BRAND.colors.cyan}`,
-          }}
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
         >
-          <p
-            className="text-base text-[var(--tss-navy)] leading-relaxed italic"
-            style={{ fontFamily: 'var(--font-tagline)' }}
-          >
-            “{tipOfDay}”
-          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/tss-logo-white.png" alt="The Surf Sequence" className="h-6 w-auto" />
+          <button type="button" onClick={() => onGoTo('feedback')} aria-label="Notifications">
+            <Bell size={18} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />
+          </button>
         </div>
-      </div>
 
-      {/* ── Surf Hours — three equal cards, editorial numerals ── */}
-      <div>
-        <p className="tss-section-label">
-          <Clock size={11} strokeWidth={1.75} />
-          Surf Hours
-        </p>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center shadow-sm">
-            <p className="tss-stat-number">{fmtHm(surf.trainingMinutes)}</p>
-            <p
-              className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mt-1"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+        <div className="p-4 space-y-4">
+          {/* Identity row: photo + name + belt + streak */}
+          <div className="flex items-center gap-3">
+            <div
+              className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center shrink-0"
+              style={{ border: '2px solid #5AC3E7', background: '#1b3148' }}
             >
-              Surf Training
+              {student.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <User size={26} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold truncate" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
+                {student.first_name} {student.last_name}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="w-3 h-3 rounded-full" style={{ background: belt?.color || '#E8E8E8', border: '1px solid #5b6b7a' }} />
+                <span className="text-xs" style={{ color: '#8aa0b2' }}>{belt?.en} · {belt?.levelName}</span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>Streak</p>
+              <p className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '20px' }}>
+                {streak}<span className="text-[11px] font-mono" style={{ color: '#8aa0b2' }}> d</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Primary ring: total water time + belt progress */}
+          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: '#122236' }}>
+            <div className="relative shrink-0" style={{ width: 104, height: 104 }}>
+              <svg viewBox="0 0 120 120" width="104" height="104">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#1f344a" strokeWidth="10" />
+                <circle
+                  cx="60" cy="60" r="52" fill="none" stroke="#5AC3E7" strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray="326.7"
+                  strokeDashoffset={326.7 * (1 - (BELT_RANK[beltLevel] ?? 1) / 6)}
+                  transform="rotate(-90 60 60)"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <p className="font-bold leading-none" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '22px' }}>
+                  {fmtHm(surf.totalMinutes)}
+                </p>
+                <p className="text-[8px] font-mono uppercase tracking-wider mt-1" style={{ color: '#8aa0b2' }}>In the water</p>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>Level progress</p>
+              <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
+                Level {BELT_RANK[beltLevel] ?? 1} of 6
+              </p>
+              <div className="h-1.5 rounded-full overflow-hidden mt-2 mb-2" style={{ background: '#1f344a' }}>
+                <div className="h-full rounded-full" style={{ width: `${((BELT_RANK[beltLevel] ?? 1) / 6) * 100}%`, background: '#5AC3E7' }} />
+              </div>
+              {(() => {
+                const idx = BELT_HIERARCHY.indexOf(beltLevel);
+                const next = idx >= 0 && idx < BELT_HIERARCHY.length - 1 ? BELT_HIERARCHY[idx + 1] : null;
+                const nd = next ? BELT_DISPLAY[next] : null;
+                return nd ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: nd.color }} />
+                    <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Next: {nd.levelName} · {nd.en}</span>
+                  </div>
+                ) : (
+                  <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Top belt reached</span>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Stat tiles — each number with a plain-language caption */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: GraduationCap, label: 'Training', value: fmtHm(surf.trainingMinutes), cap: 'coached water time' },
+              { icon: Waves, label: 'Free surf', value: fmtHm(surf.freeSurfMinutes), cap: 'on your own' },
+              { icon: ClipboardList, label: 'Sessions', value: String(totalSessions), cap: 'classes completed' },
+              { icon: BarChart3, label: 'Drills', value: String(drillsPracticed.length), cap: 'skills practiced' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-2xl p-3.5" style={{ background: '#122236' }}>
+                <div className="flex items-center gap-1.5">
+                  <s.icon size={13} strokeWidth={1.9} style={{ color: '#5AC3E7' }} />
+                  <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>{s.label}</span>
+                </div>
+                <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '24px' }}>{s.value}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: '#8aa0b2' }}>{s.cap}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Mental cue — inside the dark hero */}
+          <div className="rounded-2xl p-4" style={{ background: '#122236', borderLeft: '3px solid #5AC3E7' }}>
+            <p className="text-[9px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#5AC3E7' }}>
+              Mental cue · Belt {beltLevel.replace('_belt', '').toUpperCase()}
+            </p>
+            <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
+              “{tipOfDay}”
             </p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center shadow-sm">
-            <p
-              className="tss-stat-number"
-              style={{ color: BRAND.colors.cyan }}
-            >
-              {fmtHm(surf.freeSurfMinutes)}
-            </p>
-            <p
-              className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mt-1"
-              style={{ fontFamily: 'DM Mono, monospace' }}
-            >
-              Free Surfing
-            </p>
-          </div>
-          <div
-            className="rounded-2xl p-4 text-center shadow-sm text-white"
-            style={{ backgroundColor: BRAND.colors.navy }}
-          >
-            <p
-              className="tss-stat-number"
-              style={{ color: '#FFFFFF' }}
-            >
-              {fmtHm(surf.totalMinutes)}
-            </p>
-            <p
-              className="text-[9px] uppercase tracking-wider font-semibold mt-1 opacity-80"
-              style={{ fontFamily: 'DM Mono, monospace' }}
-            >
-              Total
-            </p>
+
+          {/* Belt journey strip */}
+          <div className="rounded-2xl p-4" style={{ background: '#122236' }}>
+            <p className="text-[9px] font-mono uppercase tracking-wider mb-3" style={{ color: '#8aa0b2' }}>Your belt journey</p>
+            <div className="flex items-center justify-between">
+              {BELT_HIERARCHY.map((b, i) => {
+                const d = BELT_DISPLAY[b];
+                const isCurrent = b === beltLevel;
+                const passed = (BELT_RANK[b] ?? 99) <= (BELT_RANK[beltLevel] ?? 1);
+                return (
+                  <div key={b} className="flex items-center" style={{ flex: i < BELT_HIERARCHY.length - 1 ? 1 : '0 0 auto' }}>
+                    <div className="flex flex-col items-center gap-1.5">
+                      <span
+                        className="rounded-full"
+                        style={{
+                          width: isCurrent ? 20 : 15,
+                          height: isCurrent ? 20 : 15,
+                          background: d.color,
+                          border: isCurrent ? '2px solid #5AC3E7' : 'none',
+                          opacity: passed ? 1 : 0.4,
+                        }}
+                      />
+                      <span className="text-[8px]" style={{ color: isCurrent ? '#5AC3E7' : '#8aa0b2' }}>{d.levelName}</span>
+                    </div>
+                    {i < BELT_HIERARCHY.length - 1 && (
+                      <div className="flex-1 mx-1" style={{ height: 2, background: '#1f344a', marginBottom: 14 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />
-
-      {/* ── Telemetry strip — four KPIs as one instrument panel ── */}
-      <div>
-        <p className="tss-section-label">
-          <BarChart3 size={11} strokeWidth={1.75} />
-          Training Stats
-        </p>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-2 sm:grid-cols-4">
-            {[
-              { label: 'Total Sessions', value: totalSessions, suffix: '' },
-              { label: 'Training Hours', value: trainingHours, suffix: 'h' },
-              { label: 'Self-Training', value: selfTrainingCount, suffix: '' },
-              { label: 'Day Streak', value: streak, suffix: '' },
-            ].map((stat, i) => (
-              <div
-                key={stat.label}
-                className={`px-4 py-5 text-center ${
-                  i > 0 ? 'border-l border-gray-100' : ''
-                } ${
-                  i >= 2 ? 'border-t sm:border-t-0 border-gray-100' : ''
-                }`}
-              >
-                <p className="tss-stat-number">
-                  {stat.value}
-                  {stat.suffix && <span className="tss-stat-suffix">{stat.suffix}</span>}
-                </p>
-                <p
-                  className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
-                  style={{ fontFamily: 'DM Mono, monospace' }}
-                >
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Current Position */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
