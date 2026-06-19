@@ -8,10 +8,10 @@ import {
 import { submitLevelQuiz } from '@/lib/actions/intake';
 
 const GATE = [
-  { emoji: '🏖️', txt: "I've never surfed — or only tried once or twice" },
-  { emoji: '🌊', txt: "I'm learning — I stand up sometimes but I'm still on the basics" },
-  { emoji: '🏄', txt: 'I surf green waves — I ride the face and do some turns' },
-  { emoji: '⚡', txt: 'I surf with power — maneuvers, hitting the lip, varied conditions' },
+  { txt: "I've never surfed — or only tried once or twice" },
+  { txt: "I'm learning — I stand up sometimes but I'm still on the basics" },
+  { txt: 'I surf green waves — I ride the face and do some turns' },
+  { txt: 'I surf with power — maneuvers, hitting the lip, varied conditions' },
 ];
 
 type Phase = 'gate' | 'tech' | 'ocean' | 'result';
@@ -110,9 +110,8 @@ export function LevelQuizStep({
         <div className="space-y-2">
           {GATE.map((g, i) => (
             <button key={i} onClick={() => gateSelect(i)}
-              className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors">
-              <span className="text-xl shrink-0">{g.emoji}</span>
-              <span className="text-sm text-gray-700">{g.txt}</span>
+              className="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-xl border border-gray-200 bg-white hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors">
+              <span className="text-sm font-medium text-[var(--tss-navy)] leading-snug">{g.txt}</span>
             </button>
           ))}
         </div>
@@ -126,8 +125,8 @@ export function LevelQuizStep({
           <div className="space-y-3">
             <Progress total={total} idx={idx} />
             <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{q.phase} · {idx + 1}/{total}</p>
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-[var(--tss-navy)]">{q.scenario}</div>
-            <p className="text-xs text-gray-500">{q.prompt}</p>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-base font-semibold text-[var(--tss-navy)] leading-snug" style={{ fontFamily: 'var(--font-heading)' }}>{q.scenario}</div>
+            <p className="text-sm font-medium text-gray-600">{q.prompt}</p>
             <div className="space-y-2">
               {q.opts.map((o, i) => (
                 <button key={i} onClick={() => pickTech(i)}
@@ -149,8 +148,8 @@ export function LevelQuizStep({
           <div className="space-y-3">
             <Progress total={OCEAN_QUESTIONS.length} idx={oceanCur} />
             <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{q.phase} · {oceanCur + 1}/{OCEAN_QUESTIONS.length}</p>
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-[var(--tss-navy)]">{q.scenario}</div>
-            <p className="text-xs text-gray-500">{q.prompt}</p>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-base font-semibold text-[var(--tss-navy)] leading-snug" style={{ fontFamily: 'var(--font-heading)' }}>{q.scenario}</div>
+            <p className="text-sm font-medium text-gray-600">{q.prompt}</p>
             <div className="space-y-2">
               {q.opts.map((o, i) => (
                 <button key={i} onClick={() => pickOcean(i)} disabled={saving}

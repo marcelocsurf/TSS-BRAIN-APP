@@ -209,9 +209,8 @@ export function IntakeForm({ token, student }: Props) {
   if (stage === 'all_done') {
     return (
       <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center space-y-3">
-          <p className="text-3xl">&#129305;</p>
-          <p className="text-lg font-bold text-[var(--tss-navy)]">Profile complete!</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center space-y-3">
+          <p className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>Profile complete!</p>
           <p className="text-sm text-gray-500">
             Your coach will have everything they need to prepare your sessions.
           </p>
@@ -242,8 +241,7 @@ export function IntakeForm({ token, student }: Props) {
         {/* Extended profile (goals etc.) is for MEMBERS. Drop-in students
             (single service) finish here — no goals, no portal, no course. */}
         {student.student_type === 'dropin' ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-2">
-            <p className="text-2xl">🤙</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center space-y-2">
             <p className="text-sm font-semibold text-[var(--tss-navy)]">You&apos;re all set!</p>
             <p className="text-xs text-gray-500">You can close this page. See you in the water.</p>
           </div>
@@ -446,9 +444,9 @@ export function IntakeForm({ token, student }: Props) {
   // ═══════════════════════════════════════
 
   const EXT_STEPS = [
-    { title: isBeginner ? 'Your Starting Point' : 'Your Surf Today', icon: '\u{1F3C4}' },
-    { title: 'Your Goals', icon: '\u{1F3AF}' },
-    { title: 'Final Details', icon: '\u2713' },
+    { title: isBeginner ? 'Your Starting Point' : 'Your Surf Today' },
+    { title: 'Your Goals' },
+    { title: 'Final Details' },
   ];
   const extTotalSteps = EXT_STEPS.length;
 
@@ -469,7 +467,12 @@ export function IntakeForm({ token, student }: Props) {
                 i === extendedStep ? 'scale-110' : 'opacity-40'
               }`}
             >
-              <span className="text-lg">{s.icon}</span>
+              <span
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                style={{ background: i <= extendedStep ? BRAND.colors.navy : '#D1D5DB' }}
+              >
+                {i + 1}
+              </span>
               <span className="text-[9px] text-gray-500 hidden sm:block">{s.title}</span>
             </button>
           ))}
@@ -488,8 +491,8 @@ export function IntakeForm({ token, student }: Props) {
       {/* Step content */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            {EXT_STEPS[extendedStep].icon} {EXT_STEPS[extendedStep].title}
+          <h3 className="text-base font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
+            {EXT_STEPS[extendedStep].title}
           </h3>
         </div>
 
