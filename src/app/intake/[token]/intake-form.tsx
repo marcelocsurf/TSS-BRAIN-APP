@@ -301,9 +301,9 @@ export function IntakeForm({ token, student }: Props) {
         <StageIndicator current={0} />
 
         {/* ── Identity (the "ficha") ── */}
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
-            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+            <h3 className="text-base font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
               About You — Required
             </h3>
           </div>
@@ -353,9 +353,9 @@ export function IntakeForm({ token, student }: Props) {
         </div>
 
         {/* ── Safety & Medical ── */}
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
-            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+            <h3 className="text-base font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
               Safety &amp; Medical — Required
             </h3>
           </div>
@@ -486,7 +486,7 @@ export function IntakeForm({ token, student }: Props) {
       </div>
 
       {/* Step content */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
             {EXT_STEPS[extendedStep].icon} {EXT_STEPS[extendedStep].title}
@@ -813,7 +813,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, required, h
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent"
+        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)] focus:border-transparent"
       />
       {hint && <p className="text-[10px] text-gray-400 mt-1">{hint}</p>}
     </div>
@@ -832,7 +832,7 @@ function TextArea({ label, value, onChange, placeholder, hint }: {
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent"
+        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)] focus:border-transparent"
       />
       {hint && <p className="text-[10px] text-gray-400 mt-1">{hint}</p>}
     </div>
@@ -848,7 +848,7 @@ function Select({ label, value, onChange, options }: {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] bg-white"
+        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)] bg-white"
       >
         {options.map((o) => (
           <option key={o} value={o}>{o || '\u2014 Select \u2014'}</option>
