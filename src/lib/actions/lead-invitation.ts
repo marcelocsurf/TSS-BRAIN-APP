@@ -1,9 +1,10 @@
 'use server';
 
-// Sends the newly-created Lead a link to the /lead/[token] safety form
-// so they can sign the waiver + complete medical info before showing
-// up to a session. Falls back to returning the URL so the coordinator
-// can copy + paste it into WhatsApp when the lead has no email.
+// Sends the newly-created Lead a single link to the /intake/[token] flow:
+// required safety + waiver first, then (for members) the level quiz and
+// extended profile — all in one link, no second send. Falls back to
+// returning the URL so the coordinator can paste it into WhatsApp when
+// the lead has no email.
 
 import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -26,7 +27,7 @@ export async function sendLeadInvitation(studentId: string): Promise<SendResult>
   if (error || !data) throw new Error(error?.message ?? 'Student not found');
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
-  const url = `${baseUrl}/lead/${data.portal_token}`;
+  const url = `${baseUrl}/intake/${data.portal_token}`;
 
   if (!data.email) {
     return { url, emailed: false, reason: 'No email on file' };

@@ -149,7 +149,7 @@ export async function createLead(input: CreateLeadInput): Promise<CreateLeadResu
     ok: true,
     studentId: data.id,
     leadToken: data.portal_token,
-    leadFormUrl: `${baseUrl}/lead/${data.portal_token}`,
+    leadFormUrl: `${baseUrl}/intake/${data.portal_token}`,
   };
 }
 
