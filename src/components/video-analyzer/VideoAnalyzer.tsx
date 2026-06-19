@@ -8,6 +8,8 @@ import ModelLibrary from "./ModelLibrary";
 import StudentClips from "./StudentClips";
 import { makeThumb, MAX_CLIPS_PER_GROUP, type Group } from "./clips";
 import type { Shape, DrawSettings } from "./types";
+import type { ModelCategory } from "./library";
+import { getModelClips } from "@/lib/actions/model-clips";
 
 type PanelKey = "student" | "model";
 
@@ -26,6 +28,16 @@ export default function VideoAnalyzer() {
   const [showLibrary, setShowLibrary] = useState(true);
   const [sidebarTab, setSidebarTab] = useState<"students" | "models">("students");
   const [layout, setLayout] = useState<"dual" | "student" | "model">("dual");
+  const [library, setLibrary] = useState<ModelCategory[]>([]);
+
+  // Load the admin-managed model clips from Supabase on first open.
+  useEffect(() => {
+    let alive = true;
+    getModelClips()
+      .then((cats) => { if (alive) setLibrary(cats); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // Student roster: groups of local clips (in-memory, never uploaded).
   const [groups, setGroups] = useState<Group[]>([
@@ -287,7 +299,7 @@ export default function VideoAnalyzer() {
                   onRemoveClip={removeClip}
                 />
               ) : (
-                <ModelLibrary selectedSrc={modelSrc} onSelect={selectModel} />
+                <ModelLibrary selectedSrc={modelSrc} onSelect={selectModel} library={library} />
               )}
             </div>
           </aside>

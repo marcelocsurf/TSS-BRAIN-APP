@@ -17,6 +17,7 @@ import {
   Pencil,
   Building2,
   Film,
+  Video,
   ShieldCheck,
   Receipt,
   BarChart3,
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/billing',   label: 'Billing',   Icon: Receipt,     roles: ['admin'] },
   { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3,   roles: ['admin'] },
   { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
+  { href: '/admin/video-library', label: 'Video Library', Icon: Video, roles: ['admin'] },
   { href: '/audit',     label: 'Audit',     Icon: ShieldCheck, roles: ['admin'] },
 ];
 

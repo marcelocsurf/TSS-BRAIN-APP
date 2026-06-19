@@ -1,22 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { LIBRARY } from "./library";
+import { LIBRARY, type ModelCategory } from "./library";
 
 type Props = {
   selectedSrc: string | null;
   onSelect: (src: string, title: string) => void;
+  library?: ModelCategory[];
 };
 
-export default function ModelLibrary({ selectedSrc, onSelect }: Props) {
-  const [openCat, setOpenCat] = useState<string | null>(LIBRARY[0]?.id ?? null);
+export default function ModelLibrary({ selectedSrc, onSelect, library }: Props) {
+  const cats = library && library.length > 0 ? library : LIBRARY;
+  const [openCat, setOpenCat] = useState<string | null>(cats[0]?.id ?? null);
 
   return (
     <div className="flex h-full flex-col gap-1 overflow-y-auto p-2">
       <h2 className="px-1 pb-1 text-sm font-bold text-cyan-300">
         TSS Model Library
       </h2>
-      {LIBRARY.map((cat) => {
+      {cats.length === 0 && (
+        <p className="px-2 py-3 text-xs text-white/40">No model clips yet.</p>
+      )}
+      {cats.map((cat) => {
         const open = openCat === cat.id;
         return (
           <div key={cat.id} className="rounded-xl bg-white/5">

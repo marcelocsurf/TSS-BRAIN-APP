@@ -216,6 +216,7 @@ export default function VideoPanel({
             <video
               ref={videoRef}
               src={src}
+              crossOrigin="anonymous"
               playsInline
               preload="auto"
               className="h-full w-full object-contain"
