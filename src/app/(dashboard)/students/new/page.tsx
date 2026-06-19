@@ -35,7 +35,7 @@ export default function AddStudentPage() {
     if (!first.trim() || !last.trim()) { setError('First and last name required.'); return; }
     setLoading(true);
     try {
-      const { leadFormUrl } = await createLead({
+      const res = await createLead({
         first_name: first,
         last_name: last,
         phone: phone || null,
@@ -43,21 +43,22 @@ export default function AddStudentPage() {
         student_type: studentType,
         allowDuplicate,
       });
-      setCreatedUrl(leadFormUrl);
-    } catch (err: any) {
-      const msg = err.message || '';
-      if (msg.startsWith('DUPLICATE::')) {
-        const [, , name, matchedOn] = msg.split('::');
-        if (confirm(`Someone with that ${matchedOn === 'email' ? 'email' : 'phone'} already exists (${name}). Create anyway?`)) {
+      if (res.ok) {
+        setCreatedUrl(res.leadFormUrl);
+      } else if (res.duplicate) {
+        const d = res.duplicate;
+        if (confirm(`Someone with that ${d.matched_on === 'email' ? 'email' : 'phone'} already exists (${d.first_name} ${d.last_name}). Create anyway?`)) {
           await submit(e, true);
           return;
         }
         setError('Cancelled — that contact already exists.');
       } else {
-        // Always surface SOMETHING so a failure never looks like a silent freeze.
-        console.error('createLead failed:', err);
-        setError(msg || 'Could not create the student. Please try again.');
+        setError(res.error || 'Could not create the student. Please try again.');
       }
+    } catch (err: any) {
+      // Always surface SOMETHING so a failure never looks like a silent freeze.
+      console.error('createLead failed:', err);
+      setError('Could not create the student. Please try again.');
     } finally {
       setLoading(false);
     }

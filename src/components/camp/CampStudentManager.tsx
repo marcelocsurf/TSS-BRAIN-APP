@@ -89,18 +89,33 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
       return;
     }
     startTransition(async () => {
-      const doCreate = async (allowDuplicate: boolean) => {
-        const lead = await createLead({
+      const doCreate = async (allowDuplicate: boolean): Promise<boolean> => {
+        const res = await createLead({
           first_name: newLead.first_name,
           last_name: newLead.last_name,
           email: newLead.email || null,
           phone: newLead.phone || null,
           allowDuplicate,
         });
-        await addStudentToCamp(campInstanceId, lead.studentId);
-        const result = await sendLeadInvitation(lead.studentId);
+        if (!res.ok) {
+          if (res.duplicate) {
+            const d = res.duplicate;
+            const field = d.matched_on === 'email' ? 'email' : 'phone';
+            const confirmed = window.confirm(
+              `A student named "${d.first_name} ${d.last_name}" already exists with the same ${field}. ` +
+                `They may already be in the system — consider enrolling the existing ` +
+                `profile instead.\n\nCreate a new separate student anyway?`,
+            );
+            if (confirmed) return doCreate(true);
+            return false;
+          }
+          alert(res.error || 'Could not create student.');
+          return false;
+        }
+        await addStudentToCamp(campInstanceId, res.studentId);
+        const result = await sendLeadInvitation(res.studentId);
         setJustCreated({
-          studentId: lead.studentId,
+          studentId: res.studentId,
           name: `${newLead.first_name} ${newLead.last_name}`,
           url: result.url,
           emailed: result.emailed,
@@ -108,30 +123,14 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
         });
         setNewLead({ first_name: '', last_name: '', email: '', phone: '' });
         router.refresh();
+        return true;
       };
 
       try {
         await doCreate(false);
       } catch (err: any) {
-        const msg: string = err?.message ?? '';
-        if (msg.startsWith('DUPLICATE::')) {
-          const [, , name, matchedOn] = msg.split('::');
-          const field = matchedOn === 'email' ? 'email' : 'phone';
-          const ok = window.confirm(
-            `A student named "${name}" already exists with the same ${field}. ` +
-              `They may already be in the system — consider enrolling the existing ` +
-              `profile instead.\n\nCreate a new separate student anyway?`,
-          );
-          if (ok) {
-            try {
-              await doCreate(true);
-            } catch (e: any) {
-              alert(e?.message ?? 'Could not create student.');
-            }
-          }
-        } else {
-          alert(msg || 'Could not create student.');
-        }
+        console.error('createLead failed:', err);
+        alert('Could not create student. Please try again.');
       }
     });
   };

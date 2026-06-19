@@ -71,16 +71,20 @@ export async function findDuplicateStudents(input: {
   return matches;
 }
 
-export async function createLead(input: CreateLeadInput): Promise<{
-  studentId: string;
-  leadToken: string;
-  leadFormUrl: string;
-}> {
-  const me = await getCurrentCoach();
-  if (!me) throw new Error('Not authenticated');
+// Discriminated result. IMPORTANT: we RETURN errors instead of throwing,
+// because Next.js strips thrown server-action error messages in production
+// (replacing them with a generic "Server Components render" digest). Returned
+// values survive the boundary, so the duplicate flow works in prod.
+export type CreateLeadResult =
+  | { ok: true; studentId: string; leadToken: string; leadFormUrl: string }
+  | { ok: false; error: string; duplicate?: DuplicateMatch };
 
-  if (!input.first_name?.trim()) throw new Error('First name is required');
-  if (!input.last_name?.trim()) throw new Error('Last name is required');
+export async function createLead(input: CreateLeadInput): Promise<CreateLeadResult> {
+  const me = await getCurrentCoach();
+  if (!me) return { ok: false, error: 'Not authenticated' };
+
+  if (!input.first_name?.trim()) return { ok: false, error: 'First name is required' };
+  if (!input.last_name?.trim()) return { ok: false, error: 'Last name is required' };
 
   const admin = createAdminClient();
 
@@ -97,10 +101,11 @@ export async function createLead(input: CreateLeadInput): Promise<{
       academy_id: academyId,
     });
     if (dupes.length > 0) {
-      const d = dupes[0];
-      throw new Error(
-        `DUPLICATE::${d.id}::${d.first_name} ${d.last_name}::${d.matched_on}`,
-      );
+      return {
+        ok: false,
+        error: 'A student with that email or phone already exists.',
+        duplicate: dupes[0],
+      };
     }
   }
 
@@ -131,7 +136,7 @@ export async function createLead(input: CreateLeadInput): Promise<{
     .select('id, portal_token')
     .single();
 
-  if (error || !data) throw new Error(error?.message ?? 'Failed to create lead');
+  if (error || !data) return { ok: false, error: error?.message ?? 'Failed to create lead' };
 
   // NOTE: intentionally NO revalidatePath here. The (dashboard) layout is
   // force-dynamic, so a revalidate would trigger a router refresh that
@@ -141,6 +146,7 @@ export async function createLead(input: CreateLeadInput): Promise<{
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
   return {
+    ok: true,
     studentId: data.id,
     leadToken: data.portal_token,
     leadFormUrl: `${baseUrl}/lead/${data.portal_token}`,
