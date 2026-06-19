@@ -13,10 +13,22 @@ import { activatePendingCoursesForStudent } from './course-grants';
 // ═══════════════════════════════════════
 
 export interface BasicIntakeInput {
+  // Identity (the "ficha" — required to close a usable profile)
+  date_of_birth?: string;
+  nationality?: string;
+  languages?: string;
+  gender?: string;
+  // Surf history — drives whether a member skips the level quiz
+  surf_self_level?: string; // 'Never' | 'Once or twice' | 'Yes, I surf'
+  // Body (optional, helps the coach pick a board)
+  height?: string;
+  weight?: string;
+  // Safety / medical
   emergency_contact_name: string;
   emergency_contact_phone: string;
   swim_level: string;
   allergies?: string;
+  injuries?: string;
   medical_notes?: string;
   waiver_signed: boolean;
 }
@@ -109,15 +121,27 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
   const isFirstSubmission = !student.intake_completed_at;
 
   const updates: Record<string, unknown> = {
+    date_of_birth: input.date_of_birth?.trim() || null,
+    nationality: input.nationality?.trim() || null,
+    languages: input.languages?.trim() || null,
+    gender: input.gender?.trim() || null,
+    surf_self_level: input.surf_self_level?.trim() || null,
+    height: input.height?.trim() || null,
+    weight: input.weight?.trim() || null,
     emergency_contact_name: input.emergency_contact_name.trim(),
     emergency_contact_phone: input.emergency_contact_phone.trim(),
     swim_level: input.swim_level,
     allergies: input.allergies?.trim() || null,
+    injuries: input.injuries?.trim() || null,
     medical_notes: input.medical_notes?.trim() || null,
     waiver_signed: true,
     waiver_signed_at: new Date().toISOString(),
-    intake_tier: 'basic',
   };
+
+  // Mark tier as 'basic' but never downgrade a member who already reached 'extended'.
+  if (student.intake_tier !== 'extended') {
+    updates.intake_tier = 'basic';
+  }
 
   if (isFirstSubmission) {
     updates.intake_completed_at = new Date().toISOString();

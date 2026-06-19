@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
+import { submitBasicIntake, submitIntake, submitLevelQuiz, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
 import { BRAND } from '@/lib/constants/brand';
 import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
@@ -16,6 +16,8 @@ interface StudentData {
   stance?: string | null;
   surf_experience_years?: string | null;
   surf_frequency?: string | null;
+  surf_self_level?: string | null;
+  belt_level?: string | null;
   board_type?: string | null;
   board_length_feet?: string | null;
   board_length_inches?: string | null;
@@ -61,11 +63,21 @@ interface Props {
 type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done';
 
 export function IntakeForm({ token, student }: Props) {
-  // Determine initial stage based on existing data
+  // New 3-part order: Profile & Safety (ficha) FIRST → Level quiz (members who
+  // surf) → Goals. A drop-in stops after the ficha. A member who has never
+  // surfed skips the quiz (auto White Belt) and jumps to goals.
+  const neverSurfed =
+    student.surf_self_level === 'Never' || student.surf_self_level === 'Once or twice';
+  const isDropin = student.student_type === 'dropin';
+  const basicDone =
+    student.intake_tier === 'basic' ||
+    student.intake_tier === 'extended' ||
+    (!!student.waiver_signed && !!student.emergency_contact_name);
   const initialStage: Stage =
     student.intake_tier === 'extended' ? 'all_done'
-    : student.intake_tier === 'basic' || (student.waiver_signed && student.emergency_contact_name) ? 'basic_done'
-    : student.ocean_quiz_completed_at ? 'basic'
+    : !basicDone ? 'basic'
+    : isDropin ? 'basic_done'
+    : neverSurfed || student.ocean_quiz_completed_at ? 'extended'
     : 'ocean_quiz';
 
   const [stage, setStage] = useState<Stage>(initialStage);
@@ -78,25 +90,32 @@ export function IntakeForm({ token, student }: Props) {
   // reload; overwritten when the quiz is completed in this session.
   const p0Saved = student.ocean_quiz_answers?.P0 ?? null;
   const [isBeginner, setIsBeginner] = useState<boolean>(
-    p0Saved === 'never' || p0Saved === 'whitewater_only',
+    neverSurfed || student.belt_level === 'white_belt' || p0Saved === 'never' || p0Saved === 'whitewater_only',
   );
 
-  // ── Basic intake form state ──
+  // ── Basic intake form state (the "ficha" — identity + safety) ──
   const [basicForm, setBasicForm] = useState<BasicIntakeInput>({
+    date_of_birth: student.date_of_birth || '',
+    nationality: student.nationality || '',
+    languages: student.languages || '',
+    gender: student.gender || '',
+    surf_self_level: student.surf_self_level || '',
+    height: student.height || '',
+    weight: student.weight || '',
     emergency_contact_name: student.emergency_contact_name || '',
     emergency_contact_phone: student.emergency_contact_phone || '',
     swim_level: student.swim_level || '',
     allergies: student.allergies || '',
+    injuries: student.injuries || '',
     medical_notes: student.medical_notes || '',
     waiver_signed: student.waiver_signed || false,
   });
 
-  // ── Extended intake form state ──
+  // ── Extended (Goals) form state ──
+  // NOTE: identity/body fields (date_of_birth, gender, nationality, languages,
+  // height, weight) are NOT here — they're collected in Part 1 (the ficha).
+  // Including them would let submitIntake overwrite the saved ficha with blanks.
   const [extForm, setExtForm] = useState<IntakeFormInput>({
-    date_of_birth: student.date_of_birth || '',
-    gender: student.gender || '',
-    nationality: student.nationality || '',
-    languages: student.languages || '',
     instagram: student.instagram || '',
     stance: student.stance || '',
     surf_experience_years: student.surf_experience_years || '',
@@ -117,8 +136,6 @@ export function IntakeForm({ token, student }: Props) {
     goal_long_term: student.goal_long_term || '',
     biggest_barrier: student.biggest_barrier || '',
     fears_phobias: student.fears_phobias || '',
-    height: student.height || '',
-    weight: student.weight || '',
     shirt_size: student.shirt_size || '',
     how_did_you_hear: student.how_did_you_hear || '',
     returning_student: student.returning_student || false,
@@ -130,18 +147,26 @@ export function IntakeForm({ token, student }: Props) {
   const setExt = (field: keyof IntakeFormInput, value: string | boolean | string[]) =>
     setExtForm((prev) => ({ ...prev, [field]: value }));
 
-  // ── Submit Stage 1 (Basic) ──
+  // ── Submit Part 1 (Profile & Safety / "ficha") ──
   const handleBasicSubmit = async () => {
+    if (!basicForm.date_of_birth?.trim()) {
+      setError('Date of birth is required.');
+      return;
+    }
+    if (!basicForm.surf_self_level) {
+      setError('Please tell us if you have surfed before.');
+      return;
+    }
+    if (!basicForm.swim_level) {
+      setError('Please select your swim level.');
+      return;
+    }
     if (!basicForm.emergency_contact_name?.trim()) {
       setError('Emergency contact name is required.');
       return;
     }
     if (!basicForm.emergency_contact_phone?.trim()) {
       setError('Emergency contact phone is required.');
-      return;
-    }
-    if (!basicForm.swim_level) {
-      setError('Please select your swim level.');
       return;
     }
     if (!basicForm.waiver_signed) {
@@ -151,9 +176,31 @@ export function IntakeForm({ token, student }: Props) {
 
     setLoading(true);
     setError('');
+    const memberNeverSurfed =
+      basicForm.surf_self_level === 'Never' || basicForm.surf_self_level === 'Once or twice';
     try {
       await submitBasicIntake(token, basicForm);
-      setStage('basic_done');
+
+      // Drop-in: single service, no level/goals — finish here.
+      if (student.student_type === 'dropin') {
+        setStage('basic_done');
+      } else if (memberNeverSurfed) {
+        // Member who has never surfed → White Belt beginner (provisional).
+        // Skip the level quiz and go straight to beginner goals.
+        await submitLevelQuiz(token, {
+          belt: 'white_belt',
+          score: 0,
+          skillmap: [],
+          ocean_level: 'beginner',
+        });
+        setIsBeginner(true);
+        setExtendedStep(0);
+        setStage('extended');
+      } else {
+        // Member who surfs → take the level quiz.
+        setStage('ocean_quiz');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       setError(err.message || 'Failed to submit. Please try again.');
     } finally {
@@ -248,13 +295,14 @@ export function IntakeForm({ token, student }: Props) {
   if (stage === 'ocean_quiz') {
     return (
       <div className="space-y-4">
-        <StageIndicator current={0} />
+        <StageIndicator current={1} />
         <LevelQuizStep
           token={token}
           onComplete={(belt) => {
-            // Beginner branch for the extended form = entry belt white_belt.
+            // Beginner branch for the goals form = entry belt white_belt.
             setIsBeginner(belt === 'white_belt');
-            setStage('basic');
+            setExtendedStep(0);
+            setStage('extended');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
@@ -270,8 +318,67 @@ export function IntakeForm({ token, student }: Props) {
     return (
       <div className="space-y-4">
         {/* Stage indicator */}
-        <StageIndicator current={1} />
+        <StageIndicator current={0} />
 
+        {/* ── Identity (the "ficha") ── */}
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-50">
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+              About You — Required
+            </h3>
+          </div>
+          <div className="p-4 space-y-4">
+            <Field
+              label="Date of Birth *"
+              type="date"
+              value={basicForm.date_of_birth || ''}
+              onChange={(v) => setBasic('date_of_birth', v)}
+              required
+            />
+            <FormRow>
+              <Field
+                label="Nationality"
+                value={basicForm.nationality || ''}
+                onChange={(v) => setBasic('nationality', v)}
+                placeholder="e.g. American, Brazilian"
+              />
+              <Field
+                label="Languages"
+                value={basicForm.languages || ''}
+                onChange={(v) => setBasic('languages', v)}
+                placeholder="e.g. English, Spanish"
+              />
+            </FormRow>
+            <Select
+              label="Gender"
+              value={basicForm.gender || ''}
+              onChange={(v) => setBasic('gender', v)}
+              options={['', 'Male', 'Female', 'Other', 'Prefer not to say']}
+            />
+            <OptionGroup
+              label="Have you surfed before? *"
+              value={basicForm.surf_self_level || ''}
+              onChange={(v) => setBasic('surf_self_level', v)}
+              options={['Never', 'Once or twice', 'Yes, I surf']}
+            />
+            <FormRow>
+              <Field
+                label="Height"
+                value={basicForm.height || ''}
+                onChange={(v) => setBasic('height', v)}
+                placeholder={`5'10" or 178cm`}
+              />
+              <Field
+                label="Weight"
+                value={basicForm.weight || ''}
+                onChange={(v) => setBasic('weight', v)}
+                placeholder="165 lbs or 75 kg"
+              />
+            </FormRow>
+          </div>
+        </div>
+
+        {/* ── Safety & Medical ── */}
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
@@ -290,6 +397,12 @@ export function IntakeForm({ token, student }: Props) {
               value={basicForm.allergies || ''}
               onChange={(v) => setBasic('allergies', v)}
               placeholder="e.g. Penicillin, shellfish, asthma, none"
+            />
+            <Field
+              label="Injuries / chronic conditions"
+              value={basicForm.injuries || ''}
+              onChange={(v) => setBasic('injuries', v)}
+              placeholder="e.g. Shoulder, knee, back — or none"
             />
             <TextArea
               label="Additional Medical Notes"
@@ -348,7 +461,7 @@ export function IntakeForm({ token, student }: Props) {
           className="w-full py-3 text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
           style={{ background: BRAND.colors.navy }}
         >
-          {loading ? 'Saving...' : 'Submit Safety Info & Waiver'}
+          {loading ? 'Saving...' : 'Save profile & continue'}
         </button>
       </div>
     );
@@ -359,7 +472,6 @@ export function IntakeForm({ token, student }: Props) {
   // ═══════════════════════════════════════
 
   const EXT_STEPS = [
-    { title: 'About You', icon: '\u{1F464}' },
     { title: isBeginner ? 'Your Starting Point' : 'Your Surf Today', icon: '\u{1F3C4}' },
     { title: 'Your Goals', icon: '\u{1F3AF}' },
     { title: 'Final Details', icon: '\u2713' },
@@ -408,58 +520,8 @@ export function IntakeForm({ token, student }: Props) {
         </div>
 
         <div className="p-4 space-y-4">
-          {/* ── STEP 0: ABOUT YOU ── */}
-          {extendedStep === 0 && (
-            <>
-              <Field
-                label="Date of Birth"
-                type="date"
-                value={(extForm.date_of_birth as string) || ''}
-                onChange={(v) => setExt('date_of_birth', v)}
-              />
-              <Select
-                label="Gender"
-                value={(extForm.gender as string) || ''}
-                onChange={(v) => setExt('gender', v)}
-                options={['', 'Male', 'Female', 'Other', 'Prefer not to say']}
-              />
-              <Field
-                label="Nationality"
-                value={(extForm.nationality as string) || ''}
-                onChange={(v) => setExt('nationality', v)}
-                placeholder="e.g. American, Brazilian, German"
-              />
-              <Field
-                label="Languages"
-                value={(extForm.languages as string) || ''}
-                onChange={(v) => setExt('languages', v)}
-                placeholder="e.g. English, Spanish"
-              />
-              <Field
-                label="Instagram"
-                value={(extForm.instagram as string) || ''}
-                onChange={(v) => setExt('instagram', v)}
-                placeholder="@yourusername"
-              />
-              <FormRow>
-                <Field
-                  label="Height"
-                  value={(extForm.height as string) || ''}
-                  onChange={(v) => setExt('height', v)}
-                  placeholder={`5'10" or 178cm`}
-                />
-                <Field
-                  label="Weight"
-                  value={(extForm.weight as string) || ''}
-                  onChange={(v) => setExt('weight', v)}
-                  placeholder="165 lbs or 75 kg"
-                />
-              </FormRow>
-            </>
-          )}
-
-          {/* ── STEP 1: SURF EXPERIENCE (adaptive) ── */}
-          {extendedStep === 1 && isBeginner && (
+          {/* ── STEP 0: SURF EXPERIENCE (adaptive) ── */}
+          {extendedStep === 0 && isBeginner && (
             <>
               <Field
                 label="Other sports you practice"
@@ -493,7 +555,7 @@ export function IntakeForm({ token, student }: Props) {
             </>
           )}
 
-          {extendedStep === 1 && !isBeginner && (
+          {extendedStep === 0 && !isBeginner && (
             <>
               <OptionGroup
                 label="What's your stance?"
@@ -577,8 +639,8 @@ export function IntakeForm({ token, student }: Props) {
             </>
           )}
 
-          {/* ── STEP 2: GOALS (adaptive) ── */}
-          {extendedStep === 2 && isBeginner && (
+          {/* ── STEP 1: GOALS (adaptive) ── */}
+          {extendedStep === 1 && isBeginner && (
             <>
               <TextArea
                 label="What would you like to achieve in this trip/course?"
@@ -602,7 +664,7 @@ export function IntakeForm({ token, student }: Props) {
             </>
           )}
 
-          {extendedStep === 2 && !isBeginner && (
+          {extendedStep === 1 && !isBeginner && (
             <>
               <TextArea
                 label="What do you want to achieve this trip/course?"
@@ -644,9 +706,15 @@ export function IntakeForm({ token, student }: Props) {
             </>
           )}
 
-          {/* ── STEP 3: FINAL DETAILS ── */}
-          {extendedStep === 3 && (
+          {/* ── STEP 2: FINAL DETAILS ── */}
+          {extendedStep === 2 && (
             <>
+              <Field
+                label="Instagram"
+                value={(extForm.instagram as string) || ''}
+                onChange={(v) => setExt('instagram', v)}
+                placeholder="@yourusername"
+              />
               <Select
                 label="Shirt Size"
                 value={(extForm.shirt_size as string) || ''}
@@ -714,9 +782,9 @@ export function IntakeForm({ token, student }: Props) {
 
 function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   const steps: { label: string }[] = [
+    { label: 'Profile & Safety' },
     { label: 'Your Level' },
-    { label: 'Safety & Waiver' },
-    { label: 'Extended Profile' },
+    { label: 'Goals' },
   ];
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3">
