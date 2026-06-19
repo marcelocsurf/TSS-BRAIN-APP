@@ -10,8 +10,12 @@ import VideoAnalyzer from './index';
 // until used. Drop it in the coach portal Tools tab and the admin dashboard.
 export function VideoAnalyzerLauncher({
   variant = 'card',
+  title = 'Video Analyzer',
+  subtitle = 'Draw on a student clip — angles, lines, frame-by-frame.',
 }: {
   variant?: 'card' | 'button';
+  title?: string;
+  subtitle?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -27,10 +31,8 @@ export function VideoAnalyzerLauncher({
             <Video size={18} strokeWidth={1.75} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--tss-navy)]">Video Analyzer</p>
-            <p className="text-[11px] text-gray-500 leading-snug">
-              Draw on a student clip — angles, lines, frame-by-frame.
-            </p>
+            <p className="text-sm font-semibold text-[var(--tss-navy)]">{title}</p>
+            <p className="text-[11px] text-gray-500 leading-snug">{subtitle}</p>
           </div>
         </button>
       ) : (

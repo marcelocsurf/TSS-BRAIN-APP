@@ -20,6 +20,7 @@ import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
+import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { LogoutButton } from '@/components/portal/LogoutButton';
 import {
   createSelfTrainingSession,
@@ -48,6 +49,7 @@ import {
   Sparkles,
   Bell,
   ChevronRight,
+  Video,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -384,6 +386,19 @@ export function PortalTabs({
                   Logged for the record but does NOT count toward step mastery.
                 </p>
               </button>
+
+              {/* Self-analysis: compare your own clip against the TSS model
+                  library (draw lines/angles, frame-by-frame). Local only. */}
+              <div>
+                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+                  <Video size={14} strokeWidth={1.75} />
+                  Video Analysis
+                </p>
+                <VideoAnalyzerLauncher
+                  title="Analyze your surfing"
+                  subtitle="Load your clip, compare it to the TSS models, and draw lines & angles frame by frame."
+                />
+              </div>
             </div>
           )
         )}
