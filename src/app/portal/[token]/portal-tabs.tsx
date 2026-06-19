@@ -46,6 +46,8 @@ import {
   Clock,
   BarChart3,
   Sparkles,
+  Bell,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -480,32 +482,15 @@ function HomeTab({
 
   return (
     <div className="space-y-4">
-      {/* M45 — Upcoming camp/service card. Shows the next official service
-          programmed by the academy (camp_instance) with coach profile,
-          day + time, and what the student will work on. */}
-      {upcomingCamps.length > 0 && <UpcomingCampCard camp={upcomingCamps[0]} />}
-      {/* Legacy: upcoming multi-block session card (deprecated). */}
-      {upcomingCamps.length === 0 && upcoming.length > 0 && (
-        <UpcomingSessionCard upcoming={upcoming[0]} />
-      )}
-
-      {/* Coach's final-evaluation note for the student (camp graduation) */}
-      {campWithNote && (
-        <div>
-          <p className="tss-section-label">
-            <Brain size={11} strokeWidth={1.75} />
-            Your Coach's Note · {campWithNote.camp_name}
-          </p>
-          <div
-            className="rounded-2xl px-5 py-4 bg-white border border-gray-100"
-            style={{ borderLeft: `4px solid ${BRAND.colors.cyan}` }}
-          >
-            <p className="text-sm text-[var(--tss-navy)] leading-relaxed whitespace-pre-line">
-              {campWithNote.coach_final_note}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Notifications — compact alerts for any new service or message,
+          replacing the space-heavy hero cards. Tap a row to see detail. */}
+      <PortalAlerts
+        upcomingCamp={upcomingCamps[0] ?? null}
+        legacyUpcoming={upcomingCamps.length === 0 ? (upcoming[0] ?? null) : null}
+        campWithNote={campWithNote ?? null}
+        latestResult={latestResult ?? null}
+        onGoTo={onGoTo}
+      />
 
       {/* ── Your Journey — Belt Journey hero (carries the student's belt
           identity, so no separate identity card is needed) ── */}
@@ -1903,6 +1888,143 @@ function StatCard({
         {label}
       </p>
       {sublabel && <p className="text-[9px] text-gray-400 mt-0.5">{sublabel}</p>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// PORTAL ALERTS — compact notification list (new service / coach message /
+// session report). Replaces the large hero cards to save vertical space.
+// ═══════════════════════════════════════
+
+function PortalAlerts({
+  upcomingCamp,
+  legacyUpcoming,
+  campWithNote,
+  latestResult,
+  onGoTo,
+}: {
+  upcomingCamp: any;
+  legacyUpcoming: any;
+  campWithNote: any;
+  latestResult: any;
+  onGoTo: (tab: Tab) => void;
+}) {
+  const [noteOpen, setNoteOpen] = useState(false);
+
+  const fmtDate = (d: string | null | undefined) =>
+    d
+      ? new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      : '';
+
+  type Row = {
+    key: string;
+    Icon: LucideIcon;
+    color: string;
+    bg: string;
+    title: string;
+    subtitle: string;
+    onClick: () => void;
+    expanded?: React.ReactNode;
+  };
+  const rows: Row[] = [];
+
+  // New / next service
+  if (upcomingCamp) {
+    const nextDate = upcomingCamp.next_session?.session_date ?? upcomingCamp.start_date;
+    const totalDays =
+      upcomingCamp.start_date && upcomingCamp.end_date
+        ? Math.round(
+            (new Date(upcomingCamp.end_date).getTime() - new Date(upcomingCamp.start_date).getTime()) /
+              86400000,
+          ) + 1
+        : 1;
+    const day = upcomingCamp.next_session?.day_number ?? 1;
+    const dayTag = totalDays > 1 ? ` · Day ${day}/${totalDays}` : '';
+    rows.push({
+      key: 'next-class',
+      Icon: Calendar,
+      color: BRAND.colors.cyan,
+      bg: 'rgba(90,195,231,0.14)',
+      title: `Next class · ${upcomingCamp.camp_name}`,
+      subtitle: `${fmtDate(nextDate)}${upcomingCamp.scheduled_time ? ` · ${upcomingCamp.scheduled_time}` : ''}${dayTag}`,
+      onClick: () => onGoTo('sessions'),
+    });
+  } else if (legacyUpcoming) {
+    rows.push({
+      key: 'next-legacy',
+      Icon: Calendar,
+      color: BRAND.colors.cyan,
+      bg: 'rgba(90,195,231,0.14)',
+      title: 'Upcoming session',
+      subtitle: fmtDate(legacyUpcoming.session_date),
+      onClick: () => onGoTo('sessions'),
+    });
+  }
+
+  // Coach message / final note (expandable inline)
+  if (campWithNote?.coach_final_note) {
+    rows.push({
+      key: 'coach-note',
+      Icon: MessageCircle,
+      color: BRAND.colors.navy,
+      bg: 'rgba(10,22,40,0.08)',
+      title: 'Message from your coach',
+      subtitle: noteOpen ? 'Tap to hide' : `${campWithNote.camp_name} — tap to read`,
+      onClick: () => setNoteOpen((o) => !o),
+      expanded: noteOpen ? (
+        <p className="text-sm text-[var(--tss-navy)] leading-relaxed whitespace-pre-line px-4 pb-3">
+          {campWithNote.coach_final_note}
+        </p>
+      ) : null,
+    });
+  }
+
+  // New session report (feedback / homework)
+  const lr = latestResult as any;
+  if (lr && (lr.coach_feedback || lr.homework || lr.whats_next || lr.general_whats_next)) {
+    rows.push({
+      key: 'session-report',
+      Icon: ClipboardList,
+      color: '#b8860b',
+      bg: 'rgba(255,209,102,0.18)',
+      title: 'New session report',
+      subtitle: 'Feedback & homework ready',
+      onClick: () => onGoTo('sessions'),
+    });
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div>
+      <p className="tss-section-label">
+        <Bell size={11} strokeWidth={1.75} />
+        Notifications
+      </p>
+      <div className="space-y-2">
+        {rows.map((r) => (
+          <div key={r.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <button
+              onClick={r.onClick}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: r.bg }}
+              >
+                <r.Icon size={16} strokeWidth={1.9} style={{ color: r.color }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">{r.title}</p>
+                <p className="text-xs text-gray-500 truncate">{r.subtitle}</p>
+              </div>
+              <ChevronRight size={16} className="text-gray-300 shrink-0" />
+            </button>
+            {r.expanded}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
