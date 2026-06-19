@@ -61,18 +61,12 @@ interface Props {
 type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done';
 
 export function IntakeForm({ token, student }: Props) {
-  // Determine initial stage based on existing data.
-  // Order: Safety+Waiver (required) FIRST, then — for members only — the
-  // level quiz, then the extended profile. Drop-ins stop after Safety.
-  const basicDone = student.intake_tier === 'basic'
-    || (student.waiver_signed && !!student.emergency_contact_name);
-  const isDropin = student.student_type === 'dropin';
+  // Determine initial stage based on existing data
   const initialStage: Stage =
     student.intake_tier === 'extended' ? 'all_done'
-    : !basicDone ? 'basic'                                   // always start with safety
-    : isDropin ? 'basic_done'                                // drop-in finishes here
-    : !student.ocean_quiz_completed_at ? 'ocean_quiz'        // member: level next
-    : 'extended';                                            // member: finish profile
+    : student.intake_tier === 'basic' || (student.waiver_signed && student.emergency_contact_name) ? 'basic_done'
+    : student.ocean_quiz_completed_at ? 'basic'
+    : 'ocean_quiz';
 
   const [stage, setStage] = useState<Stage>(initialStage);
   const [loading, setLoading] = useState(false);
@@ -159,17 +153,7 @@ export function IntakeForm({ token, student }: Props) {
     setError('');
     try {
       await submitBasicIntake(token, basicForm);
-      // Drop-ins are done after the required safety step. Members continue
-      // straight into the level quiz (no second link to send) — unless they
-      // already completed it, in which case go to the extended profile.
-      if (student.student_type === 'dropin') {
-        setStage('basic_done');
-      } else if (student.ocean_quiz_completed_at) {
-        setStage('extended');
-      } else {
-        setStage('ocean_quiz');
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setStage('basic_done');
     } catch (err: any) {
       setError(err.message || 'Failed to submit. Please try again.');
     } finally {
@@ -264,13 +248,13 @@ export function IntakeForm({ token, student }: Props) {
   if (stage === 'ocean_quiz') {
     return (
       <div className="space-y-4">
-        <StageIndicator current={1} />
+        <StageIndicator current={0} />
         <LevelQuizStep
           token={token}
           onComplete={(belt) => {
             // Beginner branch for the extended form = entry belt white_belt.
             setIsBeginner(belt === 'white_belt');
-            setStage('extended');
+            setStage('basic');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
@@ -286,7 +270,7 @@ export function IntakeForm({ token, student }: Props) {
     return (
       <div className="space-y-4">
         {/* Stage indicator */}
-        <StageIndicator current={0} />
+        <StageIndicator current={1} />
 
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
@@ -730,8 +714,8 @@ export function IntakeForm({ token, student }: Props) {
 
 function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   const steps: { label: string }[] = [
-    { label: 'Safety & Waiver' },
     { label: 'Your Level' },
+    { label: 'Safety & Waiver' },
     { label: 'Extended Profile' },
   ];
   return (
