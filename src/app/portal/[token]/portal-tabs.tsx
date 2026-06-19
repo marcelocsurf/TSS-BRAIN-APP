@@ -505,7 +505,7 @@ function HomeTab({
           style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/tss-logo-white.png" alt="The Surf Sequence" className="h-6 w-auto" />
+          <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-7 w-auto object-contain" />
           <button type="button" onClick={() => onGoTo('feedback')} aria-label="Notifications">
             <Bell size={18} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />
           </button>
@@ -651,150 +651,55 @@ function HomeTab({
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />
 
-      {/* Current Position */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold" style={{ fontFamily: 'DM Mono, monospace' }}>Current Position</p>
-        <p className="text-sm font-medium text-[var(--tss-navy)] mt-1">
-          Sequence {student.current_sequence_number || '---'} / Step{' '}
-          {student.current_step_order || '---'}
-        </p>
-        {drillsPracticed.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-50">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
-              Drills Practiced ({drillsPracticed.length})
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {drillsPracticed.slice(0, 6).map((d, i) => (
-                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
-                  {d}
-                </span>
-              ))}
-              {drillsPracticed.length > 6 && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-400">
-                  +{drillsPracticed.length - 6} more
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Recent Drills */}
-      {recentDrills.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-gray-50">
-            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Recent Drills</h3>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {recentDrills.map((drill, i) => (
-              <div key={i} className="px-4 py-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="shrink-0 text-gray-400">
-                    {drill.source === 'coach'
-                      ? <GraduationCap size={15} strokeWidth={1.75} />
-                      : <Waves size={15} strokeWidth={1.75} />}
-                  </span>
-                  <p className="text-sm text-gray-700 truncate">{drill.name}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                    drill.source === 'coach' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
-                  }`}>
-                    {drill.source === 'coach' ? 'Coach' : 'Self'}
-                  </span>
-                  <span className="text-[10px] text-gray-400">
-                    {new Date(drill.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Homework */}
-      {student.last_homework && (
-        <div
-          className="bg-amber-50 rounded-2xl p-4 shadow-sm"
-          style={{ borderLeft: `3px solid ${BRAND.colors.gold}` }}
-        >
-          <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
-            Your Homework
-          </p>
-          <p className="text-sm text-amber-900 font-medium">{student.last_homework}</p>
-        </div>
-      )}
-
-      {/* Next Focus */}
-      {student.next_recommended_focus && (
-        <div className="bg-blue-50 rounded-2xl p-4 shadow-sm">
-          <p className="text-[10px] font-semibold text-blue-800 uppercase tracking-wide mb-1">
-            Next Focus
-          </p>
-          <p className="text-sm text-blue-900">{student.next_recommended_focus}</p>
-        </div>
-      )}
-
-      {/* Latest Session Summary */}
+      {/* Latest Session — dark, matches the hero */}
       {latestResult && (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-gray-50">
-            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Latest Session</h3>
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+            <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>Latest session</p>
+            <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
+              {latestResult.standalone_sessions?.mission || 'Session'}
+            </h3>
           </div>
-          <div className="px-4 py-3 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-xs text-gray-400">Mission</span>
-              <span className="text-sm text-gray-700 text-right max-w-[65%]">
-                {latestResult.standalone_sessions?.mission || '---'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-xs text-gray-400">Date</span>
-              <span className="text-sm text-gray-700">
-                {new Date(latestResult.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+          <div className="px-4 py-3 space-y-2.5">
+            <div className="flex justify-between items-center">
+              <span className="text-xs" style={{ color: '#8aa0b2' }}>Date</span>
+              <span className="text-sm" style={{ color: '#f0f7fa' }}>
+                {new Date(latestResult.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             {latestResult.coaches?.display_name && (
-              <div className="flex justify-between">
-                <span className="text-xs text-gray-400">Coach</span>
-                <span className="text-sm text-gray-700 font-medium">
-                  {latestResult.coaches.display_name}
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs" style={{ color: '#8aa0b2' }}>Coach</span>
+                <span className="text-sm font-medium" style={{ color: '#f0f7fa' }}>{latestResult.coaches.display_name}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-xs text-gray-400">Status</span>
+            <div className="flex justify-between items-center">
+              <span className="text-xs" style={{ color: '#8aa0b2' }}>Status</span>
               <StatusBadge status={latestResult.status} />
             </div>
 
-            {/* M45 — Per-session survey gate. If the student already
-                filled the survey, show the feedback. Otherwise prompt
-                them to rate the coach so they can unlock it. */}
             {data.surveyResultIds.includes(latestResult.id) ? (
               (latestResult.student_visible_summary || latestResult.coach_feedback) && (
-                <div className="pt-2 border-t border-gray-50">
-                  <p className="text-xs text-gray-400 mb-1">Coach feedback</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">
+                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                  <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#5AC3E7' }}>Coach feedback</p>
+                  <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: '#dbe8f1' }}>
                     {latestResult.student_visible_summary || latestResult.coach_feedback}
                   </p>
                 </div>
               )
             ) : (
               latestResult.survey_unlocked && (
-                <div className="pt-2 border-t border-gray-50">
+                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
                   <button
                     type="button"
                     onClick={() => onGoTo('feedback')}
-                    className="w-full text-left bg-amber-50 border border-amber-200 rounded-xl p-3 hover:bg-amber-100 transition-colors"
+                    className="w-full text-left rounded-xl p-3 transition-opacity hover:opacity-90"
+                    style={{ background: '#122236', borderLeft: '3px solid #FFD166' }}
                   >
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">
+                    <p className="text-[9px] font-mono uppercase tracking-wider mb-0.5" style={{ color: '#FFD166' }}>
                       Coach feedback waiting
                     </p>
-                    <p className="text-sm font-semibold text-amber-900">
+                    <p className="text-sm font-semibold" style={{ color: '#f0f7fa' }}>
                       Rate your coach to unlock the session feedback →
                     </p>
                   </button>
