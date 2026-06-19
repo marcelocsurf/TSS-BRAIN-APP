@@ -30,8 +30,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" translate="no">
       <head>
+        {/* Stop browser auto-translation (Safari/Chrome). Translating the page
+            rewrites the DOM and breaks React's controlled inputs + event
+            handlers — symptoms: forms clearing, buttons going dead. The app is
+            authored in English by design. */}
+        <meta name="google" content="notranslate" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
