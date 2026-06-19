@@ -44,7 +44,10 @@ export default function ModelLibrary({ selectedSrc, onSelect, library }: Props) 
                         : "bg-white/10"
                     }`}
                   >
-                    {clip.title}
+                    <span className="block">{clip.title}</span>
+                    {clip.description && (
+                      <span className="mt-0.5 block text-[10px] text-white/50">{clip.description}</span>
+                    )}
                   </button>
                 ))}
               </div>

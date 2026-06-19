@@ -5,7 +5,8 @@
 export type ModelClip = {
   id: string;
   title: string;
-  src: string; // path under /public
+  src: string; // path under /public or a Supabase Storage URL
+  description?: string | null;
 };
 
 export type ModelCategory = {

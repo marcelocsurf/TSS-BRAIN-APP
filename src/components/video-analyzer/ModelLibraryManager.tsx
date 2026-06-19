@@ -13,24 +13,33 @@ import { MODEL_CATEGORIES } from '@/lib/constants/model-categories';
 export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   const router = useRouter();
   const [category, setCategory] = useState(MODEL_CATEGORIES[0].slug);
+  const [customName, setCustomName] = useState('');
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
 
+  const isCustom = category === '__custom__';
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (isCustom && !customName.trim()) { setError('Name the custom category (e.g. Sequence 4).'); return; }
     if (!title.trim()) { setError('Title is required.'); return; }
     if (!file) { setError('Choose a video file.'); return; }
     const fd = new FormData();
-    fd.set('category', category);
+    fd.set('category', isCustom ? '' : category);
+    fd.set('category_name', isCustom ? customName.trim() : '');
     fd.set('title', title.trim());
+    fd.set('description', description.trim());
     fd.set('file', file);
     startTransition(async () => {
       const res = await addModelClip(fd);
       if (res.ok) {
         setTitle('');
+        setDescription('');
+        setCustomName('');
         setFile(null);
         (document.getElementById('clip-file') as HTMLInputElement | null)?.value &&
           ((document.getElementById('clip-file') as HTMLInputElement).value = '');
@@ -50,7 +59,14 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
     });
   };
 
-  const byCat = MODEL_CATEGORIES.map((c) => ({
+  // Fixed categories first, then any custom ones present in the clips.
+  const order: { slug: string; name: string }[] = [...MODEL_CATEGORIES];
+  for (const cl of clips) {
+    if (!order.some((c) => c.slug === cl.category)) {
+      order.push({ slug: cl.category, name: cl.category_name });
+    }
+  }
+  const byCat = order.map((c) => ({
     ...c,
     items: clips.filter((cl) => cl.category === c.slug),
   }));
@@ -79,6 +95,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
               {MODEL_CATEGORIES.map((c) => (
                 <option key={c.slug} value={c.slug}>{c.name}</option>
               ))}
+              <option value="__custom__">Custom…</option>
             </select>
           </div>
           <div>
@@ -90,6 +107,29 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
             />
           </div>
+        </div>
+
+        {isCustom && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Custom category name</label>
+            <input
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="e.g. Sequence 4"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+            />
+          </div>
+        )}
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Details (optional)</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What to look at in this clip — key points, what the student should notice."
+            rows={2}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+          />
         </div>
 
         <div>
@@ -131,9 +171,14 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                 {c.items.map((clip) => (
                   <div key={clip.id} className="px-4 py-2.5 flex items-center gap-3">
                     <Video size={15} className="text-[var(--tss-cyan,#5AC3E7)] shrink-0" strokeWidth={1.9} />
-                    <a href={clip.video_url} target="_blank" rel="noreferrer" className="text-sm text-gray-700 truncate flex-1 hover:underline">
-                      {clip.title}
-                    </a>
+                    <div className="flex-1 min-w-0">
+                      <a href={clip.video_url} target="_blank" rel="noreferrer" className="text-sm text-gray-700 truncate block hover:underline">
+                        {clip.title}
+                      </a>
+                      {clip.description && (
+                        <p className="text-[11px] text-gray-400 truncate">{clip.description}</p>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => remove(clip.id)}

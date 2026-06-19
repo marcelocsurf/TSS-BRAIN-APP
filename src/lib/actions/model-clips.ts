@@ -19,6 +19,7 @@ export type ModelClipRow = {
   category: string;
   category_name: string;
   title: string;
+  description: string | null;
   video_url: string;
   storage_path: string | null;
   display_order: number;
@@ -27,10 +28,11 @@ export type ModelClipRow = {
 export type ModelCategoryGrouped = {
   id: string;
   name: string;
-  clips: { id: string; title: string; src: string }[];
+  clips: { id: string; title: string; src: string; description?: string | null }[];
 };
 
-// Grouped by category, in MODEL_CATEGORIES order — shape the analyzer expects.
+// Grouped by category: the fixed MODEL_CATEGORIES first (in order), then any
+// custom categories (e.g. "Secuencia 4") in the order they appear.
 export async function getModelClips(): Promise<ModelCategoryGrouped[]> {
   const admin = createAdminClient();
   const { data } = await admin
@@ -40,13 +42,23 @@ export async function getModelClips(): Promise<ModelCategoryGrouped[]> {
     .order('created_at', { ascending: true });
   const rows = (data ?? []) as ModelClipRow[];
 
-  return MODEL_CATEGORIES.map((cat) => ({
-    id: cat.slug,
-    name: cat.name,
-    clips: rows
-      .filter((r) => r.category === cat.slug)
-      .map((r) => ({ id: r.id, title: r.title, src: r.video_url })),
-  })).filter((c) => c.clips.length > 0);
+  // Ordered list of category slugs: fixed ones first, then custom ones found.
+  const order: { slug: string; name: string }[] = [...MODEL_CATEGORIES];
+  for (const r of rows) {
+    if (!order.some((c) => c.slug === r.category)) {
+      order.push({ slug: r.category, name: r.category_name });
+    }
+  }
+
+  return order
+    .map((cat) => ({
+      id: cat.slug,
+      name: cat.name,
+      clips: rows
+        .filter((r) => r.category === cat.slug)
+        .map((r) => ({ id: r.id, title: r.title, src: r.video_url, description: r.description })),
+    }))
+    .filter((c) => c.clips.length > 0);
 }
 
 // Flat list for the admin manager (so empty categories are still visible there).
@@ -66,12 +78,23 @@ export async function addModelClip(
   const me = await getCurrentCoach();
   if (!me?.is_platform_admin) return { ok: false, error: 'Not authorized' };
 
-  const category = String(formData.get('category') || '').trim();
+  let category = String(formData.get('category') || '').trim();
+  let categoryName = String(formData.get('category_name') || '').trim();
   const title = String(formData.get('title') || '').trim();
+  const description = String(formData.get('description') || '').trim();
   const file = formData.get('file') as File | null;
 
-  const cat = MODEL_CATEGORIES.find((c) => c.slug === category);
-  if (!cat) return { ok: false, error: 'Pick a category.' };
+  // Fixed category → look up its display name. Custom → derive a slug.
+  const fixed = MODEL_CATEGORIES.find((c) => c.slug === category);
+  if (fixed) {
+    categoryName = fixed.name;
+  } else {
+    // custom category: the slug carries the typed name unless one was sent
+    const raw = categoryName || category;
+    categoryName = raw;
+    category = raw.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+  if (!category || !categoryName) return { ok: false, error: 'Pick or name a category.' };
   if (!title) return { ok: false, error: 'Title is required.' };
   if (!file || file.size === 0) return { ok: false, error: 'Choose a video file.' };
 
@@ -88,8 +111,9 @@ export async function addModelClip(
 
   const { error: insErr } = await admin.from('model_clips').insert({
     category,
-    category_name: cat.name,
+    category_name: categoryName,
     title,
+    description: description || null,
     video_url: pub.publicUrl,
     storage_path: path,
   });
