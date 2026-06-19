@@ -55,15 +55,44 @@ export interface QuizLevel {
   belt: string;       // maps to TSS belt_level
   min: number; max: number;
   color: string;
+  // Narrative shown on the result screen (verbatim from the lead-magnet quiz).
+  rt?: string;   // section title
+  m1?: string;   // paragraph 1
+  m2?: string;   // paragraph 2
+  q?: string;    // closing quote
 }
 
 export const LEVELS: QuizLevel[] = [
-  { name: 'Beginner',  belt: 'white_belt',  min: 0,  max: 9,  color: '#6c63ff' },
-  { name: 'Novice',    belt: 'yellow_belt', min: 10, max: 25, color: '#2d9f4e' },
-  { name: 'Foundation',belt: 'blue_belt',   min: 26, max: 40, color: '#e68a00' },
-  { name: 'Emerging',  belt: 'purple_belt', min: 41, max: 53, color: '#ff6b6b' },
-  { name: 'Pre-Elite', belt: 'brown_belt',  min: 54, max: 63, color: '#00bcd4' },
-  { name: 'Elite',     belt: 'black_belt',  min: 64, max: 70, color: '#e040fb' },
+  { name: 'Beginner', belt: 'white_belt', min: 0, max: 9, color: '#6c63ff',
+    rt: 'Why this level matters',
+    m1: 'Every advanced surfer started exactly here. This isn’t a label — it’s a starting point. The surfers who progress fastest from Beginner build a rock-solid foundation: ocean comfort, paddle fitness, and a popup that becomes muscle memory.',
+    m2: 'Skipping this stage is the #1 reason surfers plateau later. The fundamentals you build now become the invisible platform everything else stands on.',
+    q: 'The best time to build the right habits is before the wrong ones take over.' },
+  { name: 'Novice', belt: 'yellow_belt', min: 10, max: 25, color: '#2d9f4e',
+    rt: 'Why this level matters',
+    m1: 'You can catch waves — that’s a real milestone. But here’s what separates Novices who stay stuck for years from those who level up in months: intentional practice on wave selection and turning mechanics.',
+    m2: 'Most surfers stay at this level longer than needed because they keep doing what’s comfortable instead of training what’s weak. Your next unlock isn’t more time in the water — it’s smarter time.',
+    q: 'Surfing more doesn’t mean improving more. Training the right thing at the right time does.' },
+  { name: 'Foundation', belt: 'blue_belt', min: 26, max: 40, color: '#e68a00',
+    rt: 'The critical stage',
+    m1: 'This is the most important level in surf development. You can ride and turn — but the quality of your bottom turn and speed generation will determine everything that follows.',
+    m2: 'Foundation surfers who skip to advanced maneuvers develop compensating habits that are extremely hard to undo. Those who master speed, compression, and rail-to-rail transitions here unlock performance surfing almost effortlessly.',
+    q: 'Your bottom turn is your signature. Everything above the lip is just a reflection of what happens below it.' },
+  { name: 'Emerging', belt: 'purple_belt', min: 41, max: 53, color: '#ff6b6b',
+    rt: 'Where performance begins',
+    m1: 'You’ve earned real skills. You surf with power and intention. But this is where ego becomes the biggest enemy of progress — it feels like you should land everything, and when you don’t, frustration creeps in.',
+    m2: 'The gap between Emerging and Pre-Elite isn’t new tricks. It’s consistency, reading critical sections, and committing fully when it matters. The mental game becomes as important as the physical one.',
+    q: 'The difference between good and great isn’t what you do on your best wave — it’s what you do on every wave.' },
+  { name: 'Pre-Elite', belt: 'brown_belt', min: 54, max: 63, color: '#00bcd4',
+    rt: 'The final gap',
+    m1: 'You’re in the top 2% of surfers who’ve taken this assessment. At this level, improvement isn’t adding moves — it’s eliminating inconsistency and surfing critical waves with full commitment, every time.',
+    m2: 'The athletes who break through here do so by refining timing, wave selection in consequential conditions, and the mental resilience to commit when stakes are highest.',
+    q: 'At this level, the wave doesn’t care about your talent. It only rewards your commitment.' },
+  { name: 'Elite', belt: 'black_belt', min: 64, max: 70, color: '#e040fb',
+    rt: 'The endless pursuit',
+    m1: 'You’re surfing at the highest level. But you already know — there’s no finish line. The pursuit is progressive surfing, competition IQ, and performing in the most challenging conditions on the planet.',
+    m2: 'Even at this stage, the best in the world work on fundamentals daily. The difference is in details that only become visible at this speed.',
+    q: 'Mastery isn’t a destination. It’s a standard you hold yourself to every single session.' },
 ];
 
 export const SKILLS = ['Paddle Out', 'Takeoff', 'Wave Riding', 'Speed', 'Power', 'Flow', 'Finishing'];

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import {
-  QUESTIONS, OCEAN_QUESTIONS, scoreFromAnswers, levelForScore, skillMap, oceanLevelFromAnswers,
+  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, scoreFromAnswers, levelForScore, skillMap, oceanLevelFromAnswers,
+  type QuizLevel,
 } from '@/lib/quiz/surf-level';
 import { submitLevelQuiz } from '@/lib/actions/intake';
 
@@ -13,7 +14,13 @@ const GATE = [
   { emoji: '⚡', txt: 'I surf with power — maneuvers, hitting the lip, varied conditions' },
 ];
 
-type Phase = 'gate' | 'tech' | 'ocean';
+type Phase = 'gate' | 'tech' | 'ocean' | 'result';
+
+interface ResultData {
+  score: number;
+  level: QuizLevel;
+  skills: { name: string; pct: number }[];
+}
 
 export function LevelQuizStep({
   token,
@@ -30,20 +37,25 @@ export function LevelQuizStep({
   const [oceanCur, setOceanCur] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [result, setResult] = useState<ResultData | null>(null);
 
   const finish = async (techAns: number[], oceanAns: number[]) => {
     setSaving(true);
     setError('');
     const score = scoreFromAnswers(techAns);
     const lvl = levelForScore(score);
+    const skills = skillMap(techAns);
     try {
       await submitLevelQuiz(token, {
         belt: lvl.belt,
         score,
-        skillmap: skillMap(techAns),
+        skillmap: skills,
         ocean_level: oceanLevelFromAnswers(oceanAns),
       });
-      onComplete(lvl.belt);
+      // Show the result before continuing to goals.
+      setResult({ score, level: lvl, skills });
+      setPhase('result');
+      setSaving(false);
     } catch (e: any) {
       setError(e.message || 'Could not save.');
       setSaving(false);
@@ -82,7 +94,7 @@ export function LevelQuizStep({
     }, 200);
   };
 
-  const label = phase === 'gate' ? 'Your level' : phase === 'tech' ? 'Technical level' : 'Ocean knowledge';
+  const label = phase === 'gate' ? 'Your level' : phase === 'tech' ? 'Technical level' : phase === 'ocean' ? 'Ocean knowledge' : 'Your result';
 
   return (
     <div className="space-y-4">
@@ -151,6 +163,88 @@ export function LevelQuizStep({
           </div>
         );
       })()}
+
+      {phase === 'result' && result && (
+        <div className="space-y-4">
+          {/* Score ring */}
+          <div className="flex flex-col items-center text-center pt-1">
+            <div
+              className="w-28 h-28 rounded-full flex flex-col items-center justify-center"
+              style={{ border: `4px solid ${result.level.color}` }}
+            >
+              <span className="text-3xl font-bold leading-none" style={{ color: result.level.color }}>
+                {result.score}
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-gray-400 mt-1">
+                / {MAX_SCORE}
+              </span>
+            </div>
+            <p
+              className="mt-3 text-2xl font-bold"
+              style={{ fontFamily: 'var(--font-heading)', color: result.level.color }}
+            >
+              {result.level.name}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">Your provisional level — your coach confirms it.</p>
+          </div>
+
+          {/* Narrative card */}
+          {result.level.m1 && (
+            <div
+              className="rounded-2xl bg-white border border-gray-100 p-4"
+              style={{ borderLeft: `4px solid ${result.level.color}` }}
+            >
+              <p
+                className="text-[10px] font-mono uppercase tracking-wider mb-2"
+                style={{ color: result.level.color }}
+              >
+                {result.level.rt}
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">{result.level.m1}</p>
+              {result.level.m2 && (
+                <p className="text-sm text-gray-700 leading-relaxed mt-2">{result.level.m2}</p>
+              )}
+              {result.level.q && (
+                <p
+                  className="text-sm text-[var(--tss-navy)] italic mt-3 pt-3 border-t border-gray-100"
+                  style={{ fontFamily: 'var(--font-tagline)' }}
+                >
+                  “{result.level.q}”
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Skill map */}
+          <div className="rounded-2xl bg-white border border-gray-100 p-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-3">
+              Your skill map
+            </p>
+            <div className="space-y-2">
+              {result.skills.map((s) => (
+                <div key={s.name} className="flex items-center gap-2">
+                  <span className="w-20 text-right text-[11px] text-gray-500 shrink-0">{s.name}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${s.pct}%`, background: result.level.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onComplete(result.level.belt)}
+            className="w-full py-3 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
+            style={{ background: 'var(--tss-navy)' }}
+          >
+            Continue →
+          </button>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
