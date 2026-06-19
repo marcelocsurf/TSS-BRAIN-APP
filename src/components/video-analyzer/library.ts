@@ -15,55 +15,6 @@ export type ModelCategory = {
   clips: ModelClip[];
 };
 
-export const LIBRARY: ModelCategory[] = [
-  {
-    id: "take-off",
-    name: "Take Off",
-    clips: [
-      { id: "take-off-1", title: "Take Off — Model 1", src: "/tss-library/take-off/model-1.mp4" },
-      { id: "take-off-2", title: "Take Off — Model 2", src: "/tss-library/take-off/model-2.mp4" },
-    ],
-  },
-  {
-    id: "bottom-turn",
-    name: "Bottom Turn",
-    clips: [
-      { id: "bottom-turn-1", title: "Bottom Turn — Model 1", src: "/tss-library/bottom-turn/model-1.mp4" },
-    ],
-  },
-  {
-    id: "top-turn",
-    name: "Top Turn",
-    clips: [
-      { id: "top-turn-1", title: "Top Turn — Model 1", src: "/tss-library/top-turn/model-1.mp4" },
-    ],
-  },
-  {
-    id: "cutback",
-    name: "Cutback",
-    clips: [
-      { id: "cutback-1", title: "Cutback — Model 1", src: "/tss-library/cutback/model-1.mp4" },
-    ],
-  },
-  {
-    id: "floater",
-    name: "Floater",
-    clips: [
-      { id: "floater-1", title: "Floater — Model 1", src: "/tss-library/floater/model-1.mp4" },
-    ],
-  },
-  {
-    id: "barrel-line",
-    name: "Barrel Line",
-    clips: [
-      { id: "barrel-line-1", title: "Barrel Line — Model 1", src: "/tss-library/barrel-line/model-1.mp4" },
-    ],
-  },
-  {
-    id: "air",
-    name: "Air",
-    clips: [
-      { id: "air-1", title: "Air — Model 1", src: "/tss-library/air/model-1.mp4" },
-    ],
-  },
-];
+// Empty by design — the model library is fully admin-managed via the DB
+// (see model_clips + /admin/video-library). This static fallback stays empty.
+export const LIBRARY: ModelCategory[] = [];

@@ -12,7 +12,7 @@ import { MODEL_CATEGORIES } from '@/lib/constants/model-categories';
 
 export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   const router = useRouter();
-  const [category, setCategory] = useState(MODEL_CATEGORIES[0].slug);
+  const [category, setCategory] = useState(MODEL_CATEGORIES[0]?.slug ?? '__custom__');
   const [customName, setCustomName] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
