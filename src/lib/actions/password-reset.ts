@@ -23,8 +23,14 @@ export async function requestPasswordReset(
     .eq('email', normalized)
     .maybeSingle();
 
+  // Internal staff tool (not a public sign-up), so we tell the user plainly
+  // when the email isn't on file — otherwise a typo looks like "no email
+  // arrived" with no explanation.
   if (!coach) {
-    return { success: true };
+    return {
+      success: false,
+      error: 'No staff account found for that email. Check it matches the one your admin used to invite you.',
+    };
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
