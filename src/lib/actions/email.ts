@@ -259,6 +259,18 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
         This link is one-time use and expires in 24 hours.<br/>
         If you didn't expect this email, you can safely ignore it.
       </p>
+
+      <!-- Fallback recovery: the one-time link can be consumed by email
+           previews or expire, so always give a self-serve path. -->
+      <div style="background:#F9FAFB;border-radius:8px;padding:14px 16px;margin-top:18px;border:1px solid #E5E7EB;">
+        <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;">
+          <strong>Button didn't work, or the link expired?</strong>
+        </p>
+        <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
+          Go to <a href="${(process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app')}/forgot-password" style="color:${BRAND.colors.navy};font-weight:600;">${(process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app').replace(/^https?:\/\//, '')}</a>,
+          enter <strong>${toEmail}</strong>, and we'll send a fresh link to set your password.
+        </p>
+      </div>
     </div>
 
     <!-- Footer -->
