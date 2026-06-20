@@ -673,9 +673,14 @@ function HomeTab({
                 <span className="text-sm font-medium" style={{ color: '#f0f7fa' }}>{latestResult.coaches.display_name}</span>
               </div>
             )}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start gap-3">
               <span className="text-xs" style={{ color: '#8aa0b2' }}>Status</span>
-              <StatusBadge status={latestResult.status} />
+              <div className="text-right" style={{ maxWidth: '64%' }}>
+                <StatusBadge status={latestResult.status} />
+                {statusMeaning(latestResult.status) && (
+                  <p className="text-[11px] mt-1" style={{ color: '#8aa0b2' }}>{statusMeaning(latestResult.status)}</p>
+                )}
+              </div>
             </div>
 
             {data.surveyResultIds.includes(latestResult.id) ? (
@@ -941,9 +946,14 @@ function SessionsTab({ data }: { data: PortalData }) {
                       <DetailRow label="Mission" value={session.standalone_sessions.mission} />
                     )}
                     {session.status && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-400">Status</span>
-                        <StatusBadge status={session.status} />
+                      <div className="flex justify-between items-start gap-3">
+                        <span className="text-xs text-gray-500">Status</span>
+                        <div className="text-right max-w-[64%]">
+                          <StatusBadge status={session.status} />
+                          {statusMeaning(session.status) && (
+                            <p className="text-[11px] text-gray-500 mt-1">{statusMeaning(session.status)}</p>
+                          )}
+                        </div>
                       </div>
                     )}
                     {session.standalone_sessions?.duration_minutes && (
@@ -1112,7 +1122,7 @@ function MaterialsTab({
           style={{ borderLeft: `3px solid ${belt?.color || '#999'}` }}
         >
           <div className="px-4 py-3 bg-white">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+            <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
               {belt?.en} — What You Are Working On
             </p>
             <p className="text-sm text-[var(--tss-navy)] font-medium leading-relaxed">
@@ -1179,7 +1189,7 @@ function MaterialsTab({
                     }`}>
                       {catGroupLabel}
                     </span>
-                    <span className="text-[10px] text-gray-400 mr-1">({catMats.length})</span>
+                    <span className="text-[11px] text-gray-500 mr-1">({catMats.length})</span>
                     <span className="text-gray-300 text-[10px]">{isCollapsed ? '▼' : '▲'}</span>
                   </button>
                   {!isCollapsed && catMats.map((mat) => (
@@ -1217,7 +1227,7 @@ function MaterialsTab({
                   <h3 className="text-sm font-bold text-gray-400">
                     {beltInfo?.en}
                   </h3>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[11px] text-gray-500">
                     {mats.length} sections &middot; Locked
                   </p>
                 </div>
@@ -1266,7 +1276,7 @@ function MaterialCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-400">{material.title}</p>
             <p className="text-xs text-gray-300 mt-0.5">{material.subtitle}</p>
-            <p className="text-[10px] text-gray-400 mt-1.5 font-medium">
+            <p className="text-[11px] text-gray-500 mt-1.5 font-medium">
               Ask your coach to unlock {beltInfo?.en} materials
             </p>
           </div>
@@ -1668,6 +1678,19 @@ function FeedbackTab({
 // SHARED COMPONENTS
 // ═══════════════════════════════════════
 
+// Plain-language meaning for each evaluation status, so the label isn't jargon.
+const STATUS_MEANING: Record<string, string> = {
+  mastered: 'Consistent and automatic, even in real conditions.',
+  competent: 'Solid in controlled conditions; next step is real water.',
+  partial: 'Getting there — it works some of the time.',
+  not_yet: 'Not demonstrated yet — keep practicing.',
+  not_achieved: 'Not demonstrated yet — keep practicing.',
+};
+
+function statusMeaning(status: string): string | null {
+  return STATUS_MEANING[status] ?? null;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     mastered: 'bg-green-50 text-green-700',
@@ -1691,7 +1714,7 @@ function StatusBadge({ status }: { status: string }) {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="text-xs text-gray-400">{label}</span>
+      <span className="text-xs text-gray-500">{label}</span>
       <span className="text-sm text-gray-700 capitalize">{value?.replace(/_/g, ' ')}</span>
     </div>
   );
