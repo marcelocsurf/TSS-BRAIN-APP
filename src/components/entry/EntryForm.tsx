@@ -234,6 +234,23 @@ function StaffPanel() {
       >
         {loading ? 'Signing in...' : 'Sign In'}
       </button>
+
+      <p className="text-center pt-1">
+        <a href="/forgot-password" className="text-xs text-[var(--tss-gray-500,#6b7280)] hover:text-[var(--tss-navy)]">
+          Forgot your password?
+        </a>
+      </p>
+
+      {/* First-time / expired-invite recovery — the activation link is
+          single-use and expires, so new staff land here without a password. */}
+      <div className="mt-1 rounded-xl bg-[var(--tss-gray-50,#f3f4f6)] border border-[var(--tss-gray-200,#e5e7eb)] px-4 py-3 text-center">
+        <p className="text-xs text-[var(--tss-gray-500,#6b7280)] leading-relaxed">
+          First time here, or your activation link expired?
+        </p>
+        <a href="/forgot-password" className="inline-block mt-1.5 text-sm font-semibold text-[var(--tss-cyan)] hover:brightness-110">
+          Get a new link &amp; set your password →
+        </a>
+      </div>
     </form>
   );
 }
