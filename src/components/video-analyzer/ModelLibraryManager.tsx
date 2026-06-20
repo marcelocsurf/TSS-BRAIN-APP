@@ -4,11 +4,13 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, Trash2, Video } from 'lucide-react';
 import {
-  addModelClip,
+  createModelUploadUrl,
+  finalizeModelClip,
   deleteModelClip,
   type ModelClipRow,
 } from '@/lib/actions/model-clips';
 import { MODEL_CATEGORIES } from '@/lib/constants/model-categories';
+import { createClient } from '@/lib/supabase/client';
 
 export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   const router = useRouter();
@@ -28,24 +30,40 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
     if (isCustom && !customName.trim()) { setError('Name the custom category (e.g. Sequence 4).'); return; }
     if (!title.trim()) { setError('Title is required.'); return; }
     if (!file) { setError('Choose a video file.'); return; }
-    const fd = new FormData();
-    fd.set('category', isCustom ? '' : category);
-    fd.set('category_name', isCustom ? customName.trim() : '');
-    fd.set('title', title.trim());
-    fd.set('description', description.trim());
-    fd.set('file', file);
+    const theFile = file;
     startTransition(async () => {
-      const res = await addModelClip(fd);
-      if (res.ok) {
+      try {
+        const ext = theFile.name.split('.').pop() || 'mp4';
+        // 1) get a signed upload URL (admin-gated)
+        const up = await createModelUploadUrl(isCustom ? '__custom__' : category, isCustom ? customName.trim() : '', ext);
+        if (!up.ok) { setError(up.error); return; }
+
+        // 2) upload the video straight to Storage (no server-action size limit)
+        const supabase = createClient();
+        const { error: upErr } = await supabase.storage
+          .from('tss-library')
+          .uploadToSignedUrl(up.path, up.token, theFile, { contentType: theFile.type || 'video/mp4' });
+        if (upErr) { setError(upErr.message); return; }
+
+        // 3) record the clip row
+        const fin = await finalizeModelClip({
+          category: up.category,
+          categoryName: up.categoryName,
+          title: title.trim(),
+          description: description.trim(),
+          path: up.path,
+        });
+        if (!fin.ok) { setError(fin.error); return; }
+
         setTitle('');
         setDescription('');
         setCustomName('');
         setFile(null);
-        (document.getElementById('clip-file') as HTMLInputElement | null)?.value &&
-          ((document.getElementById('clip-file') as HTMLInputElement).value = '');
+        const input = document.getElementById('clip-file') as HTMLInputElement | null;
+        if (input) input.value = '';
         router.refresh();
-      } else {
-        setError(res.error);
+      } catch (err: any) {
+        setError(err?.message || 'Upload failed. Please try again.');
       }
     });
   };

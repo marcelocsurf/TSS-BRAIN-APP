@@ -72,54 +72,72 @@ export async function listModelClips(): Promise<ModelClipRow[]> {
   return (data ?? []) as ModelClipRow[];
 }
 
-export async function addModelClip(
-  formData: FormData,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+// Resolve a (slug, display name) pair from either a fixed category slug or a
+// custom typed name.
+function resolveCategory(slug: string, customName: string): { category: string; categoryName: string } | null {
+  const fixed = MODEL_CATEGORIES.find((c) => c.slug === slug);
+  if (fixed) return { category: fixed.slug, categoryName: fixed.name };
+  const raw = (customName || slug).trim();
+  if (!raw) return null;
+  const s = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s ? { category: s, categoryName: raw } : null;
+}
+
+// Step 1 — admin asks for a signed upload URL. The browser then uploads the
+// (large) video directly to Storage, bypassing the server-action / Vercel
+// request-size limit that makes file-through-action uploads fail.
+export async function createModelUploadUrl(
+  slug: string,
+  customName: string,
+  ext: string,
+): Promise<
+  | { ok: true; path: string; token: string; category: string; categoryName: string }
+  | { ok: false; error: string }
+> {
   const me = await getCurrentCoach();
   if (!me?.is_platform_admin) return { ok: false, error: 'Not authorized' };
 
-  let category = String(formData.get('category') || '').trim();
-  let categoryName = String(formData.get('category_name') || '').trim();
-  const title = String(formData.get('title') || '').trim();
-  const description = String(formData.get('description') || '').trim();
-  const file = formData.get('file') as File | null;
+  const cat = resolveCategory(slug, customName);
+  if (!cat) return { ok: false, error: 'Pick or name a category.' };
 
-  // Fixed category → look up its display name. Custom → derive a slug.
-  const fixed = MODEL_CATEGORIES.find((c) => c.slug === category);
-  if (fixed) {
-    categoryName = fixed.name;
-  } else {
-    // custom category: the slug carries the typed name unless one was sent
-    const raw = categoryName || category;
-    categoryName = raw;
-    category = raw.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  }
-  if (!category || !categoryName) return { ok: false, error: 'Pick or name a category.' };
-  if (!title) return { ok: false, error: 'Title is required.' };
-  if (!file || file.size === 0) return { ok: false, error: 'Choose a video file.' };
+  const safeExt = (ext || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+  const path = `${cat.category}/${randomUUID()}.${safeExt}`;
 
   const admin = createAdminClient();
-  const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
-  const path = `${category}/${randomUUID()}.${ext}`;
+  const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error || !data) return { ok: false, error: error?.message ?? 'Could not start upload.' };
 
-  const { error: upErr } = await admin.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: file.type || 'video/mp4', upsert: false });
-  if (upErr) return { ok: false, error: upErr.message };
+  return { ok: true, path: data.path, token: data.token, category: cat.category, categoryName: cat.categoryName };
+}
 
-  const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path);
+// Step 2 — after the browser finished uploading, record the clip row.
+export async function finalizeModelClip(input: {
+  category: string;
+  categoryName: string;
+  title: string;
+  description?: string;
+  path: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const me = await getCurrentCoach();
+  if (!me?.is_platform_admin) return { ok: false, error: 'Not authorized' };
+
+  const title = input.title.trim();
+  if (!title) return { ok: false, error: 'Title is required.' };
+  if (!input.path) return { ok: false, error: 'Upload missing.' };
+
+  const admin = createAdminClient();
+  const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(input.path);
 
   const { error: insErr } = await admin.from('model_clips').insert({
-    category,
-    category_name: categoryName,
+    category: input.category,
+    category_name: input.categoryName,
     title,
-    description: description || null,
+    description: input.description?.trim() || null,
     video_url: pub.publicUrl,
-    storage_path: path,
+    storage_path: input.path,
   });
   if (insErr) {
-    // best-effort cleanup of the orphaned upload
-    await admin.storage.from(BUCKET).remove([path]).catch(() => {});
+    await admin.storage.from(BUCKET).remove([input.path]).catch(() => {});
     return { ok: false, error: insErr.message };
   }
 
