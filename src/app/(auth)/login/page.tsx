@@ -111,6 +111,20 @@ export default function LoginPage() {
               Forgot your password?
             </Link>
           </p>
+
+          {/* First-time / expired-invite recovery — the activation link is
+              single-use and expires, so new users land here without a password. */}
+          <div className="mt-3 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-center">
+            <p className="text-xs text-white/70 leading-relaxed">
+              First time here, or your activation link expired?
+            </p>
+            <Link
+              href="/forgot-password"
+              className="inline-block mt-1.5 text-sm font-semibold text-[var(--tss-cyan)] hover:brightness-110"
+            >
+              Get a new link &amp; set your password →
+            </Link>
+          </div>
         </form>
 
         <p
