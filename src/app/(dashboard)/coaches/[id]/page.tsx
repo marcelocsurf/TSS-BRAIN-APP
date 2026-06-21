@@ -11,6 +11,7 @@ import {
 import { CertificationManager } from './certification-manager';
 import { ToggleCoachStatus } from './toggle-coach-status';
 import { ToggleCourseAccess } from './toggle-course-access';
+import { SetCoachPasswordCard } from './SetCoachPasswordCard';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { OpenAsButton } from '@/components/admin/OpenAsButton';
 import Link from 'next/link';
@@ -209,6 +210,9 @@ export default async function CoachProfilePage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Admin: set a password manually when the email link won't work */}
+      {isPlatformAdmin && <SetCoachPasswordCard coachId={id} />}
 
       {/* STATS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
