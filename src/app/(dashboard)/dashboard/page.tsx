@@ -14,6 +14,7 @@ import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
+import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -337,8 +338,11 @@ async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Video Analyzer — quick clip analysis tool (client-only, lazy) */}
-      <VideoAnalyzerLauncher variant="card" />
+      {/* Tools — quick client-only utilities (lazy-loaded) */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        <VideoAnalyzerLauncher variant="card" />
+        <BoardSelectorLauncher variant="card" />
+      </div>
 
       {/* System Stats */}
       <div>

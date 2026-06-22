@@ -13,6 +13,7 @@ import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
+import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
 import {
   Home,
   BookOpen,
@@ -1028,6 +1029,9 @@ function ToolsTab({ stps, coach }: { stps: any[]; coach: any }) {
 
       {/* Video Analyzer — draw on a student clip (client-only, lazy) */}
       <VideoAnalyzerLauncher variant="card" />
+
+      {/* Board Selector — recommend board volume/type/fins (client-only, lazy) */}
+      <BoardSelectorLauncher variant="card" />
 
       {sequences.map(([key, g]) => (
         <SequenceGroup key={key} group={g} token={coach.portal_token} />
