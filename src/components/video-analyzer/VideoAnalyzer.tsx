@@ -264,9 +264,18 @@ export default function VideoAnalyzer() {
         </button>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
+        {/* Phone scrim — tap to close the library drawer (md+ has no overlay) */}
         {showLibrary && (
-          <aside className="flex w-44 shrink-0 flex-col border-r border-white/10">
+          <button
+            type="button"
+            aria-label="Close library"
+            onClick={() => setShowLibrary(false)}
+            className="absolute inset-0 z-10 bg-black/50 md:hidden"
+          />
+        )}
+        {showLibrary && (
+          <aside className="absolute inset-y-0 left-0 z-20 flex w-64 max-w-[85%] shrink-0 flex-col border-r border-white/10 bg-[#0B1B2B] md:static md:z-auto md:w-44 md:max-w-none md:bg-transparent">
             <div className="flex gap-1 p-2">
               <button
                 onClick={() => setSidebarTab("students")}
@@ -306,8 +315,10 @@ export default function VideoAnalyzer() {
         )}
 
         <main
-          className={`grid min-h-0 flex-1 gap-2 p-2 [grid-template-rows:minmax(0,1fr)] ${
-            layout === "dual" ? "grid-cols-2" : "grid-cols-1"
+          className={`grid min-h-0 flex-1 gap-2 p-2 ${
+            layout === "dual"
+              ? "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1"
+              : "grid-cols-1 grid-rows-1"
           }`}
         >
           {layout !== "model" && (
