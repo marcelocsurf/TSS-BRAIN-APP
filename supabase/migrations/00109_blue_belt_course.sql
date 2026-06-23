@@ -1139,3 +1139,6 @@ insert into drills_missions (id, step_id, title, type, key_words, description_md
 Mission — Hold Forever (BS):
 
 On 5 backside waves: sustain the Hold Rotation as long as possible before releasing the Codazo.$TSSBB$, ARRAY[]::text[], $TSSBB$blue$TSSBB$, 7, $TSSBB$Maneuver · integrated within$TSSBB$, 492) on conflict (id) do update set title=excluded.title, description_md=excluded.description_md, key_words=excluded.key_words, success_criteria=excluded.success_criteria, block_number=excluded.block_number, block_name=excluded.block_name, display_order=excluded.display_order;
+
+-- Blue Belt Exit Test rendered as a test lesson (same format as Yellow's YB-MOD-8).
+update lessons set lesson_type='test', is_test=true where id='BB-EXIT-01';
