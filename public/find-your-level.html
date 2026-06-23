@@ -11,14 +11,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Lora:ital@1&display=swap" rel="stylesheet">
 <style>
 :root{
-  --navy:#0A1628;        /* Ocean Navy — primary background */
-  --blue:#0D2D5E;        /* Brand Blue — structure */
-  --cyan:#5AC3E7;        /* Signature Cyan — accent */
+  --navy:#0A1628;
+  --blue:#0D2D5E;
+  --cyan:#5AC3E7;
   --cyan-dim:rgba(90,195,231,0.12);
   --cyan-glow:rgba(90,195,231,0.22);
   --white:#FFFFFF;
-  --mid:#C8D0DC;         /* Mid Grey — secondary text */
-  --tw:#F2F4F7;          /* Light Grey — primary text on dark */
+  --mid:#C8D0DC;
+  --tw:#F2F4F7;
   --tl:#C8D0DC;
   --glass:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07);
@@ -32,11 +32,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 @keyframes drift{0%,100%{transform:translate(0,0)}33%{transform:translate(2%,-1%)}66%{transform:translate(-1%,1.5%)}}
 .noise{position:fixed;inset:0;z-index:0;opacity:0.015;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none}
 .wrap{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;max-width:540px;width:100%;margin:0 auto;padding:0 20px}
-.scr{display:none;flex-direction:column;min-height:100vh;padding:24px 0}
+.scr{display:none;flex-direction:column;min-height:100vh;padding:62px 0 24px}
 .scr.on{display:flex;animation:fadeUp .35s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-
-/* ICONS */
 .ico{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .ico svg{width:100%;height:100%;display:block}
 .ico-sm{width:15px;height:15px}
@@ -44,16 +42,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .ico-gate{width:26px;height:26px;color:var(--cyan)}
 .ico-btn{width:18px;height:18px}
 .mid-icon{width:46px;height:46px;color:var(--cyan);margin-bottom:2px}
-
-/* LOGOS / CO-BRAND */
 .brand-logo{height:42px;width:auto;object-fit:contain;margin-bottom:2px}
 .cobrand{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:6px}
-.cb-puro{height:30px;width:auto;filter:brightness(0) invert(1);opacity:.92}
-.cb-tss{height:24px;width:auto;filter:brightness(0) invert(1);opacity:.82}
+.cb-puro{height:30px;width:auto;opacity:.92}
+.cb-tss{height:24px;width:auto;opacity:.82}
 .cb-div{width:1px;height:26px;background:rgba(255,255,255,.15)}
 .cb-note{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.5px;color:var(--mid);opacity:.45;text-align:center;margin-top:8px;text-transform:uppercase}
-
-/* INTRO */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:center;gap:12px;height:46px;background:rgba(10,22,40,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06)}
+.tb-logo{height:20px;width:auto;object-fit:contain}
+.tb-div{width:1px;height:18px;background:rgba(255,255,255,.15)}
 .intro{justify-content:center;align-items:center;text-align:center;gap:22px}
 .pill{display:inline-flex;align-items:center;gap:7px;background:var(--cyan-dim);border:1px solid var(--cyan-glow);border-radius:24px;padding:6px 16px;font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;color:var(--cyan);letter-spacing:1px;text-transform:uppercase}
 .intro h1{font-family:'Playfair Display',serif;font-size:2.7rem;font-weight:800;line-height:1.06;letter-spacing:-1px}
@@ -67,8 +64,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .go{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:var(--navy);border:none;border-radius:14px;padding:16px 40px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 24px rgba(90,195,231,.28)}
 .go:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(90,195,231,.4)}
 .go .ico-btn{width:16px;height:16px}
-
-/* PRIME / GATE SCREENS */
 .mid{justify-content:center;align-items:center;text-align:center;gap:22px;padding:40px 0}
 .mid h2{font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:700;line-height:1.2;max-width:420px}
 .mid h2 em{font-style:italic;color:var(--cyan)}
@@ -82,17 +77,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .mbtn-accent{background:var(--cyan);color:var(--navy);border:none;font-weight:700;box-shadow:0 4px 16px rgba(90,195,231,.22)}
 .mbtn-accent:hover{box-shadow:0 6px 24px rgba(90,195,231,.32);transform:translateY(-1px)}
 .mbtn .ico-btn{width:15px;height:15px}
-
-/* GATE OPTIONS */
 .gate-opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px}
 .gate-opt{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--glass);border:1.5px solid var(--gb);border-radius:14px;cursor:pointer;transition:all .25s;text-align:left}
 .gate-opt:hover{background:rgba(90,195,231,.05);border-color:rgba(90,195,231,.18)}
 .gate-opt .g-ico{color:var(--cyan);flex-shrink:0}
 .gate-opt .g-txt{font-size:.9rem;font-weight:400;color:var(--tl);line-height:1.35}
 .gate-opt .g-txt strong{color:var(--tw);font-weight:600}
-
-/* QUIZ */
-.q-scr{justify-content:space-between;padding-top:20px;padding-bottom:24px;min-height:100vh}
+.q-scr{justify-content:space-between;padding-top:62px;padding-bottom:24px;min-height:100vh}
 .prog{display:flex;align-items:center;gap:12px;margin-bottom:4px}
 .prog .dots{display:flex;gap:4px;flex:1}
 .prog .d{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08);transition:background .3s}
@@ -121,8 +112,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .nnx{background:var(--cyan);border:none;color:var(--navy);box-shadow:0 4px 16px rgba(90,195,231,.22)}
 .nnx:hover{box-shadow:0 6px 24px rgba(90,195,231,.32);transform:translateY(-1px)}
 .nnx:disabled{opacity:.25;cursor:not-allowed;transform:none;box-shadow:none}
-
-/* CAPTURE */
 .cap-form{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;margin-top:4px}
 .cap-in{padding:14px 16px;background:var(--glass);border:1.5px solid var(--gb);border-radius:12px;color:var(--tw);font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
 .cap-in::placeholder{color:var(--tl);opacity:.4}
@@ -130,8 +119,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .cap-form .mbtn-accent{justify-content:center;margin-top:4px;width:100%}
 .cap-err{font-size:.75rem;color:#FF6B6B;min-height:1em;margin:0}
 .cap-fine{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tl);opacity:.45;margin:0;letter-spacing:.3px}
-
-/* RESULT */
 .res{justify-content:flex-start;align-items:center;text-align:center;gap:18px;padding:30px 0 60px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .res-ring{width:120px;height:120px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
 @keyframes pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
@@ -149,6 +136,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .rmind p{font-size:.88rem;color:var(--tl);line-height:1.55;opacity:.82}
 .rmind p+p{margin-top:10px}
 .rmind .rq{font-family:'Playfair Display',serif;font-style:italic;font-size:1.05rem;font-weight:500;color:var(--tw);margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06);opacity:.92}
+.rmind .focus-h{font-family:'DM Mono',monospace;font-size:.66rem;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;opacity:.9;margin:16px 0 6px}
+.rmind .focus-lead{font-size:.86rem;color:var(--tl);opacity:.85;line-height:1.5;margin-bottom:10px}
+.rmind ul.focus{list-style:none;display:flex;flex-direction:column;gap:8px;margin:0}
+.rmind ul.focus li{position:relative;padding-left:18px;font-size:.85rem;color:var(--tl);line-height:1.45;opacity:.88}
+.rmind ul.focus li::before{content:'';position:absolute;left:2px;top:7px;width:6px;height:6px;border-radius:50%;background:var(--cyan)}
+.rmind .close{margin-top:12px;font-size:.85rem;color:var(--tl);opacity:.82;line-height:1.5}
 .rskills{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .4s ease .35s both}
 .rskills-h{font-family:'DM Mono',monospace;font-size:.66rem;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:var(--cyan);opacity:.7;margin-bottom:4px;text-align:left}
 .rsk{display:flex;align-items:center;gap:10px}
@@ -168,8 +161,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .shr button:hover{background:rgba(255,255,255,.08);color:var(--tw)}
 .shr .ico-btn{width:15px;height:15px}
 .fine{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tl);opacity:.3;margin-top:2px;letter-spacing:.3px}
-
-/* Beginner special result */
+.incl{font-size:.72rem;color:var(--tl);opacity:.6;line-height:1.5;max-width:400px;margin-top:8px}
 .beg-welcome{animation:fadeUp .4s ease .1s both;text-align:center;max-width:420px}
 .beg-welcome .bw-ico{width:54px;height:54px;color:var(--cyan);margin:0 auto 10px}
 .beg-welcome h2{font-family:'Playfair Display',serif;font-size:1.85rem;font-weight:700;line-height:1.15;margin-bottom:16px}
@@ -187,12 +179,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 </style>
 </head>
 <body>
+<div class="topbar" id="topbar"><img class="tb-logo" id="tbPuro" alt="Puro Surf"><span class="tb-div"></span><img class="tb-logo" id="tbTss" alt="The Surf Sequence"></div>
 <div class="bg"></div><div class="noise"></div>
 <div class="wrap">
 
-<!-- INTRO -->
 <div class="scr intro on" id="s-intro">
-  <img class="brand-logo" src="data:image/png;base64,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" alt="The Surf Sequence">
   <div class="pill"><span class="ico ico-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span> 60-Second Assessment</div>
   <h1>What's your <em>real</em><br>surf level?</h1>
   <p class="tagline">Evolve through play</p>
@@ -211,7 +202,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
   <p class="cb-note">Methodology by The Surf Sequence® · Operated by Puro Surf</p>
 </div>
 
-<!-- PRIME 1 -->
 <div class="scr mid" id="s-prime1">
   <span class="ico mid-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
   <h2>Before we start — <em>a quick truth</em></h2>
@@ -221,7 +211,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
   <button class="mbtn" onclick="show('prime2')">Got it — I'll be honest <span class="ico ico-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
 </div>
 
-<!-- PRIME 2 -->
 <div class="scr mid" id="s-prime2">
   <span class="ico mid-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></span>
   <h2>Why your <em>real level</em> matters</h2>
@@ -231,7 +220,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
   <button class="mbtn mbtn-accent" onclick="show('gate')">Let's Go <span class="ico ico-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
 </div>
 
-<!-- GATE -->
 <div class="scr mid" id="s-gate">
   <span class="ico mid-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5c2.2-3 4.3-3 6.5 0s4.3 3 6.5 0 4.3-3 6.5 0"/><path d="M2 15c2.2-3 4.3-3 6.5 0s4.3 3 6.5 0 4.3-3 6.5 0" opacity=".55"/></svg></span>
   <h2>First — <em>where are you</em> in your surf journey?</h2>
@@ -256,7 +244,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
   </div>
 </div>
 
-<!-- QUIZ -->
 <div class="scr q-scr" id="s-quiz">
   <div><div class="prog"><div class="dots" id="dots"></div><span class="ct" id="ct"></span></div></div>
   <div class="q-body">
@@ -271,7 +258,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
   </div>
 </div>
 
-<!-- LEAD CAPTURE -->
 <div class="scr mid" id="s-capture">
   <span class="ico mid-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0"/></svg></span>
   <h2>Your result is <em>ready</em></h2>
@@ -285,10 +271,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
   </form>
 </div>
 
-<!-- RESULT (dynamic) -->
 <div class="scr res" id="s-result"></div>
 
-<!-- BEGINNER SPECIAL RESULT -->
 <div class="scr res" id="s-beginner">
   <div class="beg-welcome">
     <span class="ico bw-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5c2.2-3 4.3-3 6.5 0s4.3 3 6.5 0 4.3-3 6.5 0"/><path d="M2 15c2.2-3 4.3-3 6.5 0s4.3 3 6.5 0 4.3-3 6.5 0" opacity=".55"/></svg></span>
@@ -372,34 +356,40 @@ const QS=[
 
 const LEVELS=[
   {name:"Beginner",belt:"White Belt",value:"Humility",min:0,max:9,color:"#C8D0DC",
-    learnTitle:"What you'll learn here",
-    body:"The foundations. How to start handling your board, how to get through the waves, and the basic sequences that let you catch waves and have fun in safe conditions and small surf. Every surfer starts exactly here — and how well you build these basics decides how fast everything else comes.",
-    why:"White Belt is built on humility — open to learn, willing to fail, ready to grow.",
+    open:"You're at the very beginning — and that's an advantage: nothing to unlearn. Right now you're learning to handle your board, get through the waves, and catch your first ones in safe, small surf.",
+    focusLead:"Build these first, in the right order:",
+    focus:["Ocean comfort and safety — reading the water, getting past the whitewater","Paddle technique — the engine that catches you more waves","A clean, repeatable pop-up and your first directional turns"],
+    close:"Built right, these become the platform everything else stands on.",
     line:"White Belt begins with humility: open to learn, willing to fail, ready to grow."},
   {name:"Novice",belt:"Yellow Belt",value:"Process & Resilience",min:10,max:25,color:"#F5C518",
-    learnTitle:"Where you are",
-    body:"The transition. You're starting to catch more green (unbroken) waves without getting crushed, staying on your board, learning to turn left and right, beginning to draw on the wave face — and becoming self-sufficient in the lineup.",
-    why:"This is where you stop just catching waves and start drawing on them. The growth here is consistency, not tricks.",
+    open:"You can catch waves now, and you're starting to read the ocean and feel its energy. You'll make plenty of mistakes here — that's how the sea is learned.",
+    focusLead:"What refines from here is reading and positioning, not force:",
+    focus:["The paddling speeds and positioning that raise your catch rate","Reading the wave's stages and finding the pocket","Beginning to draw lines on the open face"],
+    close:"Each is a trainable skill — this stage is about consistency, learned through the process.",
     line:"Resilience isn't enduring — it's accepting the process and giving it everything."},
   {name:"Foundation",belt:"Blue Belt",value:"Conscious Commitment",min:26,max:40,color:"#1E6FBF",
-    learnTitle:"Where you are",
-    body:"You're self-sufficient in conditions that are safe for your experience. You keep sharpening wave-catching, positioning and strategy — and now you also start generating speed on the face, doing your first maneuvers, and staying in the most efficient part of the wave.",
-    why:"This is the pivot stage. Your speed and your bottom turn become the engine for every maneuver that follows.",
+    open:"You've moved from attempting maneuvers to reliable, repeatable surfing. You read the spot, choose your own waves, and self-correct. Your turns are becoming consistent.",
+    focusLead:"What refines from here is technique, not talent:",
+    focus:["Generating speed efficiently, instead of relying on the wave","Setting up your maneuvers with an efficient, technical bottom turn","Connecting your maneuvers into one continuous line"],
+    close:"Each of these is a trainable, sequenced skill — what the methodology is built to develop.",
     line:"There are no shortcuts. You have to walk the path."},
   {name:"Emerging",belt:"Purple Belt",value:"Personal Responsibility",min:41,max:53,color:"#7B4FBE",
-    learnTitle:"Where you are",
-    body:"Your surfing turns progressive. You position well on the wave, start doing deeper maneuvers closer to the pocket, hold more speed, and build a wider, more varied repertoire — with cleaner execution of all the fundamentals.",
-    why:"Progressive surfing only comes from ownership — no one generates your waves for you. The mental game now weighs as much as the technical.",
-    line:"No one lives for you. You generate your own waves — you decide what kind of surfer you are."},
+    open:"You're comfortable in the water and your own style is taking shape. This is where surfing becomes precise and progressive.",
+    focusLead:"What refines from here is precision and commitment:",
+    focus:["Committed reentries and roundhouse cutbacks — head and eyes leading the direction","Holding speed through the wave's sections and the pocket","Landing your maneuvers consistently, not just attempting them"],
+    close:"Progressive moves like airs appear here, but they're a path you can choose — a powerful, technical style takes you just as far.",
+    line:""},
   {name:"Pre-Elite",belt:"Brown Belt",value:"Gratitude",min:54,max:63,color:"#7D4E27",
-    learnTitle:"Where you are",
-    body:"Polishing everything. You still train the fundamentals — but now at an advanced level. Your surfing and your execution get more efficient, and so does everything around it: planning, reading the waves, catching them, and using the ocean's energy efficiently across varied conditions.",
-    why:"At this level it's not new tricks — it's mastery and efficiency. Gratitude for the whole journey keeps the ego out of the way.",
-    line:"Gratitude for the journey — even the hard parts. Gratitude removes the ego."},
+    open:"You command the fundamentals, and your surfing is fluid and efficient. You read the wave's energy and use it in your favor, with a style that's fully your own.",
+    focusLead:"What refines from here is mastery, not novelty:",
+    focus:["Linking maneuvers continuously, always working from the pocket","Expanding your repertoire and variation across different waves","Holding power and efficiency in heavier, more critical conditions"],
+    close:"At this level surfing becomes a craft — and a relationship with the ocean.",
+    line:"Gratitude for the journey."},
   {name:"Elite",belt:"Black Belt",value:"Impact & Sharing",min:64,max:70,color:"#FFFFFF",
-    learnTitle:"Where you are",
-    body:"You keep training every fundamental, deepening your surf knowledge, adapting, and improving every pillar holistically to keep raising your level. And you go deeper into the theory — enough to explain it, teach it, and know the why behind everything you do, including spotting the exact errors to work on.",
-    why:"Mastery is no longer only about you — it's performance, transmission, and identity. What you received, you now share.",
+    open:"You've integrated every pillar — physical, technical, tactical and mental. After a long journey, you read and adapt to almost any spot — not by instinct alone, but from years of accumulated experience and good decisions.",
+    focusLead:"At this level the work never ends — it deepens:",
+    focus:["Refining consistency and performance in the most demanding conditions","Understanding the why deeply enough to explain and teach it","Expressing your own style within the structure"],
+    close:"The ocean always overrides the level — mastery includes knowing when not to go.",
     line:"What you received, you now share. Your way of living influences others."}
 ];
 
@@ -562,9 +552,11 @@ function renderResult(r){
     <div class="res-belt">${lv.belt} · ${lv.value}</div>
     <div class="rmind">
       <div class="bar" style="background:${lv.color}"></div>
-      <div class="rt" style="color:${lv.color}">${lv.learnTitle}</div>
-      <p>${lv.body}</p>
-      <p class="why"><strong>Why it matters:</strong> ${lv.why}</p>
+      <p>${lv.open}</p>
+      <div class="focus-h" style="color:${lv.color}">Focus next</div>
+      <p class="focus-lead">${lv.focusLead}</p>
+      <ul class="focus">${lv.focus.map(x=>`<li>${x}</li>`).join('')}</ul>
+      <p class="close">${lv.close}</p>
       ${lv.line?`<div class="rq">"${lv.line}"</div>`:''}
     </div>
     <div class="rskills">
@@ -577,6 +569,7 @@ function renderResult(r){
       <button onclick="shareW('${lv.name}',${score})">${ICONS.chat} WhatsApp</button>
     </div>
     <button class="retake" onclick="startFull()">Retake Quiz</button>
+    <p class="incl">Every level adapts to your age and ability — but never to the standard of knowledge and execution. There are no shortcuts: only hours of practice, study and time in the water. And there's more than one path to the top — a solid, powerful style counts as much as a progressive one.</p>
     <p class="fine">This is an estimate of your level — your official belt is certified by a TSS coach.</p>
     <p class="fine">Calibrated with 3,000+ surfer assessments</p>
     ${cobrandBlock()}`;
@@ -599,6 +592,9 @@ function shareW(level,score){
   const t=encodeURIComponent(`My real surf level: *${level}* (${score}/70)\n\nMost surfers overestimate by 1-2 levels.\nFind yours → ${location.href}`);
   window.open(`https://wa.me/?text=${t}`,'_blank');
 }
+
+/* top co-brand bar */
+document.getElementById('tbTss').src=TSS_LOGO;document.getElementById('tbPuro').src=PURO_LOGO;
 </script>
 </body>
 </html>
