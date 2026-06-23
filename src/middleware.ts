@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/feedback') ||       // token-gated standalone survey
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
+    pathname === '/api/quiz-lead' ||          // public quiz lead intake (external site)
     pathname === '/forgot-password' ||        // password recovery (unauthenticated)
     pathname === '/manifest.webmanifest' ||
     pathname === '/sw.js';

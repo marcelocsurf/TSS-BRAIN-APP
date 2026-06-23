@@ -53,6 +53,7 @@ interface StudentData {
   ocean_level?: string | null;
   ocean_level_provisional?: boolean;
   ocean_quiz_completed_at?: string | null;
+  level_quiz_completed_at?: string | null;
 }
 
 interface Props {
@@ -173,10 +174,14 @@ export function IntakeForm({ token, student }: Props) {
       await submitBasicIntake(token, basicForm);
 
       // Drop-in: single service, no level/goals — finish here.
-      // Member: ALWAYS take the level quiz next (its own first question handles
-      // the never-surfed case → White Belt). The quiz is never skipped.
+      // Member: go to the level quiz — UNLESS they already did it (e.g. via the
+      // public /quiz lead), in which case skip straight to goals so they never
+      // re-take it.
       if (student.student_type === 'dropin') {
         setStage('basic_done');
+      } else if (student.ocean_quiz_completed_at || student.level_quiz_completed_at) {
+        setExtendedStep(0);
+        setStage('extended');
       } else {
         setStage('ocean_quiz');
       }

@@ -431,3 +431,67 @@ function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUr
 </body>
 </html>`;
 }
+
+// ─── New quiz lead notification — sent to TSS + the academy ───────────────
+
+interface QuizLeadEmailData {
+  name: string;
+  email: string | null;
+  phone: string | null;
+  belt: string;            // e.g. 'white_belt'
+  score: number;           // 0–70
+  academyName: string | null;
+}
+
+export async function sendQuizLeadEmail(
+  data: QuizLeadEmailData,
+): Promise<{ success: boolean; error?: string }> {
+  const to = ['info@thesurfsequence.com', 'academy@purosurf.com'];
+  const beltName = BELT_DISPLAY[data.belt as BeltLevel]?.en || data.belt.replace(/_/g, ' ');
+  const levelName = BELT_DISPLAY[data.belt as BeltLevel]?.levelName || '';
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to,
+      subject: `New surf-level quiz lead — ${escapeHtml(data.name)} (${beltName})`,
+      html: buildQuizLeadHtml(data, beltName, levelName),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Quiz lead email send failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName: string): string {
+  const name = escapeHtml(data.name);
+  const email = escapeHtml(data.email || '—');
+  const phone = escapeHtml(data.phone || '—');
+  const academy = escapeHtml(data.academyName || 'Unassigned (TSS Direct)');
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
+    <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:28px 24px;text-align:center;">
+      <h1 style="margin:0;color:white;font-size:20px;font-weight:700;">${BRAND.name}</h1>
+      <p style="margin:6px 0 0;color:${BRAND.colors.cyan};font-size:12px;">New surf-level quiz lead</p>
+    </div>
+    <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
+      <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+        A new lead just completed the surf-level quiz. Their profile is in TSS Brain (status: lead, belt provisional).
+      </p>
+      <table style="width:100%;font-size:14px;color:#111827;border-collapse:collapse;">
+        <tr><td style="padding:6px 0;color:#6B7280;">Name</td><td style="padding:6px 0;text-align:right;font-weight:600;">${name}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Email</td><td style="padding:6px 0;text-align:right;">${email}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Phone</td><td style="padding:6px 0;text-align:right;">${phone}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Result</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(beltName)}${levelName ? ` · ${escapeHtml(levelName)}` : ''} (${data.score}/70)</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Academy</td><td style="padding:6px 0;text-align:right;">${academy}</td></tr>
+      </table>
+      <p style="margin:18px 0 0;font-size:12px;color:#9CA3AF;line-height:1.6;">
+        Next step: enrol them from TSS Brain — their quiz result is already saved, so they won't re-take it during intake.
+      </p>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">${BRAND.name}® · ${BRAND.tagline}</p>
+  </div>
+</body></html>`;
+}
