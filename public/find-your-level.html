@@ -148,6 +148,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--tw);min
 .rsk .rkn{width:85px;text-align:right;font-size:.73rem;font-weight:500;color:var(--tl);opacity:.6}
 .rsk .rkt{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
 .rsk .rkf{height:100%;border-radius:3px;transition:width .8s ease}
+.rjourney{width:100%;max-width:400px;animation:fadeUp .4s ease .3s both}
+.jbar{display:flex;gap:6px;margin-bottom:6px}
+.jlabels{display:flex;gap:6px;font-size:.62rem;color:var(--tl);opacity:.55;text-align:center}
+.jlabels>div{flex:1}
+.dimrow{margin-bottom:10px}
+.dimrow .dh{display:flex;justify-content:space-between;font-size:.8rem;color:var(--tl);opacity:.78;margin-bottom:4px}
+.dimrow .dh .pct{color:var(--tw);opacity:1}
+.dimrow .dt{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.dimrow .df{height:100%;border-radius:3px;transition:width .8s ease}
 .rcta{display:flex;flex-direction:column;gap:10px;width:100%;max-width:400px;animation:fadeUp .4s ease .45s both}
 .cta-head{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--tw);text-align:center;margin-bottom:2px}
 .cta1{display:flex;align-items:center;justify-content:center;gap:9px;padding:15px 24px;background:var(--cyan);color:var(--navy);border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 4px 20px rgba(90,195,231,.28);transition:all .2s}
@@ -393,6 +402,16 @@ const LEVELS=[
     line:"What you received, you now share. Your way of living influences others."}
 ];
 
+const DIMS={
+  "Beginner":[{label:"Ocean comfort",qs:[0]},{label:"Paddle power",qs:[0,1]},{label:"Pop-up & first turns",qs:[1,2]}],
+  "Novice":[{label:"Wave reading",qs:[0,1]},{label:"Positioning · catch rate",qs:[1]},{label:"Drawing lines",qs:[2]}],
+  "Foundation":[{label:"Speed generation",qs:[3]},{label:"Bottom turn & maneuvers",qs:[2,4]},{label:"Flow & linking",qs:[5,6]}],
+  "Emerging":[{label:"Power & precision",qs:[4]},{label:"Pocket control",qs:[5]},{label:"Consistency",qs:[2,6]}],
+  "Pre-Elite":[{label:"Flow & linking",qs:[5]},{label:"Repertoire · variation",qs:[2,4]},{label:"Power in critical conditions",qs:[4,6]}],
+  "Elite":[{label:"Consistency & mastery",qs:[6]},{label:"Reading & adaptation",qs:[0,2]},{label:"Personal expression",qs:[4,5]}]
+};
+function qScore(i){const a=ans[i];if(typeof a==='number'&&a>=0&&a<=3)return QS[i].opts[a].s;if(typeof a==='number'&&a>3)return a;return 0}
+
 const SKILLS=[
   {name:"Paddle Out",qs:[0]},{name:"Takeoff",qs:[1]},{name:"Wave Riding",qs:[2]},
   {name:"Speed",qs:[3]},{name:"Power",qs:[4]},{name:"Flow",qs:[5]},{name:"Finishing",qs:[6]}
@@ -542,7 +561,12 @@ function cobrandBlock(){
 
 function renderResult(r){
   const lv=r.lv, score=r.score, mx=70;
-  const bars=r.skills.map(s=>`<div class="rsk"><span class="rkn">${s.name}</span><div class="rkt"><div class="rkf" style="width:${s.p}%;background:${lv.color}"></div></div></div>`).join('');
+  const beltC=["#C8D0DC","#F5C518","#1E6FBF","#7B4FBE","#7D4E27","#2C2C2A"];
+  const beltN=["White","Yellow","Blue","Purple","Brown","Black"];
+  const ci=LEVELS.indexOf(lv);
+  const jseg=beltC.map((c,i)=>`<div style="flex:1;height:10px;border-radius:5px;background:${c};border:1px solid rgba(255,255,255,.15);${i>ci?'opacity:.35;':''}${i===ci?'outline:2px solid '+lv.color+';outline-offset:2px;':''}"></div>`).join('');
+  const jlab=beltN.map((n,i)=>`<div style="${i===ci?'color:var(--tw);font-weight:600':''}">${n}${i===ci?' \u2190':''}</div>`).join('');
+  const dimBars=(DIMS[lv.name]||[]).map(d=>{let s=0;d.qs.forEach(q=>s+=qScore(q));const p=Math.round(s/(d.qs.length*10)*100);return `<div class="dimrow"><div class="dh"><span>${d.label}</span><span class="pct">${p}%</span></div><div class="dt"><div class="df" style="width:${p}%;background:${lv.color}"></div></div></div>`}).join('');
   document.getElementById('s-result').innerHTML=`
     <div class="res-ring">
       <div class="rbg"></div><div class="rfill" style="border-color:${lv.color}"></div>
@@ -559,9 +583,14 @@ function renderResult(r){
       <p class="close">${lv.close}</p>
       ${lv.line?`<div class="rq">"${lv.line}"</div>`:''}
     </div>
+    <div class="rjourney">
+      <div class="rskills-h">Your TSS journey</div>
+      <div class="jbar">${jseg}</div>
+      <div class="jlabels">${jlab}</div>
+    </div>
     <div class="rskills">
-      <div class="rskills-h">Your Skill Map</div>
-      ${bars}
+      <div class="rskills-h">What matters at your level</div>
+      ${dimBars}
     </div>
     ${ctaBlock(lv.name,score,'Ready to train your next level?')}
     <div class="shr">
