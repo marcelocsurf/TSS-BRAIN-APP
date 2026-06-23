@@ -20,7 +20,7 @@ export async function setActiveCourseKey(
   const admin = createAdminClient();
   const { data: student } = await admin
     .from('students')
-    .select('id, course_access_white, course_access_yellow')
+    .select('id, course_access_white, course_access_yellow, course_access_blue')
     .eq('portal_token', portalToken)
     .single();
   if (!student) throw new Error('Student not found.');

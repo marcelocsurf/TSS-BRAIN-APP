@@ -20,7 +20,7 @@ interface Props {
 
 export function PromoteLeadCard({ studentId }: Props) {
   const router = useRouter();
-  const [course, setCourse] = useState<'white_belt' | 'yellow_belt'>('white_belt');
+  const [course, setCourse] = useState<'white_belt' | 'yellow_belt' | 'blue_belt'>('white_belt');
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -64,11 +64,12 @@ export function PromoteLeadCard({ studentId }: Props) {
       <div className="flex items-center gap-2">
         <select
           value={course}
-          onChange={(e) => setCourse(e.target.value as 'white_belt' | 'yellow_belt')}
+          onChange={(e) => setCourse(e.target.value as 'white_belt' | 'yellow_belt' | 'blue_belt')}
           className="flex-1 px-3 py-2 border border-amber-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
         >
           <option value="white_belt">White Belt Masterclass</option>
           <option value="yellow_belt">Yellow Belt Masterclass</option>
+          <option value="blue_belt">Blue Belt Masterclass</option>
         </select>
         <button
           type="button"

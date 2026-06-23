@@ -144,7 +144,10 @@ export function CourseTab({ data }: { data: CourseData }) {
   // and the YB sequences for the yellow course — same column reused).
   const beltSequences = groupByWbSequence(beltLessons);
 
-  const beltLabelShort = activeCourse.key === 'yellow_belt' ? 'Yellow Belt' : 'White Belt';
+  const beltLabelShort =
+    activeCourse.key === 'yellow_belt' ? 'Yellow Belt'
+    : activeCourse.key === 'blue_belt' ? 'Blue Belt'
+    : 'White Belt';
 
   const overallPercent =
     data.totalLessons > 0

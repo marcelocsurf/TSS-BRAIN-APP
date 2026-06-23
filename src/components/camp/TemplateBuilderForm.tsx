@@ -103,7 +103,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
   const [modality, setModality] = useState(initialData?.modality || 'individual');
   const [deliveryModel, setDeliveryModel] = useState(initialData?.delivery_model || 'in-person');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [includesCourse, setIncludesCourse] = useState<'white_belt' | 'yellow_belt' | ''>(
+  const [includesCourse, setIncludesCourse] = useState<'white_belt' | 'yellow_belt' | 'blue_belt' | ''>(
     initialData?.includes_course_key ?? '',
   );
   const [serviceKind, setServiceKind] = useState<'surf_camp' | 'surf_lesson' | 'custom' | ''>(
@@ -506,12 +506,13 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
             </label>
             <select
               value={includesCourse}
-              onChange={(e) => setIncludesCourse(e.target.value as 'white_belt' | 'yellow_belt' | '')}
+              onChange={(e) => setIncludesCourse(e.target.value as 'white_belt' | 'yellow_belt' | 'blue_belt' | '')}
               className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
             >
               <option value="">— None (lesson only)</option>
               <option value="white_belt">White Belt course</option>
               <option value="yellow_belt">Yellow Belt course</option>
+              <option value="blue_belt">Blue Belt course</option>
             </select>
             <p className="text-[10px] text-gray-400 mt-1 leading-tight">
               Camps that include a course auto-promote enrolled Leads to Members and unlock portal access.

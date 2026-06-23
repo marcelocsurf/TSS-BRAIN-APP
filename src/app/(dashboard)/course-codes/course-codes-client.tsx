@@ -35,6 +35,8 @@ type FilterTab = 'all' | 'pending' | 'redeemed';
 
 const PRODUCT_TYPES: { value: string; label: string }[] = [
   { value: 'white_belt', label: 'White Belt' },
+  { value: 'yellow_belt', label: 'Yellow Belt' },
+  { value: 'blue_belt', label: 'Blue Belt' },
 ];
 
 function copyToClipboard(text: string) {

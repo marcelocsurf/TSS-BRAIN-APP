@@ -33,6 +33,14 @@ export const COURSES = [
     lessonSections: ['yb_onboarding', 'yellow_belt'] as const,
     sharedLessonSections: ['wb_onboarding'] as readonly string[],
   },
+  {
+    key: 'blue_belt',
+    label: 'Blue Belt Masterclass',
+    belt: 'blue' as const,
+    accessColumn: 'course_access_blue' as const,
+    lessonSections: ['bb_onboarding', 'blue_belt'] as const,
+    sharedLessonSections: ['wb_onboarding', 'yb_onboarding'] as readonly string[],
+  },
 ] as const;
 
 export type CourseKey = typeof COURSES[number]['key'];

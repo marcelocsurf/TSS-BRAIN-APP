@@ -496,7 +496,7 @@ export async function createCampInstance(input: {
       .eq('id', input.template_id)
       .single();
     const courseKey = (tpl?.includes_course_key ?? null) as
-      | 'white_belt' | 'yellow_belt' | null;
+      | 'white_belt' | 'yellow_belt' | 'blue_belt' | null;
     if (courseKey) {
       const { grantCourseToStudent } = await import('./course-grants');
       const { data: existing } = await supabase
@@ -1290,7 +1290,7 @@ export interface CreateTemplateInput {
   delivery_model: string;
   description: string;
   days: TemplateDayInput[];
-  includes_course_key?: 'white_belt' | 'yellow_belt' | null;
+  includes_course_key?: 'white_belt' | 'yellow_belt' | 'blue_belt' | null;
   service_kind?: 'surf_lesson' | 'surf_camp' | 'custom' | null;
   capacity_max?: number | null;
   session_duration_minutes?: number | null;

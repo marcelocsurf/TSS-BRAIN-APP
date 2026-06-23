@@ -44,4 +44,21 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     ],
     minPrinciples: 3,
   },
+  // Blue Belt — full White->Yellow->Blue sequence (25 + 8 + 15 = 48). Principles
+  // are the Blue Belt Exit Test criteria (verbatim from the manual). The STP
+  // count threshold mirrors the Yellow proportion (~73%) — adjustable.
+  blue_belt: {
+    beltLabel: 'Blue Belt',
+    sections: ['white_belt', 'yellow_belt', 'blue_belt'],
+    stpThreshold: 4,
+    minStps: 35,
+    principles: [
+      'Execute the Universal Sequence Formula on at least 4 of 5 attempts per sequence (Seq #10, #11, #12, #13)',
+      'Pump effectively on FS and BS (Seq #8, #9) at least 3 of 5 attempts per side',
+      'Self-identify which stage failed when execution is below threshold',
+      'Demonstrate the 4 BB Concepts (Floater, Impulso, Low Finish, BT Concept) in context',
+      'Verbalize Compromiso Consciente in your own words',
+    ],
+    minPrinciples: 4,
+  },
 };

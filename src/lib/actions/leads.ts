@@ -125,6 +125,7 @@ export async function createLead(input: CreateLeadInput): Promise<CreateLeadResu
       // Leads start with NO course access; they only get it once promoted.
       course_access_white: false,
       course_access_yellow: false,
+      course_access_blue: false,
       // Set sensible defaults for required-not-null fields used elsewhere.
       belt_level: 'white_belt',
       ocean_level: 'beginner',
@@ -219,7 +220,7 @@ export async function submitLeadForm(
 // the course via activatePendingCoursesForStudent.
 export async function promoteLeadToMember(
   studentId: string,
-  courseKey: 'white_belt' | 'yellow_belt',
+  courseKey: 'white_belt' | 'yellow_belt' | 'blue_belt',
 ): Promise<void> {
   const me = await getCurrentCoach();
   if (!me) throw new Error('Not authenticated');

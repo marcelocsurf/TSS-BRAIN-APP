@@ -90,6 +90,7 @@ export async function createLeadFromQuiz(input: {
       student_type: 'member',
       course_access_white: false,
       course_access_yellow: false,
+      course_access_blue: false,
       current_sequence_number: 1,
       current_step_order: 1,
       status: 'active',
