@@ -501,7 +501,7 @@ export async function createCampInstance(input: {
       const { grantCourseToStudent } = await import('./course-grants');
       const { data: existing } = await supabase
         .from('students')
-        .select('id, lifecycle_status, pending_courses, waiver_signed, course_access_white, course_access_yellow')
+        .select('id, lifecycle_status, pending_courses, waiver_signed, course_access_white, course_access_yellow, course_access_blue')
         .in('id', input.student_ids);
 
       for (const s of existing ?? []) {
