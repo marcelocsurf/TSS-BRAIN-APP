@@ -75,11 +75,12 @@ export async function createLeadFromQuiz(input: {
     ocean_quiz_completed_at: now,
   };
 
+  let studentId = existingId;
   if (existingId) {
     const { error } = await admin.from('students').update(quizFields).eq('id', existingId);
     if (error) return { ok: false, error: error.message };
   } else {
-    const { error } = await admin.from('students').insert({
+    const { data: created, error } = await admin.from('students').insert({
       first_name: input.first_name.trim(),
       last_name: input.last_name?.trim() || '',
       email,
@@ -96,8 +97,35 @@ export async function createLeadFromQuiz(input: {
       status: 'active',
       waiver_signed: false,
       ...quizFields,
-    });
+    }).select('id').single();
     if (error) return { ok: false, error: error.message };
+    studentId = created?.id ?? null;
+  }
+
+  // Record THIS submission so the full retake history stays on the profile.
+  // The student fields above hold the latest result; this row keeps every one.
+  try {
+    let attemptNumber = 1;
+    if (studentId) {
+      const { count } = await admin
+        .from('level_quiz_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('student_id', studentId);
+      attemptNumber = (count ?? 0) + 1;
+    }
+    await admin.from('level_quiz_attempts').insert({
+      student_id: studentId,
+      email,
+      phone,
+      belt: input.belt,
+      score: input.score,
+      skillmap: input.skillmap,
+      academy_id: academyId,
+      source: 'public_quiz',
+      attempt_number: attemptNumber,
+    });
+  } catch (e) {
+    console.error('[createLeadFromQuiz] attempt logging failed', e);
   }
 
   // Notify the academy / TSS of the new (or updated) quiz lead. Never block
