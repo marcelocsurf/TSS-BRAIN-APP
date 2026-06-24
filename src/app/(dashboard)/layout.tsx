@@ -20,6 +20,7 @@ import {
   Video,
   ShieldCheck,
   Receipt,
+  ShoppingBag,
   BarChart3,
   type LucideIcon,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
+  { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
   { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['admin', 'coach'] },

@@ -465,3 +465,88 @@ export async function getCourseGrantBillingByAcademy(): Promise<
     this_month_grants: stats.thisMonth,
   }));
 }
+
+// ─── Detailed course-sales log (registry of every grant for backup) ───
+//
+// Returns one row per grant with the student name, course, sale date, channel
+// (source), academy and price. Admin sees all academies; a coordinator/coach
+// sees only their own academy. Used by the Course Sales Log page + CSV export.
+
+export interface DetailedGrantRow {
+  id: string;
+  granted_at: string;
+  student_name: string;
+  student_id: string;
+  course_key: string;
+  source: string;
+  academy_name: string;
+  academy_id: string | null;
+  price_cents: number | null;
+  currency: string | null;
+  billable: boolean;
+  granted_by_name: string | null;
+  revoked_at: string | null;
+}
+
+export async function listDetailedCourseGrants(opts?: {
+  /** Restrict to one academy (snapshot at grant). */
+  academyId?: string | null;
+  /** ISO date lower bound (inclusive). */
+  from?: string | null;
+  /** ISO date upper bound (exclusive). */
+  to?: string | null;
+}): Promise<DetailedGrantRow[]> {
+  const me = await getCurrentCoach();
+  if (!me) return [];
+
+  // Scope: platform admin → all (or a chosen academy); everyone else → own academy.
+  const scopedAcademy = me.is_platform_admin
+    ? (opts?.academyId ?? null)
+    : (me.academy_id ?? '___none___');
+
+  const admin = createAdminClient();
+  let q = admin
+    .from('course_grants')
+    .select('id, granted_at, student_id, course_key, source, academy_id_at_grant, price_cents, currency, billable, granted_by, revoked_at')
+    .order('granted_at', { ascending: false })
+    .limit(2000);
+
+  if (scopedAcademy) q = q.eq('academy_id_at_grant', scopedAcademy);
+  if (opts?.from) q = q.gte('granted_at', opts.from);
+  if (opts?.to) q = q.lt('granted_at', opts.to);
+
+  const { data: grants } = await q;
+  const rows = grants ?? [];
+  if (rows.length === 0) return [];
+
+  // Resolve names in bulk.
+  const studentIds = Array.from(new Set(rows.map((r: any) => r.student_id).filter(Boolean)));
+  const academyIds = Array.from(new Set(rows.map((r: any) => r.academy_id_at_grant).filter(Boolean)));
+  const coachIds = Array.from(new Set(rows.map((r: any) => r.granted_by).filter(Boolean)));
+
+  const [{ data: studs }, { data: acas }, { data: coaches }] = await Promise.all([
+    admin.from('students').select('id, first_name, last_name').in('id', studentIds.length ? studentIds : ['___']),
+    admin.from('academies').select('id, name').in('id', academyIds.length ? academyIds : ['___']),
+    admin.from('coaches').select('id, first_name, last_name, display_name').in('id', coachIds.length ? coachIds : ['___']),
+  ]);
+
+  const sMap = new Map((studs ?? []).map((s: any) => [s.id, `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()]));
+  const aMap = new Map((acas ?? []).map((a: any) => [a.id, a.name]));
+  const cMap = new Map((coaches ?? []).map((c: any) => [c.id, c.display_name || `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim()]));
+
+  return rows.map((r: any) => ({
+    id: r.id,
+    granted_at: r.granted_at,
+    student_name: sMap.get(r.student_id) || '(unknown)',
+    student_id: r.student_id,
+    course_key: r.course_key,
+    source: r.source,
+    academy_name: r.academy_id_at_grant ? (aMap.get(r.academy_id_at_grant) || '(academy)') : 'TSS Direct',
+    academy_id: r.academy_id_at_grant,
+    price_cents: r.price_cents ?? null,
+    currency: r.currency ?? 'USD',
+    billable: r.billable,
+    granted_by_name: r.granted_by ? (cMap.get(r.granted_by) || null) : null,
+    revoked_at: r.revoked_at ?? null,
+  }));
+}
