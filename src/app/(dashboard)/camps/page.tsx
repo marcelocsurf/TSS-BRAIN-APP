@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CampCalendar } from '@/components/camps/CampCalendar';
 import { CampFilters } from '@/components/camps/CampFilters';
 import { ApplyWeekTemplateButton } from '@/components/camps/ApplyWeekTemplateButton';
+import { DownloadPlanButton } from '@/components/camps/DownloadPlanButton';
 import { listWeekTemplates } from '@/lib/actions/week-templates';
 
 export const dynamic = 'force-dynamic';
@@ -144,6 +145,7 @@ export default async function CampsPage({
           >
             Templates
           </Link>
+          <DownloadPlanButton />
           {/* "+ New Camp" intentionally removed — creation now happens
               in-context from the calendar's "+ Add service" affordance,
               so the date is always implicit and the top bar stays clean. */}
