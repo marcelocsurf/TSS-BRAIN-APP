@@ -742,7 +742,7 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
     ? 'Leaning toward boredom — raise the challenge.'
     : lean > 0.15
     ? 'Leaning toward anxiety — lower the challenge.'
-    : 'You are in your flow channel — challenge meets ability.';
+    : "You're in the channel — challenge and ability aligned.";
 
   const YinYang = (
     <svg width="68" height="68" viewBox="0 0 100 100" aria-hidden="true">
@@ -764,6 +764,12 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
         {hasData && <span className="text-[9px]" style={{ color: '#8aa0b2' }}>from your session ratings</span>}
       </div>
 
+      {hasData && (
+        <p className="text-[12px] italic mt-2" style={{ color: '#9fb3c2' }}>
+          Where challenge meets capability, flow appears.
+        </p>
+      )}
+
       <div className="flex items-center gap-4 mt-3">
         {YinYang}
         <div className="flex-1">
@@ -777,7 +783,7 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
             </>
           ) : (
             <p className="text-[13px] leading-relaxed" style={{ color: '#dbe8f1' }}>
-              Rate your sessions to map your flow channel — the zone where challenge meets ability.
+              Rate your sessions to map where your flow lives.
             </p>
           )}
         </div>
