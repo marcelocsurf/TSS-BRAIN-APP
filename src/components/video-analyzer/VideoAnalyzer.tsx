@@ -238,6 +238,14 @@ export default function VideoAnalyzer() {
         >
           The Surf Sequence
         </span>
+        {/* Build marker — confirms the device is running the latest deploy
+            (not a stale cached PWA shell). */}
+        <span
+          className="text-[10px] tracking-[0.15em] text-white/40"
+          style={{ fontFamily: 'DM Mono, monospace' }}
+        >
+          build jun24b
+        </span>
         {/* Layout toggle: 2 panels, only student, or only model */}
         <div className="ml-auto flex gap-1">
           {([
