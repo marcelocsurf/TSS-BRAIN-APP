@@ -433,49 +433,8 @@ async function CoordinatorDashboard() {
         </div>
       )}
 
-      {/* ── Quick actions ── */}
-      <div>
-        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <Link
-            href="/students/new"
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
-          >
-            <UserPlus size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">New Student</p>
-          </Link>
-          {/* Coordinator does NOT create coaches — only the TSS head coach
-              (platform admin) assigns them. Card omitted on purpose. */}
-          <Link
-            href="/camps/new"
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
-          >
-            <Tent size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">New Service</p>
-          </Link>
-          <Link
-            href="/students"
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
-          >
-            <ClipboardList size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">All Students</p>
-          </Link>
-          <Link
-            href="/coaches"
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
-          >
-            <Users size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">All Coaches</p>
-          </Link>
-          <Link
-            href="/camps"
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center hover:border-[var(--tss-navy)] transition-colors"
-          >
-            <Tent size={22} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-xs font-medium text-gray-700">All Services</p>
-          </Link>
-        </div>
-      </div>
+      {/* Quick Actions block removed — it duplicated the left-side navigation
+          (Students / Coaches / Services) and confused the coordinator view. */}
 
       {/* ── Student Pipeline — needs action ── */}
       {coordData.pendingIntake.length > 0 && (
