@@ -419,7 +419,19 @@ const SKILLS=[
 
 let cur=0,ans=new Array(7).fill(-1),quizStart=0,pendingResult=null;
 
-function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');window.scrollTo(0,0)}
+let CAP_BTN_ORIG=null;
+function show(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.getElementById('s-'+id).classList.add('on');
+  window.scrollTo(0,0);
+  // Re-enable the capture button each time the capture screen is shown, so a
+  // retake doesn't reappear with the button stuck disabled on "Unlocking…".
+  if(id==='capture'){
+    const b=document.getElementById('capBtn');
+    if(b){ if(CAP_BTN_ORIG===null)CAP_BTN_ORIG=b.innerHTML; b.disabled=false; b.innerHTML=CAP_BTN_ORIG; }
+    const err=document.getElementById('capErr'); if(err)err.textContent='';
+  }
+}
 
 function gateSelect(g){
   if(g===0){
