@@ -44,12 +44,36 @@ export default function VideoPanel({
   emptyHint,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0); // 0..1
   const [missing, setMissing] = useState(false);
+  // iOS Safari often fails to play a local video from a blob: URL (blob URLs
+  // don't serve the Range requests iOS expects). When that happens we re-read
+  // the same blob as a data: URL, which iOS plays reliably.
+  const [fallbackSrc, setFallbackSrc] = useState<string | null>(null);
+  const triedFallback = useRef(false);
+
+  const effectiveSrc = fallbackSrc ?? src;
+
+  async function handleVideoError() {
+    // First failure on a local blob → retry once via a data: URL.
+    if (src && src.startsWith("blob:") && !triedFallback.current) {
+      triedFallback.current = true;
+      try {
+        const blob = await fetch(src).then((r) => r.blob());
+        const reader = new FileReader();
+        reader.onload = () => setFallbackSrc(reader.result as string);
+        reader.onerror = () => setMissing(true);
+        reader.readAsDataURL(blob);
+        return;
+      } catch {
+        /* fall through to the error overlay */
+      }
+    }
+    setMissing(true);
+  }
 
   // Zoom / pan state (shared by video + drawing overlay).
   const [zoom, setZoom] = useState(1);
@@ -74,6 +98,8 @@ export default function VideoPanel({
     setMissing(false);
     setPlaying(false);
     setProgress(0);
+    setFallbackSrc(null);
+    triedFallback.current = false;
     resetView();
     const el = videoRef.current;
     if (el) el.playbackRate = speed;
@@ -188,21 +214,18 @@ export default function VideoPanel({
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-sm font-bold text-cyan-300">{title}</span>
         {onPickFile && (
-          <>
-            <button
-              className={`${btn} bg-cyan-600`}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Importar video
-            </button>
+          // A <label> opens the file picker via a native tap — reliable on iOS
+          // Safari/iPad, where a display:none input triggered by a programmatic
+          // .click() often fails to open the picker at all.
+          <label className={`${btn} bg-cyan-600 cursor-pointer`}>
+            Importar video
             <input
-              ref={fileInputRef}
               type="file"
               accept="video/*"
-              className="hidden"
+              className="sr-only"
               onChange={pickFile}
             />
-          </>
+          </label>
         )}
       </div>
 
@@ -215,8 +238,11 @@ export default function VideoPanel({
           <>
             <video
               ref={videoRef}
-              src={src}
-              crossOrigin="anonymous"
+              src={effectiveSrc ?? undefined}
+              // Only request CORS for remote model clips (needed to export the
+              // annotated frame). Local files are blob:/data: URLs — setting
+              // crossOrigin on them can stop Safari/iPad from loading the video.
+              crossOrigin={src.startsWith("blob:") || src.startsWith("data:") ? undefined : "anonymous"}
               playsInline
               preload="auto"
               className="h-full w-full object-contain"
@@ -229,7 +255,7 @@ export default function VideoPanel({
               onLoadedMetadata={() => setMissing(false)}
               onTimeUpdate={onTimeUpdate}
               onEnded={() => setPlaying(false)}
-              onError={() => setMissing(true)}
+              onError={handleVideoError}
             />
             <DrawingCanvas
               ref={stageRef}
@@ -254,7 +280,14 @@ export default function VideoPanel({
                 onPointerLeave={panEnd}
               />
             )}
-            {missing && !src.startsWith('blob:') && (
+            {missing && src.startsWith('blob:') && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-4 text-center text-sm text-amber-300">
+                No se pudo reproducir este video en este dispositivo.
+                <br />
+                Intenta con un .mp4 (H.264). Los .mov/HEVC del iPad a veces no se reproducen en el navegador.
+              </div>
+            )}
+            {missing && !src.startsWith('blob:') && !src.startsWith('data:') && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-4 text-center text-sm text-amber-300">
                 No se pudo cargar este video modelo.
                 <br />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ChangeEvent } from "react";
+import { type ChangeEvent } from "react";
 import { MAX_CLIPS_PER_GROUP, type Group } from "./clips";
 
 type Props = {
@@ -26,7 +26,6 @@ export default function StudentClips({
   onSelectClip,
   onRemoveClip,
 }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const group = groups.find((g) => g.id === activeGroupId) ?? groups[0];
 
   function pick(e: ChangeEvent<HTMLInputElement>) {
@@ -64,23 +63,27 @@ export default function StudentClips({
         </button>
       </div>
 
-      <button
-        onClick={() => inputRef.current?.click()}
-        disabled={full}
-        className={`rounded-xl px-3 py-3 text-sm font-semibold active:scale-95 ${
-          full ? "bg-white/10 text-white/40" : "bg-cyan-600"
-        }`}
-      >
-        {full ? "Grupo lleno (20)" : "＋ Agregar videos"}
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        multiple
-        className="hidden"
-        onChange={pick}
-      />
+      {/* A <label> opens the picker via a native tap — reliable on iOS
+          Safari/iPad, unlike a display:none input + programmatic .click(). */}
+      {full ? (
+        <button
+          disabled
+          className="rounded-xl px-3 py-3 text-sm font-semibold bg-white/10 text-white/40"
+        >
+          Grupo lleno (20)
+        </button>
+      ) : (
+        <label className="rounded-xl px-3 py-3 text-sm font-semibold active:scale-95 bg-cyan-600 cursor-pointer text-center">
+          ＋ Agregar videos
+          <input
+            type="file"
+            accept="video/*"
+            multiple
+            className="sr-only"
+            onChange={pick}
+          />
+        </label>
+      )}
 
       <div className="px-1 text-[11px] text-white/40">
         {group?.clips.length ?? 0}/{MAX_CLIPS_PER_GROUP} videos
