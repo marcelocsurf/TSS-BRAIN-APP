@@ -2,9 +2,27 @@
 
 /**
  * Lightweight markdown renderer (no external deps).
- * Supports: H1-H4, **bold**, *italic*, `code`, lists, blockquotes, tables, hr.
- * Good enough for the canon content. Replace with `react-markdown` if needed.
+ * Supports: H1-H4, **bold**, *italic*, `code`, ==highlight==, lists, blockquotes,
+ * tables, hr, and titled CALLOUT boxes for pedagogy:
+ *   > [!CRITICAL]  > [!DOCTRINE]  > [!TEACH]  > [!CORRECT]  > [!VALIDATE]
+ *   > [!CUE]  > [!MANTRA]  > [!KEYWORDS]
+ * A plain `>` blockquote (no [!TYPE]) renders in the original cyan style.
  */
+
+// Callout palette — label + colors per type. Brand-aligned, no emojis.
+const CALLOUTS: Record<
+  string,
+  { label: string; border: string; bg: string; text: string; accent: string }
+> = {
+  CRITICAL: { label: 'Critical', border: '#FCA5A5', bg: '#FEF2F2', text: '#7F1D1D', accent: '#DC2626' },
+  DOCTRINE: { label: 'Doctrinal Note', border: '#CBD5E1', bg: '#F8FAFC', text: '#0F2A43', accent: '#475569' },
+  TEACH: { label: 'How you teach it', border: '#93C5FD', bg: '#EFF6FF', text: '#1E3A8A', accent: '#2563EB' },
+  CORRECT: { label: 'How you correct it', border: '#FCD34D', bg: '#FFFBEB', text: '#78350F', accent: '#D97706' },
+  VALIDATE: { label: 'How you validate it', border: '#6EE7B7', bg: '#ECFDF5', text: '#065F46', accent: '#059669' },
+  CUE: { label: 'Coach cue', border: '#67E8F9', bg: '#ECFEFF', text: '#155E75', accent: '#0891B2' },
+  MANTRA: { label: 'Mantra', border: '#D8B4FE', bg: '#FAF5FF', text: '#581C87', accent: '#9333EA' },
+  KEYWORDS: { label: '5 Key Words', border: '#FCD34D', bg: '#FFFBEB', text: '#78350F', accent: '#D97706' },
+};
 
 interface MarkdownContentProps {
   markdown: string;
@@ -31,6 +49,7 @@ type Block =
   | { type: 'ul'; items: string[] }
   | { type: 'ol'; items: string[] }
   | { type: 'blockquote'; content: string }
+  | { type: 'callout'; variant: string; content: string }
   | { type: 'hr' }
   | { type: 'code'; content: string }
   | { type: 'table'; rows: string[][] };
@@ -91,14 +110,23 @@ function parseMarkdown(md: string): Block[] {
       continue;
     }
 
-    // Blockquote
-    if (line.startsWith('> ')) {
+    // Blockquote / callout
+    if (line.startsWith('>')) {
       const quoteLines: string[] = [];
-      while (i < lines.length && lines[i].startsWith('> ')) {
-        quoteLines.push(lines[i].slice(2));
+      while (i < lines.length && lines[i].startsWith('>')) {
+        quoteLines.push(lines[i].replace(/^>\s?/, ''));
         i++;
       }
-      blocks.push({ type: 'blockquote', content: quoteLines.join(' ') });
+      let body = quoteLines.join('\n').trim();
+      // Callout: first token is [!TYPE]
+      const m = body.match(/^\[!([A-Za-z]+)\]\s*/);
+      if (m) {
+        const variant = m[1].toUpperCase();
+        body = body.slice(m[0].length).trim();
+        blocks.push({ type: 'callout', variant, content: body });
+      } else {
+        blocks.push({ type: 'blockquote', content: quoteLines.join(' ') });
+      }
       continue;
     }
 
@@ -187,6 +215,19 @@ function renderInline(text: string): React.ReactNode {
       const [, before, content, after] = italicMatch;
       if (before) parts.push(<span key={key++}>{before}</span>);
       parts.push(<em key={key++} className="italic">{content}</em>);
+      remaining = after;
+      continue;
+    }
+    // Highlight ==text==
+    const hlMatch = remaining.match(/^(.*?)==(.+?)==(.*)/);
+    if (hlMatch) {
+      const [, before, content, after] = hlMatch;
+      if (before) parts.push(<span key={key++}>{before}</span>);
+      parts.push(
+        <mark key={key++} className="bg-[#FEF08A] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">
+          {content}
+        </mark>
+      );
       remaining = after;
       continue;
     }
@@ -283,6 +324,51 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
           {renderInline(block.content)}
         </blockquote>
       );
+    case 'callout': {
+      const c = CALLOUTS[block.variant] ?? CALLOUTS.DOCTRINE;
+      const isKeywords = block.variant === 'KEYWORDS';
+      return (
+        <div
+          key={idx}
+          className="my-4 rounded-xl border px-4 py-3"
+          style={{ borderColor: c.border, background: c.bg }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
+            style={{ color: c.accent, fontFamily: 'DM Mono, monospace' }}
+          >
+            {c.label}
+          </p>
+          {isKeywords ? (
+            <div className="flex flex-wrap gap-1.5">
+              {block.content
+                .split(/[·,\n]/)
+                .map((w) => w.trim())
+                .filter(Boolean)
+                .map((w, j) => (
+                  <span
+                    key={j}
+                    className="text-[11px] font-semibold rounded-full px-2.5 py-0.5"
+                    style={{ background: '#fff', border: `1px solid ${c.border}`, color: c.text }}
+                  >
+                    {w}
+                  </span>
+                ))}
+            </div>
+          ) : (
+            <div className="text-[14px] leading-[1.7]" style={{ color: c.text }}>
+              {block.content.split('\n').map((ln, j) =>
+                ln.trim() ? (
+                  <p key={j} className={j > 0 ? 'mt-1.5' : ''}>
+                    {renderInline(ln)}
+                  </p>
+                ) : null
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
     case 'hr':
       return <hr key={idx} className="my-4 border-gray-200" />;
     case 'code':

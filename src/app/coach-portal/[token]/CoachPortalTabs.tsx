@@ -560,6 +560,19 @@ function CoursesTab({
     (c) => c.id === 'COACH-YB-MOD-7' || c.id === 'COACH-YB-MOD-8',
   );
 
+  // BB Coach Course tiers (course_section = 'coach_bb').
+  const bbCourses = courses.filter((c) => c.course_section === 'coach_bb');
+  const bbFoundations = bbCourses.filter((c) =>
+    ['COACH-BB-FOUND-01', 'COACH-BB-FRAME-01', 'COACH-BB-ONB-01', 'COACH-BB-FOUNDSEQ-01'].includes(c.id),
+  );
+  const bbSequences = bbCourses.filter((c) => /^COACH-BB-SEQ\d+$/.test(c.id));
+  const bbConcepts = bbCourses.filter((c) =>
+    ['COACH-BB-CONCEPTS-01', 'COACH-BB-INTEGRATION-01'].includes(c.id),
+  );
+  const bbExit = bbCourses.filter((c) =>
+    ['COACH-BB-EXIT-01', 'COACH-BB-CONDUCT-01'].includes(c.id),
+  );
+
   const renderCard = (c: any) => {
     const isCompleted = completedSet.has(c.id);
     const isInProgress = !isCompleted && !!progress[c.id]?.started;
@@ -588,12 +601,15 @@ function CoursesTab({
         id === 'COACH-OB-DELIVERY'
       );
     const isYb = !isValue && !isMethod && c.course_section === 'coach_yb';
+    const isBb = !isValue && !isMethod && c.course_section === 'coach_bb';
     const beltBg = isValue
       ? 'bg-[#EC4899]'
       : isMethod
       ? 'bg-[#00F0FF]'
       : isYb
       ? 'bg-[#FFFC00]'
+      : isBb
+      ? 'bg-[#1E6FBF] text-white'
       : 'bg-white';
     const beltDefaultBorder = isValue
       ? 'border-[#DB2777] hover:border-[#BE185D]'
@@ -601,6 +617,8 @@ function CoursesTab({
       ? 'border-[#06B6D4] hover:border-[#0891B2]'
       : isYb
       ? 'border-[#E5E300] hover:border-[#CCCB00]'
+      : isBb
+      ? 'border-[#1A5FA5] hover:border-[#154E87]'
       : 'border-gray-100 hover:border-gray-300';
     return (
       <button
@@ -742,6 +760,32 @@ function CoursesTab({
             label="YB Tier 3 — Complete Ride + Exit Test"
             sub="Coach the 11-stage integration · administer the YB Exit Test with integrity."
             items={ybIntegration}
+            render={renderCard}
+          />
+
+          {/* ── BB Coach Course (L2 Practitioner · unlocks after YB) ── */}
+          <TierGroup
+            label="BB Tier 1 — Foundations + Belt Value"
+            sub="L2 authorization · the Audit/Refinement stance · frameworks · Compromiso Consciente · Foundation Sequence."
+            items={bbFoundations}
+            render={renderCard}
+          />
+          <TierGroup
+            label="BB Tier 2 — The 6 Sequences (15 STPs)"
+            sub="Seq #8–#13. Each lesson: How to Teach · How to Correct · How to Validate · Coach Cue."
+            items={bbSequences}
+            render={renderCard}
+          />
+          <TierGroup
+            label="BB Tier 3 — Concepts + Integration"
+            sub="The 4 Blue Belt Concepts · coaching the complete Infinite Circle ride."
+            items={bbConcepts}
+            render={renderCard}
+          />
+          <TierGroup
+            label="BB Tier 4 — Exit Test + Code of Conduct"
+            sub="Administer the BB Exit Test (audit the self-evaluation) · 12-question quiz · code of conduct + appendices."
+            items={bbExit}
             render={renderCard}
           />
 
