@@ -3,7 +3,9 @@
 // sees a simple readiness verdict, without losing the canon criteria.
 //
 // An STP counts as "demonstrated" when rated >= stpThreshold stars.
-// A belt is earned when: demonstrated STPs >= minStps AND principles met >= minPrinciples.
+// Canon rule (Blue Belt and forward): the student must reach stpThreshold on
+// EVERY part of the sequence (4★ en cada parte) — requireAllStps = true. A belt
+// is earned when: all sequence STPs are demonstrated AND principles met >= minPrinciples.
 
 export interface GraduationRule {
   beltLabel: string;
@@ -12,7 +14,10 @@ export interface GraduationRule {
   // re-confirmed, not just the new YB steps.
   sections: string[];
   stpThreshold: number;   // stars needed for an STP to count as demonstrated
-  minStps: number;        // minimum STPs demonstrated (across the sections)
+  minStps: number;        // shown in the UI; with requireAllStps it equals the catalog
+  // Canon rule: the student must hit stpThreshold on EVERY part of the
+  // sequence (4★ in each STP) — not just a subset.
+  requireAllStps: boolean;
   principles: string[];   // canon principles to check ([] = none for this belt)
   minPrinciples: number;  // minimum principles embodied
 }
@@ -24,7 +29,8 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     beltLabel: 'White Belt',
     sections: ['white_belt'],
     stpThreshold: 4,
-    minStps: 18,
+    minStps: 25,
+    requireAllStps: true,
     principles: [],
     minPrinciples: 0,
   },
@@ -34,7 +40,8 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     beltLabel: 'Yellow Belt',
     sections: ['white_belt', 'yellow_belt'],
     stpThreshold: 4,
-    minStps: 24,
+    minStps: 33,
+    requireAllStps: true,
     principles: [
       'Endurance and enjoyment are not opposites',
       'Cobra + Line = TIME',
@@ -45,13 +52,14 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     minPrinciples: 3,
   },
   // Blue Belt — full White->Yellow->Blue sequence (25 + 8 + 15 = 48). Principles
-  // are the Blue Belt Exit Test criteria (verbatim from the manual). The STP
-  // count threshold mirrors the Yellow proportion (~73%) — adjustable.
+  // are the Blue Belt Exit Test criteria (verbatim from the manual). Canon rule:
+  // 4★ in EVERY part of the sequence to advance (requireAllStps).
   blue_belt: {
     beltLabel: 'Blue Belt',
     sections: ['white_belt', 'yellow_belt', 'blue_belt'],
     stpThreshold: 4,
-    minStps: 35,
+    minStps: 48,
+    requireAllStps: true,
     principles: [
       'Execute the Universal Sequence Formula on at least 4 of 5 attempts per sequence (Seq #10, #11, #12, #13)',
       'Pump effectively on FS and BS (Seq #8, #9) at least 3 of 5 attempts per side',

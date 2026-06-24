@@ -100,6 +100,7 @@ export function FinalCampEvaluation({
       sections: [],
       stpThreshold: PASS_THRESHOLD,
       minStps: stpCatalog.length,
+      requireAllStps: true,
       principles: [],
       minPrinciples: 0,
     };
@@ -127,10 +128,14 @@ export function FinalCampEvaluation({
       ? rule.principles.filter((_, i) => principles[studentId]?.[i]).length
       : 0;
 
-  // Ready for the next level = enough STPs demonstrated AND enough principles.
-  const studentApproved = (studentId: string): boolean =>
-    studentStpsOk(studentId) >= rule.minStps &&
-    studentPrinciplesMet(studentId) >= rule.minPrinciples;
+  // Ready for the next level. Canon rule: when requireAllStps is set, EVERY part
+  // of the sequence must be at >= stpThreshold (4★ en cada parte) — not a subset.
+  const studentApproved = (studentId: string): boolean => {
+    const stpsOk = rule.requireAllStps
+      ? studentStpsOk(studentId) >= stpCatalog.length
+      : studentStpsOk(studentId) >= rule.minStps;
+    return stpsOk && studentPrinciplesMet(studentId) >= rule.minPrinciples;
+  };
 
   // Compact verdict, e.g. "6/8 STPs ≥4★ · 3/5 principles".
   const readinessSummary = (studentId: string): string => {
@@ -215,7 +220,9 @@ export function FinalCampEvaluation({
             </p>
           </div>
           <p className="text-[10px] text-white/50 mt-1">
-            {rule.beltLabel} ready = ≥{rule.minStps}/{stpCatalog.length} STPs at {rule.stpThreshold}★
+            {rule.beltLabel} ready = {rule.requireAllStps
+              ? `all ${stpCatalog.length} STPs at ${rule.stpThreshold}★`
+              : `≥${rule.minStps}/${stpCatalog.length} STPs at ${rule.stpThreshold}★`}
             {rule.principles.length > 0 && ` + ≥${rule.minPrinciples}/${rule.principles.length} principles`}.
           </p>
         </div>
