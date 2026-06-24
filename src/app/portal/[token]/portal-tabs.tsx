@@ -339,6 +339,13 @@ export function PortalTabs({
         <p style={{ color: brand.accent }} className="tss-tagline text-sm">
           {brand.tagline}
         </p>
+        {/* The Surf Sequence lineage logo — shown on every screen. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/tss-logo-white.png?v=2"
+          alt="The Surf Sequence"
+          className="h-6 mx-auto mt-3 object-contain opacity-80"
+        />
       </div>
 
       {/* Tab Content */}
@@ -500,13 +507,12 @@ function HomeTab({
     <div className="space-y-4">
       {/* ── Dark "cockpit" hero — TSS Ocean Navy, Garmin-style telemetry ── */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
-        {/* Header with the official TSS wordmark */}
+        {/* Notifications row (TSS wordmark now lives in the shared header on
+            every screen, so it isn't repeated here). */}
         <div
-          className="flex items-center justify-between px-4 py-3"
+          className="flex items-center justify-end px-4 py-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-7 w-auto object-contain" />
           <button type="button" onClick={() => onGoTo('feedback')} aria-label="Notifications">
             <Bell size={18} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />
           </button>
@@ -586,16 +592,19 @@ function HomeTab({
             </div>
           </div>
 
-          {/* Training + Free Surf — data only, big name */}
+          {/* Training + Free Surf — bold, high-contrast title (Course-style) so
+              the name doesn't get lost, with a cyan accent bar. */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Training', value: fmtHm(surf.trainingMinutes) },
-              { label: 'Free Surf', value: fmtHm(surf.freeSurfMinutes) },
+              { label: 'Training', value: fmtHm(surf.trainingMinutes), accent: '#00D2FF' },
+              { label: 'Free Surf', value: fmtHm(surf.freeSurfMinutes), accent: '#5AC3E7' },
             ].map((s) => (
               <div key={s.label} className="rounded-2xl p-4" style={{ background: '#122236' }}>
-                <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>{s.label}</span>
-                <p className="font-bold mt-1.5" style={{ fontFamily: 'var(--font-heading)', color: '#eef4f8', fontSize: '17px' }}>{s.label}</p>
-                <p className="font-bold mt-1.5" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '28px', lineHeight: 1 }}>{s.value}</p>
+                <div className="flex items-center gap-2">
+                  <span style={{ width: 4, height: 18, borderRadius: 3, background: s.accent, display: 'inline-block' }} />
+                  <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>{s.label}</span>
+                </div>
+                <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-heading)', color: '#00D2FF', fontSize: '30px', lineHeight: 1 }}>{s.value}</p>
               </div>
             ))}
           </div>
@@ -760,7 +769,10 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
   return (
     <div className="rounded-2xl p-4" style={{ background: '#122236' }} aria-label="Flow Channel">
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Flow Channel</span>
+        <div className="flex items-center gap-2">
+          <span style={{ width: 4, height: 18, borderRadius: 3, background: '#00D2FF', display: 'inline-block' }} />
+          <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>Flow Channel</span>
+        </div>
         {hasData && <span className="text-[9px]" style={{ color: '#8aa0b2' }}>from your session ratings</span>}
       </div>
 
