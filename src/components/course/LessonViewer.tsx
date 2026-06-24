@@ -157,8 +157,15 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
   // Build available sections based on lesson content
   const availableSections: { key: Section; label: string; icon: IconType }[] = [];
 
-  if (lesson.lesson_type === 'form' || lesson.lesson_type === 'test') {
+  if (lesson.lesson_type === 'form') {
     availableSections.push({ key: 'form', label: 'Activity', icon: ClipboardList });
+  } else if (lesson.lesson_type === 'test') {
+    // A test/exit lesson shows the rubric or self-evaluation as "Activity", and
+    // — when comprehension questions exist — the friendly multiple-choice "Quiz"
+    // (CourseQuiz). Without this, a test lesson only rendered its reading text
+    // and the multiple-choice quiz never appeared (the Blue/Yellow exit tests).
+    availableSections.push({ key: 'form', label: 'Activity', icon: ClipboardList });
+    if (quizzes && quizzes.length > 0) availableSections.push({ key: 'quiz', label: 'Quiz', icon: Brain });
   } else {
     // Always show Video tab — VideoSection itself handles the "coming soon" empty state
     availableSections.push({ key: 'video', label: lessonVideos.length > 1 ? `Videos (${lessonVideos.length})` : 'Video', icon: PlayCircle });
