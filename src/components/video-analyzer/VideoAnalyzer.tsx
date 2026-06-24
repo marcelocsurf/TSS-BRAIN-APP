@@ -83,36 +83,46 @@ export default function VideoAnalyzer() {
   // ----- Student roster (groups + clips) -----
 
   function addFiles(files: FileList) {
+    // Capture the files + create their object URLs IMMEDIATELY. The caller
+    // (StudentClips.pick) clears the input with `e.target.value = ""` right
+    // after calling us, which empties the live FileList. Reading it lazily
+    // inside a setState updater therefore saw 0 files → nothing was added
+    // (the list stayed at 0/20). Snapshotting here fixes that.
+    const picked = Array.from(files);
+    if (picked.length === 0) return;
+
+    const current = groups.find((g) => g.id === activeGroupId);
+    const room = current ? MAX_CLIPS_PER_GROUP - current.clips.length : MAX_CLIPS_PER_GROUP;
+    const added = picked.slice(0, Math.max(0, room)).map((f) => ({
+      id: uid("c"),
+      name: f.name,
+      url: URL.createObjectURL(f),
+    }));
+    if (added.length === 0) return;
+
     setGroups((prev) =>
-      prev.map((g) => {
-        if (g.id !== activeGroupId) return g;
-        const room = MAX_CLIPS_PER_GROUP - g.clips.length;
-        const incoming = Array.from(files).slice(0, Math.max(0, room));
-        const added = incoming.map((f) => ({
-          id: uid("c"),
-          name: f.name,
-          url: URL.createObjectURL(f),
-        }));
-        // Generate thumbnails ONE AT A TIME — iPad/Safari can only decode a
-        // few videos concurrently, so firing all at once made some clips
-        // (and the player) fail to load. Sequential keeps every clip stable.
-        (async () => {
-          for (const clip of added) {
-            const thumb = await makeThumb(clip.url);
-            if (!thumb) continue;
-            setGroups((cur) =>
-              cur.map((gg) => ({
-                ...gg,
-                clips: gg.clips.map((cc) =>
-                  cc.id === clip.id ? { ...cc, thumb } : cc
-                ),
-              }))
-            );
-          }
-        })();
-        return { ...g, clips: [...g.clips, ...added] };
-      })
+      prev.map((g) =>
+        g.id === activeGroupId ? { ...g, clips: [...g.clips, ...added] } : g
+      )
     );
+
+    // Generate thumbnails ONE AT A TIME — iPad/Safari can only decode a few
+    // videos concurrently, so firing all at once made some clips (and the
+    // player) fail to load. Sequential keeps every clip stable.
+    (async () => {
+      for (const clip of added) {
+        const thumb = await makeThumb(clip.url);
+        if (!thumb) continue;
+        setGroups((cur) =>
+          cur.map((gg) => ({
+            ...gg,
+            clips: gg.clips.map((cc) =>
+              cc.id === clip.id ? { ...cc, thumb } : cc
+            ),
+          }))
+        );
+      }
+    })();
   }
 
   function selectClip(clipId: string) {
@@ -244,7 +254,7 @@ export default function VideoAnalyzer() {
           className="text-[10px] tracking-[0.15em] text-white/40"
           style={{ fontFamily: 'DM Mono, monospace' }}
         >
-          build jun24b
+          build jun24c
         </span>
         {/* Layout toggle: 2 panels, only student, or only model */}
         <div className="ml-auto flex gap-1">
