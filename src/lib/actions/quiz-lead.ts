@@ -14,6 +14,26 @@ const SLUG_ALIASES: Record<string, string> = {
   'puro-surf': 'el-zonte-la-libetad',
 };
 
+export type QuizAttempt = {
+  attempt_number: number | null;
+  belt: string | null;
+  score: number | null;
+  skillmap: { name: string; pct: number }[] | null;
+  created_at: string;
+};
+
+// Full surf-level quiz history for a student (incl. retakes). Read via the
+// service-role admin client because level_quiz_attempts is locked to the server.
+export async function getQuizAttempts(studentId: string): Promise<QuizAttempt[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('level_quiz_attempts')
+    .select('attempt_number, belt, score, skillmap, created_at')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: false });
+  return (data ?? []) as QuizAttempt[];
+}
+
 export async function createLeadFromQuiz(input: {
   first_name: string;
   last_name?: string | null;

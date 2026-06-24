@@ -1,5 +1,6 @@
 import { getStudent, checkCoachAccessToStudent } from '@/lib/actions/students';
 import { getStudentLevelAccess } from '@/lib/actions/access';
+import { getQuizAttempts } from '@/lib/actions/quiz-lead';
 import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/actions/evaluations';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
@@ -106,6 +107,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
   // Final-evaluation camp notes (coach/bitácora only — includes the private note)
   const campNotes = await getCampNotesForStudent(id);
+
+  // Public surf-level quiz history (incl. retakes) tied to this profile.
+  const quizAttempts = await getQuizAttempts(id);
 
   const [
     levelAccess,
@@ -506,6 +510,49 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Progression Status" value={student.progression_status} />
         </div>
       </Card>
+
+      {/* --- 3·b. SURF-LEVEL QUIZ HISTORY (incl. retakes) --- */}
+      {quizAttempts.length > 0 && (
+        <Card title={`Surf-Level Quiz · ${quizAttempts.length} ${quizAttempts.length === 1 ? 'attempt' : 'attempts'}`}>
+          <div className="space-y-2 pt-2">
+            {quizAttempts.map((a, i) => {
+              const ab = a.belt ? BELT_DISPLAY[a.belt as keyof typeof BELT_DISPLAY] : null;
+              const when = new Date(a.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+              return (
+                <div key={i} className="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] font-mono text-gray-400 shrink-0">#{a.attempt_number ?? quizAttempts.length - i}</span>
+                    <span className="w-3 h-3 rounded-full inline-block shrink-0" style={{ backgroundColor: ab?.color || '#999' }} />
+                    <span className="text-sm font-medium text-[var(--tss-navy)] truncate">{ab?.en ?? a.belt ?? '—'}</span>
+                    {a.score != null && <span className="text-xs text-gray-500 shrink-0">{a.score}/70</span>}
+                  </div>
+                  <span className="text-[11px] text-gray-400 shrink-0">{when}</span>
+                </div>
+              );
+            })}
+            {(() => {
+              const latest = quizAttempts[0];
+              if (!latest?.skillmap?.length) return null;
+              return (
+                <div className="pt-2">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Latest skill breakdown</p>
+                  <div className="space-y-1">
+                    {latest.skillmap.map((s, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <span className="text-[11px] text-gray-600 w-28 shrink-0 truncate">{s.name}</span>
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, s.pct))}%`, background: 'var(--tss-cyan,#5AC3E7)' }} />
+                        </div>
+                        <span className="text-[10px] text-gray-400 w-8 text-right shrink-0">{s.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </Card>
+      )}
 
       {/* --- 3a. OFFICIAL STEP EVALUATION (coach gives cyan stars per STP) --- */}
       {coach && (() => {
