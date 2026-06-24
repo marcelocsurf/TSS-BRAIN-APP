@@ -446,9 +446,8 @@ interface QuizLeadEmailData {
 export async function sendQuizLeadEmail(
   data: QuizLeadEmailData,
 ): Promise<{ success: boolean; error?: string }> {
-  // TEMP (testing): send only to Marcelo. Restore to
-  // ['info@thesurfsequence.com', 'academy@purosurf.com'] when going live.
-  const to = ['marcelocsurf@gmail.com'];
+  // Production recipients for quiz-lead notifications.
+  const to = ['info@thesurfsequence.com', 'academy@purosurf.com'];
   const beltName = BELT_DISPLAY[data.belt as BeltLevel]?.en || data.belt.replace(/_/g, ' ');
   const levelName = BELT_DISPLAY[data.belt as BeltLevel]?.levelName || '';
   try {
