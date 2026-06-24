@@ -83,11 +83,29 @@ export async function getStudentPortalData(token: string) {
   // 4. Get all survey responses for this student
   const { data: surveys } = await admin
     .from('survey_responses')
-    .select('id, session_result_id')
+    .select('id, session_result_id, flow_channel')
     .eq('student_id', student.id);
 
   const surveyResultIds = new Set((surveys || []).map((s: any) => s.session_result_id));
   const hasSurveyEver = (surveys || []).length > 0;
+
+  // ── Flow Channel (Canon v8.0 §C.7 / P2) ──────────────────────────────
+  // The student rates each session's flow_channel 1-5 (1 Bored · 2 Easy ·
+  // 3 Optimal · 4 Hard · 5 Frustrating). 3 = flow. We surface the average and
+  // the "lean": how often sessions skewed too easy (boredom, 1-2) vs too hard
+  // (anxiety, 4-5). No invented data — null when the student hasn't rated yet.
+  const flowRatings = (surveys || [])
+    .map((s: any) => s.flow_channel)
+    .filter((n: any): n is number => typeof n === 'number' && n >= 1 && n <= 5);
+  const flowAvg = flowRatings.length
+    ? Math.round((flowRatings.reduce((a: number, b: number) => a + b, 0) / flowRatings.length) * 10) / 10
+    : null;
+  const flowChannel = {
+    avg: flowAvg,
+    count: flowRatings.length,
+    boredom: flowRatings.filter((n: number) => n <= 2).length, // too easy
+    anxiety: flowRatings.filter((n: number) => n >= 4).length,  // too hard
+  };
 
   // 5. Compute quick stats
   const coachSessions = sessions || [];
@@ -382,6 +400,7 @@ export async function getStudentPortalData(token: string) {
     selfTrainingCount,
     totalTrainingMinutes,
     surfHours,
+    flowChannel,
     drillsPracticed,
     recentDrills: topRecentDrills,
     upcomingMultiBlock: upcomingWithBlocks,

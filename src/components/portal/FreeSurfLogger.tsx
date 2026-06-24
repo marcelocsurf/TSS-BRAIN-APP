@@ -9,7 +9,7 @@ import { Waves, Clock, ThumbsUp } from 'lucide-react';
 // Free Surf quick-logger — for days the student surfed without a mission.
 // All logged time counts toward "Free Surfing" in the bitácora.
 
-const MINUTE_CHIPS = [30, 60, 90, 120, 180];
+const MINUTE_CHIPS = [30, 60, 120, 240, 480];
 
 export function FreeSurfLogger({ token }: { token: string }) {
   const router = useRouter();
@@ -76,7 +76,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
               }`}
               style={minutes === m ? { background: BRAND.colors.navy } : {}}
             >
-              {m}m
+              {m >= 60 ? `${m / 60}h` : `${m}m`}
             </button>
           ))}
         </div>
@@ -88,6 +88,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
           className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
           placeholder="Minutes"
         />
+        <p className="mt-1 text-[10px] text-gray-400">Type any amount in minutes — e.g. 480 for an 8-hour day.</p>
       </div>
 
       <div>

@@ -100,6 +100,7 @@ interface PortalData {
   drillsPracticed: string[];
   recentDrills: { name: string; date: string; source: 'coach' | 'self' }[];
   surfHours?: { trainingMinutes: number; freeSurfMinutes: number; totalMinutes: number };
+  flowChannel?: { avg: number | null; count: number; boredom: number; anxiety: number };
   upcomingMultiBlock?: UpcomingMultiBlock[];
   closedMultiBlock?: ClosedMultiBlock[];
   drills: any[];
@@ -320,7 +321,7 @@ export function PortalTabs({
   const brand = resolveAcademyBranding((data as any).academyBranding ?? null);
 
   return (
-    <div className="min-h-screen tss-portal-bg pb-20">
+    <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
       {/* Header — themed by academy. Logo locked to a single size so the
           hero feels solid no matter which academy is loaded. */}
       <div style={{ background: brand.primary }} className="px-4 py-6 text-center relative">
@@ -585,24 +586,24 @@ function HomeTab({
             </div>
           </div>
 
-          {/* Stat tiles — each number with a plain-language caption */}
+          {/* Training + Free Surf — data only, big name */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: GraduationCap, label: 'Training', value: fmtHm(surf.trainingMinutes), cap: 'coached water time' },
-              { icon: Waves, label: 'Free surf', value: fmtHm(surf.freeSurfMinutes), cap: 'on your own' },
-              { icon: ClipboardList, label: 'Sessions', value: String(totalSessions), cap: 'classes completed' },
-              { icon: BarChart3, label: 'Drills', value: String(drillsPracticed.length), cap: 'skills practiced' },
+              { label: 'Training', value: fmtHm(surf.trainingMinutes) },
+              { label: 'Free Surf', value: fmtHm(surf.freeSurfMinutes) },
             ].map((s) => (
-              <div key={s.label} className="rounded-2xl p-3.5" style={{ background: '#122236' }}>
-                <div className="flex items-center gap-1.5">
-                  <s.icon size={13} strokeWidth={1.9} style={{ color: '#5AC3E7' }} />
-                  <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>{s.label}</span>
-                </div>
-                <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '24px' }}>{s.value}</p>
-                <p className="text-[10px] mt-0.5" style={{ color: '#8aa0b2' }}>{s.cap}</p>
+              <div key={s.label} className="rounded-2xl p-4" style={{ background: '#122236' }}>
+                <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>{s.label}</span>
+                <p className="font-bold mt-1.5" style={{ fontFamily: 'var(--font-heading)', color: '#eef4f8', fontSize: '17px' }}>{s.label}</p>
+                <p className="font-bold mt-1.5" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '28px', lineHeight: 1 }}>{s.value}</p>
               </div>
             ))}
           </div>
+
+          {/* Flow Channel — Canon v8.0 §C.7: the zone between boredom (too easy)
+              and anxiety (too hard). Fed by the student's session ratings
+              (survey_responses.flow_channel, 1-5; 3 = flow). */}
+          <FlowChannelCard flow={data.flowChannel} />
 
           {/* Mental cue — inside the dark hero */}
           <div className="rounded-2xl p-4" style={{ background: '#122236', borderLeft: '3px solid #5AC3E7' }}>
@@ -713,6 +714,90 @@ function HomeTab({
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// Flow Channel card (Canon v8.0 §C.7 / P2)
+// ═══════════════════════════════════════
+// The flow channel is the learning zone between boredom (too easy) and anxiety
+// (too hard); the ideal is the middle, where challenge meets ability. Fed by the
+// student's own session ratings (survey_responses.flow_channel, 1-5; 3 = flow).
+const FLOW_LABELS = ['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrating'];
+
+function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number; boredom: number; anxiety: number } }) {
+  const hasData = !!flow && flow.avg != null && flow.count > 0;
+  const avg = flow?.avg ?? null;
+  const label = avg != null ? (FLOW_LABELS[Math.round(avg) - 1] ?? '') : '';
+  const boredom = flow?.boredom ?? 0;
+  const anxiety = flow?.anxiety ?? 0;
+  // Lean: -1 = all too-easy (boredom) … 0 = balanced … +1 = all too-hard (anxiety)
+  const lean = boredom + anxiety > 0 ? (anxiety - boredom) / (boredom + anxiety) : 0;
+  const markerLeft = Math.max(8, Math.min(92, 50 + lean * 40));
+  const advice = !hasData
+    ? ''
+    : lean < -0.15
+    ? 'Leaning toward boredom — raise the challenge.'
+    : lean > 0.15
+    ? 'Leaning toward anxiety — lower the challenge.'
+    : 'You are in your flow channel — challenge meets ability.';
+
+  const YinYang = (
+    <svg width="68" height="68" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><clipPath id="fcyy"><circle cx="50" cy="50" r="48" /></clipPath></defs>
+      <g clipPath="url(#fcyy)">
+        <rect width="100" height="100" fill="#0a2a4a" />
+        <path d="M50 2 a48 48 0 0 1 0 96 a24 24 0 0 1 0 -48 a24 24 0 0 0 0 -48" fill="#00D2FF" />
+        <circle cx="50" cy="26" r="7.5" fill="#0a2a4a" />
+        <circle cx="50" cy="74" r="7.5" fill="#00D2FF" />
+      </g>
+      <circle cx="50" cy="50" r="48" fill="none" stroke="#1f3b57" strokeWidth="2" />
+    </svg>
+  );
+
+  return (
+    <div className="rounded-2xl p-4" style={{ background: '#122236' }} aria-label="Flow Channel">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Flow Channel</span>
+        {hasData && <span className="text-[9px]" style={{ color: '#8aa0b2' }}>from your session ratings</span>}
+      </div>
+
+      <div className="flex items-center gap-4 mt-3">
+        {YinYang}
+        <div className="flex-1">
+          {hasData ? (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '28px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
+                <span className="font-semibold" style={{ fontFamily: 'var(--font-heading)', color: '#5AC3E7', fontSize: '15px' }}>{label}</span>
+              </div>
+              <p className="text-[11px] mt-1" style={{ color: '#8aa0b2' }}>Flow (3) = challenge and ability in balance</p>
+            </>
+          ) : (
+            <p className="text-[13px] leading-relaxed" style={{ color: '#dbe8f1' }}>
+              Rate your sessions to map your flow channel — the zone where challenge meets ability.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {hasData && (
+        <>
+          <div className="mt-4">
+            <div className="relative" style={{ height: 8, borderRadius: 5, background: 'linear-gradient(90deg,#3a4a5e 0%,#00D2FF 50%,#7a4ab0 100%)', opacity: 0.7 }}>
+              <div className="absolute" style={{ left: '50%', top: -3, width: 1, height: 14, background: '#cfe8f2', opacity: 0.5 }} />
+              <div className="absolute" style={{ left: `${markerLeft}%`, top: -4, width: 16, height: 16, borderRadius: '50%', background: '#fff', border: '2px solid #00D2FF', transform: 'translateX(-50%)' }} />
+            </div>
+            <div className="flex justify-between mt-1.5">
+              <span className="text-[10px]" style={{ color: '#8aa0b2' }}>Bored · too easy</span>
+              <span className="text-[10px] font-medium" style={{ color: '#00D2FF' }}>Flow</span>
+              <span className="text-[10px]" style={{ color: '#8aa0b2' }}>Anxiety · too hard</span>
+            </div>
+          </div>
+          <p className="text-[11px] mt-3 pt-3" style={{ color: '#dbe8f1', borderTop: '1px solid #1f344a' }}>{advice}</p>
+        </>
       )}
     </div>
   );
