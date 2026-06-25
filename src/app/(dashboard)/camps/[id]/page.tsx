@@ -136,6 +136,81 @@ export default async function CampDetailPage({ params }: Props) {
         staffMembers={academyStaffMembers}
       />
 
+      {/* Participants with belt levels — kept right under the staff section so
+          enrolment is visible without scrolling to the bottom. */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
+            Enrolled Students ({participants.length})
+          </h3>
+        </div>
+
+        {participants.length > 0 ? (
+          <div className="space-y-2">
+            {participants.map((p: any) => {
+              const belt = BELT_DISPLAY[p.students?.belt_level as BeltLevel];
+              const isLead = p.students?.lifecycle_status === 'lead';
+              const intakePending = isLead && !p.students?.waiver_signed;
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Link
+                    href={`/students/${p.students?.id}`}
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: belt?.color || '#999' }}
+                    >
+                      {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {p.students?.first_name} {p.students?.last_name}
+                      </p>
+                      <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
+                    </div>
+                  </Link>
+                  <EnrollmentPaymentControl
+                    participantId={p.id}
+                    campInstanceId={id}
+                    studentId={p.students?.id}
+                    paymentStatus={p.payment_status ?? null}
+                    amountCents={p.amount_cents ?? null}
+                    currency={p.currency ?? 'USD'}
+                    isRefresher={!!p.is_refresher}
+                  />
+                  {intakePending ? (
+                    <LeadStatusBadge
+                      studentId={p.students.id}
+                      portalToken={p.students.portal_token}
+                      email={p.students.email}
+                    />
+                  ) : (
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full text-white shrink-0"
+                      style={{ backgroundColor: belt?.color || '#999' }}
+                    >
+                      {belt?.en}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 text-center py-3">No students enrolled</p>
+        )}
+
+        {/* Add/Remove students */}
+        <CampStudentManager
+          campInstanceId={id}
+          currentParticipantIds={participants.map((p: any) => p.students?.id).filter(Boolean)}
+        />
+      </div>
+
       {/* Read the Plan — coach-facing manual of the linked template */}
       {planForRead.templatePlan.length > 0 && (
         <CampPlanReader
@@ -213,80 +288,6 @@ export default async function CampDetailPage({ params }: Props) {
           </p>
         </div>
       )}
-
-      {/* Participants with belt levels */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
-            Enrolled Students ({participants.length})
-          </h3>
-        </div>
-
-        {participants.length > 0 ? (
-          <div className="space-y-2">
-            {participants.map((p: any) => {
-              const belt = BELT_DISPLAY[p.students?.belt_level as BeltLevel];
-              const isLead = p.students?.lifecycle_status === 'lead';
-              const intakePending = isLead && !p.students?.waiver_signed;
-              return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Link
-                    href={`/students/${p.students?.id}`}
-                    className="flex items-center gap-3 flex-1 min-w-0"
-                  >
-                    <div
-                      className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: belt?.color || '#999' }}
-                    >
-                      {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {p.students?.first_name} {p.students?.last_name}
-                      </p>
-                      <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
-                    </div>
-                  </Link>
-                  <EnrollmentPaymentControl
-                    participantId={p.id}
-                    campInstanceId={id}
-                    studentId={p.students?.id}
-                    paymentStatus={p.payment_status ?? null}
-                    amountCents={p.amount_cents ?? null}
-                    currency={p.currency ?? 'USD'}
-                    isRefresher={!!p.is_refresher}
-                  />
-                  {intakePending ? (
-                    <LeadStatusBadge
-                      studentId={p.students.id}
-                      portalToken={p.students.portal_token}
-                      email={p.students.email}
-                    />
-                  ) : (
-                    <span
-                      className="text-[10px] px-2 py-0.5 rounded-full text-white shrink-0"
-                      style={{ backgroundColor: belt?.color || '#999' }}
-                    >
-                      {belt?.en}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-xs text-gray-400 text-center py-3">No students enrolled</p>
-        )}
-
-        {/* Add/Remove students */}
-        <CampStudentManager
-          campInstanceId={id}
-          currentParticipantIds={participants.map((p: any) => p.students?.id).filter(Boolean)}
-        />
-      </div>
 
       {/* Day schedule with session blocks */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
