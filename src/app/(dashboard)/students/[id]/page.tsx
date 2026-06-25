@@ -1,6 +1,8 @@
 import { getStudent, checkCoachAccessToStudent } from '@/lib/actions/students';
 import { getStudentLevelAccess } from '@/lib/actions/access';
 import { getQuizAttempts } from '@/lib/actions/quiz-lead';
+import { getStudentVisitStats } from '@/lib/actions/students';
+import { PriorVisitsEditor } from '@/components/student/PriorVisitsEditor';
 import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/actions/evaluations';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
@@ -110,6 +112,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
   // Public surf-level quiz history (incl. retakes) tied to this profile.
   const quizAttempts = await getQuizAttempts(id);
+
+  // Relationship / loyalty — visits (trips), total days, first/last seen.
+  const visitStats = await getStudentVisitStats(id);
 
   const [
     levelAccess,
@@ -508,6 +513,40 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Step" value={`${student.current_step_order}`} />
           <Row label="Ocean Level" value={student.ocean_level} />
           <Row label="Progression Status" value={student.progression_status} />
+        </div>
+      </Card>
+
+      {/* --- 3·a2. RELATIONSHIP / VISITS --- */}
+      <Card title="Relationship" highlighted={visitStats.visits > 1}>
+        <div className="pt-2 space-y-3">
+          <div className="flex items-center gap-2">
+            {visitStats.visits > 1 ? (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tss-navy)] bg-[var(--tss-cyan,#5AC3E7)]/15 border border-[var(--tss-cyan,#5AC3E7)]/40 rounded-full px-2.5 py-0.5">
+                Returning · Visit #{visitStats.visits}
+              </span>
+            ) : visitStats.visits === 1 ? (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
+                First visit
+              </span>
+            ) : (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
+                No visits yet
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-50 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[11px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
+            </div>
+          </div>
+          <Row label="First visit" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
+          <Row label="Last visit" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
+          <PriorVisitsEditor studentId={student.id} initial={visitStats.priorVisits} />
         </div>
       </Card>
 

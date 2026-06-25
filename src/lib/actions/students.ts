@@ -1,9 +1,88 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { BeltLevel } from '@/lib/constants/belts';
+
+// ═══════════════════════════════════════
+// VISITS / RELATIONSHIP TRACKING
+// ═══════════════════════════════════════
+// A "visit" = a trip/stay at the academy. Detected by clustering the student's
+// coach-led attendance dates (camp days + coach sessions); a gap > VISIT_GAP_DAYS
+// starts a new visit. Free-surf self-logs are excluded (those are the student's
+// own surfs, not academy visits). prior_visits adds pre-app history.
+const VISIT_GAP_DAYS = 30;
+
+export type VisitStats = {
+  visits: number;
+  detectedVisits: number;
+  priorVisits: number;
+  totalDays: number;
+  firstVisit: string | null;
+  lastVisit: string | null;
+  daysSinceLast: number | null;
+};
+
+export async function getStudentVisitStats(studentId: string): Promise<VisitStats> {
+  const admin = createAdminClient();
+  const [partsRes, mbsRes, ssrRes, stuRes] = await Promise.all([
+    admin.from('camp_participants').select('camp_instance_id, enrollment_status').eq('student_id', studentId),
+    admin.from('multi_block_sessions').select('session_date').eq('student_id', studentId),
+    admin.from('student_session_results').select('created_at, standalone_sessions(session_date)').eq('student_id', studentId),
+    admin.from('students').select('prior_visits').eq('id', studentId).maybeSingle(),
+  ]);
+
+  const campIds = (partsRes.data ?? [])
+    .filter((p: any) => p.enrollment_status !== 'cancelled')
+    .map((p: any) => p.camp_instance_id);
+  const campSessRes = campIds.length
+    ? await admin.from('camp_sessions').select('session_date').in('camp_instance_id', campIds)
+    : { data: [] as any[] };
+
+  const dateSet = new Set<string>();
+  const add = (d: any) => { if (d) dateSet.add(String(d).slice(0, 10)); };
+  (campSessRes.data ?? []).forEach((r: any) => add(r.session_date));
+  (mbsRes.data ?? []).forEach((r: any) => add(r.session_date));
+  (ssrRes.data ?? []).forEach((r: any) => add(r.standalone_sessions?.session_date ?? r.created_at));
+
+  const dates = Array.from(dateSet).sort();
+  const priorVisits = stuRes.data?.prior_visits ?? 0;
+
+  if (dates.length === 0) {
+    return { visits: priorVisits, detectedVisits: 0, priorVisits, totalDays: 0, firstVisit: null, lastVisit: null, daysSinceLast: null };
+  }
+
+  const DAY = 86400000;
+  let detectedVisits = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const gap = (Date.parse(dates[i]) - Date.parse(dates[i - 1])) / DAY;
+    if (gap > VISIT_GAP_DAYS) detectedVisits++;
+  }
+  const lastVisit = dates[dates.length - 1];
+  const daysSinceLast = Math.floor((Date.now() - Date.parse(lastVisit)) / DAY);
+
+  return {
+    visits: detectedVisits + priorVisits,
+    detectedVisits,
+    priorVisits,
+    totalDays: dates.length,
+    firstVisit: dates[0],
+    lastVisit,
+    daysSinceLast,
+  };
+}
+
+// Coordinator/admin sets the pre-app visit count for a student.
+export async function setStudentPriorVisits(studentId: string, priorVisits: number): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const n = Math.max(0, Math.min(99, Math.round(priorVisits || 0)));
+  const { error } = await admin.from('students').update({ prior_visits: n }).eq('id', studentId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/students/${studentId}`);
+  return { ok: true };
+}
 
 // ═══════════════════════════════════════
 // TYPES
