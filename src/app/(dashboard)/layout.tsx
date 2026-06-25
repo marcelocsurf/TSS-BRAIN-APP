@@ -137,9 +137,16 @@ export default async function DashboardLayout({
                 alt={academyName || 'Academy'}
                 className="max-h-14 w-auto object-contain"
               />
-              <p className="text-[9px] text-white/40 mt-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
-                Lineage · The Surf Sequence
-              </p>
+              {/* The Surf Sequence lineage logo — always present. */}
+              <div className="flex items-center gap-1.5 mt-2.5">
+                <span className="text-[8px] text-white/35 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Lineage</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/tss-logo-white.png?v=2"
+                  alt="The Surf Sequence"
+                  className="h-4 w-auto object-contain opacity-70"
+                />
+              </div>
             </div>
           ) : (
             <Image
@@ -182,12 +189,22 @@ export default async function DashboardLayout({
         <div className="h-[2px] bg-[var(--tss-cyan)] w-full" />
         <div className="px-4 py-3 flex items-center justify-between">
           {academyLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={academyLogoUrl}
-              alt={academyName || 'Academy'}
-              className="max-h-9 w-auto object-contain"
-            />
+            <div className="flex items-center gap-2 min-w-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={academyLogoUrl}
+                alt={academyName || 'Academy'}
+                className="max-h-9 w-auto object-contain shrink-0"
+              />
+              <span className="h-5 w-px bg-white/20 shrink-0" />
+              {/* The Surf Sequence lineage logo — always present. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/tss-logo-white.png?v=2"
+                alt="The Surf Sequence"
+                className="h-4 w-auto object-contain opacity-70 shrink-0"
+              />
+            </div>
           ) : (
             <Image
               src="/tss-logo-white.png?v=2"

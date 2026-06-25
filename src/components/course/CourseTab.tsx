@@ -188,18 +188,12 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* PRE-COURSE — 8 sections */}
       {pcSections.length > 0 && (
         <div className="space-y-3">
-          <div className="px-2">
-            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              <BookOpen size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-              Pre-Course
-              <span className="text-[11px] font-normal text-gray-500">
-                · 8 sections · {preCourseLessons.length} units
-              </span>
-            </h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              Doctrinal foundations every student must know before entering the water
-            </p>
-          </div>
+          <GroupHeader
+            Icon={BookOpen}
+            eyebrow={`8 sections · ${preCourseLessons.length} units`}
+            title="Pre-Course"
+            subtitle="Doctrinal foundations every student must know before entering the water"
+          />
 
           {pcSections.map((section) => (
             <SectionBlock
@@ -218,18 +212,12 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* SHARED ONBOARDING (e.g. WB onboarding shown to YB students) */}
       {sharedOnboardingLessons.length > 0 && (
         <div className="space-y-3 pt-2">
-          <div className="px-2">
-            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              <CheckCircle2 size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-              Prerequisites from White Belt
-              <span className="text-[11px] font-normal text-gray-500">
-                · already completed if you came through WB
-              </span>
-            </h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              The 6 White Belt onboarding concepts carry over to Yellow Belt. If you finished them at WB they're already ✓ Completed; if you came in direct you can do them now.
-            </p>
-          </div>
+          <GroupHeader
+            Icon={CheckCircle2}
+            eyebrow="Shared · already done if you came through WB"
+            title="Prerequisites from White Belt"
+            subtitle="The 6 White Belt onboarding concepts carry over to Yellow Belt. If you finished them at WB they're already ✓ Completed; if you came in direct you can do them now."
+          />
 
           <SectionBlock
             title="White Belt Onboarding (carried over)"
@@ -247,18 +235,12 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* ONBOARDING — Module 1, single block */}
       {onboardingLessons.length > 0 && (
         <div className="space-y-3 pt-2">
-          <div className="px-2">
-            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              <Compass size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-              {beltLabelShort} Onboarding
-              <span className="text-[11px] font-normal text-gray-500">
-                · Module 1 · {onboardingLessons.length} items
-              </span>
-            </h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              Conceptual scaffolding before the sequences.
-            </p>
-          </div>
+          <GroupHeader
+            Icon={Compass}
+            eyebrow={`Module 1 · ${onboardingLessons.length} items`}
+            title={`${beltLabelShort} Onboarding`}
+            subtitle="Conceptual scaffolding before the sequences."
+          />
 
           <SectionBlock
             title={`${beltLabelShort} Onboarding`}
@@ -276,18 +258,12 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* BELT — cumulative sequences */}
       {beltSequences.length > 0 && (
         <div className="space-y-3 pt-2">
-          <div className="px-2">
-            <h3 className="text-base font-bold text-[var(--tss-navy)] flex items-center gap-2">
-              <Award size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-              {beltLabelShort}
-              <span className="text-[11px] font-normal text-gray-500">
-                · {beltSequences.length} sequences
-              </span>
-            </h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              <strong>Cumulative</strong> — each sequence builds on all previous.
-            </p>
-          </div>
+          <GroupHeader
+            Icon={Award}
+            eyebrow={`${beltSequences.length} sequences · cumulative`}
+            title={beltLabelShort}
+            subtitle="Cumulative — each sequence builds on all previous."
+          />
 
           {beltSequences.map((sequence) => {
             const SeqIcon = WB_SEQUENCE_ICON[sequence.id] || BookOpen;
@@ -378,6 +354,41 @@ function groupByWbSequence(lessons: LessonRow[]) {
           (b.sequence_step_order || b.display_order || 0)
       ),
     }));
+}
+
+// ─── Group Header (reads on the dark student dashboard) ───
+// Cyan eyebrow + soft-gray title + cyan icon, matching the student home line.
+function GroupHeader({
+  Icon,
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  Icon: LucideIcon;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+}) {
+  return (
+    <div className="px-2">
+      {eyebrow && (
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span className="inline-block w-5 h-0.5 bg-[var(--tss-cyan)]" />
+          <span
+            className="text-[10px] tracking-[0.14em] uppercase text-[var(--tss-cyan)] font-medium"
+            style={{ fontFamily: 'DM Mono, monospace' }}
+          >
+            {eyebrow}
+          </span>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <Icon size={20} strokeWidth={1.75} className="text-[var(--tss-cyan)] flex-shrink-0" />
+        <h3 className="text-lg font-bold text-gray-200">{title}</h3>
+      </div>
+      {subtitle && <p className="text-[11px] text-gray-400 mt-1">{subtitle}</p>}
+    </div>
+  );
 }
 
 // ─── Section/Chapter Block ───

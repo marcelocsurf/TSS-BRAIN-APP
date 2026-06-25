@@ -322,30 +322,35 @@ export function PortalTabs({
 
   return (
     <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
-      {/* Header — themed by academy. Logo locked to a single size so the
-          hero feels solid no matter which academy is loaded. */}
-      <div style={{ background: brand.primary }} className="px-4 py-6 text-center relative">
-        <div className="absolute top-2 right-2">
+      {/* Header — themed by academy. Slim band: academy logo + tagline on the
+          left, The Surf Sequence lineage logo on the right (shown on every
+          screen), logout tucked in the corner. */}
+      <div style={{ background: brand.primary }} className="px-4 py-3 relative">
+        <div className="absolute top-1.5 right-1.5">
           <LogoutButton portalToken={data.token} />
         </div>
-        {brand.logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
+        <div className="flex items-center justify-between gap-3 pr-6">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {brand.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brand.logoUrl}
+                alt={brand.name}
+                className="h-8 object-contain shrink-0"
+              />
+            )}
+            <p style={{ color: brand.accent }} className="tss-tagline text-xs truncate">
+              {brand.tagline}
+            </p>
+          </div>
+          {/* The Surf Sequence lineage logo — always present. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={brand.logoUrl}
-            alt={brand.name}
-            className="h-12 mx-auto mb-2 object-contain"
+            src="/tss-logo-white.png?v=2"
+            alt="The Surf Sequence"
+            className="h-5 object-contain opacity-90 shrink-0"
           />
-        )}
-        <p style={{ color: brand.accent }} className="tss-tagline text-sm">
-          {brand.tagline}
-        </p>
-        {/* The Surf Sequence lineage logo — shown on every screen. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/tss-logo-white.png?v=2"
-          alt="The Surf Sequence"
-          className="h-6 mx-auto mt-3 object-contain opacity-80"
-        />
+        </div>
       </div>
 
       {/* Tab Content */}
