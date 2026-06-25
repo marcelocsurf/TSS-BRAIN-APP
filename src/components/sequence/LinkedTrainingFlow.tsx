@@ -569,40 +569,61 @@ export function LinkedTrainingFlow({
           subtitle="Review the full session before you go practice."
         />
 
-        <div className="bg-white border-2 border-[var(--tss-navy)]/30 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 bg-[var(--tss-navy)] text-white text-xs uppercase tracking-wider font-bold">
-            Session Plan
+        <div className="space-y-3">
+          {/* Hero — the mission/drill is the headline */}
+          <div className="bg-[var(--tss-navy)] rounded-xl p-4 text-white">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--tss-cyan)] font-bold mb-1">
+              Today's {drill.type === 'drill' ? 'drill' : 'mission'}
+            </div>
+            <p className="text-lg font-bold leading-snug">{drill.title}</p>
+            <div className="flex gap-2 mt-3">
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-white/12 rounded-full px-3 py-1">
+                <Clock size={12} strokeWidth={2} /> {plannedDuration} min
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-white/12 rounded-full px-3 py-1">
+                <Repeat size={12} strokeWidth={2} /> {plannedReps} reps
+              </span>
+            </div>
           </div>
 
-          <div className="p-4 space-y-3">
-            <PlanRow icon={<MapPin size={16} strokeWidth={1.75} />} label="Venue" value={venueLabel} />
-            {isBeach && (
-              <div className="ml-7 space-y-1 text-[11px] text-gray-500">
-                {waveLabel && <div>Waves: {waveLabel}</div>}
-                {windLabel && <div>Wind: {windLabel}</div>}
-                {tideLabel && <div>Tide: {tideLabel}</div>}
-                {crowdLabel && <div>Crowd: {crowdLabel}</div>}
-                {safetyCheck && (
-                  <div className="flex items-center gap-1 text-green-700">
-                    <Check size={12} strokeWidth={2} /> Safety zone identified
-                  </div>
-                )}
+          {/* Details — clean scannable rows */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3.5">
+            <div className="flex items-start gap-3">
+              <MapPin size={17} strokeWidth={1.75} className="flex-shrink-0 text-gray-400 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Venue</div>
+                <div className="text-sm text-[var(--tss-navy)]">
+                  {[venueLabel, isBeach && waveLabel, isBeach && tideLabel && `${tideLabel} tide`].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+            </div>
+            {isBeach && safetyCheck && (
+              <div className="flex items-start gap-3">
+                <Check size={17} strokeWidth={2} className="flex-shrink-0 text-green-600 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Safety</div>
+                  <div className="text-sm text-green-700">Safe zone identified</div>
+                </div>
               </div>
             )}
-            <PlanRow icon={<Dumbbell size={16} strokeWidth={1.75} />} label="Warm-up" value={warmUpLabel || '—'} />
-            <PlanRow
-              icon={drill.type === 'drill'
-                ? <Dumbbell size={16} strokeWidth={1.75} />
-                : <Waves size={16} strokeWidth={1.75} />}
-              label={drill.type === 'drill' ? 'Drill' : 'Mission'}
-              value={drill.title}
-              accent={drill.type === 'drill' ? 'amber' : 'blue'}
-            />
-            <PlanRow icon={<Clock size={16} strokeWidth={1.75} />} label="Time" value={`${plannedDuration} min`} />
-            <PlanRow icon={<Repeat size={16} strokeWidth={1.75} />} label="Reps" value={`${plannedReps}`} />
-            <PlanRow icon={<Brain size={16} strokeWidth={1.75} />} label="Mental Hack" value={mentalLabel || '—'} />
+            {warmUpLabel && (
+              <div className="flex items-start gap-3">
+                <Dumbbell size={17} strokeWidth={1.75} className="flex-shrink-0 text-gray-400 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Warm-up</div>
+                  <div className="text-sm text-[var(--tss-navy)]">{warmUpLabel}</div>
+                </div>
+              </div>
+            )}
+            <div className="flex items-start gap-3">
+              <Brain size={17} strokeWidth={1.75} className="flex-shrink-0 text-gray-400 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Mental hack</div>
+                <div className="text-sm text-[var(--tss-navy)]">{mentalLabel || '—'}</div>
+              </div>
+            </div>
             {intention && (
-              <div className="bg-amber-50 border border-amber-200 rounded p-2">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
                 <div className="text-[9px] uppercase font-bold text-amber-700 tracking-wider">
                   Specific objective(s)
                 </div>
@@ -983,10 +1004,10 @@ function FlowShell({
   const totalPlanSteps = 5; // venue → warmup → intent → mental → review
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: '#161A26' }}>
       <Banner drill={drill} onCancel={onCancel} />
 
-      {/* Progress dots */}
+      {/* Progress bar — segments fill in cyan as you advance */}
       {phase !== 'in_progress' && phase !== 'evaluation' && phase !== 'done' && (
         <div className="flex items-center justify-center gap-1.5 px-2">
           {Array.from({ length: totalPlanSteps }).map((_, i) => (
@@ -994,10 +1015,10 @@ function FlowShell({
               key={i}
               className={`h-1.5 rounded-full transition-all ${
                 i < stepIndex
-                  ? 'w-6 bg-[var(--tss-navy)]'
+                  ? 'w-6 bg-[var(--tss-cyan)]'
                   : i === stepIndex
-                  ? 'w-10 bg-[var(--tss-navy)]'
-                  : 'w-6 bg-gray-200'
+                  ? 'w-10 bg-[var(--tss-cyan)]'
+                  : 'w-6 bg-white/15'
               }`}
             />
           ))}
@@ -1022,11 +1043,11 @@ function PhaseHeader({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">
+      <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--tss-cyan)] font-bold mb-1">
         Step {step}
       </div>
-      <h3 className="font-bold text-base">{title}</h3>
-      <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+      <h3 className="font-bold text-lg text-[var(--tss-navy)]">{title}</h3>
+      <p className="text-[13px] text-gray-500 mt-1">{subtitle}</p>
     </div>
   );
 }
@@ -1047,22 +1068,22 @@ function NavButtons({
   nextEmphasis?: boolean;
 }) {
   return (
-    <div className="flex gap-2 pt-2">
+    <div className="flex gap-2.5 pt-2">
       <button
         onClick={onBack}
-        className="flex-1 py-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        className="flex-1 py-3.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-transform"
       >
         {backLabel}
       </button>
       <button
         onClick={onNext}
         disabled={nextDisabled}
-        className={`flex-[2] py-3 rounded-lg text-sm font-bold transition-colors ${
+        className={`flex-[2] py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] ${
           nextDisabled
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : nextEmphasis
-            ? 'bg-amber-400 text-amber-900 hover:bg-amber-500'
-            : 'bg-[var(--tss-navy)] text-white hover:bg-[var(--tss-navy-dark,#0a1628)]'
+            ? 'bg-[var(--tss-gold,#EAB308)] text-[var(--tss-navy)] hover:opacity-90 shadow-md'
+            : 'bg-[var(--tss-cyan)] text-[var(--tss-navy)] hover:opacity-90'
         }`}
       >
         {nextLabel}
@@ -1083,12 +1104,13 @@ function Pill({
   return (
     <button
       onClick={onClick}
-      className={`py-2 rounded-lg text-xs font-bold transition-colors ${
+      className={`flex items-center justify-center gap-1.5 px-3 py-3 rounded-xl text-sm font-semibold border-[1.5px] transition-colors active:scale-[0.98] ${
         active
-          ? 'bg-[var(--tss-navy)] text-white'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          ? 'bg-[var(--tss-navy)] border-[var(--tss-navy)] text-white'
+          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
       }`}
     >
+      {active && <Check size={14} strokeWidth={2.5} className="flex-shrink-0" />}
       {label}
     </button>
   );
@@ -1121,40 +1143,6 @@ function Picker({
             label={o.label}
           />
         ))}
-      </div>
-    </div>
-  );
-}
-
-function PlanRow({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  accent?: 'amber' | 'blue';
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex-shrink-0 text-gray-500 mt-0.5">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
-          {label}
-        </div>
-        <div
-          className={`text-sm font-medium ${
-            accent === 'amber'
-              ? 'text-amber-900'
-              : accent === 'blue'
-              ? 'text-blue-900'
-              : 'text-gray-800'
-          }`}
-        >
-          {value}
-        </div>
       </div>
     </div>
   );
