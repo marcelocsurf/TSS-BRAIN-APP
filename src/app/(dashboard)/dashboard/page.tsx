@@ -487,30 +487,27 @@ async function CoordinatorDashboard() {
       )}
 
       {coordData.activeCamps.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Active Services</h3>
-          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-            {coordData.activeCamps.map((c: any) => {
-              const coachRel = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
-              return (
-                <Link key={c.id} href={`/camps/${c.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-700 truncate">{c.camp_name}</p>
-                    <p className="text-[10px] text-gray-400">
-                      {c.start_date} - {c.end_date}
-                      {coachRel?.display_name ? ` · ${coachRel.display_name}` : ''}
-                    </p>
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${
-                    c.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
-                  }`}>
-                    {c.status}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        <CollapsibleAlert title="Active Services" count={coordData.activeCamps.length} tone="gray">
+          {coordData.activeCamps.map((c: any) => {
+            const coachRel = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
+            return (
+              <Link key={c.id} href={`/camps/${c.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-700 truncate">{c.camp_name}</p>
+                  <p className="text-[10px] text-gray-400">
+                    {c.start_date} - {c.end_date}
+                    {coachRel?.display_name ? ` · ${coachRel.display_name}` : ''}
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${
+                  c.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                }`}>
+                  {c.status}
+                </span>
+              </Link>
+            );
+          })}
+        </CollapsibleAlert>
       )}
     </div>
   );
