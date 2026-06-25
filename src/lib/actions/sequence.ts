@@ -317,6 +317,7 @@ export async function saveLinkedTrainingSession(
     focus_rating?: number;        // 0-3
     mission_completion?: 'yes' | 'partial' | 'no';
     execution_rating?: number;    // 1-5
+    flow_channel?: number;        // 1-5 (1 Bored · 3 Flow · 5 Frustrating)
     criteria_evaluation?: CriterionEvaluation[];
   }
 ) {
@@ -356,6 +357,7 @@ export async function saveLinkedTrainingSession(
       focus_rating: data.focus_rating,
       mission_completion: data.mission_completion,
       execution_rating: data.execution_rating,
+      flow_channel: data.flow_channel ?? null,
       criteria_evaluation: data.criteria_evaluation ?? null,
       completed: true,
     })

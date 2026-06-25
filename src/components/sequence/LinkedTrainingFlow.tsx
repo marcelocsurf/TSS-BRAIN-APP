@@ -108,6 +108,7 @@ export function LinkedTrainingFlow({
   const [criteriaResults, setCriteriaResults] = useState<Record<number, CriterionResult>>({});
   const [focusRating, setFocusRating] = useState<number>(2);
   const [executionRating, setExecutionRating] = useState<number>(0);
+  const [flowChannel, setFlowChannel] = useState<number | null>(null);
   const [notesText, setNotesText] = useState('');
 
   // Load drill on mount
@@ -703,7 +704,7 @@ export function LinkedTrainingFlow({
     const allCriteriaEvaluated =
       successCriteria.length === 0 ||
       successCriteria.every((_, i) => criteriaResults[i] !== undefined);
-    const canSave = allCriteriaEvaluated && executionRating > 0 && !saving;
+    const canSave = allCriteriaEvaluated && executionRating > 0 && flowChannel !== null && !saving;
 
     const handleSave = async () => {
       if (!canSave || !drill) return;
@@ -741,6 +742,7 @@ export function LinkedTrainingFlow({
         focus_rating: focusRating,
         mission_completion,
         execution_rating: executionRating,
+        flow_channel: flowChannel ?? undefined,
         criteria_evaluation,
         notes: notesText || undefined,
       });
@@ -754,17 +756,17 @@ export function LinkedTrainingFlow({
     };
 
     return (
-      <div className="space-y-4 pb-4">
+      <div className="space-y-4 pb-4 rounded-2xl p-3 sm:p-4" style={{ background: '#161A26' }}>
         <Banner drill={drill} onCancel={onClearIncoming} />
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-5">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">
-              Honest Evaluation
+            <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--tss-cyan)] font-bold mb-1">
+              Honest evaluation
             </div>
-            <h3 className="font-bold text-base">How did it go?</h3>
-            <p className="text-xs text-gray-500 mt-1">
-              Honesty here is what makes you progress. Coach validates in person.
+            <h3 className="font-bold text-lg text-[var(--tss-navy)]">How did it go?</h3>
+            <p className="text-[13px] text-gray-500 mt-1">
+              Honesty here is what makes you progress. Your coach validates in person.
             </p>
           </div>
 
@@ -819,25 +821,26 @@ export function LinkedTrainingFlow({
           )}
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
-              <Brain size={14} strokeWidth={1.75} />
-              Focus level during practice (0–3)
+            <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--tss-navy)] mb-2">
+              <Brain size={15} strokeWidth={1.75} className="text-gray-400" />
+              Focus level during practice
             </label>
             <div className="grid grid-cols-4 gap-2">
               {[0, 1, 2, 3].map((n) => {
-                const labels = ['Distracted', 'Some focus', 'Mostly focused', 'Locked in'];
+                const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
+                const sel = focusRating === n;
                 return (
                   <button
                     key={n}
                     onClick={() => setFocusRating(n)}
-                    className={`py-2 rounded text-[10px] font-bold transition-colors flex flex-col items-center gap-0.5 ${
-                      focusRating === n
-                        ? 'bg-[var(--tss-navy)] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    className={`py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 ${
+                      sel
+                        ? 'bg-[var(--tss-navy)] border-[var(--tss-navy)] text-white'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
                   >
-                    <span className="text-base leading-none">{n}</span>
-                    <span className="text-[9px] leading-tight">{labels[n]}</span>
+                    <span className="text-base font-bold leading-none">{n}</span>
+                    <span className={`text-[9px] leading-tight ${sel ? 'opacity-80' : 'text-gray-400'}`}>{labels[n]}</span>
                   </button>
                 );
               })}
@@ -845,9 +848,9 @@ export function LinkedTrainingFlow({
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
-              <Star size={14} strokeWidth={1.75} />
-              Overall execution today (1–5)
+            <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--tss-navy)] mb-1">
+              <Star size={15} strokeWidth={1.75} className="text-gray-400" />
+              Overall execution today
             </label>
             <p className="text-[11px] text-gray-500 mb-2">
               This updates your self-rating in My Sequence.
@@ -855,18 +858,57 @@ export function LinkedTrainingFlow({
             <div className="grid grid-cols-5 gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => {
                 const labels = ["Can't yet", 'Trying', 'Sometimes', 'Consistent', 'Mastery'];
+                const sel = executionRating === n;
                 return (
                   <button
                     key={n}
                     onClick={() => setExecutionRating(n)}
-                    className={`py-2 rounded text-[10px] font-bold transition-colors flex flex-col items-center gap-0.5 ${
-                      executionRating === n
-                        ? 'bg-amber-400 text-amber-900'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    className={`py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 ${
+                      sel
+                        ? 'bg-[var(--tss-gold,#EAB308)] border-[var(--tss-gold,#EAB308)] text-[var(--tss-navy)]'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
                   >
-                    <span className="text-base leading-none">{'★'.repeat(n)}</span>
-                    <span className="text-[8px] leading-tight">{labels[n - 1]}</span>
+                    <span className="text-[13px] leading-none">{'★'.repeat(n)}</span>
+                    <span className={`text-[8px] leading-tight ${sel ? '' : 'text-gray-400'}`}>{labels[n - 1]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Flow Channel — feeds the home yin-yang. Where challenge meets skill. */}
+          <div>
+            <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--tss-navy)] mb-1">
+              <Target size={15} strokeWidth={1.75} className="text-gray-400" />
+              How did the challenge feel?
+            </label>
+            <p className="text-[11px] text-gray-500 mb-2">
+              Flow lives between boredom and frustration. This feeds your Flow Channel at home.
+            </p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[
+                { n: 1, label: 'Bored', emoji: '😴' },
+                { n: 2, label: 'Easy', emoji: '🙂' },
+                { n: 3, label: 'Flow', emoji: '🤙' },
+                { n: 4, label: 'Hard', emoji: '😅' },
+                { n: 5, label: 'Too much', emoji: '😰' },
+              ].map((o) => {
+                const sel = flowChannel === o.n;
+                return (
+                  <button
+                    key={o.n}
+                    onClick={() => setFlowChannel(o.n)}
+                    className={`py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 ${
+                      sel
+                        ? o.n === 3
+                          ? 'bg-[var(--tss-cyan)] border-[var(--tss-cyan)] text-[var(--tss-navy)]'
+                          : 'bg-[var(--tss-navy)] border-[var(--tss-navy)] text-white'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-base leading-none">{o.emoji}</span>
+                    <span className={`text-[8.5px] leading-tight ${sel ? '' : 'text-gray-400'}`}>{o.label}</span>
                   </button>
                 );
               })}
@@ -894,9 +936,9 @@ export function LinkedTrainingFlow({
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className={`w-full py-3 rounded-lg font-bold text-sm transition-colors inline-flex items-center justify-center gap-2 ${
+            className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 ${
               canSave
-                ? 'bg-[var(--tss-navy)] text-white hover:bg-[var(--tss-navy-dark,#0a1628)]'
+                ? 'bg-[var(--tss-cyan)] text-[var(--tss-navy)] hover:opacity-90'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
@@ -905,7 +947,7 @@ export function LinkedTrainingFlow({
             ) : (
               <>
                 <Save size={16} strokeWidth={1.75} />
-                Save &amp; Update My Sequence
+                Save &amp; update My Sequence
               </>
             )}
           </button>
@@ -913,6 +955,8 @@ export function LinkedTrainingFlow({
             <p className="text-[11px] text-gray-400 text-center">
               {executionRating === 0
                 ? 'Pick an overall execution rating to continue'
+                : flowChannel === null
+                ? 'Rate how the challenge felt to continue'
                 : !allCriteriaEvaluated
                 ? 'Evaluate every success criterion to continue'
                 : ''}

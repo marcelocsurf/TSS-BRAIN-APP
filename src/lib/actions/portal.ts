@@ -94,9 +94,10 @@ export async function getStudentPortalData(token: string) {
   // 3 Optimal · 4 Hard · 5 Frustrating). 3 = flow. We surface the average and
   // the "lean": how often sessions skewed too easy (boredom, 1-2) vs too hard
   // (anxiety, 4-5). No invented data — null when the student hasn't rated yet.
-  const flowRatings = (surveys || [])
-    .map((s: any) => s.flow_channel)
-    .filter((n: any): n is number => typeof n === 'number' && n >= 1 && n <= 5);
+  const flowRatings = [
+    ...(surveys || []).map((s: any) => s.flow_channel),
+    ...(selfTrainingSessions || []).map((s: any) => s.flow_channel),
+  ].filter((n: any): n is number => typeof n === 'number' && n >= 1 && n <= 5);
   const flowAvg = flowRatings.length
     ? Math.round((flowRatings.reduce((a: number, b: number) => a + b, 0) / flowRatings.length) * 10) / 10
     : null;
