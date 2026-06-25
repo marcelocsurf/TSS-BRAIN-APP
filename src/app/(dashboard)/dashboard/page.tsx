@@ -15,6 +15,7 @@ import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
+import { CollapsibleAlert } from '@/components/dashboard/CollapsibleAlert';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -436,69 +437,52 @@ async function CoordinatorDashboard() {
       {/* Quick Actions block removed — it duplicated the left-side navigation
           (Students / Coaches / Services) and confused the coordinator view. */}
 
-      {/* ── Student Pipeline — needs action ── */}
-      {coordData.pendingIntake.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Pending Intake ({coordData.pendingIntake.length})</h3>
-          <div className="bg-white rounded-xl border border-amber-100 divide-y divide-gray-50 overflow-hidden">
-            {coordData.pendingIntake.map((s: any) => (
-              <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-amber-50/30 transition-colors">
-                <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
-                <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">No Intake</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Action items — compact, collapsible notification cards ── */}
+      {(coordData.pendingIntake.length > 0 || coordData.noWaiver.length > 0 || coordData.stuckStudents.length > 0) && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Needs attention</h3>
 
-      {coordData.noWaiver.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Missing Waiver ({coordData.noWaiver.length})</h3>
-          <div className="bg-white rounded-xl border border-red-100 divide-y divide-gray-50 overflow-hidden">
-            {coordData.noWaiver.map((s: any) => (
-              <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/30 transition-colors">
-                <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
-                <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-full">No Waiver</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Stuck students — no recent session ── */}
-      {coordData.stuckStudents.length > 0 && (
-        <div>
-          <h3
-            className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider inline-flex items-center gap-1.5"
-            style={{ fontFamily: 'DM Mono, monospace' }}
-          >
-            <AlertTriangle size={14} strokeWidth={1.75} className="text-amber-600" />
-            No session in 30+ days ({coordData.stuckStudentsCount})
-          </h3>
-          <div className="bg-white rounded-xl border border-orange-100 divide-y divide-gray-50 overflow-hidden">
-            {coordData.stuckStudents.map((s: any) => (
-              <Link
-                key={s.id}
-                href={`/students/${s.id}`}
-                className="flex items-center justify-between px-4 py-2.5 hover:bg-orange-50/30 transition-colors"
-              >
-                <div>
+          {coordData.pendingIntake.length > 0 && (
+            <CollapsibleAlert title="Pending Intake" count={coordData.pendingIntake.length} tone="amber">
+              {coordData.pendingIntake.map((s: any) => (
+                <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-amber-50/30 transition-colors">
                   <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
-                  <p className="text-[10px] text-gray-400">
-                    {s.last_session_date
-                      ? `Last session: ${new Date(s.last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                      : 'Never had an in-person session'}
-                  </p>
-                </div>
-                <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full capitalize">
-                  {s.belt_level?.replace('_belt', '') ?? '—'}
-                </span>
-              </Link>
-            ))}
-          </div>
-          <p className="text-[10px] text-gray-400 mt-2 italic">
-            These students haven&apos;t had a coach-led session in over 30 days. Consider following up or re-engaging.
-          </p>
+                  <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">No Intake</span>
+                </Link>
+              ))}
+            </CollapsibleAlert>
+          )}
+
+          {coordData.noWaiver.length > 0 && (
+            <CollapsibleAlert title="Missing Waiver" count={coordData.noWaiver.length} tone="red">
+              {coordData.noWaiver.map((s: any) => (
+                <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/30 transition-colors">
+                  <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
+                  <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-full">No Waiver</span>
+                </Link>
+              ))}
+            </CollapsibleAlert>
+          )}
+
+          {coordData.stuckStudents.length > 0 && (
+            <CollapsibleAlert title="No session in 30+ days" count={coordData.stuckStudentsCount} tone="orange">
+              {coordData.stuckStudents.map((s: any) => (
+                <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-orange-50/30 transition-colors">
+                  <div>
+                    <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
+                    <p className="text-[10px] text-gray-400">
+                      {s.last_session_date
+                        ? `Last session: ${new Date(s.last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : 'Never had an in-person session'}
+                    </p>
+                  </div>
+                  <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full capitalize">
+                    {s.belt_level?.replace('_belt', '') ?? '—'}
+                  </span>
+                </Link>
+              ))}
+            </CollapsibleAlert>
+          )}
         </div>
       )}
 
