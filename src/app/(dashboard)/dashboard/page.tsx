@@ -338,12 +338,17 @@ async function AdminDashboard() {
     return null;
   }
 
+  // The admin's own academy — so the inventory tool is reachable from here too.
+  const adminMe = await getCurrentCoach();
+  const adminAcademyId = adminMe?.academy_id ?? null;
+
   return (
     <div className="space-y-6">
       {/* Tools — quick client-only utilities (lazy-loaded) */}
       <div className="grid sm:grid-cols-2 gap-3">
         <VideoAnalyzerLauncher variant="card" />
         <BoardSelectorLauncher variant="card" />
+        {adminAcademyId && <BoardInventoryLauncher academyId={adminAcademyId} variant="card" />}
       </div>
 
       {/* System Stats */}
