@@ -149,6 +149,11 @@ export function CourseTab({ data }: { data: CourseData }) {
     : activeCourse.key === 'blue_belt' ? 'Blue Belt'
     : 'White Belt';
 
+  // Color themes: Pre-Course is its own (teal); the rest follow the active belt.
+  const preTheme = BELT_THEMES.pre;
+  const whiteTheme = BELT_THEMES.white;
+  const beltTheme = BELT_THEMES[beltLevelForCourse(activeCourse.key)];
+
   const overallPercent =
     data.totalLessons > 0
       ? Math.round((data.totalCompleted / data.totalLessons) * 100)
@@ -189,7 +194,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       {pcSections.length > 0 && (
         <div className="space-y-3">
           <GroupHeader
-            Icon={BookOpen}
+            theme={preTheme}
             eyebrow={`8 sections · ${preCourseLessons.length} units`}
             title="Pre-Course"
             subtitle="Doctrinal foundations every student must know before entering the water"
@@ -204,6 +209,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               badge={`Section ${section.id}`}
               lessons={section.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
+              theme={preTheme}
             />
           ))}
         </div>
@@ -213,7 +219,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       {sharedOnboardingLessons.length > 0 && (
         <div className="space-y-3 pt-2">
           <GroupHeader
-            Icon={CheckCircle2}
+            theme={whiteTheme}
             eyebrow="Shared · already done if you came through WB"
             title="Prerequisites from White Belt"
             subtitle="The 6 White Belt onboarding concepts carry over to Yellow Belt. If you finished them at WB they're already ✓ Completed; if you came in direct you can do them now."
@@ -228,6 +234,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               (a, b) => (a.display_order || 0) - (b.display_order || 0)
             )}
             onOpenLesson={(id) => setOpenLessonId(id)}
+            theme={whiteTheme}
           />
         </div>
       )}
@@ -236,7 +243,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       {onboardingLessons.length > 0 && (
         <div className="space-y-3 pt-2">
           <GroupHeader
-            Icon={Compass}
+            theme={beltTheme}
             eyebrow={`Module 1 · ${onboardingLessons.length} items`}
             title={`${beltLabelShort} Onboarding`}
             subtitle="Conceptual scaffolding before the sequences."
@@ -251,6 +258,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               (a, b) => (a.display_order || 0) - (b.display_order || 0)
             )}
             onOpenLesson={(id) => setOpenLessonId(id)}
+            theme={beltTheme}
           />
         </div>
       )}
@@ -259,7 +267,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       {beltSequences.length > 0 && (
         <div className="space-y-3 pt-2">
           <GroupHeader
-            Icon={Award}
+            theme={beltTheme}
             eyebrow={`${beltSequences.length} sequences · cumulative`}
             title={beltLabelShort}
             subtitle="Cumulative — each sequence builds on all previous."
@@ -278,6 +286,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                 badge={cumulative ? `${cumulative}/25 cumulative` : null}
                 lessons={sequence.lessons}
                 onOpenLesson={(id) => setOpenLessonId(id)}
+                theme={beltTheme}
               />
             );
           })}
@@ -356,37 +365,69 @@ function groupByWbSequence(lessons: LessonRow[]) {
     }));
 }
 
+// ─── Belt color themes ───
+// Each content level gets a color so headers/cards read at a glance on the
+// dark student dashboard. White uses a pearl gray (pure white is invisible on
+// white cards); Pre-Course gets a cool teal so it reads as foundational, not a
+// belt. `accent` = solid line/border, `bright` = pops on the dark bg (rings +
+// eyebrow), `tint` = soft card-header wash, `ink` = readable text on the tint.
+type BeltLevel = 'pre' | 'white' | 'yellow' | 'blue';
+interface BeltTheme { accent: string; bright: string; tint: string; ink: string }
+const BELT_THEMES: Record<BeltLevel, BeltTheme> = {
+  pre:    { accent: '#0EA5A4', bright: '#2DD4BF', tint: '#F0FDFA', ink: '#0F766E' },
+  white:  { accent: '#94A3B8', bright: '#CBD5E1', tint: '#F8FAFC', ink: '#475569' },
+  yellow: { accent: '#EAB308', bright: '#FACC15', tint: '#FEFCE8', ink: '#A16207' },
+  blue:   { accent: '#3B82F6', bright: '#60A5FA', tint: '#EFF6FF', ink: '#1D4ED8' },
+};
+
+function beltLevelForCourse(key: CourseKey): BeltLevel {
+  return key === 'yellow_belt' ? 'yellow' : key === 'blue_belt' ? 'blue' : 'white';
+}
+
+// Concentric rings — the spiral/golden-ratio motif, tinted per belt.
+function ConcentricRings({ color, size = 26 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} aria-hidden="true" className="flex-shrink-0">
+      <circle cx="12" cy="12" r="10" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="6.2" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="2.6" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
 // ─── Group Header (reads on the dark student dashboard) ───
-// Cyan eyebrow + soft-gray title + cyan icon, matching the student home line.
+// Belt-colored rings + eyebrow + left accent, soft-gray title.
 function GroupHeader({
-  Icon,
+  theme,
   eyebrow,
   title,
   subtitle,
 }: {
-  Icon: LucideIcon;
+  theme: BeltTheme;
   eyebrow: string | null;
   title: string;
   subtitle: string | null;
 }) {
   return (
     <div className="px-2">
-      {eyebrow && (
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <span className="inline-block w-5 h-0.5 bg-[var(--tss-cyan)]" />
-          <span
-            className="text-[10px] tracking-[0.14em] uppercase text-[var(--tss-cyan)] font-medium"
-            style={{ fontFamily: 'DM Mono, monospace' }}
-          >
-            {eyebrow}
-          </span>
+      <div className="pl-3 border-l-4" style={{ borderColor: theme.accent }}>
+        {eyebrow && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="inline-block w-4 h-0.5" style={{ background: theme.accent }} />
+            <span
+              className="text-[10px] tracking-[0.14em] uppercase font-medium"
+              style={{ color: theme.bright, fontFamily: 'DM Mono, monospace' }}
+            >
+              {eyebrow}
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-2.5">
+          <ConcentricRings color={theme.bright} />
+          <h3 className="text-lg font-bold text-gray-200">{title}</h3>
         </div>
-      )}
-      <div className="flex items-center gap-2">
-        <Icon size={20} strokeWidth={1.75} className="text-[var(--tss-cyan)] flex-shrink-0" />
-        <h3 className="text-lg font-bold text-gray-200">{title}</h3>
+        {subtitle && <p className="text-[11px] text-gray-400 mt-1">{subtitle}</p>}
       </div>
-      {subtitle && <p className="text-[11px] text-gray-400 mt-1">{subtitle}</p>}
     </div>
   );
 }
@@ -400,6 +441,7 @@ function SectionBlock({
   badge,
   lessons,
   onOpenLesson,
+  theme,
 }: {
   title: string;
   subtitle: string | null;
@@ -407,6 +449,7 @@ function SectionBlock({
   badge: string | null;
   lessons: LessonRow[];
   onOpenLesson: (id: string) => void;
+  theme?: BeltTheme;
 }) {
   // Only count PRODUCTIZED items toward progress (PROPOSED can't be completed)
   const productized = lessons.filter((l) => l.status_v1 !== 'PROPOSED');
@@ -416,12 +459,18 @@ function SectionBlock({
   const proposedCount = lessons.length - productized.length;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+    <div
+      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+      style={theme ? { borderLeft: `4px solid ${theme.accent}` } : undefined}
+    >
+      <div
+        className="px-4 py-3 border-b border-gray-200"
+        style={{ background: theme ? theme.tint : '#f9fafb' }}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-sm flex items-center gap-2">
-              <Icon size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)] flex-shrink-0" />
+              <Icon size={16} strokeWidth={1.75} className="flex-shrink-0" style={{ color: theme ? theme.ink : 'var(--tss-cyan)' }} />
               <span className="truncate">{title}</span>
               {badge && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-mono flex-shrink-0">
@@ -434,7 +483,7 @@ function SectionBlock({
             )}
           </div>
           <div className="text-right flex-shrink-0">
-            <div className="text-xs font-bold text-[var(--tss-navy)]">{sectionPercent}%</div>
+            <div className="text-xs font-bold" style={{ color: theme ? theme.ink : 'var(--tss-navy)' }}>{sectionPercent}%</div>
             <div className="text-[10px] text-gray-400">
               {completed}/{productized.length}
               {proposedCount > 0 && (
