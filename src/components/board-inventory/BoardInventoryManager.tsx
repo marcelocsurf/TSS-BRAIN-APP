@@ -4,9 +4,17 @@ import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   listBoards, createBoard, updateBoard, deleteBoard,
-  listRentals, createRental, returnRental, cancelRental, getRentalIdUrl,
+  listRentals, createRental, returnRental, cancelRental, getRentalIdUrl, getRentalSignatureUrl,
   type Board, type BoardStatus, type Rental,
 } from '@/lib/actions/boards';
+import { SignaturePad } from './SignaturePad';
+
+// Default board-rental liability waiver. Editable later by the academy.
+const DEFAULT_WAIVER = `BOARD RENTAL AGREEMENT & LIABILITY WAIVER
+
+I confirm that I am renting this surfboard at my own risk. I am responsible for returning it in the same condition. I accept full responsibility for any loss, theft, or damage to the board while in my possession, and authorize the academy to retain my deposit toward repair or replacement costs if the board is returned damaged, broken, or not returned.
+
+I acknowledge that surfing is a hazardous activity and release the academy, its staff and owners from any liability for injury, accident, or loss arising from my use of this equipment.`;
 
 const TYPE_OPTIONS = [
   { value: 'soft', label: 'Soft top' },
@@ -273,33 +281,41 @@ function RentalsTab({
   const [notes, setNotes] = useState('');
   const [docFile, setDocFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [sigBlob, setSigBlob] = useState<Blob | null>(null);
+  const [returnTarget, setReturnTarget] = useState<Rental | null>(null);
 
   const active = rentals.filter((r) => r.status === 'active' || r.status === 'overdue');
   const past = rentals.filter((r) => r.status === 'returned' || r.status === 'cancelled');
 
   const resetForm = () => {
     setBoardId(''); setName(''); setPhone(''); setEmail(''); setDocType('passport');
-    setDays('1'); setPrice(''); setDeposit(''); setNotes(''); setDocFile(null); setCreating(false);
+    setDays('1'); setPrice(''); setDeposit(''); setNotes(''); setDocFile(null); setSigBlob(null); setCreating(false);
   };
 
   const submit = () => {
     setError('');
     if (!boardId) { setError('Pick a board to rent.'); return; }
     if (!name.trim()) { setError('Enter the renter name.'); return; }
+    if (!sigBlob) { setError('The renter must sign the waiver before renting.'); return; }
     startTransition(async () => {
       try {
+        const supabase = createClient();
+        setUploading(true);
         // Upload the ID document (if any) to the PRIVATE bucket from the browser.
         let id_doc_path: string | null = null;
         if (docFile) {
-          setUploading(true);
-          const supabase = createClient();
           const ext = docFile.name.split('.').pop() || 'jpg';
           const path = `${academyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
           const { error: upErr } = await supabase.storage.from('rental-ids').upload(path, docFile, { upsert: false });
-          setUploading(false);
-          if (upErr) throw new Error(`Could not upload the ID photo: ${upErr.message}`);
+          if (upErr) { setUploading(false); throw new Error(`Could not upload the ID photo: ${upErr.message}`); }
           id_doc_path = path;
         }
+        // Upload the signed waiver signature (required) to the PRIVATE bucket.
+        const sigPath = `${academyId}/sig-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+        const { error: sigErr } = await supabase.storage.from('rental-ids').upload(sigPath, sigBlob, { upsert: false, contentType: 'image/png' });
+        setUploading(false);
+        if (sigErr) throw new Error(`Could not save the signature: ${sigErr.message}`);
+
         const n = parseInt(days, 10) || 1;
         const start = new Date();
         const expected = new Date(start.getTime() + n * 86400000);
@@ -315,6 +331,8 @@ function RentalsTab({
           price_total: price ? parseFloat(price) : null,
           deposit: deposit ? parseFloat(deposit) : null,
           notes,
+          signature_path: sigPath,
+          waiver_text: DEFAULT_WAIVER,
         });
         resetForm();
         await reload();
@@ -322,9 +340,9 @@ function RentalsTab({
     });
   };
 
-  const doReturn = (id: string) => {
+  const doReturn = (rental: Rental, condition: { return_condition: 'good' | 'repair' | 'totaled'; damage_type?: string; damage_notes?: string }) => {
     startTransition(async () => {
-      try { await returnRental(id); await reload(); }
+      try { await returnRental(rental.id, condition); setReturnTarget(null); await reload(); }
       catch (e: any) { setError(e.message || 'Could not return.'); }
     });
   };
@@ -341,6 +359,13 @@ function RentalsTab({
       if (url) window.open(url, '_blank', 'noopener');
       else setError('No ID document on file for this rental.');
     } catch (e: any) { setError(e.message || 'Could not open the ID document.'); }
+  };
+  const viewSig = async (id: string) => {
+    try {
+      const url = await getRentalSignatureUrl(id);
+      if (url) window.open(url, '_blank', 'noopener');
+      else setError('No signed waiver on file for this rental.');
+    } catch (e: any) { setError(e.message || 'Could not open the waiver.'); }
   };
 
   return (
@@ -388,7 +413,18 @@ function RentalsTab({
             </Mini>
           </div>
           <Mini label="Notes"><input value={notes} onChange={(e) => setNotes(e.target.value)} className={inpCls} /></Mini>
-          <p className="text-[10px] text-white/40">The ID photo is stored privately and only visible to academy staff via a temporary link.</p>
+          <p className="text-[10px] text-white/40">The ID photo is stored privately and deleted automatically when the board is returned.</p>
+
+          {/* Waiver + on-screen signature (required) */}
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
+            <p className="text-[9px] uppercase tracking-wider text-white/40 font-mono">Rental waiver</p>
+            <div className="max-h-28 overflow-y-auto text-[10px] leading-relaxed text-white/60 whitespace-pre-line border border-white/5 rounded p-2 bg-black/20">
+              {DEFAULT_WAIVER}
+            </div>
+            <p className="text-[10px] text-white/50">The renter signs below to accept the agreement:</p>
+            <SignaturePad onChange={setSigBlob} />
+          </div>
+
           <div className="flex gap-2">
             <button onClick={resetForm} className="flex-1 py-2 border border-white/15 text-sm rounded-lg">Cancel</button>
             <button onClick={submit} disabled={pending || uploading} className="flex-1 py-2 bg-white text-[var(--tss-navy)] text-sm font-semibold rounded-lg disabled:opacity-50">
@@ -402,7 +438,7 @@ function RentalsTab({
         <div>
           <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1.5">Active ({active.length})</p>
           <ul className="space-y-2">
-            {active.map((r) => <RentalRow key={r.id} r={r} onReturn={doReturn} onCancel={doCancel} onViewId={viewId} />)}
+            {active.map((r) => <RentalRow key={r.id} r={r} onReturn={setReturnTarget} onCancel={doCancel} onViewId={viewId} onViewSig={viewSig} />)}
           </ul>
         </div>
       )}
@@ -411,7 +447,7 @@ function RentalsTab({
         <div>
           <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1.5">History</p>
           <ul className="space-y-2">
-            {past.slice(0, 30).map((r) => <RentalRow key={r.id} r={r} onViewId={viewId} />)}
+            {past.slice(0, 30).map((r) => <RentalRow key={r.id} r={r} onViewId={viewId} onViewSig={viewSig} />)}
           </ul>
         </div>
       )}
@@ -419,17 +455,107 @@ function RentalsTab({
       {active.length === 0 && past.length === 0 && (
         <p className="text-sm text-white/40 italic">No rentals yet.</p>
       )}
+
+      {returnTarget && (
+        <ReturnDialog
+          rental={returnTarget}
+          pending={pending}
+          onClose={() => setReturnTarget(null)}
+          onConfirm={(cond) => doReturn(returnTarget, cond)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Return-a-board dialog: capture the board's condition + damage on return.
+function ReturnDialog({
+  rental, pending, onClose, onConfirm,
+}: {
+  rental: Rental;
+  pending: boolean;
+  onClose: () => void;
+  onConfirm: (cond: { return_condition: 'good' | 'repair' | 'totaled'; damage_type?: string; damage_notes?: string }) => void;
+}) {
+  const [condition, setCondition] = useState<'good' | 'repair' | 'totaled'>('good');
+  const [damageType, setDamageType] = useState('ding');
+  const [damageNotes, setDamageNotes] = useState('');
+  const damaged = condition !== 'good';
+
+  const OPTS: { v: 'good' | 'repair' | 'totaled'; label: string; hint: string }[] = [
+    { v: 'good', label: '✅ Good', hint: 'Back in service' },
+    { v: 'repair', label: '🔧 Damaged', hint: 'Out for repair' },
+    { v: 'totaled', label: '💀 Totaled', hint: 'Broken / retired' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl bg-[#0F1E33] border border-white/10 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div>
+          <p className="text-sm font-semibold text-white">Return {rental.board_code}</p>
+          <p className="text-[11px] text-white/50">{rental.renter_name}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {OPTS.map((o) => (
+            <button
+              key={o.v}
+              onClick={() => setCondition(o.v)}
+              className={`rounded-lg p-2 text-center border transition-colors ${
+                condition === o.v ? 'bg-white text-[var(--tss-navy)] border-white' : 'border-white/15 text-white/70 hover:border-white/40'
+              }`}
+            >
+              <span className="block text-[12px] font-semibold">{o.label}</span>
+              <span className="block text-[9px] opacity-70 mt-0.5">{o.hint}</span>
+            </button>
+          ))}
+        </div>
+
+        {damaged && (
+          <div className="space-y-2">
+            <Mini label="Damage type">
+              <select value={damageType} onChange={(e) => setDamageType(e.target.value)} className={selCls}>
+                <option value="ding">Ding / small hit</option>
+                <option value="nose">Broken nose</option>
+                <option value="tail">Broken tail</option>
+                <option value="snap">Snapped in half</option>
+                <option value="fin">Fin / fin box</option>
+                <option value="leash">Leash / plug</option>
+                <option value="other">Other</option>
+              </select>
+            </Mini>
+            <Mini label="Describe the damage">
+              <textarea value={damageNotes} onChange={(e) => setDamageNotes(e.target.value)} rows={3} placeholder="What happened, where, severity…" className={`${inpCls} resize-none`} />
+            </Mini>
+            <p className="text-[10px] text-white/40">
+              {condition === 'repair' ? 'The board will be marked In repair and leave the available pool.' : 'The board will be Retired and removed from rotation.'}
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <button onClick={onClose} className="flex-1 py-2 border border-white/15 text-sm rounded-lg text-white">Cancel</button>
+          <button
+            onClick={() => onConfirm({ return_condition: condition, damage_type: damaged ? damageType : undefined, damage_notes: damaged ? damageNotes : undefined })}
+            disabled={pending}
+            className="flex-1 py-2 bg-white text-[var(--tss-navy)] text-sm font-semibold rounded-lg disabled:opacity-50"
+          >
+            {pending ? 'Saving…' : 'Confirm return'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 function RentalRow({
-  r, onReturn, onCancel, onViewId,
+  r, onReturn, onCancel, onViewId, onViewSig,
 }: {
   r: Rental;
-  onReturn?: (id: string) => void;
+  onReturn?: (r: Rental) => void;
   onCancel?: (id: string) => void;
   onViewId: (id: string) => void;
+  onViewSig: (id: string) => void;
 }) {
   const isActive = r.status === 'active' || r.status === 'overdue';
   const overdue = isActive && r.expected_return_date && r.expected_return_date < new Date().toISOString().slice(0, 10);
@@ -449,6 +575,12 @@ function RentalRow({
             {r.price_total != null ? ` · ${r.currency || '$'}${r.price_total}` : ''}
             {r.deposit != null ? ` · dep ${r.deposit}` : ''}
           </p>
+          {r.return_condition && r.return_condition !== 'good' && (
+            <p className="text-[11px] text-red-300 mt-0.5">
+              {r.return_condition === 'totaled' ? '💀 Totaled' : '🔧 Damaged'}
+              {r.damage_type ? ` · ${r.damage_type}` : ''}{r.damage_notes ? ` — ${r.damage_notes}` : ''}
+            </p>
+          )}
         </div>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
           overdue ? 'bg-red-50 text-red-600' : isActive ? 'bg-purple-50 text-purple-600' : 'bg-white/10 text-white/50'
@@ -460,8 +592,11 @@ function RentalRow({
         {r.id_doc_path && (
           <button onClick={() => onViewId(r.id)} className="text-[11px] text-[var(--tss-cyan)] hover:underline">View ID</button>
         )}
+        {r.waiver_signed && (
+          <button onClick={() => onViewSig(r.id)} className="text-[11px] text-[var(--tss-cyan)] hover:underline">View waiver</button>
+        )}
         {isActive && onReturn && (
-          <button onClick={() => onReturn(r.id)} className="text-[11px] text-emerald-400 hover:underline">Mark returned</button>
+          <button onClick={() => onReturn(r)} className="text-[11px] text-emerald-400 hover:underline">Mark returned</button>
         )}
         {isActive && onCancel && (
           <button onClick={() => onCancel(r.id)} className="text-[11px] text-white/40 hover:text-red-400">Cancel</button>

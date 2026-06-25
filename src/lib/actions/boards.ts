@@ -26,6 +26,15 @@ export interface Rental {
   status: RentalStatus;
   notes: string | null;
   created_at: string;
+  // Return condition / damage tracking.
+  return_condition: 'good' | 'repair' | 'totaled' | null;
+  damage_type: string | null;
+  damage_notes: string | null;
+  // Signed waiver.
+  waiver_signed: boolean;
+  waiver_signed_at: string | null;
+  signature_path: string | null;
+  waiver_text: string | null;
   // Joined board summary for display.
   board_code?: string | null;
 }
@@ -223,6 +232,8 @@ export async function createRental(input: {
   deposit?: number | null;
   currency?: string | null;
   notes?: string | null;
+  signature_path?: string | null;  // PNG signature already uploaded to the private bucket
+  waiver_text?: string | null;     // the waiver text the renter signed
 }): Promise<Rental> {
   await assertCanManage(input.academy_id);
   const admin = createAdminClient();
@@ -258,6 +269,10 @@ export async function createRental(input: {
       notes: input.notes?.trim() || null,
       created_by: me?.id ?? null,
       status: 'active',
+      signature_path: input.signature_path || null,
+      waiver_text: input.waiver_text || null,
+      waiver_signed: !!input.signature_path,
+      waiver_signed_at: input.signature_path ? new Date().toISOString() : null,
     })
     .select('*')
     .single();
@@ -275,8 +290,12 @@ async function purgeRentalIdDoc(admin: ReturnType<typeof createAdminClient>, pat
   try { await admin.storage.from('rental-ids').remove([path]); } catch { /* non-blocking */ }
 }
 
-// Mark a rental returned, free up the board, and delete the ID photo.
-export async function returnRental(rentalId: string): Promise<void> {
+// Mark a rental returned with the board's condition, free/repair/retire the
+// board accordingly, and delete the ID photo (the signature/waiver is kept).
+export async function returnRental(
+  rentalId: string,
+  condition: { return_condition?: 'good' | 'repair' | 'totaled'; damage_type?: string | null; damage_notes?: string | null } = {},
+): Promise<void> {
   const admin = createAdminClient();
   const { data: rental } = await admin
     .from('board_rentals')
@@ -286,16 +305,29 @@ export async function returnRental(rentalId: string): Promise<void> {
   if (!rental) throw new Error('Rental not found.');
   await assertCanManage(rental.academy_id);
 
+  const cond = condition.return_condition ?? 'good';
+  // good → back in service; repair → out for repair; totaled → retired.
+  const boardStatus: BoardStatus = cond === 'good' ? 'available' : cond === 'repair' ? 'in_repair' : 'retired';
+
   // Privacy: the moment the board comes back, the ID photo is purged.
+  // (The signed waiver/signature is retained as the legal record.)
   await purgeRentalIdDoc(admin, rental.id_doc_path);
 
   await admin
     .from('board_rentals')
-    .update({ status: 'returned', returned_at: new Date().toISOString(), id_doc_path: null, updated_at: new Date().toISOString() })
+    .update({
+      status: 'returned',
+      returned_at: new Date().toISOString(),
+      id_doc_path: null,
+      return_condition: cond,
+      damage_type: cond === 'good' ? null : (condition.damage_type?.trim() || null),
+      damage_notes: cond === 'good' ? null : (condition.damage_notes?.trim() || null),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', rentalId);
   await admin
     .from('boards')
-    .update({ status: 'available', updated_at: new Date().toISOString() })
+    .update({ status: boardStatus, updated_at: new Date().toISOString() })
     .eq('id', rental.board_id);
   revalidatePath('/dashboard');
 }
@@ -334,5 +366,19 @@ export async function getRentalIdUrl(rentalId: string): Promise<string | null> {
   if (!rental?.id_doc_path) return null;
   await assertCanManage(rental.academy_id);
   const { data } = await admin.storage.from('rental-ids').createSignedUrl(rental.id_doc_path, 300);
+  return data?.signedUrl ?? null;
+}
+
+// Short-lived signed URL for viewing the signed waiver signature (private bucket).
+export async function getRentalSignatureUrl(rentalId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data: rental } = await admin
+    .from('board_rentals')
+    .select('academy_id, signature_path')
+    .eq('id', rentalId)
+    .single();
+  if (!rental?.signature_path) return null;
+  await assertCanManage(rental.academy_id);
+  const { data } = await admin.storage.from('rental-ids').createSignedUrl(rental.signature_path, 300);
   return data?.signedUrl ?? null;
 }
