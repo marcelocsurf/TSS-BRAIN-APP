@@ -291,13 +291,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // Only here does the data sync to each student's profile + the survey
   // request go out. Deliberate + confirmed + irreversible.
   const finalize = () => {
-    const unevaluated = students.filter(
-      (s) => s.blocks.length === 0 || s.blocks.some((b) => !b.status),
-    );
+    // Only gradable blocks (sequence steps with a step_id) require a status.
+    // Non-gradable blocks (warm-up, free play, etc.) are just executed.
+    const unevaluated = students.filter((s) => {
+      const gradable = s.blocks.filter((b) => b.step_id);
+      return gradable.length > 0 && gradable.some((b) => !b.status);
+    });
     if (unevaluated.length > 0) {
       if (
         !confirm(
-          `${unevaluated.length} student(s) still have no status. Finalize anyway?`
+          `${unevaluated.length} student(s) still have ungraded sequence steps. Finalize anyway?`
         )
       ) {
         return;
@@ -351,11 +354,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     (d) => d.block_name?.toLowerCase().includes('warm') || d.step_id === 'STP-002'
   );
 
-  // M45 — a student counts as "evaluated" once every block of theirs
-  // has a status set.
-  const evaluatedCount = students.filter(
-    (s) => s.blocks.length > 0 && s.blocks.every((b) => b.status),
-  ).length;
+  // M45 — a student counts as "evaluated" once every GRADABLE block (sequence
+  // step) has a status set. Non-gradable blocks don't require a status.
+  const evaluatedCount = students.filter((s) => {
+    const gradable = s.blocks.filter((b) => b.step_id);
+    return gradable.length > 0 && gradable.every((b) => b.status);
+  }).length;
 
   // When the plan is in_progress the coach can re-open the editable plan
   // view (the plan stays modifiable until finalize).
@@ -2173,7 +2177,8 @@ function StudentEvalCard({
   onShowDrill: (drillId: string) => void;
 }) {
   const blocks = student.blocks;
-  const allEvaluated = blocks.length > 0 && blocks.every((b) => b.status);
+  const gradableBlocks = blocks.filter((b) => b.step_id);
+  const allEvaluated = gradableBlocks.length > 0 && gradableBlocks.every((b) => b.status);
 
   return (
     <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2.5">
@@ -2190,7 +2195,7 @@ function StudentEvalCard({
             </p>
           </div>
         </div>
-        {blocks.length > 0 && (
+        {gradableBlocks.length > 0 && (
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
             style={
@@ -2199,7 +2204,7 @@ function StudentEvalCard({
                 : { background: '#FEF3C7', color: '#92400E' }
             }
           >
-            {blocks.filter((b) => b.status).length} / {blocks.length} evaluated
+            {gradableBlocks.filter((b) => b.status).length} / {gradableBlocks.length} graded
           </span>
         )}
       </div>
@@ -2211,6 +2216,9 @@ function StudentEvalCard({
           per block). Saved on block 0 just like the board fields. */}
       {blocks.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-3">
+          <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[var(--tss-cyan,#5AC3E7)] font-semibold">
+            Session summary — general analysis
+          </p>
           <div>
             <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
               Focus level — how present were they today?
@@ -2384,57 +2392,63 @@ function BlockEvalSection({
         {block.notes_pre && <EvalRow label="Pre-note" value={block.notes_pre} />}
       </div>
 
-      {/* Status buttons */}
-      <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-          Did they hit the objective?
-        </label>
-        <div className="grid grid-cols-3 gap-1.5">
-          {(
-            [
-              { v: 'achieved', label: '✓ Achieved', color: '#047857', bg: '#D1FAE5' },
-              { v: 'partial', label: '~ Partial', color: '#92400E', bg: '#FEF3C7' },
-              { v: 'not_yet', label: '✗ Not yet', color: '#991B1B', bg: '#FEE2E2' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.v}
-              type="button"
-              disabled={isClosed}
-              onClick={() => onCommit({ status: opt.v })}
-              className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
-              style={
-                block.status === opt.v
-                  ? { background: opt.bg, color: opt.color, boxShadow: 'inset 0 0 0 2px ' + opt.color }
-                  : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Evaluation only on GRADABLE blocks (sequence steps). Non-gradable
+          blocks (warm-up, free play, etc.) are just executed — no status,
+          no stars. */}
+      {block.step_id ? (
+        <>
+          {/* Status buttons */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Did they hit the objective?
+            </label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(
+                [
+                  { v: 'achieved', label: '✓ Achieved', color: '#047857', bg: '#D1FAE5' },
+                  { v: 'partial', label: '~ Partial', color: '#92400E', bg: '#FEF3C7' },
+                  { v: 'not_yet', label: '✗ Not yet', color: '#991B1B', bg: '#FEE2E2' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.v}
+                  type="button"
+                  disabled={isClosed}
+                  onClick={() => onCommit({ status: opt.v })}
+                  className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
+                  style={
+                    block.status === opt.v
+                      ? { background: opt.bg, color: opt.color, boxShadow: 'inset 0 0 0 2px ' + opt.color }
+                      : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {/* M49 — Focus + Flow + Close note moved to the student-level
-          eval card (one per session, not per block). */}
-
-      {/* M45 — Inline OFFICIAL step rating (TSS cyan) per block. */}
-      {block.step_id && (
-        <div className="bg-[var(--tss-cyan,#5AC3E7)]/10 border border-[var(--tss-cyan,#5AC3E7)]/30 rounded-lg p-2">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
-            Official rating · {block.step_id}
-          </label>
-          <StarRating
-            value={currentCoachRating}
-            size="md"
-            variant="official"
-            readOnly={isClosed}
-            onChange={onRateStep}
-          />
-          <p className="text-[10px] text-gray-500 mt-0.5 italic">
-            Rates {studentFirstName}'s {block.step_id} officially in their sequence.
-          </p>
-        </div>
+          {/* M45 — Inline OFFICIAL step rating (TSS cyan) per block. */}
+          <div className="bg-[var(--tss-cyan,#5AC3E7)]/10 border border-[var(--tss-cyan,#5AC3E7)]/30 rounded-lg p-2">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
+              Official rating · {block.step_id}
+            </label>
+            <StarRating
+              value={currentCoachRating}
+              size="md"
+              variant="official"
+              readOnly={isClosed}
+              onChange={onRateStep}
+            />
+            <p className="text-[10px] text-gray-500 mt-0.5 italic">
+              Rates {studentFirstName}'s {block.step_id} officially in their sequence.
+            </p>
+          </div>
+        </>
+      ) : (
+        <p className="text-[10px] text-gray-400 italic">
+          Not a sequence step — executed only, no grading.
+        </p>
       )}
     </div>
   );
