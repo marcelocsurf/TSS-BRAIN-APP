@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { getCurrentCoach as getAuthCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
 import { EvaluationForm } from './evaluation-form';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 
 interface Props {
@@ -29,6 +31,10 @@ export default async function CoachEvaluatePage({ params }: Props) {
 
   return (
     <div className="max-w-xl mx-auto py-6">
+      <Link href={`/coaches/${coach.id}`} className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 mb-3">
+        <ArrowLeft size={14} strokeWidth={1.75} />
+        {coach.display_name}
+      </Link>
       <EvaluationForm
         coachId={coach.id}
         coachName={coach.display_name}
