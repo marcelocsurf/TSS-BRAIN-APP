@@ -29,6 +29,8 @@ import {
   Dumbbell,
   Check,
   ChevronDown,
+  ChevronRight,
+  ChevronLeft,
   ArrowRight,
   Lock,
   CalendarDays,
@@ -38,12 +40,13 @@ type TabIconComponent = typeof Home;
 
 type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating';
 
+// 'rating' is intentionally NOT in the nav — the student rating is unified
+// into the home (a featured card that taps through to the detail).
 const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
   { key: 'home', label: 'Home', Icon: Home },
   { key: 'courses', label: 'Courses', Icon: BookOpen },
   { key: 'tools', label: 'Tools', Icon: Wrench },
   { key: 'plan', label: 'Plan', Icon: ClipboardList },
-  { key: 'rating', label: 'Rating', Icon: Star },
 ];
 
 export function CoachPortalTabs({
@@ -60,10 +63,10 @@ export function CoachPortalTabs({
     <>
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
-          <>
+          <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
-            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />
-          </>
+            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} />
+          </div>
         )}
         {activeTab === 'courses' && (
           <CoursesTab
@@ -81,11 +84,15 @@ export function CoachPortalTabs({
             token={coach.portal_token}
           />
         )}
-        {activeTab === 'rating' && <RatingTab stats={stats} />}
+        {activeTab === 'rating' && (
+          <div className="rounded-2xl p-3" style={{ background: '#000' }}>
+            <RatingTab stats={stats} onBack={() => setActiveTab('home')} />
+          </div>
+        )}
       </div>
 
       {/* Bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10" style={{ background: '#0A1628' }}>
         <div className="max-w-lg mx-auto flex">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -94,13 +101,13 @@ export function CoachPortalTabs({
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex-1 flex flex-col items-center py-2.5 text-[10px] font-medium transition-colors ${
-                  isActive ? 'text-[var(--tss-navy)]' : 'text-gray-400'
+                  isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-white/40'
                 }`}
               >
                 <tab.Icon
                   size={20}
                   strokeWidth={isActive ? 2 : 1.75}
-                  className={`mb-0.5 transition-colors ${isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-400'}`}
+                  className={`mb-0.5 transition-colors ${isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-white/40'}`}
                 />
                 <span>{tab.label}</span>
               </button>
@@ -110,7 +117,7 @@ export function CoachPortalTabs({
       </div>
 
       <div className="text-center py-4 pb-24">
-        <p className="text-[10px] text-gray-300">The Surf Sequence -- {BRAND.tagline}</p>
+        <p className="text-[10px] text-white/30">The Surf Sequence -- {BRAND.tagline}</p>
       </div>
     </>
   );
@@ -121,8 +128,8 @@ export function CoachPortalTabs({
 function EmRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2 text-sm">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 w-20 shrink-0 pt-0.5">{label}</span>
-      <span className="text-gray-800 flex-1 whitespace-pre-line">{value}</span>
+      <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 w-20 shrink-0 pt-0.5">{label}</span>
+      <span className="text-white/80 flex-1 whitespace-pre-line">{value}</span>
     </div>
   );
 }
@@ -134,12 +141,14 @@ function HomeTab({
   emergencyPlan,
   students,
   boards,
+  onGoTo,
 }: {
   coach: any;
   stats: any;
   upcoming: any[];
   students?: { id: string; name: string }[];
   boards?: { id: string; code: string }[];
+  onGoTo?: (tab: Tab) => void;
   emergencyPlan?: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -155,15 +164,100 @@ function HomeTab({
     emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address ||
     emergencyPlan.emergency_protocol
   );
+  const ratingsCount = stats.ratingsCount ?? 0;
+  const avg = stats.avgRating;
+  const fullStars = avg ? Math.round(avg) : 0;
+
   return (
     <div className="space-y-4">
-      {/* Emergency plan — always at hand for the coach */}
-      <details className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden">
+      {/* ── Profile ── */}
+      <div className="rounded-2xl p-4 relative" style={{ background: '#0F1E33' }}>
+        <Link
+          href={`/coach-portal/${coach.portal_token}/profile`}
+          className="absolute top-3 right-3 text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] hover:underline"
+        >
+          Edit
+        </Link>
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-bold shrink-0" style={{ background: '#22344a' }}>
+            {coach.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coach.photo_url} alt={coach.display_name} className="w-full h-full object-cover" />
+            ) : (initials || <Waves size={18} strokeWidth={1.75} />)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-white text-base truncate">{coach.display_name}</p>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              <span className="text-[10px] px-2 py-0.5 rounded-full capitalize" style={{ background: 'rgba(90,195,231,.18)', color: '#5AC3E7' }}>
+                {coach.role.replace(/_/g, ' ')}{coach.certification_level ? ` · ${coach.certification_level}` : ''}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full capitalize" style={{ background: 'rgba(167,139,250,.18)', color: '#c4b5fd' }}>
+                Up to {coach.max_belt_permission?.replace(/_belt/g, '').replace(/_/g, ' ')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Your rating from students (unified from the old Rating tab) ── */}
+      <button
+        onClick={() => onGoTo?.('rating')}
+        className="w-full text-center rounded-2xl p-4 border transition-colors hover:border-[var(--tss-cyan)]/40"
+        style={{ background: 'linear-gradient(135deg,#0F1E33,#0A1628)', borderColor: 'rgba(90,195,231,.2)' }}
+      >
+        <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-[var(--tss-cyan)]">Your rating from students</div>
+        {ratingsCount > 0 ? (
+          <>
+            <div className="text-4xl font-bold text-white leading-none mt-1.5">
+              {avg}<span className="text-base text-white/50">/5</span>
+            </div>
+            <div className="text-[15px] tracking-[2px] mt-1" style={{ color: '#EAB308' }}>
+              {'★'.repeat(fullStars)}<span style={{ color: '#3a4a5e' }}>{'★'.repeat(5 - fullStars)}</span>
+            </div>
+            <div className="text-[10px] text-white/40 mt-1.5">from {ratingsCount} student {ratingsCount === 1 ? 'survey' : 'surveys'} · tap for detail</div>
+          </>
+        ) : (
+          <div className="text-sm text-white/50 mt-2">No ratings yet — they appear as students fill post-session surveys.</div>
+        )}
+      </button>
+
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: 'Services run', value: stats.totalServicesAsHead.toString() },
+          { label: 'Upcoming', value: stats.upcomingServicesCount.toString() },
+          { label: 'Students', value: stats.studentsWorkedWith.toString() },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl px-3 py-4 text-center" style={{ background: '#0F1E33' }}>
+            <p className="text-2xl font-semibold text-white leading-none">{s.value}</p>
+            <p className="text-[8.5px] uppercase tracking-wider text-white/40 mt-2" style={{ fontFamily: 'DM Mono, monospace' }}>{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {profileIncomplete && (
+        <Link
+          href={`/coach-portal/${coach.portal_token}/profile`}
+          className="block rounded-2xl p-4 border border-amber-400/30"
+          style={{ background: 'rgba(234,179,8,.1)' }}
+        >
+          <p className="text-sm font-semibold text-amber-300">Complete your profile</p>
+          <p className="text-xs text-amber-200/80 mt-0.5 leading-relaxed">
+            Emergency contact, medical info and waiver. Required before teaching official TSS sessions.
+          </p>
+          <p className="text-[11px] font-mono uppercase tracking-wider text-amber-300 mt-2">Fill it now →</p>
+        </Link>
+      )}
+
+      {/* ── Emergency plan (collapsible) ── */}
+      <details className="rounded-2xl overflow-hidden border-l-[3px]" style={{ background: '#0F1E33', borderColor: '#E24B4A' }}>
         <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-bold text-red-700">🚨 Plan de emergencia</span>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-red-400">{hasEmergency ? 'Ver' : 'No definido'}</span>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+            <span style={{ color: '#E24B4A' }}>🚨</span> Plan de emergencia
+          </span>
+          <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: hasEmergency ? '#5AC3E7' : '#f09595' }}>{hasEmergency ? 'Ver' : 'No definido'}</span>
         </summary>
-        <div className="px-4 pb-4 space-y-2 border-t border-red-50 pt-3">
+        <div className="px-4 pb-4 space-y-2 border-t border-white/5 pt-3">
           {hasEmergency ? (
             <>
               {emergencyPlan!.emergency_numbers && <EmRow label="Números" value={emergencyPlan!.emergency_numbers} />}
@@ -172,140 +266,55 @@ function HomeTab({
               {emergencyPlan!.emergency_address && <EmRow label="Ubicación" value={emergencyPlan!.emergency_address} />}
               {emergencyPlan!.emergency_protocol && (
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Protocolo</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">{emergencyPlan!.emergency_protocol}</p>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">Protocolo</p>
+                  <p className="text-sm text-white/80 whitespace-pre-line">{emergencyPlan!.emergency_protocol}</p>
                 </div>
               )}
             </>
           ) : (
-            <p className="text-xs text-gray-500 italic">
+            <p className="text-xs text-white/50 italic">
               Tu academia aún no cargó el plan de emergencia. Pedile al coordinador que lo complete.
             </p>
           )}
         </div>
       </details>
 
-      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
-      {profileIncomplete && (
-        <Link
-          href={`/coach-portal/${coach.portal_token}/profile`}
-          className="block bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:bg-amber-100 transition-colors"
-        >
-          <p className="text-sm font-semibold text-amber-900">Complete your profile</p>
-          <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-            Emergency contact, medical info and waiver. Required before you can teach official TSS sessions.
-          </p>
-          <p className="text-[11px] font-mono uppercase tracking-wider text-amber-700 mt-2">
-            Fill it now →
-          </p>
-        </Link>
-      )}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm relative">
-        <Link
-          href={`/coach-portal/${coach.portal_token}/profile`}
-          className="absolute top-3 right-3 text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] hover:underline"
-        >
-          Edit profile
-        </Link>
-        <div className="flex items-center gap-3">
-          <div
-            className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-bold shrink-0"
-            style={{ background: BRAND.colors.navy }}
-          >
-            {coach.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coach.photo_url} alt={coach.display_name} className="w-full h-full object-cover" />
-            ) : (
-              initials || <Waves size={18} strokeWidth={1.75} />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-[var(--tss-navy)] text-base truncate">{coach.display_name}</p>
-            <div className="flex flex-wrap gap-1.5 mt-1">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 capitalize">
-                {coach.role.replace(/_/g, ' ')}
-              </span>
-              {coach.certification_level && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">
-                  {coach.certification_level}
-                </span>
-              )}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
-                Up to {coach.max_belt_permission?.replace(/_/g, ' ')}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Coaching telemetry — single strip, no boxed tiles ── */}
-      <div>
-        <p className="tss-section-label">
-          <BarChart2 size={11} strokeWidth={1.75} />
-          Coaching Stats
-        </p>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-2 sm:grid-cols-4">
-            {[
-              { label: 'Services run', value: stats.totalServicesAsHead.toString() },
-              { label: 'Upcoming', value: stats.upcomingServicesCount.toString() },
-              { label: 'Students', value: stats.studentsWorkedWith.toString() },
-              {
-                label: 'Avg rating',
-                value: stats.avgRating !== null ? `${stats.avgRating}/5` : '—',
-              },
-            ].map((s, i) => (
-              <div
-                key={s.label}
-                className={`px-4 py-5 text-center ${
-                  i > 0 ? 'border-l border-gray-100' : ''
-                } ${i >= 2 ? 'border-t sm:border-t-0 border-gray-100' : ''}`}
-              >
-                <p className="tss-stat-number">{s.value}</p>
-                <p
-                  className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
-                  style={{ fontFamily: 'DM Mono, monospace' }}
-                >
-                  {s.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      {/* ── Your next classes (collapsible dropdown, clickable rows) ── */}
       {upcoming.length > 0 && (
-        <div>
-          <p className="tss-section-label">
-            <CalendarDays size={11} strokeWidth={1.75} />
-            Your next classes
-          </p>
-          <div className="space-y-1.5">
-            {upcoming.slice(0, 3).map((s: any) => {
+        <details open className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
+          <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+              <CalendarDays size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+              Your next classes
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(90,195,231,.18)', color: '#5AC3E7' }}>{upcoming.length}</span>
+            </span>
+            <ChevronDown size={16} className="text-white/40" />
+          </summary>
+          <div className="border-t border-white/5 divide-y divide-white/5">
+            {upcoming.slice(0, 5).map((s: any) => {
               const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
               return (
-                <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
-                  <p className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">
-                    {tpl?.service_kind?.replace(/_/g, ' ') || ''} · {s.status}
-                  </p>
-                  <p
-                    className="text-base text-[var(--tss-navy)] mt-0.5"
-                    style={{ fontFamily: 'var(--font-heading)', fontWeight: 600 }}
-                  >
-                    {s.camp_name}
-                  </p>
-                  <p
-                    className="text-[11px] text-gray-500 mt-0.5"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
-                  >
-                    {new Date(s.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  </p>
-                </div>
+                <button
+                  key={s.id}
+                  onClick={() => onGoTo?.('plan')}
+                  className="w-full text-left px-4 py-3 flex items-center justify-between gap-2 hover:bg-white/5 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[15px] text-white truncate">{s.camp_name}</p>
+                    <p className="text-[10px] text-white/40 mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+                      {(tpl?.service_kind?.replace(/_/g, ' ') || 'Service')} · {new Date(s.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <ChevronRight size={15} className="text-white/30 shrink-0" />
+                </button>
               );
             })}
           </div>
-        </div>
+        </details>
       )}
+
+      {/* Report an incident (keeps its own flow) */}
+      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
     </div>
   );
 }
@@ -1520,28 +1529,35 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
   );
 }
 
-function RatingTab({ stats }: { stats: any }) {
+function RatingTab({ stats, onBack }: { stats: any; onBack?: () => void }) {
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+      {onBack && (
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[12px] text-white/60 hover:text-white">
+          <ChevronLeft size={15} /> Back to home
+        </button>
+      )}
+      <div className="rounded-2xl px-4 py-5" style={{ background: '#0F1E33' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Rating</p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>From your students</h2>
+        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>From your students</h2>
       </div>
 
       {stats.ratingsCount > 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center">
-          <Star size={28} strokeWidth={1.75} className="mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]" />
-          <p className="text-5xl font-bold text-[var(--tss-navy)]">{stats.avgRating}</p>
-          <p className="text-xs text-gray-500 mt-1">out of 5 · across {stats.ratingsCount} surveys</p>
-          <p className="text-[11px] text-gray-400 italic mt-3">
+        <div className="rounded-2xl p-6 text-center" style={{ background: '#0F1E33' }}>
+          <p className="text-5xl font-bold text-white">{stats.avgRating}</p>
+          <p className="text-[15px] tracking-[2px] mt-1" style={{ color: '#EAB308' }}>
+            {'★'.repeat(Math.round(stats.avgRating))}<span style={{ color: '#3a4a5e' }}>{'★'.repeat(5 - Math.round(stats.avgRating))}</span>
+          </p>
+          <p className="text-xs text-white/50 mt-2">out of 5 · across {stats.ratingsCount} surveys</p>
+          <p className="text-[11px] text-white/40 italic mt-3">
             Reputation builds from honest feedback. Keep closing sessions and asking your students for the survey.
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <BarChart2 size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-500">No ratings yet.</p>
-          <p className="text-[11px] text-gray-400 mt-1">
+        <div className="rounded-2xl p-8 text-center" style={{ background: '#0F1E33' }}>
+          <BarChart2 size={36} strokeWidth={1.5} className="mx-auto mb-2 text-white/20" />
+          <p className="text-sm text-white/50">No ratings yet.</p>
+          <p className="text-[11px] text-white/40 mt-1">
             Close sessions and have students fill the post-session survey to start building your rating.
           </p>
         </div>

@@ -48,24 +48,22 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
       {isImpersonatingThisCoach && impersonation && (
         <ImpersonateBanner kind="coach" name={impersonation.name} />
       )}
-      <div style={{ background: brand.primary }} className="px-4 py-6 text-center">
-        {brand.logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={brand.logoUrl}
-            alt={brand.name}
-            className="h-12 mx-auto mb-2 object-contain"
-          />
-        )}
-        <p style={{ color: brand.accent }} className="tss-tagline text-sm">
-          {brand.tagline}
-        </p>
-        <p
-          style={{ color: brand.accent, fontFamily: 'DM Mono, monospace' }}
-          className="text-[9px] mt-1 tracking-[0.25em] uppercase opacity-70"
-        >
-          Coach Portal
-        </p>
+      {/* Slim header — academy logo + tagline left, TSS lineage logo right */}
+      <div style={{ background: brand.primary }} className="px-4 py-3 relative">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {brand.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p style={{ color: brand.accent }} className="tss-tagline text-xs truncate">{brand.tagline}</p>
+              <p style={{ color: brand.accent, fontFamily: 'DM Mono, monospace' }} className="text-[8px] tracking-[0.25em] uppercase opacity-70">Coach Portal</p>
+            </div>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-5 object-contain opacity-90 shrink-0" />
+        </div>
       </div>
 
       <CoachPortalTabs data={data} initialTab={initialTab} />
