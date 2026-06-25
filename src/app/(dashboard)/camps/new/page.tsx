@@ -21,6 +21,7 @@ export default function NewCampPage() {
   const [coach, setCoach] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
 
   const [form, setForm] = useState({
     template_id: '',
@@ -113,10 +114,14 @@ export default function NewCampPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.template_id || !form.camp_name) {
-      setError('Select a service and name it.');
+    if (!form.template_id) {
+      setError('Select a service.');
       return;
     }
+    // Service name is optional — fall back to the template name (+ date) so the
+    // service still has a readable label.
+    const campName = form.camp_name.trim()
+      || `${selectedTemplate?.template_name ?? 'Service'} · ${form.start_date}`;
     // Students are optional at creation — services open empty and fill up
     // as the coordinator sells spots. They can be added later from the
     // camp detail page.
@@ -139,6 +144,7 @@ export default function NewCampPage() {
     try {
       const instance = await createCampInstance({
         ...form,
+        camp_name: campName,
         end_date: derivedEndDate,
         coach_id: coach?.id || '',
         head_coach_id: form.head_coach_id || coach?.id || '',
@@ -236,7 +242,7 @@ export default function NewCampPage() {
         {/* Details */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Details</h3>
-          <input type="text" placeholder="Service name *" value={form.camp_name}
+          <input type="text" placeholder="Service name (optional)" value={form.camp_name}
             onChange={e => setForm(f => ({ ...f, camp_name: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
 
@@ -352,8 +358,21 @@ export default function NewCampPage() {
               </span>
             )}
           </div>
+          <input
+            type="text"
+            value={studentSearch}
+            onChange={e => setStudentSearch(e.target.value)}
+            placeholder="Search students by name…"
+            className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+          />
           <div className="space-y-1 max-h-60 overflow-y-auto">
-            {students.map(s => {
+            {students
+              .filter(s => {
+                const q = studentSearch.trim().toLowerCase();
+                if (!q) return true;
+                return `${s.first_name} ${s.last_name}`.toLowerCase().includes(q);
+              })
+              .map(s => {
               const isSelected = form.student_ids.includes(s.id);
               const atCapacity = !isSelected && form.student_ids.length >= effectiveCapacity;
               return (
