@@ -4,9 +4,10 @@ import InstallPWA from '@/components/InstallPWA';
 
 export const metadata: Metadata = {
   // metadataBase makes relative OG/icon URLs resolve to an absolute URL so
-  // link previews (WhatsApp/iMessage/social) work. Override via env when the
-  // custom domain (app.thesurfsequence.com) is live.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://tss-brain-app.vercel.app'),
+  // link previews (WhatsApp/iMessage/social) work. Uses the same canonical
+  // app URL as email links, so pointing it at app.thesurfsequence.com updates
+  // both previews and email links at once.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app'),
   title: 'The Surf Sequence',
   description: 'The Surf Sequence — learn to surf the right way, step by step.',
   manifest: '/manifest.webmanifest',
