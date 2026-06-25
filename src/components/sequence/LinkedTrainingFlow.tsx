@@ -38,7 +38,6 @@ import {
   Star,
   Lightbulb,
   Save,
-  ThumbsUp,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -646,7 +645,7 @@ export function LinkedTrainingFlow({
   // ─── PHASE: IN PROGRESS ───
   if (phase === 'in_progress') {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: '#161A26' }}>
         <Banner drill={drill} onCancel={onClearIncoming} />
 
         <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl shadow-lg p-6 text-center space-y-4">
@@ -683,7 +682,7 @@ export function LinkedTrainingFlow({
 
         <button
           onClick={() => setPhase('evaluation')}
-          className="w-full py-4 rounded-xl bg-amber-400 text-amber-900 font-bold text-base hover:bg-amber-500 transition-colors shadow-md inline-flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-xl bg-[var(--tss-gold,#EAB308)] text-[var(--tss-navy)] font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all shadow-md inline-flex items-center justify-center gap-2"
         >
           <Check size={18} strokeWidth={2.25} />
           I finished — Evaluate now
@@ -691,7 +690,7 @@ export function LinkedTrainingFlow({
 
         <button
           onClick={() => setPhase('review')}
-          className="w-full py-2 text-xs text-gray-500 hover:text-gray-700"
+          className="w-full py-2 text-xs text-white/50 hover:text-white/80"
         >
           ← Back to plan
         </button>
@@ -927,9 +926,11 @@ export function LinkedTrainingFlow({
   // ─── PHASE: DONE ───
   if (phase === 'done') {
     return (
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
-          <ThumbsUp size={48} strokeWidth={1.5} className="mx-auto text-[var(--tss-cyan)]" />
+      <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: '#161A26' }}>
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
+          <div className="mx-auto w-20 h-20 rounded-full bg-[var(--tss-cyan)]/15 flex items-center justify-center text-5xl leading-none select-none" aria-hidden="true">
+            🤙
+          </div>
           <div>
             <h2 className="text-xl font-bold text-[var(--tss-navy)]">Session saved</h2>
             <p className="text-sm text-gray-500 mt-1">
