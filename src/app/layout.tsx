@@ -3,17 +3,34 @@ import './globals.css';
 import InstallPWA from '@/components/InstallPWA';
 
 export const metadata: Metadata = {
-  title: 'TSS BRAIN',
-  description: 'The Surf Sequence — Coaching Operating System',
+  // metadataBase makes relative OG/icon URLs resolve to an absolute URL so
+  // link previews (WhatsApp/iMessage/social) work. Override via env when the
+  // custom domain (app.thesurfsequence.com) is live.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://tss-brain-app.vercel.app'),
+  title: 'The Surf Sequence',
+  description: 'The Surf Sequence — learn to surf the right way, step by step.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'TSS BRAIN',
+    title: 'The Surf Sequence',
     statusBarStyle: 'black-translucent',
   },
   icons: {
     icon: '/tss-logo-color.png',
     apple: '/icons/apple-touch-icon.png',
+  },
+  openGraph: {
+    title: 'The Surf Sequence',
+    description: 'The Surf Sequence — learn to surf the right way, step by step.',
+    siteName: 'The Surf Sequence',
+    type: 'website',
+    images: [{ url: '/tss-logo-color.png', width: 512, height: 512, alt: 'The Surf Sequence' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'The Surf Sequence',
+    description: 'The Surf Sequence — learn to surf the right way, step by step.',
+    images: ['/tss-logo-color.png'],
   },
 };
 
