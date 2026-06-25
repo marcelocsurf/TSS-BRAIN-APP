@@ -74,6 +74,7 @@ export interface CoachPortalData {
     studentsWorkedWith: number;
     avgRating: number | null;
     ratingsCount: number;
+    coachingHours: number;
   };
   upcomingServices: any[];
   pendingAssignments: any[];
@@ -174,9 +175,28 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   // (cheap-ish — pull distinct students from student_session_results for this coach)
   const { data: distinctStudents } = await admin
     .from('student_session_results')
-    .select('student_id')
+    .select('student_id, camp_session_id, standalone_session_id, cascade_session_id, multi_block_session_id, duration_minutes')
     .eq('coach_id', coach.id);
   for (const r of distinctStudents ?? []) studentsWorkedWith.add(r.student_id);
+
+  // Coaching hours — sum durations once per distinct session (a group class
+  // has many student rows but is one coaching session, so we dedupe by the
+  // session key to avoid multiplying by headcount).
+  const seenSessions = new Set<string>();
+  let coachingMinutes = 0;
+  for (const r of distinctStudents ?? []) {
+    const mins = (r as any).duration_minutes;
+    if (!mins) continue;
+    const key =
+      (r as any).camp_session_id || (r as any).standalone_session_id ||
+      (r as any).cascade_session_id || (r as any).multi_block_session_id;
+    if (key) {
+      if (seenSessions.has(key)) continue;
+      seenSessions.add(key);
+    }
+    coachingMinutes += mins;
+  }
+  const coachingHours = Math.round((coachingMinutes / 60) * 10) / 10;
 
   const surveys = (surveysResult.data ?? []) as any[];
   const ratings = surveys.map((s) => s.coach_rating).filter((n: number) => n > 0);
@@ -292,6 +312,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       studentsWorkedWith: studentsWorkedWith.size,
       avgRating,
       ratingsCount: ratings.length,
+      coachingHours,
     },
     upcomingServices: upcomingEnriched,
     pendingAssignments: upcomingEnriched.filter(

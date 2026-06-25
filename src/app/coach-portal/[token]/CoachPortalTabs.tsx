@@ -65,7 +65,7 @@ export function CoachPortalTabs({
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
-            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} />
+            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} />
           </div>
         )}
         {activeTab === 'courses' && (
@@ -142,6 +142,8 @@ function HomeTab({
   students,
   boards,
   onGoTo,
+  coachCourses = [],
+  courseProgress = {},
 }: {
   coach: any;
   stats: any;
@@ -149,6 +151,8 @@ function HomeTab({
   students?: { id: string; name: string }[];
   boards?: { id: string; code: string }[];
   onGoTo?: (tab: Tab) => void;
+  coachCourses?: any[];
+  courseProgress?: Record<string, { completed: boolean }>;
   emergencyPlan?: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -167,6 +171,10 @@ function HomeTab({
   const ratingsCount = stats.ratingsCount ?? 0;
   const avg = stats.avgRating;
   const fullStars = avg ? Math.round(avg) : 0;
+  const coachingHours = stats.coachingHours ?? 0;
+  const totalLessons = coachCourses.length;
+  const completedLessons = coachCourses.filter((l: any) => courseProgress[l.id]?.completed).length;
+  const coursePct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -233,6 +241,36 @@ function HomeTab({
             <p className="text-[8.5px] uppercase tracking-wider text-white/40 mt-2" style={{ fontFamily: 'DM Mono, monospace' }}>{s.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* ── Coaching hours + your course progress ── */}
+      <div className="rounded-2xl p-4" style={{ background: '#0F1E33' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(90,195,231,.15)' }}>
+            <Clock size={20} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>Coaching delivered</p>
+            <p className="text-2xl font-semibold text-white leading-none mt-0.5">
+              {coachingHours}<span className="text-sm text-white/50"> h</span>
+            </p>
+          </div>
+        </div>
+
+        {totalLessons > 0 && (
+          <div className="mt-3.5 pt-3.5 border-t border-white/5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>Your course progress</span>
+              <span className="text-[11px] font-semibold text-[var(--tss-cyan)]">{completedLessons}/{totalLessons} · {coursePct}%</span>
+            </div>
+            <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(255,255,255,.1)' }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${coursePct}%`, background: 'var(--tss-cyan,#5AC3E7)' }} />
+            </div>
+            <button onClick={() => onGoTo?.('courses')} className="text-[11px] text-white/50 hover:text-white mt-2.5 inline-flex items-center gap-1">
+              Continue learning <ChevronRight size={13} />
+            </button>
+          </div>
+        )}
       </div>
 
       {profileIncomplete && (
