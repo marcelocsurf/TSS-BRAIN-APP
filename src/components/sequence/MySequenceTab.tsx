@@ -73,6 +73,13 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Pr
     <div className="space-y-5">
       {/* Header — belt-colored rings + accent line, matching the course view */}
       <div className="bg-[var(--tss-navy)] text-white rounded-xl p-5 shadow-lg border-l-4" style={{ borderColor: theme.accent }}>
+        {/* The Surf Sequence logo — prominent on the sequence screen */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/tss-logo-white.png?v=2"
+          alt="The Surf Sequence"
+          className="h-9 mb-3 object-contain"
+        />
         <div className="flex items-center justify-between mb-2">
           <h2 className="inline-flex items-center gap-2.5 text-lg font-bold">
             <ConcentricRings color={theme.bright} size={22} />

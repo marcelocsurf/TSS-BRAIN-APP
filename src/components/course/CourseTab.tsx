@@ -172,6 +172,13 @@ export function CourseTab({ data }: { data: CourseData }) {
 
       {/* Header */}
       <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5 shadow-lg">
+        {/* The Surf Sequence logo — prominent on the course screen */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/tss-logo-white.png?v=2"
+          alt="The Surf Sequence"
+          className="h-9 mb-3 object-contain"
+        />
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-bold">The Surf Sequence Method</h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-white/20">
