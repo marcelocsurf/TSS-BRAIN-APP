@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { LessonViewer } from './LessonViewer';
 import { CourseSwitcher } from './CourseSwitcher';
 import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
+import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/belt-theme';
+import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import {
   BookOpen, Compass, Award, Trophy, Lock, Unlock, CheckCircle2,
   PlayCircle, Hourglass, ScrollText, Brain, Waves, Handshake,
@@ -365,34 +367,8 @@ function groupByWbSequence(lessons: LessonRow[]) {
     }));
 }
 
-// ─── Belt color themes ───
-// Each content level gets a color so headers/cards read at a glance on the
-// dark student dashboard. White uses a pearl gray (pure white is invisible on
-// white cards); Pre-Course gets a cool teal so it reads as foundational, not a
-// belt. `accent` = solid line/border, `bright` = pops on the dark bg (rings +
-// eyebrow), `tint` = soft card-header wash, `ink` = readable text on the tint.
-type BeltLevel = 'pre' | 'white' | 'yellow' | 'blue';
-interface BeltTheme { accent: string; bright: string; tint: string; ink: string }
-const BELT_THEMES: Record<BeltLevel, BeltTheme> = {
-  pre:    { accent: '#0EA5A4', bright: '#2DD4BF', tint: '#F0FDFA', ink: '#0F766E' },
-  white:  { accent: '#94A3B8', bright: '#CBD5E1', tint: '#F8FAFC', ink: '#475569' },
-  yellow: { accent: '#EAB308', bright: '#FACC15', tint: '#FEFCE8', ink: '#A16207' },
-  blue:   { accent: '#3B82F6', bright: '#60A5FA', tint: '#EFF6FF', ink: '#1D4ED8' },
-};
-
 function beltLevelForCourse(key: CourseKey): BeltLevel {
   return key === 'yellow_belt' ? 'yellow' : key === 'blue_belt' ? 'blue' : 'white';
-}
-
-// Concentric rings — the spiral/golden-ratio motif, tinted per belt.
-function ConcentricRings({ color, size = 26 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} aria-hidden="true" className="flex-shrink-0">
-      <circle cx="12" cy="12" r="10" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="6.2" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="2.6" fill={color} stroke="none" />
-    </svg>
-  );
 }
 
 // ─── Group Header (reads on the dark student dashboard) ───

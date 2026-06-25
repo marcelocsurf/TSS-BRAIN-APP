@@ -5,6 +5,8 @@ import { getMySequence, type SequenceData, type SequenceItem } from '@/lib/actio
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
 import { Dumbbell, Waves, Target } from 'lucide-react';
+import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
+import { ConcentricRings } from '@/components/shared/ConcentricRings';
 
 interface Props {
   studentId: string;
@@ -65,16 +67,21 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Pr
     ? Math.round((data.overallRating / 5) * 100)
     : 0;
 
+  const theme = BELT_THEMES[beltLevelFromString(data.belt)];
+
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5 shadow-lg">
+      {/* Header — belt-colored rings + accent line, matching the course view */}
+      <div className="bg-[var(--tss-navy)] text-white rounded-xl p-5 shadow-lg border-l-4" style={{ borderColor: theme.accent }}>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="inline-flex items-center gap-2 text-lg font-bold">
-            <Target size={18} strokeWidth={1.75} />
+          <h2 className="inline-flex items-center gap-2.5 text-lg font-bold">
+            <ConcentricRings color={theme.bright} size={22} />
             My Sequence
           </h2>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 capitalize">
+          <span
+            className="text-xs px-2.5 py-0.5 rounded-full capitalize font-medium"
+            style={{ background: theme.tint, color: theme.ink }}
+          >
             {data.belt} Belt
           </span>
         </div>
@@ -92,8 +99,8 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Pr
           </div>
           <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
             <div
-              className="h-full bg-amber-400 transition-all duration-500"
-              style={{ width: `${overallPct}%` }}
+              className="h-full transition-all duration-500"
+              style={{ width: `${overallPct}%`, background: theme.bright }}
             />
           </div>
           <p className="text-[11px] text-white/60 mt-2">
@@ -115,6 +122,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Pr
           blockName={block.block_name}
           items={block.items}
           onOpenStep={(id) => setOpenStepId(id)}
+          theme={theme}
         />
       ))}
     </div>
@@ -126,11 +134,13 @@ function BlockSection({
   blockName,
   items,
   onOpenStep,
+  theme,
 }: {
   blockNumber: number;
   blockName: string;
   items: SequenceItem[];
   onOpenStep: (id: string) => void;
+  theme: BeltTheme;
 }) {
   const ratedCount = items.filter((i) => i.rating !== null).length;
   const avgRating = ratedCount > 0
@@ -138,10 +148,10 @@ function BlockSection({
     : null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" style={{ borderLeft: `4px solid ${theme.accent}` }}>
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between" style={{ background: theme.tint }}>
         <div>
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
+          <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: theme.ink }}>
             Block {blockNumber}
           </div>
           <div className="font-bold text-sm">{blockName}</div>
@@ -149,7 +159,7 @@ function BlockSection({
         <div className="text-right text-xs">
           {avgRating !== null ? (
             <>
-              <div className="font-bold text-[var(--tss-navy)]">{avgRating.toFixed(1)}/5</div>
+              <div className="font-bold" style={{ color: theme.ink }}>{avgRating.toFixed(1)}/5</div>
               <div className="text-[10px] text-gray-400">{ratedCount}/{items.length} rated</div>
             </>
           ) : (
