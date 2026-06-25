@@ -15,6 +15,7 @@ import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
+import { BoardInventoryLauncher } from '@/components/board-inventory/BoardInventoryLauncher';
 import { CollapsibleAlert } from '@/components/dashboard/CollapsibleAlert';
 import Link from 'next/link';
 import {
@@ -421,6 +422,14 @@ async function CoordinatorDashboard() {
     <div className="space-y-6">
       {/* ── Today's services ── */}
       <TodayPanel camps={todaysCamps} />
+
+      {/* ── Tools ── */}
+      {me?.academy_id && (
+        <div className="grid sm:grid-cols-2 gap-3">
+          <BoardInventoryLauncher academyId={me.academy_id} variant="card" />
+          <BoardSelectorLauncher variant="card" />
+        </div>
+      )}
 
       {/* ── Mi academia — single stats home (analytics + operational KPIs) ── */}
       {academyAnalytics ? (

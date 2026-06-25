@@ -714,7 +714,9 @@ export async function getServicePlan(
     }
   }
 
-  // Board inventory for the camp's academy (not retired) — for the planner picker.
+  // Board inventory for the camp's academy — for the planner picker.
+  // Exclude retired boards and boards currently rented out to walk-ins
+  // (those are held by the rentals engine and aren't available to assign).
   let availableBoards: ServicePlanData['availableBoards'] = [];
   let boardConflictIds: string[] = [];
   if ((camp as any).academy_id) {
@@ -722,7 +724,7 @@ export async function getServicePlan(
       .from('boards')
       .select('id, code, board_type, shape, length_feet, length_inches, volume_liters, status')
       .eq('academy_id', (camp as any).academy_id)
-      .neq('status', 'retired')
+      .not('status', 'in', '(retired,rented)')
       .order('code');
     availableBoards = (boardRows ?? []) as any[];
 

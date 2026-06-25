@@ -18,12 +18,14 @@ const STATUS_LABEL: Record<BoardStatus, string> = {
   in_use: 'In use',
   in_repair: 'In repair',
   retired: 'Retired',
+  rented: 'Rented',
 };
 const STATUS_COLOR: Record<BoardStatus, string> = {
   available: 'bg-emerald-50 text-emerald-700',
   in_use: 'bg-blue-50 text-blue-600',
   in_repair: 'bg-amber-50 text-amber-700',
   retired: 'bg-gray-100 text-gray-500',
+  rented: 'bg-purple-50 text-purple-600',
 };
 
 export function BoardInventory({ academyId, boards }: { academyId: string; boards: Board[] }) {
