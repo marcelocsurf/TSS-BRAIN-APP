@@ -71,12 +71,14 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
   const beltKey = belt.replace(/_belt$/, '');
   const courseSection = beltKey === 'white' ? 'white_belt' : `${beltKey}_belt`;
 
-  // 1. Get all drills/missions for this belt
+  // 1. Get all drills/missions for this belt (student-visible only — admins can
+  // mark a drill coach-only via the Drill Library, which hides it here).
   const { data: drills } = await admin
     .from('drills_missions')
     .select('*')
     .eq('belt', beltKey)
     .eq('active', true)
+    .eq('student_visible', true)
     .order('display_order', { ascending: true });
 
   // 2. Get all STP lessons (for titles + pillars)
