@@ -10,6 +10,7 @@ import {
   BookOpen, Compass, Award, Trophy, Lock, Unlock, CheckCircle2,
   PlayCircle, Hourglass, ScrollText, Brain, Waves, Handshake,
   LifeBuoy, Dumbbell, Eye, DoorOpen, Anchor, Rocket, ArrowLeftRight,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -442,12 +443,12 @@ function SectionBlock({
   const proposedCount = lessons.length - productized.length;
 
   return (
-    <div
-      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+    <details
+      className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
       style={theme ? { borderLeft: `4px solid ${theme.accent}` } : undefined}
     >
-      <div
-        className="px-4 py-3 border-b border-gray-200"
+      <summary
+        className="px-4 py-3 cursor-pointer list-none"
         style={{ background: theme ? theme.tint : '#f9fafb' }}
       >
         <div className="flex items-start justify-between gap-3">
@@ -465,23 +466,24 @@ function SectionBlock({
               <p className="text-[11px] text-gray-500 mt-0.5 italic">"{subtitle}"</p>
             )}
           </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-xs font-bold" style={{ color: theme ? theme.ink : 'var(--tss-navy)' }}>{sectionPercent}%</div>
-            <div className="text-[10px] text-gray-400">
-              {completed}/{productized.length}
-              {proposedCount > 0 && (
-                <span className="text-amber-600"> +{proposedCount}↗</span>
-              )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-right">
+              <div className="text-xs font-bold" style={{ color: theme ? theme.ink : 'var(--tss-navy)' }}>{sectionPercent}%</div>
+              <div className="text-[10px] text-gray-400">
+                {completed}/{productized.length}
+                {proposedCount > 0 && (<span className="text-amber-600"> +{proposedCount}↗</span>)}
+              </div>
             </div>
+            <ChevronDown size={16} className="text-gray-400 transition-transform group-open:rotate-180" />
           </div>
         </div>
-      </div>
-      <div className="divide-y divide-gray-100">
+      </summary>
+      <div className="divide-y divide-gray-100 border-t border-gray-200">
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 

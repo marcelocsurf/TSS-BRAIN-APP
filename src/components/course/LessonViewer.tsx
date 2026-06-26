@@ -5,6 +5,7 @@ import {
   getLessonDetail,
   markVideoWatched,
   markContentRead,
+  markLessonComplete,
   saveLessonForm,
 } from '@/lib/actions/course';
 import { CourseQuiz } from './CourseQuiz';
@@ -39,7 +40,6 @@ type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'f
 export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<Section>('video');
 
   useEffect(() => {
     let mounted = true;
@@ -47,16 +47,6 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
       if (mounted) {
         setData(res);
         setLoading(false);
-        // Pick initial section: video if available, else theory
-        if (res?.lesson) {
-          if (res.lesson.lesson_type === 'form' || res.lesson.lesson_type === 'test') {
-            setActiveSection('form');
-          } else if ((res.videos?.length ?? 0) > 0 || res.lesson.video_url) {
-            setActiveSection('video');
-          } else {
-            setActiveSection('theory');
-          }
-        }
       }
     });
     return () => {
@@ -154,38 +144,13 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
     );
   }
 
-  // Build available sections based on lesson content
-  const availableSections: { key: Section; label: string; icon: IconType }[] = [];
-
-  if (lesson.lesson_type === 'form') {
-    availableSections.push({ key: 'form', label: 'Activity', icon: ClipboardList });
-  } else if (lesson.lesson_type === 'test') {
-    // A test/exit lesson shows the rubric or self-evaluation as "Activity", and
-    // — when comprehension questions exist — the friendly multiple-choice "Quiz"
-    // (CourseQuiz). Without this, a test lesson only rendered its reading text
-    // and the multiple-choice quiz never appeared (the Blue/Yellow exit tests).
-    availableSections.push({ key: 'form', label: 'Activity', icon: ClipboardList });
-    if (quizzes && quizzes.length > 0) availableSections.push({ key: 'quiz', label: 'Quiz', icon: Brain });
-  } else {
-    // Always show Video tab — VideoSection itself handles the "coming soon" empty state
-    availableSections.push({ key: 'video', label: lessonVideos.length > 1 ? `Videos (${lessonVideos.length})` : 'Video', icon: PlayCircle });
-    if (lesson.description_md) availableSections.push({ key: 'theory', label: 'Theory', icon: BookOpen });
-    // Drill: canonical drills_missions row preferred, fallback to lesson.drill_md
-    if (canonicalDrill || lesson.drill_md) availableSections.push({ key: 'drill', label: 'Drill', icon: Dumbbell });
-    // Mission: only when there's a canonical mission for this step
-    if (canonicalMission) availableSections.push({ key: 'mission', label: 'Mission', icon: Waves });
-    if (lesson.errors_md) availableSections.push({ key: 'errors', label: 'Errors', icon: AlertTriangle });
-    if (quizzes && quizzes.length > 0) availableSections.push({ key: 'quiz', label: 'Quiz', icon: Brain });
-  }
-
-  const currentSectionIdx = availableSections.findIndex((s) => s.key === activeSection);
-  const isLastSection = currentSectionIdx === availableSections.length - 1;
-  const nextSection = !isLastSection ? availableSections[currentSectionIdx + 1] : null;
-
   const refreshProgress = async () => {
     const fresh = await getLessonDetail(lessonId, studentId);
     setData(fresh);
   };
+
+  const isFormOrTest = lesson.lesson_type === 'form' || lesson.lesson_type === 'test';
+  const cardCls = 'bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-6';
 
   return (
     <div className="space-y-4 pb-8">
@@ -223,101 +188,105 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
         </div>
       </div>
 
-      {/* Section tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
-        {availableSections.map((s) => {
-          const Icon = s.icon;
-          const isActive = activeSection === s.key;
-          return (
-            <button
-              key={s.key}
-              onClick={() => setActiveSection(s.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded transition-all whitespace-nowrap ${
-                isActive
-                  ? 'bg-white shadow-sm text-[var(--tss-navy)]'
-                  : 'text-gray-600'
-              }`}
-            >
-              <Icon
-                size={16}
-                strokeWidth={1.75}
-                className={isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-400'}
+      {isFormOrTest ? (
+        /* Form / exit-test lessons keep their interactive activity (and the
+           exit test's quiz) — those ARE the gate, not a per-lesson quiz. */
+        <>
+          <div className={cardCls}>
+            <FormSection
+              lesson={lesson}
+              studentId={studentId}
+              existingResponse={progress?.form_response}
+              isCompleted={progress?.completed}
+              onComplete={refreshProgress}
+            />
+          </div>
+          {lesson.lesson_type === 'test' && quizzes && quizzes.length > 0 && (
+            <div className={cardCls}>
+              <CourseQuiz
+                lessonId={lesson.id}
+                studentId={studentId}
+                quizzes={quizzes}
+                existingScore={progress?.quiz_score}
+                existingAttempts={progress?.quiz_attempts}
+                isCompleted={progress?.completed}
+                onComplete={refreshProgress}
               />
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Section content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-6 min-h-[300px]">
-        {activeSection === 'video' && (
-          <VideoSection
-            lesson={lesson}
-            videos={lessonVideos}
-            progress={progress}
-            studentId={studentId}
-            onWatched={refreshProgress}
-          />
-        )}
-        {activeSection === 'theory' && (
-          <ContentSection
-            content={lesson.description_md}
-            studentId={studentId}
-            lessonId={lesson.id}
-            alreadyRead={progress?.content_read}
-            onRead={refreshProgress}
-          />
-        )}
-        {activeSection === 'drill' && canonicalDrill && (
-          <PracticeSection item={canonicalDrill} />
-        )}
-        {activeSection === 'drill' && !canonicalDrill && lesson.drill_md && (
-          <ContentSection content={lesson.drill_md} studentId={studentId} lessonId={lesson.id} alreadyRead={progress?.content_read} onRead={refreshProgress} hideMarkRead />
-        )}
-        {activeSection === 'mission' && canonicalMission && (
-          <PracticeSection item={canonicalMission} />
-        )}
-        {activeSection === 'errors' && (
-          <ContentSection content={lesson.errors_md} studentId={studentId} lessonId={lesson.id} alreadyRead={progress?.content_read} onRead={refreshProgress} hideMarkRead />
-        )}
-        {activeSection === 'quiz' && (
-          <CourseQuiz
-            lessonId={lesson.id}
-            studentId={studentId}
-            quizzes={quizzes}
-            existingScore={progress?.quiz_score}
-            existingAttempts={progress?.quiz_attempts}
-            isCompleted={progress?.completed}
-            onComplete={refreshProgress}
-          />
-        )}
-        {activeSection === 'form' && (
-          <FormSection
-            lesson={lesson}
-            studentId={studentId}
-            existingResponse={progress?.form_response}
-            isCompleted={progress?.completed}
-            onComplete={refreshProgress}
-          />
-        )}
-      </div>
-
-      {/* Next section button */}
-      {nextSection && (() => {
-        const NextIcon = nextSection.icon;
-        return (
-          <button
-            onClick={() => setActiveSection(nextSection.key)}
-            className="w-full flex items-center justify-center gap-1.5 bg-[var(--tss-navy)] text-white rounded-lg py-3 text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Next:
-            <NextIcon size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-            {nextSection.label} →
-          </button>
-        );
-      })()}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Reading lesson — everything in one scroll: video, theory, drill,
+           mission, errors, then a single "Mark as done". */
+        <>
+          {lessonVideos.length > 0 && (
+            <div className={cardCls}>
+              <DrillMissionVideos videos={lessonVideos} title={lesson.title} />
+            </div>
+          )}
+          {lesson.description_md && (
+            <div className={cardCls}>
+              <SectionLabel icon={BookOpen} text="Theory" />
+              <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.description_md} /></div>
+            </div>
+          )}
+          {canonicalDrill ? (
+            <div className={cardCls}><PracticeSection item={canonicalDrill} /></div>
+          ) : lesson.drill_md ? (
+            <div className={cardCls}>
+              <SectionLabel icon={Dumbbell} text="Drill" />
+              <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.drill_md} /></div>
+            </div>
+          ) : null}
+          {canonicalMission && (
+            <div className={cardCls}><PracticeSection item={canonicalMission} /></div>
+          )}
+          {lesson.errors_md && (
+            <div className={cardCls}>
+              <SectionLabel icon={AlertTriangle} text="Common errors" />
+              <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.errors_md} /></div>
+            </div>
+          )}
+          <MarkDoneButton studentId={studentId} lessonId={lesson.id} completed={!!progress?.completed} onDone={refreshProgress} />
+        </>
+      )}
     </div>
+  );
+}
+
+// ─── Unified-view helpers ───
+
+function SectionLabel({ icon: Icon, text }: { icon: IconType; text: string }) {
+  return (
+    <p className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+      <Icon size={13} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+      {text}
+    </p>
+  );
+}
+
+function MarkDoneButton({
+  studentId, lessonId, completed, onDone,
+}: {
+  studentId: string; lessonId: string; completed: boolean; onDone: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const handle = async () => {
+    setSaving(true);
+    await markLessonComplete(studentId, lessonId);
+    await onDone();
+    setSaving(false);
+  };
+  return (
+    <button
+      onClick={handle}
+      disabled={completed || saving}
+      className={`w-full py-3.5 rounded-xl text-sm font-bold transition-colors inline-flex items-center justify-center gap-2 ${
+        completed ? 'bg-green-100 text-green-700 cursor-default' : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
+      }`}
+    >
+      {completed ? (<><Check size={16} strokeWidth={2} /> Completed</>) : saving ? 'Saving…' : (<><Check size={16} strokeWidth={2} /> Mark as done</>)}
+    </button>
   );
 }
 

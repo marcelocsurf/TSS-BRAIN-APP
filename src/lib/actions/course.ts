@@ -267,6 +267,62 @@ export async function markContentRead(studentId: string, lessonId: string) {
   return { ok: !error, error: error?.message };
 }
 
+// ─── Mark a lesson complete (manual "Mark as done") ───
+// Replaces quiz-pass as the completion path for reading lessons. Mirrors the
+// same belt/pre-course rollups submitQuiz runs, so graduation gating is intact.
+const BELT_COMPLETION_COLUMN: Record<string, string> = {
+  white_belt: 'white_belt_completed_at',
+  blue_belt: 'blue_belt_completed_at',
+};
+
+export async function markLessonComplete(studentId: string, lessonId: string) {
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from('lesson_progress')
+    .upsert({
+      student_id: studentId,
+      lesson_id: lessonId,
+      content_read: true,
+      video_watched: true,
+      completed: true,
+      completed_at: new Date().toISOString(),
+    }, { onConflict: 'student_id,lesson_id' });
+  if (error) return { ok: false, error: error.message };
+
+  const { data: lesson } = await admin
+    .from('lessons')
+    .select('course_section')
+    .eq('id', lessonId)
+    .single();
+  const section = lesson?.course_section;
+
+  // Pre-course rollup
+  if (section === 'pre_course_fundamentals' || section === 'pre_course_values') {
+    const { data: done } = await admin.rpc('student_pre_course_complete', { p_student_id: studentId });
+    if (done === true) {
+      await admin.from('students').update({ pre_course_completed_at: new Date().toISOString() }).eq('id', studentId);
+    }
+  }
+
+  // Belt rollup (white / blue have a completion column)
+  const col = section ? BELT_COMPLETION_COLUMN[section] : undefined;
+  if (col) {
+    const { data: beltLessons } = await admin
+      .from('lessons').select('id').eq('course_section', section).eq('active', true);
+    const { data: completed } = await admin
+      .from('lesson_progress').select('lesson_id')
+      .eq('student_id', studentId).eq('completed', true)
+      .in('lesson_id', (beltLessons || []).map((l: any) => l.id));
+    if (beltLessons && completed && completed.length >= beltLessons.length) {
+      await admin.from('students').update({ [col]: new Date().toISOString() }).eq('id', studentId);
+    }
+  }
+
+  revalidatePath('/portal/[token]', 'layout');
+  return { ok: true };
+}
+
 // ─── Submit quiz answers ───
 
 export async function submitQuiz(
