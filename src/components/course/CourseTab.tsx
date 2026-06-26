@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LessonViewer } from './LessonViewer';
+import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intros';
+import { toEmbedUrl } from '@/lib/utils/video-embed';
 import { CourseSwitcher } from './CourseSwitcher';
 import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
 import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/belt-theme';
@@ -88,6 +90,8 @@ const WB_SEQUENCE_CUMULATIVE: Record<string, number> = {
 
 export function CourseTab({ data }: { data: CourseData }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  const [intros, setIntros] = useState<Record<string, SectionIntro>>({});
+  useEffect(() => { getSectionIntros().then(setIntros).catch(() => {}); }, []);
 
   // Access gate
   if (!data.hasAccess) {
@@ -208,6 +212,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             eyebrow={`8 sections · ${preCourseLessons.length} units`}
             title="Pre-Course"
             subtitle="Doctrinal foundations every student must know before entering the water"
+            videoUrl={intros['pre_course']?.video_url}
           />
 
           {pcSections.map((section) => (
@@ -257,6 +262,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             eyebrow={`Module 1 · ${onboardingLessons.length} items`}
             title={`${beltLabelShort} Onboarding`}
             subtitle="Conceptual scaffolding before the sequences."
+            videoUrl={intros[onboardingSection]?.video_url}
           />
 
           <SectionBlock
@@ -281,6 +287,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             eyebrow={`${beltSequences.length} sequences · cumulative`}
             title={beltLabelShort}
             subtitle="Cumulative — each sequence builds on all previous."
+            videoUrl={intros[beltSection]?.video_url}
           />
 
           {beltSequences.map((sequence) => {
@@ -386,12 +393,15 @@ function GroupHeader({
   eyebrow,
   title,
   subtitle,
+  videoUrl,
 }: {
   theme: BeltTheme;
   eyebrow: string | null;
   title: string;
   subtitle: string | null;
+  videoUrl?: string | null;
 }) {
+  const embed = videoUrl ? toEmbedUrl(videoUrl) : null;
   return (
     <div className="px-2">
       <div className="pl-3 border-l-4" style={{ borderColor: theme.accent }}>
@@ -412,6 +422,17 @@ function GroupHeader({
         </div>
         {subtitle && <p className="text-[11px] text-gray-400 mt-1">{subtitle}</p>}
       </div>
+      {embed && (
+        <div className="mt-3 rounded-xl overflow-hidden bg-black aspect-video">
+          <iframe
+            src={embed}
+            title={`${title} intro`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
     </div>
   );
 }
