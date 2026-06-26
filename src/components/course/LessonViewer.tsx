@@ -234,7 +234,7 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
             /* Don't load the full drill/mission here — send them to Let's Play
                to actually practice it and follow the flow. */
             <a
-              href={`?tab=sequence&drill=${(canonicalDrill || canonicalMission).id}`}
+              href={`?tab=sequence&step=${(canonicalDrill || canonicalMission).step_id || lesson.id}`}
               className="flex items-center justify-center gap-2 w-full rounded-xl bg-[var(--tss-navy)] text-white py-4 text-sm font-semibold hover:opacity-90"
             >
               <PlayCircle size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />

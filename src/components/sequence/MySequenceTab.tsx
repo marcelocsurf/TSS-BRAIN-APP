@@ -12,12 +12,13 @@ interface Props {
   studentId: string;
   belt?: string;
   onPracticeDrill?: (drillMissionId: string) => void;
+  initialStepId?: string | null;
 }
 
-export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill }: Props) {
+export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, initialStepId }: Props) {
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [openStepId, setOpenStepId] = useState<string | null>(null);
+  const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
 
   useEffect(() => {
     let mounted = true;

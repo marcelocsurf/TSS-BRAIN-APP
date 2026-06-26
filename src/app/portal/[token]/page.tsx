@@ -21,12 +21,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string; survey?: string; drill?: string }>;
+  searchParams: Promise<{ tab?: string; survey?: string; drill?: string; step?: string }>;
 }
 
 export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab, survey, drill } = await searchParams;
+  const { tab, survey, drill, step } = await searchParams;
 
   // Skip the anti-sharing check when an admin is impersonating — they
   // legitimately have multiple "sessions" open across alumnos.
@@ -125,6 +125,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
         initialTab={initialTab}
         initialSurveyId={survey || null}
         initialDrillId={drill || null}
+        initialStepId={step || null}
       />
     </>
   );

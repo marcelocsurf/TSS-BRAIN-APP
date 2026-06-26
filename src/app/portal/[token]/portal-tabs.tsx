@@ -289,11 +289,13 @@ export function PortalTabs({
   initialTab,
   initialSurveyId,
   initialDrillId,
+  initialStepId,
 }: {
   data: PortalData;
   initialTab?: Tab;
   initialSurveyId?: string | null;
   initialDrillId?: string | null;
+  initialStepId?: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   const TABS = useMemo(
@@ -382,6 +384,7 @@ export function PortalTabs({
                 studentId={student.id}
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
+                initialStepId={initialStepId}
               />
               <button
                 type="button"
