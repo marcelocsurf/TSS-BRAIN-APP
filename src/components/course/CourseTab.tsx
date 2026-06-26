@@ -465,41 +465,38 @@ function SectionBlock({
 
   return (
     <details
-      className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-      style={theme ? { borderLeft: `4px solid ${theme.accent}` } : undefined}
+      className="group rounded-xl overflow-hidden border border-white/10"
+      style={{ background: '#0F1E33', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
     >
-      <summary
-        className="px-4 py-3 cursor-pointer list-none"
-        style={{ background: theme ? theme.tint : '#f9fafb' }}
-      >
+      <summary className="px-4 py-3 cursor-pointer list-none">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm flex items-center gap-2">
-              <Icon size={16} strokeWidth={1.75} className="flex-shrink-0" style={{ color: theme ? theme.ink : 'var(--tss-cyan)' }} />
+            <h3 className="font-bold text-sm flex items-center gap-2 text-white">
+              <Icon size={16} strokeWidth={1.75} className="flex-shrink-0" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }} />
               <span className="truncate">{title}</span>
               {badge && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-mono flex-shrink-0">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono flex-shrink-0">
                   {badge}
                 </span>
               )}
             </h3>
             {subtitle && (
-              <p className="text-[11px] text-gray-500 mt-0.5 italic">"{subtitle}"</p>
+              <p className="text-[11px] text-white/40 mt-0.5 italic">"{subtitle}"</p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="text-right">
-              <div className="text-xs font-bold" style={{ color: theme ? theme.ink : 'var(--tss-navy)' }}>{sectionPercent}%</div>
-              <div className="text-[10px] text-gray-400">
+              <div className="text-xs font-bold" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }}>{sectionPercent}%</div>
+              <div className="text-[10px] text-white/40">
                 {completed}/{productized.length}
-                {proposedCount > 0 && (<span className="text-amber-600"> +{proposedCount}↗</span>)}
+                {proposedCount > 0 && (<span className="text-amber-400"> +{proposedCount}↗</span>)}
               </div>
             </div>
-            <ChevronDown size={16} className="text-gray-400 transition-transform group-open:rotate-180" />
+            <ChevronDown size={16} className="text-white/40 transition-transform group-open:rotate-180" />
           </div>
         </div>
       </summary>
-      <div className="divide-y divide-gray-100 border-t border-gray-200">
+      <div className="divide-y divide-white/5 border-t border-white/10">
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
@@ -523,20 +520,20 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
 
   let StatusIcon: LucideIcon = Unlock;
   let statusText = 'Start';
-  let statusColor = 'text-gray-500';
+  let statusColor = 'text-white/50';
 
   if (isProposed) {
     StatusIcon = Hourglass;
     statusText = 'v1.5';
-    statusColor = 'text-amber-600';
+    statusColor = 'text-amber-300';
   } else if (isLocked) {
     StatusIcon = Lock;
     statusText = 'Locked';
-    statusColor = 'text-gray-400';
+    statusColor = 'text-white/40';
   } else if (isCompleted) {
     StatusIcon = CheckCircle2;
     statusText = 'Completed';
-    statusColor = 'text-green-600';
+    statusColor = 'text-green-400';
   } else if (isInProgress) {
     StatusIcon = PlayCircle;
     statusText = 'Continue';
@@ -554,21 +551,21 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
       onClick={isLocked ? undefined : onOpen}
       disabled={isLocked}
       className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors ${
-        isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
-      } ${isProposed ? 'bg-amber-50/30' : ''}`}
+        isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5'
+      } ${isProposed ? 'bg-amber-500/10' : ''}`}
     >
       {/* Step number badge */}
       <div
         className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${
           isProposed
-            ? 'bg-amber-100 text-amber-700 border border-amber-300 border-dashed'
+            ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 border-dashed'
             : isCompleted
-            ? 'bg-green-100 text-green-700'
+            ? 'bg-green-500/20 text-green-300'
             : isInProgress
-            ? 'bg-amber-100 text-amber-700'
+            ? 'bg-amber-500/20 text-amber-300'
             : lesson.is_test
-            ? 'bg-purple-100 text-purple-700'
-            : 'bg-gray-100 text-gray-600'
+            ? 'bg-purple-500/20 text-purple-300'
+            : 'bg-white/10 text-white/60'
         }`}
       >
         {badgeNum}
@@ -577,19 +574,19 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
       {/* Title + meta */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-sm truncate">{lesson.title}</span>
+          <span className="font-medium text-sm truncate text-white">{lesson.title}</span>
           {isProposed && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold uppercase tracking-wide flex-shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wide flex-shrink-0">
               Coming v1.5
             </span>
           )}
           {lesson.is_test && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold uppercase tracking-wide flex-shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold uppercase tracking-wide flex-shrink-0">
               Gate Test
             </span>
           )}
         </div>
-        <div className="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
+        <div className="text-[11px] text-white/50 flex items-center gap-2 mt-0.5">
           {!isProposed && <span>{lesson.estimated_minutes} min</span>}
           {lesson.pillar && !isProposed && (
             <>
@@ -600,19 +597,19 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
           {!isProposed && lesson.lesson_type !== 'reading' && (
             <>
               <span>·</span>
-              <span className="font-medium text-[var(--tss-navy)]">
+              <span className="font-medium text-[var(--tss-cyan)]">
                 {lesson.lesson_type === 'form' ? 'Goal Setting' : 'Self Test'}
               </span>
             </>
           )}
           {isProposed && (
-            <span className="italic text-amber-700">
+            <span className="italic text-amber-300">
               Canonical content coming in v1.5
             </span>
           )}
         </div>
         {isLocked && lesson.lockReason && (
-          <div className="text-[10px] text-gray-400 mt-1 italic">{lesson.lockReason}</div>
+          <div className="text-[10px] text-white/40 mt-1 italic">{lesson.lockReason}</div>
         )}
       </div>
 
