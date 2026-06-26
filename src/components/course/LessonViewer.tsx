@@ -230,17 +230,22 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
               <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.description_md} /></div>
             </div>
           )}
-          {canonicalDrill ? (
-            <div className={cardCls}><PracticeSection item={canonicalDrill} /></div>
+          {(canonicalDrill || canonicalMission) ? (
+            /* Don't load the full drill/mission here — send them to Let's Play
+               to actually practice it and follow the flow. */
+            <a
+              href={`?tab=sequence&drill=${(canonicalDrill || canonicalMission).id}`}
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-[var(--tss-navy)] text-white py-4 text-sm font-semibold hover:opacity-90"
+            >
+              <PlayCircle size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              Let&apos;s practice drills &amp; missions in Let&apos;s Play →
+            </a>
           ) : lesson.drill_md ? (
             <div className={cardCls}>
               <SectionLabel icon={Dumbbell} text="Drill" />
               <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.drill_md} /></div>
             </div>
           ) : null}
-          {canonicalMission && (
-            <div className={cardCls}><PracticeSection item={canonicalMission} /></div>
-          )}
           {lesson.errors_md && (
             <div className={cardCls}>
               <SectionLabel icon={AlertTriangle} text="Common errors" />
