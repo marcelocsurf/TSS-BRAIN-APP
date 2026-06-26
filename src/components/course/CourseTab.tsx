@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { LessonViewer } from './LessonViewer';
+import { CourseFinalQuiz } from './CourseFinalQuiz';
 import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intros';
 import { toEmbedUrl } from '@/lib/utils/video-embed';
 import { CourseSwitcher } from './CourseSwitcher';
@@ -309,6 +310,9 @@ export function CourseTab({ data }: { data: CourseData }) {
           })}
         </div>
       )}
+
+      {/* Final quiz — one key-questions quiz at the end of the course */}
+      <CourseFinalQuiz courseKey={data.activeCourseKey} studentId={data.studentId} label={beltLabelShort} />
 
       {/* Footer */}
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (
