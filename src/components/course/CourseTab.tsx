@@ -408,35 +408,40 @@ function GroupHeader({
   const embed = videoUrl ? toEmbedUrl(videoUrl) : null;
   return (
     <div className="px-2">
-      <div className="pl-3 border-l-4" style={{ borderColor: theme.accent }}>
-        {eyebrow && (
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="inline-block w-4 h-0.5" style={{ background: theme.accent }} />
-            <span
-              className="text-[10px] tracking-[0.14em] uppercase font-medium"
-              style={{ color: theme.bright, fontFamily: 'DM Mono, monospace' }}
-            >
-              {eyebrow}
-            </span>
+      <div
+        className="rounded-2xl overflow-hidden border border-white/10"
+        style={{ background: '#0F1E33', borderLeft: `4px solid ${theme.accent}` }}
+      >
+        <div className="p-4">
+          {eyebrow && (
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="inline-block w-4 h-0.5" style={{ background: theme.bright }} />
+              <span
+                className="text-[10px] tracking-[0.14em] uppercase font-medium"
+                style={{ color: theme.bright, fontFamily: 'DM Mono, monospace' }}
+              >
+                {eyebrow}
+              </span>
+            </div>
+          )}
+          <div className="flex items-center gap-2.5">
+            <ConcentricRings color={theme.bright} />
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+          </div>
+          {subtitle && <p className="text-[11px] text-white/55 mt-1">{subtitle}</p>}
+        </div>
+        {embed && (
+          <div className="bg-black aspect-video border-t border-white/10">
+            <iframe
+              src={embed}
+              title={`${title} intro`}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         )}
-        <div className="flex items-center gap-2.5">
-          <ConcentricRings color={theme.bright} />
-          <h3 className="text-lg font-bold text-gray-200">{title}</h3>
-        </div>
-        {subtitle && <p className="text-[11px] text-gray-400 mt-1">{subtitle}</p>}
       </div>
-      {embed && (
-        <div className="mt-3 rounded-xl overflow-hidden bg-black aspect-video">
-          <iframe
-            src={embed}
-            title={`${title} intro`}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      )}
     </div>
   );
 }
