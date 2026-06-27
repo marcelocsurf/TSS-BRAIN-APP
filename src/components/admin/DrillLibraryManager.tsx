@@ -16,6 +16,7 @@ const empty = {
   title: '', type: 'drill' as 'drill' | 'mission', belt: 'white', step_id: '',
   time_estimate: '', reps_recommended: '', key_words: '', description_md: '',
   success_criteria: '', block_number: '', block_name: '', student_visible: true,
+  video_url: '',
 };
 
 export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
@@ -53,6 +54,7 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
       time_estimate: d.time_estimate?.toString() || '', reps_recommended: d.reps_recommended?.toString() || '',
       key_words: d.key_words || '', description_md: d.description_md || '', success_criteria: d.success_criteria || '',
       block_number: d.block_number?.toString() || '', block_name: d.block_name || '', student_visible: d.student_visible,
+      video_url: d.video_url || '',
     });
     setEditing(d.id); setError('');
   };
@@ -69,6 +71,7 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
       success_criteria: form.success_criteria || null,
       block_number: form.block_number ? parseInt(form.block_number, 10) : null,
       block_name: form.block_name || null, student_visible: form.student_visible,
+      video_url: form.video_url || null,
     };
     startTransition(async () => {
       try {
@@ -134,6 +137,7 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
             <Field label="Block name"><input value={form.block_name} onChange={(e) => setForm({ ...form, block_name: e.target.value })} className={inp} /></Field>
           </div>
           <Field label="Keywords (optional)"><input value={form.key_words} onChange={(e) => setForm({ ...form, key_words: e.target.value })} className={inp} placeholder="comma, separated" /></Field>
+          <Field label="Video (link — optional)"><input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} className={inp} placeholder="https://youtu.be/…  ·  vimeo.com/…  ·  drive.google.com/…" /></Field>
           <Field label="Description (markdown — same format as the app)">
             <textarea value={form.description_md} onChange={(e) => setForm({ ...form, description_md: e.target.value })} rows={5} className={`${inp} resize-y`} placeholder="What it is, how to do it. Supports **bold**, ==highlight==, bullets, > [!CUE] callouts…" />
           </Field>

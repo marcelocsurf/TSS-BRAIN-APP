@@ -23,6 +23,19 @@ export interface DrillRow {
   display_order: number | null;
   active: boolean;
   student_visible: boolean;
+  video_url?: string | null; // from content_videos (first video for this drill)
+}
+
+// One video per drill via the form: replace any existing content_videos rows
+// for this drill with the given URL (or clear them when empty).
+async function setDrillVideo(admin: ReturnType<typeof createAdminClient>, drillId: string, url?: string | null) {
+  await admin.from('content_videos').delete().eq('drill_mission_id', drillId);
+  const u = url?.trim();
+  if (u) {
+    await admin.from('content_videos').insert({
+      drill_mission_id: drillId, url: u, media_type: 'video', display_order: 0,
+    });
+  }
 }
 
 // Admin (or platform admin) only — this edits global content.
@@ -72,6 +85,19 @@ export async function listDrills(opts: { belt?: string; type?: string; q?: strin
       r.key_words?.toLowerCase().includes(q),
     );
   }
+  // Attach each drill's video (first content_videos row), if any.
+  if (rows.length) {
+    const { data: vids } = await admin
+      .from('content_videos')
+      .select('drill_mission_id, url, display_order')
+      .in('drill_mission_id', rows.map((r) => r.id))
+      .order('display_order');
+    const byDrill = new Map<string, string>();
+    for (const v of vids ?? []) {
+      if (!byDrill.has((v as any).drill_mission_id)) byDrill.set((v as any).drill_mission_id, (v as any).url);
+    }
+    rows = rows.map((r) => ({ ...r, video_url: byDrill.get(r.id) ?? null }));
+  }
   return rows;
 }
 
@@ -89,6 +115,7 @@ interface DrillInput {
   block_name?: string | null;
   display_order?: number | null;
   student_visible?: boolean;
+  video_url?: string | null;
 }
 
 function clean(input: DrillInput) {
@@ -141,6 +168,7 @@ export async function createDrill(input: DrillInput): Promise<DrillRow> {
   const id = await nextDrillId(admin, input.type, input.belt);
   const { data, error } = await admin.from('drills_missions').insert({ id, ...clean(input), active: true }).select('*').single();
   if (error) throw new Error(error.message);
+  await setDrillVideo(admin, id, input.video_url);
   revalidatePath('/drill-library');
   return data as DrillRow;
 }
@@ -150,6 +178,7 @@ export async function updateDrill(id: string, input: DrillInput): Promise<void> 
   const admin = createAdminClient();
   const { error } = await admin.from('drills_missions').update(clean(input)).eq('id', id);
   if (error) throw new Error(error.message);
+  await setDrillVideo(admin, id, input.video_url);
   revalidatePath('/drill-library');
 }
 
