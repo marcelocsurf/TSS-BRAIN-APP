@@ -190,8 +190,14 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
 
       {isFormOrTest ? (
         /* Form / exit-test lessons keep their interactive activity (and the
-           exit test's quiz) — those ARE the gate, not a per-lesson quiz. */
+           exit test's quiz) — those ARE the gate, not a per-lesson quiz.
+           Still show the lesson video on top when one is set. */
         <>
+          {lessonVideos.length > 0 && (
+            <div className={cardCls}>
+              <DrillMissionVideos videos={lessonVideos} title={lesson.title} />
+            </div>
+          )}
           <div className={cardCls}>
             <FormSection
               lesson={lesson}
