@@ -295,10 +295,13 @@ export function CourseTab({ data }: { data: CourseData }) {
             const SeqIcon = WB_SEQUENCE_ICON[sequence.id] || BookOpen;
             const cumulative = WB_SEQUENCE_CUMULATIVE[sequence.id];
             const promise = sequence.lessons[0]?.wb_sequence_promise || '';
+            // Numbered sequences (1–13) show "Sequence #N: Name"; framing groups
+            // like Foundation / Concepts / Exit (order 0 or 14+) show just the name.
+            const isNumberedSeq = sequence.order >= 1 && sequence.order <= 13;
             return (
               <SectionBlock
                 key={sequence.id}
-                title={`Sequence #${sequence.order}: ${sequence.name}`}
+                title={isNumberedSeq ? `Sequence #${sequence.order}: ${sequence.name}` : sequence.name}
                 subtitle={promise}
                 Icon={SeqIcon}
                 badge={cumulative ? `${cumulative}/25 cumulative` : null}
