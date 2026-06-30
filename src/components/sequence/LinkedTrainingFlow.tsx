@@ -651,9 +651,8 @@ export function LinkedTrainingFlow({
 
         <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl shadow-lg p-6 text-center space-y-4">
           <div className="flex justify-center">
-            {drill.type === 'mission'
-              ? <Waves size={48} strokeWidth={1.5} />
-              : <Dumbbell size={48} strokeWidth={1.5} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-12 object-contain opacity-95" />
           </div>
           <h3 className="font-bold text-lg">Now go practice</h3>
           <p className="text-sm text-white/80 leading-relaxed">
@@ -972,9 +971,16 @@ export function LinkedTrainingFlow({
     return (
       <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: '#161A26' }}>
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
-          <div className="mx-auto w-20 h-20 rounded-full bg-[var(--tss-cyan)]/15 flex items-center justify-center text-5xl leading-none select-none" aria-hidden="true">
-            🤙
-          </div>
+          <svg width="72" height="72" viewBox="0 0 100 100" className="mx-auto" aria-hidden="true">
+            <defs><clipPath id="ltf-yy"><circle cx="50" cy="50" r="48" /></clipPath></defs>
+            <g clipPath="url(#ltf-yy)">
+              <rect width="100" height="100" fill="#0a2a4a" />
+              <path d="M50 2 a48 48 0 0 1 0 96 a24 24 0 0 1 0 -48 a24 24 0 0 0 0 -48" fill="#00D2FF" />
+              <circle cx="50" cy="26" r="7.5" fill="#0a2a4a" />
+              <circle cx="50" cy="74" r="7.5" fill="#00D2FF" />
+            </g>
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#1f3b57" strokeWidth="2" />
+          </svg>
           <div>
             <h2 className="text-xl font-bold text-[var(--tss-navy)]">Session saved</h2>
             <p className="text-sm text-gray-500 mt-1">
