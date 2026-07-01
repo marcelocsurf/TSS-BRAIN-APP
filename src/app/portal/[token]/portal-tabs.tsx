@@ -412,7 +412,7 @@ export function PortalTabs({
                 </p>
                 <VideoAnalyzerLauncher
                   title="Analyze your surfing"
-                  subtitle="Load your clip, compare it to the TSS models, and draw lines & angles frame by frame."
+                  subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
                 />
               </div>
             </div>

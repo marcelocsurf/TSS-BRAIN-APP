@@ -129,7 +129,7 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
               {lesson.is_test
                 ? ' — including test specifications, evaluation rubric, accepted formats, and retake policy —'
                 : ' — including description, key concepts, coach cue, common errors, drill, and success indicators —'}
-              {' '}as part of the next update. The TSS canon prioritizes precision over speed: pedagogical content is only published once it is doctrinally complete.
+              {' '}as part of the next update. The Surf Sequence canon prioritizes precision over speed: pedagogical content is only published once it is doctrinally complete.
             </p>
           </div>
 
@@ -549,7 +549,7 @@ function SetGoalForm({
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
         <h4 className="font-bold text-sm mb-2">Your Goal</h4>
         <p className="text-xs text-gray-600 mb-3">
-          Write your personal goal as clearly as possible. Be specific. This will be visible to your TSS coach.
+          Write your personal goal as clearly as possible. Be specific. This will be visible to your coach.
         </p>
         <textarea
           value={goal}

@@ -101,7 +101,7 @@ export function CourseTab({ data }: { data: CourseData }) {
         <Lock className="mx-auto mb-4 text-[var(--tss-cyan)]" size={56} strokeWidth={1.5} />
         <h2 className="text-xl font-bold mb-2">Course Access Required</h2>
         <p className="text-gray-600 mb-6">
-          The TSS White Belt Masterclass is a paid course. Reach out to your TSS coach to get access.
+          The Surf Sequence White Belt Masterclass is a paid course. Reach out to your coach to get access.
         </p>
         <p className="text-sm text-gray-400">
           Once you have an access code, your coach will activate the course on your account.
@@ -323,7 +323,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           <Trophy className="mx-auto mb-2 text-[var(--tss-cyan)]" size={36} strokeWidth={1.75} />
           <h3 className="font-bold text-lg text-[var(--tss-navy)] mb-1">{beltLabelShort} Course Complete!</h3>
           <p className="text-sm text-[var(--tss-navy)]/70">
-            You finished the theoretical {beltLabelShort} course. Talk to your TSS coach to schedule your in-person evaluation.
+            You finished the theoretical {beltLabelShort} course. Talk to your coach to schedule your in-person evaluation.
           </p>
         </div>
       )}

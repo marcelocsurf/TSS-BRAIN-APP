@@ -483,7 +483,7 @@ export function LinkedTrainingFlow({
         value: 'play',
         Icon: Play,
         title: 'Breathe · Focus · Play',
-        desc: 'The TSS mantra — drop in and play the game.',
+        desc: 'The Surf Sequence mantra — drop in and play the game.',
       },
     ];
 
