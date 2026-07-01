@@ -173,18 +173,14 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
               Pillar: {lesson.pillar}
             </p>
           )}
-          <div className="flex items-center gap-3 mt-3 text-[11px] text-white/70">
-            <span className="flex items-center gap-1">
-              <Clock size={13} strokeWidth={1.75} />
-              {lesson.estimated_minutes} min
-            </span>
-            {progress?.completed && (
+          {progress?.completed && (
+            <div className="flex items-center gap-3 mt-3 text-[11px] text-white/70">
               <span className="flex items-center gap-1 text-green-300">
                 <CheckCircle2 size={13} strokeWidth={1.75} />
                 Completed
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

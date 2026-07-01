@@ -599,16 +599,12 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
           )}
         </div>
         <div className="text-[11px] text-white/50 flex items-center gap-2 mt-0.5">
-          {!isProposed && <span>{lesson.estimated_minutes} min</span>}
           {lesson.pillar && !isProposed && (
-            <>
-              {!isProposed && <span>·</span>}
-              <span className="truncate">{lesson.pillar}</span>
-            </>
+            <span className="truncate">{lesson.pillar}</span>
           )}
           {!isProposed && lesson.lesson_type !== 'reading' && (
             <>
-              <span>·</span>
+              {lesson.pillar && <span>·</span>}
               <span className="font-medium text-[var(--tss-cyan)]">
                 {lesson.lesson_type === 'form' ? 'Goal Setting' : 'Self Test'}
               </span>
