@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { getFinalQuiz, getFinalQuizResult, submitFinalQuiz, type FinalQuizQuestion } from '@/lib/actions/course-final-quiz';
-import { Brain, Trophy } from 'lucide-react';
+import { Brain, Trophy, Lock } from 'lucide-react';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
-export function CourseFinalQuiz({ courseKey, studentId, label }: { courseKey: string; studentId: string; label: string }) {
+export function CourseFinalQuiz({ courseKey, studentId, label, locked = false }: { courseKey: string; studentId: string; label: string; locked?: boolean }) {
   const [questions, setQuestions] = useState<FinalQuizQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<{ score: number; total: number; passed: boolean; correct?: Record<string, number> } | null>(null);
@@ -24,6 +24,20 @@ export function CourseFinalQuiz({ courseKey, studentId, label }: { courseKey: st
   }, [courseKey, studentId]);
 
   if (!loaded || questions.length === 0) return null;
+
+  // Locked until the student finishes the belt's sequences + modules.
+  if (locked && !result) {
+    return (
+      <div className="rounded-2xl p-5 text-center" style={{ background: 'linear-gradient(135deg,#0F1E33,#0A1628)', border: '1px solid rgba(255,255,255,.1)' }}>
+        <Lock size={28} strokeWidth={1.75} className="mx-auto text-white/40" />
+        <h3 className="text-lg font-bold text-white mt-2">{label} — Exit Test</h3>
+        <p className="text-[13px] text-white/60 mt-1">{questions.length} key questions · 80% to pass</p>
+        <p className="text-[12px] text-amber-300 mt-3">
+          Complete all the {label} sequences and modules to unlock the exit test.
+        </p>
+      </div>
+    );
+  }
 
   const allAnswered = questions.every((q) => answers[q.id] !== undefined);
 

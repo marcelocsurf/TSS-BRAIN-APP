@@ -52,6 +52,7 @@ interface CourseData {
   totalLessons: number;
   studentId: string;
   studentName: string;
+  isOwner: boolean;
   hasAccess: boolean;
   ownedCourses: { key: CourseKey; label: string }[];
   activeCourseKey: CourseKey;
@@ -90,6 +91,7 @@ const WB_SEQUENCE_ICON: Record<string, LucideIcon> = {
   'WB-SEQ-3': Rocket,         // Pop-Up
   'WB-SEQ-4': ArrowLeftRight, // Directional Turns
   'WB-SEQ-5': Award,          // Independence
+  'YB-SEQ-8': Trophy,         // Integration & Certification (Yellow tail)
 };
 
 // Cumulative steps mastered after completing each sequence (canon)
@@ -350,8 +352,14 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
-      {/* Final quiz — one key-questions quiz at the end of the course */}
-      <CourseFinalQuiz courseKey={data.activeCourseKey} studentId={data.studentId} label={beltLabelShort} />
+      {/* Final quiz — theory exit test. Locked until the student completes the
+          belt's sequences + modules (owners bypass for review). */}
+      <CourseFinalQuiz
+        courseKey={data.activeCourseKey}
+        studentId={data.studentId}
+        label={beltLabelShort}
+        locked={!data.isOwner && beltLessons.length > 0 && !beltLessons.every((l) => l.completed || l.status_v1 === 'PROPOSED')}
+      />
 
       {/* Footer */}
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (

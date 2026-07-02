@@ -117,6 +117,7 @@ interface PortalData {
     totalLessons: number;
     studentId: string;
     studentName: string;
+    isOwner: boolean;
     hasAccess: boolean;
     ownedCourses: { key: any; label: string }[];
     activeCourseKey: any;

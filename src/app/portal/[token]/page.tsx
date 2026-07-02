@@ -92,6 +92,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     totalLessons: courseCatalog.totalLessons,
     studentId: student.id,
     studentName: student.first_name || student.display_name || 'student',
+    isOwner,
     hasAccess: isOwner || student.course_access_white === true || student.course_access_yellow === true || student.course_access_blue === true,
     // M49 — multi-course wiring
     ownedCourses: ownedCourses.map((c) => ({ key: c.key, label: c.label })),
