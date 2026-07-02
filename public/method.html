@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Surf Sequence® — The Method · Brand-Aligned</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ════════════════════════════════════════════════════════
+     TSS OFFICIAL BRAND MANUAL v4.0 — Color & Typography
+     Source: TSS_BrandManual_v4_Final.pdf — Chapter 4
+     ════════════════════════════════════════════════════════ */
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* ───── OFFICIAL BRAND COLORS (Chapter 4.2) ───── */
+    --ocean-navy:    #0A1628;  /* Pantone 289 C · PRIMARY BG · AUTHORITY */
+    --brand-blue:    #0D2D5E;  /* Pantone 281 C · SECONDARY · STRUCTURE */
+    --signature-cyan:#5AC3E7;  /* Pantone 2186 C · ACCENT · ENERGY · IDENTITY */
+    --structural-grey:#4E4D4D; /* Pantone Cool Grey 11 C · SUPPORT · NEUTRAL TEXT */
+
+    /* ───── Derived tonal variants ───── */
+    --navy:    var(--ocean-navy);
+    --blue:    var(--brand-blue);
+    --cyan:    var(--signature-cyan);
+    --cyan-15: rgba(90, 195, 231, 0.15);
+    --cyan-25: rgba(90, 195, 231, 0.25);
+    --cyan-50: rgba(90, 195, 231, 0.50);
+    --grey:    var(--structural-grey);
+    --grey-l:  #7A7979;
+    --grey-ll: #C8C8C8;
+    --white:   #FFFFFF;
+    --off-white: #F4F7FA;
+
+    /* ───── Layer accents ───── */
+    --l1: #0D2D5E;
+    --l2: #0A4A6E;
+    --l3: #093A52;
+    --l4: #5AC3E7;
+    --violet: #7E57C2;
+
+    /* ───── OFFICIAL TYPOGRAPHY (Chapter 4.3) ───── */
+    --font-display: 'Playfair Display', Georgia, serif;        /* H1, H2, Covers, Section Titles */
+    --font-body:    'DM Sans', system-ui, -apple-system, sans-serif; /* Body, Captions, Interface */
+    --font-mono:    'DM Mono', 'Courier New', monospace;       /* Labels, Data, Tags */
+    --font-logo:    'DM Sans', system-ui, sans-serif;
+    /* NOTE: Official logo font is Biennale Medium by Latinotype (exclusive to logo).
+       Web-safe fallback: DM Sans 500/700. */
+
+    --radius: 8px;
+    --radius-lg: 14px;
+    --transition: 0.2s ease;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--ocean-navy);
+    color: var(--white);
+    min-height: 100vh;
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     LOGO BLOCK — Official Wave Mark (Stacked · Cyan · Dark)
+     ════════════════════════════════════════════════════════ */
+  .logo-banner {
+    background: var(--ocean-navy);
+    padding: 64px 40px 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--cyan-15);
+    position: relative;
+  }
+  .logo-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(90,195,231,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .logo-img {
+    display: block;
+    margin: 0 auto;
+    max-width: 520px;
+    width: 100%;
+    height: auto;
+  }
+  @media (max-width: 720px) {
+    .logo-img { max-width: 360px; }
+  }
+
+  /* ════════════════════════════════════════════════════════
+     STICKY HEADER
+     ════════════════════════════════════════════════════════ */
+  .page-header {
+    background: rgba(10, 22, 40, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--cyan-15);
+    padding: 18px 40px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .header-mini-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-mini-logo img {
+    height: 32px;
+    width: auto;
+    display: block;
+  }
+  .header-meta {
+    text-align: right;
+  }
+  .header-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+  .header-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--cyan);
+    border: 1px solid var(--cyan-25);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-left: 14px;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     MAIN WRAPPER
+     ════════════════════════════════════════════════════════ */
+  .main { max-width: 1000px; margin: 0 auto; padding: 56px 40px 80px; }
+
+  /* TITLE COVER (Playfair · the brand way) */
+  .cover {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--cyan-15);
+  }
+  .cover-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .cover h1 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1.05;
+    color: var(--white);
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .cover .essence {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+    color: var(--cyan);
+    margin-bottom: 18px;
+  }
+  .cover-sub {
+    max-width: 640px;
+    margin: 0 auto;
+    font-family: var(--font-body);
+    color: var(--grey-ll);
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     LEGEND
+     ════════════════════════════════════════════════════════ */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+    padding: 16px 20px;
+    border: 1px solid var(--cyan-15);
+    border-radius: var(--radius-lg);
+    background: rgba(13,45,94,0.3);
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-family: var(--font-mono);
+    color: var(--grey-ll); letter-spacing: 0.08em;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .pillar-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pillar-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: rgba(90,195,231,0.8);
+    border: 1px solid var(--cyan-25);
+    border-radius: 4px;
+    padding: 3px 10px;
+    text-transform: uppercase;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     LAYER WRAPPER (IPM)
+     ════════════════════════════════════════════════════════ */
+  .layer-outer {
+    border: 1px dashed rgba(90,195,231,0.18);
+    border-radius: var(--radius-lg);
+    padding: 6px;
+    position: relative;
+  }
+  .layer-outer-label {
+    position: absolute;
+    top: -11px;
+    left: 16px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: rgba(90,195,231,0.6);
+    background: var(--ocean-navy);
+    padding: 0 8px;
+    text-transform: uppercase;
+  }
+  .layer { border-radius: var(--radius); overflow: hidden; margin-bottom: 4px; }
+  .layer-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 20px; cursor: pointer;
+    transition: background var(--transition); user-select: none;
+  }
+  .layer-header:hover { filter: brightness(1.08); }
+  .layer-num {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.45); text-transform: uppercase; min-width: 60px;
+  }
+  .layer-name {
+    font-family: var(--font-display); font-size: 17px; font-weight: 700;
+    color: var(--white); flex: 1;
+  }
+  .layer-desc {
+    font-family: var(--font-body); font-size: 12px; font-weight: 300;
+    color: rgba(255,255,255,0.55); flex: 2;
+  }
+  .layer-toggle {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    transition: transform var(--transition), border-color var(--transition);
+    flex-shrink: 0;
+  }
+  .layer.open .layer-toggle { transform: rotate(180deg); border-color: var(--cyan); color: var(--cyan); }
+  .layer-body { display: none; padding: 0 20px 20px; background: rgba(0,0,0,0.15); }
+  .layer.open .layer-body { display: block; }
+
+  .layer-l1 .layer-header { background: var(--brand-blue); }
+  .layer-l1 .card         { background: rgba(13,45,94,0.5); }
+  .layer-l2 .layer-header { background: #0A3A5E; }
+  .layer-l2 .card         { background: rgba(10,58,94,0.5); }
+  .layer-l3 .layer-header { background: #073344; }
+  .layer-l4 .layer-header { background: rgba(90,195,231,0.12); border-top: 1px solid var(--cyan-25); }
+  .layer-l4 .layer-name   { color: var(--cyan); }
+
+  /* CARD GRIDS */
+  .cards-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .cards-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .cards-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 14px; }
+  .cards-7 { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin-top: 14px; }
+  @media (max-width: 720px) {
+    .cards-2, .cards-3, .cards-4 { grid-template-columns: 1fr; }
+    .cards-7 { grid-template-columns: repeat(4,1fr); }
+  }
+  .card {
+    border-radius: var(--radius); padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: border-color var(--transition), transform var(--transition);
+    background: rgba(13,45,94,0.4);
+  }
+  .card:hover { border-color: var(--cyan); transform: translateY(-1px); }
+  .card-num {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em;
+    color: var(--cyan); margin-bottom: 6px; text-transform: uppercase;
+  }
+  .card-title { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 4px; line-height: 1.3; }
+  .card-desc { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 300; line-height: 1.5; }
+  .card-step { padding: 10px; text-align: center; }
+  .card-step .card-title { font-size: 12px; margin-bottom: 2px; }
+
+  /* PRCH (Display font for letters — brand manual) */
+  .prch-row { display: grid; grid-template-columns: 40px 1fr; align-items: start; gap: 8px 12px; margin-top: 8px; }
+  .prch-letter { font-family: var(--font-display); font-size: 26px; font-weight: 900; color: var(--cyan); line-height: 1; padding-top: 2px; }
+  .prch-name { font-size: 13px; font-weight: 500; color: var(--white); }
+  .prch-def { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 300; line-height: 1.5; margin-top: 2px; }
+
+  /* CIRCLES */
+  .circles-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 14px; }
+  @media (max-width: 700px) { .circles-grid { grid-template-columns: 1fr; } }
+  .circle-card { border-radius: var(--radius); padding: 16px; border: 1px solid var(--cyan-25); background: rgba(10,70,110,0.35); }
+  .circle-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em; color: var(--cyan); margin-bottom: 8px; text-transform: uppercase; }
+  .circle-title { font-size: 14px; font-weight: 500; color: var(--white); margin-bottom: 10px; }
+  .circle-item { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 5px; }
+  .circle-bullet { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; margin-top: 5px; }
+  .circle-text { font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 300; line-height: 1.4; }
+
+  /* FLOW BADGE */
+  .flow-badge { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; padding: 14px 20px; border: 1.5px solid var(--cyan); border-radius: 40px; background: rgba(90,195,231,0.06); }
+  .flow-badge-line { height: 1px; flex: 1; background: rgba(90,195,231,0.25); }
+  .flow-badge-text { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--cyan); letter-spacing: 0.2em; }
+  .flow-badge-sub { font-size: 11px; color: rgba(90,195,231,0.6); text-align: center; margin-top: 4px; font-family: var(--font-mono); letter-spacing: 0.1em; }
+
+  /* INFINITE CIRCLE */
+  .ic-wrap { display: flex; gap: 32px; align-items: flex-start; margin-top: 14px; }
+  @media (max-width: 720px) { .ic-wrap { flex-direction: column; } }
+  .ic-diagram { flex-shrink: 0; }
+  .ic-detail { flex: 1; }
+  .ic-sequence { margin-bottom: 16px; }
+  .ic-seq-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 6px; }
+  .ic-seq-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .ic-step { font-size: 12px; font-weight: 500; color: var(--white); padding: 4px 10px; border-radius: 4px; background: rgba(90,195,231,0.12); border: 1px solid var(--cyan-25); white-space: nowrap; }
+  .ic-arrow { color: rgba(90,195,231,0.5); font-size: 12px; }
+  .ic-loop { font-family: var(--font-mono); font-size: 11px; color: var(--cyan); opacity: 0.7; }
+  .maneuver-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .mtag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--cyan); border: 1px solid rgba(90,195,231,0.3); border-radius: 4px; padding: 3px 8px; }
+  .ic-svg { width: 180px; height: 180px; }
+
+  /* BISAGRA */
+  .bisagra { border-radius: var(--radius); padding: 14px 20px; display: flex; align-items: center; gap: 20px; border: 1px solid rgba(180,160,220,0.3); background: rgba(80,60,140,0.15); margin: 4px 0; }
+  .bisagra-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em; color: rgba(180,160,220,0.8); text-transform: uppercase; min-width: 60px; }
+  .bisagra-name { font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--white); flex: 1; }
+  .bisagra-desc { font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 300; flex: 2; }
+
+  /* CONNECTOR */
+  .connector { display: flex; align-items: center; justify-content: center; height: 28px; position: relative; }
+  .connector::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: linear-gradient(to bottom, rgba(90,195,231,0.2), rgba(90,195,231,0.5)); }
+  .connector-arrow { font-size: 14px; color: rgba(90,195,231,0.6); position: relative; z-index: 1; background: var(--ocean-navy); padding: 0 4px; line-height: 1; }
+
+  /* ════════════════════════════════════════════════════════
+     PEDAGOGY SECTION
+     ════════════════════════════════════════════════════════ */
+  .ped-section { margin-top: 60px; }
+  .ped-divider { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+  .ped-divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--cyan-50), transparent); }
+  .ped-divider-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.3em;
+    color: var(--cyan); text-transform: uppercase; white-space: nowrap;
+  }
+  .ped-title { font-family: var(--font-display); font-size: 36px; font-weight: 900; color: var(--white); text-align: center; margin-bottom: 8px; letter-spacing: -0.015em; }
+  .ped-title-italic { font-family: var(--font-display); font-weight: 700; font-style: italic; color: var(--cyan); }
+  .ped-lead { font-family: var(--font-body); font-size: 14px; color: rgba(255,255,255,0.6); text-align: center; max-width: 640px; margin: 0 auto 40px; font-weight: 300; }
+  .ped-sub-h { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--white); margin-top: 40px; margin-bottom: 8px; }
+  .ped-sub-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.22em; color: var(--cyan); text-transform: uppercase; margin-bottom: 14px; }
+  .ped-body { font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 300; margin-bottom: 18px; line-height: 1.65; }
+  .ped-body strong { color: var(--white); font-weight: 500; }
+
+  /* EDPF Loop */
+  .edpf { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--cyan-25); }
+  @media (max-width: 720px) { .edpf { grid-template-columns: 1fr 1fr; } }
+  .edpf-step { padding: 22px 18px; background: rgba(10,70,110,0.25); border-right: 1px solid var(--cyan-15); text-align: center; }
+  .edpf-step:last-child { border-right: none; }
+  .edpf-step .letter { font-family: var(--font-display); font-size: 42px; font-weight: 900; color: var(--cyan); line-height: 1; margin-bottom: 8px; }
+  .edpf-step .step-name { font-family: var(--font-body); font-weight: 500; color: var(--white); font-size: 13px; margin-bottom: 4px; }
+  .edpf-step .step-desc { font-size: 10.5px; color: rgba(255,255,255,0.5); font-weight: 300; line-height: 1.4; }
+
+  /* SEQUENCE vs MISSION cards */
+  .sm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 720px) { .sm-grid { grid-template-columns: 1fr; } }
+  .sm-card { padding: 24px; border-radius: var(--radius-lg); position: relative; overflow: hidden; }
+  .sm-card.sequence { background: linear-gradient(135deg, rgba(13,45,94,0.6), rgba(10,70,110,0.4)); border: 1px solid var(--cyan-25); }
+  .sm-card.mission { background: linear-gradient(135deg, rgba(90,195,231,0.12), rgba(13,45,94,0.5)); border: 1px solid var(--cyan); }
+  .sm-card .sm-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 8px; color: var(--cyan); }
+  .sm-card .sm-h { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+  .sm-card .sm-def { font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 16px; line-height: 1.6; }
+  .sm-card .sm-attrs { list-style: none; margin: 0; padding: 0; }
+  .sm-card .sm-attrs li { font-size: 12px; color: rgba(255,255,255,0.65); padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); display: flex; gap: 8px; }
+  .sm-card .sm-attrs li:last-child { border-bottom: none; }
+  .sm-card .sm-attrs li::before { content: "›"; color: rgba(255,255,255,0.4); font-family: var(--font-mono); }
+
+  /* GAME LOOP */
+  .game-loop { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 20px 0 8px; flex-wrap: wrap; }
+  .game-step { background: rgba(13,45,94,0.55); border: 1px solid var(--cyan-25); padding: 14px 14px; border-radius: var(--radius); flex: 1; min-width: 140px; text-align: center; }
+  .game-step .gs-num { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em; color: var(--cyan); margin-bottom: 6px; }
+  .game-step .gs-name { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 4px; }
+  .game-step .gs-desc { font-size: 10.5px; color: rgba(255,255,255,0.5); font-weight: 300; line-height: 1.4; }
+  .game-arrow { color: var(--cyan); font-size: 16px; opacity: 0.6; flex-shrink: 0; }
+
+  /* RESULT CHAIN */
+  .chain { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 24px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--cyan-25); }
+  @media (max-width: 720px) { .chain { grid-template-columns: 1fr; } }
+  .chain-link { padding: 20px 16px; background: rgba(13,45,94,0.3); border-right: 1px solid var(--cyan-15); text-align: center; position: relative; }
+  .chain-link:last-child { border-right: none; background: rgba(90,195,231,0.08); }
+  .chain-link::after { content: "→"; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); color: var(--cyan); font-size: 18px; background: var(--ocean-navy); padding: 2px 4px; z-index: 2; }
+  .chain-link:last-child::after { content: ""; }
+  @media (max-width: 720px) { .chain-link::after { content: "↓"; right: 50%; top: auto; bottom: -12px; transform: translateX(50%); } }
+  .chain-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em; color: var(--cyan); margin-bottom: 8px; text-transform: uppercase; }
+  .chain-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+  .chain-desc { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 300; line-height: 1.45; }
+
+  /* BELTS — Brand Manual labels (Beginner, Novice, Foundation, Emerging, Pre-Elite, Elite) */
+  .belts-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 16px; }
+  @media (max-width: 900px) { .belts-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 560px) { .belts-grid { grid-template-columns: 1fr 1fr; } }
+  .belt-pill { padding: 14px 10px; background: rgba(13,45,94,0.4); border-radius: var(--radius); text-align: center; border-top: 4px solid var(--cyan); position: relative; }
+  .belt-pill[data-c="precurso"] { border-top-color: #AAAAAA; }
+  .belt-pill[data-c="white"]    { border-top-color: #E8E8E8; }
+  .belt-pill[data-c="yellow"]   { border-top-color: #F5C518; }
+  .belt-pill[data-c="blue"]     { border-top-color: #1E6FBF; }
+  .belt-pill[data-c="purple"]   { border-top-color: #7B4FBE; }
+  .belt-pill[data-c="brown"]    { border-top-color: #7D4E27; }
+  .belt-pill[data-c="black"]    { border-top-color: #222222; }
+  .belt-pill .bp-name { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+  .belt-pill .bp-stage { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.5); text-transform: uppercase; margin-bottom: 8px; }
+  .belt-pill .bp-seq { font-size: 11px; color: var(--cyan); font-weight: 500; margin-bottom: 4px; }
+  .belt-pill .bp-mis { font-size: 10px; color: rgba(255,255,255,0.65); font-style: italic; }
+
+  /* TRIAD */
+  .triad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 18px; }
+  @media (max-width: 720px) { .triad { grid-template-columns: 1fr; } }
+  .triad-node { padding: 18px; background: rgba(13,45,94,0.4); border: 1px solid var(--cyan-25); border-radius: var(--radius); text-align: center; }
+  .triad-node .tn-letter { font-family: var(--font-display); font-size: 28px; font-weight: 900; color: var(--cyan); margin-bottom: 6px; }
+  .triad-node .tn-name { font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 4px; }
+  .triad-node .tn-desc { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 300; }
+
+  /* DOCTRINE */
+  .doctrine { margin: 24px 0; padding: 16px 22px; background: rgba(90,195,231,0.06); border-left: 3px solid var(--cyan); border-radius: 0 var(--radius) var(--radius) 0; font-size: 13px; color: rgba(255,255,255,0.75); font-style: italic; line-height: 1.6; }
+  .doctrine strong { color: var(--cyan); font-style: normal; font-weight: 500; }
+
+  /* COMPARTIENDO OLAS */
+  .co-section { margin-top: 60px; border: 1px solid var(--cyan-15); border-radius: var(--radius-lg); overflow: hidden; }
+  .co-header { padding: 18px 24px; background: rgba(13,45,94,0.4); border-bottom: 1px solid var(--cyan-15); display: flex; align-items: center; gap: 16px; }
+  .co-icon { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, rgba(90,195,231,0.25), rgba(13,45,94,0.4)); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .co-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--white); }
+  .co-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
+  @media (max-width: 900px) { .co-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 560px) { .co-grid { grid-template-columns: 1fr 1fr; } }
+  .co-card { padding: 16px 14px; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .co-card:hover { background: rgba(255,255,255,0.03); }
+  .co-belt-dot { width: 10px; height: 10px; border-radius: 50%; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.15); }
+  .co-belt-name { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px; color: rgba(255,255,255,0.75); }
+  .co-value { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 4px; line-height: 1.3; }
+  .co-original { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.35); font-style: italic; margin-bottom: 6px; }
+  .co-desc { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 300; line-height: 1.5; }
+
+  /* FOOTER */
+  .page-footer { border-top: 1px solid var(--cyan-15); padding: 32px 40px; max-width: 1000px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .footer-essence { font-family: var(--font-display); font-style: italic; font-weight: 700; color: var(--cyan); font-size: 14px; }
+  .footer-meta { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); }
+
+  .hint { font-size: 11px; color: rgba(255,255,255,0.3); font-style: italic; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGO BANNER — Official TSS Wave Mark (Horizontal · Primary)
+     Source file: logo-wave.png (1312 × 654)
+     ════════════════════════════════════════════════════════ -->
+<div class="logo-banner">
+  <img class="logo-img" src="logo-wave.png" alt="The Surf Sequence — Evolve through play">
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     STICKY HEADER
+     ════════════════════════════════════════════════════════ -->
+<header class="page-header">
+  <div class="header-inner">
+    <div class="header-mini-logo">
+      <img src="logo-wave.png" alt="The Surf Sequence">
+    </div>
+    <div class="header-meta">
+      <span class="header-label">The Method · Canon Reference</span>
+      <span class="header-badge">v3.0 · 2026</span>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════
+     MAIN
+     ════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- COVER -->
+  <section class="cover">
+    <div class="cover-tag">Brand Manual v4.0 + Core Canon v8.1</div>
+    <h1>The Surf Sequence Method</h1>
+    <div class="essence">Evolve Through Play</div>
+    <p class="cover-sub">A licensed educational methodology — the most systematically structured approach to surf coaching in the world. Surfing learned in sequences, taught in sequences, progressed level by level.</p>
+  </section>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#0D2D5E;border:1px solid rgba(90,195,231,0.4)"></div> Preparation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7E57C2;border:1px solid rgba(180,160,220,0.4)"></div> Bisagra · Transition</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0A3A5E;border:1px solid rgba(90,195,231,0.4)"></div> Entry &amp; Capture</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#073344;border:1px solid rgba(90,195,231,0.4)"></div> Foundations · 3 Circles</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(90,195,231,0.3);border:1px solid rgba(90,195,231,0.6)"></div> Execution · Infinite Circle</div>
+    <div class="legend-item" style="margin-left:auto">
+      <div class="pillar-strip">
+        <span class="pillar-pill">Physical</span>
+        <span class="pillar-pill">Technical</span>
+        <span class="pillar-pill">Tactical</span>
+        <span class="pillar-pill">Mental</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- IPM LAYERS (unchanged from v2) -->
+  <div class="layer-outer">
+    <span class="layer-outer-label">Layer 0 · Four Holistic Pillars — transversal to all layers</span>
+
+    <div class="layer layer-l1 open" id="layer1">
+      <div class="layer-header" onclick="toggle('layer1')">
+        <span class="layer-num">Layer 01</span>
+        <span class="layer-name">Preparation</span>
+        <span class="layer-desc">Holistic foundation before entering the water</span>
+        <span class="layer-toggle">▼</span>
+      </div>
+      <div class="layer-body">
+        <div class="cards-3">
+          <div class="card"><div class="card-num">01</div><div class="card-title">Holistic Assessment</div><div class="card-desc">Evaluate current state across all four pillars. Define the real starting point.</div></div>
+          <div class="card"><div class="card-num">02</div><div class="card-title">Goals &amp; Objectives</div><div class="card-desc">Long · medium · short term. Aligned with belt level and progression arc.</div></div>
+          <div class="card"><div class="card-num">03</div><div class="card-title">Mental Preparation</div><div class="card-desc">Motivation · visualization · focus · nervous system regulation.</div></div>
+          <div class="card"><div class="card-num">04</div><div class="card-title">Getting Shape (GS)</div><div class="card-desc">Surf-specific physical readiness: paddle, pop-up, posture, mobility, stability.</div></div>
+          <div class="card"><div class="card-num">05</div><div class="card-title">Venue Analysis (VA)</div><div class="card-desc">Active reading of conditions: wave type, currents, sections, hazards.</div></div>
+          <div class="card"><div class="card-num">06</div><div class="card-title">Set Goals &amp; Expectations</div><div class="card-desc">Session mission · expectation alignment · conditions vs level vs objective.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector"><span class="connector-arrow">↓</span></div>
+    <div class="bisagra">
+      <span class="bisagra-tag">Bisagra</span>
+      <span class="bisagra-name">Getting in the Zone · Ocean Zone</span>
+      <span class="bisagra-desc">Warm-up · activation calibration · synchrony with the ocean environment</span>
+    </div>
+    <div class="connector"><span class="connector-arrow">↓</span></div>
+
+    <div class="layer layer-l2 open" id="layer2">
+      <div class="layer-header" onclick="toggle('layer2')">
+        <span class="layer-num">Layer 02</span>
+        <span class="layer-name">Entry &amp; Capture</span>
+        <span class="layer-desc">7 steps before riding the wave</span>
+        <span class="layer-toggle">▼</span>
+      </div>
+      <div class="layer-body">
+        <div class="cards-7">
+          <div class="card card-step"><div class="card-num">01</div><div class="card-title">Sweet Spot</div><div class="card-desc">Board position for paddling</div></div>
+          <div class="card card-step"><div class="card-num">02</div><div class="card-title">Duck Dive</div><div class="card-desc">Through the impact zone</div></div>
+          <div class="card card-step"><div class="card-num">03</div><div class="card-title">Hunt Waves</div><div class="card-desc">Active search &amp; position</div></div>
+          <div class="card card-step"><div class="card-num">04</div><div class="card-title">Paddling Angle</div><div class="card-desc">Efficient wave entry</div></div>
+          <div class="card card-step"><div class="card-num">05</div><div class="card-title">Cobra / Pick Line</div><div class="card-desc">Read &amp; choose your line</div></div>
+          <div class="card card-step"><div class="card-num">06</div><div class="card-title">Pop-Up</div><div class="card-desc">Stance with efficiency</div></div>
+          <div class="card card-step"><div class="card-num">07</div><div class="card-title">Connect Board</div><div class="card-desc">Board as body extension</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector"><span class="connector-arrow">↓</span></div>
+
+    <div class="layer layer-l3 open" id="layer3">
+      <div class="layer-header" onclick="toggle('layer3')">
+        <span class="layer-num">Layer 03</span>
+        <span class="layer-name">Foundations in Motion</span>
+        <span class="layer-desc">Three Circles of Power · on the wave</span>
+        <span class="layer-toggle">▼</span>
+      </div>
+      <div class="layer-body">
+        <div class="circles-grid">
+          <div class="circle-card">
+            <div class="circle-tag">Circle 01 · P·R·C·H</div>
+            <div class="circle-title">4 Basic Movements</div>
+            <div class="prch-row">
+              <div class="prch-letter">P</div><div><div class="prch-name">Posture</div><div class="prch-def">Functional stance as the base of every movement</div></div>
+              <div class="prch-letter">R</div><div><div class="prch-name">Rotation</div><div class="prch-def">Obliques &amp; kinetic chain for rail changes</div></div>
+              <div class="prch-letter">C</div><div><div class="prch-name">Compression</div><div class="prch-def">Body as spring — load &amp; release energy</div></div>
+              <div class="prch-letter">H</div><div><div class="prch-name">Hold</div><div class="prch-def">Active position maintenance — fight the forces</div></div>
+            </div>
+          </div>
+          <div class="circle-card">
+            <div class="circle-tag">Circle 02 · Feet</div>
+            <div class="circle-title">Position on the Board</div>
+            <div class="circle-item"><div class="circle-bullet"></div><div class="circle-text"><strong style="color:#fff">Position 1 · Tail</strong> — maximum maneuverability</div></div>
+            <div class="circle-item"><div class="circle-bullet"></div><div class="circle-text"><strong style="color:#fff">Position 2 · Neutral</strong> — speed–control balance</div></div>
+            <div class="circle-item"><div class="circle-bullet"></div><div class="circle-text"><strong style="color:#fff">Position 3 · Nose</strong> — velocity &amp; projection</div></div>
+          </div>
+          <div class="circle-card">
+            <div class="circle-tag">Circle 03 · Wave</div>
+            <div class="circle-title">Dynamic — Forces</div>
+            <div class="circle-item"><div class="circle-bullet" style="background:#fff"></div><div class="circle-text"><strong style="color:#fff">Internal</strong> — body · torque · compression · gravity</div></div>
+            <div class="circle-item"><div class="circle-bullet"></div><div class="circle-text"><strong style="color:#fff">External</strong> — wave energy · face · sections · environment</div></div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(90,195,231,0.15);">
+              <div class="circle-text" style="font-style:italic; color:rgba(90,195,231,0.7)">Surfing is the intelligent management of forces.</div>
+            </div>
+          </div>
+        </div>
+        <div class="flow-badge">
+          <div class="flow-badge-line"></div>
+          <div>
+            <div class="flow-badge-text">F L O W</div>
+            <div class="flow-badge-sub">Intersection of the three circles</div>
+          </div>
+          <div class="flow-badge-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector"><span class="connector-arrow">↓</span></div>
+
+    <div class="layer layer-l4 open" id="layer4">
+      <div class="layer-header" onclick="toggle('layer4')">
+        <span class="layer-num">Layer 04</span>
+        <span class="layer-name">Execution · Infinite Circle</span>
+        <span class="layer-desc">Repeatable dynamic pattern — pump · turns · combinations</span>
+        <span class="layer-toggle">▼</span>
+      </div>
+      <div class="layer-body">
+        <div class="ic-wrap">
+          <div class="ic-diagram">
+            <svg class="ic-svg" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="90" cy="90" r="58" stroke="rgba(90,195,231,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+              <path d="M90 32 C140 32, 148 90, 148 90" stroke="rgba(90,195,231,0.5)" stroke-width="1.2" marker-end="url(#ica)" fill="none"/>
+              <path d="M148 90 C148 140, 90 148, 90 148" stroke="rgba(90,195,231,0.5)" stroke-width="1.2" marker-end="url(#ica)" fill="none"/>
+              <path d="M90 148 C40 148, 32 90, 32 90" stroke="rgba(90,195,231,0.5)" stroke-width="1.2" marker-end="url(#ica)" fill="none"/>
+              <path d="M32 90 C32 40, 90 32, 90 32" stroke="rgba(90,195,231,0.5)" stroke-width="1.2" marker-end="url(#ica)" fill="none"/>
+              <defs>
+                <marker id="ica" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(90,195,231,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </marker>
+              </defs>
+              <rect x="58" y="14" width="64" height="24" rx="12" fill="#0A1628" stroke="rgba(90,195,231,0.5)" stroke-width="1"/>
+              <text x="90" y="26" text-anchor="middle" dominant-baseline="central" fill="#5AC3E7" font-family="DM Mono, monospace" font-size="10">POSTURE</text>
+              <rect x="118" y="78" width="54" height="24" rx="12" fill="#0A1628" stroke="rgba(90,195,231,0.5)" stroke-width="1"/>
+              <text x="145" y="90" text-anchor="middle" dominant-baseline="central" fill="#5AC3E7" font-family="DM Mono, monospace" font-size="9">MANEUVER</text>
+              <rect x="54" y="142" width="72" height="24" rx="12" fill="#0A1628" stroke="rgba(90,195,231,0.5)" stroke-width="1"/>
+              <text x="90" y="154" text-anchor="middle" dominant-baseline="central" fill="#5AC3E7" font-family="DM Mono, monospace" font-size="9">PROJECTION</text>
+              <rect x="8" y="78" width="56" height="24" rx="12" fill="#0A1628" stroke="rgba(90,195,231,0.5)" stroke-width="1"/>
+              <text x="36" y="90" text-anchor="middle" dominant-baseline="central" fill="#5AC3E7" font-family="DM Mono, monospace" font-size="9">ROTATION</text>
+              <text x="90" y="87" text-anchor="middle" dominant-baseline="central" fill="rgba(90,195,231,0.25)" font-size="24">∞</text>
+            </svg>
+          </div>
+          <div class="ic-detail">
+            <div class="ic-sequence">
+              <div class="ic-seq-label">Universal sequence</div>
+              <div class="ic-seq-flow">
+                <span class="ic-step">Posture</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Rotation</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Projection</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Maneuver</span><span class="ic-arrow">↩</span>
+                <span class="ic-loop">loop ∞</span>
+              </div>
+            </div>
+            <div class="ic-sequence">
+              <div class="ic-seq-label">For pump</div>
+              <div class="ic-seq-flow">
+                <span class="ic-step">Posture</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Rotation</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Projection</span><span class="ic-arrow">↩</span>
+                <span class="ic-loop">loop ∞</span>
+              </div>
+            </div>
+            <div class="ic-sequence">
+              <div class="ic-seq-label">For full maneuver</div>
+              <div class="ic-seq-flow">
+                <span class="ic-step">Posture</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Bottom Turn</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Projection</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Maneuver</span><span class="ic-arrow">→</span>
+                <span class="ic-step">Variation</span><span class="ic-arrow">↩</span>
+                <span class="ic-loop">loop ∞</span>
+              </div>
+            </div>
+            <div class="ic-seq-label" style="margin-top:12px">Maneuvers that inhabit the circle</div>
+            <div class="maneuver-tags">
+              <span class="mtag">CRUZ</span><span class="mtag">TAPALOCO</span><span class="mtag">CUTBACK</span>
+              <span class="mtag">CARVE</span><span class="mtag">SNAP</span><span class="mtag">FLOATER</span>
+              <span class="mtag">REENTRY</span><span class="mtag">BARREL</span><span class="mtag">AERIAL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint" style="margin-top:20px; text-align:center">Click any layer header to expand or collapse · TSS IPM is a cartographic map — not a replacement for belts, blocks, or drills</p>
+
+  <!-- ════════════════════════════════════════════════════════
+       PEDAGOGY SECTION
+       ════════════════════════════════════════════════════════ -->
+  <section class="ped-section">
+
+    <div class="ped-divider">
+      <div class="ped-divider-line"></div>
+      <div class="ped-divider-label">Part II · Pedagogy</div>
+      <div class="ped-divider-line"></div>
+    </div>
+
+    <h2 class="ped-title">How TSS <em class="ped-title-italic">Teaches</em></h2>
+    <p class="ped-lead">The map shows <em>what</em> the surfer traverses. This section shows <em>how</em> we teach it — the pedagogical engine that turns architecture into capability.</p>
+
+    <!-- EDPF -->
+    <div class="ped-sub-tag">Section C.3 · The Teaching Cycle</div>
+    <h3 class="ped-sub-h">Evolve Through Play — the E · D · P · F loop</h3>
+    <p class="ped-body">
+      Every drill, every mission, every session in TSS runs on the same four-step pedagogical cycle. Repetition without play produces low adherence, low learning, high dropout — so play is not optional, it is the operating system.
+    </p>
+    <div class="edpf">
+      <div class="edpf-step"><div class="letter">E</div><div class="step-name">Explain</div><div class="step-desc">State the objective and the why</div></div>
+      <div class="edpf-step"><div class="letter">D</div><div class="step-name">Demonstrate</div><div class="step-desc">Show correct execution from multiple angles</div></div>
+      <div class="edpf-step"><div class="letter">P</div><div class="step-name">Participate</div><div class="step-desc">Surfer attempts with coaching support</div></div>
+      <div class="edpf-step"><div class="letter">F</div><div class="step-name">Feedback</div><div class="step-desc">Evaluate and adjust immediately</div></div>
+    </div>
+    <div class="doctrine">
+      <strong>Doctrinal Principle.</strong> The brain learns more deeply and retains better when there is emotional engagement and playful context. Drill without play = low adherence, low learning, high dropout.
+    </div>
+
+    <!-- DUAL PHILOSOPHY -->
+    <div class="ped-sub-tag" style="margin-top:48px;">Section A.8 · Methodological Core</div>
+    <h3 class="ped-sub-h">The Dual Philosophy — Classical × Ecological Dynamics</h3>
+    <p class="ped-body">
+      TSS integrates two philosophies of motor learning. They are not opposed — they are <strong>complementary</strong>. The conscious integration of both is the methodological core of the method. Each one alone is incomplete. Together, they produce surfers who own the biomechanics AND adapt in real time to a living ocean.
+    </p>
+    <div class="sm-grid">
+      <div class="sm-card sequence">
+        <div class="sm-tag">Philosophy 1</div>
+        <div class="sm-h">Classical / Isolated</div>
+        <div class="sm-def">Repetition and automatization of isolated movements to fix biomechanics. <strong>Theory → isolated practice → repetition → automatization.</strong> Used for the initial phase of every step: understanding the body, building balance, owning base positions.</div>
+        <ul class="sm-attrs">
+          <li>Builds the biomechanical base</li>
+          <li>Decomposes the movement into parts</li>
+          <li>Land · surfskate · calm water</li>
+          <li>Pop-up, base posture, paddle technique</li>
+          <li style="border-bottom:none;color:rgba(90,195,231,0.7);font-style:italic;">Alone: limits ability to adapt to real water</li>
+        </ul>
+      </div>
+      <div class="sm-card mission">
+        <div class="sm-tag">Philosophy 2</div>
+        <div class="sm-h">Ecological Dynamics</div>
+        <div class="sm-def">Learning emerges from continuous interaction between <strong>athlete × task × environment</strong>. Movement is an adaptive response to perceived information — not the execution of a fixed recipe. <em>The heart of the TSS method.</em></div>
+        <ul class="sm-attrs">
+          <li>Builds adaptive, real-time capability</li>
+          <li>Designs constraints, not instructions</li>
+          <li>Small waves · challenging waves</li>
+          <li>Source: Rob Gray (motor learning science)</li>
+          <li style="border-bottom:none;color:rgba(90,195,231,0.7);font-style:italic;">Alone: can skip critical biomechanical foundations</li>
+        </ul>
+      </div>
+    </div>
+    <div class="doctrine">
+      <strong>TSS Integration.</strong> Classical builds the base → Ecological transfers it to the real ocean. The student learns the base on land or calm water (Classical), then applies it in real contexts with increasing variability (Ecological). The final objective: the student <em>applies</em> knowledge, <em>adapts</em> to changing conditions, <em>perceives</em> relevant information, and makes <em>good decisions</em> in real time.
+    </div>
+
+    <div class="ped-sub-tag" style="margin-top:30px;">Key Ecological Concepts Applied to Surf</div>
+    <h3 class="ped-sub-h" style="font-size:18px;">5 concepts that drive every mission design</h3>
+    <p class="ped-body">Behind every TSS drill and mission, one or more of these concepts is operating. They are why missions look like missions and not like scripted lessons.</p>
+    <div class="cards-2">
+      <div class="card"><div class="card-num">01 · Perception-Action Coupling</div><div class="card-title">Perception and action are inseparable</div><div class="card-desc">Movement is guided by available environmental information, not a fixed motor program. <strong style="color:#fff;">→ Apply:</strong> drills that force the student to decide based on real ocean information, not a script.</div></div>
+      <div class="card"><div class="card-num">02 · Affordances</div><div class="card-title">The wave invites — or restricts</div><div class="card-desc">The environment offers opportunities for action. It is not passive. <strong style="color:#fff;">→ Apply:</strong> teach the student to RECOGNIZE what the wave offers TODAY, not impose a predefined maneuver.</div></div>
+      <div class="card"><div class="card-num">03 · Constraints-Led Approach</div><div class="card-title">Skills develop under constraints</div><div class="card-desc">Individual (capacity) · Environment (conditions) · Task (objective). Manipulating constraints guides learning. <strong style="color:#fff;">→ Apply:</strong> design drills with explicit constraints — same mission with variations of board, spot, wave, time.</div></div>
+      <div class="card"><div class="card-num">04 · Self-Organization</div><div class="card-title">Technique emerges from context</div><div class="card-desc">Given well-designed tasks and constraints, the athlete-environment system self-organizes toward functional solutions without detailed verbal instruction. <strong style="color:#fff;">→ Apply:</strong> the base of Evolve Through Play — missions designed so technique emerges, not is dictated.</div></div>
+      <div class="card" style="grid-column: span 2;"><div class="card-num">05 · Practice Design — Variability</div><div class="card-title">Practice must simulate real complexity</div><div class="card-desc">Effective practice mirrors the variability and complexity of the real performance context. <strong style="color:#fff;">→ Apply:</strong> intentional rotation of locations — <em>Land → Surfskate → Calm Water → Small Waves → Challenging Waves.</em> Each environment adds a layer of variability the previous one didn't have.</div></div>
+    </div>
+
+    <div class="ped-sub-tag" style="margin-top:32px;">Integration Chain</div>
+    <h3 class="ped-sub-h" style="font-size:18px;">How Classical and Ecological combine in practice</h3>
+    <div class="chain">
+      <div class="chain-link"><div class="chain-tag">Stage 1</div><div class="chain-name">Land</div><div class="chain-desc">Classical · biomechanics · base motor comprehension</div></div>
+      <div class="chain-link"><div class="chain-tag">Stage 2</div><div class="chain-name">Surfskate</div><div class="chain-desc">Bridge · intermediate variability · carving · rotation</div></div>
+      <div class="chain-link"><div class="chain-tag">Stage 3</div><div class="chain-name">Calm Water / Small Waves</div><div class="chain-desc">Ecological begins · technique meets the real environment</div></div>
+      <div class="chain-link"><div class="chain-tag">Stage 4</div><div class="chain-name">Challenging Waves</div><div class="chain-desc">Full Ecological · real decision-making · adaptive surfing</div></div>
+    </div>
+    <div class="doctrine">
+      <strong>Doctrinal Principle.</strong> Before asking the body something in water, it must know how on land. The small wave is the safe laboratory. The truth of surfing is revealed under demanding conditions.
+    </div>
+
+    <!-- SEQUENCE vs MISSION -->
+    <div class="ped-sub-tag" style="margin-top:48px;">Section A.7 · Architecture vs Pedagogy</div>
+    <h3 class="ped-sub-h">Sequence × Mission — what is learned vs how it's applied</h3>
+    <p class="ped-body">
+      TSS has two distinct operational layers that work together. <strong>Sequences</strong> define WHAT is learned at each belt — they are canonical, non-negotiable, ordered. <strong>Missions</strong> define HOW the learning enters the water — they are the motivational game, the vehicle that turns a technical chain into a real-time playable experience.
+    </p>
+    <div class="sm-grid">
+      <div class="sm-card sequence">
+        <div class="sm-tag">Architecture</div>
+        <div class="sm-h">Sequence</div>
+        <div class="sm-def">A numbered chain of steps that defines what skills are learned at each belt level. Sequences are <strong>canonical</strong> — they do not change based on context, coach, location, or student.</div>
+        <ul class="sm-attrs">
+          <li>Fixed and ordered</li>
+          <li>Defined by the Canon, not the coach</li>
+          <li>Same in every academy, every country</li>
+          <li>The technical-progressive structure</li>
+          <li>Answers: <em>what comes next?</em></li>
+        </ul>
+      </div>
+      <div class="sm-card mission">
+        <div class="sm-tag">Pedagogy · Game</div>
+        <div class="sm-h">Mission</div>
+        <div class="sm-def">The motivational application of part of a sequence. One sequence can generate many missions. The mission is the <strong>vehicle of the Ecological Dynamics approach</strong> — it creates the constraint that triggers learning.</div>
+        <ul class="sm-attrs">
+          <li>Flexible — adapts to surfer, ocean, day</li>
+          <li>Designed by the coach within canon limits</li>
+          <li>Has a concrete, observable success criterion</li>
+          <li>Turns the session into a playable game</li>
+          <li>Answers: <em>what am I doing TODAY?</em></li>
+        </ul>
+      </div>
+    </div>
+    <div class="doctrine">
+      <strong>Doctrinal Principle.</strong> Sequences define WHAT is learned. Missions define HOW the learning is applied. The sequence is the architecture; the mission is the pedagogy.
+    </div>
+
+    <!-- GAME LOOP -->
+    <div class="ped-sub-tag" style="margin-top:48px;">Operational Loop</div>
+    <h3 class="ped-sub-h">The Game — missions become the engine of progression</h3>
+    <p class="ped-body">
+      Every session is a game. The mission is the constraint that turns the ocean into a playable field. The surfer doesn't enter the water to "go surf" — the surfer enters with one specific mission to complete. Mission completion produces evidence. Evidence drives the next mission. Missions stack into sequence mastery. Sequence mastery unlocks the belt.
+    </p>
+    <div class="game-loop">
+      <div class="game-step"><div class="gs-num">01</div><div class="gs-name">Coach sets mission</div><div class="gs-desc">Based on belt + ocean + surfer state</div></div>
+      <div class="game-arrow">→</div>
+      <div class="game-step"><div class="gs-num">02</div><div class="gs-name">Surfer plays</div><div class="gs-desc">Enters water with one concrete objective</div></div>
+      <div class="game-arrow">→</div>
+      <div class="game-step"><div class="gs-num">03</div><div class="gs-name">Evidence appears</div><div class="gs-desc">Mission completed or not — observable</div></div>
+      <div class="game-arrow">→</div>
+      <div class="game-step"><div class="gs-num">04</div><div class="gs-name">Feedback &amp; adjust</div><div class="gs-desc">Calibrate next mission based on result</div></div>
+      <div class="game-arrow">↺</div>
+    </div>
+    <p class="ped-body" style="margin-top:18px;">
+      The loop repeats. Each completed mission adds a small unit of capability. Each unit of capability connects to the next step in the sequence. The whole experience feels like a game — but the underlying chain is doctrinal progression.
+    </p>
+
+    <!-- TRIAD -->
+    <div class="ped-sub-tag" style="margin-top:48px;">Section C.4 · Principle P3</div>
+    <h3 class="ped-sub-h">The Triad — every mission is designed around three variables</h3>
+    <p class="ped-body">
+      The coach never sets a mission in isolation. Every pedagogical decision evaluates three variables at once. Adjust the Task to what the Surfer and the Ocean allow today.
+    </p>
+    <div class="triad">
+      <div class="triad-node"><div class="tn-letter">S</div><div class="tn-name">Surfer</div><div class="tn-desc">Belt level + capacity + state of the day (physical, mental, emotional)</div></div>
+      <div class="triad-node"><div class="tn-letter">O</div><div class="tn-name">Ocean</div><div class="tn-desc">Swell, tide, wind, current, crowd, hazards — what the environment offers today</div></div>
+      <div class="triad-node"><div class="tn-letter">T</div><div class="tn-name">Task</div><div class="tn-desc">The mission — the only variable the coach controls. Adjust it to fit the other two.</div></div>
+    </div>
+
+    <!-- BELTS — Brand Manual labels -->
+    <div class="ped-sub-tag" style="margin-top:48px;">Section B.4 · Belt System</div>
+    <h3 class="ped-sub-h">Belts — each level has its own sequences and missions</h3>
+    <p class="ped-body">
+      The belt is not a trophy. It is a <strong>level of capability</strong>. Each belt contains its own set of canonical sequences and the missions that operationalize them. The previous level is never discarded — it is the foundation the next level expands upon.
+    </p>
+    <div class="belts-grid">
+      <div class="belt-pill" data-c="precurso">
+        <div class="bp-name">Pre-Curso</div><div class="bp-stage">Module 0</div>
+        <div class="bp-seq">8 prerequisites</div><div class="bp-mis">+ orientation missions</div>
+      </div>
+      <div class="belt-pill" data-c="white">
+        <div class="bp-name">White</div><div class="bp-stage">Beginner</div>
+        <div class="bp-seq">Seq 1–5</div><div class="bp-mis">+ 25 missions</div>
+      </div>
+      <div class="belt-pill" data-c="yellow">
+        <div class="bp-name">Yellow</div><div class="bp-stage">Novice 1 &amp; 2</div>
+        <div class="bp-seq">Seq 6–7</div><div class="bp-mis">+ derived missions</div>
+      </div>
+      <div class="belt-pill" data-c="blue">
+        <div class="bp-name">Blue</div><div class="bp-stage">Foundation 1 &amp; 2</div>
+        <div class="bp-seq">Seq 8–13 + 4 concepts</div><div class="bp-mis">+ linking missions</div>
+      </div>
+      <div class="belt-pill" data-c="purple">
+        <div class="bp-name">Purple</div><div class="bp-stage">Emerging</div>
+        <div class="bp-seq">Seq 14–23 + 3 concepts</div><div class="bp-mis">+ verticality missions</div>
+      </div>
+      <div class="belt-pill" data-c="brown">
+        <div class="bp-name">Brown</div><div class="bp-stage">Pre-Elite</div>
+        <div class="bp-seq">6 mastery concepts</div><div class="bp-mis">+ refinement missions</div>
+      </div>
+      <div class="belt-pill" data-c="black">
+        <div class="bp-name">Black</div><div class="bp-stage">Elite</div>
+        <div class="bp-seq">3 competency domains</div><div class="bp-mis">+ teaching missions</div>
+      </div>
+    </div>
+    <div class="doctrine">
+      <strong>Doctrinal Principle.</strong> Progression occurs through structured cumulative expansion. Each sequence prepares the next. Each level adds new components. The previous foundation is never discarded.
+    </div>
+
+    <!-- RESULT CHAIN -->
+    <div class="ped-sub-tag" style="margin-top:48px;">The Pedagogical Chain</div>
+    <h3 class="ped-sub-h">From mission to result — the chain that produces real surfers</h3>
+    <p class="ped-body">
+      The reason this works is that each small unit (a completed mission) connects to a bigger unit (a mastered sequence), which connects to a belt advancement, which produces an observable real-world capability. Nothing is decorative. Every game has a destination.
+    </p>
+    <div class="chain">
+      <div class="chain-link"><div class="chain-tag">Step 1</div><div class="chain-name">Mission</div><div class="chain-desc">One concrete objective the surfer enters the water to complete today</div></div>
+      <div class="chain-link"><div class="chain-tag">Step 2</div><div class="chain-name">Sequence Mastery</div><div class="chain-desc">Missions stack into the technical chain canonical for the belt</div></div>
+      <div class="chain-link"><div class="chain-tag">Step 3</div><div class="chain-name">Belt Advancement</div><div class="chain-desc">Demonstrated capability unlocks the next level. Evidence, not calendar.</div></div>
+      <div class="chain-link"><div class="chain-tag">Result</div><div class="chain-name">Real Surfer</div><div class="chain-desc">Adaptive, perceptive, decision-making in real conditions. Capability — not technique alone.</div></div>
+    </div>
+    <div class="doctrine">
+      <strong>Closing Principle.</strong> Path selection (Recreational or Competitor) does not determine belt color. Both paths share the same structural progression — same sequences, same blocks, same Three Circles. What changes is the evaluation lens and the contextual application.
+    </div>
+
+  </section>
+
+  <!-- COMPARTIENDO OLAS -->
+  <section class="co-section">
+    <div class="co-header">
+      <span class="co-icon">🌊</span>
+      <div>
+        <div class="co-title">Compartiendo Olas — Values by Belt</div>
+        <div style="color:rgba(255,255,255,0.5); font-family:'DM Sans',sans-serif; font-size:0.85rem; margin-top:6px;">
+          Each belt level carries a core human value. Surfing shapes character — not just technique.
+        </div>
+      </div>
+    </div>
+    <div class="co-grid">
+      <div class="co-card"><div class="co-belt-dot" style="background:#AAAAAA"></div><div class="co-belt-name">Pre-Course</div><div class="co-value">Awareness</div><div class="co-original">Conciencia</div><div class="co-desc">Recognizing the ocean, oneself, and others before entering the water.</div></div>
+      <div class="co-card"><div class="co-belt-dot" style="background:#E8E8E8"></div><div class="co-belt-name">White Belt</div><div class="co-value">Humility</div><div class="co-original">Humildad</div><div class="co-desc">Accepting the beginner's mind. The ocean teaches those willing to listen.</div></div>
+      <div class="co-card"><div class="co-belt-dot" style="background:#F5C518"></div><div class="co-belt-name">Yellow Belt</div><div class="co-value">Process</div><div class="co-original">Proceso (Resiliencia)</div><div class="co-desc">Trusting the process over the result. Resilience through repetition.</div></div>
+      <div class="co-card"><div class="co-belt-dot" style="background:#1E6FBF"></div><div class="co-belt-name">Blue Belt</div><div class="co-value">Conscious Commitment</div><div class="co-original">Compromiso Consciente</div><div class="co-desc">Choosing to show up with intention — in the water and in life.</div></div>
+      <div class="co-card"><div class="co-belt-dot" style="background:#7B4FBE"></div><div class="co-belt-name">Purple Belt</div><div class="co-value">Personal Responsibility</div><div class="co-original">Responsabilidad Personal</div><div class="co-desc">Owning your progress, your impact, and your decisions.</div></div>
+      <div class="co-card"><div class="co-belt-dot" style="background:#7D4E27"></div><div class="co-belt-name">Brown Belt</div><div class="co-value">Gratitude</div><div class="co-original">Gratitud</div><div class="co-desc">Appreciating the journey, the teachers, and the waves that shaped you.</div></div>
+      <div class="co-card"><div class="co-belt-dot" style="background:#222222"></div><div class="co-belt-name">Black Belt</div><div class="co-value">Impact</div><div class="co-original">Impacto (Compartir)</div><div class="co-desc">Sharing what you've learned. Elevating others through your knowledge.</div></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="page-footer">
+    <span class="footer-essence">Evolve through play</span>
+    <span class="footer-meta">The Surf Sequence® · Enkrateia SA de CV · Brand Manual v4 · Canon v8.1 · 2026</span>
+  </div>
+</footer>
+
+<script>
+function toggle(id) { document.getElementById(id).classList.toggle('open'); }
+</script>
+</body>
+</html>

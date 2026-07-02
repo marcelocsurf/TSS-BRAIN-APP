@@ -8,6 +8,7 @@ import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/li
 import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
+import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
@@ -272,6 +273,9 @@ function HomeTab({
           </div>
         )}
       </div>
+
+      {/* The Surf Sequence Method — opens the reference page in-app */}
+      <MethodLauncher />
 
       {profileIncomplete && (
         <Link
