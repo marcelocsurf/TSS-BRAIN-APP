@@ -58,16 +58,25 @@ interface CourseData {
   portalToken: string;
 }
 
-// Pre-Course section icon map (per spec Section C)
+// Pre-Course sub-group icon map. Keys are pc_section_id values.
 const PC_SECTION_ICON: Record<string, LucideIcon> = {
-  '0.1': ScrollText, // TSS Doctrine
-  '0.2': Brain,      // Mindset and Learning
-  '0.3': Waves,      // D1 Ocean
-  '0.4': Handshake,  // D2 Etiquette
-  '0.5': LifeBuoy,   // D3 Equipment
-  '0.6': Dumbbell,   // D4 Physical
-  '0.7': Eye,        // Entry Block preview
-  '0.8': DoorOpen,   // Readiness Gate
+  // Current canon sub-groups (7 thematic groups)
+  'M0-START': Rocket,      // Start Here
+  'M0-SAFETY': LifeBuoy,   // Safety
+  'M0-ETIQ': Handshake,    // Etiquette
+  'M0-OCEAN': Waves,       // Ocean Knowledge
+  'M0-EQUIP': Anchor,      // Equipment & Stance
+  'M0-VALUES': Brain,      // Values & Mindset
+  'M0-SESSION': Dumbbell,  // Session Basics
+  // Legacy keys (kept for back-compat)
+  '0.1': ScrollText,
+  '0.2': Brain,
+  '0.3': Waves,
+  '0.4': Handshake,
+  '0.5': LifeBuoy,
+  '0.6': Dumbbell,
+  '0.7': Eye,
+  '0.8': DoorOpen,
 };
 
 // White Belt sequence icon map. Sequences are CUMULATIVE: each builds on
@@ -117,6 +126,7 @@ export function CourseTab({ data }: { data: CourseData }) {
         lessonId={openLessonId}
         studentId={data.studentId}
         onBack={() => setOpenLessonId(null)}
+        onOpenLesson={(id) => setOpenLessonId(id)}
       />
     );
   }
@@ -210,7 +220,7 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3">
           <GroupHeader
             theme={preTheme}
-            eyebrow={`8 sections · ${preCourseLessons.length} units`}
+            eyebrow={`${pcSections.length} sections · ${preCourseLessons.length} units`}
             title="Pre-Course"
             subtitle="Doctrinal foundations every student must know before entering the water"
             videoUrl={intros['pre_course']?.video_url}
@@ -222,7 +232,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               title={section.name}
               subtitle={null}
               Icon={PC_SECTION_ICON[section.id] || BookOpen}
-              badge={`Section ${section.id}`}
+              badge={null}
               lessons={section.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
               theme={preTheme}

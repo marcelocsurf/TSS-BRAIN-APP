@@ -33,11 +33,22 @@ interface LessonViewerProps {
   lessonId: string;
   studentId: string;
   onBack: () => void;
+  // Lets a lesson jump to another lesson (e.g. a sequence step pointing to
+  // its canonical Pre-Course version). Optional — falls back to no banner.
+  onOpenLesson?: (id: string) => void;
 }
+
+// A few sequence steps share their content with a canonical Pre-Course
+// lesson (single source of truth). When the student opens the sequence
+// version, we surface a banner that jumps to the shared Pre-Course lesson.
+const SEQUENCE_TO_INTRO: Record<string, { id: string; label: string }> = {
+  'STP-001': { id: 'ONB-06', label: 'Venue Analysis' },
+  'STP-002': { id: 'PC-WARMUP', label: 'Warm Up' },
+};
 
 type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'form';
 
-export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps) {
+export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -183,6 +194,21 @@ export function LessonViewer({ lessonId, studentId, onBack }: LessonViewerProps)
           )}
         </div>
       </div>
+
+      {/* Sequence step → shared Pre-Course lesson (single source of truth) */}
+      {onOpenLesson && SEQUENCE_TO_INTRO[lesson.id] && (
+        <button
+          onClick={() => onOpenLesson(SEQUENCE_TO_INTRO[lesson.id].id)}
+          className="w-full flex items-center gap-3 rounded-xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 px-4 py-3 text-left hover:bg-[var(--tss-cyan,#5AC3E7)]/20 transition-colors"
+        >
+          <BookOpen size={18} strokeWidth={1.75} className="flex-shrink-0 text-[var(--tss-navy)]" />
+          <span className="flex-1 text-sm text-[var(--tss-navy)]">
+            This is the same lesson as{' '}
+            <span className="font-bold">{SEQUENCE_TO_INTRO[lesson.id].label}</span> in your Pre-Course.
+            <span className="block text-xs text-[var(--tss-navy)]/70">Open the full Pre-Course version →</span>
+          </span>
+        </button>
+      )}
 
       {isFormOrTest ? (
         /* Form / exit-test lessons keep their interactive activity (and the
