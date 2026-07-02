@@ -68,6 +68,9 @@ const PC_SECTION_ICON: Record<string, LucideIcon> = {
   'M0-EQUIP': Anchor,      // Equipment & Stance
   'M0-VALUES': Brain,      // Values & Mindset
   'M0-SESSION': Dumbbell,  // Session Basics
+  // Yellow Belt onboarding sub-groups
+  'YB-VALUE': Award,       // Belt Value
+  'YB-FOUND': Brain,       // Foundations · Flow Language
   // Legacy keys (kept for back-compat)
   '0.1': ScrollText,
   '0.2': Brain,
@@ -157,6 +160,14 @@ export function CourseTab({ data }: { data: CourseData }) {
 
   // Group Pre-Course by pc_section_id (canon v1 uses M0 for all 8)
   const pcSections = groupByPcSection(preCourseLessons);
+
+  // Onboarding: when every lesson carries a pc_section_id (e.g. Yellow Belt's
+  // Belt Value + Foundations), render as thematic sub-groups. Otherwise fall
+  // back to a single legacy block (White has none, Blue's value has none).
+  const onboardingGroups =
+    onboardingLessons.length > 0 && onboardingLessons.every((l) => l.pc_section_id)
+      ? groupByPcSection(onboardingLessons)
+      : null;
 
   // Group belt lessons by wb_sequence_id (5 cumulative sequences for WB,
   // and the YB sequences for the yellow course — same column reused).
@@ -270,23 +281,38 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <GroupHeader
             theme={beltTheme}
-            eyebrow={`Module 1 · ${onboardingLessons.length} items`}
-            title={`${beltLabelShort} Onboarding`}
-            subtitle="Conceptual scaffolding before the sequences."
+            eyebrow={`Before the sequences · ${onboardingLessons.length} items`}
+            title={`${beltLabelShort} — Start Here`}
+            subtitle="What you'll learn, the belt value, and the flow language before you paddle out."
             videoUrl={intros[onboardingSection]?.video_url}
           />
 
-          <SectionBlock
-            title={`${beltLabelShort} Onboarding`}
-            subtitle="Bridge between awareness (Pre-Course) and action (Sequences)"
-            Icon={Compass}
-            badge="Module 1"
-            lessons={onboardingLessons.sort(
-              (a, b) => (a.display_order || 0) - (b.display_order || 0)
-            )}
-            onOpenLesson={(id) => setOpenLessonId(id)}
-            theme={beltTheme}
-          />
+          {onboardingGroups ? (
+            onboardingGroups.map((section) => (
+              <SectionBlock
+                key={section.id}
+                title={section.name}
+                subtitle={null}
+                Icon={PC_SECTION_ICON[section.id] || Compass}
+                badge={null}
+                lessons={section.lessons}
+                onOpenLesson={(id) => setOpenLessonId(id)}
+                theme={beltTheme}
+              />
+            ))
+          ) : (
+            <SectionBlock
+              title={`${beltLabelShort} Onboarding`}
+              subtitle="Bridge between awareness (Pre-Course) and action (Sequences)"
+              Icon={Compass}
+              badge="Module 1"
+              lessons={onboardingLessons.sort(
+                (a, b) => (a.display_order || 0) - (b.display_order || 0)
+              )}
+              onOpenLesson={(id) => setOpenLessonId(id)}
+              theme={beltTheme}
+            />
+          )}
         </div>
       )}
 
