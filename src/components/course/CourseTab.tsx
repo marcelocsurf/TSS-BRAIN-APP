@@ -72,6 +72,9 @@ const PC_SECTION_ICON: Record<string, LucideIcon> = {
   // Yellow Belt onboarding sub-groups
   'YB-VALUE': Award,       // Belt Value
   'YB-FOUND': Brain,       // Foundations · Flow Language
+  // Blue Belt onboarding sub-groups
+  'BB-VALUE': Award,       // Belt Values (accumulated)
+  'BB-INF': ArrowLeftRight, // The Infinite Circle
   // Legacy keys (kept for back-compat)
   '0.1': ScrollText,
   '0.2': Brain,
@@ -259,16 +262,16 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <GroupHeader
             theme={whiteTheme}
-            eyebrow="Shared · already done if you came through WB"
-            title="Prerequisites from White Belt"
-            subtitle="The 6 White Belt onboarding concepts carry over to Yellow Belt. If you finished them at WB they're already ✓ Completed; if you came in direct you can do them now."
+            eyebrow="Carried over · already done if you came up through the belts"
+            title="From your previous belts"
+            subtitle="Foundations and values from earlier belts (the 3 Circles of Power, Momentum, and belt values). If you already completed them they're ✓ Completed; if you came in direct you can do them here — they're prerequisites."
           />
 
           <SectionBlock
-            title="White Belt Onboarding (carried over)"
-            subtitle="Foundations shared between WB and YB"
+            title="Foundations & values (carried over)"
+            subtitle="Prerequisites from your earlier belts"
             Icon={Compass}
-            badge="Shared"
+            badge="Prereqs"
             lessons={sharedOnboardingLessons.sort(
               (a, b) => (a.display_order || 0) - (b.display_order || 0)
             )}
