@@ -18,7 +18,7 @@ async function assertAdmin() {
 // so it bypasses RLS, and keeps the auth account email in sync when one exists.
 export async function updateCoachIdentity(
   coachId: string,
-  input: { first_name: string; last_name: string; email: string; role?: string },
+  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string },
 ): Promise<{ ok: boolean; error?: string }> {
   await assertAdmin();
   const admin = createAdminClient();
@@ -38,6 +38,7 @@ export async function updateCoachIdentity(
   };
   if (email) patch.email = email;
   if (input.role) patch.role = input.role;
+  if (input.academy_id) patch.academy_id = input.academy_id;
 
   const { error } = await admin.from('coaches').update(patch).eq('id', coachId);
   if (error) return { ok: false, error: error.message };

@@ -7,13 +7,14 @@ import { Pencil, Trash2, X } from 'lucide-react';
 
 const ROLES = ['admin', 'coordinator', 'coach', 'assistant'];
 
-export function EditCoachForm({ coach }: { coach: any }) {
+export function EditCoachForm({ coach, academies = [] }: { coach: any; academies?: { id: string; name: string }[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [firstName, setFirstName] = useState(coach.first_name || '');
   const [lastName, setLastName] = useState(coach.last_name || '');
   const [email, setEmail] = useState(coach.email || '');
   const [role, setRole] = useState(coach.role || 'assistant');
+  const [academyId, setAcademyId] = useState(coach.academy_id || '');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export function EditCoachForm({ coach }: { coach: any }) {
       last_name: lastName,
       email,
       role,
+      academy_id: academyId || undefined,
     });
     setSaving(false);
     if (!res.ok) {
@@ -84,6 +86,13 @@ export function EditCoachForm({ coach }: { coach: any }) {
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
+        {academies.length > 0 && (
+          <label className="text-xs text-gray-500 block">Academy
+            <select value={academyId} onChange={(e) => setAcademyId(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white">
+              {academies.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </label>
+        )}
 
         {error && <p className="text-xs text-red-500">{error}</p>}
 

@@ -56,6 +56,11 @@ export default async function CoachProfilePage({ params }: Props) {
 
   if (!coach) notFound();
 
+  const { data: academies } = await supabase
+    .from('academies')
+    .select('id, name')
+    .order('name');
+
   const { data: certifications } = await supabase
     .from('coach_certifications')
     .select('certification_key')
@@ -161,7 +166,7 @@ export default async function CoachProfilePage({ params }: Props) {
           </div>
           <div className="flex gap-2 flex-wrap">
             {(currentUserIsAdmin || isPlatformAdmin) && (
-              <EditCoachForm coach={coach} />
+              <EditCoachForm coach={coach} academies={academies || []} />
             )}
             <ToggleCoachStatus
               coachId={id}
