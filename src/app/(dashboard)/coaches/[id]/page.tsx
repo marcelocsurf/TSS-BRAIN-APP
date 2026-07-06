@@ -10,6 +10,7 @@ import {
 } from '@/lib/actions/coach-dashboard';
 import { CertificationManager } from './certification-manager';
 import { ToggleCoachStatus } from './toggle-coach-status';
+import { EditCoachForm } from './EditCoachForm';
 import { ToggleCourseAccess } from './toggle-course-access';
 import { SetCoachPasswordCard } from './SetCoachPasswordCard';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
@@ -159,6 +160,9 @@ export default async function CoachProfilePage({ params }: Props) {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {(currentUserIsAdmin || isPlatformAdmin) && (
+              <EditCoachForm coach={coach} />
+            )}
             <ToggleCoachStatus
               coachId={id}
               isActive={coach.active_status}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { setCoachActiveStatus } from '@/lib/actions/coach-admin';
 
 export function ToggleCoachStatus({ coachId, isActive, currentUserRole }: {
   coachId: string;
@@ -10,6 +11,7 @@ export function ToggleCoachStatus({ coachId, isActive, currentUserRole }: {
 }) {
   const [active, setActive] = useState(isActive);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   // Only admin can toggle
   if (currentUserRole !== 'admin') return null;
@@ -21,13 +23,14 @@ export function ToggleCoachStatus({ coachId, isActive, currentUserRole }: {
     )) return;
 
     setLoading(true);
-    const supabase = createClient();
-    await supabase
-      .from('coaches')
-      .update({ active_status: !active })
-      .eq('id', coachId);
-    setActive(a => !a);
+    const res = await setCoachActiveStatus(coachId, !active);
     setLoading(false);
+    if (!res.ok) {
+      alert(res.error || 'Could not update status.');
+      return;
+    }
+    setActive(a => !a);
+    router.refresh();
   };
 
   return (
