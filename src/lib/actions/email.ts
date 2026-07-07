@@ -6,6 +6,11 @@ import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Absolute production URL for the logo — email clients can't load relative
+// paths, so this must point at the live domain (white horizontal mark for the
+// dark header). alt text keeps the brand name for image-blocking clients.
+const EMAIL_LOGO = `<img src="https://app.thesurfsequence.com/tss-logo-white-h.png" alt="${BRAND.name}" width="210" style="display:block;margin:0 auto;max-width:72%;height:auto;" />`;
+
 interface SessionEmailData {
   studentName: string;
   studentEmail: string;
@@ -73,7 +78,7 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
 <body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
     <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:24px;text-align:center;">
-      <h1 style="margin:0;color:white;font-size:20px;font-weight:700;">${BRAND.name}</h1>
+      ${EMAIL_LOGO}
       <p style="margin:4px 0 0;color:${BRAND.colors.cyan};font-size:12px;">${BRAND.tagline}</p>
     </div>
     <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
@@ -224,7 +229,7 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
     <!-- Header -->
     <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:28px 24px;text-align:center;">
-      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;letter-spacing:-0.01em;">${BRAND.name}</h1>
+      ${EMAIL_LOGO}
       <p style="margin:6px 0 0;color:${BRAND.colors.cyan};font-size:12px;letter-spacing:0.02em;">${BRAND.tagline}</p>
     </div>
 
@@ -320,7 +325,7 @@ function buildPasswordResetHtml(data: PasswordResetEmailData): string {
 <body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
     <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:28px 24px;text-align:center;">
-      <h1 style="margin:0;color:white;font-size:22px;font-weight:700;letter-spacing:-0.01em;">${BRAND.name}</h1>
+      ${EMAIL_LOGO}
       <p style="margin:6px 0 0;color:${BRAND.colors.cyan};font-size:12px;letter-spacing:0.02em;">${BRAND.tagline}</p>
     </div>
     <div style="background:white;padding:28px 24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
@@ -361,7 +366,7 @@ function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUr
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
     <!-- Header -->
     <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:24px;text-align:center;">
-      <h1 style="margin:0;color:white;font-size:20px;font-weight:700;">The Surf Sequence</h1>
+      ${EMAIL_LOGO}
       <p style="margin:4px 0 0;color:${BRAND.colors.gold};font-size:12px;">${BRAND.tagline}</p>
     </div>
 
@@ -474,7 +479,7 @@ function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName:
 <body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
     <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:28px 24px;text-align:center;">
-      <h1 style="margin:0;color:white;font-size:20px;font-weight:700;">${BRAND.name}</h1>
+      ${EMAIL_LOGO}
       <p style="margin:6px 0 0;color:${BRAND.colors.cyan};font-size:12px;">New surf-level quiz lead</p>
     </div>
     <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
