@@ -388,6 +388,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             >
               Seq {student.current_sequence_number} · Step {student.current_step_order}
             </p>
+            {(student as any).created_at && (
+              <p className="text-[11px] text-gray-400 mt-1">
+                Member since {new Date((student as any).created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
           </div>
         </div>
         {/* Quick actions */}

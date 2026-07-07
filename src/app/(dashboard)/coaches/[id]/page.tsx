@@ -162,6 +162,11 @@ export default async function CoachProfilePage({ params }: Props) {
               {coach.email && (
                 <p className="text-xs text-gray-300 mt-1">{coach.email}</p>
               )}
+              {coach.created_at && (
+                <p className="text-[11px] text-gray-300 mt-0.5">
+                  Member since {new Date(coach.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
