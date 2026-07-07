@@ -11,6 +11,7 @@ import {
 import { CertificationManager } from './certification-manager';
 import { ToggleCoachStatus } from './toggle-coach-status';
 import { EditCoachForm } from './EditCoachForm';
+import { PresentationGrants } from './PresentationGrants';
 import { ToggleCourseAccess } from './toggle-course-access';
 import { SetCoachPasswordCard } from './SetCoachPasswordCard';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
@@ -227,6 +228,9 @@ export default async function CoachProfilePage({ params }: Props) {
 
       {/* Admin: set a password manually when the email link won't work */}
       {isPlatformAdmin && <SetCoachPasswordCard coachId={id} />}
+
+      {/* Admin: grant presentations that unlock in this coach's course */}
+      {(currentUserIsAdmin || isPlatformAdmin) && <PresentationGrants coachId={id} />}
 
       {/* STATS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

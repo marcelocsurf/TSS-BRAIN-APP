@@ -9,6 +9,7 @@ import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-plan
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
 import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
+import { CoachPresentations } from '@/components/coach-portal/CoachPresentations';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
@@ -781,6 +782,9 @@ function CoursesTab({
           </div>
         )}
       </div>
+
+      {/* Presentations granted to this coach (admin-controlled) */}
+      <CoachPresentations token={token} />
 
       {courses.length === 0 ? (
         <div className="rounded-2xl p-8 text-center" style={{ background: '#0F1E33' }}>
