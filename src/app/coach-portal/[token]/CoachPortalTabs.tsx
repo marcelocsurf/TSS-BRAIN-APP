@@ -177,31 +177,81 @@ function HomeTab({
   const completedLessons = coachCourses.filter((l: any) => courseProgress[l.id]?.completed).length;
   const coursePct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
+  // Certification progression (L1–L5) — drives the hero ring, mirroring the
+  // student home's belt-progress ring.
+  const CERT_LABELS: Record<string, string> = {
+    tss_level_1: 'L1 Foundation', tss_level_2: 'L2 Practitioner', tss_level_3: 'L3 Advanced',
+    tss_level_4: 'L4 Master', tss_level_5: 'L5 Educator',
+  };
+  const certRank = coach.certification_level ? (parseInt(String(coach.certification_level).replace(/\D/g, ''), 10) || 0) : 0;
+  const certLabel = coach.certification_level ? (CERT_LABELS[coach.certification_level] || coach.certification_level) : null;
+  const nextCertLabel = certRank >= 1 && certRank < 5 ? CERT_LABELS[`tss_level_${certRank + 1}`] : null;
+
   return (
     <div className="space-y-4">
-      {/* ── Profile ── */}
-      <div className="rounded-2xl p-4 relative" style={{ background: '#0F1E33' }}>
-        <Link
-          href={`/coach-portal/${coach.portal_token}/profile`}
-          className="absolute top-3 right-3 text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] hover:underline"
-        >
-          Edit
-        </Link>
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-bold shrink-0" style={{ background: '#22344a' }}>
-            {coach.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coach.photo_url} alt={coach.display_name} className="w-full h-full object-cover" />
-            ) : (initials || <Waves size={18} strokeWidth={1.75} />)}
+      {/* ── Dark "cockpit" hero — matches the student home ── */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
+        <div className="flex items-center justify-end px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+          <Link
+            href={`/coach-portal/${coach.portal_token}/profile`}
+            className="text-[10px] font-mono uppercase tracking-wider"
+            style={{ color: '#5AC3E7' }}
+          >
+            Edit profile
+          </Link>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* Identity row: photo + name + role/cert + students */}
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center shrink-0 text-white text-lg font-bold" style={{ border: '2px solid #5AC3E7', background: '#1b3148' }}>
+              {coach.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coach.photo_url} alt={coach.display_name} className="w-full h-full object-cover" />
+              ) : (initials || <Waves size={22} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold truncate" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>{coach.display_name}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="w-3 h-3 rounded-full" style={{ background: '#5AC3E7', border: '1px solid #5b6b7a' }} />
+                <span className="text-xs capitalize" style={{ color: '#8aa0b2' }}>
+                  {coach.role.replace(/_/g, ' ')}{certLabel ? ` · ${certLabel}` : ''}
+                </span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>Students</p>
+              <p className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '20px' }}>{stats.studentsWorkedWith}</p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-white text-base truncate">{coach.display_name}</p>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              <span className="text-[10px] px-2 py-0.5 rounded-full capitalize" style={{ background: 'rgba(90,195,231,.18)', color: '#5AC3E7' }}>
-                {coach.role.replace(/_/g, ' ')}{coach.certification_level ? ` · ${coach.certification_level}` : ''}
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full capitalize" style={{ background: 'rgba(167,139,250,.18)', color: '#c4b5fd' }}>
-                Up to {coach.max_belt_permission?.replace(/_belt/g, '').replace(/_/g, ' ')}
+
+          {/* Primary ring: coaching hours + certification progress */}
+          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: '#122236' }}>
+            <div className="relative shrink-0" style={{ width: 104, height: 104 }}>
+              <svg viewBox="0 0 120 120" width="104" height="104">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#1f344a" strokeWidth="10" />
+                <circle
+                  cx="60" cy="60" r="52" fill="none" stroke="#5AC3E7" strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray="326.7"
+                  strokeDashoffset={326.7 * (1 - certRank / 5)}
+                  transform="rotate(-90 60 60)"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <p className="font-bold leading-none" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '22px' }}>{coachingHours}h</p>
+                <p className="text-[8px] font-mono uppercase tracking-wider mt-1" style={{ color: '#8aa0b2' }}>Coached</p>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>Certification</p>
+              <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
+                {certRank > 0 ? `Level ${certRank} of 5` : 'Not certified yet'}
+              </p>
+              <div className="h-1.5 rounded-full overflow-hidden mt-2 mb-2" style={{ background: '#1f344a' }}>
+                <div className="h-full rounded-full" style={{ width: `${(certRank / 5) * 100}%`, background: '#5AC3E7' }} />
+              </div>
+              <span className="text-[11px]" style={{ color: '#8aa0b2' }}>
+                {nextCertLabel ? `Next: ${nextCertLabel}` : certRank >= 5 ? 'Top certification reached' : 'Start your certification path'}
               </span>
             </div>
           </div>
