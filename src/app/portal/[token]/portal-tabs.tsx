@@ -278,7 +278,6 @@ const ALL_TABS: { key: Tab; label: string; icon: LucideIcon; lockedUntilCoachUnl
   { key: 'home', label: 'Home', icon: Home },
   { key: 'course', label: 'Course', icon: GraduationCap },
   { key: 'sequence', label: "Let's Play", icon: Play },
-  { key: 'glossary', label: 'Glossary', icon: BookOpen },
   { key: 'my-coach', label: 'My Coach', icon: User, lockedUntilCoachUnlock: true },
 ];
 
@@ -358,7 +357,24 @@ export function PortalTabs({
       {/* Tab Content */}
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && <HomeTab data={data} belt={belt} onGoTo={setActiveTab} />}
-        {activeTab === 'course' && data.courseData && <CourseTab data={data.courseData} />}
+        {activeTab === 'course' && data.courseData && (
+          <div className="space-y-4">
+            <CourseTab data={data.courseData} />
+            {/* Glossary — collapsible at the bottom of Course (moved out of the nav) */}
+            <details className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
+              <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                  <BookOpen size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+                  Glossary
+                </span>
+                <ChevronDown size={16} className="text-white/40" />
+              </summary>
+              <div className="px-3 pb-3 pt-1 border-t border-white/5">
+                <GlossaryTab />
+              </div>
+            </details>
+          </div>
+        )}
         {activeTab === 'sequence' && (
           pendingDrillMissionId ? (
             // 1) Drill picked from MySequenceTab → run the linked flow inline
