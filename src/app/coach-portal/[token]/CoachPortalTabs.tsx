@@ -61,7 +61,7 @@ export function CoachPortalTabs({
   const { coach, stats } = data;
 
   return (
-    <>
+    <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
@@ -120,7 +120,7 @@ export function CoachPortalTabs({
       <div className="text-center py-4 pb-24">
         <p className="text-[10px] text-white/30">The Surf Sequence -- {BRAND.tagline}</p>
       </div>
-    </>
+    </div>
   );
 }
 
