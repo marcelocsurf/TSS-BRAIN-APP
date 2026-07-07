@@ -280,16 +280,18 @@ function HomeTab({
         )}
       </button>
 
-      {/* ── Stats ── */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* ── Two big stat cards (Training / Free Surf style) ── */}
+      <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Services run', value: stats.totalServicesAsHead.toString() },
-          { label: 'Upcoming', value: stats.upcomingServicesCount.toString() },
-          { label: 'Students', value: stats.studentsWorkedWith.toString() },
+          { label: 'Services run', value: stats.totalServicesAsHead.toString(), accent: '#00D2FF' },
+          { label: 'Upcoming', value: stats.upcomingServicesCount.toString(), accent: '#5AC3E7' },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl px-3 py-4 text-center" style={{ background: '#0F1E33' }}>
-            <p className="text-2xl font-semibold text-white leading-none">{s.value}</p>
-            <p className="text-[8.5px] uppercase tracking-wider text-white/40 mt-2" style={{ fontFamily: 'DM Mono, monospace' }}>{s.label}</p>
+          <div key={s.label} className="rounded-2xl p-4" style={{ background: '#0F1E33' }}>
+            <div className="flex items-center gap-2">
+              <span style={{ width: 4, height: 18, borderRadius: 3, background: s.accent, display: 'inline-block' }} />
+              <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f4f9fc', fontSize: '20px' }}>{s.label}</span>
+            </div>
+            <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-heading)', color: '#00D2FF', fontSize: '30px', lineHeight: 1 }}>{s.value}</p>
           </div>
         ))}
       </div>
