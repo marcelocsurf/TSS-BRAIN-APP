@@ -494,7 +494,7 @@ function CoursesTab({
         <button
           type="button"
           onClick={closeLesson}
-          className="text-[12px] text-[var(--tss-navy)] hover:underline"
+          className="text-[12px] text-[var(--tss-cyan,#5AC3E7)] hover:underline"
         >
           ← Back to courses
         </button>
@@ -502,7 +502,7 @@ function CoursesTab({
         {loading && (
           <div className="text-center py-16">
             <BookOpen size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]" />
-            <p className="text-gray-500 text-sm">Loading lesson…</p>
+            <p className="text-white/50 text-sm">Loading lesson…</p>
           </div>
         )}
 
@@ -705,66 +705,45 @@ function CoursesTab({
       );
     const isYb = !isValue && !isMethod && c.course_section === 'coach_yb';
     const isBb = !isValue && !isMethod && c.course_section === 'coach_bb';
-    const beltBg = isValue
-      ? 'bg-[#EC4899]'
-      : isMethod
-      ? 'bg-[#00F0FF]'
-      : isYb
-      ? 'bg-[#FFFC00]'
-      : isBb
-      ? 'bg-[#1E6FBF] text-white'
-      : 'bg-white';
-    const beltDefaultBorder = isValue
-      ? 'border-[#DB2777] hover:border-[#BE185D]'
-      : isMethod
-      ? 'border-[#06B6D4] hover:border-[#0891B2]'
-      : isYb
-      ? 'border-[#E5E300] hover:border-[#CCCB00]'
-      : isBb
-      ? 'border-[#1A5FA5] hover:border-[#154E87]'
-      : 'border-gray-100 hover:border-gray-300';
+    // Category color kept as a left-accent on the dark card (signals content type).
+    const accent = isValue ? '#EC4899' : isMethod ? '#5AC3E7' : isYb ? '#FACC15' : isBb ? '#3B82F6' : '#94A3B8';
     return (
       <button
         key={c.id}
         type="button"
         onClick={() => !isLocked && openLesson(c.id)}
         disabled={isLocked}
-        className={`w-full text-left ${beltBg} rounded-2xl border p-4 transition-all shadow-sm ${
-          isLocked
-            ? 'border-gray-100 opacity-60 cursor-not-allowed'
-            : isCompleted
-            ? 'border-emerald-200 hover:border-emerald-300 hover:shadow-sm'
-            : isInProgress
-            ? 'border-amber-200 hover:border-amber-300 hover:shadow-sm'
-            : beltDefaultBorder
+        className={`w-full text-left rounded-2xl border border-white/10 p-4 transition-all ${
+          isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/25'
         }`}
+        style={{ background: '#0F1E33', borderLeft: `4px solid ${accent}` }}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-mono text-gray-400">
+            <p className="text-[10px] font-mono text-white/40">
               {c.id} · ~{c.estimated_minutes ?? '?'} min
               {isLocked && ` · locked — finish ${lockedBy} first`}
             </p>
-            <p className="text-sm font-medium text-gray-800 mt-0.5">{c.title}</p>
+            <p className="text-sm font-medium text-white mt-0.5">{c.title}</p>
           </div>
           <div className="shrink-0 flex items-center">
             {isCompleted ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/15 border border-emerald-400/30 rounded-full px-2 py-0.5">
                 <CheckCircle2 size={11} strokeWidth={2} />
                 Done
               </span>
             ) : isInProgress ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/15 border border-amber-400/30 rounded-full px-2 py-0.5">
                 <Clock size={11} strokeWidth={2} />
                 In progress
               </span>
             ) : isLocked ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
                 <Lock size={11} strokeWidth={2} />
                 Locked
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
                 Not started
               </span>
             )}
@@ -776,18 +755,18 @@ function CoursesTab({
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
+      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
           Coach Courses
         </p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>Your certification path</h2>
-        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>Your certification path</h2>
+        <p className="text-[11px] text-white/50 mt-1 leading-relaxed capitalize">
           {coach.max_belt_permission?.replace(/_/g, ' ')}
           {coach.certification_level ? ` · ${coach.certification_level}` : ''}.
         </p>
         {courses.length > 0 && (
           <div className="mt-3">
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1f344a' }}>
               <div
                 className="h-full transition-all"
                 style={{
@@ -796,7 +775,7 @@ function CoursesTab({
                 }}
               />
             </div>
-            <p className="text-[10px] text-gray-500 mt-1 font-mono">
+            <p className="text-[10px] text-white/50 mt-1 font-mono">
               {completedCount} / {courses.length} completed
             </p>
           </div>
@@ -804,9 +783,9 @@ function CoursesTab({
       </div>
 
       {courses.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <BookOpen size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-500">No coach courses published yet.</p>
+        <div className="rounded-2xl p-8 text-center" style={{ background: '#0F1E33' }}>
+          <BookOpen size={36} strokeWidth={1.5} className="mx-auto mb-2 text-white/30" />
+          <p className="text-sm text-white/50">No coach courses published yet.</p>
         </div>
       ) : (
         <>
@@ -918,10 +897,10 @@ function TierGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1 px-1">
+      <p className="text-[10px] font-mono uppercase tracking-wider mb-1 px-1" style={{ color: '#5AC3E7' }}>
         {label} ({items.length})
       </p>
-      <p className="text-[11px] text-gray-400 mb-2 px-1">{sub}</p>
+      <p className="text-[11px] text-white/40 mb-2 px-1">{sub}</p>
       <div className="space-y-1.5">{items.map(render)}</div>
     </div>
   );
