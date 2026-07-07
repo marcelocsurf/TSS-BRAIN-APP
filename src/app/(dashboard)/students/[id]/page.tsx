@@ -161,7 +161,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     supabase
       .from('self_training_sessions')
       .select(
-        'id, drill_name, duration_minutes, execution_rating, mission_completion, intention_text, completed, completed_at, created_at, linked_step_id, kind'
+        'id, drill_name, duration_minutes, execution_rating, mission_completion, intention_text, completed, created_at, linked_step_id, kind'
       )
       .eq('student_id', id)
       .order('created_at', { ascending: false })
