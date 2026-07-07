@@ -23,6 +23,7 @@ import {
   ShoppingBag,
   BarChart3,
   Dumbbell,
+  Presentation,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -49,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3,   roles: ['admin'] },
   { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
   { href: '/drill-library', label: 'Drills', Icon: Dumbbell,   roles: ['admin'] },
+  { href: '/presentations', label: 'Presentations', Icon: Presentation, roles: ['admin'] },
   { href: '/section-intros', label: 'Intros', Icon: Video,     roles: ['admin'] },
   { href: '/admin/video-library', label: 'Video Library', Icon: Video, roles: ['admin'] },
   { href: '/audit',     label: 'Audit',     Icon: ShieldCheck, roles: ['admin'] },

@@ -33,13 +33,69 @@ export async function getMyCoachResources(portalToken: string): Promise<CoachRes
 
   const { data } = await admin
     .from('coach_resource_grants')
-    .select('coach_resources!inner(id, title, description, file_url, kind, active)')
+    .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, active)')
     .eq('coach_id', coach.id);
 
-  return (data ?? [])
+  const rows = (data ?? [])
     .map((r: any) => r.coach_resources)
-    .filter((r: any) => r && r.active)
-    .map((r: any) => ({ id: r.id, title: r.title, description: r.description, file_url: r.file_url, kind: r.kind }));
+    .filter((r: any) => r && r.active);
+
+  // Bucket files are private — mint a short-lived signed URL per resource so
+  // only granted coaches can open them. Legacy public file_url is a fallback.
+  const out: CoachResource[] = [];
+  for (const r of rows) {
+    let url = r.file_url as string | null;
+    if (r.storage_path) {
+      const { data: signed } = await admin.storage
+        .from('coach-presentations')
+        .createSignedUrl(r.storage_path, 60 * 60);
+      if (signed?.signedUrl) url = signed.signedUrl;
+    }
+    if (url) out.push({ id: r.id, title: r.title, description: r.description, file_url: url, kind: r.kind });
+  }
+  return out;
+}
+
+// Admin: upload a new presentation (PDF) into the private bucket + register it.
+export async function createCoachResource(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const file = formData.get('file') as File | null;
+  const title = (formData.get('title') as string | null)?.trim();
+  const description = (formData.get('description') as string | null)?.trim() || null;
+  if (!file || !title) return { ok: false, error: 'A PDF file and a title are required.' };
+  if (file.type && file.type !== 'application/pdf') return { ok: false, error: 'Please upload a PDF.' };
+
+  const admin = createAdminClient();
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'deck';
+  const path = `${slug}-${Date.now()}.pdf`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  const { error: upErr } = await admin.storage
+    .from('coach-presentations')
+    .upload(path, bytes, { contentType: 'application/pdf', upsert: false });
+  if (upErr) return { ok: false, error: upErr.message };
+
+  const { error } = await admin
+    .from('coach_resources')
+    .insert({ title, description, file_url: '', storage_path: path, kind: 'pdf' });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/presentations');
+  return { ok: true };
+}
+
+// Admin: delete a presentation (bucket file + row + its grants cascade).
+export async function deleteCoachResource(id: string): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { data: r } = await admin.from('coach_resources').select('storage_path').eq('id', id).maybeSingle();
+  if (r?.storage_path) {
+    await admin.storage.from('coach-presentations').remove([r.storage_path]).catch(() => {});
+  }
+  const { error } = await admin.from('coach_resources').delete().eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/presentations');
+  return { ok: true };
 }
 
 // Admin: every published presentation.
