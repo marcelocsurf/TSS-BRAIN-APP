@@ -175,6 +175,62 @@ export async function sendAssignmentResponseEmail(data: {
   }
 }
 
+// ─── Daily reminder emails (tasks + services) ────────────────────────
+
+export async function sendTaskOverdueEmail(data: {
+  toEmail: string;
+  firstName: string;
+  taskTitle: string;
+  dueLabel: string;
+  isAssignee: boolean;
+  portalUrl: string;
+}): Promise<void> {
+  try {
+    const body = data.isAssignee
+      ? `<p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.firstName)}</strong>,</p>
+         <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">This task was due <strong>${escapeHtmlBasic(data.dueLabel)}</strong> and is still open:</p>`
+      : `<p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.firstName)}</strong>,</p>
+         <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">An assigned task passed its due date (<strong>${escapeHtmlBasic(data.dueLabel)}</strong>) and is still open:</p>`;
+    const card = `<div style="background:#FBEBEB;border-left:3px solid #C43D3D;border-radius:0 8px 8px 0;padding:12px 14px;">
+        <p style="margin:0;font-size:15px;color:#111827;font-weight:700;">${escapeHtmlBasic(data.taskTitle)}</p>
+      </div>`;
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `Overdue task — ${data.taskTitle}`,
+      html: assignmentEmailShell('Task overdue', body + card, { url: data.portalUrl, label: 'Open the to-do list' }),
+    });
+  } catch (err: any) {
+    console.error('Task overdue email failed:', err.message);
+  }
+}
+
+export async function sendServiceReminderEmail(data: {
+  toEmail: string;
+  firstName: string;
+  serviceName: string;
+  whenLabel: string;
+  portalUrl: string;
+}): Promise<void> {
+  try {
+    const body = `
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.firstName)}</strong>,</p>
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">A quick reminder — you have a service tomorrow:</p>
+      <div style="background:#EAF6FB;border-left:3px solid ${BRAND.colors.cyan};border-radius:0 8px 8px 0;padding:14px;">
+        <p style="margin:0;font-size:15px;color:#111827;font-weight:700;">${escapeHtmlBasic(data.serviceName)}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#6B7280;">${escapeHtmlBasic(data.whenLabel)}</p>
+      </div>`;
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `Tomorrow: ${data.serviceName}`,
+      html: assignmentEmailShell('Service reminder', body, { url: data.portalUrl, label: 'Open my portal' }),
+    });
+  } catch (err: any) {
+    console.error('Service reminder email failed:', err.message);
+  }
+}
+
 // ─── Coach invite email — sent on coach creation OR re-send ──────────
 //
 // Replaces Supabase's default invite email so we control the branding,
