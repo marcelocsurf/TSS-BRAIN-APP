@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   listBoards, createBoard, updateBoard, deleteBoard,
   listRentals, createRental, returnRental, cancelRental, getRentalIdUrl, getRentalSignatureUrl,
-  type Board, type BoardStatus, type Rental,
+  type Board, type BoardStatus, type BoardCondition, type Rental,
 } from '@/lib/actions/boards';
 import { SignaturePad } from './SignaturePad';
 
@@ -38,6 +38,16 @@ const STATUS_COLOR: Record<BoardStatus, string> = {
   in_repair: 'bg-amber-50 text-amber-700',
   retired: 'bg-gray-100 text-gray-500',
   rented: 'bg-purple-50 text-purple-600',
+};
+const CONDITION_ORDER: BoardCondition[] = ['excellent', 'good', 'fair', 'poor'];
+const CONDITION_LABEL: Record<BoardCondition, string> = {
+  excellent: 'Excellent', good: 'Good', fair: 'Fair', poor: 'Poor',
+};
+const CONDITION_COLOR: Record<BoardCondition, string> = {
+  excellent: 'bg-emerald-50 text-emerald-700',
+  good: 'bg-sky-50 text-sky-700',
+  fair: 'bg-amber-50 text-amber-700',
+  poor: 'bg-red-50 text-red-600',
 };
 
 export function BoardInventoryManager({ academyId }: { academyId: string }) {
@@ -143,6 +153,7 @@ function InventoryTab({
   const [bVolume, setBVolume] = useState('');
   const [bBrand, setBBrand] = useState('');
   const [bModel, setBModel] = useState('');
+  const [bCondition, setBCondition] = useState<BoardCondition>('good');
 
   const add = () => {
     setError('');
@@ -158,8 +169,9 @@ function InventoryTab({
           length_inches: bInches ? parseInt(bInches, 10) : null,
           volume_liters: bVolume.trim() || null,
           notes: null,
+          condition: bCondition,
         });
-        setBVolume(''); setBBrand(''); setBModel(''); setAdding(false);
+        setBVolume(''); setBBrand(''); setBModel(''); setBCondition('good'); setAdding(false);
         await reload();
       } catch (e: any) { setError(e.message || 'Could not create the board.'); }
     });
@@ -167,6 +179,12 @@ function InventoryTab({
   const setStatus = (id: string, status: BoardStatus) => {
     startTransition(async () => {
       try { await updateBoard(id, { status }); await reload(); }
+      catch (e: any) { setError(e.message || 'Could not update.'); }
+    });
+  };
+  const setCondition = (id: string, condition: BoardCondition) => {
+    startTransition(async () => {
+      try { await updateBoard(id, { condition }); await reload(); }
       catch (e: any) { setError(e.message || 'Could not update.'); }
     });
   };
@@ -206,9 +224,14 @@ function InventoryTab({
             <Mini label="Inch"><input value={bInches} onChange={(e) => setBInches(e.target.value)} inputMode="numeric" className={inpCls} /></Mini>
             <Mini label="Volume (L)"><input value={bVolume} onChange={(e) => setBVolume(e.target.value)} placeholder="42" className={inpCls} /></Mini>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <Mini label="Brand (optional)"><input value={bBrand} onChange={(e) => setBBrand(e.target.value)} placeholder="Torq" className={inpCls} /></Mini>
             <Mini label="Model (optional)"><input value={bModel} onChange={(e) => setBModel(e.target.value)} placeholder="Mod Fish" className={inpCls} /></Mini>
+            <Mini label="Condition">
+              <select value={bCondition} onChange={(e) => setBCondition(e.target.value as BoardCondition)} className={selCls}>
+                {CONDITION_ORDER.map((c) => <option key={c} value={c}>{CONDITION_LABEL[c]}</option>)}
+              </select>
+            </Mini>
           </div>
           <button onClick={add} disabled={pending} className="w-full py-2 text-[var(--tss-navy)] bg-white text-sm font-semibold rounded-lg disabled:opacity-50">
             {pending ? 'Saving…' : 'Add to inventory'}
@@ -234,6 +257,16 @@ function InventoryTab({
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <select
+                  value={b.condition ?? 'good'}
+                  onChange={(e) => setCondition(b.id, e.target.value as BoardCondition)}
+                  title="Board condition"
+                  className={`text-[10px] font-semibold rounded-full px-2 py-1 border-0 ${CONDITION_COLOR[b.condition ?? 'good']}`}
+                >
+                  {CONDITION_ORDER.map((c) => (
+                    <option key={c} value={c}>{CONDITION_LABEL[c]}</option>
+                  ))}
+                </select>
                 <select
                   value={b.status}
                   onChange={(e) => setStatus(b.id, e.target.value as BoardStatus)}
