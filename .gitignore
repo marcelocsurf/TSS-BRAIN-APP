@@ -9,3 +9,11 @@ node_modules/
 PADI MODEL APP/
 .vercel
 .env*
+
+# Local dev artifacts / exports — never commit
+*.docx
+course-export-*.json
+wb-course-export.json
+scripts/*.mjs
+public/uploads/iconos/*.png
+public/uploads/iconos/*.PNG
