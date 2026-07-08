@@ -76,7 +76,7 @@ export async function findDuplicateStudents(input: {
 // (replacing them with a generic "Server Components render" digest). Returned
 // values survive the boundary, so the duplicate flow works in prod.
 export type CreateLeadResult =
-  | { ok: true; studentId: string; leadToken: string; leadFormUrl: string }
+  | { ok: true; studentId: string; leadToken: string; leadFormUrl: string; emailSent?: boolean }
   | { ok: false; error: string; duplicate?: DuplicateMatch };
 
 export async function createLead(input: CreateLeadInput): Promise<CreateLeadResult> {
@@ -146,11 +146,28 @@ export async function createLead(input: CreateLeadInput): Promise<CreateLeadResu
   // on navigation anyway.
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const intakeUrl = `${baseUrl}/intake/${data.portal_token}`;
+
+  // If we have an email, send the intake link straight to the student so they
+  // can fill it in themselves. Never blocks creation if the send fails.
+  let emailSent = false;
+  const email = input.email?.trim();
+  if (email) {
+    const { sendIntakeLinkEmail } = await import('@/lib/actions/email');
+    const r = await sendIntakeLinkEmail({
+      toEmail: email,
+      firstName: input.first_name.trim(),
+      intakeUrl,
+    }).catch(() => ({ success: false }));
+    emailSent = !!r.success;
+  }
+
   return {
     ok: true,
     studentId: data.id,
     leadToken: data.portal_token,
-    leadFormUrl: `${baseUrl}/intake/${data.portal_token}`,
+    leadFormUrl: intakeUrl,
+    emailSent,
   };
 }
 

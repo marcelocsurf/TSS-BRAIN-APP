@@ -91,6 +91,31 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
 </body></html>`;
 }
 
+// Send the intake link to a newly created student so they can complete their
+// profile + waiver themselves. Fire-and-forget: never blocks student creation.
+export async function sendIntakeLinkEmail(data: {
+  toEmail: string;
+  firstName: string;
+  intakeUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: 'Complete your surf intake',
+      html: assignmentEmailShell(
+        `Welcome, ${data.firstName || 'surfer'}!`,
+        `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">Before your session, please complete your quick intake — it only takes a couple of minutes: your details, a short safety check, and the waiver.</p>`,
+        { url: data.intakeUrl, label: 'Complete my intake' },
+      ),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Intake email failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 export async function sendAssignmentEmail(data: {
   toEmail: string;
   coachFirstName: string;
@@ -401,17 +426,19 @@ function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUr
         <p style="font-size:14px;color:#374151;line-height:1.5;margin:0;">${data.coachFeedback}</p>
       </div>
 
-      <!-- Homework -->
+      <!-- Homework — only shown when the coach actually left something -->
+      ${data.homework && data.homework.trim() ? `
       <div style="background:#FFF7ED;border-left:3px solid ${BRAND.colors.gold};padding:12px;border-radius:0 8px 8px 0;margin-bottom:16px;">
-        <p style="font-size:11px;color:#92400E;margin:0 0 4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Your Homework</p>
+        <p style="font-size:11px;color:#92400E;margin:0 0 4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Homework</p>
         <p style="font-size:14px;color:#78350F;margin:0;font-weight:500;">${data.homework}</p>
-      </div>
+      </div>` : ''}
 
-      <!-- What's Next -->
+      <!-- What's Next — only shown when set -->
+      ${data.whatsNext && data.whatsNext.trim() ? `
       <div style="margin-bottom:24px;">
         <p style="font-size:12px;color:#6B7280;margin:0 0 4px;">Next Recommended Focus</p>
         <p style="font-size:14px;color:#111827;font-weight:500;margin:0;">${data.whatsNext}</p>
-      </div>
+      </div>` : ''}
 
       <!-- CTA: Rate Session -->
       <a href="${data.feedbackUrl}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">

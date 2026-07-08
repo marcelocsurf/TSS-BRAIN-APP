@@ -19,6 +19,7 @@ export default function AddStudentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [copied, setCopied] = useState(false);
   const successRef = useRef<HTMLDivElement | null>(null);
 
@@ -45,6 +46,7 @@ export default function AddStudentPage() {
       });
       if (res.ok) {
         setCreatedUrl(res.leadFormUrl);
+        setEmailSent(!!res.emailSent);
       } else if (res.duplicate) {
         const d = res.duplicate;
         if (confirm(`Someone with that ${d.matched_on === 'email' ? 'email' : 'phone'} already exists (${d.first_name} ${d.last_name}). Create anyway?`)) {
@@ -107,6 +109,9 @@ export default function AddStudentPage() {
           <p className="text-2xl">✅</p>
           <p className="text-sm font-semibold text-[var(--tss-navy)]">Profile created</p>
           <p className="text-xs text-gray-500">Send this link to the student to complete their intake (level + details + waiver).</p>
+          {emailSent && (
+            <p className="text-xs text-emerald-700 font-medium">✓ We also emailed the link to {email}.</p>
+          )}
           <code className="block text-[11px] text-gray-600 break-all bg-gray-50 px-3 py-2 rounded-lg">{fullUrl}</code>
           <div className="flex gap-2">
             <button onClick={() => { navigator.clipboard.writeText(fullUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700">
