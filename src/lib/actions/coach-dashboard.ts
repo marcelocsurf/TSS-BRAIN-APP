@@ -156,9 +156,11 @@ export async function getCoachRatingStats(coachId: string): Promise<CoachRatingS
 
 export interface CoachFeedbackItem {
   coach_rating: number;          // Q1 — coach overall
-  feedback_clarity: number | null; // Q2 — how clear was their feedback
-  improvement_value: number | null; // Q3 — how much it helped the student improve
-  flow_channel: number | null;   // Q4 — how the class felt (1 bored … 3 optimal … 5 frustrating)
+  feedback_clarity: number | null; // Q2 — clarity of instructions/explanations
+  safety: number | null;         // Q3 — felt safe & looked after in the water
+  improvement_value: number | null; // Q4 — learned / progressed
+  recommend: number | null;      // Q5 — would take another class with this coach
+  flow_channel: number | null;   // Q6 — how the class felt (1 bored … 3 optimal … 5 frustrating)
   open_comment: string | null;
   created_at: string;
   student_first_name: string | null;
@@ -187,7 +189,7 @@ export async function getCoachStudentFeedback(
 
   const { data, error } = await supabase
     .from('survey_responses')
-    .select('coach_rating, q2_feedback, q4_session_value, flow_channel, open_comment, submitted_at, students:student_id(first_name)')
+    .select('coach_rating, q2_feedback, q3_homework_clarity, q4_session_value, academy_rating, flow_channel, open_comment, submitted_at, students:student_id(first_name)')
     .in('session_result_id', resultIds)
     .order('submitted_at', { ascending: false })
     .limit(limit);
@@ -199,7 +201,9 @@ export async function getCoachStudentFeedback(
     return {
       coach_rating: r.coach_rating ?? 0,
       feedback_clarity: r.q2_feedback ?? null,
+      safety: r.q3_homework_clarity ?? null,
       improvement_value: r.q4_session_value ?? null,
+      recommend: r.academy_rating ?? null,
       flow_channel: r.flow_channel ?? null,
       open_comment: r.open_comment ?? null,
       created_at: r.submitted_at,

@@ -85,10 +85,12 @@ export async function submitFeedbackByToken(
   token: string,
   input: {
     coach_rating: number; // 1-5
-    q1_clarity?: number;
-    q3_homework_clarity?: number;
-    q4_session_value?: number;
+    q1_clarity?: number;            // clarity
+    q3_homework_clarity?: number;   // repurposed → safety in the water
+    q4_session_value?: number;      // learned / progressed
     q2_feedback?: number;
+    academy_rating?: number;        // repurposed → would take another class
+    flow_channel?: number;          // how the class felt
     open_comment?: string;
   },
 ): Promise<{ ok: boolean; error?: string; alreadySubmitted?: boolean }> {
@@ -128,9 +130,12 @@ export async function submitFeedbackByToken(
     student_id: result.student_id,
     coach_rating: input.coach_rating,
     q1_clarity: clamp(input.q1_clarity),
-    q3_homework_clarity: clamp(input.q3_homework_clarity),
+    q2_feedback: clamp(input.q2_feedback ?? input.q1_clarity),
+    q3_homework_clarity: clamp(input.q3_homework_clarity),   // safety
     q4_session_value: clamp(input.q4_session_value),
-    q2_feedback: clamp(input.q2_feedback),
+    session_quality: clamp(input.q4_session_value),
+    academy_rating: clamp(input.academy_rating),             // recommend
+    flow_channel: clamp(input.flow_channel),
     open_comment: input.open_comment?.trim() || null,
   });
 

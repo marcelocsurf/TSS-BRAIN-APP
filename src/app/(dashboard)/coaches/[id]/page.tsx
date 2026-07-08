@@ -469,10 +469,16 @@ export default async function CoachProfilePage({ params }: Props) {
                 {/* What the student actually rated — context for the stars */}
                 <div className="flex flex-wrap gap-1.5 mb-1.5">
                   {fb.feedback_clarity != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Feedback clarity {fb.feedback_clarity}/5</span>
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Clarity {fb.feedback_clarity}/5</span>
+                  )}
+                  {fb.safety != null && (
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Safety {fb.safety}/5</span>
                   )}
                   {fb.improvement_value != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Helped me improve {fb.improvement_value}/5</span>
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Learned/improved {fb.improvement_value}/5</span>
+                  )}
+                  {fb.recommend != null && (
+                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Would repeat {fb.recommend}/5</span>
                   )}
                   {fb.flow_channel != null && (
                     <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">

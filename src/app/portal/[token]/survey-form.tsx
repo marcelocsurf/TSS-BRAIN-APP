@@ -29,7 +29,9 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
   const [form, setForm] = useState({
     coach_rating: 0,
     feedback_clarity: 0,
+    safety_rating: 0,
     improvement_value: 0,
+    recommend_rating: 0,
     flow_channel: 0,
     open_comment: '',
   });
@@ -41,10 +43,12 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
     if (
       form.coach_rating === 0 ||
       form.feedback_clarity === 0 ||
+      form.safety_rating === 0 ||
       form.improvement_value === 0 ||
+      form.recommend_rating === 0 ||
       form.flow_channel === 0
     ) {
-      setError('Please answer all 4 questions before submitting.');
+      setError('Please answer all 6 questions before submitting.');
       return;
     }
     setLoading(true);
@@ -55,7 +59,9 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
         student_id: studentId,
         coach_rating: form.coach_rating,
         feedback_clarity: form.feedback_clarity,
+        safety_rating: form.safety_rating,
         improvement_value: form.improvement_value,
+        recommend_rating: form.recommend_rating,
         flow_channel: form.flow_channel,
         open_comment: form.open_comment.trim() || '',
       });
@@ -93,7 +99,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
           </p>
           <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
             Open the <strong>Sessions</strong> tab to read what your coach wrote
-            for you — feedback, homework, and what&apos;s next.
+            for you — feedback and what&apos;s next.
           </p>
         </div>
         {justUnlocked && (
@@ -119,7 +125,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
       <div className="px-4 py-4 text-center" style={{ background: BRAND.colors.navy }}>
         <h3 className="text-sm font-bold text-white">Rate Your Coach</h3>
         <p className="text-xs mt-0.5" style={{ color: BRAND.colors.gold }}>
-          3 quick questions. Your honest feedback becomes part of their record.
+          A few quick questions. Your honest feedback becomes part of their record.
         </p>
       </div>
 
@@ -132,15 +138,27 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
         />
 
         <StarQuestion
-          label="2. How clear was their feedback?"
+          label="2. Were the instructions and explanations clear and easy to follow?"
           value={form.feedback_clarity}
           onChange={v => set('feedback_clarity', v)}
         />
 
         <StarQuestion
-          label="3. How much did this session help you improve?"
+          label="3. Did you feel safe and well looked after in the water?"
+          value={form.safety_rating}
+          onChange={v => set('safety_rating', v)}
+        />
+
+        <StarQuestion
+          label="4. Did you learn something and feel you improved?"
           value={form.improvement_value}
           onChange={v => set('improvement_value', v)}
+        />
+
+        <StarQuestion
+          label="5. Would you take another class with this coach?"
+          value={form.recommend_rating}
+          onChange={v => set('recommend_rating', v)}
         />
 
         {/* M47 — Student-reported flow channel. Same 1-5 scale the coach
@@ -148,7 +166,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
             mismatches (coach thought it was optimal, student felt
             frustrated → next class needs less exigency). */}
         <FlowChannelQuestion
-          label="4. How did the class feel?"
+          label="6. How did the class feel?"
           value={form.flow_channel}
           onChange={v => set('flow_channel', v)}
         />

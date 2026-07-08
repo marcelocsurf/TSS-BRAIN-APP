@@ -10,11 +10,12 @@ interface Props {
   token: string;
 }
 
-const QUESTIONS: { key: 'coach_rating' | 'q1_clarity' | 'q3_homework_clarity' | 'q4_session_value'; label: string; }[] = [
+const QUESTIONS: { key: 'coach_rating' | 'q1_clarity' | 'q3_homework_clarity' | 'q4_session_value' | 'academy_rating'; label: string; }[] = [
   { key: 'coach_rating',         label: 'How would you rate your coach today?' },
-  { key: 'q1_clarity',           label: 'How clear was the mission of the session?' },
-  { key: 'q4_session_value',     label: 'How valuable did the session feel?' },
-  { key: 'q3_homework_clarity',  label: 'How clear is your homework for next time?' },
+  { key: 'q1_clarity',           label: 'Were the instructions and explanations clear and easy to follow?' },
+  { key: 'q3_homework_clarity',  label: 'Did you feel safe and well looked after in the water?' },
+  { key: 'q4_session_value',     label: 'Did you learn something and feel you improved?' },
+  { key: 'academy_rating',       label: 'Would you take another class with this coach?' },
 ];
 
 export function FeedbackForm({ token }: Props) {
@@ -37,6 +38,7 @@ export function FeedbackForm({ token }: Props) {
         q1_clarity: ratings.q1_clarity,
         q3_homework_clarity: ratings.q3_homework_clarity,
         q4_session_value: ratings.q4_session_value,
+        academy_rating: ratings.academy_rating,
         open_comment: comment,
       });
       if (!res.ok) {

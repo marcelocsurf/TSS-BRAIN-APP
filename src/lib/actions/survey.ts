@@ -15,9 +15,11 @@ import { createAdminClient } from '@/lib/supabase/admin';
 interface SurveyInput {
   session_result_id: string;
   student_id: string;
-  coach_rating: number;
-  feedback_clarity: number;
-  improvement_value: number;
+  coach_rating: number;      // 1. Overall coach
+  feedback_clarity: number;  // 2. Clarity of instructions/explanations
+  safety_rating: number;     // 3. Felt safe & looked after in the water
+  improvement_value: number; // 4. Learned / progressed
+  recommend_rating: number;  // 5. Would take another class with this coach
   // M47 — student-reported Csíkszentmihályi flow channel (1=bored,
   // 3=optimal, 5=frustrated). Used to compare against the coach's
   // own per-block flow_channel evaluation.
@@ -57,15 +59,15 @@ export async function submitSurvey(input: SurveyInput) {
     .insert({
       session_result_id: input.session_result_id,
       student_id: input.student_id,
-      coach_rating: input.coach_rating,
-      academy_rating: input.coach_rating,        // legacy — mirror coach
-      session_quality: input.improvement_value,  // legacy — closest semantic match
-      q1_clarity: input.feedback_clarity,        // legacy — closest semantic match
-      q2_feedback: input.feedback_clarity,
-      q3_homework_clarity: input.feedback_clarity, // legacy — closest match
-      q4_session_value: input.improvement_value,
-      flow_channel: input.flow_channel,
-      open_comment: input.open_comment || null,
+      coach_rating: input.coach_rating,             // 1. Overall coach
+      q1_clarity: input.feedback_clarity,           // 2. Clarity
+      q2_feedback: input.feedback_clarity,          // 2. (mirror)
+      q3_homework_clarity: input.safety_rating,     // 3. Safety in the water (repurposed)
+      q4_session_value: input.improvement_value,    // 4. Learned / progressed
+      session_quality: input.improvement_value,     // 4. (mirror)
+      academy_rating: input.recommend_rating,       // 5. Would take another class (repurposed)
+      flow_channel: input.flow_channel,             // 6. How the class felt
+      open_comment: input.open_comment || null,     // 7. Open comment
     });
 
   if (surveyErr) throw new Error(surveyErr.message);
