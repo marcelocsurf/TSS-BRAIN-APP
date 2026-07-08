@@ -3,6 +3,7 @@ import { listCampsInRange, listCampTemplates } from '@/lib/actions/camps';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CampCalendar } from '@/components/camps/CampCalendar';
+import { OccupancySummary } from '@/components/camps/OccupancySummary';
 import { CampFilters } from '@/components/camps/CampFilters';
 import { ApplyWeekTemplateButton } from '@/components/camps/ApplyWeekTemplateButton';
 import { DownloadPlanButton } from '@/components/camps/DownloadPlanButton';
@@ -153,6 +154,8 @@ export default async function CampsPage({
       </div>
 
       <CampFilters templates={templates as any} />
+
+      <OccupancySummary camps={camps} />
 
       <CampCalendar
         camps={camps as any}

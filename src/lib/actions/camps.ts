@@ -29,7 +29,7 @@ export async function listCampsInRange(startDate: string, endDate: string) {
   let query = supabase
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days, session_duration_minutes, card_color, accent_color), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), head_coach_id, head_coach_status, camp_participants(id, enrollment_status, payment_status, student_id)'
+      'id, camp_name, start_date, end_date, status, modality, scheduled_time, capacity_override, template_id, head_coach_id, coach_id, camp_templates(template_name, level_name, service_kind, capacity_max, duration_days, session_duration_minutes, card_color, accent_color), head_coach:head_coach_id(display_name), coaches:coach_id(display_name), head_coach_id, head_coach_status, camp_participants(id, enrollment_status, payment_status, student_id, amount_cents)'
     )
     .lte('start_date', endDate)
     .gte('end_date', startDate)
