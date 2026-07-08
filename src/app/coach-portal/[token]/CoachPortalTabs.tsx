@@ -10,6 +10,7 @@ import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
 import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
 import { CoachPresentations } from '@/components/coach-portal/CoachPresentations';
+import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
@@ -1467,6 +1468,10 @@ function PlanTab({
           drills + missions.
         </p>
       </div>
+
+      {upcoming.length > 0 && (
+        <CoachMiniCalendar services={upcoming} onOpen={openPlanner} />
+      )}
 
       {upcoming.length > 0 && (
         <div>
