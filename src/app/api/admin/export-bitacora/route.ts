@@ -92,7 +92,7 @@ export async function GET() {
   zip.file(
     'MANIFEST.txt',
     [
-      `TSS BRAIN — Bitácora export`,
+      `The Surf Sequence — Bitácora export`,
       `Generated: ${new Date().toISOString()}`,
       ``,
       `Row counts:`,

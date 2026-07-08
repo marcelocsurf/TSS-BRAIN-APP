@@ -58,7 +58,7 @@ export default function InstallPWA() {
     <div className="fixed bottom-4 left-4 right-4 z-50 max-w-sm mx-auto bg-[var(--tss-navy)] text-white rounded-2xl shadow-2xl border border-white/10 px-4 py-3 flex items-center gap-3">
       <Download size={20} className="text-[var(--tss-cyan)] flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold leading-tight">Install TSS BRAIN</p>
+        <p className="text-sm font-semibold leading-tight">Install The Surf Sequence</p>
         <p className="text-[11px] text-white/60 leading-tight mt-0.5">Save to your home screen for fullscreen access.</p>
       </div>
       <button

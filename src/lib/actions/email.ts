@@ -511,7 +511,7 @@ function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName:
     </div>
     <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
-        A new lead just completed the surf-level quiz. Their profile is in TSS Brain (status: lead, belt provisional).
+        A new lead just completed the surf-level quiz. Their profile is in The Surf Sequence (status: lead, belt provisional).
       </p>
       <table style="width:100%;font-size:14px;color:#111827;border-collapse:collapse;">
         <tr><td style="padding:6px 0;color:#6B7280;">Name</td><td style="padding:6px 0;text-align:right;font-weight:600;">${name}</td></tr>
@@ -521,7 +521,7 @@ function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName:
         <tr><td style="padding:6px 0;color:#6B7280;">Academy</td><td style="padding:6px 0;text-align:right;">${academy}</td></tr>
       </table>
       <p style="margin:18px 0 0;font-size:12px;color:#9CA3AF;line-height:1.6;">
-        Next step: enrol them from TSS Brain — their quiz result is already saved, so they won't re-take it during intake.
+        Next step: enrol them from The Surf Sequence — their quiz result is already saved, so they won't re-take it during intake.
       </p>
     </div>
     <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">${BRAND.name}® · ${BRAND.tagline}</p>

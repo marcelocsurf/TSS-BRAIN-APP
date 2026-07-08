@@ -4,7 +4,7 @@ import { LEVELS, levelForScore } from '@/lib/quiz/surf-level';
 
 // Public endpoint for the external "Find Your Surf Level" quiz (website /
 // Netlify). It accepts the payload the standalone HTML already sends and maps
-// it to TSS Brain's createLeadFromQuiz — so the lead lives in the right system
+// it to The Surf Sequence's createLeadFromQuiz — so the lead lives in the right system
 // (students table) with the quiz result, dedup, reuse and notification email.
 //
 // External HTML change needed: POST here instead of the Supabase REST URL, and

@@ -138,7 +138,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
   return (
     <div className="max-w-lg mx-auto space-y-5">
       <div>
-        <p className="text-xs tracking-widest text-[var(--tss-gold)] uppercase mb-1" style={{ fontFamily: 'var(--font-mono)' }}>TSS Brain</p>
+        <p className="text-xs tracking-widest text-[var(--tss-gold)] uppercase mb-1" style={{ fontFamily: 'var(--font-mono)' }}>The Surf Sequence</p>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Add Coach</h1>
         <p className="text-sm text-[var(--tss-gray-500)] mt-0.5">Create a new team member with their role and permissions.</p>
       </div>

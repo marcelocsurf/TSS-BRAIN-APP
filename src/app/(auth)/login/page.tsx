@@ -131,7 +131,7 @@ export default function LoginPage() {
           className="text-center text-xs text-white/30 mt-8 tracking-wide"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
-          TSS Brain v0.1
+          The Surf Sequence v0.1
         </p>
       </div>
     </div>

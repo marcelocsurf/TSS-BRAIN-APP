@@ -96,7 +96,7 @@ export default async function BillingPage({ searchParams }: Props) {
             className="text-[10px] tracking-[0.22em] text-[var(--tss-cyan,#5AC3E7)] uppercase mb-1 font-semibold"
             style={{ fontFamily: 'DM Mono, monospace' }}
           >
-            TSS Brain · Admin
+            The Surf Sequence · Admin
           </p>
           <h1
             className="text-2xl font-bold text-[var(--tss-navy)] leading-tight"

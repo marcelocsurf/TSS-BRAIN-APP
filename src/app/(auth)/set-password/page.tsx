@@ -64,7 +64,7 @@ export default function SetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--tss-navy)] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">TSS Brain</h1>
+          <h1 className="text-3xl font-bold text-white">The Surf Sequence</h1>
           <p className="text-[var(--tss-gold)] mt-2 text-sm">Set Your Password</p>
         </div>
 

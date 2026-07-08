@@ -5,8 +5,8 @@ import type { MetadataRoute } from 'next';
 // install still works (browsers will scale it, may look soft on large icons).
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TSS BRAIN',
-    short_name: 'TSS BRAIN',
+    name: 'The Surf Sequence',
+    short_name: 'The Surf Sequence',
     description: 'The Surf Sequence — your structured path to mastery',
     start_url: '/',
     scope: '/',

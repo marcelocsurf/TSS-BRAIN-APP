@@ -5,7 +5,7 @@ export const BRAND = {
   name: 'The Surf Sequence',
   abbreviation: 'TSS',
   tagline: 'Evolve through play',
-  appName: 'TSS Brain',
+  appName: 'The Surf Sequence',
 
   // TSS Brand Manual v4.2 §3 — paleta primaria
   colors: {
