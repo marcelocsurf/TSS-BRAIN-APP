@@ -105,7 +105,7 @@ export async function assignServiceStaff(input: {
 
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, end_date')
+    .select('id, camp_name, start_date, end_date, scheduled_time, camp_templates:template_id(duration_days)')
     .eq('id', input.campInstanceId)
     .single();
   if (!camp) return { ok: false, error: 'Service not found.' };
@@ -123,9 +123,14 @@ export async function assignServiceStaff(input: {
     .single();
   if (error) return { ok: false, error: error.message };
 
-  const dateRange = camp.start_date === camp.end_date
-    ? String(camp.start_date)
-    : `${camp.start_date} → ${camp.end_date}`;
+  const { formatServiceWhen } = await import('@/lib/utils/format-date');
+  const tpl = Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates;
+  const dateRange = formatServiceWhen({
+    startDate: camp.start_date,
+    endDate: camp.end_date,
+    scheduledTime: (camp as any).scheduled_time,
+    durationDays: tpl?.duration_days,
+  });
   const respondUrl = `${APP_URL}/respond/${row.response_token}`;
 
   // Notify the assignee.

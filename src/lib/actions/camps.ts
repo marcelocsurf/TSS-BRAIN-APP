@@ -81,19 +81,24 @@ export async function updateCampHeadCoach(
     try {
       const admin = createAdminClient();
       const [{ data: camp }, { data: coach }] = await Promise.all([
-        admin.from('camp_instances').select('camp_name, start_date, end_date').eq('id', campInstanceId).single(),
+        admin.from('camp_instances').select('camp_name, start_date, end_date, scheduled_time, camp_templates:template_id(duration_days)').eq('id', campInstanceId).single(),
         admin.from('coaches').select('id, first_name, email, portal_token').eq('id', headCoachId).single(),
       ]);
       if (camp && coach) {
-        const dateRange = camp.start_date === camp.end_date
-          ? camp.start_date
-          : `${camp.start_date} → ${camp.end_date}`;
+        const { formatServiceWhen } = await import('@/lib/utils/format-date');
+        const tpl = Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates;
+        const dateRange = formatServiceWhen({
+          startDate: camp.start_date,
+          endDate: camp.end_date,
+          scheduledTime: (camp as any).scheduled_time,
+          durationDays: tpl?.duration_days,
+        });
         const { createNotification } = await import('./notifications');
         await createNotification({
           recipientCoachId: coach.id,
           type: 'assignment',
           title: `New service to confirm: ${camp.camp_name}`,
-          body: `${dateRange} — accept or decline so your coordinator knows.`,
+          body: `${dateRange}. Please accept or decline so your coordinator knows.`,
           link: coach.portal_token ? `/coach-portal/${coach.portal_token}` : null,
           metadata: { campInstanceId },
         });
