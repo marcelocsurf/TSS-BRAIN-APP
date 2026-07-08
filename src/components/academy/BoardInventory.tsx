@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBoard, updateBoard, deleteBoard, type Board, type BoardStatus } from '@/lib/actions/boards';
+import { createBoard, updateBoard, deleteBoard, type Board, type BoardStatus, type BoardCondition } from '@/lib/actions/boards';
 
 const TYPE_OPTIONS = [
   { value: 'soft', label: 'Soft top' },
@@ -27,6 +27,16 @@ const STATUS_COLOR: Record<BoardStatus, string> = {
   retired: 'bg-gray-100 text-gray-500',
   rented: 'bg-purple-50 text-purple-600',
 };
+const CONDITION_ORDER: BoardCondition[] = ['excellent', 'good', 'fair', 'poor'];
+const CONDITION_LABEL: Record<BoardCondition, string> = {
+  excellent: 'Excellent', good: 'Good', fair: 'Fair', poor: 'Poor',
+};
+const CONDITION_COLOR: Record<BoardCondition, string> = {
+  excellent: 'bg-emerald-50 text-emerald-700',
+  good: 'bg-sky-50 text-sky-700',
+  fair: 'bg-amber-50 text-amber-700',
+  poor: 'bg-red-50 text-red-600',
+};
 
 export function BoardInventory({ academyId, boards }: { academyId: string; boards: Board[] }) {
   const router = useRouter();
@@ -41,6 +51,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
   const [bVolume, setBVolume] = useState('');
   const [bBrand, setBBrand] = useState('');
   const [bModel, setBModel] = useState('');
+  const [bCondition, setBCondition] = useState<BoardCondition>('good');
 
   const add = () => {
     setError('');
@@ -56,8 +67,9 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
           length_inches: bInches ? parseInt(bInches, 10) : null,
           volume_liters: bVolume.trim() || null,
           notes: null,
+          condition: bCondition,
         });
-        setBVolume(''); setBBrand(''); setBModel('');
+        setBVolume(''); setBBrand(''); setBModel(''); setBCondition('good');
         setAdding(false);
         router.refresh();
       } catch (e: any) {
@@ -69,6 +81,13 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
   const setStatus = (id: string, status: BoardStatus) => {
     startTransition(async () => {
       try { await updateBoard(id, { status }); router.refresh(); }
+      catch (e: any) { setError(e.message || 'No se pudo actualizar.'); }
+    });
+  };
+
+  const setCondition = (id: string, condition: BoardCondition) => {
+    startTransition(async () => {
+      try { await updateBoard(id, { condition }); router.refresh(); }
       catch (e: any) { setError(e.message || 'No se pudo actualizar.'); }
     });
   };
@@ -118,12 +137,17 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
               <input value={bVolume} onChange={(e) => setBVolume(e.target.value)} placeholder="ej. 42" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <Mini label="Brand (optional)">
               <input value={bBrand} onChange={(e) => setBBrand(e.target.value)} placeholder="ej. Torq" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
             </Mini>
             <Mini label="Model (optional)">
               <input value={bModel} onChange={(e) => setBModel(e.target.value)} placeholder="ej. Mod Fish" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+            </Mini>
+            <Mini label="Condition">
+              <select value={bCondition} onChange={(e) => setBCondition(e.target.value as BoardCondition)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
+                {CONDITION_ORDER.map((c) => <option key={c} value={c}>{CONDITION_LABEL[c]}</option>)}
+              </select>
             </Mini>
           </div>
           <button onClick={add} disabled={pending} className="w-full py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 bg-[var(--tss-navy)]">
@@ -159,6 +183,16 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <select
+                  value={b.condition ?? 'good'}
+                  onChange={(e) => setCondition(b.id, e.target.value as BoardCondition)}
+                  title="Board condition"
+                  className={`text-[10px] font-semibold rounded-full px-2 py-1 border-0 ${CONDITION_COLOR[b.condition ?? 'good']}`}
+                >
+                  {CONDITION_ORDER.map((c) => (
+                    <option key={c} value={c}>{CONDITION_LABEL[c]}</option>
+                  ))}
+                </select>
                 <select
                   value={b.status}
                   onChange={(e) => setStatus(b.id, e.target.value as BoardStatus)}

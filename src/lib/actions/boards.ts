@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 
 export type BoardStatus = 'available' | 'in_use' | 'in_repair' | 'retired' | 'rented';
 
+export type BoardCondition = 'excellent' | 'good' | 'fair' | 'poor';
+
 export type RentalStatus = 'active' | 'returned' | 'overdue' | 'cancelled';
 
 export interface Rental {
@@ -51,6 +53,7 @@ export interface Board {
   length_inches: number | null;
   volume_liters: string | null;
   status: BoardStatus;
+  condition: BoardCondition;
   notes: string | null;
   // Usage stats (computed in listBoards) — board lifespan.
   uses?: number;
@@ -140,6 +143,7 @@ export async function createBoard(input: {
   length_inches: number | null;
   volume_liters: string | null;
   notes: string | null;
+  condition?: BoardCondition;
   code?: string | null; // optional manual override; otherwise auto-suggested
 }): Promise<Board> {
   await assertCanManage(input.academy_id);
@@ -163,6 +167,7 @@ export async function createBoard(input: {
       volume_liters: input.volume_liters?.trim() || null,
       notes: input.notes?.trim() || null,
       status: 'available',
+      condition: input.condition ?? 'good',
     })
     .select('*')
     .single();
@@ -173,7 +178,7 @@ export async function createBoard(input: {
 
 export async function updateBoard(
   id: string,
-  patch: Partial<Pick<Board, 'code' | 'brand' | 'model' | 'board_type' | 'shape' | 'length_feet' | 'length_inches' | 'volume_liters' | 'status' | 'notes'>>,
+  patch: Partial<Pick<Board, 'code' | 'brand' | 'model' | 'board_type' | 'shape' | 'length_feet' | 'length_inches' | 'volume_liters' | 'status' | 'condition' | 'notes'>>,
 ): Promise<void> {
   const admin = createAdminClient();
   const { data: existing } = await admin.from('boards').select('academy_id').eq('id', id).single();
