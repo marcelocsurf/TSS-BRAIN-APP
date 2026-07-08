@@ -645,6 +645,43 @@ export async function createCampInstance(input: {
 // GET CAMP DETAIL
 // ═══════════════════════════════════════
 
+// Finalize a single student early (short camp, or they leave before the end).
+// Marks them done + records the departure date; the closing evaluation is done
+// the usual way. Keeps enrollment_status active so they still show in the roster
+// with a "Finished" badge.
+export async function finalizeParticipant(
+  participantId: string,
+  campId: string,
+  departedOn?: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('camp_participants')
+    .update({
+      finalized_at: new Date().toISOString(),
+      departed_on: departedOn || new Date().toISOString().slice(0, 10),
+    })
+    .eq('id', participantId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/camps/${campId}`);
+  return { ok: true };
+}
+
+// Reopen a student who was finalized early (undo).
+export async function reopenParticipant(
+  participantId: string,
+  campId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('camp_participants')
+    .update({ finalized_at: null, departed_on: null })
+    .eq('id', participantId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/camps/${campId}`);
+  return { ok: true };
+}
+
 export async function getCampDetail(campId: string) {
   const supabase = await createClient();
 

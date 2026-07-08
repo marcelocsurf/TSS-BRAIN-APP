@@ -10,6 +10,7 @@ import { listServiceStaff, listAssignableCoaches, listStaffMembers } from '@/lib
 import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
 import { LeadStatusBadge } from '@/components/camp/LeadStatusBadge';
 import { EnrollmentPaymentControl } from '@/components/camp/EnrollmentPaymentControl';
+import { FinalizeParticipantControl } from '@/components/camp/FinalizeParticipantControl';
 import { CancelCampButton } from '@/components/camp/CancelCampButton';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
@@ -189,12 +190,13 @@ export default async function CampDetailPage({ params }: Props) {
                       email={p.students.email}
                     />
                   ) : (
-                    <span
-                      className="text-[10px] px-2 py-0.5 rounded-full text-white shrink-0"
-                      style={{ backgroundColor: belt?.color || '#999' }}
-                    >
-                      {belt?.en}
-                    </span>
+                    <FinalizeParticipantControl
+                      participantId={p.id}
+                      campId={id}
+                      studentName={`${p.students?.first_name ?? ''} ${p.students?.last_name ?? ''}`.trim()}
+                      finalizedAt={p.finalized_at ?? null}
+                      departedOn={p.departed_on ?? null}
+                    />
                   )}
                 </div>
               );
