@@ -170,7 +170,14 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
               {doneTasks.map((t) => (
                 <li key={t.id} className="flex items-center gap-2.5 list-none px-3 py-1.5">
                   <button onClick={() => toggle(t)} className="w-5 h-5 shrink-0 rounded-md bg-emerald-500 flex items-center justify-center text-white" aria-label="Reopen"><Check size={12} /></button>
-                  <p className="flex-1 text-sm text-gray-400 line-through truncate">{t.title}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-400 line-through truncate">{t.title}</p>
+                    {(t.done_by_name || t.done_at) && (
+                      <p className="text-[10px] text-emerald-600/70">
+                        ✓ {t.done_by_name || 'Done'}{t.done_at ? ` · ${fmtDue(t.done_at.slice(0, 10))}` : ''}
+                      </p>
+                    )}
+                  </div>
                   <button onClick={() => toggle(t)} className="p-1 text-gray-300 hover:text-gray-500" aria-label="Reopen"><RotateCcw size={13} /></button>
                   <button onClick={() => remove(t)} className="p-1 text-gray-300 hover:text-red-500" aria-label="Delete"><Trash2 size={13} /></button>
                 </li>

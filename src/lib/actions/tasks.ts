@@ -15,6 +15,7 @@ export interface AcademyTask {
   status: string;         // 'open' | 'done'
   created_at: string;
   done_at: string | null;
+  done_by_name?: string | null;
 }
 
 async function assertManager() {
@@ -40,7 +41,7 @@ export async function listAcademyTasks(academyId: string | null): Promise<Academ
   const admin = createAdminClient();
   let q = admin
     .from('academy_tasks')
-    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, coaches:assignee_coach_id(display_name)')
+    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, coaches:assignee_coach_id(display_name), done_coach:done_by(display_name)')
     .order('status', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
@@ -49,6 +50,7 @@ export async function listAcademyTasks(academyId: string | null): Promise<Academ
   return (data ?? []).map((r: any) => ({
     id: r.id, title: r.title, description: r.description, assignee_coach_id: r.assignee_coach_id,
     assignee_name: (Array.isArray(r.coaches) ? r.coaches[0] : r.coaches)?.display_name ?? null,
+    done_by_name: (Array.isArray(r.done_coach) ? r.done_coach[0] : r.done_coach)?.display_name ?? null,
     due_date: r.due_date, status: r.status, created_at: r.created_at, done_at: r.done_at,
   }));
 }
@@ -179,13 +181,27 @@ export async function getMyTasks(token: string): Promise<AcademyTask[]> {
 
 export async function completeMyTask(token: string, id: string): Promise<{ ok: boolean; error?: string }> {
   const admin = createAdminClient();
-  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).maybeSingle();
+  const { data: coach } = await admin.from('coaches').select('id, display_name').eq('portal_token', token).maybeSingle();
   if (!coach) return { ok: false, error: 'Coach not found.' };
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from('academy_tasks')
     .update({ status: 'done', done_at: new Date().toISOString(), done_by: coach.id })
     .eq('id', id)
-    .eq('assignee_coach_id', coach.id);
+    .eq('assignee_coach_id', coach.id)
+    .select('title, created_by')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+
+  // Close the loop — tell the coordinator who created it that it's done.
+  if (updated?.created_by && updated.created_by !== coach.id) {
+    await createNotification({
+      recipientCoachId: updated.created_by,
+      type: 'task_done',
+      title: `Task done: ${updated.title}`,
+      body: `${coach.display_name || 'The assignee'} marked it complete.`,
+      link: null,
+      metadata: { taskId: id },
+    }).catch(() => {});
+  }
   return { ok: true };
 }
