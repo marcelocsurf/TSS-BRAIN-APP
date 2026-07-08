@@ -70,6 +70,7 @@ export interface CoachPortalData {
     role: string;
     portal_category: string;
     job_title: string | null;
+    portal_can_sell: boolean;
     certification_level: string | null;
     max_belt_permission: string;
     languages: string | null;
@@ -90,6 +91,7 @@ export interface CoachPortalData {
   upcomingServices: any[];
   pendingAssignments: any[];
   pastServices: any[];
+  academyServices: any[];  // all upcoming academy services (sellers only)
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
@@ -119,7 +121,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   const { data: coach } = await admin
     .from('coaches')
     .select(
-      'id, first_name, last_name, display_name, email, role, portal_category, job_title, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted, photo_url, intake_completed_at, waiver_signed'
+      'id, first_name, last_name, display_name, email, role, portal_category, job_title, portal_can_sell, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted, photo_url, intake_completed_at, waiver_signed'
     )
     .eq('portal_token', token)
     .single();
@@ -315,6 +317,19 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     }
   }
 
+  // Sellers see ALL upcoming academy services (with availability), not just
+  // the ones they're assigned to. Skip the query for everyone else.
+  let academyServices: any[] = [];
+  if ((coach as any).portal_can_sell && coach.academy_id) {
+    const { data: svc } = await admin
+      .from('camp_instances')
+      .select('id, camp_name, start_date, end_date, status, scheduled_time, capacity_override, template_id, camp_templates:template_id(template_name, service_kind, capacity_max, level_name), camp_participants(id, enrollment_status, payment_status, amount_cents)')
+      .eq('academy_id', coach.academy_id)
+      .gte('start_date', today)
+      .order('start_date');
+    academyServices = svc ?? [];
+  }
+
   return {
     coach,
     stats: {
@@ -330,6 +345,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       (s: any) => s.head_coach_id === coach.id && s.head_coach_status === 'pending',
     ),
     pastServices: pastEnriched,
+    academyServices,
     coachCourses: coachCoursesResult.data ?? [],
     courseProgress,
     availableDrills,

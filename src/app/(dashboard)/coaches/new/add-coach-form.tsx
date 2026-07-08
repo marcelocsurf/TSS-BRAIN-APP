@@ -55,6 +55,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
     phone: '',
     portal_category: 'coaching',
     job_title: '',
+    portal_can_sell: false,
     role: 'coach',
     max_belt_permission: 'yellow_belt',
     certification_level: 'L1',
@@ -64,7 +65,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
     academy_id: defaultAcademyId ?? (academies[0]?.id ?? ''),
   });
 
-  const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
+  const set = (field: string, value: string | boolean) => setForm(f => ({ ...f, [field]: value }));
 
   const handleSubmit = async () => {
     if (!form.first_name || !form.last_name || !form.email || !form.phone || !form.languages) {
@@ -243,6 +244,14 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
               placeholder="e.g. Photographer, Videographer, Seller"
               className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
             <p className="text-xs text-[var(--tss-gray-500)] mt-1.5">They get a portal with their tasks + assigned services. Coaching tabs are hidden.</p>
+
+            <label className="flex items-start gap-2.5 mt-3 cursor-pointer">
+              <input type="checkbox" checked={form.portal_can_sell} onChange={e => set('portal_can_sell', e.target.checked)} className="mt-0.5" />
+              <span>
+                <span className="text-sm font-semibold text-[var(--tss-gray-700)]">Seller — can sell services</span>
+                <span className="block text-xs text-[var(--tss-gray-500)]">Adds a Sell tab: services calendar with real availability + sales chart.</span>
+              </span>
+            </label>
           </div>
         )}
 

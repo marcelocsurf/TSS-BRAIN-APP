@@ -42,7 +42,7 @@ import {
 
 type TabIconComponent = typeof Home;
 
-type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating';
+type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating' | 'sell';
 
 // 'rating' is intentionally NOT in the nav — the student rating is unified
 // into the home (a featured card that taps through to the detail).
@@ -63,10 +63,18 @@ export function CoachPortalTabs({
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   const { coach, stats } = data;
   const isSupport = (coach as any).portal_category === 'support';
+  const canSell = !!(coach as any).portal_can_sell;
 
-  // Support (non-coaching) members get a trimmed nav: Home (tasks + services)
-  // and Courses (role-specific, granted). Coaching keeps the full set.
-  const visibleTabs = isSupport ? TABS.filter((t) => t.key === 'home' || t.key === 'courses') : TABS;
+  // Support (non-coaching) members get a trimmed nav: Home + Courses, plus a
+  // Sell tab when they're a seller. Coaching keeps the full set.
+  const SELL_TAB = { key: 'sell' as Tab, label: 'Sell', Icon: BarChart2 };
+  const visibleTabs = isSupport
+    ? [
+        TABS.find((t) => t.key === 'home')!,
+        ...(canSell ? [SELL_TAB] : []),
+        TABS.find((t) => t.key === 'courses')!,
+      ]
+    : TABS;
 
   return (
     <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
@@ -80,6 +88,9 @@ export function CoachPortalTabs({
               <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} />
             )}
           </div>
+        )}
+        {activeTab === 'sell' && canSell && (
+          <SellTab services={data.academyServices} />
         )}
         {activeTab === 'courses' && (
           <CoursesTab
@@ -221,6 +232,97 @@ function SupportHome({ coach, upcoming, emergencyPlan }: {
           </div>
         </details>
       )}
+    </div>
+  );
+}
+
+// Seller "Sell" tab (Fase 2A): sales chart with goal + services calendar with
+// real availability. Read-only for now — the reserve/sell flow comes in 2C.
+function SellTab({ services }: { services: any[] }) {
+  const live = (services ?? []).filter((s) => s.status !== 'cancelled');
+
+  // Per-service unit price = what's actually being charged there; fall back to
+  // the academy-wide average, then to $99, so the goal is never zero.
+  const allAmounts: number[] = [];
+  for (const s of live) for (const p of s.camp_participants ?? []) if (p.amount_cents > 0) allAmounts.push(p.amount_cents);
+  const globalAvg = allAmounts.length ? Math.round(allAmounts.reduce((a, b) => a + b, 0) / allAmounts.length) : 9900;
+
+  let spots = 0, sold = 0, reserved = 0, committedCents = 0, metaCents = 0;
+  const rows = live.map((s) => {
+    const cap = s.capacity_override ?? s.camp_templates?.capacity_max ?? 4;
+    const active = (s.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+    const paid = active.filter((p: any) => p.payment_status === 'paid');
+    const svcAmounts = active.filter((p: any) => p.amount_cents > 0).map((p: any) => p.amount_cents);
+    const unit = svcAmounts.length ? Math.round(svcAmounts.reduce((a: number, b: number) => a + b, 0) / svcAmounts.length) : globalAvg;
+    const svcCommitted = active.reduce((sum: number, p: any) => sum + (p.amount_cents || 0), 0);
+    spots += cap; sold += paid.length; reserved += active.length - paid.length;
+    committedCents += svcCommitted; metaCents += cap * unit;
+    return { s, cap, enrolled: active.length, available: Math.max(0, cap - active.length), unit };
+  });
+  const enrolled = sold + reserved;
+  const available = Math.max(0, spots - enrolled);
+  const goalPct = metaCents ? Math.min(100, Math.round((committedCents / metaCents) * 100)) : 0;
+  const money = (c: number) => `$${(c / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+
+  return (
+    <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
+      {/* Sales goal */}
+      <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">Sales goal</p>
+          <p className="text-[11px] text-white/60">{goalPct}% of {money(metaCents)}</p>
+        </div>
+        <div className="h-2.5 rounded-full overflow-hidden bg-white/10 mb-1">
+          <div style={{ width: `${goalPct}%`, background: '#5AC3E7', height: '100%' }} />
+        </div>
+        <p className="text-[12px] text-white/70">
+          <span className="font-semibold text-white">{money(committedCents)}</span> committed · goal {money(metaCents)} if fully sold
+        </p>
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          {[
+            { l: 'Spots', v: spots },
+            { l: 'Sold', v: sold },
+            { l: 'Reserved', v: reserved },
+            { l: 'Available', v: available },
+          ].map((x) => (
+            <div key={x.l} className="rounded-xl bg-white/[0.04] px-2 py-2 text-center">
+              <p className="text-lg font-bold text-white leading-none">{x.v}</p>
+              <p className="text-[8px] uppercase tracking-wider text-white/40 mt-1" style={{ fontFamily: 'DM Mono, monospace' }}>{x.l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Services with real availability */}
+      <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-3 inline-flex items-center gap-1.5">
+          <CalendarDays size={13} /> Services available {rows.length > 0 && <span className="text-white/40">· {rows.length}</span>}
+        </p>
+        {rows.length === 0 ? (
+          <p className="text-[13px] text-white/40">No upcoming services programmed.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {rows.map(({ s, cap, available }) => {
+              const full = available === 0;
+              return (
+                <div key={s.id} className="rounded-lg bg-white/[0.04] px-3 py-2.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{s.camp_name}</p>
+                    <p className="text-[10px] text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>
+                      {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {s.scheduled_time ? ` · ${s.scheduled_time.slice(0, 5)}` : ''}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${full ? 'bg-white/10 text-white/50' : 'text-[#0A1628]'}`} style={!full ? { background: '#5AC3E7' } : undefined}>
+                    {full ? 'Full' : `${available} of ${cap} free`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-[10px] text-white/30 mt-3">Reserving a spot from here comes next — for now this shows live availability so you can sell.</p>
+      </div>
     </div>
   );
 }

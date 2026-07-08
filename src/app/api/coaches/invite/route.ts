@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       academy_id: requestedAcademyId,
       portal_category: rawPortalCategory,
       job_title,
+      portal_can_sell,
     } = body;
 
     if (!first_name || !last_name || !email) {
@@ -236,6 +237,7 @@ export async function POST(req: NextRequest) {
         role,
         portal_category,
         job_title: job_title?.trim() || null,
+        portal_can_sell: portal_category === 'support' ? !!portal_can_sell : false,
         // Support members exist for the portal (tasks + services), so grant
         // portal access on creation; coaching roles are gated by course grants.
         ...(portal_category === 'support' ? { course_access_granted: true } : {}),
