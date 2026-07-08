@@ -73,6 +73,7 @@ type ServiceCardProps = {
     } | null;
     head_coach: { display_name: string } | null;
     head_coach_id?: string | null;
+    head_coach_status?: string | null;
     coaches: { display_name: string } | null;
     camp_participants: { id: string; enrollment_status: string; payment_status?: string | null; student_id?: string | null }[];
   };
@@ -195,7 +196,16 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
         {/* Coach signalling — green check + name when assigned,
             amber alert + "No coach" when missing so a coordinator who
             scans the calendar instantly spots services without a coach. */}
-        <div className="mt-1.5 flex items-center gap-1 truncate">
+        <div className="mt-1.5 space-y-0.5">
+          {camp.head_coach_status === 'rejected' && (
+            <div className="flex items-center gap-1 truncate">
+              <AlertTriangle size={11} strokeWidth={2.5} className="text-amber-600 shrink-0" />
+              <p className="text-[10px] font-semibold truncate text-amber-700" style={{ fontFamily: 'DM Mono, monospace' }}>
+                Head coach declined — reassign
+              </p>
+            </div>
+          )}
+          <div className="flex items-center gap-1 truncate">
           {coachName ? (
             <>
               <Check
@@ -227,6 +237,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
               </p>
             </>
           )}
+          </div>
         </div>
       </div>
     </button>
