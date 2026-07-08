@@ -118,7 +118,7 @@ export function CoursesPanel({
             className="text-[9px] uppercase tracking-wider bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)] px-2 py-0.5 rounded-full font-semibold"
             style={{ fontFamily: 'DM Mono, monospace' }}
           >
-            TSS Direct
+            The Surf Sequence Direct
           </span>
         )}
       </div>
@@ -257,7 +257,7 @@ export function CoursesPanel({
             )}
             {isDirectPurchase && (
               <p className="text-[10px] text-[var(--tss-cyan,#5AC3E7)]">
-                TSS Direct — no academy invoiced. Source: <code>direct_purchase</code>.
+                The Surf Sequence Direct — no academy invoiced. Source: <code>direct_purchase</code>.
               </p>
             )}
             {error && <p className="text-xs text-[var(--tss-danger)]">{error}</p>}

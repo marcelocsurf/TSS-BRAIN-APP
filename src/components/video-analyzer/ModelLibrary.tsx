@@ -16,7 +16,7 @@ export default function ModelLibrary({ selectedSrc, onSelect, library }: Props) 
   return (
     <div className="flex h-full flex-col gap-1 overflow-y-auto p-2">
       <h2 className="px-1 pb-1 text-sm font-bold text-cyan-300">
-        TSS Model Library
+        The Surf Sequence Model Library
       </h2>
       {cats.length === 0 && (
         <p className="px-2 py-3 text-xs text-white/40">No model clips yet.</p>

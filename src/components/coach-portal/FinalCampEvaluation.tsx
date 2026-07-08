@@ -5,7 +5,7 @@
 // Triggered when the coach closes the LAST day of a multi-day camp. The
 // coach is asked to rate every STP of each student officially before the
 // camp_instance flips to 'completed'. These cyan stars become the
-// student's official TSS evaluation for that step in their portal.
+// student's official The Surf Sequence evaluation for that step in their portal.
 
 import { useState, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
@@ -209,7 +209,7 @@ export function FinalCampEvaluation({
           <h2 className="text-base font-bold mt-0.5">{campName}</h2>
           <p className="text-[11px] text-white/70 mt-1">
             Rate every step of the sequence for every student. These cyan
-            stars become the official TSS record in their portal.
+            stars become the official The Surf Sequence record in their portal.
           </p>
           <div className="flex items-center gap-3 mt-2">
             <p className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold">

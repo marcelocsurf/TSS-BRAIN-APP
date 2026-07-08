@@ -19,7 +19,7 @@ const uid = (p: string) => `${p}${++seq}_${performance.now().toFixed(0)}`;
 export default function VideoAnalyzer() {
   const [studentSrc, setStudentSrc] = useState<string | null>(null);
   const [modelSrc, setModelSrc] = useState<string | null>(null);
-  const [modelTitle, setModelTitle] = useState<string>("TSS Model");
+  const [modelTitle, setModelTitle] = useState<string>("The Surf Sequence Model");
 
   const [studentShapes, setStudentShapes] = useState<Shape[]>([]);
   const [modelShapes, setModelShapes] = useState<Shape[]>([]);
@@ -356,7 +356,7 @@ export default function VideoAnalyzer() {
           )}
           {layout !== "student" && (
             <VideoPanel
-              title={modelSrc ? modelTitle : "TSS Model Video"}
+              title={modelSrc ? modelTitle : "The Surf Sequence Model Video"}
               src={modelSrc}
               isActive={active === "model"}
               shapes={modelShapes}

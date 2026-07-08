@@ -62,7 +62,7 @@ export default function EntryForm({ kicked = false }: { kicked?: boolean }) {
           className="text-center text-xs text-white/30 mt-8 tracking-wide"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
-          TSS Brain
+          The Surf Sequence
         </p>
       </div>
     </div>
