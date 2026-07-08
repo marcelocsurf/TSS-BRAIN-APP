@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
-import { createTask, setTaskDone, deleteTask, type AcademyTask } from '@/lib/actions/tasks';
+import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import { createTask, updateTask, setTaskDone, deleteTask, type AcademyTask } from '@/lib/actions/tasks';
 
 // Standard recurring academy chores — one tap pre-fills the title.
 const PRESETS = [
@@ -38,13 +38,12 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const openTasks = tasks.filter((t) => t.status !== 'done');
   const doneTasks = tasks.filter((t) => t.status === 'done');
   const overdueCount = openTasks.filter(isOverdue).length;
-
-  function refresh() { start(() => router.refresh()); }
 
   function submit() {
     setErr(null);
@@ -53,9 +52,23 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
       const res = await createTask({
         academy_id: academyId, title, assignee_coach_id: assignee || null, due_date: due || null,
       });
-      if (!res.ok) { setErr(res.error || 'Could not create the task.'); return; }
+      if (!res.ok || !res.task) { setErr(res.error || 'Could not create the task.'); return; }
+      // Add it to the list immediately so a second task can be added right away.
+      setTasks((prev) => [res.task!, ...prev]);
       setTitle(''); setAssignee(''); setDue(''); setShowForm(false);
-      refresh();
+      router.refresh();
+    });
+  }
+
+  function saveEdit(id: string, patch: { title: string; assignee_coach_id: string | null; due_date: string | null }) {
+    setErr(null);
+    if (!patch.title.trim()) { setErr('Title cannot be empty.'); return; }
+    start(async () => {
+      const res = await updateTask(id, patch);
+      if (!res.ok || !res.task) { setErr(res.error || 'Could not update the task.'); return; }
+      setTasks((prev) => prev.map((t) => (t.id === id ? res.task! : t)));
+      setEditingId(null);
+      router.refresh();
     });
   }
 
@@ -128,17 +141,24 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
           ) : (
             <ul className="space-y-1.5">
               {openTasks.map((t) => (
-                <li key={t.id} className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2.5">
-                  <button onClick={() => toggle(t)} className="w-5 h-5 shrink-0 rounded-md border-2 border-gray-300 hover:border-emerald-500 transition-colors" aria-label="Mark done" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 truncate">{t.title}</p>
-                    <p className="text-[11px] text-gray-400 flex gap-2 flex-wrap">
-                      {t.assignee_name && <span>{t.assignee_name}</span>}
-                      {t.due_date && <span className={isOverdue(t) ? 'text-red-500 font-semibold' : ''}>Due {fmtDue(t.due_date)}</span>}
-                    </p>
-                  </div>
-                  <button onClick={() => remove(t)} className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0" aria-label="Delete"><Trash2 size={14} /></button>
-                </li>
+                editingId === t.id ? (
+                  <li key={t.id}>
+                    <TaskEditForm task={t} assignees={assignees} pending={pending} onCancel={() => { setEditingId(null); setErr(null); }} onSave={(patch) => saveEdit(t.id, patch)} />
+                  </li>
+                ) : (
+                  <li key={t.id} className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2.5">
+                    <button onClick={() => toggle(t)} className="w-5 h-5 shrink-0 rounded-md border-2 border-gray-300 hover:border-emerald-500 transition-colors" aria-label="Mark done" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800 truncate">{t.title}</p>
+                      <p className="text-[11px] text-gray-400 flex gap-2 flex-wrap">
+                        {t.assignee_name ? <span>{t.assignee_name}</span> : <span className="italic">Unassigned</span>}
+                        {t.due_date && <span className={isOverdue(t) ? 'text-red-500 font-semibold' : ''}>Due {fmtDue(t.due_date)}</span>}
+                      </p>
+                    </div>
+                    <button onClick={() => { setEditingId(t.id); setErr(null); }} className="p-1 text-gray-300 hover:text-[var(--tss-navy)] transition-colors shrink-0" aria-label="Edit"><Pencil size={14} /></button>
+                    <button onClick={() => remove(t)} className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0" aria-label="Delete"><Trash2 size={14} /></button>
+                  </li>
+                )
               ))}
             </ul>
           )}
@@ -159,6 +179,40 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function TaskEditForm({ task, assignees, pending, onSave, onCancel }: {
+  task: AcademyTask;
+  assignees: { id: string; name: string }[];
+  pending: boolean;
+  onSave: (patch: { title: string; assignee_coach_id: string | null; due_date: string | null }) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(task.title);
+  const [assignee, setAssignee] = useState(task.assignee_coach_id ?? '');
+  const [due, setDue] = useState(task.due_date ?? '');
+
+  return (
+    <div className="rounded-xl border border-[var(--tss-cyan,#5AC3E7)] bg-cyan-50/30 p-3 space-y-2.5">
+      <input
+        value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title…"
+        className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+      />
+      <div className="flex gap-2 flex-wrap">
+        <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 flex-1 min-w-[140px]">
+          <option value="">Unassigned</option>
+          {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+        <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 text-gray-700" />
+      </div>
+      <div className="flex gap-2">
+        <button onClick={() => onSave({ title, assignee_coach_id: assignee || null, due_date: due || null })} disabled={pending} className="text-xs font-semibold px-3 py-2 rounded-lg bg-[var(--tss-navy)] text-white disabled:opacity-50">
+          {pending ? 'Saving…' : 'Save changes'}
+        </button>
+        <button onClick={onCancel} className="text-xs px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100">Cancel</button>
+      </div>
     </div>
   );
 }
