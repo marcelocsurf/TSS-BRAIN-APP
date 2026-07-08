@@ -226,12 +226,6 @@ export default async function CoachProfilePage({ params }: Props) {
         )}
       </div>
 
-      {/* Admin: set a password manually when the email link won't work */}
-      {isPlatformAdmin && <SetCoachPasswordCard coachId={id} />}
-
-      {/* Admin: grant presentations that unlock in this coach's course */}
-      {(currentUserIsAdmin || isPlatformAdmin) && <PresentationGrants coachId={id} />}
-
       {/* STATS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -722,6 +716,14 @@ export default async function CoachProfilePage({ params }: Props) {
           )}
         </div>
       </div>
+
+      {/* ═══ ADMIN ACTIONS (utilities, kept at the bottom) ═══ */}
+
+      {/* Admin: set a password manually when the email link won't work */}
+      {isPlatformAdmin && <SetCoachPasswordCard coachId={id} />}
+
+      {/* Admin: grant presentations that unlock in this coach's course */}
+      {(currentUserIsAdmin || isPlatformAdmin) && <PresentationGrants coachId={id} />}
     </div>
   );
 }
