@@ -62,6 +62,11 @@ export function CoachPortalTabs({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   const { coach, stats } = data;
+  const isSupport = (coach as any).portal_category === 'support';
+
+  // Support (non-coaching) members get a trimmed nav: Home (tasks + services)
+  // and Courses (role-specific, granted). Coaching keeps the full set.
+  const visibleTabs = isSupport ? TABS.filter((t) => t.key === 'home' || t.key === 'courses') : TABS;
 
   return (
     <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
@@ -69,7 +74,11 @@ export function CoachPortalTabs({
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
-            <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} />
+            {isSupport ? (
+              <SupportHome coach={coach} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} />
+            ) : (
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} />
+            )}
           </div>
         )}
         {activeTab === 'courses' && (
@@ -98,7 +107,7 @@ export function CoachPortalTabs({
       {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10" style={{ background: '#0A1628' }}>
         <div className="max-w-lg mx-auto flex">
-          {TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
               <button
@@ -134,6 +143,84 @@ function EmRow({ label, value }: { label: string; value: string }) {
     <div className="flex gap-2 text-sm">
       <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 w-20 shrink-0 pt-0.5">{label}</span>
       <span className="text-white/80 flex-1 whitespace-pre-line">{value}</span>
+    </div>
+  );
+}
+
+// Trimmed home for support (non-coaching) members: who they are, their tasks,
+// their assigned services, and the academy emergency plan. No coaching UI.
+function SupportHome({ coach, upcoming, emergencyPlan }: {
+  coach: any;
+  upcoming: any[];
+  emergencyPlan?: {
+    emergency_numbers: string | null;
+    nearest_hospital: string | null;
+    lifeguard_contact: string | null;
+    emergency_address: string | null;
+    emergency_protocol: string | null;
+  } | null;
+}) {
+  const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
+  const title = coach.job_title || 'Team member';
+  const hasEmergency = !!emergencyPlan && (
+    emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
+    emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address || emergencyPlan.emergency_protocol
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Identity */}
+      <div className="rounded-2xl border border-white/10 p-4 flex items-center gap-3" style={{ background: '#0F1E33' }}>
+        {coach.photo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coach.photo_url} alt={coach.display_name} className="w-14 h-14 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold shrink-0" style={{ background: '#5AC3E7', color: '#0A1628' }}>{initials}</div>
+        )}
+        <div className="min-w-0">
+          <p className="text-white font-semibold text-lg leading-tight truncate">{coach.display_name}</p>
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">{title}</p>
+        </div>
+      </div>
+
+      {/* My tasks */}
+      <CoachTasks token={coach.portal_token} />
+
+      {/* My services */}
+      <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-3 inline-flex items-center gap-1.5">
+          <CalendarDays size={13} /> My services {upcoming.length > 0 && <span className="text-white/40">· {upcoming.length}</span>}
+        </p>
+        {upcoming.length === 0 ? (
+          <p className="text-[13px] text-white/40">No upcoming services assigned.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {upcoming.map((s: any) => (
+              <div key={s.id} className="rounded-lg bg-white/[0.04] px-3 py-2.5">
+                <p className="text-sm text-white font-medium">{s.camp_name}</p>
+                <p className="text-[10px] text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>
+                  {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {s.scheduled_time ? ` · ${s.scheduled_time.slice(0, 5)}` : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Emergency plan */}
+      {hasEmergency && emergencyPlan && (
+        <details className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
+          <summary className="text-sm font-semibold text-white cursor-pointer">Emergency plan</summary>
+          <div className="mt-3 space-y-2">
+            {emergencyPlan.emergency_numbers && <EmRow label="Numbers" value={emergencyPlan.emergency_numbers} />}
+            {emergencyPlan.nearest_hospital && <EmRow label="Hospital" value={emergencyPlan.nearest_hospital} />}
+            {emergencyPlan.lifeguard_contact && <EmRow label="Lifeguard" value={emergencyPlan.lifeguard_contact} />}
+            {emergencyPlan.emergency_address && <EmRow label="Meeting pt" value={emergencyPlan.emergency_address} />}
+            {emergencyPlan.emergency_protocol && <EmRow label="Protocol" value={emergencyPlan.emergency_protocol} />}
+          </div>
+        </details>
+      )}
     </div>
   );
 }

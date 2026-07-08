@@ -50,11 +50,17 @@ export async function POST(req: NextRequest) {
       languages,
       internal_notes,
       academy_id: requestedAcademyId,
+      portal_category: rawPortalCategory,
+      job_title,
     } = body;
 
     if (!first_name || !last_name || !email) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
+
+    // Support (non-coaching) team members get a trimmed portal; coaching roles
+    // keep the full one. Category drives the portal, role drives permissions.
+    const portal_category = rawPortalCategory === 'support' ? 'support' : 'coaching';
 
     // Validate role
     const validRoles = ['admin', 'coordinator', 'coach', 'assistant'];
@@ -228,6 +234,11 @@ export async function POST(req: NextRequest) {
         email: email.trim().toLowerCase(),
         phone: phone?.trim() || null,
         role,
+        portal_category,
+        job_title: job_title?.trim() || null,
+        // Support members exist for the portal (tasks + services), so grant
+        // portal access on creation; coaching roles are gated by course grants.
+        ...(portal_category === 'support' ? { course_access_granted: true } : {}),
         max_belt_permission: max_belt_permission || 'yellow_belt',
         specialty_area: specialty_area?.trim() || null,
         languages: languages?.trim() || null,

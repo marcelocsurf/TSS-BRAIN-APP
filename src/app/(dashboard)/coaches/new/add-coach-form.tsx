@@ -53,6 +53,8 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
     last_name: '',
     email: '',
     phone: '',
+    portal_category: 'coaching',
+    job_title: '',
     role: 'coach',
     max_belt_permission: 'yellow_belt',
     certification_level: 'L1',
@@ -212,6 +214,39 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
       {/* Role & Permissions */}
       <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
         <p className="text-xs tracking-widest text-[var(--tss-gray-500)] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>System Role</p>
+
+        {/* Team member type — drives which portal they get */}
+        <div>
+          <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Team member type *</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => { set('portal_category', 'coaching'); if (form.role === 'assistant') set('role', 'coach'); }}
+              className={`flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+                form.portal_category === 'coaching' ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm' : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
+              }`}>
+              <span className="text-sm font-semibold">Coaching team</span>
+              <span className={`text-xs mt-0.5 ${form.portal_category === 'coaching' ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>Coach / coordinator / assistant</span>
+            </button>
+            <button type="button" onClick={() => { set('portal_category', 'support'); set('role', 'assistant'); }}
+              className={`flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+                form.portal_category === 'support' ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm' : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
+              }`}>
+              <span className="text-sm font-semibold">Support staff</span>
+              <span className={`text-xs mt-0.5 ${form.portal_category === 'support' ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>Photographer, seller, driver…</span>
+            </button>
+          </div>
+        </div>
+
+        {form.portal_category === 'support' && (
+          <div>
+            <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Job title *</label>
+            <input type="text" value={form.job_title} onChange={e => set('job_title', e.target.value)}
+              placeholder="e.g. Photographer, Videographer, Seller"
+              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+            <p className="text-xs text-[var(--tss-gray-500)] mt-1.5">They get a portal with their tasks + assigned services. Coaching tabs are hidden.</p>
+          </div>
+        )}
+
+        {form.portal_category === 'coaching' && (<>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Role *</label>
           <div className="space-y-2">
@@ -264,6 +299,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
             ))}
           </div>
         </div>
+        </>)}
       </div>
 
       {/* Optional */}

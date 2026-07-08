@@ -68,6 +68,8 @@ export interface CoachPortalData {
     display_name: string;
     email: string | null;
     role: string;
+    portal_category: string;
+    job_title: string | null;
     certification_level: string | null;
     max_belt_permission: string;
     languages: string | null;
@@ -117,7 +119,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   const { data: coach } = await admin
     .from('coaches')
     .select(
-      'id, first_name, last_name, display_name, email, role, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted, photo_url, intake_completed_at, waiver_signed'
+      'id, first_name, last_name, display_name, email, role, portal_category, job_title, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted, photo_url, intake_completed_at, waiver_signed'
     )
     .eq('portal_token', token)
     .single();
