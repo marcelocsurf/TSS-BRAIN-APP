@@ -337,10 +337,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           closed_at: new Date().toISOString(),
         }));
         flash('🏁 Day finalized');
-        // If this was the last day of the camp, surface the final
-        // official evaluation. The coach rates every STP per student
-        // before the parent camp_instance flips to 'completed'.
-        if (isLastDay) {
+        // If this was the last day of a BELT camp, surface the final
+        // official evaluation (rate every STP per student → graduation).
+        // Simple lessons (surf_lesson / Discover Surfing) close with the
+        // per-student general analysis instead — no 25-STP belt eval.
+        if (isLastDay && data.camp.service_kind !== 'surf_lesson') {
           setShowFinalEval(true);
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
