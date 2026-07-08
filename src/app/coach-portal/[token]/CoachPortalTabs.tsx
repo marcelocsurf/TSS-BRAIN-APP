@@ -1473,36 +1473,70 @@ function PlanTab({
           <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 mb-1.5">
             Upcoming + active ({upcoming.length})
           </p>
-          <div className="space-y-1.5">
-            {upcoming.map((s: any) => {
-              const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => openPlanner(s.id)}
-                  className="w-full text-left bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 hover:border-emerald-300 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-mono text-emerald-700">
-                        {tpl?.service_kind?.replace(/_/g, ' ') || s.status}
-                        {' · '}
-                        {s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
-                      </p>
-                      <p className="text-sm font-medium text-gray-800 mt-0.5">{s.camp_name}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
-                        {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                        {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}
-                      </p>
+          {(() => {
+            // Agenda view: group upcoming services by their start day, ordered,
+            // with friendly Today / Tomorrow / weekday headers.
+            const byDay = new Map<string, any[]>();
+            for (const s of upcoming) {
+              const k = s.start_date as string;
+              if (!byDay.has(k)) byDay.set(k, []);
+              byDay.get(k)!.push(s);
+            }
+            const days = Array.from(byDay.keys()).sort();
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const dayLabel = (k: string) => {
+              const d = new Date(k + 'T00:00:00');
+              const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+              if (diff === 0) return 'Today';
+              if (diff === 1) return 'Tomorrow';
+              return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            };
+            const fmtTime = (t?: string | null) => {
+              if (!t) return '';
+              const [h, m] = t.split(':');
+              const hr = parseInt(h, 10); if (Number.isNaN(hr)) return t;
+              return `${hr % 12 || 12}:${m ?? '00'} ${hr >= 12 ? 'PM' : 'AM'}`;
+            };
+            return (
+              <div className="space-y-4">
+                {days.map((k) => (
+                  <div key={k}>
+                    <p className="text-[11px] font-bold text-emerald-800 mb-1.5 flex items-center gap-1.5">
+                      <CalendarDays size={12} strokeWidth={2} /> {dayLabel(k)}
+                    </p>
+                    <div className="space-y-1.5">
+                      {byDay.get(k)!.map((s: any) => {
+                        const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => openPlanner(s.id)}
+                            className="w-full text-left bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 hover:border-emerald-300 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[11px] font-semibold text-gray-800">
+                                  {s.scheduled_time ? `${fmtTime(s.scheduled_time)} · ` : ''}{s.camp_name}
+                                </p>
+                                <p className="text-[10px] font-mono text-emerald-700 mt-0.5">
+                                  {tpl?.service_kind?.replace(/_/g, ' ') || s.status}
+                                  {' · '}
+                                  {s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
+                                  {s.start_date !== s.end_date ? ` · until ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                                </p>
+                              </div>
+                              <span className="text-emerald-700 shrink-0 text-sm">→</span>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <span className="text-emerald-700 shrink-0 text-sm">→</span>
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
