@@ -10,6 +10,7 @@ import {
 } from '@/lib/actions/dashboard';
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { incidentTypeLabel } from '@/lib/constants/brand';
+import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
@@ -159,54 +160,8 @@ export default async function DashboardHome() {
         </div>
       )}
 
-      {/* Incident reports — coordinator + admin. Red so it can't be missed. */}
-      {incidents.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-sm font-semibold text-red-700 mb-3 uppercase tracking-wider inline-flex items-center gap-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
-            <AlertTriangle size={14} strokeWidth={1.75} /> Incident reports ({incidents.length})
-          </h3>
-          <div className="bg-white rounded-xl border border-red-200 divide-y divide-red-50 overflow-hidden">
-            {incidents.map((inc) => {
-              const body = (
-                <div className="px-4 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
-                      {incidentTypeLabel(inc.incident_type)}
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      {inc.created_at ? new Date(inc.created_at).toLocaleDateString() : ''}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[var(--tss-navy)] mt-1">
-                    {inc.is_general ? (
-                      <span className="text-gray-500 italic">General (no specific student)</span>
-                    ) : (
-                      inc.student_name || 'Student'
-                    )}
-                    {inc.coach_name ? ` · ${inc.coach_name}` : ''}
-                  </p>
-                  {inc.incident_description && (
-                    <p className="text-xs text-gray-600 mt-0.5">{inc.incident_description}</p>
-                  )}
-                  {inc.incident_action && (
-                    <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Action:</span> {inc.incident_action}</p>
-                  )}
-                  {inc.student_id && (
-                    <p className="text-[10px] text-[var(--tss-cyan)] mt-1">View student →</p>
-                  )}
-                </div>
-              );
-              return inc.student_id ? (
-                <Link key={inc.id} href={`/students/${inc.student_id}`} className="block hover:bg-red-50/40 transition-colors">
-                  {body}
-                </Link>
-              ) : (
-                <div key={inc.id}>{body}</div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Incident reports — coordinator + admin. Unread badge + mark-as-read. */}
+      <IncidentsPanel incidents={incidents} />
 
       {/* Quick stats — telemetry strip. Hidden for coordinators, whose own
           dashboard has a richer academy-scoped stats block (no duplication). */}

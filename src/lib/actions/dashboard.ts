@@ -18,6 +18,7 @@ export interface IncidentAlert {
   coach_name: string | null;
   is_general: boolean;         // true = not tied to a specific student
   source: 'reported' | 'session';
+  acknowledged: boolean;       // read/handled by a coordinator
 }
 
 // Recent incidents — merged from the dedicated session_incidents log
@@ -31,7 +32,7 @@ export async function getRecentIncidents(academyId: string | null, limit = 15): 
   // 1) Dedicated incident log
   let iq = supabase
     .from('session_incidents')
-    .select('id, incident_type, description, action_taken, created_at, student_id, student_name, coach_id, academy_id, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
+    .select('id, incident_type, description, action_taken, created_at, student_id, student_name, coach_id, academy_id, acknowledged_at, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (academyId) iq = iq.eq('academy_id', academyId);
@@ -64,6 +65,7 @@ export async function getRecentIncidents(academyId: string | null, limit = 15): 
       coach_name: co?.display_name ?? null,
       is_general: !r.student_id && !r.student_name,
       source: 'reported',
+      acknowledged: !!r.acknowledged_at,
     });
   }
 
@@ -81,11 +83,65 @@ export async function getRecentIncidents(academyId: string | null, limit = 15): 
       coach_name: co?.display_name ?? null,
       is_general: false,
       source: 'session',
+      // Legacy per-session incidents have no ack field — treat as handled so
+      // they don't inflate the unread badge (they're historical).
+      acknowledged: true,
     });
   }
 
   out.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
   return out.slice(0, limit);
+}
+
+// Mark a coach-reported incident (session_incidents) as read/handled.
+export async function acknowledgeIncident(incidentId: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const me = await getCurrentCoach().catch(() => null);
+  const { error } = await supabase
+    .from('session_incidents')
+    .update({ acknowledged_at: new Date().toISOString(), acknowledged_by: (me as any)?.id ?? null })
+    .eq('id', incidentId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Full incident history for a given month ('YYYY-MM'), for the report + CSV.
+export async function getIncidentsForMonth(academyId: string | null, month: string): Promise<IncidentAlert[]> {
+  const start = `${month}-01`;
+  const [y, m] = month.split('-').map((n) => parseInt(n, 10));
+  const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const supabase = await createClient();
+
+  let iq = supabase
+    .from('session_incidents')
+    .select('id, incident_type, description, action_taken, created_at, student_id, student_name, coach_id, academy_id, acknowledged_at, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
+    .gte('created_at', start).lt('created_at', next)
+    .order('created_at', { ascending: false });
+  if (academyId) iq = iq.eq('academy_id', academyId);
+
+  let sq = supabase
+    .from('student_session_results')
+    .select('id, incident_type, incident_description, incident_action, created_at, student_id, students!inner(first_name, last_name, academy_id), coaches:coach_id(display_name)')
+    .not('incident_type', 'is', null)
+    .gte('created_at', start).lt('created_at', next)
+    .order('created_at', { ascending: false });
+  if (academyId) sq = sq.eq('students.academy_id', academyId);
+
+  const [{ data: rep }, { data: ses }] = await Promise.all([iq, sq]);
+  const out: IncidentAlert[] = [];
+  for (const r of (rep as any[]) ?? []) {
+    const co = Array.isArray(r.coaches) ? r.coaches[0] : r.coaches;
+    const stu = Array.isArray(r.students) ? r.students[0] : r.students;
+    const name = stu ? `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim() : (r.student_name ?? null);
+    out.push({ id: `rep-${r.id}`, incident_type: r.incident_type ?? null, incident_description: r.description ?? null, incident_action: r.action_taken ?? null, created_at: r.created_at ?? null, student_name: name || null, student_id: r.student_id ?? null, coach_name: co?.display_name ?? null, is_general: !r.student_id && !r.student_name, source: 'reported', acknowledged: !!r.acknowledged_at });
+  }
+  for (const r of (ses as any[]) ?? []) {
+    const stu = Array.isArray(r.students) ? r.students[0] : r.students;
+    const co = Array.isArray(r.coaches) ? r.coaches[0] : r.coaches;
+    out.push({ id: `ses-${r.id}`, incident_type: r.incident_type ?? null, incident_description: r.incident_description ?? null, incident_action: r.incident_action ?? null, created_at: r.created_at ?? null, student_name: stu ? `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim() : null, student_id: r.student_id ?? null, coach_name: co?.display_name ?? null, is_general: false, source: 'session', acknowledged: true });
+  }
+  out.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+  return out;
 }
 
 // ═══════════════════════════════════════
