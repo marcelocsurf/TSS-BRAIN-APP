@@ -11,6 +11,8 @@ import {
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { incidentTypeLabel } from '@/lib/constants/brand';
 import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
+import { TasksPanel } from '@/components/dashboard/TasksPanel';
+import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { TideWidget } from '@/components/dashboard/TideWidget';
@@ -116,6 +118,18 @@ export default async function DashboardHome() {
     } catch { /* non-blocking */ }
   }
 
+  // To-do tasks — coordinator + admin manage/assign academy tasks.
+  let tasks: Awaited<ReturnType<typeof listAcademyTasks>> = [];
+  let taskAssignees: Awaited<ReturnType<typeof listTaskAssignees>> = [];
+  if (role === 'admin' || role === 'coordinator') {
+    try {
+      [tasks, taskAssignees] = await Promise.all([
+        listAcademyTasks(academyId),
+        listTaskAssignees(academyId),
+      ]);
+    } catch { /* non-blocking */ }
+  }
+
   // Drafts for coaches/coordinators/admins
   let drafts: any[] = [];
   if (role === 'admin' || role === 'coordinator' || role === 'coach') {
@@ -162,6 +176,11 @@ export default async function DashboardHome() {
 
       {/* Incident reports — coordinator + admin. Unread badge + mark-as-read. */}
       <IncidentsPanel incidents={incidents} />
+
+      {/* To-do list — coordinator + admin create + assign academy tasks. */}
+      {(role === 'admin' || role === 'coordinator') && (
+        <TasksPanel initialTasks={tasks} assignees={taskAssignees} academyId={academyId} />
+      )}
 
       {/* Quick stats — telemetry strip. Hidden for coordinators, whose own
           dashboard has a richer academy-scoped stats block (no duplication). */}

@@ -11,6 +11,7 @@ import { PendingAssignments } from './PendingAssignments';
 import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
 import { CoachPresentations } from '@/components/coach-portal/CoachPresentations';
 import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
+import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
@@ -408,6 +409,9 @@ function HomeTab({
           </div>
         </details>
       )}
+
+      {/* Tasks assigned to me by the coordinator */}
+      <CoachTasks token={coach.portal_token} />
 
       {/* Report an incident (keeps its own flow) */}
       <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
