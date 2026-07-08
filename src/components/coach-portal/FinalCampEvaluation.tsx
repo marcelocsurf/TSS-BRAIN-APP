@@ -197,7 +197,7 @@ export function FinalCampEvaluation({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--tss-navy)]/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[120] bg-[var(--tss-navy)]/80 backdrop-blur-sm">
       <div className="max-w-lg mx-auto h-[100dvh] bg-[var(--tss-gray-50,#F6F7F9)] flex flex-col">
         <div
           className="text-white px-4 py-5 shrink-0"
