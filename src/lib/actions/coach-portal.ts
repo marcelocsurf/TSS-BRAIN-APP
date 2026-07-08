@@ -14,6 +14,7 @@ export async function reportIncident(input: {
   student_id?: string | null;
   student_name?: string | null;
   board_id?: string | null;       // optional: a board that was damaged
+  board_action?: 'repair' | 'retire' | 'keep'; // what to do with that board
   description: string;
   action_taken?: string | null;
 }): Promise<void> {
@@ -38,9 +39,17 @@ export async function reportIncident(input: {
   });
   if (error) throw new Error(error.message);
 
-  // A damaged board goes to the repair shelf so it stops being offered.
+  // A damaged board is taken out of circulation per the coach's choice:
+  //   repair (default) → in_repair · retire → retired · keep → just logged.
+  // Either way its condition drops to 'poor' when pulled.
   if (input.board_id) {
-    await admin.from('boards').update({ status: 'in_repair' }).eq('id', input.board_id);
+    const action = input.board_action ?? 'repair';
+    if (action === 'retire') {
+      await admin.from('boards').update({ status: 'retired', condition: 'poor' }).eq('id', input.board_id);
+    } else if (action === 'repair') {
+      await admin.from('boards').update({ status: 'in_repair', condition: 'poor' }).eq('id', input.board_id);
+    }
+    // 'keep' → leave the board available; the incident is still on record.
   }
 
   revalidatePath('/dashboard');

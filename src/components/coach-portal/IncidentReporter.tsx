@@ -21,6 +21,7 @@ export function IncidentReporter({
   const [type, setType] = useState('');
   const [studentId, setStudentId] = useState('');
   const [boardId, setBoardId] = useState('');
+  const [boardAction, setBoardAction] = useState<'repair' | 'retire' | 'keep'>('repair');
   const [description, setDescription] = useState('');
   const [action, setAction] = useState('');
   const [pending, startTransition] = useTransition();
@@ -39,11 +40,12 @@ export function IncidentReporter({
           student_id: studentId || null,
           student_name: students.find((s) => s.id === studentId)?.name || null,
           board_id: boardId || null,
+          board_action: boardId ? boardAction : undefined,
           description,
           action_taken: action.trim() || null,
         });
         setDone(true);
-        setType(''); setStudentId(''); setBoardId(''); setDescription(''); setAction('');
+        setType(''); setStudentId(''); setBoardId(''); setBoardAction('repair'); setDescription(''); setAction('');
         setTimeout(() => { setDone(false); setOpen(false); }, 1800);
       } catch (e: any) {
         setError(e.message || 'Could not save the incident.');
@@ -95,7 +97,7 @@ export function IncidentReporter({
           </div>
           {boards.length > 0 && (type === 'board' || type === 'equipment') && (
             <div>
-              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Board affected (marks it in repair)</label>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Board affected</label>
               <select
                 value={boardId}
                 onChange={(e) => setBoardId(e.target.value)}
@@ -106,6 +108,25 @@ export function IncidentReporter({
                   <option key={b.id} value={b.id}>{b.code}</option>
                 ))}
               </select>
+              {boardId && (
+                <div className="mt-2">
+                  <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">What happens to this board?</label>
+                  <select
+                    value={boardAction}
+                    onChange={(e) => setBoardAction(e.target.value as 'repair' | 'retire' | 'keep')}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+                  >
+                    <option value="repair">Send to repair — out of the pool</option>
+                    <option value="retire">Retire — broken for good</option>
+                    <option value="keep">Keep in service — just log it</option>
+                  </select>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {boardAction === 'keep'
+                      ? 'The board stays available; the incident is recorded.'
+                      : 'The board leaves the assignable inventory and its condition drops to Poor.'}
+                  </p>
+                </div>
+              )}
             </div>
           )}
           <div>
