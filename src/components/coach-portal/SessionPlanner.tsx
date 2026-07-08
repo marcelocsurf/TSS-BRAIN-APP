@@ -473,7 +473,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         </p>
         <h2 className="text-base font-bold mt-0.5">{data.camp.camp_name}</h2>
         <p className="text-[11px] opacity-80 mt-0.5">
-          {new Date(data.selectedDay.session_date).toLocaleDateString('en-US', {
+          {new Date(data.selectedDay.session_date + 'T00:00:00').toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'short',
             day: 'numeric',
@@ -516,7 +516,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   style={{ background: stateColor }}
                 />
                 <span className="block text-[9px] opacity-70 mt-0.5">
-                  {new Date(d.session_date).toLocaleDateString('en-US', {
+                  {new Date(d.session_date + 'T00:00:00').toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
                   })}
@@ -1570,7 +1570,7 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
                       </span>
                       <span className="shrink-0 text-gray-400 w-14">
                         {rs.date
-                          ? new Date(rs.date).toLocaleDateString('en-US', {
+                          ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(rs.date) ? rs.date + 'T00:00:00' : rs.date).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                             })

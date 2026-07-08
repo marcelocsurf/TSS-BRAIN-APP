@@ -408,7 +408,7 @@ function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUr
       <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:20px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
           <span style="font-size:12px;color:#6B7280;">Date</span>
-          <span style="font-size:13px;color:#111827;font-weight:500;">${new Date(data.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+          <span style="font-size:13px;color:#111827;font-weight:500;">${new Date(/^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate) ? data.sessionDate + 'T00:00:00' : data.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
         </div>
         <div style="margin-bottom:8px;">
           <span style="font-size:12px;color:#6B7280;">Mission</span>

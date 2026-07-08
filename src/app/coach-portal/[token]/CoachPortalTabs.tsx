@@ -397,7 +397,7 @@ function HomeTab({
                   <div className="min-w-0">
                     <p className="text-[15px] text-white truncate">{s.camp_name}</p>
                     <p className="text-[10px] text-white/40 mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
-                      {(tpl?.service_kind?.replace(/_/g, ' ') || 'Service')} · {new Date(s.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {(tpl?.service_kind?.replace(/_/g, ' ') || 'Service')} · {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
                   <ChevronRight size={15} className="text-white/30 shrink-0" />
@@ -1492,8 +1492,8 @@ function PlanTab({
                       </p>
                       <p className="text-sm font-medium text-gray-800 mt-0.5">{s.camp_name}</p>
                       <p className="text-[11px] text-gray-500 mt-0.5">
-                        {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                        {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                         {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}
                       </p>
                     </div>
@@ -1521,8 +1521,8 @@ function PlanTab({
               >
                 <p className="text-sm font-medium text-gray-700">{s.camp_name}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
-                  {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                  {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                 </p>
               </button>
             ))}
@@ -1566,8 +1566,8 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
                   </p>
                   <p className="text-sm font-medium text-gray-800 mt-0.5">{s.camp_name}</p>
                   <p className="text-[11px] text-gray-500 mt-0.5">
-                    {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                   </p>
                 </div>
               );
@@ -1586,8 +1586,8 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
               <div key={s.id} className="bg-white border border-gray-100 rounded-2xl p-4">
                 <p className="text-sm font-medium text-gray-700">{s.camp_name}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
-                  {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                  {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                 </p>
               </div>
             ))}
