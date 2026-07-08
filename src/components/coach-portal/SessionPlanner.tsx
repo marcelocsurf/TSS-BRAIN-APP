@@ -2179,6 +2179,11 @@ function StudentEvalCard({
   const blocks = student.blocks;
   const gradableBlocks = blocks.filter((b) => b.step_id);
   const allEvaluated = gradableBlocks.length > 0 && gradableBlocks.every((b) => b.status);
+  // General per-student analysis lives on block 0. For services with no planned
+  // blocks (e.g. a Discover Surfing lesson) there is no block yet, so we default
+  // to order 0 — commitStudentBlock creates it on first save.
+  const gen = (blocks[0] ?? null) as any;
+  const genOrder = blocks[0]?.order_index ?? 0;
 
   return (
     <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2.5">
@@ -2214,7 +2219,9 @@ function StudentEvalCard({
 
       {/* M49 — Session-level Focus + Flow (one per student per day, not
           per block). Saved on block 0 just like the board fields. */}
-      {blocks.length > 0 && (
+      {/* Always available — works for belt camps AND simple lessons (Discover
+          Surfing) that have no planned blocks. Saved on block 0. */}
+      {(
         <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-3">
           <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[var(--tss-cyan,#5AC3E7)] font-semibold">
             Session summary — general analysis
@@ -2229,10 +2236,10 @@ function StudentEvalCard({
                   key={n}
                   type="button"
                   disabled={isClosed}
-                  onClick={() => onCommit(blocks[0].order_index, { focus_level: n })}
+                  onClick={() => onCommit(genOrder, { focus_level: n })}
                   className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
                   style={
-                    blocks[0].focus_level === n
+                    gen?.focus_level === n
                       ? { background: BRAND.colors.navy, color: 'white' }
                       : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
                   }
@@ -2264,11 +2271,11 @@ function StudentEvalCard({
                   type="button"
                   disabled={isClosed}
                   onClick={() =>
-                    onCommit(blocks[0].order_index, { flow_channel: opt.n })
+                    onCommit(genOrder, { flow_channel: opt.n })
                   }
                   className="py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-70"
                   style={
-                    blocks[0].flow_channel === opt.n
+                    gen?.flow_channel === opt.n
                       ? { background: opt.color, color: 'white' }
                       : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
                   }
@@ -2286,16 +2293,16 @@ function StudentEvalCard({
               coach for continuity). Persisted on block 0 like board/focus. */}
           <TextArea
             label="Coach feedback (what they did well)"
-            value={blocks[0].notes_post}
-            onBlur={(v) => onCommit(blocks[0].order_index, { notes_post: v })}
+            value={gen?.notes_post ?? ''}
+            onBlur={(v) => onCommit(genOrder, { notes_post: v })}
             placeholder="e.g. Great pop-up, much steadier stance today"
             rows={3}
             disabled={isClosed}
           />
           <TextArea
             label="What to work on next"
-            value={(blocks[0] as any).whats_next ?? ''}
-            onBlur={(v) => onCommit(blocks[0].order_index, { whats_next: v } as any)}
+            value={gen?.whats_next ?? ''}
+            onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
             placeholder="e.g. Next session: angle take-offs, look down the line"
             rows={2}
             disabled={isClosed}
