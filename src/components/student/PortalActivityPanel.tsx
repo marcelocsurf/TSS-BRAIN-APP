@@ -27,13 +27,30 @@ interface LessonCompleted {
   quiz_score: number | null;
 }
 
+interface FinalExam {
+  course_key: string;
+  score: number;
+  total: number;
+  passed: boolean;
+  created_at: string;
+}
+
 interface Props {
   selfTraining: SelfTraining[];
   stepRatings: StepRating[];
   lessonsCompleted: LessonCompleted[];
+  finalExams?: FinalExam[];
 }
 
-export function PortalActivityPanel({ selfTraining, stepRatings, lessonsCompleted }: Props) {
+const COURSE_LABEL: Record<string, string> = {
+  white_belt: 'White Belt',
+  yellow_belt: 'Yellow Belt',
+  blue_belt: 'Blue Belt',
+  pre_course: 'Pre-Course',
+};
+const courseLabel = (k: string) => COURSE_LABEL[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+export function PortalActivityPanel({ selfTraining, stepRatings, lessonsCompleted, finalExams = [] }: Props) {
   const completedSelf = selfTraining.filter((s) => s.completed);
   const totalSelfMinutes = completedSelf.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
 
@@ -43,10 +60,21 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
   const recentSelf = completedSelf.slice(0, 5);
   const recentLessons = lessonsCompleted.slice(0, 5);
 
+  // Best attempt per course (a passed attempt wins; else highest score).
+  const bestExamByCourse = new Map<string, FinalExam>();
+  for (const e of finalExams) {
+    const cur = bestExamByCourse.get(e.course_key);
+    if (!cur || (e.passed && !cur.passed) || (e.passed === cur.passed && e.score > cur.score)) {
+      bestExamByCourse.set(e.course_key, e);
+    }
+  }
+  const exams = Array.from(bestExamByCourse.values());
+
   const isEmpty =
     selfTraining.length === 0 &&
     stepRatings.length === 0 &&
-    lessonsCompleted.length === 0;
+    lessonsCompleted.length === 0 &&
+    exams.length === 0;
 
   if (isEmpty) {
     return (
@@ -88,6 +116,45 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
           highlighted={struggling.length > 0}
         />
       </div>
+
+      {/* Course final exams — belt exit tests taken in the portal */}
+      {exams.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">
+            Course final exams
+          </p>
+          <div className="space-y-1">
+            {exams.map((e) => {
+              const pct = e.total > 0 ? Math.round((e.score / e.total) * 100) : 0;
+              return (
+                <div
+                  key={e.course_key}
+                  className={`flex items-center justify-between rounded px-3 py-2 border ${
+                    e.passed ? 'border-emerald-100 bg-emerald-50' : 'border-amber-100 bg-amber-50'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800">{courseLabel(e.course_key)} exam</p>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-gray-500">{e.score}/{e.total} · {pct}%</span>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        e.passed ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+                      }`}
+                    >
+                      {e.passed ? 'Passed' : 'Not yet'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Struggling steps — coach attention */}
       {struggling.length > 0 && (

@@ -127,6 +127,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     lessonProgressResult,
     multiBlockResult,
     stpLessonsResult,
+    finalQuizResult,
   ] = await Promise.all([
     getStudentLevelAccess(id),
     // Standalone session results
@@ -198,6 +199,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('course_section', 'white_belt')
       .eq('active', true)
       .order('step_number'),
+    // Portal activity: course final-exam attempts (belt exit tests)
+    supabase
+      .from('course_final_quiz_attempts')
+      .select('course_key, score, total, passed, created_at')
+      .eq('student_id', id)
+      .order('created_at', { ascending: false })
+      .limit(30),
   ]);
 
   // Merge and sort all sessions for the unified history
@@ -275,6 +283,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     course_section: l.lessons?.course_section ?? null,
     completed_at: l.completed_at,
     quiz_score: l.quiz_score,
+  }));
+  const finalExams = (finalQuizResult?.data ?? []).map((q: any) => ({
+    course_key: q.course_key,
+    score: q.score,
+    total: q.total,
+    passed: !!q.passed,
+    created_at: q.created_at,
   }));
 
   // Multi-block sessions: split active (resume) vs closed (history merge)
@@ -746,6 +761,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               selfTraining={selfTraining}
               stepRatings={stepRatings}
               lessonsCompleted={lessonsCompleted}
+              finalExams={finalExams}
             />
           </CollapsibleSection>
         );
