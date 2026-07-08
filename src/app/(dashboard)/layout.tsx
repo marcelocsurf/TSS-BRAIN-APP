@@ -24,6 +24,7 @@ import {
   BarChart3,
   Dumbbell,
   Presentation,
+  DollarSign,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -47,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
   { href: '/admin/billing',   label: 'Billing',   Icon: Receipt,     roles: ['admin'] },
+  { href: '/admin/pricing',   label: 'Pricing',   Icon: DollarSign,  roles: ['admin'] },
   { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3,   roles: ['admin'] },
   { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
   { href: '/drill-library', label: 'Drills', Icon: Dumbbell,   roles: ['admin'] },
