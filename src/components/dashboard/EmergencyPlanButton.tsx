@@ -35,7 +35,7 @@ export function EmergencyPlanButton({ plan }: { plan: EmergencyPlan | null }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-left transition-colors hover:bg-red-100"
+        className="flex h-full w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-left transition-colors hover:bg-red-100"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white">
           <ShieldAlert size={20} strokeWidth={1.75} />

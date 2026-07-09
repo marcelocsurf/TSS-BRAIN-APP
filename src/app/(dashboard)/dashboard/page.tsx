@@ -173,24 +173,25 @@ export default async function DashboardHome() {
 
       <NotificationsPanel notifications={notifications} />
 
-      {/* Problem-solving system — reference PDF, visible to every role */}
-      <a
-        href="/docs/sistema-resolver-problemas.pdf"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mb-6 flex items-center gap-3 rounded-2xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 p-4 hover:bg-[var(--tss-cyan,#5AC3E7)]/15 transition-colors"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white">
-          <LifeBuoy size={20} strokeWidth={1.75} />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
-          <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
-        </span>
-      </a>
+      {/* Quick-access reference cards — side by side to use the width neatly */}
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <a
+          href="/docs/sistema-resolver-problemas.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-2xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 p-4 hover:bg-[var(--tss-cyan,#5AC3E7)]/15 transition-colors"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white">
+            <LifeBuoy size={20} strokeWidth={1.75} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
+            <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
+          </span>
+        </a>
 
-      {/* Emergency plan — quick-access for whoever is running the academy */}
-      {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
+        {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
+      </div>
 
       {/* Academy setup checklist — coordinator, until filled */}
       {academySetup && (academySetup.emergencyMissing || academySetup.boardsMissing) && (

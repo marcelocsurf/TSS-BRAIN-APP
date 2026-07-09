@@ -12,9 +12,11 @@ import { AlertTriangle, Check, ChevronDown } from 'lucide-react';
 export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [open, setOpen] = useState(true);
 
   const unread = incidents.filter((i) => !i.acknowledged);
+  // Open on load only when there's something new to read; if everything's been
+  // acknowledged, start collapsed so the dashboard stays clean.
+  const [open, setOpen] = useState(unread.length > 0);
 
   const markRead = async (id: string) => {
     const rawId = id.replace(/^rep-/, '');

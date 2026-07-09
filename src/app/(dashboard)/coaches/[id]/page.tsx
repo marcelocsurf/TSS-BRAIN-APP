@@ -94,6 +94,25 @@ export default async function CoachProfilePage({ params }: Props) {
     getCoachServices(id),
   ]);
 
+  // Per-dimension averages across all surveys — so the profile shows at a
+  // glance where the coach is strong/weak, not just the overall number.
+  const dimAvg = (() => {
+    const pick = (key: 'feedback_clarity' | 'safety' | 'improvement_value' | 'recommend') => {
+      const vals = feedback.map((f: any) => f[key]).filter((v: any) => v != null) as number[];
+      return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
+    };
+    const recommendVals = feedback.map((f: any) => f.recommend).filter((v: any) => v != null) as number[];
+    const recommendPct = recommendVals.length
+      ? Math.round((recommendVals.filter((v) => v >= 4).length / recommendVals.length) * 100)
+      : null;
+    return {
+      clarity: pick('feedback_clarity'),
+      safety: pick('safety'),
+      improvement: pick('improvement_value'),
+      recommendPct,
+    };
+  })();
+
   // Onboarding completeness — show admin if the coach finished their ficha.
   const intakeDone = !!coach.intake_completed_at;
 
@@ -414,6 +433,23 @@ export default async function CoachProfilePage({ params }: Props) {
             </div>
           ) : (
             <p className="text-xs text-gray-300 italic text-center py-4">No ratings yet.</p>
+          )}
+
+          {/* Per-dimension averages — quick read of strengths/weaknesses */}
+          {ratingStats.total_ratings > 0 && (dimAvg.safety != null || dimAvg.clarity != null || dimAvg.improvement != null || dimAvg.recommendPct != null) && (
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-gray-50 pt-4">
+              {[
+                { label: 'Safety in the water', value: dimAvg.safety != null ? `${dimAvg.safety.toFixed(1)}/5` : '—' },
+                { label: 'Clarity', value: dimAvg.clarity != null ? `${dimAvg.clarity.toFixed(1)}/5` : '—' },
+                { label: 'Learned / progressed', value: dimAvg.improvement != null ? `${dimAvg.improvement.toFixed(1)}/5` : '—' },
+                { label: 'Would repeat', value: dimAvg.recommendPct != null ? `${dimAvg.recommendPct}%` : '—' },
+              ].map((d) => (
+                <div key={d.label} className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
+                  <p className="text-lg font-bold leading-none text-[var(--tss-navy)]">{d.value}</p>
+                  <p className="mt-1.5 text-[9px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>{d.label}</p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
