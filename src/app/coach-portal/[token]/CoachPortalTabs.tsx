@@ -119,7 +119,7 @@ export function CoachPortalTabs({
             token={coach.portal_token}
           />
         )}
-        {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} />}
+        {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />}
         {activeTab === 'plan' && (
           <PlanTab
             upcoming={data.upcomingServices}
@@ -375,11 +375,6 @@ function HomeTab({
 }) {
   const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
   const profileIncomplete = !coach.intake_completed_at;
-  const hasEmergency = !!emergencyPlan && (
-    emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
-    emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address ||
-    emergencyPlan.emergency_protocol
-  );
   const ratingsCount = stats.ratingsCount ?? 0;
   const avg = stats.avgRating;
   const fullStars = avg ? Math.round(avg) : 0;
@@ -551,36 +546,6 @@ function HomeTab({
         </Link>
       )}
 
-      {/* ── Emergency plan (collapsible) ── */}
-      <details className="rounded-2xl overflow-hidden border-l-[3px]" style={{ background: '#0F1E33', borderColor: '#E24B4A' }}>
-        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-            <span style={{ color: '#E24B4A' }}>🚨</span> Plan de emergencia
-          </span>
-          <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: hasEmergency ? '#5AC3E7' : '#f09595' }}>{hasEmergency ? 'Ver' : 'No definido'}</span>
-        </summary>
-        <div className="px-4 pb-4 space-y-2 border-t border-white/5 pt-3">
-          {hasEmergency ? (
-            <>
-              {emergencyPlan!.emergency_numbers && <EmRow label="Números" value={emergencyPlan!.emergency_numbers} />}
-              {emergencyPlan!.nearest_hospital && <EmRow label="Hospital" value={emergencyPlan!.nearest_hospital} />}
-              {emergencyPlan!.lifeguard_contact && <EmRow label="Salvavidas" value={emergencyPlan!.lifeguard_contact} />}
-              {emergencyPlan!.emergency_address && <EmRow label="Ubicación" value={emergencyPlan!.emergency_address} />}
-              {emergencyPlan!.emergency_protocol && (
-                <div>
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">Protocolo</p>
-                  <p className="text-sm text-white/80 whitespace-pre-line">{emergencyPlan!.emergency_protocol}</p>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-xs text-white/50 italic">
-              Tu academia aún no cargó el plan de emergencia. Pedile al coordinador que lo complete.
-            </p>
-          )}
-        </div>
-      </details>
-
       {/* ── Your next classes (collapsible dropdown, clickable rows) ── */}
       {upcoming.length > 0 && (
         <details open className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
@@ -617,9 +582,6 @@ function HomeTab({
 
       {/* Tasks assigned to me by the coordinator */}
       <CoachTasks token={coach.portal_token} />
-
-      {/* Report an incident (keeps its own flow) */}
-      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
     </div>
   );
 }
@@ -1339,7 +1301,24 @@ function CoachQuizSection({
   );
 }
 
-function ToolsTab({ stps, coach }: { stps: any[]; coach: any }) {
+function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
+  stps: any[];
+  coach: any;
+  emergencyPlan?: {
+    emergency_numbers: string | null;
+    nearest_hospital: string | null;
+    lifeguard_contact: string | null;
+    emergency_address: string | null;
+    emergency_protocol: string | null;
+  } | null;
+  students?: { id: string; name: string }[];
+  boards?: { id: string; code: string }[];
+}) {
+  const hasEmergency = !!emergencyPlan && (
+    emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
+    emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address ||
+    emergencyPlan.emergency_protocol
+  );
   // Group STPs by sequence (using wb_sequence_* data from lessons).
   // STPs without sequence info fall into an "Other" bucket at the end.
   const groups = new Map<string, { name: string; belt: 'white' | 'yellow'; order: number; items: any[] }>();
@@ -1369,6 +1348,39 @@ function ToolsTab({ stps, coach }: { stps: any[]; coach: any }) {
           {' '}Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
         </p>
       </div>
+
+      {/* Report an incident */}
+      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
+
+      {/* Emergency plan (collapsible) */}
+      <details className="rounded-2xl overflow-hidden border-l-[3px]" style={{ background: '#0F1E33', borderColor: '#E24B4A' }}>
+        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+            <span style={{ color: '#E24B4A' }}>🚨</span> Plan de emergencia
+          </span>
+          <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: hasEmergency ? '#5AC3E7' : '#f09595' }}>{hasEmergency ? 'Ver' : 'No definido'}</span>
+        </summary>
+        <div className="px-4 pb-4 space-y-2 border-t border-white/5 pt-3">
+          {hasEmergency ? (
+            <>
+              {emergencyPlan!.emergency_numbers && <EmRow label="Números" value={emergencyPlan!.emergency_numbers} />}
+              {emergencyPlan!.nearest_hospital && <EmRow label="Hospital" value={emergencyPlan!.nearest_hospital} />}
+              {emergencyPlan!.lifeguard_contact && <EmRow label="Salvavidas" value={emergencyPlan!.lifeguard_contact} />}
+              {emergencyPlan!.emergency_address && <EmRow label="Ubicación" value={emergencyPlan!.emergency_address} />}
+              {emergencyPlan!.emergency_protocol && (
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">Protocolo</p>
+                  <p className="text-sm text-white/80 whitespace-pre-line">{emergencyPlan!.emergency_protocol}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-white/50 italic">
+              Tu academia aún no cargó el plan de emergencia. Pedile al coordinador que lo complete.
+            </p>
+          )}
+        </div>
+      </details>
 
       {/* Video Analyzer — draw on a student clip (client-only, lazy) */}
       <VideoAnalyzerLauncher variant="card" />
@@ -1682,7 +1694,7 @@ function PlanTab({
       </div>
 
       {upcoming.length > 0 && (
-        <CoachMiniCalendar services={upcoming} onOpen={openPlanner} />
+        <CoachMiniCalendar services={upcoming} onOpen={openPlanner} token={token} />
       )}
 
       {upcoming.length > 0 && (
