@@ -234,6 +234,7 @@ export interface ServicePlanBlock {
   // M47 — Coach-rated, per-block-per-student (filled at close).
   focus_level: number | null;   // 1-5, how present + engaged
   flow_channel: number | null;  // 1=bored, 3=optimal, 5=frustrated
+  day_objective_status?: string | null; // session-level: achieved | partial | not_yet (block 0)
 }
 
 export interface ServicePlanStudent {
@@ -534,6 +535,7 @@ export async function getServicePlan(
         board_id: b.board_id ?? null,
         focus_level: b.focus_level ?? null,
         flow_channel: b.flow_channel ?? null,
+        day_objective_status: b.day_objective_status ?? null,
       })),
     };
   });
@@ -1039,6 +1041,7 @@ export async function saveServicePlanBlock(
     focus_level: number | null;
     flow_channel: number | null;
     whats_next: string | null;
+    day_objective_status: string | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1114,6 +1117,7 @@ export async function saveServicePlanBlock(
     'focus_level',
     'flow_channel',
     'whats_next',
+    'day_objective_status',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {
@@ -1692,12 +1696,19 @@ export async function closeServicePlan(
     const firstBlock = studentBlocks[0];
     const stud = studById[studentId];
 
-    // Aggregate status — worst wins (gives the coach an honest summary).
+    // Session status: prefer the coach's session-level "did they meet the
+    // objective?" (block 0, the new light daily eval); fall back to the old
+    // per-block worst-status aggregation for plans that didn't set it.
     const statusOrder: Record<string, number> = { not_yet: 0, partial: 1, achieved: 2 };
+    const sessionObjective = firstBlock?.day_objective_status as string | undefined;
     let worst: any = 'achieved';
-    for (const b of studentBlocks) {
-      if (!b.status) continue;
-      if (statusOrder[b.status] < statusOrder[worst]) worst = b.status;
+    if (sessionObjective === 'achieved' || sessionObjective === 'partial' || sessionObjective === 'not_yet') {
+      worst = sessionObjective;
+    } else {
+      for (const b of studentBlocks) {
+        if (!b.status) continue;
+        if (statusOrder[b.status] < statusOrder[worst]) worst = b.status;
+      }
     }
     const status = STATUS_MAP[worst as string] ?? 'partial';
     const achievedText =

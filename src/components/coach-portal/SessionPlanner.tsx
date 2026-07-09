@@ -30,6 +30,7 @@ import {
 import { StarRating } from '@/components/sequence/StarRating';
 import {
   Waves,
+  ChevronRight,
   Flame,
   Brain,
   Users,
@@ -291,16 +292,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // Only here does the data sync to each student's profile + the survey
   // request go out. Deliberate + confirmed + irreversible.
   const finalize = () => {
-    // Only gradable blocks (sequence steps with a step_id) require a status.
-    // Non-gradable blocks (warm-up, free play, etc.) are just executed.
-    const unevaluated = students.filter((s) => {
-      const gradable = s.blocks.filter((b) => b.step_id);
-      return gradable.length > 0 && gradable.some((b) => !b.status);
-    });
-    if (unevaluated.length > 0) {
+    // Light daily evaluation — nudge (don't block) if a student has no
+    // session-level objective set. Per-step STP grading now happens once in the
+    // end-of-camp Final Evaluation, so it's no longer required here.
+    const noObjective = students.filter((s) => !(s.blocks[0]?.day_objective_status));
+    if (noObjective.length > 0) {
       if (
         !confirm(
-          `${unevaluated.length} student(s) still have ungraded sequence steps. Finalize anyway?`
+          `${noObjective.length} student(s) don't have "objective met" set yet. Finalize anyway?`
         )
       ) {
         return;
@@ -680,6 +679,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 ))}
               </div>
 
+              {/* Essentials — the call + the two conditions that shape the plan. */}
               <div className="grid grid-cols-2 gap-2">
                 <SelectField
                   label="Wave size"
@@ -693,79 +693,59 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   options={WIND_OPTIONS}
                   onChange={(v) => commitPlanField('venue_wind', v)}
                 />
-                <SelectField
-                  label="Tide"
-                  value={plan.venue_tide}
-                  options={TIDE_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_tide', v)}
-                />
-                <SelectField
-                  label="Crowd"
-                  value={plan.venue_crowd}
-                  options={CROWD_LEVEL_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_crowd', v)}
-                />
-                <SelectField
-                  label="Water temp"
-                  value={plan.venue_water_temp}
-                  options={WATER_TEMP_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_water_temp', v)}
-                />
-                <SelectField
-                  label="Sky"
-                  value={plan.venue_sky}
-                  options={SKY_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_sky', v)}
-                />
               </div>
 
-              {/* M48 — Hazards multi-select. Toggle on/off chips; stored
-                  as a comma-joined string so the existing TEXT column
-                  works without schema change. */}
-              <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-                  Hazards (tap any that apply)
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {HAZARD_OPTIONS.map((h) => {
-                    const selected = (plan.venue_hazards ?? '')
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean);
-                    const isOn = selected.includes(h.value);
-                    return (
-                      <button
-                        key={h.value}
-                        type="button"
-                        onClick={() => {
-                          const next = isOn
-                            ? selected.filter((v) => v !== h.value)
-                            : [...selected, h.value];
-                          commitPlanField(
-                            'venue_hazards',
-                            next.length > 0 ? next.join(', ') : null,
-                          );
-                        }}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                          isOn
-                            ? 'bg-[var(--tss-navy)] text-white'
-                            : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
-                        }`}
-                      >
-                        {h.label}
-                      </button>
-                    );
-                  })}
+              {/* Everything else is optional context — tucked away so the common
+                  case is just the go/no-go call + wave + wind. */}
+              <details className="group rounded-lg border border-gray-100 bg-gray-50/60">
+                <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                  <ChevronRight size={13} className="transition-transform group-open:rotate-90" /> Más detalles (opcional)
+                </summary>
+                <div className="px-3 pb-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <SelectField label="Tide" value={plan.venue_tide} options={TIDE_OPTIONS} onChange={(v) => commitPlanField('venue_tide', v)} />
+                    <SelectField label="Crowd" value={plan.venue_crowd} options={CROWD_LEVEL_OPTIONS} onChange={(v) => commitPlanField('venue_crowd', v)} />
+                    <SelectField label="Water temp" value={plan.venue_water_temp} options={WATER_TEMP_OPTIONS} onChange={(v) => commitPlanField('venue_water_temp', v)} />
+                    <SelectField label="Sky" value={plan.venue_sky} options={SKY_OPTIONS} onChange={(v) => commitPlanField('venue_sky', v)} />
+                  </div>
+
+                  {/* M48 — Hazards multi-select. Comma-joined string in the existing TEXT column. */}
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                      Hazards (tap any that apply)
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {HAZARD_OPTIONS.map((h) => {
+                        const selected = (plan.venue_hazards ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+                        const isOn = selected.includes(h.value);
+                        return (
+                          <button
+                            key={h.value}
+                            type="button"
+                            onClick={() => {
+                              const next = isOn ? selected.filter((v) => v !== h.value) : [...selected, h.value];
+                              commitPlanField('venue_hazards', next.length > 0 ? next.join(', ') : null);
+                            }}
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                              isOn ? 'bg-[var(--tss-navy)] text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
+                            }`}
+                          >
+                            {h.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <TextArea
+                    label="Extra notes (optional)"
+                    value={plan.venue_analysis}
+                    onBlur={(v) => commitPlanField('venue_analysis', v)}
+                    placeholder="Only if there's something the dropdowns above can't capture."
+                    rows={2}
+                  />
                 </div>
-              </div>
-
-              <TextArea
-                label="Extra notes (optional)"
-                value={plan.venue_analysis}
-                onBlur={(v) => commitPlanField('venue_analysis', v)}
-                placeholder="Only if there's something the dropdowns above can't capture."
-                rows={2}
-              />
+              </details>
             </div>
           </Section>
 
@@ -2178,8 +2158,6 @@ function StudentEvalCard({
   onShowDrill: (drillId: string) => void;
 }) {
   const blocks = student.blocks;
-  const gradableBlocks = blocks.filter((b) => b.step_id);
-  const allEvaluated = gradableBlocks.length > 0 && gradableBlocks.every((b) => b.status);
   // General per-student analysis lives on block 0. For services with no planned
   // blocks (e.g. a Discover Surfing lesson) there is no block yet, so we default
   // to order 0 — commitStudentBlock creates it on first save.
@@ -2201,18 +2179,6 @@ function StudentEvalCard({
             </p>
           </div>
         </div>
-        {gradableBlocks.length > 0 && (
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
-            style={
-              allEvaluated
-                ? { background: '#D1FAE5', color: '#047857' }
-                : { background: '#FEF3C7', color: '#92400E' }
-            }
-          >
-            {gradableBlocks.filter((b) => b.status).length} / {gradableBlocks.length} graded
-          </span>
-        )}
       </div>
 
       {/* Profile / bitácora — context while evaluating */}
@@ -2227,6 +2193,37 @@ function StudentEvalCard({
           <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[var(--tss-cyan,#5AC3E7)] font-semibold">
             Session summary — general analysis
           </p>
+
+          {/* Session-level objective completion (one per student, not per block).
+              STP star grading moved to the end-of-camp evaluation. */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Did they meet today&apos;s objective?
+            </label>
+            <div className="grid grid-cols-3 gap-1">
+              {([
+                { v: 'achieved', label: 'Achieved', bg: '#D1FAE5', fg: '#047857' },
+                { v: 'partial', label: 'Partial', bg: '#FEF3C7', fg: '#92400E' },
+                { v: 'not_yet', label: 'Not yet', bg: '#FEE2E2', fg: '#991B1B' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.v}
+                  type="button"
+                  disabled={isClosed}
+                  onClick={() => onCommit(genOrder, { day_objective_status: opt.v } as any)}
+                  className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-70"
+                  style={
+                    (gen?.day_objective_status) === opt.v
+                      ? { background: opt.bg, color: opt.fg, boxShadow: 'inset 0 0 0 2px ' + opt.fg }
+                      : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
               Focus level — how present were they today?
@@ -2311,22 +2308,8 @@ function StudentEvalCard({
         </div>
       )}
 
-      {/* One eval section per block */}
-      {blocks.map((block, i) => (
-        <BlockEvalSection
-          key={block.id ?? `eval-${block.order_index}`}
-          block={block}
-          blockNumber={i + 1}
-          studentFirstName={student.display_name.split(' ')[0]}
-          isClosed={isClosed}
-          stpLabel={stpLabel}
-          drillTitle={drillTitle}
-          currentCoachRating={block.step_id ? coachRatings[block.step_id] ?? null : null}
-          onCommit={(patch) => onCommit(block.order_index, patch)}
-          onRateStep={(rating) => block.step_id && onRateStep(block.step_id, rating)}
-          onShowDrill={onShowDrill}
-        />
-      ))}
+      {/* Per-step (STP) grading moved to the end-of-camp Final Evaluation —
+          the daily flow stays light. BlockEvalSection is no longer rendered here. */}
     </div>
   );
 }
