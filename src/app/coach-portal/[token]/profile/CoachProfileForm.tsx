@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
 import { submitCoachIntake, type CoachProfile } from '@/lib/actions/coach-intake';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
+import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
 
 interface Props {
   token: string;
@@ -67,6 +68,7 @@ export function CoachProfileForm({ token, initial }: Props) {
         specialty_area: form.specialty_area || null,
         bio_short: form.bio_short || null,
         waiver_signed: form.waiver,
+        waiver_version: WAIVER_VERSION,
       });
       setSavedAt(res.intake_completed_at);
       router.refresh();
@@ -221,18 +223,22 @@ export function CoachProfileForm({ token, initial }: Props) {
         </Field>
       </Card>
 
-      {/* Waiver */}
-      <label className="bg-white rounded-2xl border border-gray-200 p-4 flex items-start gap-3 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={form.waiver}
-          onChange={(e) => update('waiver', e.target.checked)}
-          className="mt-0.5 w-4 h-4 rounded text-[var(--tss-cyan)] border-gray-300 focus:ring-[var(--tss-cyan)]"
-        />
-        <span className="text-xs text-gray-700 leading-relaxed">
-          I confirm the medical info above is accurate. I acknowledge that teaching surfing carries inherent risks for both me and my students, and I accept full responsibility for delivering sessions within TSS doctrine and within the conditions I'm authorized to teach.
-        </span>
-      </label>
+      {/* Waiver — full coach agreement (liability + confidentiality/IP + membership) */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
+        <WaiverContent variant="coach" />
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.waiver}
+            onChange={(e) => update('waiver', e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded text-[var(--tss-cyan)] border-gray-300 focus:ring-[var(--tss-cyan)]"
+          />
+          <span className="text-[12.5px] text-gray-700 leading-relaxed">
+            He leído y ACEPTO este acuerdo, incluyendo la confidencialidad del Material TSS y el uso exclusivo para miembros al día.{' '}
+            <span className="text-gray-400 italic">I have read and I AGREE to this agreement, including the confidentiality of the TSS Material and members-only use.</span> <span className="text-red-500">*</span>
+          </span>
+        </label>
+      </div>
 
       {error && (
         <p className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>

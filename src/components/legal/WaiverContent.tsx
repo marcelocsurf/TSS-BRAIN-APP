@@ -17,6 +17,27 @@ const SUMMARY_ES = [
   'Debés seguir siempre las instrucciones de los coaches y las reglas de seguridad.',
 ];
 
+// Extra plain-language points shown only in the coach waiver.
+const COACH_SUMMARY_ES = [
+  'El método, materiales, videos y portal de The Surf Sequence® son confidenciales y propiedad de la empresa: no los copies, compartas ni enseñes fuera de tu rol.',
+  'El acceso al material es exclusivo para miembros con membresía/certificación TSS activa y al día.',
+  'Si tu membresía vence o termina tu relación, dejás de usar la marca, el método y los materiales.',
+];
+
+// Coach-only clauses appended after the shared sections. Numbered C1–C3 so they
+// never collide with the participant sections above.
+const COACH_SECTIONS: Section[] = [
+  { n: 101, es_t: 'Confidencialidad y propiedad intelectual', en_t: 'Confidentiality and intellectual property',
+    es: 'Reconozco que el Método The Surf Sequence®, sus secuencias, drills, misiones, manuales, videos, evaluaciones, el portal y todo material relacionado (el “Material TSS”) son propiedad exclusiva de las Partes Liberadas y constituyen información confidencial y secretos comerciales. Me obligo a mantenerlos en estricta confidencialidad, a no copiarlos, reproducirlos, publicarlos, distribuirlos ni enseñarlos fuera de mi rol autorizado, y a no usarlos para crear métodos derivados ni para competir con las Partes Liberadas. Esta obligación se mantiene incluso después de terminar mi relación con ellas.',
+    en: 'I acknowledge that The Surf Sequence® Method, its sequences, drills, missions, manuals, videos, evaluations, the portal and all related material (the “TSS Material”) are the exclusive property of the Released Parties and constitute confidential information and trade secrets. I agree to keep them strictly confidential, not to copy, reproduce, publish, distribute or teach them outside my authorized role, and not to use them to create derivative methods or to compete with the Released Parties. This obligation survives the end of my relationship with them.' },
+  { n: 102, es_t: 'Uso exclusivo para miembros / membresía al día', en_t: 'Members-only use / active membership',
+    es: 'Reconozco que el acceso al Material TSS se otorga únicamente mientras mantenga una membresía y/o certificación TSS activa y al día. Si mi membresía vence, se suspende, o termina mi relación con las Partes Liberadas por cualquier causa, cesará de inmediato mi derecho a usar el Material TSS.',
+    en: 'I acknowledge that access to the TSS Material is granted only while I maintain an active TSS membership and/or certification in good standing. If my membership expires, is suspended, or my relationship with the Released Parties ends for any reason, my right to use the TSS Material shall cease immediately.' },
+  { n: 103, es_t: 'Cese y devolución al terminar', en_t: 'Cessation and return upon termination',
+    es: 'Al finalizar mi vínculo con las Partes Liberadas, por cualquier causa, me obligo a dejar de representarme como coach de The Surf Sequence®, a dejar de usar la marca, el método y el Material TSS, y a devolver o eliminar de forma permanente toda copia (física o digital) en mi poder.',
+    en: 'Upon the end of my relationship with the Released Parties, for any reason, I agree to stop representing myself as a The Surf Sequence® coach, to stop using the brand, the method and the TSS Material, and to return or permanently delete any copy (physical or digital) in my possession.' },
+];
+
 const SECTIONS: Section[] = [
   { n: 1, es_t: 'Partes liberadas', en_t: 'Released parties',
     es: 'Este acuerdo se otorga a favor de: Enkrateia, S.A. de C.V.; The Surf Sequence®; Puro Surf y Puro Surf Academy (y la sociedad que las opera); el señor Marcelo Castellanos; y todos sus socios, directores, empleados, entrenadores, instructores, contratistas, voluntarios, agentes y representantes (en conjunto, las “Partes Liberadas”).',
@@ -50,14 +71,18 @@ const SECTIONS: Section[] = [
     en: 'This agreement is binding upon me, my heirs and representatives. If any provision is held invalid, the remaining provisions shall remain in effect. This agreement is governed by the laws of the Republic of El Salvador and any dispute shall be submitted to its competent courts. In case of discrepancy between the Spanish and English versions, the Spanish version shall prevail. This agreement remains in effect throughout my relationship with the Released Parties and covers all my present and future participation in the Activities, unless revoked in writing.' },
 ];
 
-export function WaiverContent() {
+export function WaiverContent({ variant = 'student' }: { variant?: 'student' | 'coach' }) {
+  const summary = variant === 'coach' ? [...SUMMARY_ES, ...COACH_SUMMARY_ES] : SUMMARY_ES;
+  const sections = variant === 'coach' ? [...SECTIONS, ...COACH_SECTIONS] : SECTIONS;
+  const label = (n: number) => (n >= 100 ? `C${n - 100}` : String(n));
+
   return (
     <div className="space-y-4">
       {/* Plain-language summary */}
       <div className="rounded-xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 p-4">
         <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-navy)] mb-2">En resumen / In short</p>
         <ul className="space-y-1.5">
-          {SUMMARY_ES.map((s, i) => (
+          {summary.map((s, i) => (
             <li key={i} className="flex gap-2 text-[13px] text-gray-700">
               <span className="text-[var(--tss-cyan,#5AC3E7)] font-bold">•</span>
               <span>{s}</span>
@@ -74,11 +99,11 @@ export function WaiverContent() {
         <p className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 bg-gray-50">
           Exención de responsabilidad, asunción de riesgo e indemnización · Release of liability
         </p>
-        {SECTIONS.map((sec) => (
+        {sections.map((sec) => (
           <details key={sec.n} className="group">
             <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-2 hover:bg-gray-50">
               <span className="text-[13px] font-semibold text-[var(--tss-navy)]">
-                {sec.n}. {sec.es_t} <span className="font-normal text-gray-400">/ {sec.en_t}</span>
+                {label(sec.n)}. {sec.es_t} <span className="font-normal text-gray-400">/ {sec.en_t}</span>
               </span>
               <span className="text-gray-300 group-open:rotate-90 transition-transform">›</span>
             </summary>

@@ -93,6 +93,7 @@ export type CoachIntakeInput = {
   bio_short?: string | null;
   // Waiver
   waiver_signed: boolean;
+  waiver_version?: string;
 };
 
 export async function submitCoachIntake(
@@ -138,6 +139,7 @@ export async function submitCoachIntake(
       bio_short: input.bio_short?.trim() || null,
       waiver_signed: true,
       waiver_signed_at: now,
+      waiver_version: input.waiver_version ?? null,
       intake_completed_at: now,
     })
     .eq('id', coach.id);
