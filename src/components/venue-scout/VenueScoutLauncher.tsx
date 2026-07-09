@@ -15,10 +15,10 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`w-full text-left rounded-2xl p-4 flex items-center gap-3 border transition-colors ${
+        className={`w-full text-left rounded-2xl p-4 flex items-center gap-3 ${
           dark
-            ? 'border-white/10 hover:border-[var(--tss-cyan)]/40'
-            : 'border-gray-100 bg-white hover:border-[var(--tss-cyan,#5AC3E7)]/50 shadow-sm'
+            ? 'border border-white/10 hover:border-[var(--tss-cyan)]/40 transition-colors'
+            : 'bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow'
         }`}
         style={dark ? { background: '#0F1E33' } : undefined}
       >

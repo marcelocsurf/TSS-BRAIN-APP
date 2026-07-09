@@ -41,6 +41,7 @@ import {
   Lock,
   CalendarDays,
   LifeBuoy,
+  ShieldAlert,
 } from 'lucide-react';
 
 type TabIconComponent = typeof Home;
@@ -160,6 +161,16 @@ function EmRow({ label, value }: { label: string; value: string }) {
     <div className="flex gap-2 text-sm">
       <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 w-20 shrink-0 pt-0.5">{label}</span>
       <span className="text-white/80 flex-1 whitespace-pre-line">{value}</span>
+    </div>
+  );
+}
+
+// Same row, dark-on-white — used inside the white Tools cards.
+function EmRowLight({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 w-20 shrink-0 pt-0.5">{label}</span>
+      <span className="text-gray-700 flex-1 whitespace-pre-line">{value}</span>
     </div>
   );
 }
@@ -1341,15 +1352,14 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
         href="/docs/sistema-resolver-problemas.pdf"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 rounded-2xl border border-white/10 p-3.5 transition-colors hover:bg-white/[0.06]"
-        style={{ background: '#0F1E33' }}
+        className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow flex items-center gap-3"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: '#5AC3E7', color: '#0A1628' }}>
-          <LifeBuoy size={20} strokeWidth={1.75} />
+        <span className="w-10 h-10 rounded-xl bg-[var(--tss-navy)] text-white flex items-center justify-center shrink-0">
+          <LifeBuoy size={18} strokeWidth={1.75} />
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-semibold text-white">Protocolo de Problemas</span>
-          <span className="block text-[11px] text-white/50">Guía de referencia — abrir PDF</span>
+          <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
+          <span className="block text-[11px] text-gray-500 leading-snug">Guía de referencia — abrir PDF</span>
         </span>
       </a>
 
@@ -1357,29 +1367,28 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
       <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
 
       {/* Emergency plan (collapsible) */}
-      <details className="rounded-2xl overflow-hidden border-l-[3px]" style={{ background: '#0F1E33', borderColor: '#E24B4A' }}>
-        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-            <span style={{ color: '#E24B4A' }}>🚨</span> Plan de emergencia
+      <details className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <summary className="cursor-pointer list-none p-4 flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
+            <ShieldAlert size={18} strokeWidth={1.75} />
           </span>
-          <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: hasEmergency ? '#5AC3E7' : '#f09595' }}>{hasEmergency ? 'Ver' : 'No definido'}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-[var(--tss-navy)]">Plan de emergencia</span>
+            <span className="block text-[11px] text-gray-500 leading-snug">Números, hospital, protocolo</span>
+          </span>
+          <span className="text-[10px] font-mono uppercase tracking-wider shrink-0" style={{ color: hasEmergency ? '#2E93BD' : '#C43D3D' }}>{hasEmergency ? 'Ver' : 'No definido'}</span>
         </summary>
-        <div className="px-4 pb-4 space-y-2 border-t border-white/5 pt-3">
+        <div className="px-4 pb-4 space-y-2.5 border-t border-gray-50 pt-3">
           {hasEmergency ? (
             <>
-              {emergencyPlan!.emergency_numbers && <EmRow label="Números" value={emergencyPlan!.emergency_numbers} />}
-              {emergencyPlan!.nearest_hospital && <EmRow label="Hospital" value={emergencyPlan!.nearest_hospital} />}
-              {emergencyPlan!.lifeguard_contact && <EmRow label="Salvavidas" value={emergencyPlan!.lifeguard_contact} />}
-              {emergencyPlan!.emergency_address && <EmRow label="Ubicación" value={emergencyPlan!.emergency_address} />}
-              {emergencyPlan!.emergency_protocol && (
-                <div>
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">Protocolo</p>
-                  <p className="text-sm text-white/80 whitespace-pre-line">{emergencyPlan!.emergency_protocol}</p>
-                </div>
-              )}
+              {emergencyPlan!.emergency_numbers && <EmRowLight label="Números" value={emergencyPlan!.emergency_numbers} />}
+              {emergencyPlan!.nearest_hospital && <EmRowLight label="Hospital" value={emergencyPlan!.nearest_hospital} />}
+              {emergencyPlan!.lifeguard_contact && <EmRowLight label="Salvavidas" value={emergencyPlan!.lifeguard_contact} />}
+              {emergencyPlan!.emergency_address && <EmRowLight label="Ubicación" value={emergencyPlan!.emergency_address} />}
+              {emergencyPlan!.emergency_protocol && <EmRowLight label="Protocolo" value={emergencyPlan!.emergency_protocol} />}
             </>
           ) : (
-            <p className="text-xs text-white/50 italic">
+            <p className="text-xs text-gray-400 italic">
               Tu academia aún no cargó el plan de emergencia. Pedile al coordinador que lo complete.
             </p>
           )}
