@@ -231,7 +231,7 @@ export default function VideoAnalyzer() {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
-      <header className="flex shrink-0 flex-wrap items-center gap-3 px-3 py-2 pr-24">
+      <header className="flex shrink-0 flex-wrap items-center gap-2 px-3 py-1.5 pr-24">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {/* ?v cache-bust: Safari cached the pre-middleware-fix 307 redirect
             for this path, showing a broken image. New URL forces a re-fetch. */}
@@ -266,7 +266,7 @@ export default function VideoAnalyzer() {
             <button
               key={key}
               onClick={() => setLayout(key)}
-              className={`rounded-xl px-3 py-2 text-sm font-semibold active:scale-95 ${
+              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 ${
                 layout === key ? "bg-cyan-500" : "bg-white/10"
               }`}
             >
@@ -276,7 +276,7 @@ export default function VideoAnalyzer() {
         </div>
         <button
           onClick={() => setShowLibrary((v) => !v)}
-          className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold active:scale-95"
+          className="rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold active:scale-95"
         >
           {showLibrary ? "Ocultar librería" : "Mostrar librería"}
         </button>
@@ -333,7 +333,7 @@ export default function VideoAnalyzer() {
         )}
 
         <main
-          className={`grid min-h-0 flex-1 gap-2 p-2 ${
+          className={`grid min-h-0 flex-1 gap-1.5 p-1.5 ${
             layout === "dual"
               ? "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1"
               : "grid-cols-1 grid-rows-1"

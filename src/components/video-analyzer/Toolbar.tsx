@@ -30,10 +30,10 @@ export default function Toolbar({
   onExport,
   activeLabel,
 }: Props) {
-  const btn = "rounded-xl px-3 py-3 text-sm font-semibold active:scale-95 transition";
+  const btn = "rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 transition";
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 bg-black/60 p-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-white/10 bg-black/60 p-1.5">
       <span className="px-1 text-xs text-white/50">Dibujar en: {activeLabel}</span>
 
       <div className="flex gap-1">
@@ -56,7 +56,7 @@ export default function Toolbar({
             key={c}
             onClick={() => onChange({ ...settings, color: c })}
             style={{ background: c }}
-            className={`h-11 w-11 rounded-xl border-2 ${
+            className={`h-8 w-8 rounded-lg border-2 ${
               settings.color === c ? "border-white" : "border-transparent"
             }`}
             aria-label={`color ${c}`}

@@ -203,7 +203,7 @@ export default function VideoPanel({
   }
 
   const btn =
-    "rounded-xl px-3 py-3 text-sm font-semibold active:scale-95 transition";
+    "rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 transition";
 
   return (
     <div
@@ -211,8 +211,8 @@ export default function VideoPanel({
         isActive ? "border-cyan-400" : "border-white/10"
       } bg-black/40`}
     >
-      <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-sm font-bold text-cyan-300">{title}</span>
+      <div className="flex items-center justify-between px-2.5 py-1.5">
+        <span className="text-xs font-bold text-cyan-300">{title}</span>
         {onPickFile && (
           // A <label> opens the file picker via a native tap — reliable on iOS
           // Safari/iPad, where a display:none input triggered by a programmatic
@@ -303,7 +303,7 @@ export default function VideoPanel({
       </div>
 
       {src && (
-        <div className="shrink-0 space-y-2 p-2">
+        <div className="shrink-0 space-y-1.5 p-1.5">
           <input
             type="range"
             min={0}
@@ -313,7 +313,7 @@ export default function VideoPanel({
             onChange={onSeek}
             className="w-full accent-cyan-400"
           />
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <button className={`${btn} bg-cyan-600`} onClick={togglePlay}>
               {playing ? "Pausa" : "Play"}
             </button>
