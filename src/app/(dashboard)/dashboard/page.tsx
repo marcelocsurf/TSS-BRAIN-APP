@@ -20,6 +20,7 @@ import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzer
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
 import { BoardInventoryLauncher } from '@/components/board-inventory/BoardInventoryLauncher';
 import { CollapsibleAlert } from '@/components/dashboard/CollapsibleAlert';
+import { EmergencyPlanButton, type EmergencyPlan } from '@/components/dashboard/EmergencyPlanButton';
 import Link from 'next/link';
 import {
   UserPlus,
@@ -119,6 +120,19 @@ export default async function DashboardHome() {
     } catch { /* non-blocking */ }
   }
 
+  // Emergency plan — quick-access button for anyone working an academy.
+  let emergencyPlan: EmergencyPlan | null = null;
+  if (academyId) {
+    try {
+      const { data } = await supabase
+        .from('academies')
+        .select('emergency_numbers, nearest_hospital, lifeguard_contact, emergency_address, emergency_protocol')
+        .eq('id', academyId)
+        .single();
+      emergencyPlan = data ?? null;
+    } catch { /* non-blocking */ }
+  }
+
   // To-do tasks — coordinator + admin manage/assign academy tasks.
   let tasks: Awaited<ReturnType<typeof listAcademyTasks>> = [];
   let taskAssignees: Awaited<ReturnType<typeof listTaskAssignees>> = [];
@@ -174,6 +188,9 @@ export default async function DashboardHome() {
           <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
         </span>
       </a>
+
+      {/* Emergency plan — quick-access for whoever is running the academy */}
+      {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
 
       {/* Academy setup checklist — coordinator, until filled */}
       {academySetup && (academySetup.emergencyMissing || academySetup.boardsMissing) && (
