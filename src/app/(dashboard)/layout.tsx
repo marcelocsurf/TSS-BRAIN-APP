@@ -25,6 +25,7 @@ import {
   Dumbbell,
   Presentation,
   DollarSign,
+  CalendarClock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -39,6 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/students',      label: 'Students',     Icon: Users,       roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/camps',         label: 'Services',     Icon: Tent,        roles: ['admin', 'coordinator'] },
   { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
+  { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
