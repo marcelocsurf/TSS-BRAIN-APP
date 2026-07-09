@@ -537,9 +537,6 @@ function HomeTab({
         )}
       </div>
 
-      {/* The Surf Sequence Method — opens the reference page in-app */}
-      <MethodLauncher />
-
       {profileIncomplete && (
         <Link
           href={`/coach-portal/${coach.portal_token}/profile`}
@@ -995,6 +992,9 @@ function CoursesTab({
           </div>
         )}
       </div>
+
+      {/* The Surf Sequence Method — first item in Courses (reference doctrine) */}
+      <MethodLauncher />
 
       {/* Presentations granted to this coach (admin-controlled) */}
       <CoachPresentations token={token} />
@@ -1758,10 +1758,11 @@ function PlanTab({
       )}
 
       {past.length > 0 && (
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+        <details className="group">
+          <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+            <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
             Past ({past.length})
-          </p>
+          </summary>
           <div className="space-y-1.5">
             {past.map((s: any) => (
               <button
@@ -1778,7 +1779,7 @@ function PlanTab({
               </button>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
       {upcoming.length === 0 && past.length === 0 && (
@@ -1828,10 +1829,11 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
       )}
 
       {past.length > 0 && (
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+        <details className="group">
+          <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+            <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
             Past ({past.length})
-          </p>
+          </summary>
           <div className="space-y-1.5">
             {past.map((s: any) => (
               <div key={s.id} className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -1843,7 +1845,7 @@ function ServicesTab({ upcoming, past }: { upcoming: any[]; past: any[] }) {
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
       {upcoming.length === 0 && past.length === 0 && (
