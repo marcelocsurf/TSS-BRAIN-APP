@@ -26,6 +26,7 @@ import {
   Presentation,
   DollarSign,
   CalendarClock,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -41,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/camps',         label: 'Services',     Icon: Tent,        roles: ['admin', 'coordinator'] },
   { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
   { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['admin', 'coordinator', 'coach', 'assistant'] },
+  { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['admin', 'coordinator', 'coach'] },
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
