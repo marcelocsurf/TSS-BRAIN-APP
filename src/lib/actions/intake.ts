@@ -31,6 +31,8 @@ export interface BasicIntakeInput {
   injuries?: string;
   medical_notes?: string;
   waiver_signed: boolean;
+  media_release_consent?: boolean;
+  waiver_version?: string;
 }
 
 export interface IntakeFormInput {
@@ -136,6 +138,8 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
     medical_notes: input.medical_notes?.trim() || null,
     waiver_signed: true,
     waiver_signed_at: new Date().toISOString(),
+    media_release_consent: input.media_release_consent ?? null,
+    waiver_version: input.waiver_version ?? null,
   };
 
   // Mark tier as 'basic' but never downgrade a member who already reached 'extended'.

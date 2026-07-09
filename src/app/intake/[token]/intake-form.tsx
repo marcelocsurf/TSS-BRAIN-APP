@@ -5,6 +5,7 @@ import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntake
 import { BRAND } from '@/lib/constants/brand';
 import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
+import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
 
 interface StudentData {
   student_type?: string | null;
@@ -107,6 +108,8 @@ export function IntakeForm({ token, student }: Props) {
     injuries: student.injuries || '',
     medical_notes: student.medical_notes || '',
     waiver_signed: student.waiver_signed || false,
+    media_release_consent: (student as any).media_release_consent ?? true,
+    waiver_version: WAIVER_VERSION,
   });
 
   // ── Extended (Goals) form state ──
@@ -409,20 +412,24 @@ export function IntakeForm({ token, student }: Props) {
                 />
               </div>
             </div>
-            <div className="pt-4 border-t border-gray-100">
-              <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  I acknowledge that surf training involves inherent risks. I release The Surf Sequence&reg;, its coaches,
-                  and affiliated academies from liability for injuries during training sessions, whether self-directed
-                  or coach-supervised. I confirm the medical information provided is accurate.
-                </p>
-              </div>
+            <div className="pt-4 border-t border-gray-100 space-y-4">
+              <WaiverContent />
+
               <Checkbox
-                label="I agree to the above waiver and liability release *"
+                label="He leído y ACEPTO este acuerdo de exención de responsabilidad. / I have read and I AGREE to this release of liability. *"
                 checked={basicForm.waiver_signed}
                 onChange={(v) => setBasic('waiver_signed', v)}
                 required
               />
+
+              <div className="rounded-lg bg-gray-50 p-3">
+                <Checkbox
+                  label="Autorizo el uso de mis fotos y videos con fines educativos y promocionales (Sección 10). / I authorize the use of my photos and videos for educational and promotional purposes (Section 10)."
+                  checked={!!basicForm.media_release_consent}
+                  onChange={(v) => setBasic('media_release_consent', v)}
+                />
+                <p className="mt-1 text-[11px] text-gray-400">Opcional — podés desmarcarlo. / Optional — you may uncheck it.</p>
+              </div>
             </div>
           </div>
         </div>
