@@ -1,18 +1,10 @@
-import { getCurrentCoach } from '@/lib/actions/auth';
-import { listMyScouts } from '@/lib/actions/venue-scout';
-import { ScoutList } from '@/components/venue-scout/ScoutList';
-import { redirect } from 'next/navigation';
+import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-export default async function VenueScoutPage() {
-  const me = await getCurrentCoach();
-  if (!me) redirect('/dashboard');
-  const scouts = await listMyScouts();
-
+export default function VenueScoutPage() {
   return (
-    <div>
+    <div className="max-w-2xl">
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-[var(--tss-navy)] leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
           Venue Scout
@@ -21,7 +13,10 @@ export default async function VenueScoutPage() {
           Análisis táctico de spots · competencia y sesión libre
         </p>
       </div>
-      <ScoutList scouts={scouts} />
+      <VenueScoutLauncher variant="light" />
+      <p className="text-xs text-gray-400 mt-3">
+        Se abre a pantalla completa. Es una herramienta de análisis — tu trabajo queda en este dispositivo (no se guarda en el servidor).
+      </p>
     </div>
   );
 }

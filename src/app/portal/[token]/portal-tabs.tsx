@@ -21,6 +21,7 @@ import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
+import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { LogoutButton } from '@/components/portal/LogoutButton';
 import {
   createSelfTrainingSession,
@@ -51,6 +52,7 @@ import {
   Bell,
   ChevronRight,
   Video,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -430,6 +432,13 @@ export function PortalTabs({
                   title="Analyze your surfing"
                   subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
                 />
+              </div>
+              <div>
+                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+                  <MapPin size={14} strokeWidth={1.75} />
+                  Venue Scout
+                </p>
+                <VenueScoutLauncher variant="light" />
               </div>
             </div>
           )

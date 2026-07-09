@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A1628">
+<title>Venue Scout · The Surf Sequence®</title>
+<link rel="icon" href="tss-logo-wave.png?v=2" type="image/png">
+<link rel="apple-touch-icon" href="tss-logo-wave.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&family=Work+Sans:wght@400;500;600&family=DM+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A1628; --bg2:#0E1F3D; --bg3:#1a2842;
+  --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.14);
+  --text:#E8F0F5; --text-soft:#B8CCDF; --grey:#6B7E8F;
+  --cyan:#00D2FF; --purple:#A855F7; --amber:#F59E0B; --foam:#34D399; --coral:#FCA5A5;
+  --gold:#F59E0B; --silver:#9CA3AF; --bronze:#B45309;
+  --gold-text:#FCD34D; --silver-text:#D1D5DB; --bronze-text:#FBBF24;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Work Sans',system-ui,sans-serif; min-height:100vh; min-height:100dvh; overscroll-behavior:none; -webkit-font-smoothing:antialiased;}
+h1,h2,h3{font-family:'Outfit',sans-serif; margin:0; font-weight:700;}
+.serif{font-family:'Instrument Serif',serif; font-weight:400; font-style:italic; letter-spacing:-.01em;}
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+input,textarea,select{font-family:inherit;}
+.mono{font-family:'DM Mono',monospace;}
+
+/* ---------- Layout ---------- */
+.app{max-width:100%; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column;}
+.topbar{display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(10,22,40,.94); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); z-index:10;}
+.brand-block{display:flex; align-items:center; gap:14px;}
+.brand-logo{height:22px; width:auto; opacity:.95;}
+.brand-divider{width:1px; height:18px; background:var(--border2);}
+.brand-tool{font-family:'Outfit',sans-serif; font-weight:500; font-size:12px; color:var(--text-soft); letter-spacing:.6px; text-transform:uppercase;}
+.brand-tool strong{color:var(--cyan); font-weight:700;}
+.brand-ctx{font-family:'Work Sans',sans-serif; font-size:12px; color:var(--text-soft); display:none;}
+.brand-ctx strong{color:var(--text); font-weight:600;}
+@media(min-width:600px){ .brand-ctx{display:inline;} }
+.menu-btn{padding:7px; border:1px solid var(--border2); border-radius:8px; color:var(--text-soft); display:inline-flex; align-items:center; justify-content:center; transition:all .15s;}
+.menu-btn:hover{border-color:var(--cyan); color:var(--cyan);}
+.menu-btn svg{width:16px; height:16px;}
+.screen{padding:16px; flex:1; display:flex; flex-direction:column; gap:14px;}
+
+/* ---------- Inputs ---------- */
+.label{font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--cyan); font-weight:600; margin-bottom:6px;}
+.inp,.sel,.ta{width:100%; background:rgba(255,255,255,.04); border:1px solid var(--border2); border-radius:10px; padding:11px 14px; color:var(--text); font-size:14px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none; border-color:var(--cyan); background:rgba(0,210,255,.04);}
+.ta{resize:vertical; min-height:64px; font-family:inherit;}
+
+/* ---------- Chips ---------- */
+.chips{display:flex; gap:6px; flex-wrap:wrap;}
+.chip{font-size:13px; padding:7px 14px; border-radius:18px; background:rgba(0,210,255,.1); border:1px solid rgba(0,210,255,.3); color:var(--cyan); font-weight:600; cursor:pointer; user-select:none; transition:all .12s;}
+.chip:active{transform:scale(.96);}
+.chip.off{background:transparent; border:1px solid var(--border2); color:var(--grey);}
+.chip.amber{background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.4); color:var(--gold-text);}
+.chip.purple{background:rgba(168,85,247,.12); border-color:rgba(168,85,247,.4); color:#C9B9E8;}
+
+/* ---------- Buttons ---------- */
+.btn{padding:12px 16px; border-radius:10px; font-size:13px; font-weight:600; transition:all .15s; display:inline-flex; align-items:center; justify-content:center; gap:6px;}
+.btn:active{transform:scale(.97);}
+.btn-cyan{background:var(--cyan); color:var(--bg);}
+.btn-ghost{background:transparent; border:1px solid var(--border2); color:var(--text-soft);}
+.btn-coral{background:rgba(252,165,165,.12); border:1px solid rgba(252,165,165,.4); color:var(--coral);}
+.btn-block{width:100%;}
+.btn-lg{padding:14px 18px; font-size:14px;}
+
+/* ---------- Categories ---------- */
+.cat-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+.cat{padding:14px 6px; border-radius:12px; text-align:center; cursor:pointer; user-select:none; transition:all .15s; border:2.5px solid transparent;}
+.cat:active{transform:scale(.97);}
+.cat.on{transform:scale(1.03); box-shadow:0 0 0 3px rgba(255,255,255,.18);}
+.cat-mejor{background:rgba(245,158,11,.18); border-color:var(--gold);}
+.cat-media{background:rgba(156,163,175,.16); border-color:var(--silver);}
+.cat-otra{background:rgba(180,83,9,.18); border-color:var(--bronze);}
+.cat-lbl{font-size:11px; font-weight:700; letter-spacing:.8px;}
+.cat-num{font-size:22px; font-weight:700; font-family:'DM Mono',monospace; margin-top:4px; line-height:1;}
+.cat-mejor .cat-lbl,.cat-mejor .cat-num{color:var(--gold-text);}
+.cat-media .cat-lbl,.cat-media .cat-num{color:var(--silver-text);}
+.cat-otra .cat-lbl,.cat-otra .cat-num{color:var(--bronze-text);}
+
+/* ---------- Toolbar ---------- */
+.toolbar{display:grid; grid-template-columns:repeat(5,1fr); gap:5px;}
+.tool{padding:9px 4px; border-radius:8px; text-align:center; font-size:10px; font-weight:700; border:1px solid var(--border2); color:var(--text-soft); cursor:pointer; user-select:none; letter-spacing:.4px; transition:all .12s; line-height:1.1;}
+.tool:active{transform:scale(.96);}
+.tool svg{display:block; margin:0 auto 3px; width:16px; height:16px;}
+.tool.on{background:rgba(255,255,255,.08); border-color:currentColor;}
+.tool.out{color:var(--purple);}
+.tool.in{color:var(--gold);}
+.tool.ori{color:var(--cyan);}
+.tool.del{color:var(--coral);}
+.tool.misma{color:var(--cyan); border-color:rgba(0,210,255,.4); background:rgba(0,210,255,.08);}
+
+/* ---------- Timer ---------- */
+.timer-bar{display:flex; justify-content:space-between; align-items:center; gap:12px;}
+.timer-big{font-size:28px; font-weight:700; color:var(--text); font-family:'DM Mono',monospace; line-height:1;}
+.timer-sub{font-size:11px; color:var(--grey); margin-top:3px;}
+.timer-stop{font-size:13px; color:var(--coral); font-weight:600; padding:8px 14px; border:1px solid rgba(252,165,165,.4); border-radius:8px;}
+.timer-warn{color:var(--gold-text) !important;}
+
+/* ---------- Map ---------- */
+.map-wrap{position:relative; background:#021126; border-radius:14px; overflow:hidden; touch-action:pan-y;}
+.map-wrap svg{display:block; width:100%; height:auto; touch-action:pan-y; max-height:52vh;}
+.map-wrap.drawing-mode, .map-wrap.drawing-mode svg{touch-action:none;}
+.map-meta{display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--grey); padding:4px 2px; font-family:'DM Mono',monospace;}
+@media (min-width:1024px){
+  .map-wrap svg{max-height:none;}
+}
+
+/* ---------- Section ---------- */
+.section{background:rgba(255,255,255,.025); border:1px solid var(--border); border-radius:14px; padding:14px 14px;}
+.section-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+.section-t{font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--cyan); font-weight:700;}
+
+/* ---------- Recent waves list ---------- */
+.recent{max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;}
+.recent-item{display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:rgba(255,255,255,.04); border-radius:6px; font-size:12px;}
+.recent-coord{font-family:'DM Mono',monospace; font-weight:700;}
+.recent-time{color:var(--grey); font-size:11px;}
+
+/* ---------- Modal ---------- */
+.modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.78); display:flex; align-items:center; justify-content:center; z-index:200; backdrop-filter:blur(8px); padding:20px;}
+.modal{background:var(--bg2); border:1px solid var(--border2); border-radius:16px; padding:18px 18px 20px; max-width:440px; width:100%; max-height:90vh; overflow-y:auto;}
+.modal-h{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:14px;}
+.modal-t{font-size:16px; font-weight:700;}
+.modal-x{font-size:22px; color:var(--grey); padding:0 6px;}
+
+/* ---------- Report ---------- */
+.report-block{background:rgba(255,255,255,.025); border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:0 12px 12px 0; padding:0; margin-bottom:10px; overflow:hidden;}
+.report-block.silver{border-left-color:var(--silver);}
+.report-block.bronze{border-left-color:var(--bronze);}
+.report-cat-banner{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:rgba(245,158,11,.08); border-bottom:1px solid var(--border);}
+.report-block.silver .report-cat-banner{background:rgba(156,163,175,.06);}
+.report-block.bronze .report-cat-banner{background:rgba(180,83,9,.06);}
+.report-cat-lbl{font-size:11px; font-weight:700; letter-spacing:1px; color:var(--gold-text);}
+.report-block.silver .report-cat-lbl{color:var(--silver-text);}
+.report-block.bronze .report-cat-lbl{color:var(--bronze-text);}
+.report-cat-meta{font-size:11px; color:var(--text-soft); font-family:'DM Mono',monospace;}
+.report-hero{padding:18px 16px 14px; text-align:center;}
+.report-hero-coord{font-family:'DM Mono',monospace; font-size:44px; font-weight:700; color:var(--gold-text); line-height:.95; letter-spacing:-.02em;}
+.report-block.silver .report-hero-coord{color:var(--silver-text);}
+.report-block.bronze .report-hero-coord{color:var(--bronze-text);}
+.report-hero-arrow{color:var(--text-soft); font-size:22px; font-weight:300; margin:0 12px;}
+.report-hero-time{font-family:'DM Mono',monospace; font-size:24px; font-weight:600; color:var(--text);}
+.report-hero-row{display:flex; align-items:baseline; justify-content:center; flex-wrap:wrap;}
+.report-hero-sub{font-size:13px; color:var(--text-soft); margin-top:6px; line-height:1.4;}
+.report-hero-sub strong{color:var(--text); font-weight:500;}
+.report-strip{display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--border); flex-wrap:wrap;}
+.report-pill{font-size:11px; padding:4px 10px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--text-soft);}
+.report-pill strong{color:var(--text); font-weight:600;}
+.report-pill.foam{background:rgba(52,211,153,.12); border-color:rgba(52,211,153,.3); color:var(--foam);}
+.report-pill.amber{background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.3); color:var(--gold-text);}
+.report-pill.coral{background:rgba(252,165,165,.12); border-color:rgba(252,165,165,.3); color:var(--coral);}
+.report-alt-section{padding:10px 14px 14px; border-top:1px solid var(--border);}
+.report-alt-title{font-size:10px; font-weight:700; letter-spacing:1.2px; color:var(--cyan); margin-bottom:8px;}
+.report-alt-row{display:flex; align-items:center; gap:10px; padding:8px 0; font-size:12px; color:var(--text-soft);}
+.report-alt-row + .report-alt-row{border-top:1px dashed var(--border);}
+.report-alt-num{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; background:rgba(0,210,255,.15); color:var(--cyan); border-radius:50%; font-family:'DM Mono',monospace; font-size:11px; font-weight:700; flex-shrink:0;}
+.report-alt-coord{font-family:'DM Mono',monospace; font-weight:700; color:var(--text); min-width:42px;}
+.report-alt-refs{flex:1; min-width:0; color:var(--grey); font-size:11px;}
+.report-alt-data{font-family:'DM Mono',monospace; font-size:11px; color:var(--text-soft);}
+.plan-card{background:rgba(0,210,255,.08); border:1px solid rgba(0,210,255,.3); border-radius:12px; padding:14px 16px; margin-top:14px;}
+.plan-h{font-size:11px; font-weight:700; color:var(--cyan); letter-spacing:1px; margin-bottom:8px;}
+.plan-line{font-size:13px; color:var(--text-soft); margin-top:5px; line-height:1.5;}
+.plan-line strong{color:var(--text); font-weight:600;}
+.plan-line.win strong{color:var(--foam);}
+
+/* ---------- Score sliders ---------- */
+.score-row{display:grid; grid-template-columns:30px 1fr 50px; align-items:center; gap:12px; margin-bottom:10px;}
+.score-row input[type=range]{width:100%; -webkit-appearance:none; background:transparent;}
+.score-row input[type=range]::-webkit-slider-runnable-track{height:8px; background:rgba(255,255,255,.08); border-radius:4px;}
+.score-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--cyan); margin-top:-6px; box-shadow:0 0 0 3px rgba(0,210,255,.18);}
+.score-val{font-family:'DM Mono',monospace; font-weight:700; text-align:right; font-size:15px;}
+
+/* ---------- Empty ---------- */
+.empty{text-align:center; padding:40px 20px; color:var(--grey);}
+
+/* ---------- Tablet landscape (≥1024px, landscape) ---------- */
+@media (min-width:1024px){
+  .app{flex-direction:column;}
+  .topbar{padding:14px 24px;}
+  .brand{font-size:14px;}
+  .screen{padding:20px 24px 32px; max-width:1280px; width:100%; margin:0 auto;}
+  .screen.observe{display:grid; grid-template-columns:minmax(440px, 1fr) minmax(520px, 1.05fr); gap:20px; align-items:start;}
+  .screen.observe > .section:first-of-type{grid-column:1; grid-row:1;}
+  .screen.observe > .map-wrap{grid-column:2; grid-row:1 / span 2; position:sticky; top:80px; max-height:calc(100vh - 100px); display:flex; align-items:center;}
+  .screen.observe > .map-wrap svg{max-height:calc(100vh - 100px); width:100%; height:auto; max-width:none;}
+  .screen.observe > .section:last-of-type{grid-column:1; grid-row:2;}
+  .screen.setup, .screen.report{max-width:780px;}
+  .cat{padding:18px 6px;}
+  .cat-lbl{font-size:13px;}
+  .cat-num{font-size:28px; margin-top:6px;}
+  .tool{padding:11px 4px; font-size:11px;}
+  .tool svg{width:18px; height:18px;}
+  .timer-big{font-size:36px;}
+  .timer-stop{font-size:14px; padding:10px 18px;}
+}
+@media (min-width:1280px){
+  .screen.observe{grid-template-columns:minmax(480px, 1fr) minmax(620px, 1.15fr);}
+}
+
+/* Hide scrollbar */
+.recent::-webkit-scrollbar{width:5px;}
+.recent::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1); border-radius:5px;}
+
+/* SVG cell highlight on tap */
+.cell-hit{fill:rgba(0,210,255,.18); transition:opacity .2s; pointer-events:none;}
+
+/* Toast */
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--cyan); color:var(--text); padding:10px 18px; border-radius:24px; font-size:13px; font-weight:600; z-index:500; box-shadow:0 6px 24px rgba(0,0,0,.4); animation:toastIn .3s ease-out;}
+@keyframes toastIn{from{opacity:0; transform:translate(-50%,12px);} to{opacity:1; transform:translate(-50%,0);}}
+
+/* Box breathing screen */
+.breath-screen{position:fixed; inset:0; background:radial-gradient(ellipse at center, #0a3a5c 0%, #021126 70%, #000a18 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:900; padding:24px;}
+.breath-intro{font-family:'Instrument Serif',serif; font-style:italic; font-size:22px; color:var(--text); text-align:center; line-height:1.4; max-width:480px; margin-bottom:28px; opacity:.95;}
+.breath-circle-wrap{position:relative; width:240px; height:240px; display:flex; align-items:center; justify-content:center;}
+.breath-circle{position:absolute; width:120px; height:120px; border-radius:50%; background:rgba(0,210,255,.12); border:2px solid rgba(0,210,255,.55); transition:transform 4s cubic-bezier(.5,.0,.5,1), background 4s ease, border-color 4s ease;}
+.breath-circle.in{transform:scale(1.9); background:rgba(34,211,238,.25); border-color:#22D3EE;}
+.breath-circle.hold{transform:scale(1.9); background:rgba(34,211,238,.18); border-color:#22D3EE;}
+.breath-circle.out{transform:scale(1); background:rgba(0,210,255,.12); border-color:rgba(0,210,255,.55);}
+.breath-circle.holdout{transform:scale(1); background:rgba(0,210,255,.08); border-color:rgba(0,210,255,.4);}
+.breath-phase{position:absolute; font-family:'Outfit',sans-serif; font-weight:300; font-size:24px; color:var(--text); letter-spacing:2px; text-transform:uppercase; pointer-events:none;}
+.breath-meta{margin-top:32px; font-family:'DM Mono',monospace; font-size:12px; color:var(--text-soft); letter-spacing:1.5px;}
+.breath-skip{margin-top:24px; font-size:12px; color:var(--text-soft); padding:8px 18px; border:1px solid var(--border2); border-radius:20px; transition:all .15s;}
+.breath-skip:hover{color:var(--text); border-color:var(--text-soft);}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   VENUE SCOUT · TSS — standalone v1
+   Una herramienta de análisis de spots para coach/atleta de surf comp.
+   Estado en localStorage. Sin red. Funciona offline en la beach.
+   ════════════════════════════════════════════════════════════════════ */
+
+const STORAGE_KEY = 'tss_venue_scout_v1';
+const GRID_ROWS = 17;
+const GRID_COLS = 15;
+const ROW_LETTERS = ['A','B','C','D','E','F','G','H','J','K','L','M','N','O','P','Q','R'].slice(0, GRID_ROWS);
+
+/* Catálogo de hazards. Cada uno tiene: id (persistente), label, svg (paths Lucide-style
+   dentro de un viewBox 24×24), color, cat (agrupación en el modal). El svg se renderiza
+   escalado dentro de un círculo del color en el mapa. */
+const HAZARDS = [
+  { id:'rip',      label:'Corriente',    cat:'Peligros físicos',   color:'#00D2FF', directional:true, svg:'<line x1="12" y1="21" x2="12" y2="6"/><polyline points="6 12 12 6 18 12"/><polyline points="6 18 12 12 18 18"/>' },
+  { id:'rocks',    label:'Piedras',      cat:'Peligros físicos',   color:'#B8CCDF', svg:'<ellipse cx="7" cy="17" rx="4.5" ry="3.5"/><ellipse cx="15" cy="13" rx="6" ry="4.5"/><ellipse cx="20" cy="18" rx="3" ry="2.5"/>' },
+  { id:'coral',    label:'Coral / fondo',cat:'Peligros físicos',   color:'#FCA5A5', svg:'<path d="M12 22V10"/><path d="M12 14c-2-2-4-2-5 0"/><path d="M12 14c2-2 4-2 5 0"/><path d="M12 18c-2-2-3.5-2-5 0"/><path d="M12 18c2-2 3.5-2 5 0"/><circle cx="12" cy="8" r="2"/>' },
+  { id:'danger',   label:'Peligro',      cat:'Peligros físicos',   color:'#F59E0B', svg:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' },
+  { id:'crowd',    label:'Crowd',        cat:'Otros humanos',      color:'#A855F7', svg:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
+  { id:'judges',   label:'Jueces',       cat:'Otros humanos',      color:'#00D2FF', svg:'<path d="m14 12-8.5 8.5a2.12 2.12 0 1 1-3-3L11 9"/><path d="M15 13 9 7l4-4 6 6h3a8 8 0 0 1-7 7z"/>' },
+  { id:'buoy',     label:'Boya',         cat:'Otros humanos',      color:'#E8F0F5', svg:'<circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>' },
+  { id:'camera',   label:'Cámara',       cat:'Otros humanos',      color:'#6B7E8F', svg:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>' },
+  { id:'marine',   label:'Vida marina',  cat:'Naturaleza y agua',  color:'#34D399', svg:'<path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/>' },
+  { id:'freshwater',label:'Agua dulce',  cat:'Naturaleza y agua',  color:'#00D2FF', svg:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>' },
+  { id:'wind',     label:'Viento',       cat:'Naturaleza y agua',  color:'#B8CCDF', svg:'<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>' },
+  { id:'lifeguard',label:'Salvavidas',   cat:'Seguridad',          color:'#34D399', svg:'<circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/>' },
+  { id:'safeentry',label:'Entrada segura',cat:'Seguridad',         color:'#34D399', svg:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>' },
+  { id:'meeting',  label:'Punto reunión',cat:'Seguridad',          color:'#F59E0B', svg:'<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/>' },
+];
+const HAZARD_MAP = Object.fromEntries(HAZARDS.map(h => [h.id, h]));
+
+const SESSION_LEVELS = ['principiante', 'intermedio', 'avanzado'];
+const FREE_INTENTIONS = ['diversión', 'desestresarse', 'ejercicio', 'jugar con el mar', 'fluir', 'lo que salga'];
+const TRAINING_GOALS = ['practicar maniobra', 'ganar volumen de olas', 'mejorar timing', 'prep competencia', 'evaluación técnica', 'foto / video'];
+const CONDITION_MATCH = ['ideales para mi nivel', 'desafiantes / al límite', 'por debajo de mi nivel'];
+const SESSION_HAZARDS = ['piedras', 'crowd', 'corrientes', 'fondo agresivo', 'olas grandes', 'localismo'];
+
+let state = {
+  screen: 'setup',
+  config: { spotName: '', date: todayStr(), conditions: { sizeFt:5, tideLevel:60, tideDir:'bajando', wind:'offshore suave', period:'14s' }, durationMin: 20, mode: 'comp', surferProfile: { name:'', level:'intermedio', focus:'free-surf', intention:'diversión', goal:'practicar maniobra', conditionsMatch:'ideales para mi nivel', hazards:[] } },
+  map: { lines: { outside:null, inside:null, orilla:null }, refs: [], photoDataUrl:null, photoOpacity:0.7, freehand:[], entryPoint:null, exitPoint:null, hazards:[] },
+  waves: [],   // { id, gridCol(1-12), gridRow(1-N), category('mejor'|'media'|'otra'), ts(ms desde inicio), absTime }
+  timer: { startedAt:null, durationMs:null, paused:false, finished:false },
+  activeMode: 'mejor',  // mejor | media | otra | line-out | line-in | line-ori | ref | erase | draw
+  activeDirection: null,  // 'L' | 'R' | null — sticky modifier; cada wave hereda este valor
+  activePrediction: null, // {col, row} — predicción pendiente esperando próxima MEJOR
+  predictionStats: { tried:0, hit:0, near:0 },
+  pendingLineStart: null,
+  pendingRipStart: null,   // {x,y} · primer tap para dibujar corriente direccional
+  closing: { description:'', scores: { mejor:8.5, media:6.5, otra:5.0 }, heatObjective:14.5, heatDurationMin:25 },
+  rapidMode: true  // true (default) = tap primero, asignás score después · el score auto-clasifica
+};
+
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function nowMs(){ return Date.now(); }
+function fmtMMSS(ms){ if(ms<0) ms=0; const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function fmtHM(ms){ const s=Math.floor(ms/1000); const m=Math.floor(s/60); const sec=s%60; return m+':'+String(sec).padStart(2,'0'); }
+function fmtClock(d){ d=new Date(d); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0'); }
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function colToLetter(c){ /* placeholder, columnas siguen siendo numéricas */ return c; }
+function rowToLetter(r){ return ROW_LETTERS[r-1] || '?'; }
+function pointToCell(pt){
+  if(!pt) return null;
+  const cellW = MAP_W / GRID_COLS;
+  const cellH = MAP_H / GRID_ROWS;
+  const col = Math.max(1, Math.min(GRID_COLS, Math.floor(pt.x / cellW) + 1));
+  const row = Math.max(1, Math.min(GRID_ROWS, Math.floor(pt.y / cellH) + 1));
+  return rowToLetter(row) + col;
+}
+function coordLbl(w){ return rowToLetter(w.gridRow)+w.gridCol; }
+
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.warn(e); } }
+function load(){
+  try{
+    const s = localStorage.getItem(STORAGE_KEY);
+    if(!s) return;
+    const parsed = JSON.parse(s);
+    if(!parsed || !parsed.screen) return;
+    // Migración v1 → v1.1: condiciones de string a slider numérico
+    const c = parsed.config && parsed.config.conditions;
+    if(c){
+      if(c.size !== undefined && c.sizeFt === undefined){
+        const m = String(c.size).match(/([\d.]+)/);
+        const meters = m ? parseFloat(m[1]) : 1.5;
+        c.sizeFt = Math.max(1, Math.min(12, Math.round(meters * 3.28)));
+        delete c.size;
+      }
+      if(c.tide !== undefined && c.tideLevel === undefined){
+        const tideMap = { 'baja':10, 'media':50, 'alta':90 };
+        c.tideLevel = tideMap[c.tide] !== undefined ? tideMap[c.tide] : 50;
+        c.tideDir = c.tide === 'subiendo' ? 'subiendo' : c.tide === 'bajando' ? 'bajando' : 'parada';
+        delete c.tide;
+      }
+      if(c.sizeFt === undefined) c.sizeFt = 5;
+      if(c.tideLevel === undefined) c.tideLevel = 60;
+      if(c.tideDir === undefined) c.tideDir = 'bajando';
+    }
+    // Migración v1.4 → v1.5: agregar map.hazards si no existe
+    if(parsed.map && !Array.isArray(parsed.map.hazards)) parsed.map.hazards = [];
+    // Migración v1.5 → v1.6: modo de análisis + perfil del surfista
+    if(parsed.config){
+      if(!parsed.config.mode) parsed.config.mode = 'comp';
+      if(!parsed.config.surferProfile) parsed.config.surferProfile = { name:'', level:'intermedio', focus:'free-surf', intention:'diversión', goal:'practicar maniobra', conditionsMatch:'ideales para mi nivel', hazards:[] };
+      const sp = parsed.config.surferProfile;
+      // Migración v1.6 → v1.7: focus/intention/conditionsMatch + rename concerns → hazards
+      if(!sp.focus) sp.focus = 'free-surf';
+      if(!sp.intention) sp.intention = 'diversión';
+      if(!sp.conditionsMatch) sp.conditionsMatch = 'ideales para mi nivel';
+      if(!sp.goal) sp.goal = 'practicar maniobra';
+      if(Array.isArray(sp.concerns) && !Array.isArray(sp.hazards)) { sp.hazards = sp.concerns; delete sp.concerns; }
+      if(!Array.isArray(sp.hazards)) sp.hazards = [];
+    }
+    state = parsed;
+  } catch(e){ console.warn('load() failed', e); }
+}
+function reset(){ if(!confirm('¿Borrar el análisis actual y empezar de cero?')) return; localStorage.removeItem(STORAGE_KEY); location.reload(); }
+
+function openAppMenu(){
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  m.innerHTML = `<div class="modal" style="max-width:340px;">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">Opciones</div>
+        <div style="font-size:11px;color:var(--grey);margin-top:2px;font-family:'DM Mono',monospace;">v1.4</div>
+      </div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${state.screen!=='setup' ? `<button class="btn btn-ghost btn-block" style="justify-content:flex-start;padding:14px 16px;" onclick="this.closest('.modal-overlay').remove();state.screen='setup';save();render();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:10px;"><polyline points="15 18 9 12 15 6"/></svg>Volver al setup</button>`:''}
+      <button class="btn btn-ghost btn-block" style="justify-content:space-between;padding:14px 16px;" onclick="toggleRapidMode(this)">
+        <span style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Score auto-clasifica · tap primero, score después</span>
+        <span style="font-size:11px;padding:3px 10px;border-radius:12px;background:${state.rapidMode?'rgba(52,211,153,.18)':'rgba(255,255,255,.06)'};color:${state.rapidMode?'var(--foam)':'var(--text-soft)'};font-weight:700;">${state.rapidMode?'ON':'OFF'}</span>
+      </button>
+      <button class="btn btn-ghost btn-block" style="justify-content:flex-start;padding:14px 16px;" onclick="this.closest('.modal-overlay').remove();window.print();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:10px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / guardar PDF</button>
+      <button class="btn btn-coral btn-block" style="justify-content:flex-start;padding:14px 16px;" onclick="this.closest('.modal-overlay').remove();reset();"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:10px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>Nuevo análisis (borra el actual)</button>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--grey);text-align:center;letter-spacing:.5px;line-height:1.6;">
+      The Surf Sequence®<br>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;">venue scout · standalone</span>
+    </div>
+  </div>`;
+  m.onclick = e => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+
+function toast(msg, ms=1800){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), ms); }
+
+/* ════════════════════════════════════════════════════════════════════
+   RENDER ROUTER
+   ════════════════════════════════════════════════════════════════════ */
+function render(){
+  const app = document.getElementById('app');
+  const ctx = state.config.spotName
+    ? `<span class="brand-ctx"><strong>${esc(state.config.spotName)}</strong>${state.screen!=='setup'?` · ${state.config.date}`:''}</span>`
+    : '';
+  const topbar = `<header class="topbar">
+    <div class="brand-block">
+      <img src="tss-logo-white-h.png?v=2" alt="The Surf Sequence" class="brand-logo" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='inline');"><span style="display:none;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;color:var(--cyan);letter-spacing:.5px;">TSS</span>
+      <div class="brand-divider"></div>
+      <span class="brand-tool">Venue <strong>Scout</strong></span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      ${ctx}
+      <button class="menu-btn" onclick="openAppMenu()" aria-label="Menu" title="Opciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </header>`;
+  let body = '';
+  if(state.screen === 'setup') body = renderSetup();
+  else if(state.screen === 'observe') body = renderObserve();
+  else if(state.screen === 'report') body = renderReport();
+  app.innerHTML = topbar + body;
+  if(state.screen === 'observe') attachMapHandlers();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   1. SETUP
+   ════════════════════════════════════════════════════════════════════ */
+const WIND_OPTS = ['offshore fuerte','offshore suave','sin viento','onshore suave','onshore fuerte','crosshore'];
+const PERIOD_OPTS = ['<8s','8-10s','10-12s','12-14s','14s','15-17s','17s+'];
+const DUR_OPTS = [5,10,15,20,30,45,60];
+
+function sizeLabel(ft){
+  ft = Number(ft) || 0;
+  let qual = '';
+  if(ft<=1.5) qual = 'ankle';
+  else if(ft<=2.5) qual = 'knee';
+  else if(ft<=3.5) qual = 'waist';
+  else if(ft<=5) qual = 'chest';
+  else if(ft<=7) qual = 'overhead';
+  else if(ft<=10) qual = 'double overhead';
+  else qual = 'XXL';
+  return `${ft} ft · ${qual}`;
+}
+function tideLabel(level, dir){
+  level = Number(level)||0;
+  let where = '';
+  if(level<=12) where = 'baja';
+  else if(level<=30) where = 'media-baja';
+  else if(level<=45) where = 'media';
+  else if(level<=60) where = 'media';
+  else if(level<=80) where = 'media-alta';
+  else if(level<=92) where = 'casi alta';
+  else where = 'alta';
+  return dir==='parada' ? `${where} (parada)` : `${where} ${dir}`;
+}
+
+function renderSetup(){
+  const c = state.config;
+  const mode = c.mode || 'comp';
+  const sp = c.surferProfile || { name:'', level:'intermedio', goal:'sesión relajada', concerns:[] };
+  return `<main class="screen setup">
+    <section class="section">
+      <div class="section-h"><div class="section-t">Tipo de análisis</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="setAnalysisMode('comp')" style="padding:14px 10px;border-radius:12px;border:2px solid ${mode==='comp'?'var(--cyan)':'var(--border)'};background:${mode==='comp'?'rgba(0,210,255,.08)':'rgba(255,255,255,.02)'};color:var(--text);text-align:left;cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${mode==='comp'?'#00D2FF':'#B8CCDF'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            <div style="font-weight:700;font-size:13px;color:${mode==='comp'?'var(--cyan)':'var(--text)'};">COMPETENCIA</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-soft);line-height:1.35;">Scoring 1-10 · plan táctico del heat · categorías mejor/media/otra · replay</div>
+        </button>
+        <button onclick="setAnalysisMode('free')" style="padding:14px 10px;border-radius:12px;border:2px solid ${mode==='free'?'var(--foam)':'var(--border)'};background:${mode==='free'?'rgba(52,211,153,.08)':'rgba(255,255,255,.02)'};color:var(--text);text-align:left;cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${mode==='free'?'#34D399':'#B8CCDF'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+            <div style="font-weight:700;font-size:13px;color:${mode==='free'?'var(--foam)':'var(--text)'};">SESIÓN LIBRE</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-soft);line-height:1.35;">Sin puntajes · buscamos zona segura o zona deseada para el surfista</div>
+        </button>
+      </div>
+    </section>
+
+    ${mode==='free' ? `
+    <section class="section">
+      <div class="section-h"><div class="section-t">Perfil del surfista</div></div>
+      <input type="text" class="inp" value="${esc(sp.name)}" placeholder="Nombre del surfista (opcional)" oninput="state.config.surferProfile.name=this.value;save();" autocomplete="off">
+      <div style="margin-top:12px;">
+        <div class="label">Nivel</div>
+        <div class="chips">
+          ${SESSION_LEVELS.map(l=>`<span class="chip ${sp.level===l?'':'off'}" onclick="state.config.surferProfile.level='${l}';save();render();">${l}</span>`).join('')}
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="label">¿Las condiciones son buenas para tu nivel?</div>
+        <div class="chips">
+          ${CONDITION_MATCH.map(cm=>`<span class="chip ${sp.conditionsMatch===cm?'':'off'}" onclick="state.config.surferProfile.conditionsMatch='${cm}';save();render();">${cm}</span>`).join('')}
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="label">Enfoque de la sesión</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button onclick="setSessionFocus('free-surf')" style="padding:12px 8px;border-radius:10px;border:2px solid ${sp.focus==='free-surf'?'#34D399':'var(--border)'};background:${sp.focus==='free-surf'?'rgba(52,211,153,.08)':'rgba(255,255,255,.02)'};color:${sp.focus==='free-surf'?'#34D399':'var(--text)'};font-weight:700;font-size:12px;cursor:pointer;">FREE SURF</button>
+          <button onclick="setSessionFocus('training')" style="padding:12px 8px;border-radius:10px;border:2px solid ${sp.focus==='training'?'#A855F7':'var(--border)'};background:${sp.focus==='training'?'rgba(168,85,247,.08)':'rgba(255,255,255,.02)'};color:${sp.focus==='training'?'#A855F7':'var(--text)'};font-weight:700;font-size:12px;cursor:pointer;">TRAINING SESSION</button>
+        </div>
+      </div>
+      ${sp.focus==='training' ? `
+      <div style="margin-top:14px;">
+        <div class="label">Objetivo del entrenamiento</div>
+        <div class="chips">
+          ${TRAINING_GOALS.map(g=>`<span class="chip ${sp.goal===g?'':'off'}" onclick="state.config.surferProfile.goal='${g}';save();render();">${g}</span>`).join('')}
+        </div>
+        <input type="text" class="inp" style="margin-top:8px;font-size:12px;" value="${sp.focus==='training' && !TRAINING_GOALS.includes(sp.goal) ? esc(sp.goal) : ''}" placeholder="O escribí tu propio objetivo..." oninput="state.config.surferProfile.goal=this.value;save();">
+      </div>
+      ` : `
+      <div style="margin-top:14px;">
+        <div class="label">Intención de la sesión</div>
+        <div class="chips">
+          ${FREE_INTENTIONS.map(i=>`<span class="chip ${sp.intention===i?'':'off'}" onclick="state.config.surferProfile.intention='${i}';save();render();">${i}</span>`).join('')}
+        </div>
+        <input type="text" class="inp" style="margin-top:8px;font-size:12px;" value="${sp.focus==='free-surf' && !FREE_INTENTIONS.includes(sp.intention) ? esc(sp.intention) : ''}" placeholder="O escribí tu propia intención..." oninput="state.config.surferProfile.intention=this.value;save();">
+      </div>
+      `}
+      <div style="margin-top:14px;">
+        <div class="label">Peligros / hazards a considerar (opcional · multi-select)</div>
+        <div class="chips">
+          ${SESSION_HAZARDS.map(k=>`<span class="chip ${sp.hazards.includes(k)?'':'off'}" onclick="toggleHazard('${k}')">${k}</span>`).join('')}
+        </div>
+      </div>
+    </section>
+    ` : ''}
+
+    <section class="section">
+      <div class="section-h"><div class="section-t">Spot</div></div>
+      <input type="text" class="inp" id="spotName" value="${esc(c.spotName)}" placeholder="ej. Punta Mango · El Sunzal · Las Flores" oninput="state.config.spotName=this.value;save();" autocomplete="off">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div>
+          <div class="label">Fecha</div>
+          <input type="date" class="inp" value="${c.date}" onchange="state.config.date=this.value;save();">
+        </div>
+        <div>
+          <div class="label">Hora local</div>
+          <div class="inp mono" style="text-align:center;font-weight:700;color:var(--text);" id="liveClock">--:--</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-h"><div class="section-t">Condiciones</div></div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="label" style="margin:0;">Tamaño</div>
+          <div class="mono" style="font-size:13px;font-weight:700;color:var(--text);" id="sizeLabel">${sizeLabel(c.conditions.sizeFt)}</div>
+        </div>
+        <input type="range" min="1" max="12" step="0.5" value="${c.conditions.sizeFt}" oninput="state.config.conditions.sizeFt=parseFloat(this.value);document.getElementById('sizeLabel').textContent=sizeLabel(this.value);save();" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--grey);margin-top:2px;font-family:'DM Mono',monospace;"><span>1 ft</span><span>6 ft</span><span>12+ ft</span></div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="label" style="margin:0;">Marea</div>
+          <div class="mono" style="font-size:13px;font-weight:700;color:var(--text);" id="tideLabel">${tideLabel(c.conditions.tideLevel, c.conditions.tideDir)}</div>
+        </div>
+        <input type="range" min="0" max="100" step="5" value="${c.conditions.tideLevel}" oninput="state.config.conditions.tideLevel=parseInt(this.value);document.getElementById('tideLabel').textContent=tideLabel(this.value, state.config.conditions.tideDir);save();" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--grey);margin-top:2px;font-family:'DM Mono',monospace;"><span>baja</span><span>media</span><span>alta</span></div>
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <span class="chip ${c.conditions.tideDir==='subiendo'?'':'off'}" onclick="state.config.conditions.tideDir='subiendo';save();render();">↑ subiendo</span>
+          <span class="chip ${c.conditions.tideDir==='parada'?'':'off'}" onclick="state.config.conditions.tideDir='parada';save();render();">— parada</span>
+          <span class="chip ${c.conditions.tideDir==='bajando'?'':'off'}" onclick="state.config.conditions.tideDir='bajando';save();render();">↓ bajando</span>
+        </div>
+      </div>
+
+      ${renderChipGroup('wind', 'Viento', WIND_OPTS, c.conditions.wind)}
+      ${renderChipGroup('period', 'Período swell', PERIOD_OPTS, c.conditions.period)}
+    </section>
+
+    <section class="section">
+      <div class="section-h"><div class="section-t">Duración del análisis</div></div>
+      <div class="chips">
+        ${DUR_OPTS.map(m=>`<span class="chip ${c.durationMin===m?'':'off'}" onclick="state.config.durationMin=${m};save();render();">${m} min</span>`).join('')}
+      </div>
+    </section>
+
+    <button class="btn btn-cyan btn-block btn-lg" onclick="goToObserve()" style="margin-top:8px;">
+      Empezar análisis →
+    </button>
+    <button class="btn btn-ghost btn-block" onclick="startBreathingThenObserve()" style="margin-top:8px;border:1px solid rgba(34,211,238,.3);color:#22D3EE;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+      Conectar 60 seg primero · box breathing
+    </button>
+  </main>`;
+}
+function renderChipGroup(key, label, opts, current){
+  return `<div style="margin-bottom:12px;">
+    <div class="label">${label}</div>
+    <div class="chips">
+      ${opts.map(o=>`<span class="chip ${current===o?'':'off'}" onclick="state.config.conditions.${key}='${o}';save();render();">${o}</span>`).join('')}
+    </div>
+  </div>`;
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function goToObserve(){
+  if(!state.config.spotName.trim()){ toast('Poné un nombre al spot'); return; }
+  if(!state.timer.startedAt){
+    state.timer.startedAt = nowMs();
+    state.timer.durationMs = state.config.durationMin * 60 * 1000;
+  }
+  state.screen = 'observe';
+  save(); render();
+  startTimerLoop();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   BOX BREATHING · 4-4-4-4 × 4 ciclos · 64s total
+   Antes de observar: calmar sistema nervioso, abrir visión periférica
+   ════════════════════════════════════════════════════════════════════ */
+function startBreathingThenObserve(){
+  if(!state.config.spotName.trim()){ toast('Poné un nombre al spot'); return; }
+  showBreathingScreen();
+}
+function showBreathingScreen(){
+  let scr = document.getElementById('breathScreen'); if(scr) scr.remove();
+  scr = document.createElement('div');
+  scr.id = 'breathScreen';
+  scr.className = 'breath-screen';
+  scr.innerHTML = `
+    <div class="breath-intro">Es hora de conectar con el aquí y ahora · sentí el océano antes de leerlo</div>
+    <div class="breath-circle-wrap">
+      <div class="breath-circle" id="breathCircle"></div>
+      <div class="breath-phase" id="breathPhase">Listo</div>
+    </div>
+    <div class="breath-meta" id="breathMeta">Ciclo 1 de 4 · 4-4-4-4</div>
+    <button class="breath-skip" onclick="endBreathing(false)">Saltar →</button>
+  `;
+  document.body.appendChild(scr);
+  // Empezamos después de 500ms para que la pantalla aparezca antes de la primera inhalación
+  setTimeout(()=> runBreathingCycle(1), 500);
+}
+let _breathTimers = [];
+function runBreathingCycle(cycle){
+  if(cycle > 4){ endBreathing(true); return; }
+  const meta = document.getElementById('breathMeta');
+  if(meta) meta.textContent = `Ciclo ${cycle} de 4 · 4-4-4-4`;
+  const phases = [
+    { lbl:'Inhalá', cls:'in',      ms:4000 },
+    { lbl:'Mantené', cls:'hold',    ms:4000 },
+    { lbl:'Exhalá', cls:'out',     ms:4000 },
+    { lbl:'Mantené', cls:'holdout', ms:4000 },
+  ];
+  let elapsed = 0;
+  phases.forEach((p, i) => {
+    const t = setTimeout(()=>{
+      const c = document.getElementById('breathCircle');
+      const lbl = document.getElementById('breathPhase');
+      if(c){ c.classList.remove('in','hold','out','holdout'); c.classList.add(p.cls); }
+      if(lbl) lbl.textContent = p.lbl;
+    }, elapsed);
+    _breathTimers.push(t);
+    elapsed += p.ms;
+  });
+  const nextT = setTimeout(()=> runBreathingCycle(cycle+1), elapsed);
+  _breathTimers.push(nextT);
+}
+function endBreathing(completed){
+  _breathTimers.forEach(t => clearTimeout(t));
+  _breathTimers = [];
+  const scr = document.getElementById('breathScreen'); if(scr) scr.remove();
+  if(completed) toast('🌊 Listo · conectado');
+  // Arranca observación
+  if(!state.timer.startedAt){
+    state.timer.startedAt = nowMs();
+    state.timer.durationMs = state.config.durationMin * 60 * 1000;
+  }
+  state.screen = 'observe';
+  save(); render();
+  startTimerLoop();
+}
+
+/* Live clock on setup */
+setInterval(()=>{
+  const el=document.getElementById('liveClock');
+  if(el){ const d=new Date(); el.textContent = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0'); }
+}, 1000);
+
+/* ════════════════════════════════════════════════════════════════════
+   2. OBSERVE (map + waves)
+   ════════════════════════════════════════════════════════════════════ */
+let _timerInterval = null;
+function startTimerLoop(){
+  if(_timerInterval) clearInterval(_timerInterval);
+  _timerInterval = setInterval(()=>{
+    if(state.screen !== 'observe') return;
+    if(state.timer.finished || state.timer.paused) return;
+    const el = document.getElementById('timerDisplay');
+    if(!el) return;
+    const remaining = state.timer.startedAt + state.timer.durationMs - nowMs();
+    el.textContent = fmtMMSS(remaining);
+    if(remaining < 60000) el.classList.add('timer-warn'); else el.classList.remove('timer-warn');
+    const elapsed = nowMs() - state.timer.startedAt;
+    const subEl = document.getElementById('timerSub');
+    if(subEl) subEl.textContent = `restante · ${fmtMMSS(elapsed)} transc.`;
+    if(remaining <= 0){
+      state.timer.finished = true;
+      save();
+      toast('⏰ Análisis terminado');
+      goToReport();
+    }
+  }, 250);
+}
+
+function renderObserve(){
+  const counts = countByCategory();
+  const isFree = (state.config.mode === 'free');
+  return `<main class="screen observe">
+    <section class="section" style="padding:12px 14px;">
+      <div class="timer-bar">
+        <div>
+          <div class="timer-big" id="timerDisplay">${fmtMMSS(state.timer.startedAt+state.timer.durationMs-nowMs())}</div>
+          <div class="timer-sub" id="timerSub">restante</div>
+        </div>
+        <button class="timer-stop" onclick="finishNow()">■ Finalizar</button>
+      </div>
+
+      ${isFree ? `
+      <div style="margin-top:14px;">
+        <div class="cat cat-mejor ${state.activeMode==='ola'?'on':''}" style="background:rgba(52,211,153,.14);border:2px solid ${state.activeMode==='ola'?'#34D399':'transparent'};padding:12px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="setMode('ola')">
+          <div>
+            <div class="cat-lbl" style="color:#34D399;">OLA BUENA</div>
+            <div style="font-size:10px;color:var(--grey);margin-top:2px;">Tap donde viste una ola aprovechable</div>
+          </div>
+          <div class="cat-num" style="color:#34D399;">${counts.ola||0}</div>
+        </div>
+      </div>
+      ` : `
+      <div class="cat-row" style="margin-top:14px;">
+        <div class="cat cat-mejor ${state.activeMode==='mejor'?'on':''}" onclick="setMode('mejor')">
+          <div class="cat-lbl">MEJOR</div><div class="cat-num">${counts.mejor}</div>
+        </div>
+        <div class="cat cat-media ${state.activeMode==='media'?'on':''}" onclick="setMode('media')">
+          <div class="cat-lbl">MEDIA</div><div class="cat-num">${counts.media}</div>
+        </div>
+        <div class="cat cat-otra ${state.activeMode==='otra'?'on':''}" onclick="setMode('otra')">
+          <div class="cat-lbl">OTRA</div><div class="cat-num">${counts.otra}</div>
+        </div>
+      </div>
+      `}
+
+      <div class="dir-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+        <button class="dir-btn ${state.activeDirection==='R'?'on':''}" style="padding:9px 4px;border-radius:9px;background:${state.activeDirection==='R'?'rgba(251,191,36,.22)':'rgba(255,255,255,.04)'};border:1.5px solid ${state.activeDirection==='R'?'#FBBF24':'var(--border2)'};color:${state.activeDirection==='R'?'#FBBF24':'var(--text-soft)'};font-weight:700;font-size:12px;letter-spacing:.4px;transition:all .12s;" onclick="toggleDirection('R')" title="La ola va hacia tu izquierda visual = ola DERECHA del surfista">← DER</button>
+        <button class="dir-btn ${state.activeDirection===null?'on':''}" style="padding:9px 4px;border-radius:9px;background:${state.activeDirection===null?'rgba(255,255,255,.08)':'rgba(255,255,255,.04)'};border:1.5px solid ${state.activeDirection===null?'var(--text-soft)':'var(--border2)'};color:${state.activeDirection===null?'var(--text)':'var(--text-soft)'};font-weight:700;font-size:11px;letter-spacing:.4px;" onclick="toggleDirection(null)">SIN DIR</button>
+        <button class="dir-btn ${state.activeDirection==='L'?'on':''}" style="padding:9px 4px;border-radius:9px;background:${state.activeDirection==='L'?'rgba(34,211,238,.22)':'rgba(255,255,255,.04)'};border:1.5px solid ${state.activeDirection==='L'?'#22D3EE':'var(--border2)'};color:${state.activeDirection==='L'?'#22D3EE':'var(--text-soft)'};font-weight:700;font-size:12px;letter-spacing:.4px;" onclick="toggleDirection('L')" title="La ola va hacia tu derecha visual = ola IZQUIERDA del surfista">IZQ →</button>
+      </div>
+
+      <div class="toolbar" style="margin-top:10px;">
+        <div class="tool" onclick="triggerPhotoUpload()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          FOTO
+        </div>
+        <div class="tool ${state.activeMode==='draw'?'on':''}" onclick="setMode('draw')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+          DIBUJ
+        </div>
+        <div class="tool out ${state.activeMode==='line-out'?'on':''}" onclick="setMode('line-out')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/></svg>
+          OUT
+        </div>
+        <div class="tool in ${state.activeMode==='line-in'?'on':''}" onclick="setMode('line-in')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/></svg>
+          IN
+        </div>
+        <div class="tool ori ${state.activeMode==='line-ori'?'on':''}" onclick="setMode('line-ori')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/></svg>
+          ORILLA
+        </div>
+        <div class="tool ${state.activeMode==='ref'?'on':''}" onclick="setMode('ref')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          +REF
+        </div>
+        <div class="tool ${String(state.activeMode).startsWith('hazard')?'on':''}" style="color:#F59E0B;" onclick="openHazardModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          HAZARD
+        </div>
+        <div class="tool entry ${state.activeMode==='entry'?'on':''}" style="color:#34D399;" onclick="setMode('entry')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 9-6-6-6 6"/><path d="M12 3v14"/><path d="M5 21h14"/></svg>
+          ENTRA
+        </div>
+        <div class="tool exit ${state.activeMode==='exit'?'on':''}" style="color:#FCA5A5;" onclick="setMode('exit')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>
+          SALE
+        </div>
+        <div class="tool misma" onclick="plantSameAsLast()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          +MISMA
+        </div>
+        <div class="tool del ${state.activeMode==='erase'?'on':''}" onclick="setMode('erase')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          BORRAR
+        </div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+      ${state.map.photoDataUrl ? `<div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;">
+        <span style="color:var(--grey);font-weight:600;">Foto:</span>
+        <input type="range" min="20" max="100" step="5" value="${Math.round((state.map.photoOpacity||0.7)*100)}" oninput="state.map.photoOpacity=parseInt(this.value)/100;save();updatePhotoOpacity();" style="flex:1;">
+        <span class="mono" id="photoPct" style="color:var(--text);font-weight:700;min-width:32px;text-align:right;">${Math.round((state.map.photoOpacity||0.7)*100)}%</span>
+        <button onclick="if(confirm('¿Quitar la foto?')){state.map.photoDataUrl=null;save();render();}" style="color:var(--coral);font-weight:600;padding:0 4px;">×</button>
+      </div>` : ''}
+      ${(state.map.freehand && state.map.freehand.length) ? `<div style="margin-top:6px;text-align:right;"><button onclick="if(confirm('¿Borrar todos los trazos?')){state.map.freehand=[];save();render();}" style="font-size:11px;color:var(--coral);font-weight:600;">× Limpiar ${state.map.freehand.length} trazo${state.map.freehand.length===1?'':'s'}</button></div>` : ''}
+
+      ${renderPredictionWidget()}
+      <div style="font-size:10px;color:var(--grey);text-align:center;margin-top:6px;line-height:1.4;">
+        ${modeHint(state.activeMode)}
+      </div>
+    </section>
+
+    <section class="map-wrap${state.activeMode==='draw'?' drawing-mode':''}" id="mapWrap">
+      ${renderMapSVG()}
+    </section>
+
+    ${(()=>{ const pend = pendingWaves(); if(!pend.length) return ''; return `<div style="margin-top:8px;padding:10px 12px;background:rgba(52,211,153,.06);border:1.5px dashed var(--foam);border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div style="font-size:11px;color:var(--text);"><strong>${pend.length}</strong> ola${pend.length===1?'':'s'} sin score <span style="color:var(--text-soft);">· tap cada pin gris para asignar score</span></div>
+      <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px;color:var(--foam);border-color:rgba(52,211,153,.4);" onclick="categorizePendingModal('${pend[pend.length-1].id}')">Score de la última</button>
+    </div>`; })()}
+
+    <section class="section">
+      <div class="section-h">
+        <div class="section-t">Últimas olas (${state.waves.length})</div>
+        ${state.waves.length?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="openAllWavesModal()">Ver todas</button>`:''}
+      </div>
+      <div class="recent">
+        ${state.waves.slice(-7).reverse().map(w=>renderRecentItem(w)).join('') || '<div class="empty" style="padding:20px;font-size:12px;">Tap una celda con MEJOR/MEDIA/OTRA activa para plantar la primera ola.</div>'}
+      </div>
+    </section>
+  </main>`;
+}
+function modeHint(mode){
+  switch(mode){
+    case 'mejor': case 'media': case 'otra': return state.rapidMode
+      ? `tap el mapa donde salió la ola · después le asignás score 1-10 y se clasifica sola`
+      : `tap una celda del mapa para plantar pin ${mode.toUpperCase()} con timestamp`;
+    case 'line-out': return state.pendingLineStart ? 'tap el segundo punto de la línea OUTSIDE' : 'tap el primer punto de la línea OUTSIDE';
+    case 'line-in': return state.pendingLineStart ? 'tap el segundo punto de la línea INSIDE' : 'tap el primer punto de la línea INSIDE';
+    case 'line-ori': return state.pendingLineStart ? 'tap el segundo punto de la línea ORILLA' : 'tap el primer punto de la línea ORILLA';
+    case 'ref': return 'tap donde quieras plantar la referencia (palmera, casa, poste...)';
+    case 'erase': return 'tap un pin para borrarlo';
+    case 'draw': return 'dibujá con el dedo sobre la cuadrícula (esbozá orilla, banco, lineup...)';
+    case 'predict': return '🎯 tap la celda donde predecís que sale la PRÓXIMA mejor';
+    case 'entry': return 'tap el punto por donde el atleta ENTRA al agua (canal, orilla, etc.)';
+    case 'exit': return 'tap el punto por donde el atleta SALE del agua después de la ola';
+  }
+  if(typeof mode === 'string' && mode.startsWith('hazard-')){
+    const h = HAZARD_MAP[mode.slice(7)];
+    if(!h) return '';
+    if(h.directional){
+      return state.pendingRipStart
+        ? `tap el DESTINO de la ${h.label.toLowerCase()} (hacia dónde fluye)`
+        : `tap el ORIGEN de la ${h.label.toLowerCase()} (dos taps: origen → destino)`;
+    }
+    return `tap el mapa donde va: ${h.label}`;
+  }
+  return '';
+}
+
+function renderPredictionWidget(){
+  const ps = state.predictionStats || {tried:0, hit:0, near:0};
+  const hasStats = ps.tried > 0;
+  const accuracy = hasStats ? Math.round(((ps.hit + ps.near*0.5) / ps.tried) * 100) : 0;
+  if(state.activePrediction){
+    const p = state.activePrediction;
+    return `<div style="margin-top:10px;padding:10px 12px;background:rgba(34,211,238,.1);border:1.5px dashed #22D3EE;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div style="font-size:11px;color:#22D3EE;font-weight:700;line-height:1.4;">🎯 Predijiste <strong style="font-family:'DM Mono',monospace;font-size:13px;">${rowToLetter(p.row)}${p.col}</strong> · esperando próxima MEJOR...</div>
+      <button onclick="cancelPrediction()" style="font-size:11px;color:var(--text-soft);padding:4px 10px;border:1px solid var(--border2);border-radius:6px;flex-shrink:0;">Cancelar</button>
+    </div>`;
+  }
+  if(state.activeMode === 'predict'){
+    return `<div style="margin-top:10px;padding:10px 12px;background:rgba(34,211,238,.08);border:1.5px solid #22D3EE;border-radius:10px;text-align:center;">
+      <div style="font-size:11px;color:#22D3EE;font-weight:700;">🎯 Tap la celda donde predecís la próxima MEJOR</div>
+      <button onclick="setMode('mejor')" style="margin-top:6px;font-size:11px;color:var(--text-soft);padding:4px 12px;border:1px solid var(--border2);border-radius:6px;">Cancelar</button>
+    </div>`;
+  }
+  return `<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 4px;">
+    <button onclick="startPrediction()" style="font-size:12px;color:#22D3EE;padding:8px 14px;border:1.5px solid rgba(34,211,238,.4);border-radius:9px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+      🎯 Predecir próxima MEJOR
+    </button>
+    ${hasStats ? `<div style="font-size:11px;color:var(--text-soft);font-family:'DM Mono',monospace;">
+      ${ps.hit} aciertos · ${ps.near} cerca · ${ps.tried} intentos · <strong style="color:#22D3EE;">${accuracy}%</strong>
+    </div>` : `<div style="font-size:11px;color:var(--grey);font-style:italic;">opt-in · entrenar lectura del mar</div>`}
+  </div>`;
+}
+
+function startPrediction(){
+  if(state.activePrediction){ toast('Ya tenés una predicción pendiente'); return; }
+  state.activeMode = 'predict';
+  save(); render();
+}
+function cancelPrediction(){
+  state.activePrediction = null;
+  state.activeMode = 'mejor';
+  save(); render();
+}
+function recordPrediction(col, row){
+  state.activePrediction = { col, row };
+  state.activeMode = 'mejor';  // vuelve al modo MEJOR automáticamente
+  save(); render();
+  toast(`🎯 Predijiste ${rowToLetter(row)}${col} · plantá la próxima MEJOR donde realmente salga`);
+}
+function checkPredictionAgainst(col, row){
+  if(!state.activePrediction) return;
+  const p = state.activePrediction;
+  const dist = Math.max(Math.abs(p.col - col), Math.abs(p.row - row));
+  state.predictionStats = state.predictionStats || { tried:0, hit:0, near:0 };
+  state.predictionStats.tried++;
+  if(dist === 0){
+    state.predictionStats.hit++;
+    toast(`🎯 ¡ACERTASTE ${rowToLetter(row)}${col}! Estás leyendo el mar.`, 2800);
+  } else if(dist <= 1){
+    state.predictionStats.near++;
+    toast(`Cerca · predijiste ${rowToLetter(p.row)}${p.col} · salió ${rowToLetter(row)}${col} (a 1 celda)`, 2800);
+  } else {
+    toast(`Lejos · predijiste ${rowToLetter(p.row)}${p.col} · salió ${rowToLetter(row)}${col}`, 2800);
+  }
+  state.activePrediction = null;
+}
+function renderRecentItem(w){
+  const colorMap = { mejor:'var(--gold-text)', media:'var(--silver-text)', otra:'var(--bronze-text)' };
+  const c = colorMap[w.category];
+  const dirChip = w.direction === 'L'
+    ? `<span style="font-size:10px;color:#22D3EE;font-weight:700;">IZQ→</span>`
+    : w.direction === 'R'
+    ? `<span style="font-size:10px;color:#FBBF24;font-weight:700;">←DER</span>`
+    : '';
+  return `<div class="recent-item" onclick="openEditWaveModal('${w.id}')" style="cursor:pointer;">
+    <span style="color:${c};font-weight:700;">● ${w.category.toUpperCase()}</span>
+    <span class="recent-coord">${coordLbl(w)}</span>
+    ${dirChip}
+    ${w.score?`<span style="font-size:10px;background:rgba(255,255,255,.08);color:var(--text);padding:1px 6px;border-radius:8px;font-weight:700;">${w.score}/10</span>`:''}
+    <span class="recent-time mono">+${fmtMMSS(w.ts)}</span>
+    <button onclick="event.stopPropagation();removeWave('${w.id}')" style="color:var(--coral);font-size:14px;padding:0 4px;line-height:1;" title="Borrar">×</button>
+  </div>`;
+}
+
+function countByCategory(){
+  const c = {mejor:0,media:0,otra:0,ola:0};
+  state.waves.forEach(w=>{ if(c[w.category]!==undefined) c[w.category]++; });
+  return c;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MAP RENDER (SVG)
+   ════════════════════════════════════════════════════════════════════ */
+const MAP_W = 600, MAP_H = 600;
+function renderMapSVG(){
+  // 600x600 SVG (responsive via viewBox). Grid uniform.
+  const cellW = MAP_W / GRID_COLS;
+  const cellH = MAP_H / GRID_ROWS;
+
+  // Background: foto si hay, o gradient Ocean Tropical
+  const hasPhoto = !!state.map.photoDataUrl;
+  const bg = `<defs>
+    <linearGradient id="oc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A1628"/>
+      <stop offset="80%" stop-color="#0E1F3D"/>
+      <stop offset="88%" stop-color="#1a2842"/>
+      <stop offset="100%" stop-color="#2a3a2e"/>
+    </linearGradient>
+  </defs>
+  ${hasPhoto
+    ? `<rect width="${MAP_W}" height="${MAP_H}" fill="#021126"/><image id="mapPhoto" href="${state.map.photoDataUrl}" x="0" y="0" width="${MAP_W}" height="${MAP_H}" preserveAspectRatio="xMidYMid slice" opacity="${state.map.photoOpacity||0.7}"/>`
+    : `<rect width="${MAP_W}" height="${MAP_H}" fill="url(#oc)"/>`}`;
+
+  // Sin línea decorativa — fondo limpio
+  const wave = '';
+
+  // Trazos libres
+  const freehandPaths = (state.map.freehand||[]).map((p,i)=>
+    `<path class="freehand-path" data-fh="${i}" d="${p.d}" stroke="${p.color||'#ffffff'}" stroke-width="${p.width||2.8}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9" style="pointer-events:${state.activeMode==='erase'?'auto':'none'};cursor:${state.activeMode==='erase'?'pointer':'default'};"/>`
+  ).join('') + '<path id="drawPreview" d="" stroke="#00D2FF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.85" style="pointer-events:none;"/>';
+
+  // Líneas de grilla en fucsia
+  let grid = '<g stroke="rgba(236,72,153,0.55)" stroke-width="0.7">';
+  for(let r=1; r<GRID_ROWS; r++) grid += `<line x1="0" y1="${r*cellH}" x2="${MAP_W}" y2="${r*cellH}"/>`;
+  for(let c=1; c<GRID_COLS; c++) grid += `<line x1="${c*cellW}" y1="0" x2="${c*cellW}" y2="${MAP_H}"/>`;
+  grid += '</g>';
+
+  // Labels en chips oscuros · letras cyan eléctrico · números amarillo eléctrico
+  const chipBg = 'rgba(0,0,0,0.7)';
+  let labels = '<g font-family="DM Mono,monospace" font-weight="700">';
+  // Letras (eje vertical, A-Q)
+  for(let r=1; r<=GRID_ROWS; r++){
+    const y = (r-0.5)*cellH;
+    labels += `<rect x="2" y="${y-9}" width="20" height="18" rx="4" fill="${chipBg}"/>`;
+    labels += `<text x="12" y="${y+5}" text-anchor="middle" font-size="12" fill="#22D3EE">${rowToLetter(r)}</text>`;
+  }
+  // Números (eje horizontal, 1-15)
+  for(let c=1; c<=GRID_COLS; c++){
+    const x = (c-0.5)*cellW;
+    const w = c >= 10 ? 24 : 20;
+    labels += `<rect x="${x-w/2}" y="${MAP_H-22}" width="${w}" height="18" rx="4" fill="${chipBg}"/>`;
+    labels += `<text x="${x}" y="${MAP_H-8}" text-anchor="middle" font-size="12" fill="#FBBF24">${c}</text>`;
+  }
+  labels += '</g>';
+
+  // Líneas de referencia (outside/inside/orilla)
+  let refLines = '';
+  if(state.map.lines.outside) refLines += renderLine(state.map.lines.outside, '#A855F7', 'OUTSIDE');
+  if(state.map.lines.inside)  refLines += renderLine(state.map.lines.inside,  '#F59E0B', 'INSIDE');
+  if(state.map.lines.orilla)  refLines += renderLine(state.map.lines.orilla,  '#00D2FF', 'ORILLA');
+  if(state.pendingLineStart){
+    const p = state.pendingLineStart;
+    const colors = {'line-out':'#A855F7','line-in':'#F59E0B','line-ori':'#00D2FF'};
+    const c = colors[state.activeMode] || '#fff';
+    refLines += `<circle cx="${p.x}" cy="${p.y}" r="8" fill="${c}" stroke="#fff" stroke-width="2"/>`;
+  }
+
+  // Entry / Exit points (verde para entrada, coral para salida)
+  let entryExit = '';
+  if(state.map.entryPoint){
+    const ep = state.map.entryPoint;
+    // arrow-up-from-line · flecha sube desde la orilla hacia el mar (entra al agua)
+    entryExit += `<g class="entry-pin" data-kind="entry" style="cursor:pointer;">
+      <circle cx="${ep.x}" cy="${ep.y}" r="16" fill="rgba(52,211,153,0.25)" stroke="#34D399" stroke-width="3"/>
+      <g transform="translate(${ep.x-10} ${ep.y-10})" style="pointer-events:none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m18 9-6-6-6 6"/>
+          <path d="M12 3v14"/>
+          <path d="M5 21h14"/>
+        </svg>
+      </g>
+      <rect x="${ep.x-24}" y="${ep.y+18}" width="48" height="16" rx="4" fill="rgba(0,0,0,0.75)"/>
+      <text x="${ep.x}" y="${ep.y+30}" text-anchor="middle" font-size="11" fill="#34D399" font-weight="700">ENTRADA</text>
+    </g>`;
+  }
+  if(state.map.exitPoint){
+    const xp = state.map.exitPoint;
+    // arrow-down-to-line · flecha baja desde el mar y llega a la orilla (sale del agua)
+    entryExit += `<g class="exit-pin" data-kind="exit" style="cursor:pointer;">
+      <circle cx="${xp.x}" cy="${xp.y}" r="16" fill="rgba(252,165,165,0.25)" stroke="#FCA5A5" stroke-width="3"/>
+      <g transform="translate(${xp.x-10} ${xp.y-10})" style="pointer-events:none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 17V3"/>
+          <path d="m6 11 6 6 6-6"/>
+          <path d="M19 21H5"/>
+        </svg>
+      </g>
+      <rect x="${xp.x-20}" y="${xp.y+18}" width="40" height="16" rx="4" fill="rgba(0,0,0,0.75)"/>
+      <text x="${xp.x}" y="${xp.y+30}" text-anchor="middle" font-size="11" fill="#FCA5A5" font-weight="700">SALIDA</text>
+    </g>`;
+  }
+
+  // Referencias en tierra
+  let refs = '';
+  state.map.refs.forEach(r=>{
+    refs += `<g class="ref-pin" data-id="${r.id}">
+      <circle cx="${r.x}" cy="${r.y}" r="13" fill="#00D2FF" stroke="#fff" stroke-width="2.5"/>
+      <text x="${r.x}" y="${r.y+4}" text-anchor="middle" font-size="13" font-weight="700" fill="#0A1628">${esc(r.label.charAt(0).toUpperCase())}</text>
+      <rect x="${r.x-30}" y="${r.y+14}" width="60" height="16" rx="4" fill="rgba(0,0,0,0.55)"/>
+      <text x="${r.x}" y="${r.y+26}" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">${esc(r.label.slice(0,12))}</text>
+    </g>`;
+  });
+
+  // Pins de olas, agrupados por celda+categoría
+  const grouped = groupWavesByCell();
+  let pins = '';
+  Object.values(grouped).forEach(g=>{
+    const cx = (g.col - 0.5) * cellW;
+    const cy = (g.row - 0.5) * cellH;
+    const colors = { mejor:'#F59E0B', media:'#9CA3AF', otra:'#B45309', ola:'#34D399' };
+    const c = colors[g.category];
+    const baseR = g.category==='mejor' ? 16 : g.category==='media' ? 14 : g.category==='ola' ? 15 : 12;
+    const r = baseR + Math.min(8, (g.count-1) * 2);
+    // Dirección dominante del grupo (solo si ≥70% de las olas marcadas tienen una dirección)
+    const dirCounts = { L:0, R:0, none:0 };
+    g.waves.forEach(w => {
+      if(w.direction === 'L') dirCounts.L++;
+      else if(w.direction === 'R') dirCounts.R++;
+      else dirCounts.none++;
+    });
+    const totalDir = dirCounts.L + dirCounts.R;
+    let dom = null;
+    if(totalDir > 0){
+      if(dirCounts.L / totalDir >= 0.7) dom = 'L';
+      else if(dirCounts.R / totalDir >= 0.7) dom = 'R';
+      else if(dirCounts.L > 0 && dirCounts.R > 0) dom = 'mixed';
+    }
+    const label = g.count > 1 ? '×'+g.count : '1';
+    // Convención surf: ola IZQUIERDA (surfista) se VE visualmente yendo a la derecha desde la playa.
+    // Por eso la flecha visual del pin se invierte respecto al nombre.
+    const arrow = dom === 'L' ? '→' : dom === 'R' ? '←' : dom === 'mixed' ? '⇄' : '';
+    const displayText = arrow ? `${arrow} ${label}` : label;
+    pins += `<g class="wave-pin" data-cell="${g.col}-${g.row}-${g.category}" style="cursor:pointer;">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}" stroke="#fff" stroke-width="2.5"/>
+      <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="${displayText.length>2?10:11}" font-weight="700" fill="#0A1628">${displayText}</text>
+    </g>`;
+  });
+
+  // Pins PENDING (modo rápido tap-first · gris con "?", clickeables para categorizar)
+  let pendingPins = '';
+  pendingWaves().forEach(w => {
+    const cx = (w.gridCol - 0.5) * cellW;
+    const cy = (w.gridRow - 0.5) * cellH;
+    pendingPins += `<g class="pending-pin" data-wave-id="${w.id}" style="cursor:pointer;">
+      <circle cx="${cx}" cy="${cy}" r="14" fill="rgba(180,180,180,0.35)" stroke="#B8CCDF" stroke-width="2" stroke-dasharray="3,2"/>
+      <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">?</text>
+    </g>`;
+  });
+
+  // Pin de predicción pendiente (cyan punteado pulsante)
+  let predictionPin = '';
+  if(state.activePrediction){
+    const p = state.activePrediction;
+    const pcx = (p.col - 0.5) * cellW;
+    const pcy = (p.row - 0.5) * cellH;
+    predictionPin = `<g style="pointer-events:none;">
+      <circle cx="${pcx}" cy="${pcy}" r="18" fill="rgba(34,211,238,0.18)" stroke="#22D3EE" stroke-width="2.5" stroke-dasharray="4,3">
+        <animate attributeName="r" values="18;22;18" dur="1.5s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+      <text x="${pcx}" y="${pcy+4}" text-anchor="middle" font-size="14" font-weight="700" fill="#22D3EE">🎯</text>
+    </g>`;
+  }
+  // Hazards (corrientes, piedras, crowd, etc)
+  let hazards = '';
+  (state.map.hazards||[]).forEach(h => {
+    const meta = HAZARD_MAP[h.type];
+    if(!meta) return;
+    // Círculo relleno translúcido + icono SVG line-art centrado. Radio 15, icono 20×20.
+    // Si el hazard tiene angle (ej. corriente direccional), rotamos el icono alrededor del centro.
+    const rot = (typeof h.angle === 'number') ? ` transform="rotate(${h.angle} 12 12)"` : '';
+    hazards += `<g class="hazard-pin" data-id="${h.id}" style="cursor:pointer;pointer-events:all;">
+      <circle cx="${h.x}" cy="${h.y}" r="15" fill="${meta.color}22" stroke="${meta.color}" stroke-width="2"/>
+      <g transform="translate(${h.x-10} ${h.y-10})">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${meta.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><g${rot}>${meta.svg}</g></svg>
+      </g>
+    </g>`;
+  });
+  // Preview del origen de corriente en curso (durante el 2do tap)
+  if(state.pendingRipStart){
+    const p = state.pendingRipStart;
+    hazards += `<g style="pointer-events:none;">
+      <circle cx="${p.x}" cy="${p.y}" r="10" fill="rgba(0,210,255,0.2)" stroke="#00D2FF" stroke-width="2" stroke-dasharray="3,3">
+        <animate attributeName="r" values="10;14;10" dur="1.2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="${p.x}" y="${p.y-16}" text-anchor="middle" font-size="10" fill="#00D2FF" font-weight="700">tap destino →</text>
+    </g>`;
+  }
+  return `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    ${bg}${wave}${grid}${labels}${refLines}${freehandPaths}${entryExit}${refs}${hazards}${pins}${pendingPins}${predictionPin}
+  </svg>`;
+}
+function renderLine(line, color, label){
+  return `<g>
+    <line x1="${line.x1}" y1="${line.y1}" x2="${line.x2}" y2="${line.y2}" stroke="${color}" stroke-width="3" stroke-dasharray="6,4" opacity="0.85"/>
+    <text x="${Math.max(line.x1,line.x2)-4}" y="${Math.min(line.y1,line.y2)-6}" text-anchor="end" font-size="13" font-weight="700" fill="${color}">${label}</text>
+  </g>`;
+}
+function groupWavesByCell(){
+  const g = {};
+  state.waves.forEach(w=>{
+    if(w.category === 'pending') return;  // pending no cuentan hasta categorizar
+    const k = `${w.gridCol}-${w.gridRow}-${w.category}`;
+    if(!g[k]) g[k] = { col:w.gridCol, row:w.gridRow, category:w.category, count:0, waves:[] };
+    g[k].count++; g[k].waves.push(w);
+  });
+  return g;
+}
+function pendingWaves(){
+  return state.waves.filter(w => w.category === 'pending');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MAP INTERACTION
+   ════════════════════════════════════════════════════════════════════ */
+function attachMapHandlers(){
+  const svg = document.querySelector('#mapWrap svg'); if(!svg) return;
+  svg.addEventListener('click', handleMapTap);
+  svg.addEventListener('pointerdown', handleDrawStart);
+  svg.addEventListener('pointermove', handleDrawMove);
+  svg.addEventListener('pointerup', handleDrawEnd);
+  svg.addEventListener('pointercancel', handleDrawEnd);
+  svg.addEventListener('pointerleave', handleDrawEnd);
+}
+
+let _drawing = false;
+let _drawingPath = '';
+function svgCoordsFromEvent(e){
+  const svg = e.currentTarget;
+  const rect = svg.getBoundingClientRect();
+  const sx = MAP_W / rect.width;
+  const sy = MAP_H / rect.height;
+  return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+}
+function handleDrawStart(e){
+  if(state.activeMode !== 'draw') return;
+  e.preventDefault();
+  const {x,y} = svgCoordsFromEvent(e);
+  _drawing = true;
+  _drawingPath = `M ${x.toFixed(1)} ${y.toFixed(1)}`;
+  const prev = document.getElementById('drawPreview');
+  if(prev) prev.setAttribute('d', _drawingPath);
+  e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId);
+}
+function handleDrawMove(e){
+  if(!_drawing) return;
+  e.preventDefault();
+  const {x,y} = svgCoordsFromEvent(e);
+  _drawingPath += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+  const prev = document.getElementById('drawPreview');
+  if(prev) prev.setAttribute('d', _drawingPath);
+}
+function handleDrawEnd(e){
+  if(!_drawing) return;
+  _drawing = false;
+  // Solo guardar si tiene al menos un L (más de 1 punto)
+  if(_drawingPath.includes(' L ')){
+    state.map.freehand = state.map.freehand || [];
+    state.map.freehand.push({ d: _drawingPath, color: '#ffffff', width: 2.8 });
+    save();
+    render();
+  } else {
+    const prev = document.getElementById('drawPreview');
+    if(prev) prev.setAttribute('d', '');
+  }
+  _drawingPath = '';
+}
+
+function triggerPhotoUpload(){
+  const inp = document.getElementById('photoInput');
+  if(inp) inp.click();
+}
+function handlePhotoUpload(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(file.size > 6 * 1024 * 1024){
+    if(!confirm('La foto pesa '+(file.size/1024/1024).toFixed(1)+'MB. Puede ser lenta. ¿Continuar?')) return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.map.photoDataUrl = e.target.result;
+    if(!state.map.photoOpacity) state.map.photoOpacity = 0.7;
+    save();
+    render();
+    toast('Foto agregada');
+  };
+  reader.onerror = () => toast('Error leyendo la foto');
+  reader.readAsDataURL(file);
+  input.value = '';  // reset para poder re-subir la misma foto
+}
+function updatePhotoOpacity(){
+  const img = document.getElementById('mapPhoto');
+  if(img) img.setAttribute('opacity', state.map.photoOpacity || 0.7);
+  const pct = document.getElementById('photoPct');
+  if(pct) pct.textContent = Math.round((state.map.photoOpacity||0.7)*100)+'%';
+}
+function handleMapTap(e){
+  const svg = e.currentTarget;
+  const rect = svg.getBoundingClientRect();
+  const scaleX = MAP_W / rect.width;
+  const scaleY = MAP_H / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  if(x<0||y<0||x>MAP_W||y>MAP_H) return;
+
+  const mode = state.activeMode;
+
+  if(mode==='mejor' || mode==='media' || mode==='otra'){
+    const cellW = MAP_W / GRID_COLS;
+    const cellH = MAP_H / GRID_ROWS;
+    let col, row;
+    // Si tap sobre pin PENDING → abrir modal para categorizar
+    const hitPendingPin = e.target.closest('.pending-pin');
+    if(hitPendingPin){
+      categorizePendingModal(hitPendingPin.dataset.waveId);
+      return;
+    }
+    // Si tap sobre pin existente categorizado, plantamos OTRA ola en la MISMA celda
+    const hitPin = e.target.closest('.wave-pin');
+    if(hitPin){
+      const [c,r] = hitPin.dataset.cell.split('-');
+      col = parseInt(c); row = parseInt(r);
+    } else {
+      col = Math.floor(x / cellW) + 1;
+      row = Math.floor(y / cellH) + 1;
+      if(col<1||col>GRID_COLS||row<1||row>GRID_ROWS) return;
+    }
+    // Modo rápido: plantar pending sin categorizar
+    if(state.rapidMode && !hitPin){
+      plantPendingWave(col, row);
+      return;
+    }
+    plantWave(col, row, mode);
+    return;
+  }
+
+  // Modo SESIÓN LIBRE: un solo pin genérico 'ola'
+  if(mode==='ola'){
+    const cellW = MAP_W / GRID_COLS;
+    const cellH = MAP_H / GRID_ROWS;
+    const hitPin = e.target.closest('.wave-pin');
+    let col, row;
+    if(hitPin){
+      const [c,r] = hitPin.dataset.cell.split('-');
+      col = parseInt(c); row = parseInt(r);
+    } else {
+      col = Math.floor(x / cellW) + 1;
+      row = Math.floor(y / cellH) + 1;
+      if(col<1||col>GRID_COLS||row<1||row>GRID_ROWS) return;
+    }
+    plantWave(col, row, 'ola');
+    return;
+  }
+
+  if(mode==='predict'){
+    const cellW = MAP_W / GRID_COLS;
+    const cellH = MAP_H / GRID_ROWS;
+    const col = Math.floor(x / cellW) + 1;
+    const row = Math.floor(y / cellH) + 1;
+    if(col<1||col>GRID_COLS||row<1||row>GRID_ROWS) return;
+    recordPrediction(col, row);
+    return;
+  }
+
+  if(mode==='line-out' || mode==='line-in' || mode==='line-ori'){
+    if(!state.pendingLineStart){
+      state.pendingLineStart = {x, y};
+      save(); render();
+    } else {
+      const lineKey = mode==='line-out'?'outside':mode==='line-in'?'inside':'orilla';
+      state.map.lines[lineKey] = { x1:state.pendingLineStart.x, y1:state.pendingLineStart.y, x2:x, y2:y };
+      state.pendingLineStart = null;
+      // Volver al modo MEJOR después de trazar línea
+      state.activeMode = 'mejor';
+      save(); render();
+      toast(`Línea ${lineKey.toUpperCase()} marcada`);
+    }
+    return;
+  }
+
+  if(mode==='ref'){
+    openRefNameModal(x, y);
+    return;
+  }
+
+  if(mode==='entry'){
+    state.map.entryPoint = { x, y };
+    state.activeMode = 'mejor';
+    save(); render();
+    toast('Punto de ENTRADA marcado');
+    return;
+  }
+
+  if(mode==='exit'){
+    state.map.exitPoint = { x, y };
+    state.activeMode = 'mejor';
+    save(); render();
+    toast('Punto de SALIDA marcado');
+    return;
+  }
+
+  if(typeof mode === 'string' && mode.startsWith('hazard-')){
+    const hazardId = mode.slice(7);
+    const meta = HAZARD_MAP[hazardId];
+    // Hazards direccionales (ej. corriente) usan flujo de 2 taps
+    if(meta && meta.directional){
+      if(!state.pendingRipStart){
+        state.pendingRipStart = { x, y, hazardId };
+        save(); render();
+        toast('Ahora tap el destino de la corriente →');
+      } else {
+        const ori = state.pendingRipStart;
+        const dx = x - ori.x, dy = y - ori.y;
+        // atan2(dy,dx) da 0 para vector hacia el este; sumamos 90 porque el
+        // chevron por default apunta al norte (0° del rotate).
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        plantHazard(ori.hazardId, ori.x, ori.y, angle);
+        state.pendingRipStart = null;
+        save(); render();
+      }
+      return;
+    }
+    plantHazard(hazardId, x, y);
+    return;
+  }
+
+  if(mode==='erase'){
+    // Tap sobre entry/exit pin → borrar
+    if(e.target.closest('.entry-pin')){
+      if(confirm('¿Borrar punto de ENTRADA?')){ state.map.entryPoint = null; save(); render(); }
+      return;
+    }
+    if(e.target.closest('.exit-pin')){
+      if(confirm('¿Borrar punto de SALIDA?')){ state.map.exitPoint = null; save(); render(); }
+      return;
+    }
+    // Tap sobre trazo libre → borrar ese trazo
+    if(e.target.classList && e.target.classList.contains('freehand-path')){
+      const idx = parseInt(e.target.dataset.fh);
+      if(!isNaN(idx)){
+        state.map.freehand.splice(idx, 1);
+        save(); render();
+        toast('Trazo borrado');
+      }
+      return;
+    }
+    // Si tap sobre pin → borrar todo el cluster (con confirm)
+    if(e.target.closest('.wave-pin')){
+      const cell = e.target.closest('.wave-pin').dataset.cell;
+      const [c,r,cat] = cell.split('-');
+      const matching = state.waves.filter(w=>w.gridCol==c && w.gridRow==r && w.category==cat);
+      if(confirm(`¿Borrar ${matching.length} ola(s) ${cat.toUpperCase()} en ${rowToLetter(parseInt(r))}${c}?`)){
+        state.waves = state.waves.filter(w=>!(w.gridCol==c && w.gridRow==r && w.category==cat));
+        save(); render();
+      }
+      return;
+    }
+    // Tap sobre referencia → borrar
+    if(e.target.closest('.ref-pin')){
+      const id = e.target.closest('.ref-pin').dataset.id;
+      const r = state.map.refs.find(x=>x.id===id);
+      if(r && confirm(`¿Borrar referencia "${r.label}"?`)){
+        state.map.refs = state.map.refs.filter(x=>x.id!==id);
+        save(); render();
+      }
+      return;
+    }
+    // Tap sobre hazard → borrar
+    if(e.target.closest('.hazard-pin')){
+      const id = e.target.closest('.hazard-pin').dataset.id;
+      const h = (state.map.hazards||[]).find(x=>x.id===id);
+      if(h){
+        const meta = HAZARD_MAP[h.type];
+        if(confirm(`¿Borrar hazard "${meta?meta.label:h.type}"?`)){
+          state.map.hazards = state.map.hazards.filter(x=>x.id!==id);
+          save(); render();
+        }
+      }
+      return;
+    }
+  }
+}
+
+function toggleRapidMode(btn){
+  state.rapidMode = !state.rapidMode;
+  save();
+  toast(state.rapidMode ? '⚡ Modo rápido ON · tap primero, clasificás después' : '⚡ Modo rápido OFF');
+  const m = btn?.closest('.modal-overlay'); if(m) m.remove();
+  render();
+}
+
+function setAnalysisMode(mode){
+  if(mode !== 'comp' && mode !== 'free') return;
+  state.config.mode = mode;
+  // En modo free, arrancamos con activeMode='ola' (pin genérico). En comp, mantiene el default.
+  if(mode === 'free' && !String(state.activeMode||'').match(/^(ola|line-|ref|hazard-|entry|exit|erase|draw)$/)) {
+    state.activeMode = 'ola';
+  } else if(mode === 'comp' && state.activeMode === 'ola'){
+    state.activeMode = 'mejor';
+  }
+  save(); render();
+}
+
+function setSessionFocus(focus){
+  const sp = state.config.surferProfile;
+  if(!sp) return;
+  sp.focus = focus;
+  save(); render();
+}
+
+function toggleHazard(k){
+  const sp = state.config.surferProfile;
+  if(!sp) return;
+  if(!Array.isArray(sp.hazards)) sp.hazards = [];
+  const idx = sp.hazards.indexOf(k);
+  if(idx>=0) sp.hazards.splice(idx,1); else sp.hazards.push(k);
+  save(); render();
+}
+
+function openHazardModal(){
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  const cats = [...new Set(HAZARDS.map(h=>h.cat))];
+  const gridHTML = cats.map(cat => {
+    const items = HAZARDS.filter(h=>h.cat===cat).map(h => `
+      <button class="hazard-cell" onclick="pickHazard('${h.id}')" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer;">
+        <span style="width:32px;height:32px;border-radius:50%;background:${h.color}22;border:1.5px solid ${h.color};display:inline-flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${h.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${h.svg}</svg>
+        </span>
+        <span style="font-size:10px;color:var(--text);font-weight:600;text-align:center;line-height:1.15;">${esc(h.label)}</span>
+      </button>`).join('');
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:10px;letter-spacing:.6px;color:var(--grey);font-weight:700;text-transform:uppercase;margin-bottom:6px;">${esc(cat)}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">${items}</div>
+    </div>`;
+  }).join('');
+  m.innerHTML = `<div class="modal" style="max-width:420px;">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">Elegí un hazard</div>
+        <div style="font-size:11px;color:var(--grey);margin-top:2px;">Después tap en el mapa donde va</div>
+      </div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    ${gridHTML}
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if(e.target===m) m.remove(); });
+}
+
+function pickHazard(hazardId){
+  if(!HAZARD_MAP[hazardId]) return;
+  document.querySelector('.modal-overlay')?.remove();
+  setMode('hazard-' + hazardId);
+  toast('Tap en el mapa para plantar: ' + HAZARD_MAP[hazardId].label);
+}
+
+function plantHazard(hazardId, x, y, angle){
+  if(!HAZARD_MAP[hazardId]) return;
+  state.map.hazards = state.map.hazards || [];
+  const h = { id: uid(), type: hazardId, x, y };
+  if(typeof angle === 'number' && !isNaN(angle)) h.angle = angle;
+  state.map.hazards.push(h);
+  state.activeMode = (state.config.mode === 'free') ? 'ola' : 'mejor';
+  save(); render();
+  toast(HAZARD_MAP[hazardId].label + ' marcado');
+}
+
+function plantPendingWave(col, row){
+  const ts = nowMs() - state.timer.startedAt;
+  state.waves.push({ id: uid(), gridCol: col, gridRow: row, category: 'pending', ts, absTime: nowMs(), direction: state.activeDirection || null });
+  save(); render();
+}
+
+/* Auto-clasifica una ola según su score y los scores potenciales del análisis.
+   En días perfectos (MEJOR=9), los thresholds suben automáticamente.
+   En días malos (MEJOR=5), bajan. La categoría se adapta al día. */
+function scoreToCategory(score, scores){
+  if(!score || score <= 0) return null;
+  scores = scores || (state.closing?.scores || { mejor:8.5, media:6.5, otra:5.0 });
+  const midMejorMedia = (scores.mejor + scores.media) / 2;  // ej: 7.5
+  const midMediaOtra  = (scores.media + scores.otra) / 2;   // ej: 5.75
+  if(score >= midMejorMedia) return 'mejor';
+  if(score >= midMediaOtra) return 'media';
+  return 'otra';
+}
+
+function categorizePendingModal(waveId){
+  const w = state.waves.find(x=>x.id===waveId); if(!w) return;
+  const scores = state.closing?.scores || { mejor:8.5, media:6.5, otra:5.0 };
+  const midMM = ((scores.mejor + scores.media) / 2).toFixed(1);
+  const midMO = ((scores.media + scores.otra) / 2).toFixed(1);
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  const scoreBtn = (n) => {
+    const cat = scoreToCategory(n, scores);
+    const bg = cat==='mejor' ? 'rgba(245,158,11,.22)' : cat==='media' ? 'rgba(156,163,175,.18)' : cat==='otra' ? 'rgba(180,83,9,.22)' : 'rgba(255,255,255,.06)';
+    const border = cat==='mejor' ? 'var(--gold)' : cat==='media' ? 'var(--silver)' : cat==='otra' ? 'var(--bronze)' : 'var(--border2)';
+    const col = cat==='mejor' ? 'var(--gold-text)' : cat==='media' ? 'var(--silver-text)' : cat==='otra' ? 'var(--bronze-text)' : 'var(--text)';
+    return `<button onclick="assignScore('${w.id}',${n})" style="padding:14px 4px;background:${bg};border:2px solid ${border};border-radius:10px;color:${col};font-weight:800;font-size:16px;font-family:'DM Mono',monospace;">${n}</button>`;
+  };
+  m.innerHTML = `<div class="modal" style="max-width:400px;">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">¿Qué score tenía esta ola?</div>
+        <div style="font-size:12px;color:var(--grey);margin-top:2px;">${rowToLetter(w.gridRow)}${w.gridCol} · +${fmtMMSS(w.ts)}</div>
+      </div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-soft);margin-bottom:10px;line-height:1.5;">
+      Se auto-clasifica según el score. Hoy: ≥${midMM} = <strong style="color:var(--gold-text);">MEJOR</strong> · ≥${midMO} = <strong style="color:var(--silver-text);">MEDIA</strong> · &lt;${midMO} = <strong style="color:var(--bronze-text);">OTRA</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+      ${[1,2,3,4,5,6,7,8,9,10].map(n => scoreBtn(n)).join('')}
+    </div>
+    <button class="btn btn-coral btn-block" style="margin-top:12px;" onclick="removeWave('${w.id}');this.closest('.modal-overlay').remove();">× Borrar esta ola</button>
+  </div>`;
+  m.onclick = e => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+
+function assignScore(id, score){
+  const w = state.waves.find(x=>x.id===id); if(!w) return;
+  const scores = state.closing?.scores || { mejor:8.5, media:6.5, otra:5.0 };
+  w.score = score;
+  w.category = scoreToCategory(score, scores);
+  save(); render();
+  document.querySelector('.modal-overlay')?.remove();
+  toast(`${score}/10 → ${w.category.toUpperCase()}`);
+}
+
+function quickCategorize(id, cat){
+  const w = state.waves.find(x=>x.id===id); if(!w) return;
+  w.category = cat;
+  save(); render();
+  document.querySelector('.modal-overlay')?.remove();
+  toast(`Marcada como ${cat.toUpperCase()}`);
+}
+
+function plantWave(col, row, category){
+  const ts = nowMs() - state.timer.startedAt;
+  state.waves.push({ id: uid(), gridCol: col, gridRow: row, category, ts, absTime: nowMs(), direction: state.activeDirection || null });
+  // Si había una predicción pendiente y plantamos MEJOR, comparamos
+  if(category === 'mejor' && state.activePrediction){
+    checkPredictionAgainst(col, row);
+  }
+  save(); render();
+}
+function toggleDirection(dir){
+  state.activeDirection = (state.activeDirection === dir) ? null : dir;
+  save(); render();
+}
+function plantSameAsLast(){
+  if(!state.waves.length){ toast('No hay olas aún'); return; }
+  const last = state.waves[state.waves.length-1];
+  plantWave(last.gridCol, last.gridRow, state.activeMode);
+  toast(`+ misma · ${state.activeMode.toUpperCase()} en ${rowToLetter(last.gridRow)}${last.gridCol}`);
+}
+function setMode(mode){
+  if(state.pendingLineStart && !mode.startsWith('line-')){
+    state.pendingLineStart = null;  // cancela línea en proceso
+  }
+  if(state.pendingRipStart && mode !== 'hazard-rip'){
+    state.pendingRipStart = null;   // cancela corriente direccional en proceso
+  }
+  state.activeMode = mode;
+  save(); render();
+}
+function removeWave(id){
+  state.waves = state.waves.filter(w=>w.id!==id);
+  save(); render();
+}
+function openRefNameModal(x, y){
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  m.innerHTML = `<div class="modal">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">Nueva referencia</div>
+        <div style="font-size:12px;color:var(--grey);margin-top:2px;">Ej: palmera, casa azul, kiosko, poste, roca</div>
+      </div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    <div class="label">Nombre</div>
+    <input type="text" class="inp" id="refNameInput" placeholder="ej. palmera grande" autofocus>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost btn-block" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      <button class="btn btn-cyan btn-block" onclick="confirmRef(${x},${y})">Guardar</button>
+    </div>
+  </div>`;
+  m.onclick = e => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+  setTimeout(()=>{ const i = document.getElementById('refNameInput'); if(i){ i.focus(); i.addEventListener('keydown', e => { if(e.key==='Enter') confirmRef(x,y); }); } }, 80);
+}
+function confirmRef(x, y){
+  const name = (document.getElementById('refNameInput')?.value || '').trim();
+  if(!name){ toast('Poné un nombre'); return; }
+  state.map.refs.push({ id: uid(), x, y, label: name });
+  state.activeMode = 'mejor';
+  document.querySelector('.modal-overlay')?.remove();
+  save(); render();
+  toast(`Referencia "${name}" plantada`);
+}
+
+function openEditWaveModal(waveId){
+  const w = state.waves.find(x=>x.id===waveId); if(!w) return;
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  m.innerHTML = `<div class="modal">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">Ola · ${rowToLetter(w.gridRow)}${w.gridCol}</div>
+        <div style="font-size:12px;color:var(--grey);margin-top:2px;">+${fmtMMSS(w.ts)} desde inicio · ${fmtClock(w.absTime)}</div>
+      </div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    <div class="label">Categoría</div>
+    <div class="cat-row" style="margin-bottom:14px;">
+      <div class="cat cat-mejor ${w.category==='mejor'?'on':''}" onclick="updateWaveCategory('${w.id}','mejor')"><div class="cat-lbl">MEJOR</div></div>
+      <div class="cat cat-media ${w.category==='media'?'on':''}" onclick="updateWaveCategory('${w.id}','media')"><div class="cat-lbl">MEDIA</div></div>
+      <div class="cat cat-otra ${w.category==='otra'?'on':''}" onclick="updateWaveCategory('${w.id}','otra')"><div class="cat-lbl">OTRA</div></div>
+    </div>
+    <div class="label">Dirección · vista desde la playa</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px;">
+      <button style="padding:10px 4px;border-radius:9px;background:${w.direction==='R'?'rgba(251,191,36,.22)':'rgba(255,255,255,.04)'};border:1.5px solid ${w.direction==='R'?'#FBBF24':'var(--border2)'};color:${w.direction==='R'?'#FBBF24':'var(--text-soft)'};font-weight:700;font-size:12px;" onclick="updateWaveDir('${w.id}','R')" title="Va hacia tu izquierda visual = DERECHA del surfista">← DER</button>
+      <button style="padding:10px 4px;border-radius:9px;background:${w.direction===null||w.direction===undefined?'rgba(255,255,255,.08)':'rgba(255,255,255,.04)'};border:1.5px solid ${w.direction===null||w.direction===undefined?'var(--text-soft)':'var(--border2)'};color:${w.direction===null||w.direction===undefined?'var(--text)':'var(--text-soft)'};font-weight:700;font-size:11px;" onclick="updateWaveDir('${w.id}',null)">SIN DIR</button>
+      <button style="padding:10px 4px;border-radius:9px;background:${w.direction==='L'?'rgba(34,211,238,.22)':'rgba(255,255,255,.04)'};border:1.5px solid ${w.direction==='L'?'#22D3EE':'var(--border2)'};color:${w.direction==='L'?'#22D3EE':'var(--text-soft)'};font-weight:700;font-size:12px;" onclick="updateWaveDir('${w.id}','L')" title="Va hacia tu derecha visual = IZQUIERDA del surfista">IZQ →</button>
+    </div>
+    <div class="label">Potencial de puntos (opcional)</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;">
+      ${['','1','2','3','4','5','6','7','8','9','10'].map(s=>`<span class="chip ${String(w.score||'')===s?'':'off'}" style="font-size:12px;padding:6px 10px;" onclick="updateWaveScore('${w.id}','${s}')">${s===''?'—':s}</span>`).join('')}
+    </div>
+    <button class="btn btn-coral btn-block" onclick="removeWave('${w.id}');this.closest('.modal-overlay').remove();">× Borrar esta ola</button>
+  </div>`;
+  m.onclick = e => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+function updateWaveCategory(id, cat){
+  const w = state.waves.find(x=>x.id===id); if(!w) return;
+  w.category = cat;
+  save(); render();
+  // Re-render del modal con la nueva categoría seleccionada
+  openEditWaveModal(id);
+}
+function updateWaveScore(id, score){
+  const w = state.waves.find(x=>x.id===id); if(!w) return;
+  w.score = score === '' ? null : parseInt(score);
+  // Auto-reclasificar según score y los scores potenciales del día
+  if(w.score){
+    const scores = state.closing?.scores || { mejor:8.5, media:6.5, otra:5.0 };
+    w.category = scoreToCategory(w.score, scores);
+  }
+  save();
+  openEditWaveModal(id);
+}
+function updateWaveDir(id, dir){
+  const w = state.waves.find(x=>x.id===id); if(!w) return;
+  w.direction = dir;
+  save(); render();
+  openEditWaveModal(id);
+}
+
+function openClusterModal(col, row, category){
+  const matching = state.waves.filter(w=>w.gridCol==col && w.gridRow==row && w.category==category).sort((a,b)=>a.ts-b.ts);
+  if(!matching.length) return;
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  m.innerHTML = `<div class="modal">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">Olas en ${rowToLetter(row)}${col} · ${category.toUpperCase()}</div>
+        <div style="font-size:12px;color:var(--grey);margin-top:2px;">${matching.length} ola${matching.length===1?'':'s'} registradas</div>
+      </div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${matching.map((w,i)=>`<div class="recent-item">
+        <span style="font-weight:700;">#${i+1}</span>
+        <span class="mono">+${fmtMMSS(w.ts)}</span>
+        <span class="recent-time">${fmtClock(w.absTime)}</span>
+        <button onclick="removeWave('${w.id}');this.closest('.modal-overlay').remove();" style="color:var(--coral);font-size:14px;">×</button>
+      </div>`).join('')}
+    </div>
+    ${matching.length>1?`<div style="margin-top:12px;padding:10px;background:rgba(0,210,255,.06);border-radius:8px;font-size:12px;color:var(--text-soft);">
+      Intervalo promedio entre estas olas: <strong style="color:var(--cyan);">${avgIntervalLabel(matching)}</strong>
+    </div>`:''}
+  </div>`;
+  m.onclick = e => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+function avgIntervalLabel(waves){
+  if(waves.length<2) return '—';
+  const intervals = [];
+  for(let i=1; i<waves.length; i++) intervals.push(waves[i].ts - waves[i-1].ts);
+  const avg = intervals.reduce((s,x)=>s+x,0) / intervals.length;
+  return fmtMMSS(avg);
+}
+function openAllWavesModal(){
+  if(!state.waves.length) return;
+  const sorted = [...state.waves].sort((a,b)=>b.ts-a.ts);
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay';
+  m.innerHTML = `<div class="modal">
+    <div class="modal-h">
+      <div><div class="modal-t">Todas las olas (${state.waves.length})</div></div>
+      <button class="modal-x" onclick="this.closest('.modal-overlay').remove()">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:60vh;overflow-y:auto;">
+      ${sorted.map(w=>renderRecentItem(w)).join('')}
+    </div>
+  </div>`;
+  m.onclick = e => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+
+function finishNow(){
+  if(state.waves.length === 0){
+    if(!confirm('No marcaste ninguna ola. ¿Seguro que querés terminar?')) return;
+  }
+  state.timer.finished = true;
+  state.timer.endedAt = nowMs();
+  save();
+  goToReport();
+}
+function goToReport(){
+  state.screen = 'report';
+  save(); render();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   3. REPORT
+   ════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════
+   REPORT FREE MODE · recomienda zona ideal + zonas a evitar
+   ════════════════════════════════════════════════════════════════════ */
+function renderReportFree(){
+  const sp = state.config.surferProfile || { name:'', level:'intermedio', focus:'free-surf', intention:'diversión', goal:'practicar maniobra', conditionsMatch:'ideales para mi nivel', hazards:[] };
+  // Compat con perfiles viejos que aún tengan concerns
+  if(Array.isArray(sp.concerns) && !Array.isArray(sp.hazards)) sp.hazards = sp.concerns;
+  if(!Array.isArray(sp.hazards)) sp.hazards = [];
+  const waves = state.waves.filter(w => w.category === 'ola');
+  const hazards = state.map.hazards || [];
+  const totalMs = state.timer.durationMs || (state.config.durationMin*60*1000);
+  const totalMin = Math.round(totalMs/60000);
+
+  // Agrupar olas por celda para hallar cluster más denso
+  const cellW = MAP_W / GRID_COLS;
+  const cellH = MAP_H / GRID_ROWS;
+  const clusters = {};
+  waves.forEach(w=>{
+    const k = w.gridCol+'-'+w.gridRow;
+    if(!clusters[k]) clusters[k] = { col:w.gridCol, row:w.gridRow, count:0, x:(w.gridCol-0.5)*cellW, y:(w.gridRow-0.5)*cellH };
+    clusters[k].count++;
+  });
+  const sortedClusters = Object.values(clusters).sort((a,b)=>b.count-a.count);
+
+  // Distancia a hazard más cercano por cluster
+  const distToNearestHazard = (cx, cy) => {
+    if(!hazards.length) return Infinity;
+    let min = Infinity;
+    hazards.forEach(h=>{ const d = Math.hypot(h.x-cx, h.y-cy); if(d<min) min = d; });
+    return min;
+  };
+
+  // Zona ideal = cluster con más olas, alejado ≥60px del hazard más cercano
+  const SAFE_DIST = 60;
+  const idealZone = sortedClusters.find(c => distToNearestHazard(c.x, c.y) >= SAFE_DIST) || sortedClusters[0] || null;
+
+  // Zonas a evitar = hazards con label
+  const hazardsList = hazards.map(h => {
+    const meta = HAZARD_MAP[h.type];
+    if(!meta) return null;
+    const col = Math.max(1, Math.min(GRID_COLS, Math.floor(h.x / cellW) + 1));
+    const row = Math.max(1, Math.min(GRID_ROWS, Math.floor(h.y / cellH) + 1));
+    return { label: meta.label, color: meta.color, cell: rowToLetter(row)+col };
+  }).filter(Boolean);
+
+  // Refs cercanas a la zona ideal
+  const idealRefs = idealZone ? nearestRefs(idealZone.col, idealZone.row) : [];
+  const idealCell = idealZone ? rowToLetter(idealZone.row)+idealZone.col : null;
+
+  // Entry / exit
+  const ep = state.map.entryPoint;
+  const xp = state.map.exitPoint;
+  const epCell = ep ? pointToCell(ep) : null;
+  const xpCell = xp ? pointToCell(xp) : null;
+
+  // Checklist adaptado al nivel, enfoque y hazards
+  const checklist = [];
+  checklist.push('5 min de calentamiento (rotaciones + respiración)');
+  if(sp.level === 'principiante') checklist.push('Empezá en zona interior sin remar directo al pico');
+  if(sp.conditionsMatch === 'desafiantes / al límite') checklist.push('Las condiciones te desafían · marcá un límite claro de tiempo o intentos');
+  if(sp.conditionsMatch === 'por debajo de mi nivel') checklist.push('Aprovechá para trabajar técnica fina en vez de buscar el volumen');
+  if(sp.hazards.includes('piedras')) checklist.push('Chequeá visualmente las piedras marcadas antes de entrar');
+  if(sp.hazards.includes('corrientes')) checklist.push('Identificá la corriente y usála para posicionarte, no para pelearla');
+  if(sp.hazards.includes('crowd')) checklist.push('Respetá turnos · esperá tu ola aunque tarde');
+  if(sp.hazards.includes('fondo agresivo')) checklist.push('Caídas suaves · no te tires de cabeza en la parte más shallow');
+  if(sp.hazards.includes('olas grandes')) checklist.push('Estrategia de duck-dive y respiración clara antes de entrar');
+  if(sp.hazards.includes('localismo')) checklist.push('Sé respetuoso con los locales · saludá y no forces prioridad');
+  if(sp.focus === 'training'){
+    const g = String(sp.goal||'').toLowerCase();
+    if(g.includes('maniobra')) checklist.push('Elegí olas parejas para repetir la maniobra sin distracciones');
+    if(g.includes('volumen')) checklist.push('Prioridad al conteo · no dejes pasar olas medias esperando la perfecta');
+    if(g.includes('timing')) checklist.push('Contá segundos entre sets · buscá el patrón antes de posicionarte');
+    if(g.includes('foto') || g.includes('video')) checklist.push('Coordiná con el fotógrafo dónde va a posicionarse');
+    if(g.includes('competencia')) checklist.push('Simulá heat: cronometrá 20 min y contá tus mejores 2 olas');
+    if(g.includes('evaluación')) checklist.push('El coach observa · ejecutá tu sesión normal, sin buscar impresionar');
+  } else {
+    // Free surf: enfoque en la intención
+    const i = String(sp.intention||'').toLowerCase();
+    if(i.includes('desestres') || i.includes('fluir')) checklist.push('Nada de agenda técnica · dejate llevar por lo que el mar proponga');
+    if(i.includes('ejercicio')) checklist.push('Priorizá volumen de remada · seguí remando aunque falle la ola');
+    if(i.includes('jugar')) checklist.push('Probá cosas nuevas · maniobras raras, olas cerradas, lo que sea');
+  }
+  checklist.push('Salí antes de que se te acabe la energía · nunca al 100%');
+
+  return `<main class="screen report">
+    <section class="section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+        <div>
+          <h2 class="serif" style="font-size:30px;color:var(--white);line-height:1.05;">${esc(state.config.spotName||'Spot')}</h2>
+          <div style="font-size:12px;color:var(--text-soft);margin-top:6px;font-family:'DM Mono',monospace;letter-spacing:.5px;">${state.config.date} · ${totalMin} MIN · ${waves.length} OLAS OBSERVADAS · SESIÓN LIBRE</div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;" onclick="goBackToObserve()">← Seguir marcando</button>
+      </div>
+      <div class="chips" style="margin-top:8px;">
+        <span class="chip">${sizeLabel(state.config.conditions.sizeFt)}</span>
+        <span class="chip">${tideLabel(state.config.conditions.tideLevel, state.config.conditions.tideDir)}</span>
+        <span class="chip">${state.config.conditions.wind}</span>
+        <span class="chip">${state.config.conditions.period}</span>
+      </div>
+    </section>
+
+    <section class="section" style="background:rgba(52,211,153,.08);border:1.5px solid rgba(52,211,153,.35);">
+      <div style="font-size:11px;color:var(--foam);font-weight:700;letter-spacing:.6px;margin-bottom:8px;">RECOMENDACIÓN ${sp.name?'PARA '+esc(sp.name).toUpperCase():''}</div>
+      <div style="font-size:14px;color:var(--text);line-height:1.55;">
+        ${sp.name?'<strong>'+esc(sp.name)+'</strong> · ':''}<span style="color:var(--text-soft);">nivel <strong style="color:var(--text);">${esc(sp.level)}</strong></span>
+      </div>
+      <div style="margin-top:6px;font-size:13px;color:var(--text);line-height:1.5;">
+        ${sp.focus==='training'
+          ? `<span style="color:#A855F7;font-weight:700;">TRAINING</span> · objetivo: <strong>${esc(sp.goal||'—')}</strong>`
+          : `<span style="color:#34D399;font-weight:700;">FREE SURF</span> · intención: <strong>${esc(sp.intention||'—')}</strong>`}
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--text-soft);">
+        Condiciones hoy: <strong style="color:var(--text);">${esc(sp.conditionsMatch||'—')}</strong>
+      </div>
+      ${sp.hazards.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-soft);">
+        Peligros declarados: ${sp.hazards.map(k=>`<span style="color:#F59E0B;">${esc(k)}</span>`).join(' · ')}
+      </div>` : ''}
+    </section>
+
+    ${idealZone ? `
+    <section class="section" style="border:2px solid var(--foam);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <div style="font-size:11px;color:var(--foam);font-weight:700;letter-spacing:.6px;">ZONA IDEAL</div>
+      </div>
+      <div style="font-size:22px;color:var(--white);font-weight:800;font-family:'DM Mono',monospace;letter-spacing:1px;">${idealCell}</div>
+      <div style="font-size:13px;color:var(--text-soft);margin-top:6px;line-height:1.5;">
+        ${idealRefs.length ? 'Entre <strong style="color:var(--text);">'+idealRefs.map(r=>esc(r.label)).join('</strong> y <strong style="color:var(--text);">')+'</strong>' : 'Zona con más actividad de olas'}
+        · <strong style="color:var(--foam);">${idealZone.count}</strong> ola${idealZone.count===1?'':'s'} observada${idealZone.count===1?'':'s'} en ${totalMin} min
+        ${distToNearestHazard(idealZone.x, idealZone.y) < Infinity && distToNearestHazard(idealZone.x, idealZone.y) >= SAFE_DIST ? ' · lejos de hazards marcados' : ''}
+      </div>
+    </section>
+    ` : `
+    <section class="section" style="border:1.5px dashed var(--amber);background:rgba(245,158,11,.05);">
+      <div style="font-size:13px;color:var(--amber);text-align:center;">Marcá al menos una ola en el mapa para que el sistema recomiende una zona.</div>
+    </section>
+    `}
+
+    ${hazardsList.length ? `
+    <section class="section">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="font-size:11px;color:var(--amber);font-weight:700;letter-spacing:.6px;">EVITAR / TENER EN CUENTA</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${hazardsList.map(h=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
+          <span style="color:${h.color};font-weight:600;">${esc(h.label)}</span>
+          <span class="mono" style="color:var(--text-soft);">${h.cell}</span>
+        </div>`).join('')}
+      </div>
+    </section>
+    ` : ''}
+
+    ${(epCell || xpCell) ? `
+    <section class="section" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      ${epCell ? `<div style="padding:10px;background:rgba(52,211,153,.08);border-radius:10px;border:1px solid rgba(52,211,153,.3);">
+        <div style="font-size:10px;color:var(--foam);font-weight:700;letter-spacing:.5px;">ENTRADA</div>
+        <div style="font-size:18px;color:var(--white);font-weight:700;font-family:'DM Mono',monospace;margin-top:2px;">${epCell}</div>
+      </div>` : ''}
+      ${xpCell ? `<div style="padding:10px;background:rgba(252,165,165,.08);border-radius:10px;border:1px solid rgba(252,165,165,.3);">
+        <div style="font-size:10px;color:var(--coral);font-weight:700;letter-spacing:.5px;">SALIDA</div>
+        <div style="font-size:18px;color:var(--white);font-weight:700;font-family:'DM Mono',monospace;margin-top:2px;">${xpCell}</div>
+      </div>` : ''}
+    </section>
+    ` : ''}
+
+    <section class="section">
+      <div style="font-size:11px;color:var(--text-soft);font-weight:700;letter-spacing:.6px;margin-bottom:10px;">CHECKLIST ANTES DE ENTRAR</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${checklist.map(c=>`<div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text);line-height:1.4;">
+          <span style="width:14px;height:14px;border-radius:4px;border:1.5px solid var(--text-soft);flex-shrink:0;margin-top:2px;"></span>
+          <span>${esc(c)}</span>
+        </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="section">
+      <div style="font-size:11px;color:var(--text-soft);font-weight:700;letter-spacing:.6px;margin-bottom:10px;">MAPA DEL SPOT</div>
+      <div style="border-radius:12px;overflow:hidden;background:var(--bg2);">
+        ${renderMapSVG()}
+      </div>
+    </section>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn btn-ghost btn-block" onclick="window.print()">Imprimir / PDF</button>
+      <button class="btn btn-cyan btn-block" onclick="openAppMenu()">Opciones</button>
+    </div>
+  </main>`;
+}
+
+function renderReport(){
+  if((state.config.mode||'comp') === 'free') return renderReportFree();
+  const stats = computeStats();
+  const cl = state.closing;
+  return `<main class="screen report">
+    <section class="section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+        <div>
+          <h2 class="serif" style="font-size:30px;color:var(--white);line-height:1.05;">${esc(state.config.spotName||'Spot')}</h2>
+          <div style="font-size:12px;color:var(--text-soft);margin-top:6px;font-family:'DM Mono',monospace;letter-spacing:.5px;">${state.config.date} · ${stats.totalMin} MIN · ${state.waves.length} OLAS</div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;" onclick="goBackToObserve()">← Seguir marcando</button>
+      </div>
+      <div class="chips" style="margin-top:8px;">
+        <span class="chip">${sizeLabel(state.config.conditions.sizeFt)}</span>
+        <span class="chip">${tideLabel(state.config.conditions.tideLevel, state.config.conditions.tideDir)}</span>
+        <span class="chip">${state.config.conditions.wind}</span>
+        <span class="chip">${state.config.conditions.period}</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-h"><div class="section-t">¿Cómo se ve una buena hoy?</div></div>
+      <textarea class="ta" id="closingDesc" placeholder="Describí la ola ideal de hoy con tus palabras: forma, dónde rompe, qué referencia, qué señales mirar..." oninput="state.closing.description=this.value;save();">${esc(cl.description)}</textarea>
+    </section>
+
+    <section class="section">
+      <div class="section-h"><div class="section-t">Score que la ola hoy puede dar</div></div>
+      ${renderScoreSlider('mejor', cl.scores.mejor, 'var(--gold-text)', 'MEJOR')}
+      ${renderScoreSlider('media', cl.scores.media, 'var(--silver-text)', 'MEDIA')}
+      ${renderScoreSlider('otra',  cl.scores.otra,  'var(--bronze-text)', 'OTRA')}
+
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 70px;gap:10px;align-items:center;">
+        <div class="label" style="margin:0;">Heat objetivo (puntaje total a batir)</div>
+        <input type="number" class="inp" value="${cl.heatObjective}" min="0" max="20" step="0.5" oninput="state.closing.heatObjective=parseFloat(this.value)||0;save();render();" style="text-align:center;font-weight:700;color:var(--text);">
+      </div>
+      <div style="margin-top:10px;">
+        <div class="label" style="margin-bottom:6px;">Duración del heat</div>
+        <div class="chips">
+          ${[15,20,25,30,35,40].map(m=>`<span class="chip ${(cl.heatDurationMin||25)===m?'':'off'}" onclick="state.closing.heatDurationMin=${m};save();render();">${m} min</span>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    ${renderNarrativeSummary(stats, cl)}
+    ${renderHeatPlanCard(stats, cl)}
+
+    <section class="section">
+      <div class="section-h"><div class="section-t">Reporte automático</div></div>
+      ${renderReportBlock('mejor', stats.mejor, 'MEJOR', cl.scores.mejor)}
+      ${renderReportBlock('media', stats.media, 'MEDIA', cl.scores.media)}
+      ${renderReportBlock('otra',  stats.otra,  'OTRA',  cl.scores.otra)}
+
+      ${renderPlan(stats, cl)}
+    </section>
+
+    <section class="section">
+      <div class="section-h">
+        <div class="section-t">Mapa final</div>
+        ${state.waves.length > 0 ? `<button class="btn btn-ghost" style="padding:6px 14px;font-size:11px;border:1px solid rgba(34,211,238,.4);color:#22D3EE;font-weight:700;" onclick="openReplay()">▶ Ver replay 30s</button>` : ''}
+      </div>
+      ${renderMapSVG()}
+    </section>
+
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-cyan btn-block btn-lg" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:6px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / PDF</button>
+      <button class="btn btn-ghost" onclick="reset()">Nuevo análisis</button>
+    </div>
+  </main>`;
+}
+function renderNarrativeSummary(stats, cl){
+  if(stats.mejor.count === 0 && stats.media.count === 0 && stats.otra.count === 0){
+    return '';
+  }
+  const m = stats.mejor;
+  const sp = state.config.spotName || 'el spot';
+  const intro = `Hoy <strong>${esc(sp)}</strong> habló.`;
+  let lines = [intro];
+
+  if(m.count > 0){
+    const mainCoord = `${rowToLetter(m.topCell.row)}${m.topCell.col}`;
+    const refs = nearestRefs(m.topCell.col, m.topCell.row);
+    const refLine = refs.length
+      ? `alineadas con <strong>${refs.map(r=>r.label).join(' y ')}</strong>`
+      : `en zona <strong>${mainCoord}</strong>`;
+    const dirLine = m.dirDominant === 'L' ? ', casi siempre <strong>izquierdas</strong>'
+                  : m.dirDominant === 'R' ? ', casi siempre <strong>derechas</strong>'
+                  : m.dirDominant === 'mixed' ? ', mixtas izq/der'
+                  : '';
+    const intervalLine = m.avgInterval ? `, cada <strong>${fmtMMSS(m.avgInterval)}</strong>` : '';
+    const setsLine = m.setsDetected ? ` Vienen en sets de <strong>${m.avgPerSet}</strong> olas cada <strong>${fmtMMSS(m.avgBetweenSets)}</strong>.` : '';
+    lines.push(`Las <strong>mejores</strong> rompen ${refLine}${dirLine}${intervalLine}.${setsLine}`);
+  }
+
+  // Entrada / salida al agua
+  const entryCell = state.map.entryPoint ? pointToCell(state.map.entryPoint) : null;
+  const exitCell = state.map.exitPoint ? pointToCell(state.map.exitPoint) : null;
+  if(entryCell || exitCell){
+    const parts = [];
+    if(entryCell) parts.push(`entrás por <strong style="color:#34D399;">${entryCell}</strong>`);
+    if(exitCell) parts.push(`salís por <strong style="color:#FCA5A5;">${exitCell}</strong>`);
+    lines.push(`Al agua ${parts.join(', ')}.`);
+  }
+
+  // Frase táctica final
+  const obj = cl.heatObjective || 0;
+  if(obj && m.count > 0){
+    const score = (m.scoredCount >= 2 ? m.avgScore : cl.scores.mejor) || 0;
+    const scoreMed = stats.media.scoredCount >= 2 ? stats.media.avgScore : cl.scores.media || 0;
+    if(score + scoreMed >= obj){
+      lines.push(`Para batir el heat de <strong>${obj}</strong> alcanza con una mejor + una media. Tu trabajo es estar donde están.`);
+    } else if(stats.otra.count > 0){
+      lines.push(`El heat de <strong>${obj}</strong> está apretado hoy. Mejor combinar volumen: dos medias + una otra.`);
+    }
+  } else if(m.count > 0 && stats.media.count > 0){
+    lines.push(`Si la <strong>mejor</strong> no aparece, las <strong>medias</strong> en ${rowToLetter(stats.media.topCell.row)}${stats.media.topCell.col} salen seguido.`);
+  }
+
+  return `<section class="section" style="background:linear-gradient(135deg,rgba(0,210,255,.06),rgba(168,85,247,.04));border:1px solid rgba(0,210,255,.2);">
+    <div class="section-h"><div class="section-t" style="color:#22D3EE;">Lo que el spot habló hoy</div></div>
+    <div class="serif" style="font-size:18px;line-height:1.6;color:var(--text);font-style:italic;">
+      ${lines.join(' ')}
+    </div>
+  </section>`;
+}
+
+function renderScoreSlider(key, val, color, lbl){
+  return `<div class="score-row">
+    <span style="color:${color};font-weight:700;font-size:14px;">${lbl.charAt(0)}</span>
+    <input type="range" min="0" max="10" step="0.5" value="${val}" oninput="state.closing.scores.${key}=parseFloat(this.value);save();document.getElementById('sv_${key}').textContent=this.value;">
+    <span class="score-val" id="sv_${key}" style="color:${color};">${val}</span>
+  </div>`;
+}
+function renderReportBlock(cat, s, lbl, score){
+  const cls = cat==='mejor'?'':cat==='media'?'silver':'bronze';
+  if(!s.count) return `<div class="report-block ${cls}">
+    <div class="report-cat-banner"><span class="report-cat-lbl">${lbl}</span><span class="report-cat-meta">sin olas</span></div>
+    <div style="padding:14px;text-align:center;font-style:italic;color:var(--grey);font-size:12px;">No marcaste ninguna ola en esta categoría.</div>
+  </div>`;
+
+  // Zona principal con sus refs
+  const mainCoord = `${rowToLetter(s.topCell.row)}${s.topCell.col}`;
+  const refsForZone = nearestRefs(s.topCell.col, s.topCell.row);
+  const refsText = refsForZone.length
+    ? `entre <strong>${refsForZone.map(r=>r.label).join(' y ')}</strong>`
+    : `coordenada <strong>${mainCoord}</strong>`;
+
+  // Score real vs estimado
+  let realScorePill = '';
+  if(s.scoredCount > 0){
+    const real = s.avgScore.toFixed(1);
+    const diff = s.avgScore - score;
+    const cls2 = Math.abs(diff) < 0.3 ? 'foam' : diff > 0 ? 'amber' : 'coral';
+    const diffLbl = Math.abs(diff) < 0.3 ? '≈ coincide con estimado' : diff > 0 ? `+${diff.toFixed(1)} sobre estimado` : `${diff.toFixed(1)} bajo estimado`;
+    realScorePill = `<span class="report-pill ${cls2}"><strong>${real}/10</strong> real · ${diffLbl}</span>`;
+  }
+
+  // Ritmo / sets
+  let rhythmPill = '';
+  if(s.setsDetected){
+    rhythmPill = `<span class="report-pill"><strong>${s.setsDetected} set${s.setsDetected===1?'':'s'}</strong> · ${s.avgPerSet} olas/set · entre sets ${fmtMMSS(s.avgBetweenSets)}</span>`;
+  }
+
+  // Zonas alternativas (solo si hay 2+)
+  let altsBlock = '';
+  if(s.zones && s.zones.length >= 2){
+    const alts = s.zones.slice(1);  // saltamos la primera (ya está en hero)
+    altsBlock = `<div class="report-alt-section">
+      <div class="report-alt-title">🎯 OTRAS ${alts.length} ZONA${alts.length===1?'':'S'} POSIBLE${alts.length===1?'':'S'} · el atleta elige según sus tools</div>
+      ${alts.map((z,i)=>{
+        const zRefs = nearestRefs(z.col, z.row);
+        const zRefStr = zRefs.length ? zRefs.map(r=>r.label).join(', ') : 'sin referencia cerca';
+        const scoreStr = z.avgScore !== null ? `score ${z.avgScore.toFixed(1)}` : 'sin score';
+        const intStr = z.avgInterval ? `cada ${fmtMMSS(z.avgInterval)}` : 'ola única';
+        const dirStr = z.dirDom === 'L' ? ` · <span style="color:#22D3EE;font-weight:700;">IZQ→</span>`
+                      : z.dirDom === 'R' ? ` · <span style="color:#FBBF24;font-weight:700;">←DER</span>`
+                      : z.dirDom === 'mixed' ? ` · <span style="color:var(--text-soft);">mixta</span>`
+                      : '';
+        return `<div class="report-alt-row">
+          <span class="report-alt-num">${i+2}</span>
+          <span class="report-alt-coord">${rowToLetter(z.row)}${z.col}</span>
+          <span class="report-alt-refs">${esc(zRefStr)}</span>
+          <span class="report-alt-data">${z.count} ola${z.count===1?'':'s'} · ${scoreStr} · ${intStr}${dirStr}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // Dirección dominante de la categoría
+  const dirLabel = s.dirDominant === 'L' ? 'OLAS IZQUIERDAS'
+                  : s.dirDominant === 'R' ? 'OLAS DERECHAS'
+                  : s.dirDominant === 'mixed' ? `Mixto (${s.dirCounts.L} izq · ${s.dirCounts.R} der)`
+                  : '';
+  const dirColor = s.dirDominant === 'L' ? '#22D3EE' : s.dirDominant === 'R' ? '#FBBF24' : 'var(--text-soft)';
+  const dirPill = s.dirDominant
+    ? `<span class="report-pill" style="background:${s.dirDominant==='L'?'rgba(34,211,238,.15)':s.dirDominant==='R'?'rgba(251,191,36,.15)':'rgba(255,255,255,.06)'};border-color:${dirColor};color:${dirColor};font-weight:700;">${s.dirDominant==='R'?'← ':''}${dirLabel}${s.dirDominant==='L'?' →':''}${s.dirDominant!=='mixed'?` · ${Math.round(s.dirRatio*100)}%`:''}</span>`
+    : '';
+
+  return `<div class="report-block ${cls}">
+    <div class="report-cat-banner">
+      <span class="report-cat-lbl">${lbl}</span>
+      <span class="report-cat-meta">${s.count} ola${s.count===1?'':'s'} · estimado ${score}/10</span>
+    </div>
+
+    <div class="report-hero">
+      <div class="report-hero-row">
+        <span class="report-hero-coord">${mainCoord}</span>
+        <span class="report-hero-arrow">→</span>
+        <span class="report-hero-time">cada ${fmtMMSS(s.avgInterval)}</span>
+      </div>
+      <div class="report-hero-sub">Aquí salen las ${lbl.toLowerCase()} · ${refsText}${s.dirDominant && s.dirDominant!=='mixed' ? ` · son <strong style="color:${dirColor};">${s.dirDominant==='L'?'OLAS IZQUIERDAS →':'← OLAS DERECHAS'}</strong>` : ''}</div>
+    </div>
+
+    ${(realScorePill || rhythmPill || dirPill) ? `<div class="report-strip">
+      ${dirPill}
+      ${realScorePill}
+      ${rhythmPill}
+    </div>` : ''}
+
+    ${altsBlock}
+  </div>`;
+}
+function renderPlan(stats, cl){
+  const obj = cl.heatObjective || 0;
+  if(!obj || stats.mejor.count + stats.media.count + stats.otra.count === 0){
+    return `<div class="plan-card"><div class="plan-h">🏁 Plan táctico</div><div class="report-stat">Definí un objetivo de heat para generar el plan.</div></div>`;
+  }
+  // Si hay suficientes scores reales (≥2 por categoría), usamos avg real en vez del estimado
+  const MIN_SCORED = 2;
+  const score = {
+    mejor: (stats.mejor.scoredCount >= MIN_SCORED) ? stats.mejor.avgScore : cl.scores.mejor,
+    media: (stats.media.scoredCount >= MIN_SCORED) ? stats.media.avgScore : cl.scores.media,
+    otra:  (stats.otra.scoredCount  >= MIN_SCORED) ? stats.otra.avgScore  : cl.scores.otra,
+  };
+  const usingReal = {
+    mejor: stats.mejor.scoredCount >= MIN_SCORED,
+    media: stats.media.scoredCount >= MIN_SCORED,
+    otra:  stats.otra.scoredCount  >= MIN_SCORED,
+  };
+  const realityChip = (cat) => usingReal[cat] ? `<span style="font-size:9px;background:rgba(52,211,153,.18);color:var(--foam);padding:1px 5px;border-radius:6px;font-weight:700;margin-left:3px;">REAL</span>` : '';
+  const combos = [
+    { name:`1 MEJOR${realityChip('mejor')} + 1 MEDIA${realityChip('media')}`, total: score.mejor + score.media, requires:{mejor:1,media:1} },
+    { name:`2 MEJOR${realityChip('mejor')}`, total: score.mejor*2, requires:{mejor:2} },
+    { name:`2 MEDIA${realityChip('media')} + 1 OTRA${realityChip('otra')}`, total: score.media*2 + score.otra, requires:{media:2,otra:1} },
+    { name:`1 MEJOR${realityChip('mejor')} + 1 OTRA${realityChip('otra')}`, total: score.mejor + score.otra, requires:{mejor:1,otra:1} },
+    { name:`3 OTRA${realityChip('otra')}`, total: score.otra*3, requires:{otra:3} },
+  ];
+  const validForData = combos.filter(c=>{
+    return (c.requires.mejor||0) <= stats.mejor.count
+        && (c.requires.media||0) <= stats.media.count
+        && (c.requires.otra||0)  <= stats.otra.count;
+  });
+  const sufficient = validForData.filter(c=>c.total >= obj);
+  if(!sufficient.length){
+    const best = validForData.sort((a,b)=>b.total-a.total)[0];
+    return `<div class="plan-card" style="border-color:rgba(252,165,165,.4);background:rgba(252,165,165,.06);">
+      <div class="plan-h" style="color:var(--coral);">⚠ HEAT OBJETIVO ${obj} · NO FACTIBLE HOY</div>
+      ${best?`<div class="plan-line">El mejor combo posible da <strong>${best.total.toFixed(1)}</strong> (faltan <strong>${(obj-best.total).toFixed(1)}</strong>).</div>`:''}
+      <div class="plan-line" style="color:var(--gold-text);">Subí el score potencial si la ola lo justifica, o ajustá el objetivo.</div>
+    </div>`;
+  }
+  const primary = sufficient[0];
+  const backup = sufficient[1] || sufficient[0];
+  return `<div class="plan-card">
+    <div class="plan-h">🏁 PLAN PARA EL HEAT · OBJETIVO ${obj}</div>
+    <div class="plan-line win">✓ Plan A: <strong>${primary.name}</strong> = ${primary.total.toFixed(1)} · factible</div>
+    ${backup !== primary ? `<div class="plan-line">↺ Plan B: <strong>${backup.name}</strong> = ${backup.total.toFixed(1)}</div>` : ''}
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   STATS
+   ════════════════════════════════════════════════════════════════════ */
+/* Plan ejecutivo simple: dónde pararse, cuándo cambiar, si alcanza el objetivo */
+function computeHeatPlan(stats, cl){
+  const duration = cl.heatDurationMin || 25;
+  const objective = cl.heatObjective || 0;
+  // Zona top por categoría (la 1ra ya viene rankeada por findHotZones)
+  const zTop = { mejor: stats.mejor.zones?.[0], media: stats.media.zones?.[0], otra: stats.otra.zones?.[0] };
+  const expected = { mejor:0, media:0, otra:0 };
+  ['mejor','media','otra'].forEach(k=>{
+    const z = zTop[k];
+    if(z && z.avgInterval > 0){
+      expected[k] = Math.floor((duration * 60000) / z.avgInterval);
+    } else if(z){
+      expected[k] = z.count;  // ola única · sin intervalo
+    }
+  });
+  // Score usado por combo (real si hay ≥2 scores en la zona · si no, el estimado)
+  const score = {
+    mejor: (stats.mejor.scoredCount >= 2) ? stats.mejor.avgScore : (cl.scores.mejor || 0),
+    media: (stats.media.scoredCount >= 2) ? stats.media.avgScore : (cl.scores.media || 0),
+    otra:  (stats.otra.scoredCount  >= 2) ? stats.otra.avgScore  : (cl.scores.otra  || 0),
+  };
+  // Combos posibles según lo que ESPERAMOS ver en el heat (surf usa top 2 waves)
+  const combos = [
+    { name:'2 MEJOR', total: score.mejor*2, needs:{mejor:2}, feasible: expected.mejor >= 2 },
+    { name:'1 MEJOR + 1 MEDIA', total: score.mejor + score.media, needs:{mejor:1,media:1}, feasible: expected.mejor >= 1 && expected.media >= 1 },
+    { name:'2 MEDIA', total: score.media*2, needs:{media:2}, feasible: expected.media >= 2 },
+    { name:'1 MEDIA + 1 OTRA', total: score.media + score.otra, needs:{media:1,otra:1}, feasible: expected.media >= 1 && expected.otra >= 1 },
+    { name:'2 OTRA', total: score.otra*2, needs:{otra:2}, feasible: expected.otra >= 2 },
+  ].filter(c => c.feasible);
+  // Rankear combos que ALCANCEN objetivo por total desc; si ninguno alcanza, ranquear por total desc
+  const sufficient = combos.filter(c => c.total >= objective).sort((a,b)=>b.total-a.total);
+  const bestFallback = combos.sort((a,b)=>b.total-a.total)[0];
+  const primary = sufficient[0] || bestFallback;
+  const backup = sufficient[1] || (bestFallback && primary !== bestFallback ? bestFallback : null);
+  // Tiempo espera razonable antes de cambiar de zona (si esperás MEJOR pero no cae, cuándo movete)
+  // Regla simple: si el intervalo promedio es X min, esperá hasta 1.5X min antes de cambiar
+  let waitBeforeSwitch = null;
+  if(zTop.mejor && zTop.mejor.avgInterval > 0){
+    waitBeforeSwitch = Math.round((zTop.mejor.avgInterval * 1.5) / 60000);  // en minutos
+  }
+  return {
+    duration, objective, zTop, expected, primary, backup, waitBeforeSwitch, sufficient, hasAnyPlan: !!primary,
+    status: !objective ? 'none' : (sufficient.length ? (primary.total > objective + 2 ? 'yes' : 'tight') : 'no'),
+    lowConfidence: (stats.mejor.count + stats.media.count + stats.otra.count) < 10
+  };
+}
+
+function renderHeatPlanCard(stats, cl){
+  const plan = computeHeatPlan(stats, cl);
+  if(!plan.hasAnyPlan) return '';
+  const statusColor = plan.status === 'yes' ? 'var(--foam)' : plan.status === 'tight' ? 'var(--gold-text)' : plan.status === 'no' ? 'var(--coral)' : 'var(--text-soft)';
+  const statusIcon = plan.status === 'yes' ? '✓' : plan.status === 'tight' ? '⚠' : plan.status === 'no' ? '✗' : '·';
+  const statusLbl = plan.status === 'yes' ? 'FACTIBLE' : plan.status === 'tight' ? 'APRETADO' : plan.status === 'no' ? 'NO ALCANZA' : '';
+  const zM = plan.zTop.mejor;
+  const zMed = plan.zTop.media;
+  const coordM = zM ? `${rowToLetter(zM.row)}${zM.col}` : null;
+  const coordMed = zMed ? `${rowToLetter(zMed.row)}${zMed.col}` : null;
+  const refsM = zM ? nearestRefs(zM.col, zM.row) : [];
+  const refsMedList = zMed ? nearestRefs(zMed.col, zMed.row) : [];
+  const refM = refsM.length ? refsM[0].label : null;
+  const refMed = refsMedList.length ? refsMedList[0].label : null;
+  const lines = [];
+  // Línea 1: dónde pararse
+  if(coordM && plan.expected.mejor >= 1){
+    const interval = zM.avgInterval ? fmtMMSS(zM.avgInterval) : '—';
+    lines.push(`Empezá en <strong style="color:var(--gold-text);">${coordM}</strong>${refM?` (${esc(refM)})`:''} · esperás <strong>~${plan.expected.mejor}</strong> MEJOR en ${plan.duration} min (${interval} c/u)`);
+  } else if(coordMed){
+    lines.push(`No hay MEJOR frecuente hoy. Andá directo a <strong style="color:var(--silver-text);">${coordMed}</strong>${refMed?` (${esc(refMed)})`:''} para MEDIA`);
+  }
+  // Línea 2: cuándo cambiar / backup
+  if(plan.waitBeforeSwitch && coordMed && plan.expected.mejor >= 1){
+    lines.push(`Si no cae MEJOR en <strong>${plan.waitBeforeSwitch} min</strong> → movete a <strong style="color:var(--silver-text);">${coordMed}</strong>${refMed?` (${esc(refMed)})`:''} para MEDIA`);
+  }
+  // Línea 3: score potencial
+  if(plan.primary){
+    lines.push(`<strong>${plan.primary.name}</strong> = <strong style="color:${statusColor};">${plan.primary.total.toFixed(1)} pts</strong> · objetivo ${plan.objective}`);
+  }
+  const bgGrad = plan.status === 'yes' ? 'linear-gradient(135deg,rgba(52,211,153,.12),rgba(52,211,153,.03))'
+              : plan.status === 'tight' ? 'linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.03))'
+              : plan.status === 'no' ? 'linear-gradient(135deg,rgba(252,165,165,.12),rgba(252,165,165,.03))'
+              : 'linear-gradient(135deg,rgba(0,210,255,.08),rgba(0,210,255,.02))';
+  return `<section class="section" style="background:${bgGrad};border:1.5px solid ${statusColor};margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;color:${statusColor};">🏁 Plan para tu heat · ${plan.duration} min</div>
+      <div style="font-size:11px;font-weight:800;color:${statusColor};padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.06);">${statusIcon} ${statusLbl}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${lines.map(l => `<div style="font-size:14px;color:var(--text);line-height:1.6;">${l}</div>`).join('')}
+    </div>
+    ${plan.lowConfidence ? `<div style="margin-top:8px;font-size:11px;color:var(--gold-text);font-style:italic;">⚠ Confianza baja · pocos datos observados (menos de 10 olas)</div>` : ''}
+  </section>`;
+}
+
+function computeStats(){
+  const totalMs = state.timer.finished
+    ? (state.timer.endedAt || nowMs()) - state.timer.startedAt
+    : nowMs() - (state.timer.startedAt || nowMs());
+  const totalMin = Math.max(1, Math.round(totalMs / 60000));
+  return {
+    totalMin,
+    totalMs,
+    mejor: statsForCategory('mejor'),
+    media: statsForCategory('media'),
+    otra:  statsForCategory('otra'),
+  };
+}
+function statsForCategory(category){
+  const waves = state.waves.filter(w=>w.category===category).sort((a,b)=>a.ts-b.ts);
+  if(!waves.length) return { count:0 };
+  // Top cell: la celda con más pins
+  const cellCount = {};
+  waves.forEach(w=>{
+    const k = `${w.gridCol}-${w.gridRow}`;
+    cellCount[k] = (cellCount[k]||0) + 1;
+  });
+  const topKey = Object.entries(cellCount).sort((a,b)=>b[1]-a[1])[0][0];
+  const [tc, tr] = topKey.split('-').map(Number);
+  // Hot zones: detecta hasta 3 zonas separadas por al menos 2 celdas
+  // Cada zona ranquea por (count × avgScore) para priorizar densidad + calidad
+  const zones = findHotZones(waves);
+  // Intervalo promedio
+  let avgInterval = 0;
+  if(waves.length > 1){
+    const intervals = [];
+    for(let i=1; i<waves.length; i++) intervals.push(waves[i].ts - waves[i-1].ts);
+    avgInterval = intervals.reduce((s,x)=>s+x,0) / intervals.length;
+  }
+  // Score promedio real (de las olas que tienen score asignado)
+  const scoredWaves = waves.filter(w => typeof w.score === 'number' && w.score > 0);
+  const scoredCount = scoredWaves.length;
+  const avgScore = scoredCount ? (scoredWaves.reduce((s,w)=>s+w.score, 0) / scoredCount) : null;
+  // Dirección dominante (L/R/mixed/none)
+  const dirCounts = { L:0, R:0, none:0 };
+  waves.forEach(w => {
+    if(w.direction === 'L') dirCounts.L++;
+    else if(w.direction === 'R') dirCounts.R++;
+    else dirCounts.none++;
+  });
+  const totalDir = dirCounts.L + dirCounts.R;
+  let dirDominant = null;
+  let dirRatio = 0;
+  if(totalDir > 0){
+    const lRatio = dirCounts.L / totalDir;
+    const rRatio = dirCounts.R / totalDir;
+    if(lRatio >= 0.7){ dirDominant = 'L'; dirRatio = lRatio; }
+    else if(rRatio >= 0.7){ dirDominant = 'R'; dirRatio = rRatio; }
+    else dirDominant = 'mixed';
+  }
+  // Detección de sets: 3+ olas en <2 min consecutivas
+  const SET_GAP = 120000;
+  const sets = [];
+  let cur = [waves[0]];
+  for(let i=1; i<waves.length; i++){
+    if(waves[i].ts - waves[i-1].ts <= SET_GAP){
+      cur.push(waves[i]);
+    } else {
+      if(cur.length >= 3) sets.push(cur);
+      cur = [waves[i]];
+    }
+  }
+  if(cur.length >= 3) sets.push(cur);
+  const setsDetected = sets.length;
+  const avgPerSet = setsDetected ? Math.round(sets.reduce((s,x)=>s+x.length,0) / setsDetected) : 0;
+  let avgBetweenSets = 0;
+  if(setsDetected > 1){
+    const gaps = [];
+    for(let i=1; i<sets.length; i++) gaps.push(sets[i][0].ts - sets[i-1][sets[i-1].length-1].ts);
+    avgBetweenSets = gaps.reduce((s,x)=>s+x,0) / gaps.length;
+  }
+  return { count: waves.length, topCell:{col:tc, row:tr}, avgInterval, setsDetected, avgPerSet, avgBetweenSets, scoredCount, avgScore, zones, dirCounts, dirDominant, dirRatio };
+}
+
+function findHotZones(waves){
+  // Agrupa por celda exacta
+  const byCell = {};
+  waves.forEach(w=>{
+    const k = `${w.gridCol}-${w.gridRow}`;
+    if(!byCell[k]) byCell[k] = { col:w.gridCol, row:w.gridRow, waves:[] };
+    byCell[k].waves.push(w);
+  });
+  // Por cada celda, calcula stats
+  const cells = Object.values(byCell).map(c=>{
+    const scored = c.waves.filter(w=>typeof w.score === 'number' && w.score > 0);
+    const avgScore = scored.length ? scored.reduce((s,w)=>s+w.score,0)/scored.length : null;
+    const sortedTs = c.waves.map(w=>w.ts).sort((a,b)=>a-b);
+    const intervals = [];
+    for(let i=1; i<sortedTs.length; i++) intervals.push(sortedTs[i]-sortedTs[i-1]);
+    const avgInterval = intervals.length ? intervals.reduce((s,x)=>s+x,0)/intervals.length : null;
+    // Dirección dominante de esta celda
+    let dL=0, dR=0;
+    c.waves.forEach(w => { if(w.direction==='L') dL++; else if(w.direction==='R') dR++; });
+    const tDir = dL + dR;
+    let dirDom = null;
+    if(tDir > 0){
+      if(dL/tDir >= 0.7) dirDom = 'L';
+      else if(dR/tDir >= 0.7) dirDom = 'R';
+      else if(dL>0 && dR>0) dirDom = 'mixed';
+    }
+    // Ranking: prioriza densidad × calidad (si hay score, ponderado; si no, solo count)
+    const rank = c.waves.length * (avgScore !== null ? avgScore : 5);
+    return { col:c.col, row:c.row, count:c.waves.length, avgScore, avgInterval, rank, dirDom, dirL:dL, dirR:dR };
+  });
+  cells.sort((a,b)=>b.rank - a.rank);
+  // Selecciona hasta 3 zonas separadas por al menos 2 celdas de distancia
+  const selected = [];
+  for(const c of cells){
+    if(selected.length >= 3) break;
+    const tooClose = selected.some(s => Math.abs(s.col-c.col) <= 1 && Math.abs(s.row-c.row) <= 1);
+    if(!tooClose) selected.push(c);
+  }
+  return selected;
+}
+function nearestRefs(col, row){
+  if(!state.map.refs.length) return [];
+  const cellW = MAP_W / GRID_COLS;
+  const cellH = MAP_H / GRID_ROWS;
+  const cx = (col - 0.5) * cellW;
+  const cy = (row - 0.5) * cellH;
+  const withDist = state.map.refs.map(r=>({ ...r, d: Math.hypot(r.x-cx, r.y-cy) }));
+  withDist.sort((a,b)=>a.d-b.d);
+  return withDist.slice(0, 2).filter(r=>r.d < MAP_W*0.4);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   REPLAY TEMPORAL · ver los pins apareciendo en orden de tiempo (30 seg)
+   ════════════════════════════════════════════════════════════════════ */
+let _replayTimers = [];
+let _replayInterval = null;
+function openReplay(){
+  if(!state.waves.length){ toast('No hay olas para reproducir'); return; }
+  const sorted = [...state.waves].sort((a,b)=>a.ts-b.ts);
+  const maxTs = sorted[sorted.length-1].ts;
+  const REPLAY_DURATION = 30000; // 30 segundos total
+  let m = document.querySelector('.modal-overlay'); if(m) m.remove();
+  m = document.createElement('div'); m.className='modal-overlay'; m.id='replayModal';
+  m.innerHTML = `<div class="modal" style="max-width:560px;max-height:92vh;overflow-y:auto;">
+    <div class="modal-h">
+      <div>
+        <div class="modal-t">▶ Replay del análisis</div>
+        <div style="font-size:11px;color:var(--grey);margin-top:2px;font-family:'DM Mono',monospace;">${state.waves.length} olas en 30 seg · ${Math.round(maxTs/60000)} min reales</div>
+      </div>
+      <button class="modal-x" onclick="closeReplay()">×</button>
+    </div>
+    <div id="replayMapWrap" style="position:relative;background:#021126;border-radius:12px;overflow:hidden;">
+      ${renderReplayMapEmpty()}
+    </div>
+    <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:11px;">
+      <span style="color:var(--text-soft);">Min reales: <strong id="replayMinReal" style="color:var(--text);font-size:14px;">0:00</strong></span>
+      <span style="color:var(--text-soft);">Olas: <strong id="replayCount" style="color:var(--text);font-size:14px;">0 / ${state.waves.length}</strong></span>
+    </div>
+    <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:8px;overflow:hidden;">
+      <div id="replayBar" style="height:100%;background:linear-gradient(90deg,#22D3EE,#FBBF24);width:0%;transition:width .1s linear;"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-ghost btn-block" onclick="closeReplay()">Cerrar</button>
+      <button class="btn btn-cyan btn-block" onclick="openReplay()">↺ Repetir</button>
+    </div>
+  </div>`;
+  m.onclick = e => { if(e.target===m) closeReplay(); };
+  document.body.appendChild(m);
+  // Schedule cada pin en su tiempo proporcional
+  _replayTimers.forEach(t => clearTimeout(t));
+  _replayTimers = [];
+  if(_replayInterval) clearInterval(_replayInterval);
+  const svg = document.querySelector('#replayMapWrap svg');
+  const pinsLayer = svg ? svg.querySelector('#replayPins') : null;
+  const startedAt = Date.now();
+  sorted.forEach((w, idx) => {
+    const proportion = maxTs > 0 ? (w.ts / maxTs) : 0;
+    const delay = proportion * (REPLAY_DURATION - 200) + 100;  // 100ms primero, último a 29.9s
+    const t = setTimeout(() => {
+      if(!pinsLayer) return;
+      const cellW = MAP_W / GRID_COLS;
+      const cellH = MAP_H / GRID_ROWS;
+      const cx = (w.gridCol - 0.5) * cellW;
+      const cy = (w.gridRow - 0.5) * cellH;
+      const colors = { mejor:'#F59E0B', media:'#9CA3AF', otra:'#B45309' };
+      const c = colors[w.category];
+      const r = w.category==='mejor' ? 14 : w.category==='media' ? 11 : 9;
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}" stroke="#fff" stroke-width="2" opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur="0.3s" fill="freeze"/>
+          <animate attributeName="r" from="${r*1.6}" to="${r}" dur="0.3s" fill="freeze"/>
+        </circle>`;
+      pinsLayer.appendChild(g);
+      const countEl = document.getElementById('replayCount');
+      if(countEl) countEl.textContent = `${idx+1} / ${state.waves.length}`;
+    }, delay);
+    _replayTimers.push(t);
+  });
+  // Update progress + min real cada 100ms
+  _replayInterval = setInterval(() => {
+    const elapsed = Date.now() - startedAt;
+    if(elapsed >= REPLAY_DURATION){ clearInterval(_replayInterval); _replayInterval = null; }
+    const pct = Math.min(100, (elapsed / REPLAY_DURATION) * 100);
+    const bar = document.getElementById('replayBar');
+    if(bar) bar.style.width = pct + '%';
+    const minReal = (elapsed / REPLAY_DURATION) * (maxTs / 60000);
+    const minRealEl = document.getElementById('replayMinReal');
+    if(minRealEl) minRealEl.textContent = fmtMMSS(elapsed / REPLAY_DURATION * maxTs);
+  }, 80);
+}
+function renderReplayMapEmpty(){
+  // Mismo SVG que renderMapSVG pero con un layer <g id="replayPins"> vacío para que se llene en vivo
+  // Y SIN los pins ya existentes
+  const cellW = MAP_W / GRID_COLS;
+  const cellH = MAP_H / GRID_ROWS;
+  const hasPhoto = !!state.map.photoDataUrl;
+  const bg = `<defs>
+    <linearGradient id="ocReplay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A1628"/><stop offset="80%" stop-color="#0E1F3D"/><stop offset="88%" stop-color="#1a2842"/><stop offset="100%" stop-color="#2a3a2e"/>
+    </linearGradient>
+  </defs>
+  ${hasPhoto
+    ? `<rect width="${MAP_W}" height="${MAP_H}" fill="#021126"/><image href="${state.map.photoDataUrl}" x="0" y="0" width="${MAP_W}" height="${MAP_H}" preserveAspectRatio="xMidYMid slice" opacity="${state.map.photoOpacity||0.7}"/>`
+    : `<rect width="${MAP_W}" height="${MAP_H}" fill="url(#ocReplay)"/>`}`;
+  let grid = '<g stroke="rgba(236,72,153,0.45)" stroke-width="0.6">';
+  for(let r=1; r<GRID_ROWS; r++) grid += `<line x1="0" y1="${r*cellH}" x2="${MAP_W}" y2="${r*cellH}"/>`;
+  for(let c=1; c<GRID_COLS; c++) grid += `<line x1="${c*cellW}" y1="0" x2="${c*cellW}" y2="${MAP_H}"/>`;
+  grid += '</g>';
+  let refLines = '';
+  if(state.map.lines.outside) refLines += renderLine(state.map.lines.outside, '#A855F7', 'OUT');
+  if(state.map.lines.inside)  refLines += renderLine(state.map.lines.inside,  '#F59E0B', 'IN');
+  if(state.map.lines.orilla)  refLines += renderLine(state.map.lines.orilla,  '#00D2FF', 'OR');
+  let refs = '';
+  state.map.refs.forEach(r=>{
+    refs += `<g><circle cx="${r.x}" cy="${r.y}" r="10" fill="#00D2FF" stroke="#fff" stroke-width="2"/><text x="${r.x}" y="${r.y+3}" text-anchor="middle" font-size="11" font-weight="700" fill="#0A1628">${esc(r.label.charAt(0).toUpperCase())}</text></g>`;
+  });
+  // Entry/exit points en el replay (mismas flechas opuestas: sube al mar / baja a la orilla)
+  let replayEE = '';
+  if(state.map.entryPoint){
+    const ep = state.map.entryPoint;
+    replayEE += `<g style="pointer-events:none;">
+      <circle cx="${ep.x}" cy="${ep.y}" r="13" fill="rgba(52,211,153,0.3)" stroke="#34D399" stroke-width="2.5"/>
+      <g transform="translate(${ep.x-8} ${ep.y-8})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 9-6-6-6 6"/><path d="M12 3v14"/><path d="M5 21h14"/></svg>
+      </g>
+    </g>`;
+  }
+  if(state.map.exitPoint){
+    const xp = state.map.exitPoint;
+    replayEE += `<g style="pointer-events:none;">
+      <circle cx="${xp.x}" cy="${xp.y}" r="13" fill="rgba(252,165,165,0.3)" stroke="#FCA5A5" stroke-width="2.5"/>
+      <g transform="translate(${xp.x-8} ${xp.y-8})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>
+      </g>
+    </g>`;
+  }
+  // Hazards también en el replay (contexto del análisis)
+  let hazards = '';
+  (state.map.hazards||[]).forEach(h => {
+    const meta = HAZARD_MAP[h.type];
+    if(!meta) return;
+    const rot = (typeof h.angle === 'number') ? ` transform="rotate(${h.angle} 12 12)"` : '';
+    hazards += `<g style="pointer-events:none;opacity:0.85;">
+      <circle cx="${h.x}" cy="${h.y}" r="13" fill="${meta.color}22" stroke="${meta.color}" stroke-width="1.8"/>
+      <g transform="translate(${h.x-9} ${h.y-9})">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${meta.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g${rot}>${meta.svg}</g></svg>
+      </g>
+    </g>`;
+  });
+  return `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;">
+    ${bg}${grid}${refLines}${replayEE}${refs}${hazards}<g id="replayPins"></g>
+  </svg>`;
+}
+function closeReplay(){
+  _replayTimers.forEach(t => clearTimeout(t));
+  _replayTimers = [];
+  if(_replayInterval){ clearInterval(_replayInterval); _replayInterval = null; }
+  document.querySelector('.modal-overlay')?.remove();
+}
+
+function goBackToObserve(){
+  if(!confirm('Volver a marcar olas? El cronómetro se reanuda donde estaba.')) return;
+  state.screen = 'observe';
+  state.timer.finished = false;
+  save(); render();
+  startTimerLoop();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════ */
+load();
+render();
+if(state.screen === 'observe' && state.timer.startedAt && !state.timer.finished){
+  startTimerLoop();
+}
+
+// Print styles
+const printStyle = document.createElement('style');
+printStyle.textContent = `@media print {
+  .topbar, .timer-stop, .toolbar, .cat, button { display: none !important; }
+  body { background: white; color: black; }
+  .section { border: 1px solid #ddd; background: white; page-break-inside: avoid; }
+  .report-block, .plan-card { background: white; }
+}`;
+document.head.appendChild(printStyle);
+</script>
+</body>
+</html>

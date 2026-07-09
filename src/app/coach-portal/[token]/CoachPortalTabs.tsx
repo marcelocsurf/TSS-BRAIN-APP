@@ -19,6 +19,7 @@ import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
+import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import {
   Home,
   BookOpen,
@@ -1390,6 +1391,9 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
 
       {/* Board Selector — recommend board volume/type/fins (client-only, lazy) */}
       <BoardSelectorLauncher variant="card" />
+
+      {/* Venue Scout — analyze a surf spot (standalone tool, full-screen) */}
+      <VenueScoutLauncher variant="light" />
 
       {sequences.map(([key, g]) => (
         <SequenceGroup key={key} group={g} token={coach.portal_token} />
