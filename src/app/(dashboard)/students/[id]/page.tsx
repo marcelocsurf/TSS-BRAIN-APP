@@ -432,6 +432,27 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* ═══ GROUP 1 · IDENTITY & ALERTS (safety-critical, top of the file) ═══ */}
 
+      {/* Media-use consent — warn loudly when the student did NOT authorize it */}
+      {(student as any).media_release_consent === false ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5">
+          <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">No autoriza uso de fotos ni videos</p>
+            <p className="text-xs text-red-500">No publicar ni usar su material (fotos/clips) con fines promocionales.</p>
+          </div>
+        </div>
+      ) : (student as any).media_release_consent === true ? (
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+          <CheckCircle2 size={14} strokeWidth={2} className="text-emerald-600 shrink-0" />
+          <p className="text-xs text-emerald-700">Autoriza uso de fotos y videos (Sección 10)</p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+          <CircleDot size={13} strokeWidth={2} className="text-gray-400 shrink-0" />
+          <p className="text-xs text-gray-500">Uso de imagen: sin registrar (waiver anterior o sin responder)</p>
+        </div>
+      )}
+
       {/* --- SAFETY & MEDICAL (highlighted if data) --- */}
       <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
         <div className="space-y-2">
