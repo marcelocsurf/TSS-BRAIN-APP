@@ -170,7 +170,7 @@ export default async function DashboardHome() {
           <LifeBuoy size={20} strokeWidth={1.75} />
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-semibold text-[var(--tss-navy)]">Sistema para resolver problemas</span>
+          <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
           <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
         </span>
       </a>

@@ -96,7 +96,7 @@ export function CoachPortalTabs({
                 <LifeBuoy size={20} strokeWidth={1.75} />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-white">Sistema para resolver problemas</span>
+                <span className="block text-sm font-semibold text-white">Protocolo de Problemas</span>
                 <span className="block text-[11px] text-white/50">Guía de referencia — abrir PDF</span>
               </span>
             </a>
