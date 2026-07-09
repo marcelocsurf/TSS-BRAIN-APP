@@ -139,3 +139,72 @@ export async function deactivateSpace(id: string): Promise<{ ok: boolean; error?
   revalidatePath('/spaces');
   return { ok: true };
 }
+
+// ── Token-based variants for the coach portal (no session) ──
+async function coachByToken(token: string): Promise<{ id: string; academy_id: string | null } | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.from('coaches').select('id, academy_id').eq('portal_token', token).maybeSingle();
+  return data ?? null;
+}
+
+export async function listSpacesByToken(token: string): Promise<AcademySpace[]> {
+  const coach = await coachByToken(token);
+  if (!coach?.academy_id) return [];
+  const admin = createAdminClient();
+  const { data } = await admin.from('academy_spaces').select('id, name, space_type, color, sort_order').eq('academy_id', coach.academy_id).eq('active', true).order('sort_order');
+  return (data ?? []) as AcademySpace[];
+}
+
+export async function listBookingsForDayByToken(token: string, dateStr: string): Promise<SpaceBooking[]> {
+  const coach = await coachByToken(token);
+  if (!coach?.academy_id) return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('space_bookings')
+    .select('id, space_id, coach_id, title, starts_at, ends_at, coaches:coach_id(display_name)')
+    .eq('academy_id', coach.academy_id)
+    .eq('status', 'booked')
+    .lte('starts_at', `${dateStr}T23:59:59${ES_OFFSET}`)
+    .gte('ends_at', `${dateStr}T00:00:00${ES_OFFSET}`)
+    .order('starts_at');
+  return (data ?? []).map((r: any) => ({
+    id: r.id, space_id: r.space_id, coach_id: r.coach_id,
+    coach_name: (Array.isArray(r.coaches) ? r.coaches[0] : r.coaches)?.display_name ?? null,
+    title: r.title, starts_at: r.starts_at, ends_at: r.ends_at,
+  }));
+}
+
+export async function createBookingByToken(token: string, input: {
+  spaceId: string; date: string; startTime: string; endTime: string; title?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const coach = await coachByToken(token);
+  if (!coach?.academy_id) return { ok: false, error: 'No academy in context.' };
+  if (!input.startTime || !input.endTime) return { ok: false, error: 'Pick a start and end time.' };
+  const starts_at = `${input.date}T${input.startTime}:00${ES_OFFSET}`;
+  const ends_at = `${input.date}T${input.endTime}:00${ES_OFFSET}`;
+  if (ends_at <= starts_at) return { ok: false, error: 'The end time must be after the start time.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('space_bookings').insert({
+    space_id: input.spaceId, academy_id: coach.academy_id, coach_id: coach.id,
+    title: input.title?.trim() || null, starts_at, ends_at,
+  });
+  if (error) {
+    if (error.code === '23P01' || /no_overlap|exclusion/i.test(error.message)) {
+      return { ok: false, error: 'That space is already booked for part of this time. Pick another slot.' };
+    }
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
+export async function cancelBookingByToken(token: string, id: string): Promise<{ ok: boolean; error?: string }> {
+  const coach = await coachByToken(token);
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+  const admin = createAdminClient();
+  const { data: booking } = await admin.from('space_bookings').select('coach_id').eq('id', id).maybeSingle();
+  if (!booking) return { ok: false, error: 'Booking not found.' };
+  if (booking.coach_id !== coach.id) return { ok: false, error: 'You can only cancel your own bookings.' };
+  const { error } = await admin.from('space_bookings').update({ status: 'cancelled' }).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

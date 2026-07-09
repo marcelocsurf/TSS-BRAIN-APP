@@ -39,19 +39,32 @@ function hhmm(ts: string) {
   return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/El_Salvador' });
 }
 
-export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachId, canManage }: {
+export type BoardApi = {
+  listDay: (date: string) => Promise<SpaceBooking[]>;
+  create: (input: { spaceId: string; date: string; startTime: string; endTime: string; title?: string }) => Promise<{ ok: boolean; error?: string }>;
+  cancel: (id: string) => Promise<{ ok: boolean; error?: string }>;
+};
+
+const SESSION_API: BoardApi = {
+  listDay: (d) => listBookingsForDay(d),
+  create: (i) => createBooking(i),
+  cancel: (id) => cancelBooking(id),
+};
+
+export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachId, canManage, api = SESSION_API }: {
   spaces: AcademySpace[];
   initialDate: string;
   initialBookings: SpaceBooking[];
   currentCoachId: string | null;
   canManage: boolean;
+  api?: BoardApi;
 }) {
   const [date, setDate] = useState(initialDate);
   const [bookings, setBookings] = useState<SpaceBooking[]>(initialBookings);
   const [form, setForm] = useState<{ space: AcademySpace; hour: number } | null>(null);
   const [pending, start] = useTransition();
 
-  function load(d: string) { start(async () => setBookings(await listBookingsForDay(d))); }
+  function load(d: string) { start(async () => setBookings(await api.listDay(d))); }
   function shiftDay(delta: number) {
     const d = new Date(date + 'T00:00:00'); d.setDate(d.getDate() + delta);
     const next = iso(d); setDate(next); load(next);
@@ -132,7 +145,7 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                             </p>
                             {(mine || canManage) && (
                               <button
-                                onClick={() => start(async () => { const r = await cancelBooking(b.id); if (r.ok) load(date); else alert(r.error); })}
+                                onClick={() => start(async () => { const r = await api.cancel(b.id); if (r.ok) load(date); else alert(r.error); })}
                                 className="text-gray-400 hover:text-red-500 -mt-0.5"
                                 aria-label="Cancelar"
                               ><X size={11} /></button>
@@ -159,6 +172,7 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
           space={form.space}
           date={date}
           hour={form.hour}
+          api={api}
           onClose={() => setForm(null)}
           onDone={() => { setForm(null); load(date); }}
         />
@@ -167,10 +181,11 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
   );
 }
 
-function BookingModal({ space, date, hour, onClose, onDone }: {
+function BookingModal({ space, date, hour, api, onClose, onDone }: {
   space: AcademySpace;
   date: string;
   hour: number;
+  api: BoardApi;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -183,7 +198,7 @@ function BookingModal({ space, date, hour, onClose, onDone }: {
   function submit() {
     setErr(null);
     start(async () => {
-      const r = await createBooking({ spaceId: space.id, date, startTime, endTime, title });
+      const r = await api.create({ spaceId: space.id, date, startTime, endTime, title });
       if (!r.ok) { setErr(r.error || 'No se pudo reservar.'); return; }
       onDone();
     });
