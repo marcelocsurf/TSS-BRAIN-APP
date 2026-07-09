@@ -20,6 +20,7 @@ import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
+import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import {
   Home,
   BookOpen,
@@ -1403,6 +1404,9 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
 
       {/* Venue Scout — analyze a surf spot (standalone tool, full-screen) */}
       <VenueScoutLauncher variant="light" />
+
+      {/* Guided breathing — box / 4-7-8 / coherent / breath of fire */}
+      <BreathingLauncher variant="light" />
 
       {sequences.map(([key, g]) => (
         <SequenceGroup key={key} group={g} token={coach.portal_token} />

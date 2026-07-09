@@ -22,6 +22,7 @@ import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
+import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import { LogoutButton } from '@/components/portal/LogoutButton';
 import {
   createSelfTrainingSession,
@@ -53,6 +54,7 @@ import {
   ChevronRight,
   Video,
   MapPin,
+  Wind,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -439,6 +441,13 @@ export function PortalTabs({
                   Venue Scout
                 </p>
                 <VenueScoutLauncher variant="light" />
+              </div>
+              <div>
+                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+                  <Wind size={14} strokeWidth={1.75} />
+                  Respiración
+                </p>
+                <BreathingLauncher variant="light" />
               </div>
             </div>
           )
