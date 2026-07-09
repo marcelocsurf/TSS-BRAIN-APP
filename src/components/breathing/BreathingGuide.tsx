@@ -54,24 +54,47 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
+  const noiseRef = useRef<AudioBuffer | null>(null);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
 
-  function tone(freq: number) {
+  function ensureAudio() {
+    if (!audioRef.current) audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = audioRef.current!;
+    if (!noiseRef.current) {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      noiseRef.current = buf;
+    }
+    return ctx;
+  }
+
+  // Soft breath whoosh: filtered noise that swells up (inhale) or eases down
+  // (exhale). No tones, no beeps — sounds like breathing.
+  function playBreath(kind: 'in' | 'out', durationSec: number) {
     if (mutedRef.current) return;
     try {
-      if (!audioRef.current) audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const ctx = audioRef.current!;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.value = freq;
+      const ctx = ensureAudio();
       const t = ctx.currentTime;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.14, t + 0.05);
-      g.gain.linearRampToValueAtTime(0, t + 0.4);
-      o.connect(g); g.connect(ctx.destination);
-      o.start(t); o.stop(t + 0.45);
+      const src = ctx.createBufferSource();
+      src.buffer = noiseRef.current!;
+      src.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.value = 0.7;
+      const g = ctx.createGain();
+      const peak = 0.05;
+      const d = Math.max(0.4, durationSec);
+      // Volume swells then eases — the shape of a breath.
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(peak, t + d * 0.45);
+      g.gain.linearRampToValueAtTime(0.0001, t + d);
+      // Filter sweeps up on inhale, down on exhale.
+      if (kind === 'in') { filter.frequency.setValueAtTime(480, t); filter.frequency.linearRampToValueAtTime(1200, t + d); }
+      else { filter.frequency.setValueAtTime(1200, t); filter.frequency.linearRampToValueAtTime(420, t + d); }
+      src.connect(filter); filter.connect(g); g.connect(ctx.destination);
+      src.start(t); src.stop(t + d + 0.05);
     } catch { /* audio not available */ }
   }
 
@@ -85,7 +108,9 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       const ph = phases[i];
       setPhaseIdx(i);
       setScale(ph.scale);
-      tone(ph.label === 'Inhalá' ? 528 : ph.label === 'Exhalá' ? 396 : 440);
+      if (ph.label === 'Inhalá') playBreath('in', ph.sec);
+      else if (ph.label === 'Exhalá') playBreath('out', ph.sec);
+      // holds stay silent
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
 
       if (countRef.current) clearInterval(countRef.current);
