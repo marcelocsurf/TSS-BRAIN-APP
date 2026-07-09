@@ -84,23 +84,6 @@ export function CoachPortalTabs({
           <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
 
-            {/* Problem-solving system — reference PDF, everyone in the portal */}
-            <a
-              href="/docs/sistema-resolver-problemas.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-white/10 p-3.5 transition-colors hover:bg-white/[0.06]"
-              style={{ background: '#0F1E33' }}
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: '#5AC3E7', color: '#0A1628' }}>
-                <LifeBuoy size={20} strokeWidth={1.75} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-white">Protocolo de Problemas</span>
-                <span className="block text-[11px] text-white/50">Guía de referencia — abrir PDF</span>
-              </span>
-            </a>
-
             {isSupport ? (
               <SupportHome coach={coach} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} />
             ) : (
@@ -1348,6 +1331,23 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
           {' '}Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
         </p>
       </div>
+
+      {/* Problem-solving system — reference PDF */}
+      <a
+        href="/docs/sistema-resolver-problemas.pdf"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 rounded-2xl border border-white/10 p-3.5 transition-colors hover:bg-white/[0.06]"
+        style={{ background: '#0F1E33' }}
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: '#5AC3E7', color: '#0A1628' }}>
+          <LifeBuoy size={20} strokeWidth={1.75} />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-white">Protocolo de Problemas</span>
+          <span className="block text-[11px] text-white/50">Guía de referencia — abrir PDF</span>
+        </span>
+      </a>
 
       {/* Report an incident */}
       <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
