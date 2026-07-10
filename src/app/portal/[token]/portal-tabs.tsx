@@ -19,7 +19,6 @@ import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
-import { AchievementsShowcase } from '@/components/portal/AchievementsShowcase';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
@@ -712,9 +711,6 @@ function HomeTab({
           </p>
         </div>
       )}
-
-      {/* The Path — achievements / recognitions trophy case (derived) */}
-      <AchievementsShowcase token={data.token} />
 
       {/* Presentations granted to this student (renders nothing if none) */}
       <StudentPresentations token={data.token} />
