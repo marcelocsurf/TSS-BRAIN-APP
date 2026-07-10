@@ -29,8 +29,13 @@ export function CourseSwitcher({ portalToken, ownedCourses, activeCourseKey }: P
           onChange={(e) => {
             const next = e.target.value as CourseKey;
             startTransition(async () => {
-              await setActiveCourseKey(portalToken, next);
-              router.refresh();
+              try {
+                await setActiveCourseKey(portalToken, next);
+                router.refresh();
+              } catch {
+                // A failed switch must never white-screen the whole portal.
+                alert('Could not switch course. Please try again.');
+              }
             });
           }}
           className="w-full appearance-none bg-transparent text-sm font-semibold text-[var(--tss-navy)] pr-6 focus:outline-none disabled:opacity-50"
