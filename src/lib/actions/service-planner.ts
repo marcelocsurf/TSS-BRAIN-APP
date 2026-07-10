@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
+import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -26,6 +26,9 @@ export interface ServicePlanData {
     template_name: string | null;
     service_kind: string | null;
     target_belt: string | null;
+    // Accreditation context for the final evaluation UI.
+    coach_max_belt: string | null;
+    viewer_is_head_coach: boolean;
   };
   // M45 — list of all days (one camp_session per day) so the UI can render
   // a day picker. `selectedDay` is the day currently loaded in `plan` and
@@ -761,6 +764,8 @@ export async function getServicePlan(
       template_name: tpl?.template_name ?? null,
       service_kind: tpl?.service_kind ?? null,
       target_belt: tpl?.includes_course_key ?? null,
+      coach_max_belt: coach.max_belt_permission ?? null,
+      viewer_is_head_coach: camp.head_coach_id === coach.id,
     },
     plan: {
       venue_analysis: plan?.venue_analysis ?? null,
@@ -1299,7 +1304,7 @@ export async function closeCampFinal(
 
   const { data: coach } = await admin
     .from('coaches')
-    .select('id')
+    .select('id, role, display_name, max_belt_permission')
     .eq('portal_token', token)
     .single();
   if (!coach) throw new Error('Coach not found.');
@@ -1313,6 +1318,15 @@ export async function closeCampFinal(
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
   }
+
+  // Accreditation authority: a coach can only promote UP TO their own
+  // certification (max_belt_permission). Admins and the camp's head coach
+  // bypass the cap. Anyone else's promotion becomes a pending recommendation
+  // for a head coach / admin to confirm. Default cap is black_belt so coaches
+  // without the field set keep working as before (no regression).
+  const coachCap = ((coach as any).max_belt_permission || 'black_belt') as BeltLevel;
+  const canAccreditAny =
+    (coach as any).role === 'admin' || camp.head_coach_id === coach.id;
 
   // Batch-write the official STP ratings, if any
   if (ratings && ratings.length > 0) {
@@ -1378,6 +1392,8 @@ export async function closeCampFinal(
 
   // Belt promotions — coach-confirmed. Only promote UP (never demote): set
   // the new belt when its rank is higher than the student's current belt.
+  // If the coach isn't authorized to accredit the target belt, the promotion
+  // is saved as a PENDING recommendation instead (a head coach/admin confirms).
   if (promotions && promotions.length > 0) {
     for (const p of promotions) {
       const newBelt = p.belt_level as BeltLevel;
@@ -1388,11 +1404,41 @@ export async function closeCampFinal(
         .eq('id', p.student_id)
         .single();
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
-      if (BELT_RANK[newBelt] > currentRank) {
+      if (BELT_RANK[newBelt] <= currentRank) continue; // never demote / no-op
+
+      const authorized = canAccreditAny || canCoachBelt(coachCap, newBelt);
+      if (authorized) {
         await admin
           .from('students')
           .update({ belt_level: newBelt })
           .eq('id', p.student_id);
+      } else {
+        // Not authorized → record a pending recommendation for a head
+        // coach/admin to confirm. Guarded so a missing table never breaks
+        // the camp close (the belt just isn't changed until confirmed).
+        try {
+          const { data: existing } = await admin
+            .from('belt_promotion_recommendations')
+            .select('id')
+            .eq('student_id', p.student_id)
+            .eq('recommended_belt', newBelt)
+            .eq('status', 'pending')
+            .limit(1);
+          if (!existing || existing.length === 0) {
+            await admin.from('belt_promotion_recommendations').insert({
+              student_id: p.student_id,
+              camp_instance_id: campInstanceId,
+              recommended_belt: newBelt,
+              from_belt: stu?.belt_level ?? null,
+              recommended_by: coach.id,
+              recommended_by_name: (coach as any).display_name ?? null,
+              coach_max_belt: coachCap,
+              status: 'pending',
+            });
+          }
+        } catch {
+          /* table not present yet — belt simply stays until an admin promotes */
+        }
       }
     }
   }

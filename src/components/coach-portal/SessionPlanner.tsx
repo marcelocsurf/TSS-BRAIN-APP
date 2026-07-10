@@ -53,6 +53,7 @@ import {
   Key,
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
+import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
@@ -438,6 +439,15 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           stpCatalog={data.graduationCatalog}
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
+          canAccreditTarget={
+            data.camp.viewer_is_head_coach ||
+            !data.camp.coach_max_belt ||
+            !data.camp.target_belt ||
+            canCoachBelt(
+              data.camp.coach_max_belt as BeltLevel,
+              data.camp.target_belt as BeltLevel,
+            )
+          }
           onCancel={() => setShowFinalEval(false)}
           onCompleted={() => {
             setShowFinalEval(false);

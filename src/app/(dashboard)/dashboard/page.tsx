@@ -12,6 +12,7 @@ import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { incidentTypeLabel } from '@/lib/constants/brand';
 import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
 import { TasksPanel } from '@/components/dashboard/TasksPanel';
+import { PendingPromotionsPanel } from '@/components/dashboard/PendingPromotionsPanel';
 import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
@@ -211,6 +212,10 @@ export default async function DashboardHome() {
 
       {/* Incident reports — coordinator + admin. Unread badge + mark-as-read. */}
       <IncidentsPanel incidents={incidents} />
+
+      {/* Belt promotions recommended by under-certified coaches — admin /
+          head coach confirms. Self-gates + renders nothing when empty. */}
+      <PendingPromotionsPanel />
 
       {/* To-do list — coordinator + admin create + assign academy tasks. */}
       {(role === 'admin' || role === 'coordinator') && (

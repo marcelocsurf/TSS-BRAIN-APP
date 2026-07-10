@@ -149,3 +149,26 @@ CREATE TABLE IF NOT EXISTS student_resource_grants (
   granted_at  timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (student_id, resource_id)
 );
+
+-- ─────────────────────────────────────────────────────────────
+-- belt_promotion_recommendations — when a coach whose certification is below
+-- the target belt approves a graduation, the promotion is stored here as a
+-- pending recommendation for a head coach / admin to confirm. (2026-07-10)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS belt_promotion_recommendations (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id          uuid NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  camp_instance_id    uuid REFERENCES camp_instances(id) ON DELETE SET NULL,
+  recommended_belt    text NOT NULL,
+  from_belt           text,
+  recommended_by      uuid REFERENCES coaches(id) ON DELETE SET NULL,
+  recommended_by_name text,
+  coach_max_belt      text,
+  status              text NOT NULL DEFAULT 'pending', -- pending | confirmed | rejected
+  resolved_by         uuid REFERENCES coaches(id) ON DELETE SET NULL,
+  resolved_at         timestamptz,
+  notes               text,
+  created_at          timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_belt_promo_pending
+  ON belt_promotion_recommendations(status) WHERE status = 'pending';

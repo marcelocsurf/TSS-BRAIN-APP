@@ -29,6 +29,10 @@ interface Props {
   // Belt this camp graduates students into (e.g. 'yellow_belt'). When an
   // approved student is below it, the coach is offered a promotion.
   targetBelt?: string | null;
+  // False when the coach's certification is below the target belt. The
+  // evaluation still saves; promotions become pending recommendations that a
+  // head coach / admin confirms. Defaults to true (full authority).
+  canAccreditTarget?: boolean;
   onCancel: () => void;
   onCompleted: () => void;
 }
@@ -46,6 +50,7 @@ export function FinalCampEvaluation({
   stpCatalog,
   initialRatings,
   targetBelt,
+  canAccreditTarget = true,
   onCancel,
   onCompleted,
 }: Props) {
@@ -440,6 +445,11 @@ export function FinalCampEvaluation({
               <p className="text-[12px] text-gray-500 mt-0.5">
                 {approvedCount} of {students.length} ready for {rule.beltLabel}.
               </p>
+              {!canAccreditTarget && targetBeltValid && (
+                <p className="mt-2 text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                  Your certification is below <strong>{targetBeltLabel}</strong>. Your evaluation still saves — any promotion is sent as a <strong>recommendation</strong> for a head coach or admin to confirm. The belt won&apos;t change until then.
+                </p>
+              )}
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {students.map((s) => {
