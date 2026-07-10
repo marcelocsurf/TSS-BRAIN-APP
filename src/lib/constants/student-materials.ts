@@ -2691,10 +2691,47 @@ STANDARD: Student completes the Three Questions after every session (logged in j
 // COMBINED MATERIALS ARRAY
 // ═══════════════════════════════════════════════════════════
 
+// Advanced belts — structure is live in the course, but the printable
+// Training Manual content is still being written. Show a friendly
+// "coming soon" card instead of an empty section.
+const COMING_SOON_MATERIALS: BeltMaterial[] = [
+  {
+    id: 'purple-coming-soon',
+    beltLevel: 'purple_belt',
+    category: 'theory',
+    title: 'Purple Belt — Training Manual',
+    subtitle: 'Advanced · coming soon',
+    content:
+      'Your Purple Belt course is live in the Course tab (sequences #14–#23, the 13 new steps, and the 3 concepts). The full printable Training Manual — biomechanics, coach cues, and the 5 Key Words per step — is being finalized and will appear here soon.',
+    order: 1,
+  },
+  {
+    id: 'brown-coming-soon',
+    beltLevel: 'brown_belt',
+    category: 'theory',
+    title: 'Brown Belt — Training Manual',
+    subtitle: 'Elite Mastery · coming soon',
+    content:
+      'Brown Belt is the deep, elite mastery of everything you already know — the 6 Mastery Concepts and holistic evaluation. The full Training Manual for this belt is being finalized and will appear here soon.',
+    order: 1,
+  },
+  {
+    id: 'black-coming-soon',
+    beltLevel: 'black_belt',
+    category: 'theory',
+    title: 'Black Belt — Training Manual',
+    subtitle: 'Mastery & Transmission · coming soon',
+    content:
+      'Black Belt is mastery that is shared — the 3 Competency Domains and certification review. The full Training Manual for this belt is being finalized and will appear here soon.',
+    order: 1,
+  },
+];
+
 export const STUDENT_MATERIALS: BeltMaterial[] = [
   ...WHITE_BELT_MATERIALS,
   ...YELLOW_BELT_MATERIALS,
   ...BLUE_BELT_MATERIALS,
+  ...COMING_SOON_MATERIALS,
 ];
 
 // Helper: get materials accessible by a student given their belt training level

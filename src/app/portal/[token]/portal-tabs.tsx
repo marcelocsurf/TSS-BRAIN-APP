@@ -700,6 +700,17 @@ function HomeTab({
         </div>
       </div>
 
+      {/* Provisional belt notice — set your expectations: the belt from the
+          quiz is a starting point your coach confirms in the water. */}
+      {(student as any).belt_provisional && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-900">
+            <span className="font-semibold">Your belt is provisional.</span>{' '}
+            It started from your quiz — your coach will confirm your level after a few sessions in the water.
+          </p>
+        </div>
+      )}
+
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />
 

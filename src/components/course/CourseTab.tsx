@@ -365,6 +365,17 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
+      {/* Empty-state — a course whose belt content isn't published yet. Better
+          than a blank section: tell the student it's coming. */}
+      {beltSequences.length === 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center">
+          <p className="text-sm font-semibold text-[var(--tss-navy)]">{beltLabelShort} content is coming soon</p>
+          <p className="text-xs text-gray-500 mt-1">
+            The lessons for this belt are being finalized. Your Pre-Course and earlier belts stay available above.
+          </p>
+        </div>
+      )}
+
       {/* Final quiz — theory exit test. Locked until the student completes the
           belt's sequences + modules (owners bypass for review). */}
       <CourseFinalQuiz
