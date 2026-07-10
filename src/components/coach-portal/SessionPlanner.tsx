@@ -1381,7 +1381,6 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
 
   const quickFacts = [
     beltLevel && `🥋 ${beltLevel.replace(/_/g, ' ')}`,
-    profile.ocean_level && `🌊 ${profile.ocean_level}`,
     profile.age && `${profile.age} yrs`,
     profile.weight && `${profile.weight} kg`,
     profile.height && `${profile.height} cm`,
