@@ -25,11 +25,21 @@ export async function setActiveCourseKey(
     .single();
   if (!student) throw new Error('Student not found.');
 
+  // Course owners (TSS founders + the Androide Salvadoreno review account)
+  // bypass the access gate so they can review any course, including belts
+  // that don't have a per-student access column yet (purple/brown/black).
+  // Keep in sync with COURSE_OWNER_IDS in src/app/portal/[token]/page.tsx.
+  const COURSE_OWNER_IDS = new Set<string>([
+    '3518cc9c-d633-44ff-b32a-bfb86b5ae748', // Marcelo Castellanos
+    '0f6816db-a637-4af0-86b6-1a1c8227953c', // Androide Salvadoreno (review account)
+  ]);
+  const isOwner = COURSE_OWNER_IDS.has(student.id);
+
   // Refuse to switch into a course the student doesn't own. This is
   // belt-and-suspenders — the dropdown only lists owned courses, but
   // a hand-crafted request shouldn't be able to bypass the gate.
   const course = COURSES.find((c) => c.key === nextCourseKey)!;
-  const owned = !!(student as any)[course.accessColumn];
+  const owned = isOwner || !!(student as any)[course.accessColumn];
   if (!owned) {
     throw new Error('This course is not unlocked for this student.');
   }

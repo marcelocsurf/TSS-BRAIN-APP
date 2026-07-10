@@ -7,7 +7,7 @@
 //   bright — pops on the dark bg (rings + eyebrow)
 //   tint   — soft card-header wash
 //   ink    — readable text on the tint
-export type BeltLevel = 'pre' | 'white' | 'yellow' | 'blue';
+export type BeltLevel = 'pre' | 'white' | 'yellow' | 'blue' | 'purple' | 'brown' | 'black';
 
 export interface BeltTheme {
   accent: string;
@@ -21,6 +21,9 @@ export const BELT_THEMES: Record<BeltLevel, BeltTheme> = {
   white:  { accent: '#94A3B8', bright: '#CBD5E1', tint: '#F8FAFC', ink: '#475569' },
   yellow: { accent: '#EAB308', bright: '#FACC15', tint: '#FEFCE8', ink: '#A16207' },
   blue:   { accent: '#3B82F6', bright: '#60A5FA', tint: '#EFF6FF', ink: '#1D4ED8' },
+  purple: { accent: '#9333EA', bright: '#A855F7', tint: '#FAF5FF', ink: '#7E22CE' },
+  brown:  { accent: '#92400E', bright: '#B45309', tint: '#FBF3EA', ink: '#78350F' },
+  black:  { accent: '#334155', bright: '#64748B', tint: '#F1F5F9', ink: '#0F172A' },
 };
 
 // Accepts belt keys/labels in any form: 'white', 'white_belt', 'Yellow Belt', …

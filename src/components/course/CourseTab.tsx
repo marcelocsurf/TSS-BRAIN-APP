@@ -143,8 +143,15 @@ export function CourseTab({ data }: { data: CourseData }) {
   // to whichever course the student selected in CourseSwitcher.
   const activeCourse =
     COURSES.find((c) => c.key === data.activeCourseKey) ?? COURSES[0];
-  const onboardingSection = activeCourse.lessonSections[0];
-  const beltSection = activeCourse.lessonSections[1];
+  // WB/YB/BB courses are [onboarding, belt]; Purple/Brown/Black have a single
+  // belt section (no onboarding). Belt is always the last section; onboarding
+  // only exists when there are two.
+  const beltSection =
+    activeCourse.lessonSections[activeCourse.lessonSections.length - 1];
+  const onboardingSection =
+    activeCourse.lessonSections.length > 1
+      ? activeCourse.lessonSections[0]
+      : undefined;
 
   const preCourseLessons = data.lessons.filter((l) =>
     (SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(l.course_section)
@@ -181,6 +188,9 @@ export function CourseTab({ data }: { data: CourseData }) {
   const beltLabelShort =
     activeCourse.key === 'yellow_belt' ? 'Yellow Belt'
     : activeCourse.key === 'blue_belt' ? 'Blue Belt'
+    : activeCourse.key === 'purple_belt' ? 'Purple Belt'
+    : activeCourse.key === 'brown_belt' ? 'Brown Belt'
+    : activeCourse.key === 'black_belt' ? 'Black Belt'
     : 'White Belt';
 
   // Color themes: Pre-Course is its own (teal); the rest follow the active belt.
@@ -289,7 +299,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             eyebrow={`Before the sequences · ${onboardingLessons.length} items`}
             title={`${beltLabelShort} — Start Here`}
             subtitle="What you'll learn, the belt value, and the flow language before you paddle out."
-            videoUrl={intros[onboardingSection]?.video_url}
+            videoUrl={onboardingSection ? intros[onboardingSection]?.video_url : undefined}
           />
 
           {onboardingGroups ? (
@@ -437,7 +447,12 @@ function groupByWbSequence(lessons: LessonRow[]) {
 }
 
 function beltLevelForCourse(key: CourseKey): BeltLevel {
-  return key === 'yellow_belt' ? 'yellow' : key === 'blue_belt' ? 'blue' : 'white';
+  return key === 'yellow_belt' ? 'yellow'
+    : key === 'blue_belt' ? 'blue'
+    : key === 'purple_belt' ? 'purple'
+    : key === 'brown_belt' ? 'brown'
+    : key === 'black_belt' ? 'black'
+    : 'white';
 }
 
 // ─── Group Header (reads on the dark student dashboard) ───
