@@ -21,6 +21,7 @@ import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { CoursesPanel } from '@/components/student/CoursesPanel';
+import { StudentPresentationGrants } from './StudentPresentationGrants';
 import { listStudentCourseGrants } from '@/lib/actions/course-grants';
 import { getCampNotesForStudent } from '@/lib/actions/camps';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
@@ -839,6 +840,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         isPlatformAdmin={!!coach?.is_platform_admin}
         isDirectPurchase={!(student as any).academy_id}
       />
+
+      {/* Presentations — grant decks to this student (admin only; renders
+          nothing if there are no presentations or the viewer isn't admin) */}
+      <StudentPresentationGrants studentId={id} />
 
       {/* Level Access */}
       <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />

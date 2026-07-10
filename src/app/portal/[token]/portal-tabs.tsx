@@ -18,6 +18,7 @@ import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
+import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
@@ -710,6 +711,9 @@ function HomeTab({
           </p>
         </div>
       )}
+
+      {/* Presentations granted to this student (renders nothing if none) */}
+      <StudentPresentations token={data.token} />
 
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />

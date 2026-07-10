@@ -110,6 +110,91 @@ export async function listCoachResources(): Promise<CoachResource[]> {
   return (data ?? []) as CoachResource[];
 }
 
+// ─────────────────────────────────────────────────────────────
+// Presentations for STUDENTS (same decks, granted per student).
+// All reads are guarded so the app keeps working even before the
+// student_resource_grants table exists (returns empty instead of throwing).
+// ─────────────────────────────────────────────────────────────
+
+// Student portal (token-based): the presentations granted to THIS student.
+export async function getMyStudentResources(portalToken: string): Promise<CoachResource[]> {
+  try {
+    const admin = createAdminClient();
+    const { data: student } = await admin
+      .from('students')
+      .select('id')
+      .eq('portal_token', portalToken)
+      .maybeSingle();
+    if (!student) return [];
+
+    const { data, error } = await admin
+      .from('student_resource_grants')
+      .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, active)')
+      .eq('student_id', student.id);
+    if (error) return [];
+
+    const rows = (data ?? [])
+      .map((r: any) => r.coach_resources)
+      .filter((r: any) => r && r.active);
+
+    const out: CoachResource[] = [];
+    for (const r of rows) {
+      let url = r.file_url as string | null;
+      if (r.storage_path) {
+        const { data: signed } = await admin.storage
+          .from('coach-presentations')
+          .createSignedUrl(r.storage_path, 60 * 60);
+        if (signed?.signedUrl) url = signed.signedUrl;
+      }
+      if (url) out.push({ id: r.id, title: r.title, description: r.description, file_url: url, kind: r.kind });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// Admin: which presentation ids a given student currently has.
+export async function listStudentResourceGrants(studentId: string): Promise<string[]> {
+  await assertAdmin();
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('student_resource_grants')
+      .select('resource_id')
+      .eq('student_id', studentId);
+    if (error) return [];
+    return (data ?? []).map((r: any) => r.resource_id);
+  } catch {
+    return [];
+  }
+}
+
+// Admin: grant or revoke one presentation for one student.
+export async function setStudentResourceGrant(
+  studentId: string,
+  resourceId: string,
+  granted: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  if (granted) {
+    const { error } = await admin
+      .from('student_resource_grants')
+      .upsert({ student_id: studentId, resource_id: resourceId }, { onConflict: 'student_id,resource_id' });
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { error } = await admin
+      .from('student_resource_grants')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('resource_id', resourceId);
+    if (error) return { ok: false, error: error.message };
+  }
+  revalidatePath(`/students/${studentId}`);
+  return { ok: true };
+}
+
 // Admin: which presentation ids a given coach currently has.
 export async function listCoachGrants(coachId: string): Promise<string[]> {
   await assertAdmin();
