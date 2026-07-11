@@ -789,7 +789,11 @@ export async function redeemCodeAndCreateStudent(
   }
 
   // Create student record. The students table uses `nationality` (not
-  // `country`) and `age` (not a DOB column).
+  // `country`) and `age` (not a DOB column). The course is queued in
+  // pending_courses — it activates automatically the moment the student
+  // completes the intake ficha + signs the waiver (submitBasicIntake →
+  // activatePendingCoursesForStudent). Access codes no longer bypass the
+  // waiver gate.
   const { data: newStudent, error: studentErr } = await admin
     .from('students')
     .insert({
@@ -800,7 +804,8 @@ export async function redeemCodeAndCreateStudent(
       age,
       belt_level: 'white_belt',
       academy_id: codeRow.academy_id || null,
-      course_access_white: false, // consumeAccessCode sets this to true
+      course_access_white: false,
+      pending_courses: [codeRow.product_type],
       signup_code: code.toUpperCase().trim(),
     })
     .select('id, portal_token')
@@ -810,22 +815,15 @@ export async function redeemCodeAndCreateStudent(
     return { ok: false, error: studentErr?.message || 'Failed to create student' };
   }
 
-  // Consume the code (grants course_access_white = true)
-  const consumeResult = await consumeAccessCode(code, newStudent.id);
-  if (!consumeResult.ok) {
-    // Roll back student creation on failure
+  // Mark the code consumed (but do NOT grant access yet — that happens on
+  // waiver signature via the pending_courses activation).
+  const { error: updateCodeErr } = await admin
+    .from('access_codes')
+    .update({ used_by: newStudent.id, used_at: new Date().toISOString() })
+    .eq('code', code.toUpperCase().trim());
+  if (updateCodeErr) {
     await admin.from('students').delete().eq('id', newStudent.id);
-    return { ok: false, error: consumeResult.error || 'Failed to activate code' };
-  }
-
-  // Record a billable course grant so the redemption shows up in
-  // /admin/billing for the academy, priced at that academy's course price.
-  // Best-effort — the student already has access via the boolean flag.
-  try {
-    const { grantCourseToStudent } = await import('@/lib/actions/course-grants');
-    await grantCourseToStudent(newStudent.id, codeRow.product_type, 'access_code');
-  } catch (e) {
-    console.error('access_code grant (billing) failed:', e);
+    return { ok: false, error: updateCodeErr.message };
   }
 
   return { ok: true, portalToken: newStudent.portal_token as string };

@@ -106,6 +106,9 @@ export default function ActivatePage() {
   };
 
   const portalUrl = `/portal/${portalToken}`;
+  // The course unlocks after the student completes their profile + signs the
+  // waiver, so the success CTA routes through intake first.
+  const intakeUrl = `/intake/${portalToken}`;
 
   return (
     <>
@@ -266,16 +269,16 @@ export default function ActivatePage() {
               Your account is ready!
             </h1>
             <p className="text-sm text-gray-500">
-              Welcome to TSS Surf Academy. Your student portal is ready to use.
+              One last step: complete your profile and sign the waiver — your course unlocks right after.
             </p>
           </div>
 
           <a
-            href={portalUrl}
+            href={intakeUrl}
             className="block w-full py-3 rounded-lg font-semibold text-sm text-white text-center transition-opacity hover:opacity-90"
             style={{ backgroundColor: 'var(--tss-navy, #0d2240)' }}
           >
-            Go to my portal →
+            Complete my profile →
           </a>
 
           <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-left">

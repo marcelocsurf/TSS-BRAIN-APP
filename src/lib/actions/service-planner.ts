@@ -189,6 +189,7 @@ export interface StudentProfileSnapshot {
   allergies: string | null;
   medical_notes: string | null;
   risk_notes: string | null;
+  media_release_consent: boolean | null;
   last_session_date: string | null;
   last_session_mission: string | null;
   last_session_status: string | null;
@@ -354,7 +355,7 @@ export async function getServicePlan(
         'current_sequence_number, current_step_order, ' +
         'emergency_contact_name, emergency_contact_phone, ' +
         'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
-        'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, ' +
+        'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, media_release_consent, ' +
         'last_session_date, last_session_mission, last_session_status, last_homework, ' +
         'current_focus_area, next_recommended_focus, coach_notes_general, learning_profile_primary' +
       ')'
@@ -509,6 +510,7 @@ export async function getServicePlan(
         allergies: s?.allergies ?? null,
         medical_notes: s?.medical_notes ?? null,
         risk_notes: s?.risk_notes ?? null,
+        media_release_consent: s?.media_release_consent ?? null,
         last_session_date: s?.last_session_date ?? null,
         last_session_mission: s?.last_session_mission ?? null,
         last_session_status: s?.last_session_status ?? null,
@@ -1349,11 +1351,26 @@ export async function closeCampFinal(
   // portal; coach_private_note is coach/bitácora-only.
   if (results && results.length > 0) {
     const finalizedAt = new Date().toISOString();
+    // Server-side graduation guard: "approved" must be consistent with the
+    // submitted ratings (every rated STP >= 4 stars). The UI already derives
+    // approval this way — this only blocks hand-crafted requests from writing
+    // an approved=true record for a student whose ratings don't meet the bar.
+    const ratingsByStudent = new Map<string, number[]>();
+    for (const r of ratings ?? []) {
+      const list = ratingsByStudent.get(r.student_id) ?? [];
+      list.push(r.rating);
+      ratingsByStudent.set(r.student_id, list);
+    }
+    const meetsBar = (studentId: string): boolean => {
+      const list = ratingsByStudent.get(studentId);
+      if (!list || list.length === 0) return true; // no ratings submitted — coach judgment call
+      return list.every((n) => n >= 4);
+    };
     const rows = results.map((r) => ({
       camp_instance_id: campInstanceId,
       student_id: r.student_id,
       coach_id: coach.id,
-      approved: r.approved,
+      approved: r.approved && meetsBar(r.student_id),
       readiness_summary: r.readiness_summary || null,
       ocean_level_recommendation: r.ocean_level || null,
       finalized_at: finalizedAt,
@@ -1651,7 +1668,20 @@ export async function closeServicePlan(
     .from('service_plan_blocks')
     .select('*')
     .eq('camp_session_id', campSessionId);
-  const allBlocks = blocks ?? [];
+
+  // Skip students who already left the camp (finalized early / removed).
+  // Their pre-seeded blocks for the remaining days must not produce session
+  // results, feedback emails or survey invites.
+  const { data: activeParts } = await admin
+    .from('camp_participants')
+    .select('student_id, finalized_at, enrollment_status')
+    .eq('camp_instance_id', sessionAny.camp_instance_id);
+  const departed = new Set(
+    (activeParts ?? [])
+      .filter((p: any) => p.finalized_at || p.enrollment_status !== 'active')
+      .map((p: any) => p.student_id),
+  );
+  const allBlocks = (blocks ?? []).filter((b: any) => !departed.has(b.student_id));
 
   // Mark session completed.
   await admin
@@ -1831,7 +1861,7 @@ export async function closeServicePlan(
           status,
           coachFeedback: b.notes_post ?? '',
           homework: '',
-          whatsNext: '',
+          whatsNext: firstBlock.whats_next ?? '',
           beltLevel: stud.belt_level || 'white_belt',
           sessionResultId: result.id,
           feedbackToken: (result as any).feedback_token ?? undefined,

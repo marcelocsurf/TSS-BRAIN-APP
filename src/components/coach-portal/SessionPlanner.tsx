@@ -1553,6 +1553,17 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
             </div>
           )}
 
+          {/* Media consent — the coach films/photographs, so this must be
+              impossible to miss when the student opted out. */}
+          {profile.media_release_consent === false && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-2">
+              <p className="text-[11px] font-semibold text-red-700 inline-flex items-center gap-1">
+                <AlertTriangle size={11} strokeWidth={2} />
+                No photos / video — student did not authorize media use
+              </p>
+            </div>
+          )}
+
           {/* Recent training history — coach + self, fold-down for more days */}
           <div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
