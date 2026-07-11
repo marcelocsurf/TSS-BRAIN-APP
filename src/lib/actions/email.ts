@@ -529,19 +529,38 @@ interface QuizLeadEmailData {
   belt: string;            // e.g. 'white_belt'
   score: number;           // 0–70
   academyName: string | null;
+  academyId?: string | null;
 }
 
 export async function sendQuizLeadEmail(
   data: QuizLeadEmailData,
 ): Promise<{ success: boolean; error?: string }> {
-  // Production recipients for quiz-lead notifications.
-  const to = ['info@thesurfsequence.com', 'academy@purosurf.com'];
+  // Recipients: TSS HQ always, plus the lead's academy coordinators/admins
+  // (dynamic — new academies get their leads without touching this file).
+  const to = new Set<string>(['info@thesurfsequence.com']);
+  if (data.academyId) {
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const admin = createAdminClient();
+      const { data: staff } = await admin
+        .from('coaches')
+        .select('email, role, active_status')
+        .eq('academy_id', data.academyId)
+        .in('role', ['coordinator', 'admin']);
+      for (const c of staff ?? []) {
+        if (c.email && c.active_status !== false) to.add(c.email);
+      }
+    } catch { /* fall through to the base recipients */ }
+  }
+  // Legacy fallback so the pilot academy keeps receiving leads even if its
+  // coordinators aren't registered with emails yet.
+  if (to.size === 1) to.add('academy@purosurf.com');
   const beltName = BELT_DISPLAY[data.belt as BeltLevel]?.en || data.belt.replace(/_/g, ' ');
   const levelName = BELT_DISPLAY[data.belt as BeltLevel]?.levelName || '';
   try {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
-      to,
+      to: [...to],
       subject: `New surf-level quiz lead — ${escapeHtml(data.name)} (${beltName})`,
       html: buildQuizLeadHtml(data, beltName, levelName),
     });

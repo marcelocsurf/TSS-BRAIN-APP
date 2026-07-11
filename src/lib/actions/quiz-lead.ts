@@ -158,6 +158,7 @@ export async function createLeadFromQuiz(input: {
       belt: input.belt,
       score: input.score,
       academyName,
+      academyId,
     });
   } catch (e) {
     console.error('[createLeadFromQuiz] notification email failed', e);
