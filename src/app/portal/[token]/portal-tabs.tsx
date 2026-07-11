@@ -2103,7 +2103,7 @@ function PortalAlerts({
       color: BRAND.colors.cyan,
       bg: 'rgba(90,195,231,0.14)',
       title: `Next class · ${upcomingCamp.camp_name}`,
-      subtitle: `${fmtDate(nextDate)}${upcomingCamp.scheduled_time ? ` · ${upcomingCamp.scheduled_time}` : ''}${dayTag}`,
+      subtitle: `${fmtDate(nextDate)}${upcomingCamp.scheduled_time ? ` · ${upcomingCamp.scheduled_time}` : ''}${dayTag}${upcomingCamp.coach?.display_name ? ` · Coach ${upcomingCamp.coach.display_name.split(' ')[0]}` : ''}`,
       onClick: () => onGoTo('sessions'),
     });
   } else if (legacyUpcoming) {
@@ -2234,18 +2234,22 @@ function UpcomingCampCard({ camp }: { camp: any }) {
         {camp.scheduled_time && ` · ${camp.scheduled_time}`}
       </p>
 
-      {/* Coach profile */}
+      {/* Coach profile — who's taking you in the water: photo, name, level */}
       {coach && (
-        <div className="mt-3 flex items-center gap-2.5 bg-white/10 rounded-xl px-3 py-2">
+        <div className="mt-3 flex items-center gap-3 bg-white/10 rounded-xl px-3 py-2.5">
           {coach.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={coach.photo_url}
               alt={coach.display_name}
-              className="w-10 h-10 rounded-full object-cover border border-white/20"
+              className="w-12 h-12 rounded-full object-cover shrink-0"
+              style={{ border: '2px solid var(--tss-cyan, #5AC3E7)' }}
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold">
+            <div
+              className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold shrink-0"
+              style={{ border: '2px solid var(--tss-cyan, #5AC3E7)' }}
+            >
               {coach.display_name
                 ?.split(' ')
                 .map((p: string) => p[0])
@@ -2256,10 +2260,32 @@ function UpcomingCampCard({ camp }: { camp: any }) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate">{coach.display_name}</p>
-            <p className="text-[10px] text-white/60 truncate">
-              Your coach{coach.certification_level ? ` · ${coach.certification_level}` : ''}
+            <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-[var(--tss-cyan)]">
+              Your coach
             </p>
+            <p className="text-sm font-semibold truncate mt-0.5">{coach.display_name}</p>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              {coach.certification_level && (
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/15 text-white/85 font-semibold uppercase tracking-wide">
+                  {String(coach.certification_level).replace(/_/g, ' ').replace(/\btss\b/i, 'TSS')}
+                </span>
+              )}
+              {coach.max_belt_permission && BELT_DISPLAY[coach.max_belt_permission as BeltLevel] && (
+                <span
+                  className="text-[9px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"
+                  style={{ background: 'rgba(255,255,255,.12)', color: '#fff' }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{
+                      background: BELT_DISPLAY[coach.max_belt_permission as BeltLevel]?.color || '#fff',
+                      boxShadow: '0 0 0 1px rgba(255,255,255,.35)',
+                    }}
+                  />
+                  {BELT_DISPLAY[coach.max_belt_permission as BeltLevel]?.en}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}

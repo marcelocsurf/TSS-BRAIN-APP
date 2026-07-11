@@ -453,7 +453,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
-            data.camp.viewer_is_head_coach ||
+            // Policy 2026-07-11: everyone (head coach included) is capped by
+            // their own certification; only unset caps or no target skip it.
             !data.camp.coach_max_belt ||
             !data.camp.target_belt ||
             canCoachBelt(

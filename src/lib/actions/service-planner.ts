@@ -1331,14 +1331,14 @@ export async function closeCampFinal(
     throw new Error('You are not assigned to this service.');
   }
 
-  // Accreditation authority: a coach can only promote UP TO their own
-  // certification (max_belt_permission). Admins and the camp's head coach
-  // bypass the cap. Anyone else's promotion becomes a pending recommendation
-  // for a head coach / admin to confirm. Default cap is black_belt so coaches
-  // without the field set keep working as before (no regression).
+  // Accreditation authority (policy 2026-07-11): EVERY coach — including the
+  // camp's head coach — can only promote UP TO their own certification
+  // (max_belt_permission). Only admins bypass. An under-certified coach's
+  // promotion becomes a pending recommendation so someone WITH the level
+  // performs/confirms the official evaluation. Default cap is black_belt so
+  // coaches without the field set keep working as before (no regression).
   const coachCap = ((coach as any).max_belt_permission || 'black_belt') as BeltLevel;
-  const canAccreditAny =
-    (coach as any).role === 'admin' || camp.head_coach_id === coach.id;
+  const canAccreditAny = (coach as any).role === 'admin';
 
   // Batch-write the official STP ratings, if any
   if (ratings && ratings.length > 0) {

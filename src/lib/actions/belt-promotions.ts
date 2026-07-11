@@ -33,9 +33,10 @@ export async function listPendingPromotions(): Promise<PendingPromotion[]> {
       .order('created_at', { ascending: true });
 
     const role = (me as any).role;
-    if (role !== 'admin') {
-      // Non-admins (incl. coordinators) only see recommendations for camps
-      // they are the head coach of — the only ones they can confirm.
+    if (role !== 'admin' && role !== 'coordinator') {
+      // Coaches only see recommendations for camps they head; admins and
+      // coordinators see everything (they can confirm when their own
+      // certification covers the belt).
       const { data: camps } = await admin
         .from('camp_instances')
         .select('id')
@@ -82,17 +83,35 @@ export async function resolvePromotion(
   if (recErr || !rec) return { ok: false, error: 'Recommendation not found.' };
   if (rec.status !== 'pending') return { ok: false, error: 'Already resolved.' };
 
-  // Authority check: admin, or head coach of the originating camp.
+  // Authority check (policy 2026-07-11): the person confirming must be able
+  // to accredit the recommended belt themselves — admin bypasses; everyone
+  // else needs max_belt_permission >= the belt AND a position of authority
+  // (coordinator, or head coach of the originating camp).
   let authorized = (me as any).role === 'admin';
-  if (!authorized && rec.camp_instance_id) {
-    const { data: camp } = await admin
-      .from('camp_instances')
-      .select('head_coach_id')
-      .eq('id', rec.camp_instance_id)
-      .single();
-    authorized = camp?.head_coach_id === (me as any).id;
+  if (!authorized) {
+    const cap = ((me as any).max_belt_permission || 'black_belt') as BeltLevel;
+    const beltOk =
+      rec.recommended_belt in BELT_RANK &&
+      (BELT_RANK[cap] ?? 0) >= (BELT_RANK[rec.recommended_belt as BeltLevel] ?? 99);
+    let positionOk = (me as any).role === 'coordinator';
+    if (!positionOk && rec.camp_instance_id) {
+      const { data: camp } = await admin
+        .from('camp_instances')
+        .select('head_coach_id')
+        .eq('id', rec.camp_instance_id)
+        .single();
+      positionOk = camp?.head_coach_id === (me as any).id;
+    }
+    authorized = beltOk && positionOk;
+    if (!authorized) {
+      return {
+        ok: false,
+        error: beltOk
+          ? 'Only an admin, a coordinator, or the camp head coach can confirm this.'
+          : 'Your coach certification does not cover this belt — ask someone certified for it to confirm.',
+      };
+    }
   }
-  if (!authorized) return { ok: false, error: 'Only an admin or the camp head coach can confirm this.' };
 
   if (confirm) {
     const newBelt = rec.recommended_belt as BeltLevel;
