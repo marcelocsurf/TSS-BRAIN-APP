@@ -105,10 +105,11 @@ export default async function DashboardHome() {
     } catch { /* non-blocking */ }
   }
 
-  // Coordinator academy setup checklist — nudge to fill emergency plan +
-  // board inventory right after being assigned.
+  // Academy setup checklist — nudge to fill emergency plan + board
+  // inventory. Shown to coordinators AND admins (both manage academies;
+  // safety setup should never depend on which role happens to look).
   let academySetup: { emergencyMissing: boolean; boardsMissing: boolean } | null = null;
-  if (role === 'coordinator' && academyId) {
+  if ((role === 'coordinator' || role === 'admin') && academyId) {
     try {
       const [{ data: aca }, { count: boardCount }] = await Promise.all([
         supabase.from('academies').select('emergency_numbers, nearest_hospital, emergency_address').eq('id', academyId).single(),

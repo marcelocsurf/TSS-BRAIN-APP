@@ -130,6 +130,19 @@ async function handle(req: NextRequest) {
     await admin.from('camp_instances').update({ reminder_emailed_at: new Date().toISOString() }).eq('id', s.id);
   }
 
+  // ── 3) Housekeeping: prune stale notifications ──────────────────
+  // Notifications are append-only; without this they grow forever. 90 days
+  // is far beyond their useful life (the panel shows the latest 30 anyway).
+  let notificationsPruned = 0;
+  try {
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from('notifications')
+      .delete({ count: 'exact' })
+      .lt('created_at', cutoff);
+    notificationsPruned = count ?? 0;
+  } catch { /* table shape changed — never fail the reminder run over cleanup */ }
+
   return NextResponse.json({
     ok: true,
     date: today,
@@ -137,6 +150,7 @@ async function handle(req: NextRequest) {
     taskEmails,
     servicesTomorrow: liveServices.length,
     serviceEmails,
+    notificationsPruned,
   });
 }
 

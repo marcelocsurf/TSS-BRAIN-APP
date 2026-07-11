@@ -649,6 +649,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               return {
                                 order_index: b.block_order,
                                 step_id: b.step_id,
+                                step_ids: (b as any).step_ids ?? null,
                                 drill_id: b.drill_id,
                                 drill_custom: b.drill_custom,
                                 mission_id: b.mission_id,

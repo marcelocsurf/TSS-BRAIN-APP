@@ -68,20 +68,25 @@ export default async function AuditDashboardPage() {
     .select('id, camp_name, status, camp_templates(duration_days)')
     .in('status', ['planned', 'active']);
 
-  // Per camp: count completed sessions
-  const campProgress = [];
-  for (const camp of activeCamps || []) {
-    const { count: completedDays } = await supabase
+  // Per camp: count completed sessions — one batched query instead of one
+  // query per camp (was N+1; slow past a few dozen active camps).
+  const campIds = (activeCamps ?? []).map((c) => c.id);
+  const completedByCamp = new Map<string, number>();
+  if (campIds.length > 0) {
+    const { data: doneSessions } = await supabase
       .from('camp_sessions')
-      .select('*', { count: 'exact', head: true })
-      .eq('camp_instance_id', camp.id)
+      .select('camp_instance_id')
+      .in('camp_instance_id', campIds)
       .eq('session_status', 'completed');
-    campProgress.push({
-      ...camp,
-      completedDays: completedDays || 0,
-      totalDays: (camp as any).camp_templates?.duration_days || 0,
-    });
+    for (const s of doneSessions ?? []) {
+      completedByCamp.set(s.camp_instance_id, (completedByCamp.get(s.camp_instance_id) ?? 0) + 1);
+    }
   }
+  const campProgress = (activeCamps ?? []).map((camp) => ({
+    ...camp,
+    completedDays: completedByCamp.get(camp.id) ?? 0,
+    totalDays: (camp as any).camp_templates?.duration_days || 0,
+  }));
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

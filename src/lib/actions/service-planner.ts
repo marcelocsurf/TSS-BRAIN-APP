@@ -223,6 +223,8 @@ export interface ServicePlanBlock {
   id: string | null;
   order_index: number;
   step_id: string | null;
+  // Multi-step blocks (M78 activity taxonomy) — all STPs this block trains.
+  step_ids?: string[] | null;
   land_drill_id: string | null;
   land_drill_custom: string | null;
   water_drill_id: string | null;
@@ -525,6 +527,7 @@ export async function getServicePlan(
         id: b.id ?? null,
         order_index: b.order_index ?? 0,
         step_id: b.step_id ?? null,
+        step_ids: b.step_ids ?? null,
         land_drill_id: b.land_drill_id ?? null,
         land_drill_custom: b.land_drill_custom ?? null,
         water_drill_id: b.water_drill_id ?? null,
@@ -1219,6 +1222,7 @@ export async function applyTemplateDayToStudents(
   templateBlocks: Array<{
     order_index: number;
     step_id: string | null;
+    step_ids?: string[] | null;
     drill_id: string | null;
     drill_custom: string | null;
     mission_id: string | null;
@@ -1274,7 +1278,8 @@ export async function applyTemplateDayToStudents(
         camp_session_id: campSessionId,
         student_id: studentId,
         order_index: tb.order_index,
-        step_id: tb.step_id ?? null,
+        step_id: tb.step_id ?? (tb.step_ids?.[0] ?? null),
+        step_ids: tb.step_ids ?? null,
         land_drill_id: tb.drill_id ?? null,
         land_drill_custom: tb.drill_id ? null : tb.drill_custom ?? null,
         water_drill_id: tb.mission_id ?? null,
@@ -1284,7 +1289,12 @@ export async function applyTemplateDayToStudents(
     }
   }
   if (rows.length > 0) {
-    const { error } = await admin.from('service_plan_blocks').insert(rows);
+    let { error } = await admin.from('service_plan_blocks').insert(rows);
+    if (error && /step_ids/.test(error.message)) {
+      // Column not migrated yet — retry without the array.
+      const legacy = rows.map(({ step_ids: _drop, ...rest }) => rest);
+      ({ error } = await admin.from('service_plan_blocks').insert(legacy));
+    }
     if (error) throw new Error(error.message);
   }
 }

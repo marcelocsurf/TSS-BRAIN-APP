@@ -413,7 +413,7 @@ export async function createCampInstance(input: {
   if (days.length === 0) {
     const { data: tmpl } = await supabase
       .from('camp_templates')
-      .select('duration_days, is_custom')
+      .select('duration_days, is_custom, template_name')
       .eq('id', input.template_id)
       .single();
 
@@ -426,7 +426,10 @@ export async function createCampInstance(input: {
     const newDays = Array.from({ length: durationDays }, (_, i) => ({
       template_id: input.template_id,
       day_number: i + 1,
-      day_goal: `Day ${i + 1}`,
+      // One-day services read much better titled by what they ARE
+      // ("Surf Lesson 1") than a generic "Day 1".
+      day_goal:
+        durationDays === 1 && tmpl?.template_name ? tmpl.template_name : `Day ${i + 1}`,
       evaluation_focus: null as string | null,
     }));
 
@@ -590,7 +593,7 @@ export async function createCampInstance(input: {
     const { data: tplBlocks } = await supabase
       .from('camp_template_blocks')
       .select(
-        'id, template_day_id, block_order, step_id, drill_id, drill_custom, mission_id, mission_custom, evaluation_focus, mission_time'
+        'id, template_day_id, block_order, step_id, step_ids, drill_id, drill_custom, mission_id, mission_custom, evaluation_focus, mission_time'
       )
       .in('template_day_id', dayIds)
       .order('block_order');
@@ -625,7 +628,8 @@ export async function createCampInstance(input: {
               camp_session_id: cs.id,
               student_id: studentId,
               order_index: tb.block_order ?? idx,
-              step_id: tb.step_id ?? null,
+              step_id: tb.step_id ?? ((tb as any).step_ids?.[0] ?? null),
+              step_ids: (tb as any).step_ids ?? null,
               land_drill_id: tb.drill_id ?? null,
               land_drill_custom: tb.drill_custom ?? null,
               water_drill_id: tb.mission_id ?? null,
@@ -637,7 +641,13 @@ export async function createCampInstance(input: {
       }
     }
     if (blockRows.length > 0) {
-      const { error: blkErr } = await supabase.from('service_plan_blocks').insert(blockRows);
+      let { error: blkErr } = await supabase.from('service_plan_blocks').insert(blockRows);
+      if (blkErr && /step_ids/.test(blkErr.message)) {
+        // service_plan_blocks.step_ids column not migrated yet — retry
+        // without it (blocks keep the primary step_id only).
+        const legacyRows = blockRows.map(({ step_ids: _drop, ...rest }) => rest);
+        ({ error: blkErr } = await supabase.from('service_plan_blocks').insert(legacyRows));
+      }
       if (blkErr) throw new Error(`Failed to seed service_plan_blocks: ${blkErr.message}`);
     }
   }
@@ -1478,6 +1488,25 @@ export async function createCampTemplate(input: CreateTemplateInput) {
 
 export async function updateCampTemplate(templateId: string, input: CreateTemplateInput) {
   const supabase = await createClient();
+
+  // Guard: editing a template DELETES + re-creates its days/blocks, which
+  // running camps reference by FK (camp_sessions.template_day_id). Editing
+  // while services are active would orphan their days mid-camp. Block it
+  // with a clear path forward instead of corrupting live services.
+  {
+    const admin = createAdminClient();
+    const { count } = await admin
+      .from('camp_instances')
+      .select('id', { count: 'exact', head: true })
+      .eq('template_id', templateId)
+      .not('status', 'in', '("completed","cancelled")');
+    if ((count ?? 0) > 0) {
+      throw new Error(
+        `This template has ${count} active service(s) using it. Editing it would break their day plans. ` +
+          `Duplicate the template and edit the copy, or wait until those services finish.`,
+      );
+    }
+  }
 
   // Update template row
   const { error: tplErr } = await supabase
