@@ -724,7 +724,7 @@ function HomeTab({
           <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
             <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>Latest session</p>
             <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
-              {latestResult.standalone_sessions?.mission || 'Session'}
+              {latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}
             </h3>
           </div>
           <div className="px-4 py-3 space-y-2.5">
