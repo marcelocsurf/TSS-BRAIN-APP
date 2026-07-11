@@ -23,6 +23,7 @@ import {
   startServicePlan,
   closeServicePlan,
   saveOfficialStepRatingFromPortal,
+  saveStudentInternalNote,
   type ServicePlanData,
   type ServicePlanStudent,
   type ServicePlanBlock,
@@ -132,6 +133,18 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   };
   const commitPlanField = (field: keyof ServicePlanData['plan'], value: any) =>
     commitPlanPatch({ [field]: value } as any);
+
+  // Coach-to-coach internal note on a student (not shown to the student).
+  const saveInternalNote = (studentId: string, note: string) => {
+    startTransition(async () => {
+      try {
+        await saveStudentInternalNote(token, data.selectedDay.camp_session_id, studentId, note);
+        flash('✓ Internal note saved');
+      } catch (e: any) {
+        alert(e.message || 'Save failed');
+      }
+    });
+  };
 
   // M45 — When the coach rates an STP inline at session close, persist
   // to student_step_ratings.coach_rating so it shows up cyan in the
@@ -832,6 +845,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     boardConflictIds={data.boardConflictIds}
                     templateBlocks={tplBlocks}
                     onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
+                    onSaveNote={(note) => saveInternalNote(s.student_id, note)}
                     onAddBlock={() => addStudentBlock(s.student_id)}
                     onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
                     onShowDrill={(id) => setDrillDetailId(id)}
@@ -882,6 +896,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   drillTitle={drillTitle}
                   coachRatings={coachRatings[s.student_id] ?? {}}
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
+                  onSaveNote={(note) => saveInternalNote(s.student_id, note)}
                   onRateStep={(stepId, rating) => rateStepInline(s.student_id, stepId, rating)}
                   onShowDrill={(id) => setDrillDetailId(id)}
                 />
@@ -1377,7 +1392,7 @@ function StudentAvatar({
   );
 }
 
-function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
+function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStudent; onSaveNote?: (note: string) => void }) {
   const { profile, belt_level: beltLevel, recentSessions, stepRatings } = student;
   const [open, setOpen] = useState(false);
   const [showAllDays, setShowAllDays] = useState(false);
@@ -1615,19 +1630,31 @@ function StudentProfilePanel({ student }: { student: ServicePlanStudent }) {
             </div>
           )}
 
-          {/* Coach notes */}
-          {(profile.current_focus_area ||
-            profile.next_recommended_focus ||
-            profile.coach_notes_general) && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
-                Coach notes
-              </p>
-              {profile.current_focus_area && <ProfileLine label="Focus now" value={profile.current_focus_area} />}
-              {profile.next_recommended_focus && <ProfileLine label="Next" value={profile.next_recommended_focus} />}
-              {profile.coach_notes_general && <ProfileLine label="General" value={profile.coach_notes_general} />}
-            </div>
-          )}
+          {/* Coach notes — Focus/Next are auto-derived (read-only); the
+              internal note is editable and coach-only (the student never
+              sees it), so the next coach gets real context. */}
+          <div className="space-y-2">
+            {(profile.current_focus_area || profile.next_recommended_focus) && (
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                  Coach notes
+                </p>
+                {profile.current_focus_area && <ProfileLine label="Focus now" value={profile.current_focus_area} />}
+                {profile.next_recommended_focus && <ProfileLine label="Next" value={profile.next_recommended_focus} />}
+              </div>
+            )}
+            {onSaveNote && (
+              <div className="rounded-lg bg-amber-50 border border-amber-100 p-2">
+                <TextArea
+                  label="Internal note · next coach only (student can't see)"
+                  value={profile.coach_notes_general}
+                  onBlur={(v) => onSaveNote(v)}
+                  placeholder="e.g. Gets frustrated when it gets hard — short wins help. This cue worked: …"
+                  rows={2}
+                />
+              </div>
+            )}
+          </div>
 
           {quickFacts.length === 0 && !hasMedical && goals.length === 0 && (
             <p className="text-[11px] text-gray-400 italic">
@@ -1676,12 +1703,14 @@ function StudentPlanCard({
   onAddBlock,
   onRemoveBlock,
   onShowDrill,
+  onSaveNote,
 }: {
   student: ServicePlanStudent;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
   availableBoards: ServicePlanData['availableBoards'];
   boardConflictIds: string[];
+  onSaveNote: (note: string) => void;
   templateBlocks: ServicePlanData['templatePlan'][number]['blocks'];
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onAddBlock: () => void;
@@ -1725,7 +1754,7 @@ function StudentPlanCard({
       </div>
 
       {/* Profile / bitácora — review before planning */}
-      <StudentProfilePanel student={student} />
+      <StudentProfilePanel student={student} onSaveNote={onSaveNote} />
 
       {/* M49 — Board assignment lives ONCE per student per day. Saved on
           block 0 so it persists even when the coach adds more blocks. */}
@@ -2156,6 +2185,7 @@ function StudentEvalCard({
   onCommit,
   onRateStep,
   onShowDrill,
+  onSaveNote,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
@@ -2165,6 +2195,7 @@ function StudentEvalCard({
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onRateStep: (stepId: string, rating: number) => void;
   onShowDrill: (drillId: string) => void;
+  onSaveNote: (note: string) => void;
 }) {
   const blocks = student.blocks;
   // General per-student analysis lives on block 0. For services with no planned
@@ -2191,7 +2222,7 @@ function StudentEvalCard({
       </div>
 
       {/* Profile / bitácora — context while evaluating */}
-      <StudentProfilePanel student={student} />
+      <StudentProfilePanel student={student} onSaveNote={onSaveNote} />
 
       {/* M49 — Session-level Focus + Flow (one per student per day, not
           per block). Saved on block 0 just like the board fields. */}

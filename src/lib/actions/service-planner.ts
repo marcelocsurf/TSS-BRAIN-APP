@@ -1908,3 +1908,42 @@ export async function closeServicePlan(
   // step flips it to 'completed'. For 1-day services (lessons), Phase 6
   // will treat day-1 close as the final and trigger the eval inline.
 }
+
+// Coach-to-coach internal note on a student (students.coach_notes_general).
+// Persistent, coach-only — NOT shown in the student portal. Any coach assigned
+// to a service the student is in can leave/read it, so the next coach sees
+// context like "gets frustrated easily" or "this cue worked".
+export async function saveStudentInternalNote(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+  note: string,
+): Promise<void> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) throw new Error('Coach not found.');
+
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  const camp = Array.isArray((session as any)?.camp_instances)
+    ? (session as any).camp_instances[0]
+    : (session as any)?.camp_instances;
+  if (!session || !camp) throw new Error('Service not found.');
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    throw new Error('You are not assigned to this service.');
+  }
+
+  const { error } = await admin
+    .from('students')
+    .update({ coach_notes_general: note.trim() || null })
+    .eq('id', studentId);
+  if (error) throw new Error(error.message);
+}
