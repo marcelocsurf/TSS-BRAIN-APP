@@ -376,13 +376,20 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
-      {/* Final quiz — theory exit test. Locked until the student completes the
-          belt's sequences + modules (owners bypass for review). */}
+      {/* Final quiz — theory exit test. Policy 2026-07-12: studying is free
+          (no locked lessons), but ADVANCING requires completing EVERY lesson
+          of the course — pre-course (safety included), onboarding, and the
+          belt content — before this exam unlocks. Owners bypass for review. */}
       <CourseFinalQuiz
         courseKey={data.activeCourseKey}
         studentId={data.studentId}
         label={beltLabelShort}
-        locked={!data.isOwner && beltLessons.length > 0 && !beltLessons.every((l) => l.completed || l.status_v1 === 'PROPOSED')}
+        locked={
+          !data.isOwner &&
+          ![...preCourseLessons, ...sharedOnboardingLessons, ...onboardingLessons, ...beltLessons].every(
+            (l) => l.completed || l.status_v1 === 'PROPOSED',
+          )
+        }
       />
 
       {/* Footer */}

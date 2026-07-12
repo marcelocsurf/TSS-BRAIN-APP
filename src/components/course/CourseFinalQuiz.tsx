@@ -33,7 +33,7 @@ export function CourseFinalQuiz({ courseKey, studentId, label, locked = false }:
         <h3 className="text-lg font-bold text-white mt-2">{label} — Exit Test</h3>
         <p className="text-[13px] text-white/60 mt-1">{questions.length} key questions · 80% to pass</p>
         <p className="text-[12px] text-amber-300 mt-3">
-          Complete all the {label} sequences and modules to unlock the exit test.
+          Complete every lesson of this course — Pre-Course, safety, onboarding and the {label} content, with their quizzes — to unlock the exit test.
         </p>
       </div>
     );

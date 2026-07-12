@@ -113,15 +113,13 @@ export async function getCourseCatalog(studentId: string) {
   const enriched = (lessons || []).map((lesson: any, idx: number) => {
     const lessonProgress = progressMap.get(lesson.id);
 
-    // Lock logic
+    // Lock logic — policy 2026-07-12 (Marcelo): STUDY IS FREE. Nothing in an
+    // owned course is locked for reading; students explore whenever they
+    // want. The requirement moved to ADVANCEMENT: the belt final exam stays
+    // locked until every lesson (pre-course + onboarding + belt, safety
+    // included) is completed with its quizzes.
     let locked = false;
     let lockReason: string | null = null;
-
-    // White belt is locked until pre-course is complete (skipped for owners)
-    if (lesson.course_section === 'white_belt' && !preCourseCompleted && !isOwner) {
-      locked = true;
-      lockReason = 'Complete the Pre-Course first to unlock White Belt lessons';
-    }
 
     // Check prerequisites (skipped for owners)
     if (lesson.prerequisites && lesson.prerequisites.length > 0 && !isOwner) {
