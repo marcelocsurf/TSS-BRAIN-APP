@@ -3,6 +3,7 @@ import { getCoachPortalData } from '@/lib/actions/coach-portal';
 import { CoachPortalTabs } from './CoachPortalTabs';
 import { resolveAcademyBranding } from '@/lib/branding';
 import { Lock } from 'lucide-react';
+import { LogoutButton } from '@/components/shared/LogoutButton';
 import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 
@@ -28,6 +29,14 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
           <p className="text-sm text-gray-500">
             Your portal access has not been activated yet. Contact your academy administrator to enable it.
           </p>
+          {/* Escape hatch — without this, a signed-in account with no portal
+              access is a dead end (the root route keeps sending it back here). */}
+          <div className="mt-5">
+            <LogoutButton
+              label="Sign out and use another account"
+              className="inline-block rounded-xl bg-[var(--tss-navy)] px-4 py-2.5 text-sm font-semibold text-white"
+            />
+          </div>
         </div>
       </div>
     );
