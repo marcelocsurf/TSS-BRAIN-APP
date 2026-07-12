@@ -36,6 +36,12 @@ import {
   Waves,
   BarChart3,
   LifeBuoy,
+  Zap,
+  CalendarClock,
+  MapPin,
+  Ticket,
+  DollarSign,
+  Receipt,
 } from 'lucide-react';
 
 export default async function DashboardHome() {
@@ -194,6 +200,37 @@ export default async function DashboardHome() {
 
         {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
       </div>
+
+      {/* Quick actions — the tools the admin reaches for daily, one tap from
+          Home instead of hunting the sidebar. */}
+      {role === 'admin' && (
+        <div className="mb-6">
+          <p className="tss-section-label">
+            <Zap size={11} strokeWidth={1.75} />
+            Quick actions
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {[
+              { href: '/spaces', label: 'Espacios', Icon: CalendarClock },
+              { href: '/venue-scout', label: 'Venue Scout', Icon: MapPin },
+              { href: '/course-codes', label: 'Course Codes', Icon: Ticket },
+              { href: '/admin/pricing', label: 'Pricing', Icon: DollarSign },
+              { href: '/admin/billing', label: 'Billing', Icon: Receipt },
+            ].map(({ href, label, Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-white px-2 py-3.5 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors text-center"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)]">
+                  <Icon size={17} strokeWidth={1.75} />
+                </span>
+                <span className="text-[11px] font-semibold text-[var(--tss-navy)] leading-tight">{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Academy setup checklist — coordinator, until filled */}
       {academySetup && (academySetup.emergencyMissing || academySetup.boardsMissing) && (

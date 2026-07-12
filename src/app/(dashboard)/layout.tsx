@@ -48,7 +48,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
-  { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['admin', 'coach'] },
+  // Drafts removed from the admin sidebar (legacy session flow) — coaches
+  // keep it until the old flow is fully retired.
+  { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['coach'] },
   // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
   { href: '/admin/billing',   label: 'Billing',   Icon: Receipt,     roles: ['admin'] },
