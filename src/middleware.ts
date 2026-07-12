@@ -47,6 +47,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/api/quiz-lead' ||          // public quiz lead intake (external site)
     pathname === '/find-your-level.html' ||   // public co-branded quiz (static)
     pathname === '/forgot-password' ||        // password recovery (unauthenticated)
+    pathname === '/my-portal' ||              // public "email me my portal link" for students
     pathname === '/manifest.webmanifest' ||
     pathname === '/sw.js';
 

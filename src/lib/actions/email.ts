@@ -91,6 +91,16 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
 </body></html>`;
 }
 
+// "Install the app" instructions — appended to student-facing emails so the
+// portal lives one tap away on their phone. English, brand name in full.
+const INSTALL_APP_HTML = `
+<div style="margin-top:20px;padding:14px 16px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
+  <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#0d2240;">📲 Add The Surf Sequence to your phone</p>
+  <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>iPhone:</strong> open your portal link in Safari → tap the Share button → <strong>"Add to Home Screen"</strong>.</p>
+  <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>Android:</strong> open it in Chrome → tap the ⋮ menu → <strong>"Add to Home screen"</strong>.</p>
+  <p style="margin:0;font-size:12px;color:#6B7280;line-height:1.6;">You'll get The Surf Sequence icon on your home screen — your portal, one tap away.</p>
+</div>`;
+
 // Send the intake link to a newly created student so they can complete their
 // profile + waiver themselves. Fire-and-forget: never blocks student creation.
 export async function sendIntakeLinkEmail(data: {
@@ -105,13 +115,48 @@ export async function sendIntakeLinkEmail(data: {
       subject: 'Complete your surf intake',
       html: assignmentEmailShell(
         `Welcome, ${data.firstName || 'surfer'}!`,
-        `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">Before your session, please complete your quick intake — it only takes a couple of minutes: your details, a short safety check, and the waiver.</p>`,
+        `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">Before your session, please complete your quick intake — it only takes a couple of minutes: your details, a short safety check, and the waiver.</p>${INSTALL_APP_HTML}`,
         { url: data.intakeUrl, label: 'Complete my intake' },
       ),
     });
     return { success: true };
   } catch (err: any) {
     console.error('Intake email failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// Portal-access email — the student asked for their portal link from the
+// public /my-portal page (any device, no password needed). One email per
+// address; when several students share the email (family, camp testing),
+// each gets their own button.
+export async function sendPortalLinkEmail(data: {
+  toEmail: string;
+  students: Array<{ firstName: string; portalUrl: string }>;
+}): Promise<{ success: boolean; error?: string }> {
+  const many = data.students.length > 1;
+  const buttons = data.students
+    .map(
+      (s) => `
+    <div style="margin:14px 0;">
+      ${many ? `<p style="margin:0 0 6px;font-size:13px;color:#374151;font-weight:600;">${escapeHtml(s.firstName || 'Surfer')}</p>` : ''}
+      <a href="${s.portalUrl}" style="display:inline-block;background:#0d2240;color:#ffffff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Open my portal →</a>
+    </div>`,
+    )
+    .join('');
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: 'Your Surf Sequence portal link',
+      html: assignmentEmailShell(
+        many ? 'Your portal links' : `Here you go, ${escapeHtml(data.students[0]?.firstName || 'surfer')}!`,
+        `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">Tap the button to open your Surf Sequence student portal. Save this email — the link is yours and works on any device.</p>${buttons}${INSTALL_APP_HTML}`,
+      ),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Portal link email failed:', err.message);
     return { success: false, error: err.message };
   }
 }
