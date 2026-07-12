@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
-import { createTask, updateTask, setTaskDone, deleteTask, type AcademyTask } from '@/lib/actions/tasks';
+import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight, Pencil, Repeat, ListChecks, History } from 'lucide-react';
+import { createTask, updateTask, setTaskDone, deleteTask, listTaskHistory, type AcademyTask, type TaskReport } from '@/lib/actions/tasks';
 
 // Standard recurring academy chores — one tap pre-fills the title.
 const PRESETS = [
@@ -37,9 +37,22 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
   const [title, setTitle] = useState('');
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
+  const [recurrence, setRecurrence] = useState('');
+  const [checklistText, setChecklistText] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [history, setHistory] = useState<TaskReport[]>([]);
   const [pending, start] = useTransition();
+
+  function toggleHistory(taskId: string) {
+    if (historyId === taskId) { setHistoryId(null); return; }
+    setHistoryId(taskId);
+    setHistory([]);
+    start(async () => {
+      try { setHistory(await listTaskHistory(taskId)); } catch { /* soft */ }
+    });
+  }
 
   const openTasks = tasks.filter((t) => t.status !== 'done');
   const doneTasks = tasks.filter((t) => t.status === 'done');
@@ -51,11 +64,13 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
     start(async () => {
       const res = await createTask({
         academy_id: academyId, title, assignee_coach_id: assignee || null, due_date: due || null,
+        recurrence: recurrence || null,
+        checklist: checklistText.split('\n').map((s) => s.trim()).filter(Boolean),
       });
       if (!res.ok || !res.task) { setErr(res.error || 'Could not create the task.'); return; }
       // Add it to the list immediately so a second task can be added right away.
       setTasks((prev) => [res.task!, ...prev]);
-      setTitle(''); setAssignee(''); setDue(''); setShowForm(false);
+      setTitle(''); setAssignee(''); setDue(''); setRecurrence(''); setChecklistText(''); setShowForm(false);
       router.refresh();
     });
   }
@@ -124,6 +139,23 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                   {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
                 <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 text-gray-700" />
+                <select value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
+                  <option value="">One-time</option>
+                  <option value="weekly">🔁 Weekly (standing)</option>
+                  <option value="monthly">🔁 Monthly (standing)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-500 mb-1">
+                  Steps / manual (optional — one step per line). The assignee ticks them off when doing the task.
+                </label>
+                <textarea
+                  value={checklistText}
+                  onChange={(e) => setChecklistText(e.target.value)}
+                  rows={3}
+                  placeholder={'1. Check leashes\n2. Check fins\n3. Report any damage'}
+                  className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                />
               </div>
               {err && <p className="text-xs text-red-600">{err}</p>}
               <div className="flex gap-2">
@@ -146,17 +178,53 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                     <TaskEditForm task={t} assignees={assignees} pending={pending} onCancel={() => { setEditingId(null); setErr(null); }} onSave={(patch) => saveEdit(t.id, patch)} />
                   </li>
                 ) : (
-                  <li key={t.id} className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2.5">
-                    <button onClick={() => toggle(t)} className="w-5 h-5 shrink-0 rounded-md border-2 border-gray-300 hover:border-emerald-500 transition-colors" aria-label="Mark done" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-800 truncate">{t.title}</p>
-                      <p className="text-[11px] text-gray-400 flex gap-2 flex-wrap">
-                        {t.assignee_name ? <span>{t.assignee_name}</span> : <span className="italic">Unassigned</span>}
-                        {t.due_date && <span className={isOverdue(t) ? 'text-red-500 font-semibold' : ''}>Due {fmtDue(t.due_date)}</span>}
-                      </p>
+                  <li key={t.id} className="rounded-xl border border-gray-100">
+                    <div className="flex items-center gap-2.5 px-3 py-2.5">
+                      <button onClick={() => toggle(t)} className="w-5 h-5 shrink-0 rounded-md border-2 border-gray-300 hover:border-emerald-500 transition-colors" aria-label="Mark done" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-800 truncate">
+                          {t.title}
+                          {t.recurrence && (
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-1.5 py-0.5 align-middle">
+                              <Repeat size={9} /> {t.recurrence}
+                            </span>
+                          )}
+                          {(t.checklist?.length ?? 0) > 0 && (
+                            <span className="ml-1 inline-flex items-center gap-0.5 text-[9px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-1.5 py-0.5 align-middle">
+                              <ListChecks size={9} /> {t.checklist!.length} steps
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[11px] text-gray-400 flex gap-2 flex-wrap">
+                          {t.assignee_name ? <span>{t.assignee_name}</span> : <span className="italic">Unassigned</span>}
+                          {t.due_date && <span className={isOverdue(t) ? 'text-red-500 font-semibold' : ''}>Due {fmtDue(t.due_date)}</span>}
+                        </p>
+                      </div>
+                      <button onClick={() => toggleHistory(t.id)} className={`p-1 transition-colors shrink-0 ${historyId === t.id ? 'text-[var(--tss-navy)]' : 'text-gray-300 hover:text-[var(--tss-navy)]'}`} aria-label="History"><History size={14} /></button>
+                      <button onClick={() => { setEditingId(t.id); setErr(null); }} className="p-1 text-gray-300 hover:text-[var(--tss-navy)] transition-colors shrink-0" aria-label="Edit"><Pencil size={14} /></button>
+                      <button onClick={() => remove(t)} className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0" aria-label="Delete"><Trash2 size={14} /></button>
                     </div>
-                    <button onClick={() => { setEditingId(t.id); setErr(null); }} className="p-1 text-gray-300 hover:text-[var(--tss-navy)] transition-colors shrink-0" aria-label="Edit"><Pencil size={14} /></button>
-                    <button onClick={() => remove(t)} className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0" aria-label="Delete"><Trash2 size={14} /></button>
+                    {historyId === t.id && (
+                      <div className="border-t border-gray-100 bg-gray-50/60 px-3 py-2">
+                        {history.length === 0 ? (
+                          <p className="text-[11px] text-gray-400 italic">{pending ? 'Loading…' : 'No reports yet for this task.'}</p>
+                        ) : (
+                          <ul className="space-y-1">
+                            {history.map((h) => (
+                              <li key={h.id} className="text-[11px]">
+                                <span className={h.outcome === 'done' ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                                  {h.outcome === 'done' ? '✓ Done' : '✗ Not done'}
+                                </span>{' '}
+                                <span className="text-gray-500">
+                                  · {h.completed_by_name || '—'} · {fmtDue(h.created_at.slice(0, 10))}
+                                </span>
+                                {h.comment && <span className="text-gray-600"> — “{h.comment}”</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </li>
                 )
               ))}

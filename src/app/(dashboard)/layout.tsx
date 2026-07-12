@@ -41,9 +41,12 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/students',      label: 'Students',     Icon: Users,       roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/camps',         label: 'Services',     Icon: Tent,        roles: ['admin', 'coordinator'] },
   { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
-  { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['admin', 'coordinator', 'coach', 'assistant'] },
-  { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['admin', 'coordinator', 'coach'] },
-  { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
+  // Espacios / Venue Scout / Course Codes / Pricing / Billing left the ADMIN
+  // sidebar — they live in the dashboard Quick Actions now (less clutter).
+  // Other roles keep their entries.
+  { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['coordinator', 'coach', 'assistant'] },
+  { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['coordinator', 'coach'] },
+  { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
@@ -53,8 +56,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['coach'] },
   // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
-  { href: '/admin/billing',   label: 'Billing',   Icon: Receipt,     roles: ['admin'] },
-  { href: '/admin/pricing',   label: 'Pricing',   Icon: DollarSign,  roles: ['admin'] },
+  // Billing + Pricing moved to the dashboard Quick Actions (admin).
   { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3,   roles: ['admin'] },
   { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
   { href: '/drill-library', label: 'Drills', Icon: Dumbbell,   roles: ['admin'] },
