@@ -822,6 +822,8 @@ function CoursesTab({
   );
   const tierDiagnostics = byPrefix('COACH-DIAG-');
   const tierCareer = byPrefix('COACH-CAREER-');
+  // Safety Canon certification module — required for L1 + annual renewal.
+  const tierSafety = byPrefix('COACH-SAFETY-');
   const exitTest = courses.filter((c) => c.id === 'COACH-WB-EXIT-TEST');
   const master = courses.filter((c) => c.course_section === 'coach_wb_master');
 
@@ -1001,6 +1003,12 @@ function CoursesTab({
             label="Tier 5 — Career"
             sub="The 5-level coach certification ladder + code of conduct."
             items={tierCareer}
+            render={renderCard}
+          />
+          <TierGroup
+            label="Safety Canon — Certification Module"
+            sub="The governing safety doctrine. Required for L1 certification · final exam 80% · annual renewal."
+            items={tierSafety}
             render={renderCard}
           />
           {/* ── YB Coach Course (unlocks after WB Exit Test) ── */}
