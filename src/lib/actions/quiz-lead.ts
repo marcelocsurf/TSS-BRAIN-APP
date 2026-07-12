@@ -69,14 +69,37 @@ export async function createLeadFromQuiz(input: {
   // update its quiz result instead of creating a second record.
   const email = input.email?.trim().toLowerCase() || null;
   const phone = input.phone?.trim() || null;
+  // Dedup requires contact match AND name match. Email/phone alone is not
+  // enough: shared emails are a real pattern (a coordinator quizzing campers,
+  // parents quizzing kids) and matching by contact only silently merged
+  // different people into one record — overwriting the first one's quiz.
+  const norm = (v: string | null | undefined) =>
+    (v || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '') // strip accents
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  const incomingName = norm(`${input.first_name} ${input.last_name || ''}`);
   let existingId: string | null = null;
   if (email || phone) {
-    let q = admin.from('students').select('id, email, phone').eq('status', 'active').limit(50);
+    let q = admin
+      .from('students')
+      .select('id, email, phone, first_name, last_name')
+      .eq('status', 'active')
+      .limit(50);
     if (academyId) q = q.eq('academy_id', academyId);
     const { data } = await q;
     for (const s of data ?? []) {
-      if (email && s.email && s.email.trim().toLowerCase() === email) { existingId = s.id; break; }
-      if (phone && s.phone && s.phone.trim() === phone) { existingId = s.id; break; }
+      const contactMatch =
+        (email && s.email && s.email.trim().toLowerCase() === email) ||
+        (phone && s.phone && s.phone.trim() === phone);
+      if (!contactMatch) continue;
+      const existingName = norm(`${s.first_name || ''} ${s.last_name || ''}`);
+      if (existingName && incomingName && existingName === incomingName) {
+        existingId = s.id;
+        break;
+      }
     }
   }
 
