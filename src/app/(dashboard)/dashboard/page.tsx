@@ -498,6 +498,22 @@ async function CoordinatorDashboard() {
         <div className="grid sm:grid-cols-2 gap-3">
           <BoardInventoryLauncher academyId={me.academy_id} variant="card" />
           <BoardSelectorLauncher variant="card" />
+          {/* Ratio Decision Engine — Safety Canon coach-to-student ratio by
+              conditions; the coordinator uses it to assign coaches/assistants. */}
+          <a
+            href="/ratio-engine.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors sm:col-span-2"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white">
+              <Users size={20} strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-[var(--tss-navy)]">Ratio Decision Engine</span>
+              <span className="block text-xs text-gray-500">Coach-to-student ratio by conditions — assign coaches &amp; assistants safely</span>
+            </span>
+          </a>
         </div>
       )}
 

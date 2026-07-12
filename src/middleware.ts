@@ -46,6 +46,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
     pathname === '/api/quiz-lead' ||          // public quiz lead intake (external site)
     pathname === '/find-your-level.html' ||   // public co-branded quiz (static)
+    pathname === '/ratio-engine.html' ||      // Safety Canon ratio tool (static)
     pathname === '/forgot-password' ||        // password recovery (unauthenticated)
     pathname === '/my-portal' ||              // public "email me my portal link" for students
     pathname === '/manifest.webmanifest' ||

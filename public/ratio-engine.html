@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Surf Sequence — Ratio Decision Engine</title>
+<style>
+  :root {
+    --navy: #0A1628;
+    --navy-2: #101F35;
+    --cyan: #5AC3E7;
+    --green: #3DC97C;
+    --amber: #E8B93D;
+    --orange: #E8833D;
+    --red: #E04545;
+    --text: #EAF2F8;
+    --muted: #8FA3B8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, 'Segoe UI', Arial, sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px;
+    display: flex;
+    justify-content: center;
+  }
+  .engine { width: 100%; max-width: 560px; }
+  .brand { text-align: center; margin-bottom: 20px; }
+  .brand img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 8px; }
+  .brand h1 { font-size: 22px; letter-spacing: 0.5px; }
+  .brand h1 span { color: var(--cyan); }
+  .brand p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .card {
+    background: var(--navy-2);
+    border: 1px solid rgba(90,195,231,0.25);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--cyan); margin: 12px 0 6px; }
+  label:first-child { margin-top: 0; }
+  select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(90,195,231,0.35);
+    background: var(--navy);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .result { text-align: center; padding: 22px 18px; border-radius: 14px; margin-bottom: 14px; transition: all 0.25s; }
+  .result .label { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+  .result .ratio { font-size: 52px; font-weight: 800; line-height: 1.2; margin: 6px 0; }
+  .result .notes { font-size: 14px; opacity: 0.95; }
+  .c-green  { background: rgba(61,201,124,0.12); border: 2px solid var(--green);  color: var(--green); }
+  .c-cyan   { background: rgba(90,195,231,0.12); border: 2px solid var(--cyan);   color: var(--cyan); }
+  .c-amber  { background: rgba(232,185,61,0.12); border: 2px solid var(--amber);  color: var(--amber); }
+  .c-orange { background: rgba(232,131,61,0.12); border: 2px solid var(--orange); color: var(--orange); }
+  .c-red    { background: rgba(224,69,69,0.15);  border: 2px solid var(--red);    color: var(--red); }
+  .restrict { display: none; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; background: rgba(232,131,61,0.12); border: 1px solid var(--orange); color: var(--orange); font-size: 14px; }
+  .redcode { display: none; border-radius: 14px; padding: 18px; margin-bottom: 14px; background: rgba(224,69,69,0.15); border: 2px solid var(--red); }
+  .redcode h2 { color: var(--red); font-size: 18px; margin-bottom: 6px; }
+  .redcode p { font-size: 14px; margin-bottom: 10px; }
+  .planb { display: flex; flex-wrap: wrap; gap: 6px; }
+  .planb span { background: var(--navy); border: 1px solid rgba(90,195,231,0.35); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--cyan); }
+  .hazards h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--orange); margin-bottom: 8px; }
+  .hazards p.note { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .hz { display: flex; flex-wrap: wrap; gap: 6px; }
+  .hz button {
+    background: var(--navy); border: 1px solid rgba(143,163,184,0.4); border-radius: 20px;
+    padding: 6px 12px; font-size: 12px; color: var(--text); cursor: pointer; font-family: inherit;
+  }
+  .hz button.on { background: rgba(224,69,69,0.2); border-color: var(--red); color: var(--red); font-weight: 700; }
+  .foot { text-align: center; font-size: 11px; color: var(--muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="engine">
+  <div class="brand">
+    <img src="/tss-logo-wave.png" alt="The Surf Sequence" />
+    <h1>Ratio Decision Engine</h1>
+    <p>The Surf Sequence<span style="color:var(--cyan)">®</span> · Coach-to-student ratio by conditions — The system decides, not emotion.</p>
+  </div>
+
+  <div class="card">
+    <label for="swell">Swell Size</label>
+    <select id="swell" onchange="calc()">
+      <option value="1">1–2 ft</option>
+      <option value="2">3–4 ft</option>
+      <option value="3">5–6 ft</option>
+      <option value="4">7–8 ft</option>
+      <option value="5">8–10 ft</option>
+      <option value="6">10+ ft</option>
+    </select>
+
+    <label for="current">Current</label>
+    <select id="current" onchange="calc()">
+      <option value="0">No current</option>
+      <option value="1">Moderate</option>
+      <option value="2">Moderate to strong</option>
+      <option value="3">Heavy</option>
+    </select>
+
+    <label for="age">Student Age Range</label>
+    <select id="age" onchange="calc()">
+      <option value="0">Under 8</option>
+      <option value="1">8–11 years</option>
+      <option value="2">12–13 years</option>
+      <option value="3">14+ years</option>
+    </select>
+
+    <label for="level">Student Level</label>
+    <select id="level" onchange="calc()">
+      <option value="0">Beginner (White Belt)</option>
+      <option value="1">Novice (Yellow Belt)</option>
+      <option value="2">Foundation (Blue Belt)</option>
+    </select>
+  </div>
+
+  <div class="result" id="result">
+    <div class="label" id="r-label"></div>
+    <div class="ratio" id="r-ratio"></div>
+    <div class="notes" id="r-notes"></div>
+  </div>
+
+  <div class="restrict" id="restrict"></div>
+
+  <div class="redcode" id="redcode">
+    <h2>🚨 RED CODE — Cancel Session</h2>
+    <p>Conditions exceed safe delivery threshold. <strong>Cancel the water session immediately.</strong></p>
+    <div class="planb">
+      <span>Surf Skate</span><span>Pool Paddle</span><span>Gym / Functional</span>
+      <span>Video Analysis</span><span>Theory Session</span><span>Games (Kids)</span>
+    </div>
+  </div>
+
+  <div class="card hazards">
+    <h3>Additional Hazard Check</h3>
+    <p class="note">Any hazard present = RED CODE regardless of swell. Tap to mark.</p>
+    <div class="hz" id="hz">
+      <button onclick="toggleHz(this)">Jellyfish</button>
+      <button onclick="toggleHz(this)">Stingrays</button>
+      <button onclick="toggleHz(this)">Rocks exposed</button>
+      <button onclick="toggleHz(this)">Sharks / Crocs</button>
+      <button onclick="toggleHz(this)">Contaminated water</button>
+      <button onclick="toggleHz(this)">Boat traffic</button>
+      <button onclick="toggleHz(this)">Venomous creatures</button>
+      <button onclick="toggleHz(this)">Lightning / storm</button>
+    </div>
+  </div>
+
+  <div class="foot">The Surf Sequence® — Safety Canon v2.0 · Field Operations · Enkrateia SA de CV</div>
+</div>
+
+<script>
+// Decision logic — extracted 1:1 from The Surf Sequence Safety Canon Tool (Ratio Decision Engine), Safety Canon v2.0
+function decide(sw, age, lv) {
+  if (sw === 1) { // 1–2 ft — VERY SAFE
+    if (age === 0) return { c: 'c-green', l: 'VERY SAFE CONDITIONS', r: '1 : 1', n: 'Kids under 8 always require 1:1 ratio.', x: 'Under 8: 1:1 mandatory regardless of conditions.' };
+    if (age === 1) return { c: 'c-green', l: 'VERY SAFE CONDITIONS', r: '1 : 2', n: '8–11 years. Very safe conditions.', x: '' };
+    return { c: 'c-green', l: 'VERY SAFE CONDITIONS', r: '1 : 4', n: '12+ years. Standard conditions. No additional restrictions.', x: '' };
+  }
+  if (sw === 2) { // 3–4 ft — SAFE
+    if (age === 0) return { c: 'c-cyan', l: 'SAFE CONDITIONS', r: 'EVALUATE', n: 'Kids under 8: based on detailed condition assessment.', x: 'Under 8 requires individual assessment of all conditions before approval.' };
+    if (age === 1) return { c: 'c-cyan', l: 'SAFE CONDITIONS', r: '1 : 1', n: '8–11 years with moderate swell: 1:1 required.', x: '' };
+    return { c: 'c-cyan', l: 'SAFE CONDITIONS', r: '1 : 2', n: '12+ years. Standard safe conditions.', x: '' };
+  }
+  if (sw === 3) { // 5–6 ft — CHALLENGING
+    if (age === 0) return { c: 'c-amber', l: 'CHALLENGING CONDITIONS', r: 'NO ENTRY', n: 'No children under 8 in challenging conditions.', x: 'Under 8: not permitted.' };
+    if (age <= 2) return { c: 'c-amber', l: 'CHALLENGING CONDITIONS', r: '1 : 1', n: '8–13 years: 1:1 ratio mandatory. No kids under 8.', x: 'No children under 8. Ages 8-13 require 1:1.' };
+    return { c: 'c-amber', l: 'CHALLENGING CONDITIONS', r: '1 : 2', n: '14+ years. If necessary, increase to 1:1.', x: '' };
+  }
+  if (sw === 4) { // 7–8 ft — STRONG
+    if (age <= 2) return { c: 'c-orange', l: 'STRONG CONDITIONS', r: '1 : 1', n: 'NO kids under 14. 1:1 ratio mandatory.', x: 'NO students under 14 years in strong conditions.' };
+    return { c: 'c-orange', l: 'STRONG CONDITIONS', r: '1 : 1', n: '14+ years only. 1:1 mandatory.', x: '' };
+  }
+  if (sw === 5) { // 8–10 ft — HEAVY
+    if (age === 3 && lv >= 1) return { c: 'c-orange', l: 'HEAVY CONDITIONS', r: '1 : 1', n: 'Novice to Foundation only. 14+ years only. Can be cancelled at any time.', x: 'NO beginners. NO kids under 14. Session can be cancelled at any time.' };
+    return { c: 'c-orange', l: 'HEAVY CONDITIONS', r: 'CANCEL', n: 'No beginners. No students under 14. Cancel or upgrade to qualified students only.', x: 'NO beginners in these conditions.' };
+  }
+  return { c: 'c-red', red: true }; // 10+ ft — RED CODE
+}
+
+function calc() {
+  const sw = +document.getElementById('swell').value;
+  const age = +document.getElementById('age').value;
+  const lv = +document.getElementById('level').value;
+  const hzOn = document.querySelectorAll('#hz button.on').length > 0;
+  const d = decide(sw, age, lv);
+  const result = document.getElementById('result');
+  const redcode = document.getElementById('redcode');
+  const restrict = document.getElementById('restrict');
+
+  if (d.red || hzOn) {
+    result.style.display = 'none';
+    restrict.style.display = 'none';
+    redcode.style.display = 'block';
+    return;
+  }
+  redcode.style.display = 'none';
+  result.style.display = 'block';
+  result.className = 'result ' + d.c;
+  document.getElementById('r-label').textContent = d.l;
+  document.getElementById('r-ratio').textContent = d.r;
+  document.getElementById('r-notes').textContent = d.n;
+  if (d.x) { restrict.style.display = 'block'; restrict.textContent = '⚠ ' + d.x; }
+  else { restrict.style.display = 'none'; }
+}
+
+function toggleHz(btn) { btn.classList.toggle('on'); calc(); }
+calc();
+</script>
+</body>
+</html>
