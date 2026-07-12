@@ -23,7 +23,7 @@ export default async function AddCoachPage({ searchParams }: Props) {
   // implicitly bound to their own academy by the server route.
   const supabase = await createClient();
   const { data: academies } = currentCoach.is_platform_admin
-    ? await supabase.from('academies').select('id, name, slug').order('name')
+    ? await supabase.from('academies').select('id, name, slug').is('archived_at', null).order('name')
     : { data: null };
 
   return (

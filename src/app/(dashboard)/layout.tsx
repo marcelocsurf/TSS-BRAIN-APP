@@ -105,9 +105,12 @@ export default async function DashboardLayout({
   let actAsAcademyName: string | null = null;
   let allAcademies: { id: string; name: string; slug: string }[] = [];
   if (isAdmin) {
+    // Archived academies stay in the DB (their students remain in the admin
+    // roster) but disappear from the act-as switcher.
     const { data: list } = await supabase
       .from('academies')
       .select('id, name, slug')
+      .is('archived_at', null)
       .order('name');
     allAcademies = list ?? [];
     if (actAsId) {
