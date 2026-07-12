@@ -13,6 +13,8 @@ import { incidentTypeLabel } from '@/lib/constants/brand';
 import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
 import { TasksPanel } from '@/components/dashboard/TasksPanel';
 import { PendingPromotionsPanel } from '@/components/dashboard/PendingPromotionsPanel';
+import { PlatformOverview } from '@/components/dashboard/PlatformOverview';
+import { getPlatformOverview } from '@/lib/actions/platform-overview';
 import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
@@ -161,6 +163,14 @@ export default async function DashboardHome() {
     } catch { /* non-blocking */ }
   }
 
+  // Platform control tower — admin only, per-academy pulse. Soft-fail.
+  let platformOverview: Awaited<ReturnType<typeof getPlatformOverview>> = null;
+  if (role === 'admin') {
+    try {
+      platformOverview = await getPlatformOverview();
+    } catch { /* non-blocking */ }
+  }
+
   return (
     <div>
       <h2
@@ -247,6 +257,9 @@ export default async function DashboardHome() {
           </ul>
         </div>
       )}
+
+      {/* Platform control tower — per-academy pulse for the admin. */}
+      {platformOverview && <PlatformOverview data={platformOverview} />}
 
       {/* Incident reports — coordinator + admin. Unread badge + mark-as-read. */}
       <IncidentsPanel incidents={incidents} />
