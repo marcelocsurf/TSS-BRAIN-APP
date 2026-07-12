@@ -1800,11 +1800,27 @@ export async function closeServicePlan(
     const achievedText =
       worst === 'achieved' ? 'yes' : worst === 'not_yet' ? 'not yet' : 'partial';
 
-    const missionTitle =
-      firstBlock.objective_text ||
-      (firstBlock.water_drill_id ? titleById[firstBlock.water_drill_id] : firstBlock.water_drill_custom) ||
-      (firstBlock.land_drill_id ? titleById[firstBlock.land_drill_id] : firstBlock.land_drill_custom) ||
-      'Service session';
+    // The mission shown to the student ("Latest session" card) should be the
+    // MAIN work of the day, not the opening block. Prefer the first block
+    // with a water mission whose label isn't a warm-up/venue/opening item;
+    // fall back to the old first-block derivation.
+    const labelOf = (blk: any): string | null =>
+      blk.objective_text ||
+      (blk.water_drill_id ? titleById[blk.water_drill_id] : blk.water_drill_custom) ||
+      (blk.land_drill_id ? titleById[blk.land_drill_id] : blk.land_drill_custom) ||
+      null;
+    const isOpening = (s: string) => /warm.?up|venue analysis|welcome|opening|check.?in/i.test(s);
+    const mainBlock =
+      studentBlocks.find((blk: any) => {
+        const label = labelOf(blk);
+        return !!(blk.water_drill_id || blk.water_drill_custom) && label && !isOpening(label);
+      }) ??
+      studentBlocks.find((blk: any) => {
+        const label = labelOf(blk);
+        return label && !isOpening(label);
+      }) ??
+      firstBlock;
+    const missionTitle = labelOf(mainBlock) || labelOf(firstBlock) || 'Service session';
     const b = firstBlock; // alias for the legacy code below
 
     const { data: result, error: resErr } = await admin

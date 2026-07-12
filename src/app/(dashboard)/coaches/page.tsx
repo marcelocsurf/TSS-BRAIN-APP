@@ -41,7 +41,8 @@ export default async function CoachesPage() {
     .from('coaches')
     .select('*')
     .order('role', { ascending: true })
-    .order('display_name', { ascending: true });
+    .order('display_name', { ascending: true })
+    .limit(300); // sanity cap — keeps the page fast if the roster ever balloons
   if (!currentCoach.is_platform_admin && currentCoach.academy_id) {
     query = query.eq('academy_id', currentCoach.academy_id);
   }

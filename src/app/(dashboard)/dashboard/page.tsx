@@ -103,7 +103,10 @@ export default async function DashboardHome() {
   let notifications: Awaited<ReturnType<typeof getMyNotifications>> = [];
   try {
     notifications = await getMyNotifications();
-  } catch { /* non-blocking */ }
+  } catch (e) {
+    // Non-blocking for the user, but never silent for us.
+    console.error('[dashboard] notifications failed:', e);
+  }
 
   // Incident reports — alert coordinator + admin so a flagged incident
   // never goes unseen. Scoped to the academy in context.

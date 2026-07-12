@@ -493,6 +493,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <p className="text-[10px] font-mono uppercase tracking-wider opacity-80">
           {data.camp.service_kind?.replace(/_/g, ' ') || 'Service'} ·{' '}
           {state === 'planned' ? 'planning' : state === 'in_progress' ? 'in progress' : 'closed'}
+          {data.daySummaries.length > 1 && (
+            <span style={{ color: '#5AC3E7' }}>
+              {' '}· Day {data.selectedDay.day_number} of {data.daySummaries.length}
+            </span>
+          )}
         </p>
         <h2 className="text-base font-bold mt-0.5">{data.camp.camp_name}</h2>
         <p className="text-[11px] opacity-80 mt-0.5">
@@ -1419,7 +1424,9 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
     profile.swim_level && `swim: ${profile.swim_level}`,
     profile.board_type && `🛹 ${profile.board_type}`,
     profile.favorite_wave_size && `fav wave: ${profile.favorite_wave_size}`,
-    profile.ocean_level && `ocean: ${String(profile.ocean_level).replace(/_/g, ' ')}`,
+    // "water comfort" (self-reported ocean_level) — labeled so it never reads
+    // as the student's belt/level (they're independent axes).
+    profile.ocean_level && `water comfort: ${String(profile.ocean_level).replace(/_/g, ' ')}`,
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
   ].filter(Boolean) as string[];
