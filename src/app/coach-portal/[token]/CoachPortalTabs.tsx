@@ -71,12 +71,14 @@ export function CoachPortalTabs({
   const isSupport = (coach as any).portal_category === 'support';
   const canSell = !!(coach as any).portal_can_sell;
 
-  // Support (non-coaching) members get a trimmed nav: Home + Courses, plus a
-  // Sell tab when they're a seller. Coaching keeps the full set.
+  // Support (non-coaching) members get an operations-focused nav: Home
+  // (schedule + tasks), Espacios (they prepare/clean the rooms), Courses,
+  // plus a Sell tab when they're a seller. Coaching keeps the full set.
   const SELL_TAB = { key: 'sell' as Tab, label: 'Sell', Icon: BarChart2 };
   const visibleTabs = isSupport
     ? [
         TABS.find((t) => t.key === 'home')!,
+        TABS.find((t) => t.key === 'spaces')!,
         ...(canSell ? [SELL_TAB] : []),
         TABS.find((t) => t.key === 'courses')!,
       ]
@@ -90,7 +92,7 @@ export function CoachPortalTabs({
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
 
             {isSupport ? (
-              <SupportHome coach={coach} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} />
+              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} emergencyPlan={data.emergencyPlan} onGoTo={setActiveTab} />
             ) : (
               <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} />
             )}
@@ -176,11 +178,14 @@ function EmRowLight({ label, value }: { label: string; value: string }) {
   );
 }
 
-// Trimmed home for support (non-coaching) members: who they are, their tasks,
-// their assigned services, and the academy emergency plan. No coaching UI.
-function SupportHome({ coach, upcoming, emergencyPlan }: {
+// Operations home for support (non-coaching) members — customer service,
+// space prep, coffee, reception. The goal: the WHOLE team knows what's
+// happening. Identity + their tasks + the academy's 7-day schedule (time,
+// group, coach, headcount) + space bookings shortcut + emergency plan.
+function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
   coach: any;
   upcoming: any[];
+  schedule: any[];
   emergencyPlan?: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -188,6 +193,7 @@ function SupportHome({ coach, upcoming, emergencyPlan }: {
     emergency_address: string | null;
     emergency_protocol: string | null;
   } | null;
+  onGoTo?: (tab: Tab) => void;
 }) {
   const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
   const title = coach.job_title || 'Team member';
@@ -195,6 +201,24 @@ function SupportHome({ coach, upcoming, emergencyPlan }: {
     emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
     emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address || emergencyPlan.emergency_protocol
   );
+
+  // Group the academy schedule by day (Today / Tomorrow / weekday) so the
+  // team can prep per group — a camp spanning several days appears on each
+  // day it runs within the next week.
+  const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days: Array<{ key: string; label: string; items: any[] }> = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today.getTime() + i * 86400000);
+    const key = dayKey(d);
+    const items = schedule.filter((s) => s.start_date <= key && key <= (s.end_date || s.start_date));
+    if (items.length === 0) continue;
+    const label =
+      i === 0 ? 'Today' : i === 1 ? 'Tomorrow'
+        : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    items.sort((a, b) => (a.scheduled_time || '99').localeCompare(b.scheduled_time || '99'));
+    days.push({ key, label, items });
+  }
 
   return (
     <div className="space-y-4">
@@ -214,6 +238,63 @@ function SupportHome({ coach, upcoming, emergencyPlan }: {
 
       {/* My tasks */}
       <CoachTasks token={coach.portal_token} />
+
+      {/* Academy schedule — the operational picture: every group running in
+          the next 7 days with time, coach, and headcount, so reception /
+          coffee / cleaning can prepare for each one. */}
+      <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-3 inline-flex items-center gap-1.5">
+          <CalendarDays size={13} /> Academy schedule · next 7 days
+        </p>
+        {days.length === 0 ? (
+          <p className="text-[13px] text-white/40">Nothing scheduled this week.</p>
+        ) : (
+          <div className="space-y-3">
+            {days.map((d) => (
+              <div key={d.key}>
+                <p className={`text-[10px] font-mono uppercase tracking-wider mb-1.5 ${d.label === 'Today' ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-white/40'}`}>
+                  {d.label}
+                </p>
+                <div className="space-y-1.5">
+                  {d.items.map((s: any) => (
+                    <div key={`${d.key}-${s.id}`} className="rounded-lg bg-white/[0.04] px-3 py-2.5 flex items-center gap-3">
+                      <span className="text-[12px] font-bold shrink-0 tabular-nums" style={{ color: '#5AC3E7', fontFamily: 'DM Mono, monospace' }}>
+                        {s.scheduled_time ? s.scheduled_time.slice(0, 5) : '—'}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm text-white font-medium truncate">{s.camp_name}</span>
+                        <span className="block text-[10px] text-white/40 truncate">
+                          {s.coach_name ? `Coach ${s.coach_name}` : 'No coach assigned'}
+                          {s.template_name ? ` · ${s.template_name}` : ''}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ background: 'rgba(90,195,231,.12)', color: '#5AC3E7' }}>
+                        {s.students} student{s.students === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Space bookings shortcut — they prepare and clean the rooms */}
+      {onGoTo && (
+        <button
+          type="button"
+          onClick={() => onGoTo('spaces')}
+          className="w-full text-left rounded-2xl border border-white/10 p-4 flex items-center justify-between gap-3 hover:border-[var(--tss-cyan)]/40 transition-colors"
+          style={{ background: '#0F1E33' }}
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-white">Espacios — room bookings</span>
+            <span className="block text-[11px] text-white/50">See which spaces are reserved today, to prepare and clean them.</span>
+          </span>
+          <span className="text-[var(--tss-cyan,#5AC3E7)] text-lg shrink-0">→</span>
+        </button>
+      )}
 
       {/* My services */}
       <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>

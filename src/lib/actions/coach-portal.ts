@@ -92,6 +92,7 @@ export interface CoachPortalData {
   pendingAssignments: any[];
   pastServices: any[];
   academyServices: any[];  // all upcoming academy services (sellers only)
+  academySchedule: any[];  // next-7-days academy schedule (support members)
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
@@ -330,6 +331,45 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     academyServices = svc ?? [];
   }
 
+  // Academy schedule for SUPPORT members (customer service, cleaning, coffee,
+  // reception): every service running in the next 7 days with its time, coach
+  // and headcount — the operational picture so the whole team knows what's
+  // happening and can prepare for each group.
+  let academySchedule: any[] = [];
+  if ((coach as any).portal_category === 'support' && coach.academy_id) {
+    try {
+      const weekOut = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      const { data: sched } = await admin
+        .from('camp_instances')
+        .select(
+          'id, camp_name, start_date, end_date, scheduled_time, status, ' +
+            'camp_templates:template_id(template_name, service_kind), ' +
+            'head_coach:head_coach_id(display_name), ' +
+            'camp_participants(id, enrollment_status)'
+        )
+        .eq('academy_id', coach.academy_id)
+        .lte('start_date', weekOut)
+        .gte('end_date', today)
+        .not('status', 'in', '("completed","cancelled")')
+        .order('start_date');
+      academySchedule = (sched ?? []).map((s: any) => {
+        const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
+        const hc = Array.isArray(s.head_coach) ? s.head_coach[0] : s.head_coach;
+        return {
+          id: s.id,
+          camp_name: s.camp_name,
+          start_date: s.start_date,
+          end_date: s.end_date,
+          scheduled_time: s.scheduled_time ?? null,
+          service_kind: tpl?.service_kind ?? null,
+          template_name: tpl?.template_name ?? null,
+          coach_name: hc?.display_name ?? null,
+          students: (s.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length,
+        };
+      });
+    } catch { /* soft — the rest of the portal still works */ }
+  }
+
   return {
     coach,
     stats: {
@@ -346,6 +386,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     ),
     pastServices: pastEnriched,
     academyServices,
+    academySchedule,
     coachCourses: coachCoursesResult.data ?? [],
     courseProgress,
     availableDrills,
