@@ -19,6 +19,7 @@ export interface AcademyTask {
   // v2 — standing (recurring) tasks + step-by-step manual
   recurrence?: string | null;     // null | 'weekly' | 'monthly'
   checklist?: string[] | null;    // ordered steps ("the manual")
+  link_url?: string | null;       // in-app tool link ('inventory' opens the academy inventory)
 }
 
 export interface TaskReport {
@@ -65,7 +66,7 @@ export async function listAcademyTasks(academyId: string | null): Promise<Academ
   const admin = createAdminClient();
   let q = admin
     .from('academy_tasks')
-    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, checklist, coaches:assignee_coach_id(display_name), done_coach:done_by(display_name)')
+    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, checklist, link_url, coaches:assignee_coach_id(display_name), done_coach:done_by(display_name)')
     .order('status', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
@@ -76,7 +77,7 @@ export async function listAcademyTasks(academyId: string | null): Promise<Academ
     assignee_name: (Array.isArray(r.coaches) ? r.coaches[0] : r.coaches)?.display_name ?? null,
     done_by_name: (Array.isArray(r.done_coach) ? r.done_coach[0] : r.done_coach)?.display_name ?? null,
     due_date: r.due_date, status: r.status, created_at: r.created_at, done_at: r.done_at,
-    recurrence: r.recurrence ?? null, checklist: r.checklist ?? null,
+    recurrence: r.recurrence ?? null, checklist: r.checklist ?? null, link_url: r.link_url ?? null,
   }));
 }
 
@@ -88,6 +89,7 @@ export async function createTask(input: {
   due_date?: string | null;
   recurrence?: string | null;   // null | 'weekly' | 'monthly'
   checklist?: string[] | null;  // manual steps
+  link_url?: string | null;     // 'inventory' attaches the academy inventory
 }): Promise<{ ok: boolean; error?: string; task?: AcademyTask }> {
   const me = await assertManager();
   if (!input.title?.trim()) return { ok: false, error: 'A task title is required.' };
@@ -105,9 +107,10 @@ export async function createTask(input: {
       due_date: input.due_date || (recurrence ? new Date().toISOString().slice(0, 10) : null),
       recurrence,
       checklist: checklist.length > 0 ? checklist : null,
+      link_url: input.link_url?.trim() || null,
       created_by: (me as any).id ?? null,
     })
-    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, checklist, coaches:assignee_coach_id(display_name)')
+    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, checklist, link_url, coaches:assignee_coach_id(display_name)')
     .single();
   if (error) return { ok: false, error: error.message };
 
@@ -128,6 +131,7 @@ export async function createTask(input: {
     assignee_name: (Array.isArray((data as any).coaches) ? (data as any).coaches[0] : (data as any).coaches)?.display_name ?? null,
     due_date: data!.due_date, status: data!.status, created_at: data!.created_at, done_at: data!.done_at,
     recurrence: (data as any).recurrence ?? null, checklist: (data as any).checklist ?? null,
+    link_url: (data as any).link_url ?? null,
   };
   return { ok: true, task };
 }
@@ -204,7 +208,7 @@ export async function getMyTasks(token: string): Promise<AcademyTask[]> {
   if (!coach) return [];
   const { data } = await admin
     .from('academy_tasks')
-    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, checklist')
+    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, checklist, link_url')
     .eq('assignee_coach_id', coach.id)
     .order('status', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false })

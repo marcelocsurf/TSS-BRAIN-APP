@@ -39,6 +39,7 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
   const [due, setDue] = useState('');
   const [recurrence, setRecurrence] = useState('');
   const [checklistText, setChecklistText] = useState('');
+  const [attachTool, setAttachTool] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
@@ -66,11 +67,12 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
         academy_id: academyId, title, assignee_coach_id: assignee || null, due_date: due || null,
         recurrence: recurrence || null,
         checklist: checklistText.split('\n').map((s) => s.trim()).filter(Boolean),
+        link_url: attachTool || null,
       });
       if (!res.ok || !res.task) { setErr(res.error || 'Could not create the task.'); return; }
       // Add it to the list immediately so a second task can be added right away.
       setTasks((prev) => [res.task!, ...prev]);
-      setTitle(''); setAssignee(''); setDue(''); setRecurrence(''); setChecklistText(''); setShowForm(false);
+      setTitle(''); setAssignee(''); setDue(''); setRecurrence(''); setChecklistText(''); setAttachTool(''); setShowForm(false);
       router.refresh();
     });
   }
@@ -144,6 +146,10 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                   <option value="weekly">🔁 Weekly (standing)</option>
                   <option value="monthly">🔁 Monthly (standing)</option>
                 </select>
+                <select value={attachTool} onChange={(e) => setAttachTool(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
+                  <option value="">No tool attached</option>
+                  <option value="inventory">📦 Opens the academy inventory</option>
+                </select>
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-gray-500 mb-1">
@@ -192,6 +198,11 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                           {(t.checklist?.length ?? 0) > 0 && (
                             <span className="ml-1 inline-flex items-center gap-0.5 text-[9px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-1.5 py-0.5 align-middle">
                               <ListChecks size={9} /> {t.checklist!.length} steps
+                            </span>
+                          )}
+                          {t.link_url === 'inventory' && (
+                            <span className="ml-1 inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 align-middle">
+                              📦 inventory
                             </span>
                           )}
                         </p>

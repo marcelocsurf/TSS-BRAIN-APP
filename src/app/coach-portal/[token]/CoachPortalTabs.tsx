@@ -13,6 +13,7 @@ import { CoachPresentations } from '@/components/coach-portal/CoachPresentations
 import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
 import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
+import { PortalInventory } from '@/components/coach-portal/PortalInventory';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
@@ -47,7 +48,7 @@ import {
 
 type TabIconComponent = typeof Home;
 
-type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating' | 'sell' | 'spaces';
+type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating' | 'sell' | 'spaces' | 'inventory';
 
 // 'rating' is intentionally NOT in the nav — the student rating is unified
 // into the home (a featured card that taps through to the detail).
@@ -79,6 +80,7 @@ export function CoachPortalTabs({
     ? [
         TABS.find((t) => t.key === 'home')!,
         TABS.find((t) => t.key === 'spaces')!,
+        { key: 'inventory' as Tab, label: 'Inventory', Icon: Wrench },
         ...(canSell ? [SELL_TAB] : []),
         TABS.find((t) => t.key === 'courses')!,
       ]
@@ -111,6 +113,11 @@ export function CoachPortalTabs({
         )}
         {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />}
         {activeTab === 'spaces' && <PortalSpaces token={coach.portal_token} coachId={coach.id} />}
+        {activeTab === 'inventory' && (
+          <div className="rounded-2xl p-3" style={{ background: '#000' }}>
+            <PortalInventory token={coach.portal_token} />
+          </div>
+        )}
         {activeTab === 'plan' && (
           <PlanTab
             upcoming={data.upcomingServices}
@@ -237,7 +244,7 @@ function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
       </div>
 
       {/* My tasks */}
-      <CoachTasks token={coach.portal_token} />
+      <CoachTasks token={coach.portal_token} onOpenInventory={onGoTo ? () => onGoTo('inventory') : undefined} />
 
       {/* Academy schedule — the operational picture: every group running in
           the next 7 days with time, coach, and headcount, so reception /
@@ -661,7 +668,7 @@ function HomeTab({
       )}
 
       {/* Tasks assigned to me by the coordinator */}
-      <CoachTasks token={coach.portal_token} />
+      <CoachTasks token={coach.portal_token} onOpenInventory={onGoTo ? () => onGoTo('inventory') : undefined} />
     </div>
   );
 }

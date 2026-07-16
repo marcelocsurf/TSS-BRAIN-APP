@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { CheckSquare, Check, X, Repeat, ListChecks } from 'lucide-react';
+import { CheckSquare, Check, X, Repeat, ListChecks, Package } from 'lucide-react';
 import { getMyTasks, reportMyTask, type AcademyTask } from '@/lib/actions/tasks';
 
 // Tasks the coordinator assigned to this coach. The assignee reports the
@@ -18,7 +18,7 @@ function isOverdue(t: AcademyTask) {
   return new Date(t.due_date + 'T00:00:00') < today;
 }
 
-export function CoachTasks({ token }: { token: string }) {
+export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenInventory?: () => void }) {
   const [tasks, setTasks] = useState<AcademyTask[] | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -69,6 +69,18 @@ export function CoachTasks({ token }: { token: string }) {
               </span>
               <span className="text-[10px] text-white/40 shrink-0">{openId === t.id ? 'Close' : 'Open'}</span>
             </button>
+            {openId === t.id && t.link_url === 'inventory' && onOpenInventory && (
+              <div className="px-3 pt-3">
+                <button
+                  type="button"
+                  onClick={onOpenInventory}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold"
+                  style={{ background: '#5AC3E7', color: '#0A1628' }}
+                >
+                  <Package size={15} /> Open the academy inventory →
+                </button>
+              </div>
+            )}
             {openId === t.id && (
               <TaskReportForm
                 task={t}
