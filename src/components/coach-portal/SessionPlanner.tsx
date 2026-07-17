@@ -14,6 +14,7 @@ import {
   BOARD_TYPE_OPTIONS,
   BOARD_SIZE_FEET_OPTIONS,
   BOARD_SIZE_INCHES_OPTIONS,
+  SURF_SPOT_OPTIONS,
 } from '@/lib/constants/brand';
 import {
   saveServicePlanHeader,
@@ -718,11 +719,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 </label>
                 <label className="block">
                   <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Surf spot / beach</span>
-                  <SmallField
-                    label=""
+                  <VenuePicker
                     value={plan.surf_venue}
-                    onBlur={(v: string) => commitPlanField('surf_venue', v || null)}
-                    placeholder="e.g. El Zonte"
+                    onChange={(v) => commitPlanField('surf_venue', v)}
                   />
                 </label>
               </div>
@@ -1350,6 +1349,50 @@ function ApplyToWeekButton({ onApply }: { onApply: () => Promise<{ ok: boolean; 
 }
 
 // ─── Form fields ──────────────────────────────────────────────────
+
+// M133 — surf-spot picker: a dropdown of the academy's known spots, plus an
+// "Other…" option that reveals a free text input for anything not listed. A
+// stored value that isn't in the list is treated as a custom entry.
+function VenuePicker({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const known = (SURF_SPOT_OPTIONS as readonly string[]).includes(value ?? '');
+  const [custom, setCustom] = useState(!!value && !known);
+  const [text, setText] = useState(value && !known ? value : '');
+  useEffect(() => {
+    const isKnown = (SURF_SPOT_OPTIONS as readonly string[]).includes(value ?? '');
+    setCustom(!!value && !isKnown);
+    setText(value && !isKnown ? value : '');
+  }, [value]);
+
+  return (
+    <div className="space-y-1.5">
+      <select
+        value={custom ? '__other__' : (value ?? '')}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === '__other__') { setCustom(true); onChange(text || null); }
+          else { setCustom(false); onChange(v || null); }
+        }}
+        className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+      >
+        <option value="">—</option>
+        {SURF_SPOT_OPTIONS.map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+        <option value="__other__">Other…</option>
+      </select>
+      {custom && (
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={() => onChange(text.trim() || null)}
+          placeholder="Type the spot"
+          className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+        />
+      )}
+    </div>
+  );
+}
 
 function SmallField({
   label,

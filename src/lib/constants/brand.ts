@@ -211,6 +211,28 @@ export const BOARD_TYPE_OPTIONS = [
 export const BOARD_SIZE_FEET_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12];
 export const BOARD_SIZE_INCHES_OPTIONS = [0, 2, 4, 6, 8, 10];
 
+// Surf spots the academy uses on the El Salvador coast — offered as a dropdown
+// when the coach picks the class-day venue (M133). "Other" reveals a free text
+// input for anything not listed.
+export const SURF_SPOT_OPTIONS = [
+  'El Sunzal',
+  'La Paz',
+  'Negrei',
+  'El Zonte Punta',
+  'Rio Mar',
+  'El Zonte Matadero',
+  'K61',
+  'K59',
+  'Punta Roca',
+  'San Blas',
+  'Mizata',
+  'El Palmar',
+  'La Bocana',
+  'Cocal',
+  'Fishermans',
+  'Conchalío',
+] as const;
+
 // ═══════════════════════════════════════
 // WARM-UP — Section 6.3
 // ═══════════════════════════════════════
