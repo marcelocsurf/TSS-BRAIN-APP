@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { BRAND } from '@/lib/constants/brand';
 import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-portal';
@@ -68,6 +68,11 @@ export function CoachPortalTabs({
   initialTab?: Tab;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // When a class is open in the planner we switch to a focused, light-themed
+  // full-screen mode: light background (not the dark portal shell) + the global
+  // tab-nav hidden, so the planner isn't a light screen floating on black with
+  // two stacked bottom bars.
+  const [plannerOpen, setPlannerOpen] = useState(false);
   const { coach, stats } = data;
   const isSupport = (coach as any).portal_category === 'support';
   const canSell = !!(coach as any).portal_can_sell;
@@ -87,7 +92,10 @@ export function CoachPortalTabs({
     : TABS;
 
   return (
-    <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
+    <div
+      className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
+      style={plannerOpen ? undefined : { background: '#000' }}
+    >
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
@@ -123,6 +131,7 @@ export function CoachPortalTabs({
             upcoming={data.upcomingServices}
             past={data.pastServices}
             token={coach.portal_token}
+            onOpenChange={setPlannerOpen}
           />
         )}
         {activeTab === 'rating' && (
@@ -132,7 +141,8 @@ export function CoachPortalTabs({
         )}
       </div>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — hidden while the planner is open (focused mode). */}
+      {!plannerOpen && (
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10" style={{ background: '#0A1628' }}>
         <div className="max-w-lg mx-auto flex">
           {visibleTabs.map((tab) => {
@@ -156,8 +166,9 @@ export function CoachPortalTabs({
           })}
         </div>
       </div>
+      )}
 
-      <div className="text-center py-4 pb-24">
+      <div className={`text-center py-4 ${plannerOpen ? 'hidden' : 'pb-24'}`}>
         <p className="text-[10px] text-white/30">The Surf Sequence -- {BRAND.tagline}</p>
       </div>
     </div>
@@ -1693,12 +1704,19 @@ function PlanTab({
   upcoming,
   past,
   token,
+  onOpenChange,
 }: {
   upcoming: any[];
   past: any[];
   token: string;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
+  // Tell the shell to switch to focused mode while a class is open.
+  useEffect(() => {
+    onOpenChange?.(!!selectedCampId);
+    return () => onOpenChange?.(false);
+  }, [selectedCampId, onOpenChange]);
   const [planData, setPlanData] = useState<ServicePlanData | null>(null);
   const [loading, setLoading] = useState(false);
   // 'read' = the polished day-by-day manual (CampPlanReader). 'run' =

@@ -147,6 +147,10 @@ input:focus, select:focus, textarea:focus {
   min-height: 100vh;
 }
 
+/* Hide the horizontal scrollbar on tab/day strips (still scrollable). */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ── Scrollbar polish ── */
 ::-webkit-scrollbar {
   width: 6px;

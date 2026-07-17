@@ -538,7 +538,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
       {/* M45 — Day picker. Only shown when the camp has more than one day. */}
       {data.daySummaries.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {data.daySummaries.map((d) => {
             const isActive = d.day_number === data.selectedDay.day_number;
             const stateColor =
@@ -1128,10 +1128,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         </>
       )}
 
-      {/* Sticky footer */}
+      {/* Sticky footer — sits at the very bottom (the global tab-nav is hidden
+          while the planner is open), with iPhone safe-area padding. */}
       <div
-        className="fixed bottom-14 left-0 right-0 px-4 py-2 z-40 border-t border-gray-200"
-        style={{ background: 'white' }}
+        className="fixed bottom-0 left-0 right-0 px-4 pt-2 z-40 border-t border-gray-200"
+        style={{ background: 'white', paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
       >
         <div className="max-w-lg mx-auto flex gap-2">
           {/* PLANNING → close the plan (still editable after) */}
@@ -1170,15 +1171,18 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               {/* Everything autosaves on blur, so leaving never loses work.
                   This makes that explicit — pause the eval, finish it later
                   (e.g. in the video-analysis session). */}
+              {/* Compact on phones: two small secondary actions + the primary
+                  Finalize takes the rest of the row (no more 2-line wrapping). */}
               <button
                 type="button"
                 onClick={() => { flash('✓ Saved — finish it whenever'); onBack(); }}
                 disabled={pending}
-                className="py-2.5 px-4 text-sm font-semibold rounded-xl border inline-flex items-center gap-1.5"
+                className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-xl border inline-flex flex-col items-center gap-0.5 leading-none"
                 style={{ borderColor: '#CBD5E1', color: '#475569' }}
+                title="Save & finish later"
               >
-                <Check size={13} strokeWidth={2} />
-                Save &amp; finish later
+                <Check size={15} strokeWidth={2} />
+                Later
               </button>
               <button
                 type="button"
@@ -1187,11 +1191,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 disabled={pending}
-                className="py-2.5 px-4 text-sm font-semibold rounded-xl border inline-flex items-center gap-1.5"
+                className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-xl border inline-flex flex-col items-center gap-0.5 leading-none"
                 style={{ borderColor: BRAND.colors.navy, color: BRAND.colors.navy }}
+                title="Edit plan"
               >
-                <Pencil size={13} strokeWidth={1.75} />
-                Edit plan
+                <Pencil size={15} strokeWidth={1.75} />
+                Edit
               </button>
               <button
                 type="button"
