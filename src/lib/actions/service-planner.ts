@@ -40,6 +40,7 @@ export interface ServicePlanData {
     venue_go_no_go: 'go' | 'modified' | 'no_go' | null;
     venue_wave_size: string | null;
     venue_wind: string | null;
+    venue_current: string | null;
     venue_tide: string | null;
     venue_hazards: string | null;
     // M48 — extra standardized venue fields
@@ -786,6 +787,7 @@ export async function getServicePlan(
       venue_go_no_go: plan?.venue_go_no_go ?? null,
       venue_wave_size: plan?.venue_wave_size ?? null,
       venue_wind: plan?.venue_wind ?? null,
+      venue_current: plan?.venue_current ?? null,
       venue_tide: plan?.venue_tide ?? null,
       venue_hazards: plan?.venue_hazards ?? null,
       venue_crowd: plan?.venue_crowd ?? null,
@@ -986,6 +988,7 @@ export async function saveServicePlanHeader(
     venue_go_no_go: 'go' | 'modified' | 'no_go' | null;
     venue_wave_size: string | null;
     venue_wind: string | null;
+    venue_current: string | null;
     venue_tide: string | null;
     venue_hazards: string | null;
     venue_crowd: string | null;

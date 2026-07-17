@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import {
   BRAND,
   WAVE_SIZE_OPTIONS,
+  CURRENT_OPTIONS,
   WIND_OPTIONS,
   TIDE_OPTIONS,
   HAZARD_OPTIONS,
@@ -812,30 +813,32 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 ))}
               </div>
 
-              {/* Essentials — the call + the two conditions that shape the plan. */}
+              {/* Essentials — wave size (ft) + current, the two safety reads
+                  that shape the plan. Wind moved into "Más detalles". */}
               <div className="grid grid-cols-2 gap-2">
                 <SelectField
-                  label="Wave size"
+                  label="Wave size (ft)"
                   value={plan.venue_wave_size}
                   options={WAVE_SIZE_OPTIONS}
                   onChange={(v) => commitPlanField('venue_wave_size', v)}
                 />
                 <SelectField
-                  label="Wind"
-                  value={plan.venue_wind}
-                  options={WIND_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_wind', v)}
+                  label="Current / corriente"
+                  value={plan.venue_current}
+                  options={CURRENT_OPTIONS}
+                  onChange={(v) => commitPlanField('venue_current', v)}
                 />
               </div>
 
               {/* Everything else is optional context — tucked away so the common
-                  case is just the go/no-go call + wave + wind. */}
+                  case is just the go/no-go call + wave + current. */}
               <details className="group rounded-lg border border-gray-100 bg-gray-50/60">
                 <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <ChevronRight size={13} className="transition-transform group-open:rotate-90" /> Más detalles (opcional)
                 </summary>
                 <div className="px-3 pb-3 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
+                    <SelectField label="Wind" value={plan.venue_wind} options={WIND_OPTIONS} onChange={(v) => commitPlanField('venue_wind', v)} />
                     <SelectField label="Tide" value={plan.venue_tide} options={TIDE_OPTIONS} onChange={(v) => commitPlanField('venue_tide', v)} />
                     <SelectField label="Crowd" value={plan.venue_crowd} options={CROWD_LEVEL_OPTIONS} onChange={(v) => commitPlanField('venue_crowd', v)} />
                     <SelectField label="Water temp" value={plan.venue_water_temp} options={WATER_TEMP_OPTIONS} onChange={(v) => commitPlanField('venue_water_temp', v)} />
@@ -1229,6 +1232,7 @@ function GeneralPlanSummary({
       : '—';
   const conditions: { Icon: React.ComponentType<any>; value: string }[] = [
     plan.venue_wave_size ? { Icon: Waves, value: plan.venue_wave_size } : null,
+    plan.venue_current ? { Icon: Waves, value: `current: ${plan.venue_current}` } : null,
     plan.venue_wind ? { Icon: Wind, value: plan.venue_wind } : null,
     plan.venue_tide ? { Icon: Moon, value: plan.venue_tide } : null,
     plan.venue_hazards ? { Icon: AlertTriangle, value: plan.venue_hazards } : null,

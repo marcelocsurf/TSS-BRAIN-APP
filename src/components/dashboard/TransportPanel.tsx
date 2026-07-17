@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { Bus, Check, X, RotateCcw } from 'lucide-react';
+import { Bus, Check, X, RotateCcw, Download, Copy } from 'lucide-react';
 import { listWeekTransports, setTransportStatus, type TransportDay } from '@/lib/actions/transport';
 
 // Coordinator's transport board: every class day in the next 7 days where the
@@ -39,17 +39,69 @@ export function TransportPanel() {
 
   const pendingCount = rows.filter((r) => !r.transport_status).length;
 
+  // Only the rides that are actually needed (drop cancelled ones) — this is
+  // the list the coordinator forwards to whoever arranges transport.
+  const exportRows = (rows ?? []).filter((r) => r.transport_status !== 'cancelled');
+  const statusEs = (s: string | null) => (s === 'taken' ? 'Tomado' : s === 'cancelled' ? 'Cancelado' : 'Pendiente');
+
+  function downloadCsv() {
+    const header = ['Fecha', 'Servicio', 'Coach', 'Playa', 'Hora clase', 'Salida', 'Regreso', 'Alumnos', 'Estado'];
+    const cell = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = exportRows.map((r) => [
+      fmtDate(r.session_date), r.camp_name ?? '', r.coach_name ?? '', r.surf_venue ?? '',
+      fmtTime(r.class_start_time), fmtTime(r.transport_depart), fmtTime(r.transport_return),
+      r.students, statusEs(r.transport_status),
+    ].map(cell).join(','));
+    const csv = ['﻿' + header.map(cell).join(','), ...lines].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transportes-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function copyText() {
+    const lines = exportRows.map((r) =>
+      `• ${fmtDate(r.session_date)} — ${r.camp_name ?? 'Servicio'}\n` +
+      `  Coach: ${r.coach_name ?? '—'} · ${r.students} alumno${r.students === 1 ? '' : 's'}${r.surf_venue ? ` · 🏖 ${r.surf_venue}` : ''}\n` +
+      `  🚐 Salida ${fmtTime(r.transport_depart)} · Regreso ${fmtTime(r.transport_return)}${r.class_start_time ? ` · clase ${fmtTime(r.class_start_time)}` : ''}`
+    );
+    const text = `🚐 Transportes programados\n\n${lines.join('\n\n')}`;
+    navigator.clipboard?.writeText(text).then(
+      () => alert('Copiado — ya podés pegarlo en WhatsApp o correo.'),
+      () => alert('No se pudo copiar.'),
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="inline-flex items-center gap-2 text-sm font-bold text-[var(--tss-navy)]">
           <Bus size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Transportes programados
         </h2>
-        {pendingCount > 0 && (
-          <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
-            {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {pendingCount > 0 && (
+            <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+              {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
+            </span>
+          )}
+          {exportRows.length > 0 && (
+            <>
+              <button
+                onClick={copyText}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                title="Copiar como texto (WhatsApp / correo)"
+              ><Copy size={12} /> Copiar</button>
+              <button
+                onClick={downloadCsv}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                title="Descargar CSV"
+              ><Download size={12} /> Descargar</button>
+            </>
+          )}
+        </div>
       </div>
 
       <ul className="space-y-2">

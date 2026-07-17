@@ -118,12 +118,24 @@ export type TrainingVenue = typeof TRAINING_VENUES[number]['value'];
 // list so the data is comparable across sessions / academies.
 // ═══════════════════════════════════════
 
+// Wave size in feet — coaches call it in ft on the El Salvador coast.
 export const WAVE_SIZE_OPTIONS = [
-  { value: 'knee',     label: 'Knee high' },
-  { value: 'waist',    label: 'Waist high' },
-  { value: 'chest',    label: 'Chest high' },
-  { value: 'head',     label: 'Head high' },
-  { value: 'overhead', label: 'Overhead' },
+  { value: '0-1ft', label: '0–1 ft' },
+  { value: '1-2ft', label: '1–2 ft' },
+  { value: '2-3ft', label: '2–3 ft' },
+  { value: '3-4ft', label: '3–4 ft' },
+  { value: '4-5ft', label: '4–5 ft' },
+  { value: '5-6ft', label: '5–6 ft' },
+  { value: '6-8ft', label: '6–8 ft' },
+  { value: '8ft+',  label: '8 ft+' },
+] as const;
+
+// Current strength (corrientes) — a safety-relevant read for the venue.
+export const CURRENT_OPTIONS = [
+  { value: 'none',   label: 'No hay' },
+  { value: 'light',  label: 'Suave' },
+  { value: 'medium', label: 'Media' },
+  { value: 'strong', label: 'Fuerte' },
 ] as const;
 
 export const WIND_OPTIONS = [
