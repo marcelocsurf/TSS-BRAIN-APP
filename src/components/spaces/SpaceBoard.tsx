@@ -138,6 +138,7 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                           key={b.id}
                           className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-1 overflow-hidden"
                           style={{ top, height, background: (s.color || '#5A6B78') + '22', borderLeft: `3px solid ${s.color || '#5A6B78'}` }}
+                          title={`${hhmm(b.starts_at)}–${hhmm(b.ends_at)} · ${b.title || 'Reserva'} · Reservado por ${b.coach_name || '—'}`}
                         >
                           <div className="flex items-start justify-between gap-1">
                             <p className="text-[10px] font-semibold leading-tight" style={{ color: '#17272F' }}>
@@ -151,9 +152,14 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                               ><X size={11} /></button>
                             )}
                           </div>
-                          <p className="text-[10px] text-gray-600 leading-tight line-clamp-2">
-                            {b.title || 'Reserva'}{b.coach_name ? ` · ${b.coach_name}` : ''}
+                          {/* WHO booked it — the fact the coordinator needs, so it
+                              leads and never gets clipped behind the title. */}
+                          <p className="text-[10px] font-bold leading-tight truncate" style={{ color: s.color || '#17272F' }}>
+                            {b.coach_name || 'Reserva'}
                           </p>
+                          {b.title && (
+                            <p className="text-[10px] text-gray-600 leading-tight truncate">{b.title}</p>
+                          )}
                         </div>
                       );
                     })}
