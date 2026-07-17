@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { Package, Plus, AlertTriangle, Check } from 'lucide-react';
+import { Package, Plus, AlertTriangle, Check, ClipboardList } from 'lucide-react';
 import { getInventory, saveInventoryCount, addInventoryItem, type InventoryItem } from '@/lib/actions/inventory';
+import { createRequisitionFromLowStock } from '@/lib/actions/requisitions';
 
 // The academy's real inventory, countable from the phone — the digital
 // version of the weekly Excel. Grouped by category; each row saves on blur
@@ -56,9 +57,26 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
           Count and update each item — changes save on the spot and the check is logged with your name.
         </p>
         {lowCount > 0 && (
-          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-300 bg-red-500/10 border border-red-400/30 rounded-full px-2.5 py-1">
-            <AlertTriangle size={11} /> {lowCount} item{lowCount > 1 ? 's' : ''} below minimum
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-300 bg-red-500/10 border border-red-400/30 rounded-full px-2.5 py-1">
+              <AlertTriangle size={11} /> {lowCount} item{lowCount > 1 ? 's' : ''} below minimum
+            </span>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                start(async () => {
+                  const r = await createRequisitionFromLowStock(token);
+                  if (!r.ok) { alert(r.error || 'No se pudo crear la requisición.'); return; }
+                  alert(`✓ Requisición creada con ${r.count} ítem(s). Ya aparece en el dashboard para verla y sacar el PDF.`);
+                });
+              }}
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-3 py-1 disabled:opacity-50"
+              style={{ background: '#5AC3E7', color: '#0A1628' }}
+            >
+              <ClipboardList size={12} /> Crear requisición de compra
+            </button>
+          </div>
         )}
       </div>
 

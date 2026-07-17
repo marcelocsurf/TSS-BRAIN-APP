@@ -14,6 +14,7 @@ import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
 import { TasksPanel } from '@/components/dashboard/TasksPanel';
 import { PendingPromotionsPanel } from '@/components/dashboard/PendingPromotionsPanel';
 import { TransportPanel } from '@/components/dashboard/TransportPanel';
+import { RequisitionsPanel } from '@/components/dashboard/RequisitionsPanel';
 import { PlatformOverview } from '@/components/dashboard/PlatformOverview';
 import { getPlatformOverview } from '@/lib/actions/platform-overview';
 import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
@@ -277,6 +278,9 @@ export default async function DashboardHome() {
       {/* Transport board — rides the coaches asked for this week (M133).
           Coordinator marks each one taken/cancelled. Renders nothing if empty. */}
       {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
+
+      {/* Purchase requisitions built from low-stock inventory (M136). */}
+      {(role === 'admin' || role === 'coordinator') && <RequisitionsPanel />}
 
       {/* To-do list — coordinator + admin create + assign academy tasks. */}
       {(role === 'admin' || role === 'coordinator') && (
