@@ -263,23 +263,36 @@ function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
                   {d.label}
                 </p>
                 <div className="space-y-1.5">
-                  {d.items.map((s: any) => (
-                    <div key={`${d.key}-${s.id}`} className="rounded-lg bg-white/[0.04] px-3 py-2.5 flex items-center gap-3">
-                      <span className="text-[12px] font-bold shrink-0 tabular-nums" style={{ color: '#5AC3E7', fontFamily: 'DM Mono, monospace' }}>
-                        {s.scheduled_time ? s.scheduled_time.slice(0, 5) : '—'}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm text-white font-medium truncate">{s.camp_name}</span>
-                        <span className="block text-[10px] text-white/40 truncate">
-                          {s.coach_name ? `Coach ${s.coach_name}` : 'No coach assigned'}
-                          {s.template_name ? ` · ${s.template_name}` : ''}
+                  {d.items.map((s: any) => {
+                    // Class-day logistics the coach planned for THIS date (M133):
+                    // real start time, beach, transport times.
+                    const dl = (s.day_logistics ?? []).find((x: any) => x.session_date === d.key);
+                    return (
+                      <div key={`${d.key}-${s.id}`} className="rounded-lg bg-white/[0.04] px-3 py-2.5 flex items-center gap-3">
+                        <span className="text-[12px] font-bold shrink-0 tabular-nums" style={{ color: '#5AC3E7', fontFamily: 'DM Mono, monospace' }}>
+                          {dl?.class_start_time ? dl.class_start_time.slice(0, 5) : s.scheduled_time ? s.scheduled_time.slice(0, 5) : '—'}
                         </span>
-                      </span>
-                      <span className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ background: 'rgba(90,195,231,.12)', color: '#5AC3E7' }}>
-                        {s.students} student{s.students === 1 ? '' : 's'}
-                      </span>
-                    </div>
-                  ))}
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm text-white font-medium truncate">{s.camp_name}</span>
+                          <span className="block text-[10px] text-white/40 truncate">
+                            {s.coach_name ? `Coach ${s.coach_name}` : 'No coach assigned'}
+                            {s.template_name ? ` · ${s.template_name}` : ''}
+                          </span>
+                          {dl && (dl.surf_venue || dl.transport_needed) && (
+                            <span className="block text-[10px] truncate" style={{ color: '#5AC3E7' }}>
+                              {dl.surf_venue ? `🏖 ${dl.surf_venue}` : ''}
+                              {dl.transport_needed
+                                ? `${dl.surf_venue ? ' · ' : ''}🚐 out ${dl.transport_depart?.slice(0, 5) ?? '—'} / back ${dl.transport_return?.slice(0, 5) ?? '—'}${dl.transport_status === 'cancelled' ? ' (cancelled)' : ''}`
+                                : ''}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ background: 'rgba(90,195,231,.12)', color: '#5AC3E7' }}>
+                          {s.students} student{s.students === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}

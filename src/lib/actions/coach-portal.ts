@@ -367,6 +367,49 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           students: (s.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length,
         };
       });
+
+      // Class-day logistics (M133): pull each day's plan so the team also sees
+      // start time, beach, and transport — not just which group is running.
+      if (academySchedule.length > 0) {
+        try {
+          const instIds = academySchedule.map((s) => s.id);
+          const { data: sess } = await admin
+            .from('camp_sessions')
+            .select('id, camp_instance_id, session_date, day_number')
+            .in('camp_instance_id', instIds)
+            .gte('session_date', today)
+            .lte('session_date', weekOut);
+          const sessIds = (sess ?? []).map((x: any) => x.id);
+          const { data: plans } = sessIds.length
+            ? await admin
+                .from('service_plans')
+                .select('camp_session_id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status')
+                .in('camp_session_id', sessIds)
+            : { data: [] as any[] };
+          const planBySession = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p]));
+          const daysByInstance = new Map<string, any[]>();
+          for (const x of sess ?? []) {
+            const p = planBySession.get(x.id);
+            if (!p) continue;
+            const arr = daysByInstance.get(x.camp_instance_id) ?? [];
+            arr.push({
+              session_date: x.session_date,
+              day_number: x.day_number,
+              class_start_time: p.class_start_time ?? null,
+              surf_venue: p.surf_venue ?? null,
+              transport_needed: p.transport_needed ?? null,
+              transport_depart: p.transport_depart ?? null,
+              transport_return: p.transport_return ?? null,
+              transport_status: p.transport_status ?? null,
+            });
+            daysByInstance.set(x.camp_instance_id, arr);
+          }
+          academySchedule = academySchedule.map((s) => ({
+            ...s,
+            day_logistics: (daysByInstance.get(s.id) ?? []).sort((a, b) => a.session_date.localeCompare(b.session_date)),
+          }));
+        } catch { /* pre-migration or partial data — schedule still renders */ }
+      }
     } catch { /* soft — the rest of the portal still works */ }
   }
 

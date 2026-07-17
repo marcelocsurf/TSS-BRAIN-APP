@@ -50,6 +50,15 @@ export interface ServicePlanData {
     warm_up_custom: string | null;
     mental_hack: string | null;
     notes_general: string | null;
+    // Class-day logistics (M133): what time class starts, which beach, and
+    // whether the coach needs transport (drives the coordinator's transport
+    // board + the team's 7-day agenda).
+    class_start_time: string | null;
+    surf_venue: string | null;
+    transport_needed: boolean | null;
+    transport_depart: string | null;
+    transport_return: string | null;
+    transport_status: string | null;
     completion_state: 'planned' | 'in_progress' | 'closed';
     started_at: string | null;
     closed_at: string | null;
@@ -786,6 +795,12 @@ export async function getServicePlan(
       warm_up_custom: plan?.warm_up_custom ?? null,
       mental_hack: plan?.mental_hack ?? null,
       notes_general: plan?.notes_general ?? null,
+      class_start_time: plan?.class_start_time ?? null,
+      surf_venue: plan?.surf_venue ?? null,
+      transport_needed: plan?.transport_needed ?? null,
+      transport_depart: plan?.transport_depart ?? null,
+      transport_return: plan?.transport_return ?? null,
+      transport_status: plan?.transport_status ?? null,
       completion_state: (plan?.completion_state as any) ?? 'planned',
       started_at: plan?.started_at ?? null,
       closed_at: plan?.closed_at ?? null,
@@ -980,6 +995,11 @@ export async function saveServicePlanHeader(
     warm_up_custom: string | null;
     mental_hack: string | null;
     notes_general: string | null;
+    class_start_time: string | null;
+    surf_venue: string | null;
+    transport_needed: boolean | null;
+    transport_depart: string | null;
+    transport_return: string | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();

@@ -13,6 +13,7 @@ import { incidentTypeLabel } from '@/lib/constants/brand';
 import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
 import { TasksPanel } from '@/components/dashboard/TasksPanel';
 import { PendingPromotionsPanel } from '@/components/dashboard/PendingPromotionsPanel';
+import { TransportPanel } from '@/components/dashboard/TransportPanel';
 import { PlatformOverview } from '@/components/dashboard/PlatformOverview';
 import { getPlatformOverview } from '@/lib/actions/platform-overview';
 import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
@@ -271,6 +272,10 @@ export default async function DashboardHome() {
       {/* Belt promotions recommended by under-certified coaches — admin /
           head coach confirms. Self-gates + renders nothing when empty. */}
       <PendingPromotionsPanel />
+
+      {/* Transport board — rides the coaches asked for this week (M133).
+          Coordinator marks each one taken/cancelled. Renders nothing if empty. */}
+      {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
 
       {/* To-do list — coordinator + admin create + assign academy tasks. */}
       {(role === 'admin' || role === 'coordinator') && (

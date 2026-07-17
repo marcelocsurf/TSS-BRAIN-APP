@@ -52,6 +52,7 @@ import {
   Zap,
   Dumbbell,
   Key,
+  CalendarClock,
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
@@ -681,6 +682,84 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               </Section>
             );
           })()}
+
+          {/* 0. CLASS DAY — the real-world logistics: start time, which beach,
+              transport. Feeds the coordinator's transport board and the whole
+              team's 7-day agenda (photographer, assistants, support). */}
+          <Section icon={CalendarClock} title="Class day" subtitle="Start time, beach, and transport — the team plans around this">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Class starts at</span>
+                  <input
+                    type="time"
+                    value={plan.class_start_time ?? ''}
+                    onChange={(e) => commitPlanField('class_start_time', e.target.value || null)}
+                    className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Surf spot / beach</span>
+                  <SmallField
+                    label=""
+                    value={plan.surf_venue}
+                    onBlur={(v: string) => commitPlanField('surf_venue', v || null)}
+                    placeholder="e.g. El Zonte"
+                  />
+                </label>
+              </div>
+
+              <div>
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Transport needed?</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { v: false, label: 'No — on site' },
+                    { v: true, label: '🚐 Yes, we need transport' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={String(opt.v)}
+                      type="button"
+                      onClick={() => commitPlanField('transport_needed', opt.v)}
+                      className="py-2 rounded-lg text-xs font-semibold transition-all"
+                      style={
+                        plan.transport_needed === opt.v
+                          ? { background: '#E0F2FE', color: '#075985', boxShadow: 'inset 0 0 0 2px #0284C7' }
+                          : { background: '#F3F4F6', color: '#6B7280' }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {plan.transport_needed === true && (
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-sky-50 border border-sky-200 p-3">
+                  <label className="block">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-sky-700 mb-1">Departure</span>
+                    <input
+                      type="time"
+                      value={plan.transport_depart ?? ''}
+                      onChange={(e) => commitPlanField('transport_depart', e.target.value || null)}
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-sky-700 mb-1">Return</span>
+                    <input
+                      type="time"
+                      value={plan.transport_return ?? ''}
+                      onChange={(e) => commitPlanField('transport_return', e.target.value || null)}
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
+                    />
+                  </label>
+                  <p className="col-span-2 text-[11px] text-sky-700">
+                    The coordinator sees this and books the ride — keep the times realistic.
+                  </p>
+                </div>
+              )}
+            </div>
+          </Section>
 
           {/* 1. VENUE ANALYSIS */}
           <Section icon={Waves} title="1. Venue Analysis" subtitle="Read today's conditions before going in">
