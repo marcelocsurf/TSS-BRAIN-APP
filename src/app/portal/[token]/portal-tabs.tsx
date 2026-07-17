@@ -751,11 +751,11 @@ function HomeTab({
             </div>
 
             {data.surveyResultIds.includes(latestResult.id) ? (
-              (latestResult.student_visible_summary || latestResult.coach_feedback) && (
+              latestResult.student_visible_summary && (
                 <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
                   <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#5AC3E7' }}>Coach feedback</p>
                   <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: '#dbe8f1' }}>
-                    {latestResult.student_visible_summary || latestResult.coach_feedback}
+                    {latestResult.student_visible_summary}
                   </p>
                 </div>
               )
@@ -1188,16 +1188,16 @@ function SessionsTab({ data }: { data: PortalData }) {
                     )}
                     {/* M45 — Per-session survey gate */}
                     {surveyResultIds.includes(session.id) &&
-                      (session.student_visible_summary || session.coach_feedback) && (
+                      session.student_visible_summary && (
                         <div className="pt-1">
                           <p className="text-xs text-gray-400 mb-1">Session Summary</p>
                           <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-2 whitespace-pre-line">
-                            {session.student_visible_summary || session.coach_feedback}
+                            {session.student_visible_summary}
                           </p>
                         </div>
                       )}
                     {!surveyResultIds.includes(session.id) &&
-                      (session.student_visible_summary || session.coach_feedback) && (
+                      session.student_visible_summary && (
                         <div className="pt-1 text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2 italic">
                           Fill the coach survey for this session to unlock the feedback.
                         </div>
@@ -1782,7 +1782,7 @@ function FeedbackTab({
           submittedSurveys.map((survey: any) => {
             const ssr = survey.student_session_results;
             const coachName = ssr?.coaches?.display_name;
-            const coachFeedback = ssr?.student_visible_summary || ssr?.coach_feedback;
+            const coachFeedback = ssr?.student_visible_summary; // M135 — daily coach_feedback is internal now
             return (
               <div
                 key={survey.id}
@@ -1825,21 +1825,13 @@ function FeedbackTab({
                   </p>
                 )}
 
-                {/* Homework + what's next */}
-                {(ssr?.homework || ssr?.whats_next) && (
+                {/* Homework stays student-facing; "what's next" is internal (M135). */}
+                {ssr?.homework && (
                   <div className="grid grid-cols-1 gap-2">
-                    {ssr?.homework && (
-                      <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">Homework</p>
-                        <p className="text-xs text-amber-900 leading-relaxed">{ssr.homework}</p>
-                      </div>
-                    )}
-                    {ssr?.whats_next && (
-                      <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-0.5">What&apos;s next</p>
-                        <p className="text-xs text-gray-700 leading-relaxed">{ssr.whats_next}</p>
-                      </div>
-                    )}
+                    <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">Homework</p>
+                      <p className="text-xs text-amber-900 leading-relaxed">{ssr.homework}</p>
+                    </div>
                   </div>
                 )}
 
@@ -2138,7 +2130,10 @@ function PortalAlerts({
 
   // New session report (feedback / homework)
   const lr = latestResult as any;
-  if (lr && (lr.coach_feedback || lr.homework || lr.whats_next || lr.general_whats_next)) {
+  // M135 — only ping when there's student-facing content. Daily coach_feedback
+  // + whats_next are internal now; the student sees the explicit
+  // student_visible_summary (final eval) and homework.
+  if (lr && (lr.student_visible_summary || lr.homework)) {
     rows.push({
       key: 'session-report',
       Icon: ClipboardList,

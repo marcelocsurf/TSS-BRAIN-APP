@@ -62,6 +62,58 @@ export async function sendSessionEmail(data: SessionEmailData): Promise<{ succes
   }
 }
 
+// ─── Coach survey email (M135) ───────────────────────────────────────
+// Fase 3: the student no longer gets a report after every day. Once — after
+// the official final evaluation (or the close of a one-day lesson) — they get
+// this single invitation to rate their coach + experience. Coach feedback and
+// "what to work on next" are INTERNAL now, so they are NOT in this email.
+
+interface CoachSurveyEmailData {
+  studentName: string;
+  studentEmail: string;
+  portalToken: string | null;
+  coachName: string;
+  /** What they attended, e.g. "Surf Camp Beginner (White Belt)" or "Discover Surfing". */
+  serviceName: string;
+  /** student_session_results.id — deep-links the survey. */
+  sessionResultId?: string;
+  feedbackToken?: string;
+  studentHasCourseAccess?: boolean;
+}
+
+export async function sendCoachSurveyEmail(data: CoachSurveyEmailData): Promise<{ success: boolean; error?: string }> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const portalUrl = data.portalToken ? `${appUrl}/portal/${data.portalToken}` : appUrl;
+  const useStandalone = data.feedbackToken && data.studentHasCourseAccess === false;
+  const feedbackUrl = useStandalone
+    ? `${appUrl}/feedback/${data.feedbackToken}`
+    : data.sessionResultId
+      ? `${portalUrl}?tab=feedback&survey=${data.sessionResultId}`
+      : `${portalUrl}?tab=feedback`;
+
+  const body = `
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 14px;">
+      Congratulations on finishing <strong>${escapeHtmlBasic(data.serviceName)}</strong> with
+      <strong>${escapeHtmlBasic(data.coachName)}</strong>! 🌊
+    </p>
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">
+      We'd love to hear how it went. It takes about 30 seconds and helps your coach and the whole team keep getting better.
+    </p>${INSTALL_APP_HTML}`;
+
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.studentEmail,
+      subject: `How was your experience with ${data.coachName}?`,
+      html: assignmentEmailShell('Rate your coach & experience ★', body, { url: feedbackUrl, label: 'Rate my coach ★' }),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Coach survey email failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ─── Service assignment emails ───────────────────────────────────────
 
 function escapeHtmlBasic(s: string): string {

@@ -68,6 +68,22 @@ const MENTAL_HACK_QUICK: { id: string; label: string; Icon: React.ComponentType<
   { id: 'visualize_success', label: 'Visualize',       Icon: Target },
 ];
 
+// M135 — quick internal-feedback chips. The coach taps a few instead of
+// typing every time; still free to write their own. Kept short + generic so
+// they fit any belt / session.
+const FEEDBACK_CHIPS = [
+  'Great pop-up',
+  'Steady stance',
+  'Good wave selection',
+  'Strong paddling',
+  'Better timing',
+  'More confident',
+  'Good positioning',
+  'Read the wave well',
+  'Committed to the drop',
+  'Needs more reps',
+];
+
 // ────────────────────────────────────────────────────────────────────
 // SessionPlanner — coach's session-planning UI. Two phases driven by
 // service_plans.completion_state:
@@ -1139,9 +1155,22 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             </button>
           )}
 
-          {/* IN PROGRESS + evaluating → edit plan OR finalize */}
+          {/* IN PROGRESS + evaluating → save & leave · edit plan · finalize */}
           {state === 'in_progress' && !editingPlan && (
             <>
+              {/* Everything autosaves on blur, so leaving never loses work.
+                  This makes that explicit — pause the eval, finish it later
+                  (e.g. in the video-analysis session). */}
+              <button
+                type="button"
+                onClick={() => { flash('✓ Saved — finish it whenever'); onBack(); }}
+                disabled={pending}
+                className="py-2.5 px-4 text-sm font-semibold rounded-xl border inline-flex items-center gap-1.5"
+                style={{ borderColor: '#CBD5E1', color: '#475569' }}
+              >
+                <Check size={13} strokeWidth={2} />
+                Save &amp; finish later
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -2531,24 +2560,61 @@ function StudentEvalCard({
             </p>
           </div>
 
-          {/* Two close fields per student (visible to the student + the next
-              coach for continuity). Persisted on block 0 like board/focus. */}
-          <TextArea
-            label="Coach feedback (what they did well)"
-            value={gen?.notes_post ?? ''}
-            onBlur={(v) => onCommit(genOrder, { notes_post: v })}
-            placeholder="e.g. Great pop-up, much steadier stance today"
-            rows={3}
-            disabled={isClosed}
-          />
-          <TextArea
-            label="What to work on next"
-            value={gen?.whats_next ?? ''}
-            onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
-            placeholder="e.g. Next session: angle take-offs, look down the line"
-            rows={2}
-            disabled={isClosed}
-          />
+          {/* Internal coach notes (M135). NOT sent to the student — these live
+              in the bitácora for the coach + the next coach. Feedback starts
+              from quick chips; "what to work on next" stays free text. */}
+          <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 space-y-2.5">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 inline-flex items-center gap-1">
+              <Lock size={10} /> Internal · not sent to the student
+            </p>
+            <div>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                Coach feedback (what they did well)
+              </label>
+              {!isClosed && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {FEEDBACK_CHIPS.map((chip) => {
+                    const current = gen?.notes_post ?? '';
+                    const on = current.includes(chip);
+                    return (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => {
+                          const next = on
+                            ? current.split(/·|\n/).map((s: string) => s.trim()).filter((s: string) => s && s !== chip).join(' · ')
+                            : (current.trim() ? `${current.trim()} · ${chip}` : chip);
+                          onCommit(genOrder, { notes_post: next });
+                        }}
+                        className="text-[11px] font-medium px-2.5 py-1 rounded-full transition-all"
+                        style={on
+                          ? { background: BRAND.colors.navy, color: 'white' }
+                          : { background: 'white', color: '#475569', border: '1px solid #CBD5E1' }}
+                      >
+                        {chip}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <TextArea
+                label=""
+                value={gen?.notes_post ?? ''}
+                onBlur={(v) => onCommit(genOrder, { notes_post: v })}
+                placeholder="Tap chips above, or write your own…"
+                rows={2}
+                disabled={isClosed}
+              />
+            </div>
+            <TextArea
+              label="What to work on next"
+              value={gen?.whats_next ?? ''}
+              onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
+              placeholder="e.g. Next session: angle take-offs, look down the line"
+              rows={2}
+              disabled={isClosed}
+            />
+          </div>
         </div>
       )}
 

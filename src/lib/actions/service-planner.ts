@@ -1558,6 +1558,65 @@ export async function closeCampFinal(
     .from('camp_instances')
     .update({ status: 'completed' })
     .eq('id', campInstanceId);
+
+  // M135 — the single coach-survey email per student, sent once here at the
+  // official close of the camp (daily closes send nothing for camps). Uses
+  // each student's most recent session result to deep-link the survey.
+  try {
+    const { data: campRow } = await admin
+      .from('camp_instances')
+      .select('camp_name')
+      .eq('id', campInstanceId)
+      .single();
+    const { data: parts } = await admin
+      .from('camp_participants')
+      .select('student_id, enrollment_status, students:student_id(id, first_name, email, portal_token, belt_level, course_access_white, course_access_yellow)')
+      .eq('camp_instance_id', campInstanceId);
+    const active = (parts ?? []).filter((p: any) => p.enrollment_status !== 'removed' && p.enrollment_status !== 'cancelled');
+    if (active.length > 0) {
+      const studentIds = active.map((p: any) => p.student_id);
+      // Latest closed session result per student, for feedback_token + survey id.
+      const { data: sessRows } = await admin
+        .from('camp_sessions')
+        .select('id')
+        .eq('camp_instance_id', campInstanceId);
+      const sessIds = (sessRows ?? []).map((s: any) => s.id);
+      const { data: results } = sessIds.length
+        ? await admin
+            .from('student_session_results')
+            .select('id, student_id, feedback_token, created_at, email_sent')
+            .in('camp_session_id', sessIds)
+            .in('student_id', studentIds)
+            .order('created_at', { ascending: false })
+        : { data: [] as any[] };
+      const latestByStudent = new Map<string, any>();
+      for (const r of results ?? []) if (!latestByStudent.has(r.student_id)) latestByStudent.set(r.student_id, r);
+
+      const { sendCoachSurveyEmail } = await import('@/lib/actions/email');
+      for (const p of active) {
+        const stu: any = Array.isArray(p.students) ? p.students[0] : p.students;
+        if (!stu?.email) continue;
+        const res = latestByStudent.get(p.student_id);
+        if (res?.email_sent) continue; // already invited (idempotent re-close)
+        const hasCourseAccess = !!stu.course_access_white || !!stu.course_access_yellow;
+        await sendCoachSurveyEmail({
+          studentName: stu.first_name,
+          studentEmail: stu.email,
+          portalToken: stu.portal_token,
+          coachName: (coach as any).display_name || 'Coach',
+          serviceName: campRow?.camp_name || 'your surf camp',
+          sessionResultId: res?.id,
+          feedbackToken: res?.feedback_token ?? undefined,
+          studentHasCourseAccess: hasCourseAccess,
+        });
+        if (res?.id) {
+          await admin.from('student_session_results').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', res.id);
+        }
+      }
+    }
+  } catch {
+    /* non-blocking — the camp is closed regardless of email delivery */
+  }
 }
 
 // M45 — Save a coach's official STP rating for a student during session
@@ -1951,28 +2010,27 @@ export async function closeServicePlan(
       }
     }
 
-    // 4. Email feedback + survey link (only on first close, non-blocking)
-    if (!alreadyClosed && stud?.email && result) {
+    // 4. Coach-survey email (M135). Fase 3: no more daily reports. The student
+    //    gets ONE survey email — and for a multi-day camp that goes out after
+    //    the official FINAL evaluation (closeCampFinal), NOT on a daily close.
+    //    A one-day lesson (surf_lesson / Discover Surfing) has no separate
+    //    final eval, so its close IS the moment to send the survey.
+    const tplForEmail = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
+    const isOneDayLesson = (tplForEmail?.service_kind ?? null) === 'surf_lesson';
+    if (isOneDayLesson && !alreadyClosed && stud?.email && result) {
       try {
-        const { sendSessionEmail } = await import('@/lib/actions/email');
-        // M86 — pick the right feedback URL based on whether the
-        // student has any course access. Leads land on the standalone
+        const { sendCoachSurveyEmail } = await import('@/lib/actions/email');
+        // M86 — Leads (no course access) land on the standalone
         // /feedback/[token] page; Members get the full portal.
         const hasCourseAccess =
           !!(stud as any).course_access_white ||
           !!(stud as any).course_access_yellow;
-        await sendSessionEmail({
+        await sendCoachSurveyEmail({
           studentName: stud.first_name,
           studentEmail: stud.email,
           portalToken: stud.portal_token,
           coachName: coach.display_name || 'Coach',
-          sessionDate: new Date().toISOString(),
-          mission: missionTitle,
-          status,
-          coachFeedback: b.notes_post ?? '',
-          homework: '',
-          whatsNext: firstBlock.whats_next ?? '',
-          beltLevel: stud.belt_level || 'white_belt',
+          serviceName: camp.camp_name || missionTitle,
           sessionResultId: result.id,
           feedbackToken: (result as any).feedback_token ?? undefined,
           studentHasCourseAccess: hasCourseAccess,
