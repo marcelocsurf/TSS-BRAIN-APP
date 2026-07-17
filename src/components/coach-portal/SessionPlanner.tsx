@@ -708,24 +708,24 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               team's 7-day agenda (photographer, assistants, support). */}
           <Section icon={CalendarClock} title="Class day" subtitle="Start time, beach, and transport — the team plans around this">
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block">
-                  <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Class starts at</span>
-                  <input
-                    type="time"
-                    value={plan.class_start_time ?? ''}
-                    onChange={(e) => commitPlanField('class_start_time', e.target.value || null)}
-                    className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
-                  />
-                </label>
-                <label className="block">
-                  <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Surf spot / beach</span>
-                  <VenuePicker
-                    value={plan.surf_venue}
-                    onChange={(v) => commitPlanField('surf_venue', v)}
-                  />
-                </label>
-              </div>
+              {/* Stacked (not a 2-col grid): the native iOS time picker renders
+                  wider than its cell and used to overlap the beach field. */}
+              <label className="block min-w-0">
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Class starts at</span>
+                <input
+                  type="time"
+                  value={plan.class_start_time ?? ''}
+                  onChange={(e) => commitPlanField('class_start_time', e.target.value || null)}
+                  className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                />
+              </label>
+              <label className="block min-w-0">
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Surf spot / beach</span>
+                <VenuePicker
+                  value={plan.surf_venue}
+                  onChange={(v) => commitPlanField('surf_venue', v)}
+                />
+              </label>
 
               <div>
                 <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Transport needed?</span>
@@ -753,22 +753,22 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
               {plan.transport_needed === true && (
                 <div className="grid grid-cols-2 gap-2 rounded-xl bg-sky-50 border border-sky-200 p-3">
-                  <label className="block">
+                  <label className="block min-w-0">
                     <span className="block text-[10px] font-mono uppercase tracking-wider text-sky-700 mb-1">Departure</span>
                     <input
                       type="time"
                       value={plan.transport_depart ?? ''}
                       onChange={(e) => commitPlanField('transport_depart', e.target.value || null)}
-                      className="w-full text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
+                      className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
                     />
                   </label>
-                  <label className="block">
+                  <label className="block min-w-0">
                     <span className="block text-[10px] font-mono uppercase tracking-wider text-sky-700 mb-1">Return</span>
                     <input
                       type="time"
                       value={plan.transport_return ?? ''}
                       onChange={(e) => commitPlanField('transport_return', e.target.value || null)}
-                      className="w-full text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
+                      className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
                     />
                   </label>
                   <p className="col-span-2 text-[11px] text-sky-700">
