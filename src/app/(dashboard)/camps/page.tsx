@@ -86,10 +86,13 @@ export default async function CampsPage({
     rangeEnd = `${year}-12-31`;
   }
 
-  const [campsRaw, templates, weekTemplates] = await Promise.all([
+  const [campsRaw, templates, weekTemplates, occupancyCampsRaw] = await Promise.all([
     listCampsInRange(rangeStart, rangeEnd),
     listCampTemplates(),
     listWeekTemplates(),
+    // Broad dataset for the occupancy widget so it can slice by day/month/year/
+    // total independently of the calendar's current view window.
+    listCampsInRange('2020-01-01', '2100-12-31'),
   ]);
 
   // Monday of the currently-anchored week — used by the Apply launcher.
@@ -155,7 +158,7 @@ export default async function CampsPage({
 
       <CampFilters templates={templates as any} />
 
-      <OccupancySummary camps={camps} />
+      <OccupancySummary camps={occupancyCampsRaw as any} anchor={anchor} />
 
       <CampCalendar
         camps={camps as any}
