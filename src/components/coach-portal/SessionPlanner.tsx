@@ -4,7 +4,6 @@ import { useState, useTransition, useEffect } from 'react';
 import {
   BRAND,
   WAVE_SIZE_OPTIONS,
-  CURRENT_OPTIONS,
   WIND_OPTIONS,
   TIDE_OPTIONS,
   HAZARD_OPTIONS,
@@ -813,25 +812,17 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 ))}
               </div>
 
-              {/* Essentials — wave size (ft) + current, the two safety reads
-                  that shape the plan. Wind moved into "Más detalles". */}
-              <div className="grid grid-cols-2 gap-2">
-                <SelectField
-                  label="Wave size (ft)"
-                  value={plan.venue_wave_size}
-                  options={WAVE_SIZE_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_wave_size', v)}
-                />
-                <SelectField
-                  label="Current / corriente"
-                  value={plan.venue_current}
-                  options={CURRENT_OPTIONS}
-                  onChange={(v) => commitPlanField('venue_current', v)}
-                />
-              </div>
+              {/* Essentials — just the wave size (ft). Wind + everything else
+                  live in "Más detalles". */}
+              <SelectField
+                label="Wave size (ft)"
+                value={plan.venue_wave_size}
+                options={WAVE_SIZE_OPTIONS}
+                onChange={(v) => commitPlanField('venue_wave_size', v)}
+              />
 
               {/* Everything else is optional context — tucked away so the common
-                  case is just the go/no-go call + wave + current. */}
+                  case is just the go/no-go call + wave size. */}
               <details className="group rounded-lg border border-gray-100 bg-gray-50/60">
                 <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <ChevronRight size={13} className="transition-transform group-open:rotate-90" /> Más detalles (opcional)
@@ -1232,7 +1223,6 @@ function GeneralPlanSummary({
       : '—';
   const conditions: { Icon: React.ComponentType<any>; value: string }[] = [
     plan.venue_wave_size ? { Icon: Waves, value: plan.venue_wave_size } : null,
-    plan.venue_current ? { Icon: Waves, value: `current: ${plan.venue_current}` } : null,
     plan.venue_wind ? { Icon: Wind, value: plan.venue_wind } : null,
     plan.venue_tide ? { Icon: Moon, value: plan.venue_tide } : null,
     plan.venue_hazards ? { Icon: AlertTriangle, value: plan.venue_hazards } : null,

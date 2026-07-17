@@ -130,14 +130,6 @@ export const WAVE_SIZE_OPTIONS = [
   { value: '8ft+',  label: '8 ft+' },
 ] as const;
 
-// Current strength (corrientes) — a safety-relevant read for the venue.
-export const CURRENT_OPTIONS = [
-  { value: 'none',   label: 'No hay' },
-  { value: 'light',  label: 'Suave' },
-  { value: 'medium', label: 'Media' },
-  { value: 'strong', label: 'Fuerte' },
-] as const;
-
 export const WIND_OPTIONS = [
   { value: 'glassy',           label: 'Glassy' },
   { value: 'offshore-light',   label: 'Light offshore' },
