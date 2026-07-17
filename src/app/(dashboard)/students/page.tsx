@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { StudentSearch } from './student-search';
 import { StudentFilters } from './student-filters';
 import { Suspense } from 'react';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 
 // All advanced filter keys that map to URL params
 const ADVANCED_KEYS = [
@@ -121,6 +121,14 @@ export default async function StudentRosterPage({ searchParams }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Full roster export (all personal data) → CSV, opens in Excel. */}
+          <a
+            href="/students/export"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white text-[var(--tss-navy)] text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-all shadow-sm"
+            title="Descargar todos los alumnos con su data (Excel)"
+          >
+            <Download size={15} /> Descargar Excel
+          </a>
           <Link
             href="/students/new"
             className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
