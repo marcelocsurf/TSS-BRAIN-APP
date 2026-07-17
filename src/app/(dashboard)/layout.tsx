@@ -45,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   // sidebar — they live in the dashboard Quick Actions now (less clutter).
   // Other roles keep their entries.
   { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['coordinator', 'coach', 'assistant'] },
-  { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['coordinator', 'coach'] },
+  { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['coach'] },
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
