@@ -26,6 +26,7 @@ import {
   saveOfficialStepRatingFromPortal,
   saveStudentInternalNote,
   applyPlanHeaderToWeek,
+  applyStudentBoardToWeek,
   type ServicePlanData,
   type ServicePlanStudent,
   type ServicePlanBlock,
@@ -966,6 +967,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     onAddBlock={() => addStudentBlock(s.student_id)}
                     onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
                     onShowDrill={(id) => setDrillDetailId(id)}
+                    multiDay={data.daySummaries.length > 1}
+                    onApplyBoardToWeek={(board) =>
+                      applyStudentBoardToWeek(token, data.selectedDay.camp_session_id, s.student_id, board)
+                    }
                   />
                 ));
               })()}
@@ -1317,7 +1322,15 @@ function Section({
 
 // M134 — "plan once, use all week": copies the warm-up / mental hack to every
 // non-closed day of the camp.
-function ApplyToWeekButton({ onApply }: { onApply: () => Promise<{ ok: boolean; days?: number; error?: string }> }) {
+function ApplyToWeekButton({
+  onApply,
+  label = '📅 Use this for the whole week',
+  doneLabel = '✓ Applied to the whole week',
+}: {
+  onApply: () => Promise<{ ok: boolean; days?: number; skipped?: number; error?: string }>;
+  label?: string;
+  doneLabel?: string;
+}) {
   const [state, setState] = useState<'idle' | 'saving' | 'done'>('idle');
   return (
     <button
@@ -1328,6 +1341,9 @@ function ApplyToWeekButton({ onApply }: { onApply: () => Promise<{ ok: boolean; 
         try {
           const r = await onApply();
           if (!r.ok) { alert(r.error || 'Could not apply.'); setState('idle'); return; }
+          if (r.skipped && r.skipped > 0) {
+            alert(`Aplicado a ${r.days} día(s). ${r.skipped} día(s) quedaron sin esa tabla porque ya estaba asignada a otro servicio ese día.`);
+          }
           setState('done');
           setTimeout(() => setState('idle'), 2500);
         } catch { setState('idle'); }
@@ -1337,7 +1353,7 @@ function ApplyToWeekButton({ onApply }: { onApply: () => Promise<{ ok: boolean; 
         ? { borderColor: '#10B981', color: '#047857', background: '#ECFDF5' }
         : { borderColor: '#5AC3E7', color: '#0369A1', background: 'white' }}
     >
-      {state === 'done' ? '✓ Applied to the whole week' : state === 'saving' ? 'Applying…' : '📅 Use this for the whole week'}
+      {state === 'done' ? doneLabel : state === 'saving' ? 'Applying…' : label}
     </button>
   );
 }
@@ -1918,6 +1934,8 @@ function StudentPlanCard({
   onRemoveBlock,
   onShowDrill,
   onSaveNote,
+  multiDay,
+  onApplyBoardToWeek,
 }: {
   student: ServicePlanStudent;
   stpCatalog: ServicePlanData['stpCatalog'];
@@ -1930,6 +1948,8 @@ function StudentPlanCard({
   onAddBlock: () => void;
   onRemoveBlock: (orderIndex: number) => void;
   onShowDrill: (drillId: string) => void;
+  multiDay: boolean;
+  onApplyBoardToWeek: (board: { board_id: string | null; board_type: string | null; board_size_feet: number | null; board_size_inches: number | null }) => Promise<{ ok: boolean; days?: number; skipped?: number; error?: string }>;
 }) {
   const [showFullPlan, setShowFullPlan] = useState(false);
   const blocks = student.blocks.length > 0
@@ -2093,6 +2113,19 @@ function StudentPlanCard({
                 </div>
               );
             })()}
+            {/* M136 — assign this board once, reuse it every day of the camp. */}
+            {multiDay && (firstBlock.board_type || firstBlock.board_id) && (
+              <ApplyToWeekButton
+                label="📅 Usar esta tabla toda la semana"
+                doneLabel="✓ Tabla aplicada toda la semana"
+                onApply={() => onApplyBoardToWeek({
+                  board_id: firstBlock.board_id,
+                  board_type: firstBlock.board_type,
+                  board_size_feet: firstBlock.board_size_feet,
+                  board_size_inches: firstBlock.board_size_inches,
+                })}
+              />
+            )}
           </div>
         );
       })()}

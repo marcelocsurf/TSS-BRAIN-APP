@@ -1111,6 +1111,96 @@ export async function applyPlanHeaderToWeek(
   return { ok: true, days: touched };
 }
 
+// ─── Apply a student's board to the WHOLE week (M136) ──────────────
+// The coach assigns a board once and reuses it for every day of the camp.
+// Writes board fields to that student's block 0 for each non-closed day.
+// Skips days where the (inventory) board is already taken by another service.
+export async function applyStudentBoardToWeek(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+  board: { board_id: string | null; board_type: string | null; board_size_feet: number | null; board_size_inches: number | null },
+): Promise<{ ok: boolean; days?: number; skipped?: number; error?: string }> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).single();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id, academy_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) return { ok: false, error: 'Session not found.' };
+  const camp = Array.isArray(session.camp_instances) ? session.camp_instances[0] : session.camp_instances;
+  if (!camp || (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id)) {
+    return { ok: false, error: 'You are not assigned to this service.' };
+  }
+
+  const { data: participant } = await admin
+    .from('camp_participants').select('id')
+    .eq('camp_instance_id', session.camp_instance_id).eq('student_id', studentId).maybeSingle();
+  if (!participant) return { ok: false, error: 'Student not enrolled in this service.' };
+
+  // All days of this camp + their plan state (skip closed) and dates.
+  const { data: sessions } = await admin
+    .from('camp_sessions')
+    .select('id, session_date')
+    .eq('camp_instance_id', session.camp_instance_id);
+  const ids = (sessions ?? []).map((x: any) => x.id);
+  const { data: plans } = await admin
+    .from('service_plans').select('camp_session_id, completion_state').in('camp_session_id', ids);
+  const closedByS = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p.completion_state === 'closed']));
+
+  const boardPatch: Record<string, any> = {
+    board_type: board.board_type ?? null,
+    board_size_feet: board.board_size_feet ?? null,
+    board_size_inches: board.board_size_inches ?? null,
+  };
+
+  let applied = 0, skipped = 0;
+  if (board.board_id) await admin.from('boards').update({ status: 'in_use' }).eq('id', board.board_id);
+
+  for (const sess of sessions ?? []) {
+    if (closedByS.get(sess.id)) continue; // never touch a closed day
+
+    // Inventory-board double-booking guard, per date.
+    let dayBoardId = board.board_id ?? null;
+    if (dayBoardId && (sess as any).session_date && (camp as any).academy_id) {
+      const { data: sameDay } = await admin
+        .from('camp_sessions')
+        .select('id, camp_instances:camp_instance_id!inner(academy_id)')
+        .eq('session_date', (sess as any).session_date)
+        .eq('camp_instances.academy_id', (camp as any).academy_id)
+        .neq('id', sess.id);
+      const otherIds = (sameDay ?? []).map((x: any) => x.id);
+      if (otherIds.length > 0) {
+        const { data: clash } = await admin
+          .from('service_plan_blocks').select('id')
+          .eq('board_id', dayBoardId).in('camp_session_id', otherIds).limit(1);
+        if (clash && clash.length > 0) { dayBoardId = null; skipped++; } // leave board off that day
+      }
+    }
+
+    const patch = { ...boardPatch, board_id: dayBoardId };
+    const { data: existing } = await admin
+      .from('service_plan_blocks').select('id')
+      .eq('camp_session_id', sess.id).eq('student_id', studentId).eq('order_index', 0).maybeSingle();
+    if (existing) {
+      await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    } else {
+      await admin.from('service_plan_blocks').insert({
+        camp_instance_id: session.camp_instance_id,
+        camp_session_id: sess.id,
+        student_id: studentId,
+        order_index: 0,
+        ...patch,
+      });
+    }
+    applied++;
+  }
+  return { ok: true, days: applied, skipped };
+}
+
 // ─── Save per-student block ────────────────────────────────────────
 
 export async function saveServicePlanBlock(
