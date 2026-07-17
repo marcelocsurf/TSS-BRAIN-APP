@@ -997,6 +997,17 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             plan={plan}
             warmUpLabel={warmUpLabel}
             mentalLabel={mentalLabel}
+            students={students.map((s) => {
+              const objective = s.blocks.map((b) => b.objective_text).find(Boolean) ?? null;
+              const wb = s.blocks.find((b) => b.water_drill_id || b.water_drill_custom);
+              const mission =
+                (wb?.water_drill_custom ||
+                  (wb?.water_drill_id ? data.availableDrills.find((d) => d.id === wb.water_drill_id)?.title : null)) ??
+                null;
+              const stepBlock = s.blocks.find((b) => b.step_id);
+              const step = stepBlock?.step_id ? data.stpCatalog.find((x) => x.id === stepBlock.step_id)?.title ?? null : null;
+              return { name: s.display_name, objective, mission: mission ?? step };
+            })}
           />
 
           <Section
@@ -1213,11 +1224,19 @@ function GeneralPlanSummary({
   plan,
   warmUpLabel,
   mentalLabel,
+  students,
 }: {
   plan: ServicePlanData['plan'];
   warmUpLabel: string | null | undefined;
   mentalLabel: string | null | undefined;
+  students: { name: string; objective: string | null; mission: string | null }[];
 }) {
+  const hhmm = (t: string | null) => {
+    if (!t) return null;
+    const [h, m] = t.split(':').map(Number);
+    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  };
+  const classTime = hhmm(plan.class_start_time);
   const goLabel =
     plan.venue_go_no_go === 'go'
       ? '✓ Go'
@@ -1236,6 +1255,27 @@ function GeneralPlanSummary({
   return (
     <Section icon={ClipboardList} title="Session Plan" subtitle="The plan you set for this class">
       <div className="space-y-2.5">
+        {/* Class day — the real logistics at a glance (M137). */}
+        {(classTime || plan.surf_venue || plan.transport_needed) && (
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-sky-50 border border-sky-100 px-2.5 py-2">
+            {classTime && (
+              <span className="text-[11px] font-semibold text-sky-800 inline-flex items-center gap-1">
+                <CalendarClock size={12} /> {classTime}
+              </span>
+            )}
+            {plan.surf_venue && (
+              <span className="text-[11px] text-sky-800 inline-flex items-center gap-1">
+                <MapPin size={12} /> {plan.surf_venue}
+              </span>
+            )}
+            {plan.transport_needed && (
+              <span className="text-[11px] text-sky-800 inline-flex items-center gap-1">
+                🚐 {hhmm(plan.transport_depart) ?? '—'} / {hhmm(plan.transport_return) ?? '—'}
+                {plan.transport_status === 'cancelled' ? ' (cancelled)' : ''}
+              </span>
+            )}
+          </div>
+        )}
         <SummaryRow label="Venue call" value={goLabel} />
         {conditions.length > 0 && (
           <div>
@@ -1271,6 +1311,32 @@ function GeneralPlanSummary({
             label={<><NotebookPen size={11} strokeWidth={1.75} /> Notes</>}
             value={plan.notes_general}
           />
+        )}
+
+        {/* Per-student objective + water mission (M137) — so an assembled plan
+            shows what each student is set to work on, not just the group read. */}
+        {students.some((s) => s.objective || s.mission) && (
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1 inline-flex items-center gap-1">
+              <Users size={11} strokeWidth={1.75} /> Students
+            </p>
+            <div className="space-y-1">
+              {students.map((s, i) => (
+                <div key={i} className="rounded-lg bg-gray-50 border border-gray-100 px-2.5 py-1.5">
+                  <p className="text-[12px] font-semibold text-[var(--tss-navy)] leading-tight">{s.name}</p>
+                  {s.objective && (
+                    <p className="text-[11px] text-gray-600 leading-snug">🎯 {s.objective}</p>
+                  )}
+                  {s.mission && (
+                    <p className="text-[11px] text-gray-600 leading-snug">🌊 {s.mission}</p>
+                  )}
+                  {!s.objective && !s.mission && (
+                    <p className="text-[11px] text-gray-400 italic">No objective set yet</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </Section>
