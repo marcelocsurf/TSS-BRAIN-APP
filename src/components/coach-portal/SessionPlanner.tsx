@@ -70,22 +70,6 @@ const MENTAL_HACK_QUICK: { id: string; label: string; Icon: React.ComponentType<
   { id: 'visualize_success', label: 'Visualize',       Icon: Target },
 ];
 
-// M135 — quick internal-feedback chips. The coach taps a few instead of
-// typing every time; still free to write their own. Kept short + generic so
-// they fit any belt / session.
-const FEEDBACK_CHIPS = [
-  'Great pop-up',
-  'Steady stance',
-  'Good wave selection',
-  'Strong paddling',
-  'Better timing',
-  'More confident',
-  'Good positioning',
-  'Read the wave well',
-  'Committed to the drop',
-  'Needs more reps',
-];
-
 // ────────────────────────────────────────────────────────────────────
 // SessionPlanner — coach's session-planning UI. Two phases driven by
 // service_plans.completion_state:
@@ -998,15 +982,23 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             warmUpLabel={warmUpLabel}
             mentalLabel={mentalLabel}
             students={students.map((s) => {
-              const objective = s.blocks.map((b) => b.objective_text).find(Boolean) ?? null;
-              const wb = s.blocks.find((b) => b.water_drill_id || b.water_drill_custom);
-              const mission =
-                (wb?.water_drill_custom ||
-                  (wb?.water_drill_id ? data.availableDrills.find((d) => d.id === wb.water_drill_id)?.title : null)) ??
-                null;
-              const stepBlock = s.blocks.find((b) => b.step_id);
-              const step = stepBlock?.step_id ? data.stpCatalog.find((x) => x.id === stepBlock.step_id)?.title ?? null : null;
-              return { name: s.display_name, objective, mission: mission ?? step };
+              // objective_text is stored as "<block type> · <title>". The
+              // water missions are the blocks whose type is "Water Mission";
+              // strip the type prefix to get the mission title.
+              const strip = (t: string) => t.replace(/^[^·]+·\s*/, '').trim();
+              const isWater = (b: ServicePlanBlock) => /water mission|misi[oó]n de agua/i.test(b.objective_text || '');
+              let missions = s.blocks
+                .filter(isWater)
+                .map((b) => strip(b.objective_text || '') || b.water_drill_custom || '')
+                .filter(Boolean);
+              // Fallback: no labeled water block → show whatever objectives exist.
+              if (missions.length === 0) {
+                missions = s.blocks
+                  .map((b) => (b.objective_text ? strip(b.objective_text) : (b.water_drill_custom || '')))
+                  .filter(Boolean)
+                  .slice(0, 2);
+              }
+              return { name: s.display_name, missions };
             })}
           />
 
@@ -1234,7 +1226,7 @@ function GeneralPlanSummary({
   plan: ServicePlanData['plan'];
   warmUpLabel: string | null | undefined;
   mentalLabel: string | null | undefined;
-  students: { name: string; objective: string | null; mission: string | null }[];
+  students: { name: string; missions: string[] }[];
 }) {
   const hhmm = (t: string | null) => {
     if (!t) return null;
@@ -1318,25 +1310,23 @@ function GeneralPlanSummary({
           />
         )}
 
-        {/* Per-student objective + water mission (M137) — so an assembled plan
-            shows what each student is set to work on, not just the group read. */}
-        {students.some((s) => s.objective || s.mission) && (
+        {/* Per-student water missions (M137) — so an assembled plan shows what
+            each student is set to surf, not just the group read. */}
+        {students.some((s) => s.missions.length > 0) && (
           <div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1 inline-flex items-center gap-1">
-              <Users size={11} strokeWidth={1.75} /> Students
+              <Users size={11} strokeWidth={1.75} /> Missions per student
             </p>
             <div className="space-y-1">
               {students.map((s, i) => (
                 <div key={i} className="rounded-lg bg-gray-50 border border-gray-100 px-2.5 py-1.5">
                   <p className="text-[12px] font-semibold text-[var(--tss-navy)] leading-tight">{s.name}</p>
-                  {s.objective && (
-                    <p className="text-[11px] text-gray-600 leading-snug">🎯 {s.objective}</p>
-                  )}
-                  {s.mission && (
-                    <p className="text-[11px] text-gray-600 leading-snug">🌊 {s.mission}</p>
-                  )}
-                  {!s.objective && !s.mission && (
-                    <p className="text-[11px] text-gray-400 italic">No objective set yet</p>
+                  {s.missions.length > 0 ? (
+                    s.missions.map((m, j) => (
+                      <p key={j} className="text-[11px] text-gray-600 leading-snug">🌊 {m}</p>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-gray-400 italic">No mission set yet</p>
                   )}
                 </div>
               ))}
@@ -2702,53 +2692,22 @@ function StudentEvalCard({
           </div>
 
           {/* Internal coach notes (M135). NOT sent to the student — these live
-              in the bitácora for the coach + the next coach. Feedback starts
-              from quick chips; "what to work on next" stays free text. */}
+              in the bitácora for the coach + the next coach. Both optional:
+              free text, no chips. */}
           <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 space-y-2.5">
             <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 inline-flex items-center gap-1">
               <Lock size={10} /> Internal · not sent to the student
             </p>
-            <div>
-              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-                Coach feedback (what they did well)
-              </label>
-              {!isClosed && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {FEEDBACK_CHIPS.map((chip) => {
-                    const current = gen?.notes_post ?? '';
-                    const on = current.includes(chip);
-                    return (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => {
-                          const next = on
-                            ? current.split(/·|\n/).map((s: string) => s.trim()).filter((s: string) => s && s !== chip).join(' · ')
-                            : (current.trim() ? `${current.trim()} · ${chip}` : chip);
-                          onCommit(genOrder, { notes_post: next });
-                        }}
-                        className="text-[11px] font-medium px-2.5 py-1 rounded-full transition-all"
-                        style={on
-                          ? { background: BRAND.colors.navy, color: 'white' }
-                          : { background: 'white', color: '#475569', border: '1px solid #CBD5E1' }}
-                      >
-                        {chip}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <TextArea
-                label=""
-                value={gen?.notes_post ?? ''}
-                onBlur={(v) => onCommit(genOrder, { notes_post: v })}
-                placeholder="Tap chips above, or write your own…"
-                rows={2}
-                disabled={isClosed}
-              />
-            </div>
             <TextArea
-              label="What to work on next"
+              label="Coach feedback (optional)"
+              value={gen?.notes_post ?? ''}
+              onBlur={(v) => onCommit(genOrder, { notes_post: v })}
+              placeholder="e.g. Great pop-up, much steadier stance today"
+              rows={2}
+              disabled={isClosed}
+            />
+            <TextArea
+              label="What to work on next (optional)"
               value={gen?.whats_next ?? ''}
               onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
               placeholder="e.g. Next session: angle take-offs, look down the line"
