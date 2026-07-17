@@ -565,19 +565,43 @@ export async function createCampInstance(input: {
     }
   }
 
-  // Auto-create camp sessions (one per template day)
-  const startDate = new Date(input.start_date);
-  const sessionsToInsert = days.map((day, i) => {
-    const sessionDate = new Date(startDate);
-    sessionDate.setDate(sessionDate.getDate() + i);
-    return {
+  // Auto-create camp sessions — ONE per distinct day_number. Dedupe first: a
+  // template with a duplicated day (e.g. two "day 1" rows) must not create two
+  // sessions, and the extra one used to land a day past the camp (TZ + array
+  // index bug). When a day_number is duplicated, keep the template day that
+  // actually has blocks. Date is computed by UTC arithmetic off day_number so
+  // it never shifts with the server timezone.
+  const [sy, sm, sd] = input.start_date.split('-').map(Number);
+  const startUtcMs = Date.UTC(sy, (sm || 1) - 1, sd || 1);
+
+  // Block counts per template day, to prefer the content-rich duplicate.
+  const blockCountByDay = new Map<string, number>();
+  {
+    const { data: tplBlocks } = await supabase
+      .from('camp_template_blocks')
+      .select('template_day_id')
+      .in('template_day_id', days.map((d) => d.id));
+    for (const b of tplBlocks ?? []) {
+      const k = (b as any).template_day_id as string;
+      blockCountByDay.set(k, (blockCountByDay.get(k) ?? 0) + 1);
+    }
+  }
+  const bestDayByNumber = new Map<number, { id: string; day_number: number }>();
+  for (const day of days) {
+    const cur = bestDayByNumber.get(day.day_number);
+    if (!cur || (blockCountByDay.get(day.id) ?? 0) > (blockCountByDay.get(cur.id) ?? 0)) {
+      bestDayByNumber.set(day.day_number, day);
+    }
+  }
+  const sessionsToInsert = Array.from(bestDayByNumber.values())
+    .sort((a, b) => a.day_number - b.day_number)
+    .map((day) => ({
       camp_instance_id: instance.id,
       template_day_id: day.id,
       day_number: day.day_number,
-      session_date: sessionDate.toISOString().slice(0, 10),
+      session_date: new Date(startUtcMs + (day.day_number - 1) * 86400000).toISOString().slice(0, 10),
       session_status: 'planned' as const,
-    };
-  });
+    }));
   const { data: createdSessions, error: sessErr } = await supabase
     .from('camp_sessions')
     .insert(sessionsToInsert)
