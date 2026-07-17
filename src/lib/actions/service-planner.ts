@@ -1047,6 +1047,70 @@ export async function saveServicePlanHeader(
   }
 }
 
+// ─── Apply a header field to the WHOLE week (M134) ─────────────────
+// The coach plans the group warm-up / mental hack once and reuses it for
+// every day of the camp. Upserts a plan row per camp_session with the patch;
+// days that already have their own value get overwritten on purpose (the
+// coach pressed the button knowing that).
+
+export async function applyPlanHeaderToWeek(
+  token: string,
+  campSessionId: string,
+  patch: Partial<{
+    warm_up_drill_id: string | null;
+    warm_up_custom: string | null;
+    mental_hack: string | null;
+  }>
+): Promise<{ ok: boolean; days?: number; error?: string }> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id')
+    .eq('portal_token', token)
+    .single();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) return { ok: false, error: 'Session not found.' };
+  const camp = Array.isArray(session.camp_instances) ? session.camp_instances[0] : session.camp_instances;
+  if (!camp || (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id)) {
+    return { ok: false, error: 'You are not assigned to this service.' };
+  }
+
+  const { data: sessions } = await admin
+    .from('camp_sessions')
+    .select('id')
+    .eq('camp_instance_id', session.camp_instance_id);
+  const ids = (sessions ?? []).map((x: any) => x.id);
+  const { data: plans } = await admin
+    .from('service_plans')
+    .select('id, camp_session_id, completion_state')
+    .in('camp_session_id', ids);
+  const planBySession = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p]));
+
+  let touched = 0;
+  for (const sid of ids) {
+    const existing = planBySession.get(sid);
+    if (existing) {
+      if (existing.completion_state === 'closed') continue; // never rewrite a closed day
+      await admin.from('service_plans').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    } else {
+      await admin.from('service_plans').insert({
+        camp_instance_id: session.camp_instance_id,
+        camp_session_id: sid,
+        ...patch,
+        completion_state: 'planned',
+      });
+    }
+    touched++;
+  }
+  return { ok: true, days: touched };
+}
+
 // ─── Save per-student block ────────────────────────────────────────
 
 export async function saveServicePlanBlock(

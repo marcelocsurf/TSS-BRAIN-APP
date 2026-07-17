@@ -24,6 +24,7 @@ import {
   closeServicePlan,
   saveOfficialStepRatingFromPortal,
   saveStudentInternalNote,
+  applyPlanHeaderToWeek,
   type ServicePlanData,
   type ServicePlanStudent,
   type ServicePlanBlock,
@@ -55,6 +56,7 @@ import {
   CalendarClock,
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
+import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 
@@ -758,6 +760,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   </p>
                 </div>
               )}
+
+              {/* Tide reference for THIS class day (same data as the coordinator's
+                  dashboard widget). Tapping a suggested window fills the start time. */}
+              <TidePlannerHint
+                date={data.selectedDay.session_date}
+                onPickTime={(hhmm) => commitPlanField('class_start_time', hhmm)}
+              />
             </div>
           </Section>
 
@@ -872,6 +881,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               onCustom={(v) => commitPlanPatch({ warm_up_custom: v, warm_up_drill_id: null })}
               customPlaceholder="e.g. Joint mobility + 10 sand pop-ups"
             />
+            {(plan.warm_up_drill_id || plan.warm_up_custom) && data.daySummaries.length > 1 && (
+              <ApplyToWeekButton
+                onApply={() => applyPlanHeaderToWeek(token, data.selectedDay.camp_session_id, {
+                  warm_up_drill_id: plan.warm_up_drill_id,
+                  warm_up_custom: plan.warm_up_custom,
+                })}
+              />
+            )}
           </Section>
 
           {/* 3. MENTAL HACK */}
@@ -907,7 +924,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               onBlur={(v) => commitPlanField('mental_hack', v || null)}
               placeholder="Visualization · breath ladder · etc."
             />
-          </Section>
+  {plan.mental_hack && data.daySummaries.length > 1 && (
+              <ApplyToWeekButton
+                onApply={() => applyPlanHeaderToWeek(token, data.selectedDay.camp_session_id, { mental_hack: plan.mental_hack })}
+              />
+            )}
+                    </Section>
 
           {/* 4. PER-STUDENT PLANNING */}
           <Section
@@ -1268,6 +1290,33 @@ function Section({
       </div>
       {children}
     </div>
+  );
+}
+
+// M134 — "plan once, use all week": copies the warm-up / mental hack to every
+// non-closed day of the camp.
+function ApplyToWeekButton({ onApply }: { onApply: () => Promise<{ ok: boolean; days?: number; error?: string }> }) {
+  const [state, setState] = useState<'idle' | 'saving' | 'done'>('idle');
+  return (
+    <button
+      type="button"
+      disabled={state !== 'idle'}
+      onClick={async () => {
+        setState('saving');
+        try {
+          const r = await onApply();
+          if (!r.ok) { alert(r.error || 'Could not apply.'); setState('idle'); return; }
+          setState('done');
+          setTimeout(() => setState('idle'), 2500);
+        } catch { setState('idle'); }
+      }}
+      className="mt-2 w-full py-2 rounded-lg border border-dashed text-[12px] font-semibold transition-colors disabled:opacity-70"
+      style={state === 'done'
+        ? { borderColor: '#10B981', color: '#047857', background: '#ECFDF5' }
+        : { borderColor: '#5AC3E7', color: '#0369A1', background: 'white' }}
+    >
+      {state === 'done' ? '✓ Applied to the whole week' : state === 'saving' ? 'Applying…' : '📅 Use this for the whole week'}
+    </button>
   );
 }
 
@@ -1816,6 +1865,7 @@ function StudentPlanCard({
   onRemoveBlock: (orderIndex: number) => void;
   onShowDrill: (drillId: string) => void;
 }) {
+  const [showFullPlan, setShowFullPlan] = useState(false);
   const blocks = student.blocks.length > 0
     ? student.blocks
     : [{
@@ -1891,99 +1941,154 @@ function StudentPlanCard({
                 );
               })()}
             </div>
-            {/* Inventory picker — pick a real board from the academy fleet.
-                Picking one auto-fills type/size below. Leave on "Manual" to
-                set type/size by hand (no inventory). */}
-            {availableBoards.length > 0 && (() => {
-              const picked = availableBoards.find((b) => b.id === firstBlock.board_id);
+            {/* M134 — one decision: the student's own board, or one from the
+                academy fleet. Sizes come along automatically (intake profile
+                for own board, inventory record for academy boards); manual
+                tweaks live behind "Adjust manually". */}
+            {(() => {
+              const p = student.profile;
+              const mode = firstBlock.board_id ? 'academy' : firstBlock.board_type ? 'own' : null;
               const conflicts = new Set(boardConflictIds);
               const options = availableBoards
-                // Date-aware: hide repair boards + boards already booked by
-                // another service THAT day. Always keep the current pick.
                 .filter((b) => b.id === firstBlock.board_id || (b.status !== 'in_repair' && !conflicts.has(b.id)))
                 .map((b) => ({
                   value: b.id,
-                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}${b.status === 'in_repair' ? ' · (in repair)' : ''}`,
+                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}`,
                 }));
+              const picked = availableBoards.find((b) => b.id === firstBlock.board_id);
               return (
-                <div>
-                  <SelectField
-                    label="Inventory board"
-                    value={firstBlock.board_id}
-                    options={options}
-                    onChange={(v) => {
-                      const b = availableBoards.find((x) => x.id === v);
-                      onCommit(firstBlock.order_index, {
-                        board_id: v,
-                        board_type: b?.board_type ?? firstBlock.board_type,
-                        board_size_feet: b?.length_feet ?? firstBlock.board_size_feet,
-                        board_size_inches: b?.length_inches ?? firstBlock.board_size_inches,
-                      });
-                    }}
-                  />
-                  {picked && (
-                    <p className="text-[10px] text-gray-400 mt-0.5">Asignada: {picked.code}</p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onCommit(firstBlock.order_index, {
+                        board_id: null,
+                        board_type: p.board_type ?? 'own',
+                        board_size_feet: p.board_length_feet ? parseInt(p.board_length_feet, 10) || null : null,
+                        board_size_inches: p.board_length_inches ? parseInt(p.board_length_inches, 10) || null : null,
+                      })}
+                      className="py-2 rounded-lg text-xs font-semibold transition-all"
+                      style={mode === 'own'
+                        ? { background: '#E0F2FE', color: '#075985', boxShadow: 'inset 0 0 0 2px #0284C7' }
+                        : { background: '#F3F4F6', color: '#6B7280' }}
+                    >
+                      🏄 Tabla propia
+                    </button>
+                    <div className={mode === 'academy' ? '' : 'opacity-80'}>
+                      <SelectField
+                        label=""
+                        value={firstBlock.board_id}
+                        options={options}
+                        onChange={(v) => {
+                          const b = availableBoards.find((x) => x.id === v);
+                          onCommit(firstBlock.order_index, {
+                            board_id: v,
+                            board_type: b?.board_type ?? firstBlock.board_type,
+                            board_size_feet: b?.length_feet ?? firstBlock.board_size_feet,
+                            board_size_inches: b?.length_inches ?? firstBlock.board_size_inches,
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {mode === 'academy' && picked && (
+                    <p className="text-[10px] text-gray-500">Asignada: <span className="font-semibold">{picked.code}</span>{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}</p>
                   )}
+                  {mode === 'own' && (
+                    <p className="text-[10px] text-gray-500">
+                      Own board{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}
+                    </p>
+                  )}
+                  <details className="group">
+                    <summary className="cursor-pointer list-none text-[10px] font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                      <ChevronRight size={11} className="transition-transform group-open:rotate-90" /> Adjust manually
+                    </summary>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      <SelectField
+                        label="Type"
+                        value={firstBlock.board_type}
+                        options={BOARD_TYPE_OPTIONS}
+                        onChange={(v) => onCommit(firstBlock.order_index, { board_type: v })}
+                      />
+                      <SelectField
+                        label="Feet"
+                        value={firstBlock.board_size_feet != null ? String(firstBlock.board_size_feet) : null}
+                        options={BOARD_SIZE_FEET_OPTIONS.map((n) => ({ value: String(n), label: `${n}'` }))}
+                        onChange={(v) => onCommit(firstBlock.order_index, { board_size_feet: v ? parseInt(v, 10) : null })}
+                      />
+                      <SelectField
+                        label="Inches"
+                        value={firstBlock.board_size_inches != null ? String(firstBlock.board_size_inches) : null}
+                        options={BOARD_SIZE_INCHES_OPTIONS.map((n) => ({ value: String(n), label: `${n}"` }))}
+                        onChange={(v) => onCommit(firstBlock.order_index, { board_size_inches: v ? parseInt(v, 10) : null })}
+                      />
+                    </div>
+                  </details>
                 </div>
               );
             })()}
-            <div className="grid grid-cols-3 gap-2">
-              <SelectField
-                label="Type"
-                value={firstBlock.board_type}
-                options={BOARD_TYPE_OPTIONS}
-                onChange={(v) => onCommit(firstBlock.order_index, { board_type: v })}
-              />
-              <SelectField
-                label="Feet"
-                value={firstBlock.board_size_feet != null ? String(firstBlock.board_size_feet) : null}
-                options={BOARD_SIZE_FEET_OPTIONS.map((n) => ({ value: String(n), label: `${n}'` }))}
-                onChange={(v) =>
-                  onCommit(firstBlock.order_index, {
-                    board_size_feet: v ? parseInt(v, 10) : null,
-                  })
-                }
-              />
-              <SelectField
-                label="Inches"
-                value={firstBlock.board_size_inches != null ? String(firstBlock.board_size_inches) : null}
-                options={BOARD_SIZE_INCHES_OPTIONS.map((n) => ({ value: String(n), label: `${n}"` }))}
-                onChange={(v) =>
-                  onCommit(firstBlock.order_index, {
-                    board_size_inches: v ? parseInt(v, 10) : null,
-                  })
-                }
-              />
-            </div>
           </div>
         );
       })()}
 
-      {/* M45 — One BlockEditor per block; coach can add/remove blocks. */}
-      <div className="space-y-3">
-        {blocks.map((b, i) => (
-          <BlockEditor
-            key={b.id ?? `new-${b.order_index}`}
-            block={b}
-            blockNumber={i + 1}
-            canRemove={blocks.length > 1}
-            stpCatalog={stpCatalog}
-            availableDrills={availableDrills}
-            templateBlock={templateBlocks.find((tb) => tb.block_order === b.order_index) ?? null}
-            onCommit={(patch) => onCommit(b.order_index, patch)}
-            onRemove={() => onRemoveBlock(b.order_index)}
-            onShowDrill={onShowDrill}
-          />
-        ))}
-      </div>
-
-      <button
-        type="button"
-        onClick={onAddBlock}
-        className="w-full py-2 rounded-lg border-2 border-dashed border-gray-300 text-[12px] text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors"
-      >
-        + Add another block
-      </button>
+      {/* M45/M134 — One BlockEditor per block. After a template lands many
+          blocks, the daily view opens with ONLY the water missions (what the
+          coach actually adapts per student); "Ver plan completo" expands the
+          rest (warm-up, mental, land drills, closing). */}
+      {(() => {
+        const isWater = (b: ServicePlanBlock) => {
+          const tb = templateBlocks.find((t) => t.block_order === b.order_index);
+          const label = `${tb?.block_type ?? ''} ${tb?.pilar ?? ''}`.toLowerCase();
+          if (label.includes('water') || label.includes('agua')) return true;
+          return !!(b.water_drill_id || b.water_drill_custom);
+        };
+        const waterBlocks = blocks.filter(isWater);
+        const collapsible = blocks.length > 2 && waterBlocks.length > 0 && waterBlocks.length < blocks.length;
+        const visible = collapsible && !showFullPlan ? waterBlocks : blocks;
+        return (
+          <>
+            {collapsible && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+                  {showFullPlan ? `Full plan · ${blocks.length} blocks` : `🌊 Water missions · ${waterBlocks.length} of ${blocks.length} blocks`}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowFullPlan(!showFullPlan)}
+                  className="text-[11px] font-semibold text-[var(--tss-cyan,#0369A1)] underline underline-offset-2"
+                >
+                  {showFullPlan ? 'Ver solo agua' : 'Ver plan completo'}
+                </button>
+              </div>
+            )}
+            <div className="space-y-3">
+              {visible.map((b) => (
+                <BlockEditor
+                  key={b.id ?? `new-${b.order_index}`}
+                  block={b}
+                  blockNumber={blocks.indexOf(b) + 1}
+                  canRemove={blocks.length > 1}
+                  stpCatalog={stpCatalog}
+                  availableDrills={availableDrills}
+                  templateBlock={templateBlocks.find((tb) => tb.block_order === b.order_index) ?? null}
+                  onCommit={(patch) => onCommit(b.order_index, patch)}
+                  onRemove={() => onRemoveBlock(b.order_index)}
+                  onShowDrill={onShowDrill}
+                />
+              ))}
+            </div>
+            {(!collapsible || showFullPlan) && (
+              <button
+                type="button"
+                onClick={onAddBlock}
+                className="w-full py-2 rounded-lg border-2 border-dashed border-gray-300 text-[12px] text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors"
+              >
+                + Add another block
+              </button>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
