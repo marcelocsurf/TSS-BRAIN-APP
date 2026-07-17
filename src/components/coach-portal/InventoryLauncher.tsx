@@ -6,9 +6,9 @@ import { PortalInventory } from '@/components/coach-portal/PortalInventory';
 
 // Opens the general academy inventory (leashes, wax, accessories, etc. — the
 // academy_inventory_items list) in a full-screen overlay, so the coordinator
-// can check or update counts at any time from the dashboard. Token-gated via
-// the coordinator's own portal_token.
-export function InventoryLauncher({ token }: { token: string }) {
+// can check or update counts at any time from the dashboard. Session-scoped —
+// PortalInventory resolves the current (or act-as) academy on the server.
+export function InventoryLauncher() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -42,7 +42,7 @@ export function InventoryLauncher({ token }: { token: string }) {
             <X size={15} /> Close
           </button>
           <div className="flex-1 min-h-0 overflow-y-auto p-4 pt-14">
-            <PortalInventory token={token} />
+            <PortalInventory />
           </div>
         </div>
       )}

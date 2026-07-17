@@ -488,17 +488,6 @@ async function CoordinatorDashboard() {
 
   // Academy-scoped analytics (same metrics as admin, just this academy).
   const me = await getCurrentCoach();
-  // The coordinator's own portal_token — lets the general Academy Inventory
-  // (token-gated) open right from the dashboard.
-  let myPortalToken: string | null = null;
-  if (me?.id) {
-    try {
-      const { createAdminClient } = await import('@/lib/supabase/admin');
-      const { data } = await createAdminClient()
-        .from('coaches').select('portal_token').eq('id', me.id).single();
-      myPortalToken = data?.portal_token ?? null;
-    } catch { /* non-blocking */ }
-  }
   let academyAnalytics: Awaited<ReturnType<typeof import('@/lib/actions/analytics').getAcademyAnalytics>> | null = null;
   if (me?.academy_id) {
     try {
@@ -518,7 +507,7 @@ async function CoordinatorDashboard() {
       {me?.academy_id && (
         <div className="grid sm:grid-cols-2 gap-3">
           <BoardInventoryLauncher academyId={me.academy_id} variant="card" />
-          {myPortalToken && <InventoryLauncher token={myPortalToken} />}
+          <InventoryLauncher />
           <BoardSelectorLauncher variant="card" />
           {/* Ratio Decision Engine — Safety Canon coach-to-student ratio by
               conditions; opens in an in-app overlay (X to close, never

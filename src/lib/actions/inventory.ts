@@ -7,6 +7,7 @@
 // digital version of the weekly Excel check.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentCoach } from '@/lib/actions/auth';
 
 export interface InventoryItem {
   id: string;
@@ -21,18 +22,27 @@ export interface InventoryItem {
   updated_by_name?: string | null;
 }
 
-async function resolveMember(token: string) {
+// Resolve the acting member + their academy. With a portal_token → the coach
+// portal / support member (token-gated). With token null → session auth (the
+// dashboard), which respects the platform admin's act-as academy via
+// getCurrentCoach(). Either way we get {admin, coach:{id, academy_id}}.
+async function resolveMember(token: string | null) {
   const admin = createAdminClient();
-  const { data: coach } = await admin
-    .from('coaches')
-    .select('id, academy_id, display_name, active_status')
-    .eq('portal_token', token)
-    .maybeSingle();
-  if (!coach || coach.active_status === false || !coach.academy_id) return null;
-  return { admin, coach };
+  if (token) {
+    const { data: coach } = await admin
+      .from('coaches')
+      .select('id, academy_id, display_name, active_status')
+      .eq('portal_token', token)
+      .maybeSingle();
+    if (!coach || coach.active_status === false || !coach.academy_id) return null;
+    return { admin, coach };
+  }
+  const me = await getCurrentCoach();
+  if (!me?.academy_id) return null;
+  return { admin, coach: { id: me.id, academy_id: me.academy_id, display_name: me.display_name, active_status: true } };
 }
 
-export async function getInventory(token: string): Promise<InventoryItem[]> {
+export async function getInventory(token: string | null): Promise<InventoryItem[]> {
   const ctx = await resolveMember(token);
   if (!ctx) return [];
   try {
@@ -58,7 +68,7 @@ export async function getInventory(token: string): Promise<InventoryItem[]> {
 // Save a count for one item (autosave on blur). Updates the item AND logs a
 // check row — who counted what, when, with what note.
 export async function saveInventoryCount(
-  token: string,
+  token: string | null,
   itemId: string,
   patch: { qty_in_use?: number; qty_in_stock?: number; notes?: string | null },
 ): Promise<{ ok: boolean; error?: string }> {
@@ -95,7 +105,7 @@ export async function saveInventoryCount(
 
 // Add an item discovered while counting ("we bought 5 tokawi leashes").
 export async function addInventoryItem(
-  token: string,
+  token: string | null,
   input: { category: string; name: string; unit?: string | null; qty_in_use?: number; qty_in_stock?: number; minimum?: number | null },
 ): Promise<{ ok: boolean; error?: string; item?: InventoryItem }> {
   const ctx = await resolveMember(token);

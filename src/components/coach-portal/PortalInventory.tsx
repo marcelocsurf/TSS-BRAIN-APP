@@ -8,7 +8,9 @@ import { getInventory, saveInventoryCount, addInventoryItem, type InventoryItem 
 // version of the weekly Excel. Grouped by category; each row saves on blur
 // and logs a check (who, when, note). Low stock (< minimum) highlights red.
 
-export function PortalInventory({ token }: { token: string }) {
+// token = a portal_token (coach portal / support). Omit it (session mode) on
+// the dashboard, where the server scopes to the current/act-as academy.
+export function PortalInventory({ token = null }: { token?: string | null }) {
   const [items, setItems] = useState<InventoryItem[] | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
