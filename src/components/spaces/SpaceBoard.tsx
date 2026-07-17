@@ -38,6 +38,18 @@ function esHourFloat(ts: string) {
 function hhmm(ts: string) {
   return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/El_Salvador' });
 }
+// Compact time parts (El Salvador) for a Google-Calendar-style range label.
+function esParts(ts: string) {
+  const s = new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/El_Salvador' });
+  const m = s.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  return m ? { hm: m[2] === '00' ? m[1] : `${m[1]}:${m[2]}`, ap: m[3].toLowerCase() } : { hm: s, ap: '' };
+}
+// "7–9am" · "7:30–9am" · "11am–1pm" — meridiem shown once when it matches.
+function rangeLabel(startTs: string, endTs: string) {
+  const a = esParts(startTs), b = esParts(endTs);
+  const start = a.ap === b.ap ? a.hm : `${a.hm}${a.ap}`;
+  return `${start}–${b.hm}${b.ap}`;
+}
 
 export type BoardApi = {
   listDay: (date: string) => Promise<SpaceBooking[]>;
@@ -141,8 +153,9 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                           title={`${hhmm(b.starts_at)}–${hhmm(b.ends_at)} · ${b.title || 'Reserva'} · Reservado por ${b.coach_name || '—'}`}
                         >
                           <div className="flex items-start justify-between gap-1">
-                            <p className="text-[10px] font-semibold leading-tight" style={{ color: '#17272F' }}>
-                              {hhmm(b.starts_at)}
+                            {/* From–to range, Google-Calendar style. */}
+                            <p className="text-[10px] font-semibold leading-tight truncate" style={{ color: '#17272F' }}>
+                              {rangeLabel(b.starts_at, b.ends_at)}
                             </p>
                             {(mine || canManage) && (
                               <button
