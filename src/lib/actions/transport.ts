@@ -28,7 +28,9 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
   const admin = createAdminClient();
 
   const today = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10); // ES local
-  const weekOut = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  // Show ALL upcoming transports (today → +60 days), not just this week — the
+  // coordinator arranges rides for camps that can be weeks out.
+  const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
 
   const { data, error } = await admin
     .from('service_plans')
@@ -44,7 +46,7 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
   const rows: TransportDay[] = [];
   for (const p of data ?? []) {
     const sess: any = Array.isArray((p as any).camp_sessions) ? (p as any).camp_sessions[0] : (p as any).camp_sessions;
-    if (!sess?.session_date || sess.session_date < today || sess.session_date > weekOut) continue;
+    if (!sess?.session_date || sess.session_date < today || sess.session_date > horizon) continue;
     const inst: any = Array.isArray(sess.camp_instances) ? sess.camp_instances[0] : sess.camp_instances;
     if (me.academy_id && inst?.academy_id && inst.academy_id !== me.academy_id) continue;
     const hc = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;

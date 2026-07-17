@@ -43,7 +43,7 @@ export function TransportPanel() {
     <div className="rounded-2xl border border-gray-100 bg-white p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="inline-flex items-center gap-2 text-sm font-bold text-[var(--tss-navy)]">
-          <Bus size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Transportes de la semana
+          <Bus size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Transportes programados
         </h2>
         {pendingCount > 0 && (
           <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
