@@ -32,7 +32,7 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
 
   const lowCount = (items ?? []).filter((i) => i.minimum != null && i.qty_in_stock < i.minimum).length;
 
-  function commit(item: InventoryItem, patch: { qty_in_use?: number; qty_in_stock?: number; notes?: string | null }) {
+  function commit(item: InventoryItem, patch: { qty_in_use?: number; qty_in_stock?: number; notes?: string | null; minimum?: number | null }) {
     setItems((prev) => (prev ?? []).map((x) => (x.id === item.id ? { ...x, ...patch } as InventoryItem : x)));
     start(async () => {
       const res = await saveInventoryCount(token, item.id, patch);
@@ -90,10 +90,14 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="mt-2 grid grid-cols-3 gap-2">
                     <QtyField label="In use" value={it.qty_in_use} onCommit={(v) => commit(it, { qty_in_use: v })} />
                     <QtyField label="In stock" value={it.qty_in_stock} low={low} onCommit={(v) => commit(it, { qty_in_stock: v })} />
+                    <MinField value={it.minimum} onCommit={(v) => commit(it, { minimum: v })} />
                   </div>
+                  <p className="mt-1 text-[10px] text-white/30 leading-snug">
+                    Set a minimum → you get an alert when In stock drops below it.
+                  </p>
                   <NoteField value={it.notes} onCommit={(v) => commit(it, { notes: v })} />
                 </div>
               );
@@ -147,6 +151,35 @@ function QtyField({ label, value, low, onCommit }: { label: string; value: numbe
           else setLocal(String(value));
         }}
         className={`w-full rounded-lg px-3 py-2 text-sm text-white text-center focus:outline-none ${low ? 'border border-red-400/50' : 'border border-white/15'}`}
+        style={{ background: 'rgba(255,255,255,.06)' }}
+      />
+    </label>
+  );
+}
+
+// Minimum threshold. Blank = no minimum (no alert). Amber accent so it reads as
+// the "reorder line", distinct from the count fields.
+function MinField({ value, onCommit }: { value: number | null; onCommit: (v: number | null) => void }) {
+  const [local, setLocal] = useState(value == null ? '' : String(value));
+  useEffect(() => setLocal(value == null ? '' : String(value)), [value]);
+  return (
+    <label className="block">
+      <span className="block text-[9px] font-mono uppercase tracking-wider text-amber-300/70 mb-1">Min ⚠</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        onBlur={() => {
+          const t = local.trim();
+          if (t === '') { if (value != null) onCommit(null); return; }
+          const n = parseInt(t, 10);
+          if (!Number.isNaN(n) && n !== value) onCommit(Math.max(0, n));
+          else setLocal(value == null ? '' : String(value));
+        }}
+        placeholder="—"
+        className="w-full rounded-lg px-3 py-2 text-sm text-white text-center border border-amber-400/25 focus:outline-none placeholder:text-white/25"
         style={{ background: 'rgba(255,255,255,.06)' }}
       />
     </label>

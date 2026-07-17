@@ -70,7 +70,7 @@ export async function getInventory(token: string | null): Promise<InventoryItem[
 export async function saveInventoryCount(
   token: string | null,
   itemId: string,
-  patch: { qty_in_use?: number; qty_in_stock?: number; notes?: string | null },
+  patch: { qty_in_use?: number; qty_in_stock?: number; notes?: string | null; minimum?: number | null; name?: string; unit?: string | null },
 ): Promise<{ ok: boolean; error?: string }> {
   const ctx = await resolveMember(token);
   if (!ctx) return { ok: false, error: 'Not authorized.' };
@@ -79,6 +79,9 @@ export async function saveInventoryCount(
   if (patch.qty_in_use !== undefined) fields.qty_in_use = Math.max(0, Math.floor(patch.qty_in_use));
   if (patch.qty_in_stock !== undefined) fields.qty_in_stock = Math.max(0, Math.floor(patch.qty_in_stock));
   if (patch.notes !== undefined) fields.notes = patch.notes?.trim() || null;
+  if (patch.minimum !== undefined) fields.minimum = patch.minimum == null ? null : Math.max(0, Math.floor(patch.minimum));
+  if (patch.name !== undefined && patch.name.trim()) fields.name = patch.name.trim();
+  if (patch.unit !== undefined) fields.unit = patch.unit?.trim() || null;
 
   const { data: item, error } = await ctx.admin
     .from('academy_inventory_items')
