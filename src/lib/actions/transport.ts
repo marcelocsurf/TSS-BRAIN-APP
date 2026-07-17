@@ -20,6 +20,7 @@ export interface TransportDay {
   transport_depart: string | null;
   transport_return: string | null;
   transport_status: string | null; // 'taken' | 'cancelled' | null = pending
+  transport_actual_depart: string | null; // real 'HH:MM' the ride left (coordinator)
 }
 
 export async function listWeekTransports(): Promise<TransportDay[]> {
@@ -32,16 +33,22 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
   // coordinator arranges rides for camps that can be weeks out.
   const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
 
-  const { data, error } = await admin
-    .from('service_plans')
-    .select(
+  const campJoin =
+    'camp_sessions:camp_session_id(id, session_date, day_number, ' +
+    'camp_instances:camp_instance_id(id, camp_name, academy_id, ' +
+    'head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status)))';
+  const fullSelect =
+    'id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status, transport_actual_depart, ' +
+    campJoin;
+  let { data, error } = await admin.from('service_plans').select(fullSelect).eq('transport_needed', true);
+  if (error) {
+    // Pre-migration: transport_actual_depart column not there yet — retry without it.
+    const legacySelect =
       'id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status, ' +
-        'camp_sessions:camp_session_id(id, session_date, day_number, ' +
-        'camp_instances:camp_instance_id(id, camp_name, academy_id, ' +
-        'head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status)))'
-    )
-    .eq('transport_needed', true);
-  if (error) return []; // pre-migration: columns not there yet
+      campJoin;
+    ({ data, error } = await admin.from('service_plans').select(legacySelect).eq('transport_needed', true));
+    if (error) return [];
+  }
 
   const rows: TransportDay[] = [];
   for (const p of data ?? []) {
@@ -62,6 +69,7 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
       transport_depart: (p as any).transport_depart ?? null,
       transport_return: (p as any).transport_return ?? null,
       transport_status: (p as any).transport_status ?? null,
+      transport_actual_depart: (p as any).transport_actual_depart ?? null,
     });
   }
   rows.sort((a, b) => a.session_date.localeCompare(b.session_date) || (a.transport_depart ?? '').localeCompare(b.transport_depart ?? ''));
@@ -76,6 +84,21 @@ export async function setTransportStatus(
   if (!me) return { ok: false, error: 'Not authorized.' };
   const admin = createAdminClient();
   const { error } = await admin.from('service_plans').update({ transport_status: status }).eq('id', planId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/dashboard');
+  return { ok: true };
+}
+
+// Coordinator records the REAL departure time (M135). Optional — when set we can
+// report how late departures run vs the planned time.
+export async function setTransportActualDepart(
+  planId: string,
+  time: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  const me = await getCurrentCoach();
+  if (!me) return { ok: false, error: 'Not authorized.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('service_plans').update({ transport_actual_depart: time }).eq('id', planId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/dashboard');
   return { ok: true };
