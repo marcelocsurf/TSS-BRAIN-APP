@@ -15,6 +15,7 @@ import { TasksPanel } from '@/components/dashboard/TasksPanel';
 import { PendingPromotionsPanel } from '@/components/dashboard/PendingPromotionsPanel';
 import { TransportPanel } from '@/components/dashboard/TransportPanel';
 import { RequisitionsPanel } from '@/components/dashboard/RequisitionsPanel';
+import { RecentClosesPanel } from '@/components/dashboard/RecentClosesPanel';
 import { PlatformOverview } from '@/components/dashboard/PlatformOverview';
 import { getPlatformOverview } from '@/lib/actions/platform-overview';
 import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
@@ -367,6 +368,11 @@ export default async function DashboardHome() {
       {/* Role-specific content */}
       {role === 'admin' && <AdminDashboard />}
       {role === 'coordinator' && <CoordinatorDashboard />}
+
+      {/* Coach closes + feedback oversight (M137) — bottom, collapsible. */}
+      {(role === 'admin' || role === 'coordinator') && (
+        <div className="mt-6"><RecentClosesPanel /></div>
+      )}
       {role === 'coach' && coach && <CoachDashboard coachId={coach.id} />}
       {role === 'assistant' && <AssistantDashboard />}
 
