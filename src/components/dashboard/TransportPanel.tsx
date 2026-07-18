@@ -148,72 +148,98 @@ export function TransportPanel() {
         </div>
       </div>
 
-      <ul className="space-y-2">
-        {rows.map((r) => (
-          <li
-            key={r.plan_id}
-            className={`rounded-xl border p-3 ${
-              r.transport_status === 'taken'
-                ? 'border-emerald-200 bg-emerald-50/50'
-                : r.transport_status === 'cancelled'
-                  ? 'border-gray-200 bg-gray-50 opacity-70'
-                  : 'border-amber-200 bg-amber-50/40'
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">
-                  {fmtDate(r.session_date)}
-                  {r.day_number ? ` · Día ${r.day_number}` : ''} — {r.camp_name || 'Servicio'}
-                </p>
-                <p className="text-[12px] text-gray-600">
-                  {r.coach_name || 'Coach'} · {r.students} alumno{r.students === 1 ? '' : 's'}
-                  {r.surf_venue ? ` · 🏖 ${r.surf_venue}` : ''}
-                  {r.class_start_time ? ` · clase ${fmtTime(r.class_start_time)}` : ''}
-                </p>
-                <p className="text-[12px] font-medium text-gray-700">
-                  🚐 Salida {fmtTime(r.transport_depart)} · Regreso {fmtTime(r.transport_return)}
-                </p>
-                {/* Real departure time (optional) — feeds the delay report. */}
-                <ActualDepartField
-                  planId={r.plan_id}
-                  planned={r.transport_depart}
-                  value={r.transport_actual_depart}
-                  pending={pending}
-                  onSave={saveActual}
-                />
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {r.transport_status ? (
-                  <>
-                    <span className={`text-[11px] font-bold uppercase tracking-wide ${r.transport_status === 'taken' ? 'text-emerald-700' : 'text-gray-500'}`}>
-                      {r.transport_status === 'taken' ? '✓ Tomado' : '✗ Cancelado'}
-                    </span>
-                    <button
-                      onClick={() => mark(r.plan_id, null)}
-                      disabled={pending}
-                      className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"
-                      title="Volver a pendiente"
-                    ><RotateCcw size={13} /></button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => mark(r.plan_id, 'taken')}
-                      disabled={pending}
-                      className="inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white disabled:opacity-50"
-                    ><Check size={13} strokeWidth={2.5} /> Tomado</button>
-                    <button
-                      onClick={() => mark(r.plan_id, 'cancelled')}
-                      disabled={pending}
-                      className="inline-flex items-center gap-1 text-[12px] font-semibold px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-red-600 disabled:opacity-50"
-                    ><X size={13} strokeWidth={2.5} /> Cancelado</button>
-                  </>
-                )}
-              </div>
-            </div>
-          </li>
-        ))}
+      {/* One card per SERVICE; a compact row per day inside (M139). A coach
+          planning 5 straight days = 1 card with 5 rows, not 5 big cards. */}
+      <ul className="space-y-2.5">
+        {(() => {
+          const groups = new Map<string, TransportDay[]>();
+          for (const r of rows) {
+            const k = r.camp_instance_id ?? r.plan_id;
+            const arr = groups.get(k) ?? [];
+            arr.push(r);
+            groups.set(k, arr);
+          }
+          return Array.from(groups.entries()).map(([k, days]) => {
+            const first = days[0];
+            // Beach shown once in the header when uniform; per-day when it varies.
+            const venues = new Set(days.map((d) => d.surf_venue ?? ''));
+            const uniformVenue = venues.size === 1 ? first.surf_venue : null;
+            const pendingDays = days.filter((d) => !d.transport_status).length;
+            return (
+              <li key={k} className="rounded-xl border border-gray-200 overflow-hidden">
+                {/* Service header — once */}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-[var(--tss-navy)] min-w-0 truncate">
+                    {first.camp_name || 'Servicio'}
+                  </p>
+                  <p className="text-[11px] text-gray-500 shrink-0">
+                    {first.coach_name || 'Coach'} · {first.students} alumno{first.students === 1 ? '' : 's'}
+                    {uniformVenue ? ` · 🏖 ${uniformVenue}` : ''}
+                    {pendingDays > 0 && <span className="ml-1.5 font-semibold text-amber-700">· {pendingDays} pend.</span>}
+                  </p>
+                </div>
+                {/* Compact day rows */}
+                <div className="divide-y divide-gray-50">
+                  {days.map((r) => (
+                    <div
+                      key={r.plan_id}
+                      className={`px-3 py-2 ${
+                        r.transport_status === 'taken' ? 'bg-emerald-50/40'
+                          : r.transport_status === 'cancelled' ? 'bg-gray-50 opacity-60'
+                          : 'bg-amber-50/30'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[12px] text-gray-700 min-w-0">
+                          <span className="font-bold text-[var(--tss-navy)]">{fmtDate(r.session_date)}</span>
+                          {' '}· 🚐 {fmtTime(r.transport_depart)} → {fmtTime(r.transport_return)}
+                          {!uniformVenue && r.surf_venue ? ` · 🏖 ${r.surf_venue}` : ''}
+                        </p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {r.transport_status ? (
+                            <>
+                              <span className={`text-[10px] font-bold uppercase tracking-wide ${r.transport_status === 'taken' ? 'text-emerald-700' : 'text-gray-500'}`}>
+                                {r.transport_status === 'taken' ? '✓ Tomado' : '✗ Cancelado'}
+                              </span>
+                              <button
+                                onClick={() => mark(r.plan_id, null)}
+                                disabled={pending}
+                                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100"
+                                title="Volver a pendiente"
+                              ><RotateCcw size={12} /></button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => mark(r.plan_id, 'taken')}
+                                disabled={pending}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg bg-emerald-500 text-white disabled:opacity-50"
+                              ><Check size={12} strokeWidth={2.5} /> Tomado</button>
+                              <button
+                                onClick={() => mark(r.plan_id, 'cancelled')}
+                                disabled={pending}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg bg-white border border-gray-200 text-red-600 disabled:opacity-50"
+                              ><X size={12} strokeWidth={2.5} /> Cancelado</button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      {r.transport_status !== 'cancelled' && (
+                        <ActualDepartField
+                          planId={r.plan_id}
+                          planned={r.transport_depart}
+                          value={r.transport_actual_depart}
+                          pending={pending}
+                          onSave={saveActual}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </li>
+            );
+          });
+        })()}
       </ul>
     </div>
   );

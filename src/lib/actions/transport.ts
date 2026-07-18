@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 
 export interface TransportDay {
   plan_id: string;
+  camp_instance_id: string | null; // group key: one card per service, days inside
   session_date: string;
   day_number: number | null;
   camp_name: string | null;
@@ -59,6 +60,7 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
     const hc = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;
     rows.push({
       plan_id: (p as any).id,
+      camp_instance_id: inst?.id ?? null,
       session_date: sess.session_date,
       day_number: sess.day_number ?? null,
       camp_name: inst?.camp_name ?? null,
