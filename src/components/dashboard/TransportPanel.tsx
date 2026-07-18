@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { Bus, Check, X, RotateCcw, Download, Copy, Clock } from 'lucide-react';
+import { Bus, Check, X, RotateCcw, Download, Copy, Clock, ChevronDown } from 'lucide-react';
 import { listWeekTransports, setTransportStatus, setTransportActualDepart, type TransportDay } from '@/lib/actions/transport';
 
 // Coordinator's transport board: every upcoming class day where the coach asked
@@ -33,6 +33,9 @@ function delayLabel(d: number): string {
 export function TransportPanel() {
   const [rows, setRows] = useState<TransportDay[] | null>(null);
   const [pending, start] = useTransition();
+  // Per-service collapse. Unset = default: open while it has pending days,
+  // collapsed once everything is resolved.
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
 
   function refresh() {
     listWeekTransports().then(setRows).catch(() => setRows([]));
@@ -165,21 +168,29 @@ export function TransportPanel() {
             const venues = new Set(days.map((d) => d.surf_venue ?? ''));
             const uniformVenue = venues.size === 1 ? first.surf_venue : null;
             const pendingDays = days.filter((d) => !d.transport_status).length;
+            const isCollapsed = collapsedMap[k] ?? pendingDays === 0;
             return (
               <li key={k} className="rounded-xl border border-gray-200 overflow-hidden">
-                {/* Service header — once */}
-                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-[var(--tss-navy)] min-w-0 truncate">
+                {/* Service header — once; tap to collapse/expand its days */}
+                <button
+                  type="button"
+                  onClick={() => setCollapsedMap((m) => ({ ...m, [k]: !isCollapsed }))}
+                  className={`w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gray-50 text-left ${isCollapsed ? '' : 'border-b border-gray-100'}`}
+                >
+                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--tss-navy)] min-w-0 truncate">
+                    <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
                     {first.camp_name || 'Servicio'}
-                  </p>
-                  <p className="text-[11px] text-gray-500 shrink-0">
-                    {first.coach_name || 'Coach'} · {first.students} alumno{first.students === 1 ? '' : 's'}
+                  </span>
+                  <span className="text-[11px] text-gray-500 shrink-0">
+                    {first.coach_name || 'Coach'} · {days.length} día{days.length === 1 ? '' : 's'} · {first.students} alumno{first.students === 1 ? '' : 's'}
                     {uniformVenue ? ` · 🏖 ${uniformVenue}` : ''}
-                    {pendingDays > 0 && <span className="ml-1.5 font-semibold text-amber-700">· {pendingDays} pend.</span>}
-                  </p>
-                </div>
+                    {pendingDays > 0
+                      ? <span className="ml-1.5 font-semibold text-amber-700">· {pendingDays} pend.</span>
+                      : <span className="ml-1.5 font-semibold text-emerald-700">· ✓ resuelto</span>}
+                  </span>
+                </button>
                 {/* Compact day rows */}
-                <div className="divide-y divide-gray-50">
+                <div className={isCollapsed ? 'hidden' : 'divide-y divide-gray-50'}>
                   {days.map((r) => (
                     <div
                       key={r.plan_id}
