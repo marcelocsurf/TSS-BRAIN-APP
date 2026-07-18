@@ -14,6 +14,7 @@ import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { LevelAccessCard } from '@/components/student/LevelAccessCard';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection';
+import { ProfileTabs } from '@/components/student/ProfileTabs';
 import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton';
 import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
@@ -386,6 +387,22 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               >
                 {belt?.en}
               </span>
+              {/* Critical flags — always visible, whatever tab is open (M138). */}
+              {hasSafetyData && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-red-50 text-red-600 border border-red-200">
+                  ⚕️ Médico
+                </span>
+              )}
+              {(student as any).media_release_consent === false && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-red-50 text-red-600 border border-red-200">
+                  🚫 No fotos
+                </span>
+              )}
+              {!student.waiver_signed && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  ⚠️ Sin waiver
+                </span>
+              )}
             </div>
             <p
               className="text-[10px] uppercase tracking-wider text-gray-400 mt-1.5"
@@ -431,121 +448,36 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       </div>
 
-      {/* ═══ GROUP 1 · IDENTITY & ALERTS (safety-critical, top of the file) ═══ */}
-
-      {/* Media-use consent — warn loudly when the student did NOT authorize it */}
-      {(student as any).media_release_consent === false ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5">
-          <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-red-700">No autoriza uso de fotos ni videos</p>
-            <p className="text-xs text-red-500">No publicar ni usar su material (fotos/clips) con fines promocionales.</p>
+      {/* ── Tabbed body (M138): Bitácora / Progresión / Perfil ── */}
+      <ProfileTabs
+        bitacora={<>
+      {/* --- 2. LAST SESSION (always visible, highlighted) ---
+          Use the most recent real session entry (richest: coach feedback,
+          mission, what's next). Fall back to the student snapshot only if
+          the unified history is empty. */}
+      <Card title="Latest Session" highlighted>
+        {allSessions.length > 0 ? (
+          <div className="space-y-2">
+            <Row label="Date" value={new Date(allSessions[0].date).toLocaleDateString()} />
+            <Row label="Mission" value={allSessions[0].mission} />
+            <Row label="Coach" value={allSessions[0].coachName} />
+            <Row label="Status" value={allSessions[0].status} badge />
+            <Row label="Coach Feedback" value={allSessions[0].coachFeedback} highlight />
+            <Row label="Homework" value={allSessions[0].homework} highlight />
+            <Row label="What to Work Next" value={allSessions[0].whatsNext} highlight />
           </div>
-        </div>
-      ) : (student as any).media_release_consent === true ? (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
-          <CheckCircle2 size={14} strokeWidth={2} className="text-emerald-600 shrink-0" />
-          <p className="text-xs text-emerald-700">Autoriza uso de fotos y videos (Sección 10)</p>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
-          <CircleDot size={13} strokeWidth={2} className="text-gray-400 shrink-0" />
-          <p className="text-xs text-gray-500">Uso de imagen: sin registrar (waiver anterior o sin responder)</p>
-        </div>
-      )}
-
-      {/* --- SAFETY & MEDICAL (highlighted if data) --- */}
-      <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
-        <div className="space-y-2">
-          <Row label="Emergency Contact" value={student.emergency_contact_name} />
-          <Row label="Emergency Phone" value={student.emergency_contact_phone} />
-          {student.allergies && (
-            <div className="flex items-start justify-between gap-4">
-              <span className="text-xs text-gray-500 shrink-0">Allergies</span>
-              <span className="text-sm text-right text-red-600 font-medium">{student.allergies}</span>
-            </div>
-          )}
-          {student.injuries && (
-            <div className="flex items-start justify-between gap-4">
-              <span className="text-xs text-gray-500 shrink-0">Injuries</span>
-              <span className="text-sm text-right text-amber-600 font-medium">{student.injuries}</span>
-            </div>
-          )}
-          <Row label="Medical Notes" value={student.medical_notes} />
-          <Row label="Swim Level" value={student.swim_level} />
-          <Row label="Risk Notes" value={student.risk_notes} />
-        </div>
-      </Card>
-
-      {/* --- WAIVER STATUS --- */}
-      <Card title="Waiver Status">
-        {student.waiver_signed ? (
-          <div className="flex items-center gap-2 py-1">
-            <CheckCircle2 size={20} strokeWidth={1.75} className="text-emerald-600 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-emerald-700">Waiver signed</p>
-              {student.waiver_signed_at && (
-                <p className="text-xs text-gray-400">
-                  Signed on {new Date(student.waiver_signed_at).toLocaleDateString()}
-                </p>
-              )}
-            </div>
+        ) : student.last_session_date ? (
+          <div className="space-y-2">
+            <Row label="Date" value={new Date(student.last_session_date).toLocaleDateString()} />
+            <Row label="Mission" value={student.last_session_mission} />
+            <Row label="Status" value={student.last_session_status} badge />
+            <Row label="Homework" value={student.last_homework} highlight />
+            <Row label="What to Work Next" value={student.next_recommended_focus} highlight />
           </div>
         ) : (
-          <div className="flex items-center gap-2 py-2 bg-red-50 rounded-lg px-3">
-            <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-red-600">Waiver required</p>
-              <p className="text-xs text-red-400">Student has not signed the liability waiver</p>
-            </div>
-          </div>
+          <p className="text-sm text-gray-400 py-4 text-center">No sessions recorded yet</p>
         )}
       </Card>
-
-      {/* --- RELATIONSHIP / VISITS (who is this, at a glance) --- */}
-      <Card title="Relationship" highlighted={visitStats.visits > 1}>
-        <div className="pt-2 space-y-3">
-          <div className="flex items-center gap-2">
-            {visitStats.visits > 1 ? (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tss-navy)] bg-[var(--tss-cyan,#5AC3E7)]/15 border border-[var(--tss-cyan,#5AC3E7)]/40 rounded-full px-2.5 py-0.5">
-                Returning · Visit #{visitStats.visits}
-              </span>
-            ) : visitStats.visits === 1 ? (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
-                First visit
-              </span>
-            ) : (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
-                No visits yet
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
-              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[11px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
-              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
-            </div>
-          </div>
-          <Row label="First visit" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
-          <Row label="Last visit" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
-          <PriorVisitsEditor studentId={student.id} initial={visitStats.priorVisits} />
-        </div>
-      </Card>
-
-      {/* ═══ GROUP 2 · SNAPSHOT (how they're doing) ═══ */}
-
-      {/* --- LEARNING PROFILE (how this student learns — coach scans before every session) --- */}
-      <LearningProfileCard
-        studentId={student.id}
-        primary={(student as any).learning_profile_primary as LearningChannel | null}
-        secondary={(student as any).learning_profile_secondary as LearningChannel | null}
-        portalToken={student.portal_token}
-        intakeLearningStyle={(student as any).learning_style as string | null}
-      />
 
       {/* --- ACTIVE PLANS (resume CTA, only when there's an unfinished plan) --- */}
       {activeMultiBlock.length > 0 && (
@@ -588,34 +520,90 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       )}
 
-      {/* --- 2. LAST SESSION (always visible, highlighted) ---
-          Use the most recent real session entry (richest: coach feedback,
-          mission, what's next). Fall back to the student snapshot only if
-          the unified history is empty. */}
-      <Card title="Latest Session" highlighted>
-        {allSessions.length > 0 ? (
-          <div className="space-y-2">
-            <Row label="Date" value={new Date(allSessions[0].date).toLocaleDateString()} />
-            <Row label="Mission" value={allSessions[0].mission} />
-            <Row label="Coach" value={allSessions[0].coachName} />
-            <Row label="Status" value={allSessions[0].status} badge />
-            <Row label="Coach Feedback" value={allSessions[0].coachFeedback} highlight />
-            <Row label="Homework" value={allSessions[0].homework} highlight />
-            <Row label="What to Work Next" value={allSessions[0].whatsNext} highlight />
-          </div>
-        ) : student.last_session_date ? (
-          <div className="space-y-2">
-            <Row label="Date" value={new Date(student.last_session_date).toLocaleDateString()} />
-            <Row label="Mission" value={student.last_session_mission} />
-            <Row label="Status" value={student.last_session_status} badge />
-            <Row label="Homework" value={student.last_homework} highlight />
-            <Row label="What to Work Next" value={student.next_recommended_focus} highlight />
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400 py-4 text-center">No sessions recorded yet</p>
-        )}
-      </Card>
+      {/* --- 6. SESSION HISTORY (collapsible) --- */}
+      <CollapsibleSection title={`Session History (${allSessions.length})`} defaultOpen={false}>
+        <SessionHistoryPanel sessions={allSessions} />
+      </CollapsibleSection>
 
+      {/* --- 3c-bis. CAMP FINAL-EVALUATION NOTES (collapsible) --- */}
+      {campNotes.length > 0 && (
+        <CollapsibleSection
+          title={
+            <>
+              <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              Camp Evaluation Notes
+            </>
+          }
+          defaultOpen={false}
+        >
+          <div className="space-y-4">
+            {campNotes.map((n) => (
+              <div key={n.camp_instance_id} className="rounded-xl border border-gray-100 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-[var(--tss-navy)]">{n.camp_name || 'Camp'}</p>
+                  {n.approved != null && (
+                    n.approved ? (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                        In progress
+                      </span>
+                    )
+                  )}
+                </div>
+                {(n.finalized_at || n.created_at) && (
+                  <p className="text-[10px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+                    {(n.finalized_at || n.created_at)!.slice(0, 10)}
+                  </p>
+                )}
+                {n.readiness_summary && (
+                  <p className="text-[11px] text-gray-600 mb-2">{n.readiness_summary}</p>
+                )}
+                {n.student_visible_note && (
+                  <div className="mb-2 rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Student sees this</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{n.student_visible_note}</p>
+                  </div>
+                )}
+                {n.coach_private_note && (
+                  <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">🔒 Private — coach only</p>
+                    <p className="text-sm text-amber-900 whitespace-pre-line">{n.coach_private_note}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* --- 8. COACH NOTES (collapsible) --- */}
+      <CollapsibleSection title="Coach Notes" defaultOpen={false}>
+        <div className="space-y-3">
+          {student.coach_notes_general ? (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Internal Notes</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">
+                {student.coach_notes_general}
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">No coach notes yet</p>
+          )}
+          {student.current_focus_area && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Current Focus Area</p>
+              <p className="text-sm text-[var(--tss-navy)] font-medium">{student.current_focus_area}</p>
+            </div>
+          )}
+          <Row label="Primary Goal" value={student.primary_goal} />
+        </div>
+      </CollapsibleSection>
+
+        </>}
+        progresion={<>
       {/* --- 3. PROGRESSION (always visible) --- */}
       <Card title="Progression">
         <div className="space-y-2">
@@ -632,49 +620,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Progression Status" value={student.progression_status} />
         </div>
       </Card>
-
-      {/* --- 3·b. SURF-LEVEL QUIZ HISTORY (incl. retakes) --- */}
-      {quizAttempts.length > 0 && (
-        <Card title={`Surf-Level Quiz · ${quizAttempts.length} ${quizAttempts.length === 1 ? 'attempt' : 'attempts'}`}>
-          <div className="space-y-2 pt-2">
-            {quizAttempts.map((a, i) => {
-              const ab = a.belt ? BELT_DISPLAY[a.belt as keyof typeof BELT_DISPLAY] : null;
-              const when = new Date(a.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-              return (
-                <div key={i} className="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] font-mono text-gray-400 shrink-0">#{a.attempt_number ?? quizAttempts.length - i}</span>
-                    <span className="w-3 h-3 rounded-full inline-block shrink-0" style={{ backgroundColor: ab?.color || '#999' }} />
-                    <span className="text-sm font-medium text-[var(--tss-navy)] truncate">{ab?.en ?? a.belt ?? '—'}</span>
-                    {a.score != null && <span className="text-xs text-gray-500 shrink-0">{a.score}/70</span>}
-                  </div>
-                  <span className="text-[11px] text-gray-400 shrink-0">{when}</span>
-                </div>
-              );
-            })}
-            {(() => {
-              const latest = quizAttempts[0];
-              if (!latest?.skillmap?.length) return null;
-              return (
-                <div className="pt-2">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Latest skill breakdown</p>
-                  <div className="space-y-1">
-                    {latest.skillmap.map((s, j) => (
-                      <div key={j} className="flex items-center gap-2">
-                        <span className="text-[11px] text-gray-600 w-28 shrink-0 truncate">{s.name}</span>
-                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, s.pct))}%`, background: 'var(--tss-cyan,#5AC3E7)' }} />
-                        </div>
-                        <span className="text-[10px] text-gray-400 w-8 text-right shrink-0">{s.pct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </Card>
-      )}
 
       {/* --- 3a. OFFICIAL STEP EVALUATION (coach gives cyan stars per STP) --- */}
       {coach && (() => {
@@ -734,60 +679,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         />
       </CollapsibleSection>
 
-      {/* --- 3c-bis. CAMP FINAL-EVALUATION NOTES (collapsible) --- */}
-      {campNotes.length > 0 && (
-        <CollapsibleSection
-          title={
-            <>
-              <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-              Camp Evaluation Notes
-            </>
-          }
-          defaultOpen={false}
-        >
-          <div className="space-y-4">
-            {campNotes.map((n) => (
-              <div key={n.camp_instance_id} className="rounded-xl border border-gray-100 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-[var(--tss-navy)]">{n.camp_name || 'Camp'}</p>
-                  {n.approved != null && (
-                    n.approved ? (
-                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                        Approved
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                        In progress
-                      </span>
-                    )
-                  )}
-                </div>
-                {(n.finalized_at || n.created_at) && (
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
-                    {(n.finalized_at || n.created_at)!.slice(0, 10)}
-                  </p>
-                )}
-                {n.readiness_summary && (
-                  <p className="text-[11px] text-gray-600 mb-2">{n.readiness_summary}</p>
-                )}
-                {n.student_visible_note && (
-                  <div className="mb-2 rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Student sees this</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-line">{n.student_visible_note}</p>
-                  </div>
-                )}
-                {n.coach_private_note && (
-                  <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">🔒 Private — coach only</p>
-                    <p className="text-sm text-amber-900 whitespace-pre-line">{n.coach_private_note}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
-      )}
-
       {/* --- 3d. COURSE PROGRESS (collapsible) --- */}
       <CollapsibleSection
         title={
@@ -803,6 +694,67 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           hasAccess={(student as any).course_access_white === true}
         />
       </CollapsibleSection>
+
+      {/* --- COURSES (granted + earmarked + manual grant) --- */}
+      <CoursesPanel
+        studentId={id}
+        grants={courseGrants}
+        pendingCourses={pendingCourses}
+        intakeComplete={intakeComplete}
+        canManage={canManageCourses}
+        isPlatformAdmin={!!coach?.is_platform_admin}
+        isDirectPurchase={!(student as any).academy_id}
+      />
+
+      {/* Presentations — grant decks to this student (admin only; renders
+          nothing if there are no presentations or the viewer isn't admin) */}
+      <StudentPresentationGrants studentId={id} />
+
+      {/* Level Access */}
+      <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />
+
+      {/* --- 3·b. SURF-LEVEL QUIZ HISTORY (incl. retakes) --- */}
+      {quizAttempts.length > 0 && (
+        <Card title={`Surf-Level Quiz · ${quizAttempts.length} ${quizAttempts.length === 1 ? 'attempt' : 'attempts'}`}>
+          <div className="space-y-2 pt-2">
+            {quizAttempts.map((a, i) => {
+              const ab = a.belt ? BELT_DISPLAY[a.belt as keyof typeof BELT_DISPLAY] : null;
+              const when = new Date(a.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+              return (
+                <div key={i} className="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] font-mono text-gray-400 shrink-0">#{a.attempt_number ?? quizAttempts.length - i}</span>
+                    <span className="w-3 h-3 rounded-full inline-block shrink-0" style={{ backgroundColor: ab?.color || '#999' }} />
+                    <span className="text-sm font-medium text-[var(--tss-navy)] truncate">{ab?.en ?? a.belt ?? '—'}</span>
+                    {a.score != null && <span className="text-xs text-gray-500 shrink-0">{a.score}/70</span>}
+                  </div>
+                  <span className="text-[11px] text-gray-400 shrink-0">{when}</span>
+                </div>
+              );
+            })}
+            {(() => {
+              const latest = quizAttempts[0];
+              if (!latest?.skillmap?.length) return null;
+              return (
+                <div className="pt-2">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Latest skill breakdown</p>
+                  <div className="space-y-1">
+                    {latest.skillmap.map((s, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <span className="text-[11px] text-gray-600 w-28 shrink-0 truncate">{s.name}</span>
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, s.pct))}%`, background: 'var(--tss-cyan,#5AC3E7)' }} />
+                        </div>
+                        <span className="text-[10px] text-gray-400 w-8 text-right shrink-0">{s.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </Card>
+      )}
 
       {/* --- 3e. PORTAL ACTIVITY (what the student did on their own) --- */}
       {(() => {
@@ -830,28 +782,119 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         );
       })()}
 
-      {/* --- COURSES (granted + earmarked + manual grant) --- */}
-      <CoursesPanel
-        studentId={id}
-        grants={courseGrants}
-        pendingCourses={pendingCourses}
-        intakeComplete={intakeComplete}
-        canManage={canManageCourses}
-        isPlatformAdmin={!!coach?.is_platform_admin}
-        isDirectPurchase={!(student as any).academy_id}
+        </>}
+        perfil={<>
+      {/* --- SAFETY & MEDICAL (highlighted if data) --- */}
+      <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
+        <div className="space-y-2">
+          <Row label="Emergency Contact" value={student.emergency_contact_name} />
+          <Row label="Emergency Phone" value={student.emergency_contact_phone} />
+          {student.allergies && (
+            <div className="flex items-start justify-between gap-4">
+              <span className="text-xs text-gray-500 shrink-0">Allergies</span>
+              <span className="text-sm text-right text-red-600 font-medium">{student.allergies}</span>
+            </div>
+          )}
+          {student.injuries && (
+            <div className="flex items-start justify-between gap-4">
+              <span className="text-xs text-gray-500 shrink-0">Injuries</span>
+              <span className="text-sm text-right text-amber-600 font-medium">{student.injuries}</span>
+            </div>
+          )}
+          <Row label="Medical Notes" value={student.medical_notes} />
+          <Row label="Swim Level" value={student.swim_level} />
+          <Row label="Risk Notes" value={student.risk_notes} />
+        </div>
+      </Card>
+
+      {/* --- WAIVER STATUS --- */}
+      <Card title="Waiver Status">
+        {student.waiver_signed ? (
+          <div className="flex items-center gap-2 py-1">
+            <CheckCircle2 size={20} strokeWidth={1.75} className="text-emerald-600 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-emerald-700">Waiver signed</p>
+              {student.waiver_signed_at && (
+                <p className="text-xs text-gray-400">
+                  Signed on {new Date(student.waiver_signed_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 py-2 bg-red-50 rounded-lg px-3">
+            <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-600">Waiver required</p>
+              <p className="text-xs text-red-400">Student has not signed the liability waiver</p>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Media-use consent — warn loudly when the student did NOT authorize it */}
+      {(student as any).media_release_consent === false ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5">
+          <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">No autoriza uso de fotos ni videos</p>
+            <p className="text-xs text-red-500">No publicar ni usar su material (fotos/clips) con fines promocionales.</p>
+          </div>
+        </div>
+      ) : (student as any).media_release_consent === true ? (
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+          <CheckCircle2 size={14} strokeWidth={2} className="text-emerald-600 shrink-0" />
+          <p className="text-xs text-emerald-700">Autoriza uso de fotos y videos (Sección 10)</p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+          <CircleDot size={13} strokeWidth={2} className="text-gray-400 shrink-0" />
+          <p className="text-xs text-gray-500">Uso de imagen: sin registrar (waiver anterior o sin responder)</p>
+        </div>
+      )}
+
+      {/* --- LEARNING PROFILE (how this student learns — coach scans before every session) --- */}
+      <LearningProfileCard
+        studentId={student.id}
+        primary={(student as any).learning_profile_primary as LearningChannel | null}
+        secondary={(student as any).learning_profile_secondary as LearningChannel | null}
+        portalToken={student.portal_token}
+        intakeLearningStyle={(student as any).learning_style as string | null}
       />
 
-      {/* Presentations — grant decks to this student (admin only; renders
-          nothing if there are no presentations or the viewer isn't admin) */}
-      <StudentPresentationGrants studentId={id} />
-
-      {/* Level Access */}
-      <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />
-
-      {/* --- 6. SESSION HISTORY (collapsible) --- */}
-      <CollapsibleSection title={`Session History (${allSessions.length})`} defaultOpen={false}>
-        <SessionHistoryPanel sessions={allSessions} />
-      </CollapsibleSection>
+      {/* --- RELATIONSHIP / VISITS (who is this, at a glance) --- */}
+      <Card title="Relationship" highlighted={visitStats.visits > 1}>
+        <div className="pt-2 space-y-3">
+          <div className="flex items-center gap-2">
+            {visitStats.visits > 1 ? (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tss-navy)] bg-[var(--tss-cyan,#5AC3E7)]/15 border border-[var(--tss-cyan,#5AC3E7)]/40 rounded-full px-2.5 py-0.5">
+                Returning · Visit #{visitStats.visits}
+              </span>
+            ) : visitStats.visits === 1 ? (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
+                First visit
+              </span>
+            ) : (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
+                No visits yet
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-50 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[11px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
+            </div>
+          </div>
+          <Row label="First visit" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
+          <Row label="Last visit" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
+          <PriorVisitsEditor studentId={student.id} initial={visitStats.priorVisits} />
+        </div>
+      </Card>
 
       {/* --- 7. PROFILE DETAILS (collapsible, default closed) --- */}
       <CollapsibleSection title="Profile Details" defaultOpen={false}>
@@ -886,28 +929,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       </CollapsibleSection>
 
-      {/* --- 8. COACH NOTES (collapsible) --- */}
-      <CollapsibleSection title="Coach Notes" defaultOpen={false}>
-        <div className="space-y-3">
-          {student.coach_notes_general ? (
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Internal Notes</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">
-                {student.coach_notes_general}
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs text-gray-400">No coach notes yet</p>
-          )}
-          {student.current_focus_area && (
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Current Focus Area</p>
-              <p className="text-sm text-[var(--tss-navy)] font-medium">{student.current_focus_area}</p>
-            </div>
-          )}
-          <Row label="Primary Goal" value={student.primary_goal} />
-        </div>
-      </CollapsibleSection>
+        </>}
+      />
 
     </div>
   );
