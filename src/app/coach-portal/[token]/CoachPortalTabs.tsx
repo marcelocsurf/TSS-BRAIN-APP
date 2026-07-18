@@ -44,6 +44,11 @@ import {
   CalendarDays,
   LifeBuoy,
   ShieldAlert,
+  Sunrise,
+  MapPin,
+  Truck,
+  Award,
+  Users,
 } from 'lucide-react';
 
 type TabIconComponent = typeof Home;
@@ -52,6 +57,28 @@ type Tab = 'home' | 'courses' | 'tools' | 'plan' | 'rating' | 'sell' | 'spaces' 
 
 // 'rating' is intentionally NOT in the nav — the student rating is unified
 // into the home (a featured card that taps through to the detail).
+// ── Brand Manual v10 type helpers (Archivo Expanded display · Plex Mono labels) ──
+const F_DISPLAY: React.CSSProperties = {
+  fontFamily: 'var(--font-archivo), system-ui, sans-serif',
+  fontStretch: '125%' as any,
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  letterSpacing: '-0.02em',
+  lineHeight: 1.05,
+};
+const F_LABEL: React.CSSProperties = {
+  fontFamily: 'var(--font-plex), monospace',
+  fontWeight: 500,
+  textTransform: 'uppercase',
+  letterSpacing: '0.18em',
+};
+// 'HH:MM' → '6:30 AM'
+function t12(t: string | null): string | null {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
 const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
   { key: 'home', label: 'Home', Icon: Home },
   { key: 'courses', label: 'Courses', Icon: BookOpen },
@@ -94,17 +121,17 @@ export function CoachPortalTabs({
   return (
     <div
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
-      style={plannerOpen ? undefined : { background: '#000' }}
+      style={plannerOpen ? undefined : { background: activeTab === 'home' && !isSupport ? '#F7F9FA' : '#000' }}
     >
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
-          <div className="rounded-2xl p-3 space-y-4" style={{ background: '#000' }}>
+          <div className="rounded-2xl p-3 space-y-4" style={{ background: isSupport ? '#000' : 'transparent' }}>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
 
             {isSupport ? (
               <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} emergencyPlan={data.emergencyPlan} onGoTo={setActiveTab} />
             ) : (
-              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} />
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} />
             )}
           </div>
         )}
@@ -143,7 +170,7 @@ export function CoachPortalTabs({
 
       {/* Bottom nav — hidden while the planner is open (focused mode). */}
       {!plannerOpen && (
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10" style={{ background: '#0A1628' }}>
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10" style={{ background: '#061C2B' }}>
         <div className="max-w-lg mx-auto flex">
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -152,13 +179,13 @@ export function CoachPortalTabs({
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex-1 flex flex-col items-center py-2.5 text-[10px] font-medium transition-colors ${
-                  isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-white/40'
+                  isActive ? 'text-[#00D2FF]' : 'text-white/40'
                 }`}
               >
                 <tab.Icon
                   size={20}
                   strokeWidth={isActive ? 2 : 1.75}
-                  className={`mb-0.5 transition-colors ${isActive ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-white/40'}`}
+                  className={`mb-0.5 transition-colors ${isActive ? 'text-[#00D2FF]' : 'text-white/40'}`}
                 />
                 <span>{tab.label}</span>
               </button>
@@ -467,6 +494,7 @@ function HomeTab({
   onGoTo,
   coachCourses = [],
   courseProgress = {},
+  todayLogistics = null,
 }: {
   coach: any;
   stats: any;
@@ -476,6 +504,7 @@ function HomeTab({
   onGoTo?: (tab: Tab) => void;
   coachCourses?: any[];
   courseProgress?: Record<string, { completed: boolean }>;
+  todayLogistics?: any;
   emergencyPlan?: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -506,184 +535,178 @@ function HomeTab({
 
   return (
     <div className="space-y-4">
-      {/* ── Dark "cockpit" hero — matches the student home ── */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
-        <div className="flex items-center justify-end px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-          <Link
-            href={`/coach-portal/${coach.portal_token}/profile`}
-            className="text-[10px] font-mono uppercase tracking-wider"
-            style={{ color: '#5AC3E7' }}
-          >
-            Edit profile
-          </Link>
-        </div>
+      {/* ── INK HERO — Brand Manual v10 (Archivo Expanded · Plex Mono · #00D2FF) ── */}
+      <div className="rounded-3xl overflow-hidden" style={{ background: '#061C2B' }}>
+        <div className="px-5 pt-5 pb-6">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Here and now · Coach portal</p>
+            <Link
+              href={`/coach-portal/${coach.portal_token}/profile`}
+              className="text-[10px] hover:opacity-80"
+              style={{ ...F_LABEL, color: 'rgba(247,249,250,.55)' }}
+            >
+              Edit profile
+            </Link>
+          </div>
 
-        <div className="p-4 space-y-4">
-          {/* Identity row: photo + name + role/cert + students */}
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center shrink-0 text-white text-lg font-bold" style={{ border: '2px solid #5AC3E7', background: '#1b3148' }}>
+          <div className="mt-4 flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center shrink-0 text-white text-lg font-bold" style={{ boxShadow: '0 0 0 2px rgba(0,210,255,.4)', background: '#0d2a3f' }}>
               {coach.photo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={coach.photo_url} alt={coach.display_name} className="w-full h-full object-cover" />
               ) : (initials || <Waves size={22} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-lg font-bold truncate" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>{coach.display_name}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="w-3 h-3 rounded-full" style={{ background: '#5AC3E7', border: '1px solid #5b6b7a' }} />
-                <span className="text-xs capitalize" style={{ color: '#8aa0b2' }}>
-                  {coach.role.replace(/_/g, ' ')}{certLabel ? ` · ${certLabel}` : ''}
-                </span>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>Students</p>
-              <p className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '20px' }}>{stats.studentsWorkedWith}</p>
-            </div>
-          </div>
-
-          {/* Primary ring: coaching hours + certification progress */}
-          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: '#122236' }}>
-            <div className="relative shrink-0" style={{ width: 104, height: 104 }}>
-              <svg viewBox="0 0 120 120" width="104" height="104">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#1f344a" strokeWidth="10" />
-                <circle
-                  cx="60" cy="60" r="52" fill="none" stroke="#5AC3E7" strokeWidth="10" strokeLinecap="round"
-                  strokeDasharray="326.7"
-                  strokeDashoffset={326.7 * (1 - certRank / 5)}
-                  transform="rotate(-90 60 60)"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className="font-bold leading-none" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '22px' }}>{coachingHours}h</p>
-                <p className="text-[8px] font-mono uppercase tracking-wider mt-1" style={{ color: '#8aa0b2' }}>Coached</p>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#5AC3E7' }}>Certification</p>
-              <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
-                {certRank > 0 ? `Level ${certRank} of 5` : 'Not certified yet'}
-              </p>
-              <div className="h-1.5 rounded-full overflow-hidden mt-2 mb-2" style={{ background: '#1f344a' }}>
-                <div className="h-full rounded-full" style={{ width: `${(certRank / 5) * 100}%`, background: '#5AC3E7' }} />
-              </div>
-              <span className="text-[11px]" style={{ color: '#8aa0b2' }}>
-                {nextCertLabel ? `Next: ${nextCertLabel}` : certRank >= 5 ? 'Top certification reached' : 'Start your certification path'}
+            <div className="min-w-0">
+              <h1 className="text-2xl truncate" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{coach.display_name}</h1>
+              <span className="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[10px]" style={{ ...F_LABEL, background: 'rgba(0,210,255,.15)', color: '#00D2FF' }}>
+                {coach.role.replace(/_/g, ' ')}{certRank > 0 ? ` · L${certRank}` : ''}
               </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* ── Your rating from students (unified from the old Rating tab) ── */}
-      <button
-        onClick={() => onGoTo?.('rating')}
-        className="w-full text-center rounded-2xl p-4 border transition-colors hover:border-[var(--tss-cyan)]/40"
-        style={{ background: 'linear-gradient(135deg,#0F1E33,#0A1628)', borderColor: 'rgba(90,195,231,.2)' }}
-      >
-        <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-[var(--tss-cyan)]">Your rating from students</div>
-        {ratingsCount > 0 ? (
-          <>
-            <div className="text-4xl font-bold text-white leading-none mt-1.5">
-              {avg}<span className="text-base text-white/50">/5</span>
+          {/* Certification card */}
+          <div className="mt-5 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.06)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.1)' }}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Award size={16} className="shrink-0" style={{ color: '#00D2FF' }} />
+                <span className="text-base whitespace-nowrap" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>
+                  {certRank > 0 ? `Level ${certRank} of 5` : 'Not certified'}
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1.5 shrink-0 text-[10px]" style={{ ...F_LABEL, color: 'rgba(247,249,250,.7)' }}>
+                <Clock size={13} /> {coachingHours}h coached
+              </span>
             </div>
-            <div className="text-[15px] tracking-[2px] mt-1" style={{ color: '#EAB308' }}>
-              {'★'.repeat(fullStars)}<span style={{ color: '#3a4a5e' }}>{'★'.repeat(5 - fullStars)}</span>
+            <div className="mt-3 h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.1)' }}>
+              <div className="h-full rounded-full" style={{ width: `${(certRank / 5) * 100}%`, background: '#00D2FF' }} />
             </div>
-            <div className="text-[10px] text-white/40 mt-1.5">from {ratingsCount} student {ratingsCount === 1 ? 'survey' : 'surveys'} · tap for detail</div>
-          </>
-        ) : (
-          <div className="text-sm text-white/50 mt-2">No ratings yet — they appear as students fill post-session surveys.</div>
-        )}
-      </button>
-
-      {/* ── Two big stat cards (Training / Free Surf style) ── */}
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: 'Services run', value: stats.totalServicesAsHead.toString(), accent: '#00D2FF' },
-          { label: 'Upcoming', value: stats.upcomingServicesCount.toString(), accent: '#5AC3E7' },
-        ].map((s) => (
-          <div key={s.label} className="rounded-2xl p-4" style={{ background: '#0F1E33' }}>
-            <div className="flex items-center gap-2">
-              <span style={{ width: 4, height: 18, borderRadius: 3, background: s.accent, display: 'inline-block' }} />
-              <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f4f9fc', fontSize: '20px' }}>{s.label}</span>
-            </div>
-            <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-heading)', color: '#00D2FF', fontSize: '30px', lineHeight: 1 }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Coaching hours + your course progress ── */}
-      <div className="rounded-2xl p-4" style={{ background: '#0F1E33' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(90,195,231,.15)' }}>
-            <Clock size={20} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>Coaching delivered</p>
-            <p className="text-2xl font-semibold text-white leading-none mt-0.5">
-              {coachingHours}<span className="text-sm text-white/50"> h</span>
+            <p className="mt-2 text-[10px]" style={{ ...F_LABEL, color: 'rgba(247,249,250,.55)' }}>
+              {nextCertLabel ? `Next: ${nextCertLabel}` : certRank >= 5 ? 'Top certification reached' : 'Start your certification path'}
             </p>
           </div>
         </div>
-
-        {totalLessons > 0 && (
-          <div className="mt-3.5 pt-3.5 border-t border-white/5">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>Your course progress</span>
-              <span className="text-[11px] font-semibold text-[var(--tss-cyan)]">{completedLessons}/{totalLessons} · {coursePct}%</span>
-            </div>
-            <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(255,255,255,.1)' }}>
-              <div className="h-full rounded-full transition-all" style={{ width: `${coursePct}%`, background: 'var(--tss-cyan,#5AC3E7)' }} />
-            </div>
-            <button onClick={() => onGoTo?.('courses')} className="text-[11px] text-white/50 hover:text-white mt-2.5 inline-flex items-center gap-1">
-              Continue learning <ChevronRight size={13} />
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* ── TODAY — the class running now, with its class-day logistics ── */}
+      {todayLogistics && (
+        <div className="rounded-3xl bg-white p-5" style={{ boxShadow: '0 10px 30px rgba(6,28,43,.06), inset 0 0 0 1px rgba(6,28,43,.05)' }}>
+          <p className="text-[10px]" style={{ ...F_LABEL, color: '#00A8CC' }}>
+            Today{todayLogistics.day_number ? ` · Day ${todayLogistics.day_number}${todayLogistics.total_days ? ` of ${todayLogistics.total_days}` : ''}` : ''}
+          </p>
+          <h2 className="mt-1.5 text-xl" style={{ ...F_DISPLAY, color: '#061C2B' }}>{todayLogistics.camp_name || 'Your class'}</h2>
+
+          <div className="mt-4 space-y-2.5">
+            {t12(todayLogistics.class_start_time) && (
+              <div className="flex items-center gap-2.5 text-sm" style={{ color: '#55666E' }}>
+                <Sunrise size={16} style={{ color: '#00A8CC' }} /> {t12(todayLogistics.class_start_time)} start
+              </div>
+            )}
+            {todayLogistics.surf_venue && (
+              <div className="flex items-center gap-2.5 text-sm" style={{ color: '#55666E' }}>
+                <MapPin size={16} style={{ color: '#00A8CC' }} /> {todayLogistics.surf_venue}
+              </div>
+            )}
+            {t12(todayLogistics.transport_depart) && (
+              <div className="flex items-center gap-2.5 text-sm" style={{ color: '#55666E' }}>
+                <Truck size={16} style={{ color: '#00A8CC' }} /> Van departs {t12(todayLogistics.transport_depart)}
+              </div>
+            )}
+            <div className="flex items-center gap-2.5 text-[10px]" style={{ ...F_LABEL, color: '#55666E' }}>
+              <Users size={15} style={{ color: '#00A8CC' }} /> {todayLogistics.students} student{todayLogistics.students === 1 ? '' : 's'}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onGoTo?.('plan')}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-full px-4 py-3.5 text-xs transition-opacity hover:opacity-90"
+            style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}
+          >
+            <ClipboardList size={16} /> Plan the session
+          </button>
+        </div>
+      )}
+
+      {/* ── QUICK STATS — 4 tiles ── */}
+      <div className="grid grid-cols-4 gap-2.5">
+        {[
+          { label: 'Services run', value: stats.totalServicesAsHead.toString(), onClick: undefined },
+          { label: 'Upcoming', value: stats.upcomingServicesCount.toString(), onClick: undefined },
+          { label: 'Students', value: String(stats.studentsWorkedWith ?? 0), onClick: undefined },
+          { label: 'Rating', value: ratingsCount > 0 ? `${avg}★` : '—', onClick: () => onGoTo?.('rating') },
+        ].map((t) => (
+          <button
+            key={t.label}
+            type="button"
+            onClick={t.onClick}
+            disabled={!t.onClick}
+            className="rounded-2xl bg-white px-2 py-3 text-center disabled:cursor-default"
+            style={{ boxShadow: '0 2px 8px rgba(6,28,43,.04), inset 0 0 0 1px rgba(6,28,43,.05)' }}
+          >
+            <p className="text-xl leading-none" style={{ ...F_DISPLAY, color: '#061C2B' }}>{t.value}</p>
+            <p className="mt-1.5 text-[8px] leading-tight" style={{ ...F_LABEL, letterSpacing: '0.12em', color: '#55666E' }}>{t.label}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Your course progress (coach certification study) ── */}
+      {totalLessons > 0 && (
+        <div className="rounded-3xl bg-white p-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(6,28,43,.05)' }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px]" style={{ ...F_LABEL, color: '#55666E' }}>Your course progress</span>
+            <span className="text-[11px] font-semibold" style={{ color: '#00A8CC' }}>{completedLessons}/{totalLessons} · {coursePct}%</span>
+          </div>
+          <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(6,28,43,.07)' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${coursePct}%`, background: '#00D2FF' }} />
+          </div>
+          <button onClick={() => onGoTo?.('courses')} className="text-[11px] mt-2.5 inline-flex items-center gap-1 hover:opacity-80" style={{ color: '#00A8CC' }}>
+            Continue learning <ChevronRight size={13} />
+          </button>
+        </div>
+      )}
 
       {profileIncomplete && (
         <Link
           href={`/coach-portal/${coach.portal_token}/profile`}
-          className="block rounded-2xl p-4 border border-amber-400/30"
-          style={{ background: 'rgba(234,179,8,.1)' }}
+          className="block rounded-3xl p-4 bg-amber-50"
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(217,119,6,.25)' }}
         >
-          <p className="text-sm font-semibold text-amber-300">Complete your profile</p>
-          <p className="text-xs text-amber-200/80 mt-0.5 leading-relaxed">
-            Emergency contact, medical info and waiver. Required before teaching official TSS sessions.
+          <p className="text-sm font-semibold text-amber-800">Complete your profile</p>
+          <p className="text-xs text-amber-700/90 mt-0.5 leading-relaxed">
+            Emergency contact, medical info and waiver. Required before teaching official sessions.
           </p>
-          <p className="text-[11px] font-mono uppercase tracking-wider text-amber-300 mt-2">Fill it now →</p>
+          <p className="text-[10px] mt-2" style={{ ...F_LABEL, color: '#B45309' }}>Fill it now →</p>
         </Link>
       )}
 
-      {/* ── Your next classes (collapsible dropdown, clickable rows) ── */}
+      {/* ── Your next classes ── */}
       {upcoming.length > 0 && (
-        <details open className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
+        <details open className="rounded-3xl overflow-hidden bg-white" style={{ boxShadow: 'inset 0 0 0 1px rgba(6,28,43,.05)' }}>
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-              <CalendarDays size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
+            <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: '#061C2B' }}>
+              <CalendarDays size={16} strokeWidth={1.75} style={{ color: '#00A8CC' }} />
               Your next classes
-              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(90,195,231,.18)', color: '#5AC3E7' }}>{upcoming.length}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,210,255,.12)', color: '#00A8CC' }}>{upcoming.length}</span>
             </span>
-            <ChevronDown size={16} className="text-white/40" />
+            <ChevronDown size={16} style={{ color: '#9aa7ad' }} />
           </summary>
-          <div className="border-t border-white/5 divide-y divide-white/5">
+          <div style={{ borderTop: '1px solid rgba(6,28,43,.06)' }}>
             {upcoming.slice(0, 5).map((s: any) => {
               const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
               return (
                 <button
                   key={s.id}
                   onClick={() => onGoTo?.('plan')}
-                  className="w-full text-left px-4 py-3 flex items-center justify-between gap-2 hover:bg-white/5 transition-colors"
+                  className="w-full text-left px-4 py-3 flex items-center justify-between gap-2 transition-colors hover:bg-[rgba(6,28,43,.03)]"
+                  style={{ borderBottom: '1px solid rgba(6,28,43,.04)' }}
                 >
                   <div className="min-w-0">
-                    <p className="text-[15px] text-white truncate">{s.camp_name}</p>
-                    <p className="text-[10px] text-white/40 mt-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+                    <p className="text-[15px] truncate" style={{ color: '#061C2B' }}>{s.camp_name}</p>
+                    <p className="text-[10px] mt-0.5" style={{ ...F_LABEL, letterSpacing: '0.12em', color: '#55666E' }}>
                       {(tpl?.service_kind?.replace(/_/g, ' ') || 'Service')} · {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
-                  <ChevronRight size={15} className="text-white/30 shrink-0" />
+                  <ChevronRight size={15} className="shrink-0" style={{ color: '#9aa7ad' }} />
                 </button>
               );
             })}

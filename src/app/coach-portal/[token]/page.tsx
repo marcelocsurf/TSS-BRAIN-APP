@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { getCoachPortalData } from '@/lib/actions/coach-portal';
 import { CoachPortalTabs } from './CoachPortalTabs';
 import { resolveAcademyBranding } from '@/lib/branding';
@@ -6,6 +7,11 @@ import { Lock } from 'lucide-react';
 import { LogoutButton } from '@/components/shared/LogoutButton';
 import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
+
+// Brand Manual v10 typefaces — Archivo (variable, wdth axis for Expanded
+// display) + IBM Plex Mono for labels/data. Scoped to the coach portal.
+const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
+const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -53,7 +59,7 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
     impersonation?.kind === 'coach' && impersonation.portal_token === token;
 
   return (
-    <div className="min-h-screen tss-portal-bg pb-20">
+    <div className={`min-h-screen tss-portal-bg pb-20 ${archivo.variable} ${plexMono.variable}`}>
       {isImpersonatingThisCoach && impersonation && (
         <ImpersonateBanner kind="coach" name={impersonation.name} />
       )}

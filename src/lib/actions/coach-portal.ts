@@ -93,6 +93,7 @@ export interface CoachPortalData {
   pastServices: any[];
   academyServices: any[];  // all upcoming academy services (sellers only)
   academySchedule: any[];  // next-7-days academy schedule (support members)
+  todayLogistics?: any;    // coach's service running TODAY + its class-day plan (M139)
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
@@ -413,6 +414,41 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     } catch { /* soft — the rest of the portal still works */ }
   }
 
+  // M139 — the coach's service running TODAY + its class-day logistics, for
+  // the redesigned home "Today" hero card. Soft-fail: null hides the card.
+  let todayLogistics: any = null;
+  try {
+    const running = (upcomingEnriched as any[]).find(
+      (s: any) => s.start_date <= today && (s.end_date ?? s.start_date) >= today,
+    );
+    if (running) {
+      const [{ data: sess }, { count: totalDays }, { count: studentsCount }] = await Promise.all([
+        admin.from('camp_sessions').select('id, day_number').eq('camp_instance_id', running.id).eq('session_date', today).maybeSingle(),
+        admin.from('camp_sessions').select('*', { count: 'exact', head: true }).eq('camp_instance_id', running.id),
+        admin.from('camp_participants').select('*', { count: 'exact', head: true }).eq('camp_instance_id', running.id).eq('enrollment_status', 'active'),
+      ]);
+      let plan: any = null;
+      if (sess) {
+        const { data: pl } = await admin
+          .from('service_plans')
+          .select('class_start_time, surf_venue, transport_needed, transport_depart')
+          .eq('camp_session_id', sess.id)
+          .maybeSingle();
+        plan = pl;
+      }
+      todayLogistics = {
+        camp_id: running.id,
+        camp_name: running.camp_name ?? null,
+        day_number: sess?.day_number ?? null,
+        total_days: totalDays ?? null,
+        students: studentsCount ?? 0,
+        class_start_time: plan?.class_start_time ?? null,
+        surf_venue: plan?.surf_venue ?? null,
+        transport_depart: plan?.transport_needed ? (plan?.transport_depart ?? null) : null,
+      };
+    }
+  } catch { /* non-blocking */ }
+
   return {
     coach,
     stats: {
@@ -430,6 +466,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     pastServices: pastEnriched,
     academyServices,
     academySchedule,
+    todayLogistics,
     coachCourses: coachCoursesResult.data ?? [],
     courseProgress,
     availableDrills,
