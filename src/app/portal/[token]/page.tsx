@@ -1,3 +1,4 @@
+import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { type BeltLevel } from '@/lib/constants/belts';
 import { notFound, redirect } from 'next/navigation';
 import {
@@ -16,6 +17,11 @@ import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 
 // Always fetch fresh data — no caching of student portal
+
+// Brand Manual v10 typefaces — Archivo (wdth axis → Expanded display) +
+// IBM Plex Mono labels. Scoped to the student portal via CSS variables.
+const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
+const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -110,6 +116,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
       {isImpersonatingThisStudent && impersonation && (
         <ImpersonateBanner kind="student" name={impersonation.name} />
       )}
+      <div className={`${archivo.variable} ${plexMono.variable}`}>
       <PortalTabs
         data={{
           ...portalData,
@@ -128,6 +135,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
         initialDrillId={drill || null}
         initialStepId={step || null}
       />
+      </div>
     </>
   );
 }
