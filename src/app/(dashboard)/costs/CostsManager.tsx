@@ -3,8 +3,8 @@
 import { useMemo, useState, useTransition } from 'react';
 import {
   upsertCostRate, deleteCostRate, saveCoachPayRate, setTemplateCostItem, setTemplateListPrice,
-  DRIVER_LABEL, type CostRate, type CoachPayRate, type CostDriver, type RecipeRow,
 } from '@/lib/actions/costs';
+import { DRIVER_LABEL, type CostRate, type CoachPayRate, type CostDriver, type RecipeRow } from '@/lib/cost-shared';
 import { Plus, Trash2, Check } from 'lucide-react';
 
 // Costs settings UI (M145). Three sections: coach pay matrix (level × group
