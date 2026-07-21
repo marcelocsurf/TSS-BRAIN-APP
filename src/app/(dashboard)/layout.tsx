@@ -49,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
-  { href: '/costs',         label: 'Costs',        Icon: DollarSign,   roles: ['coordinator'] },
+  { href: '/costs',         label: 'Costs',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
   // Drafts removed from the admin sidebar (legacy session flow) — coaches
