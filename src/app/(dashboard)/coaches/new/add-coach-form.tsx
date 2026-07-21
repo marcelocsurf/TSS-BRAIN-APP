@@ -234,6 +234,13 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
               <span className="text-sm font-semibold">Support staff</span>
               <span className={`text-xs mt-0.5 ${form.portal_category === 'support' ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>Photographer, seller, driver…</span>
             </button>
+            <button type="button" onClick={() => { set('portal_category', 'manager'); set('role', 'assistant'); }}
+              className={`flex-1 rounded-xl border px-3 py-2.5 text-left transition-all ${
+                form.portal_category === 'manager' ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm' : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
+              }`}>
+              <span className="block text-sm font-semibold">Manager</span>
+              <span className={`text-xs mt-0.5 ${form.portal_category === 'manager' ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>Read-only academy overview</span>
+            </button>
           </div>
         </div>
 

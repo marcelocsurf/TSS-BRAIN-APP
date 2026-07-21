@@ -41,6 +41,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/activate') ||
     pathname.startsWith('/lead') ||
     pathname.startsWith('/coach-portal') ||  // token-gated coach portal
+    pathname.startsWith('/manager-portal') || // token-gated read-only manager view
     pathname.startsWith('/feedback') ||       // token-gated standalone survey
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
