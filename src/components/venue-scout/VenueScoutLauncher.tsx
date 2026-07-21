@@ -31,7 +31,7 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
         <div className="min-w-0">
           <p className={`text-sm font-semibold ${dark ? 'text-white' : 'text-[var(--tss-navy)]'}`}>Venue Scout</p>
           <p className={`text-[11px] leading-snug ${dark ? 'text-white/50' : 'text-gray-500'}`}>
-            Analizá un spot — olas, hazards, corrientes, plan táctico.
+            Analyze a spot — waves, hazards, currents, tactical plan.
           </p>
         </div>
       </button>

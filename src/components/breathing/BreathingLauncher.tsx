@@ -25,9 +25,9 @@ export function BreathingLauncher({ variant = 'light' }: { variant?: 'light' | '
           <Wind size={18} strokeWidth={1.75} className={dark ? 'text-[var(--tss-cyan)]' : 'text-white'} />
         </div>
         <div className="min-w-0">
-          <p className={`text-sm font-semibold ${dark ? 'text-white' : 'text-[var(--tss-navy)]'}`}>Respiración guiada</p>
+          <p className={`text-sm font-semibold ${dark ? 'text-white' : 'text-[var(--tss-navy)]'}`}>Breathwork</p>
           <p className={`text-[11px] leading-snug ${dark ? 'text-white/50' : 'text-gray-500'}`}>
-            Box breathing, 4-7-8, coherente y breath of fire — con visual y sonido.
+            Box · 4-7-8 · coherent · breath of fire — with visuals and sound.
           </p>
         </div>
       </button>

@@ -38,6 +38,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  FileText,
   ChevronLeft,
   ArrowRight,
   Lock,
@@ -121,7 +122,7 @@ export function CoachPortalTabs({
   return (
     <div
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
-      style={plannerOpen ? undefined : { background: activeTab === 'home' && !isSupport ? '#F7F9FA' : '#000' }}
+      style={plannerOpen ? undefined : { background: (activeTab === 'home' || activeTab === 'tools') && !isSupport ? '#F7F9FA' : '#000' }}
     >
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
@@ -1480,76 +1481,17 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Your Tools</p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
-          Browse by sequence
-        </h2>
-        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+      <p className="text-[10px] px-1" style={{ ...F_LABEL, color: '#55666E' }}>Your tools · Coaching toolkit</p>
+
+      {/* ── STP LIBRARY (hero) ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-5">
+        <p className="text-[9px] mb-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>STP Library</p>
+        <h2 className="text-lg" style={{ ...F_DISPLAY, color: '#061C2B' }}>Browse by sequence</h2>
+        <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
           Pick a step to see its drills, missions and visual aids.
           {' '}Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
         </p>
       </div>
-
-      {/* Problem-solving system — reference PDF */}
-      <a
-        href="/docs/sistema-resolver-problemas.pdf"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow flex items-center gap-3"
-      >
-        <span className="w-10 h-10 rounded-xl bg-[var(--tss-navy)] text-white flex items-center justify-center shrink-0">
-          <LifeBuoy size={18} strokeWidth={1.75} />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
-          <span className="block text-[11px] text-gray-500 leading-snug">Guía de referencia — abrir PDF</span>
-        </span>
-      </a>
-
-      {/* Report an incident */}
-      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
-
-      {/* Emergency plan (collapsible) */}
-      <details className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <summary className="cursor-pointer list-none p-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
-            <ShieldAlert size={18} strokeWidth={1.75} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-[var(--tss-navy)]">Plan de emergencia</span>
-            <span className="block text-[11px] text-gray-500 leading-snug">Números, hospital, protocolo</span>
-          </span>
-          <span className="text-[10px] font-mono uppercase tracking-wider shrink-0" style={{ color: hasEmergency ? '#2E93BD' : '#C43D3D' }}>{hasEmergency ? 'Ver' : 'No definido'}</span>
-        </summary>
-        <div className="px-4 pb-4 space-y-2.5 border-t border-gray-50 pt-3">
-          {hasEmergency ? (
-            <>
-              {emergencyPlan!.emergency_numbers && <EmRowLight label="Números" value={emergencyPlan!.emergency_numbers} />}
-              {emergencyPlan!.nearest_hospital && <EmRowLight label="Hospital" value={emergencyPlan!.nearest_hospital} />}
-              {emergencyPlan!.lifeguard_contact && <EmRowLight label="Salvavidas" value={emergencyPlan!.lifeguard_contact} />}
-              {emergencyPlan!.emergency_address && <EmRowLight label="Ubicación" value={emergencyPlan!.emergency_address} />}
-              {emergencyPlan!.emergency_protocol && <EmRowLight label="Protocolo" value={emergencyPlan!.emergency_protocol} />}
-            </>
-          ) : (
-            <p className="text-xs text-gray-400 italic">
-              Tu academia aún no cargó el plan de emergencia. Pedile al coordinador que lo complete.
-            </p>
-          )}
-        </div>
-      </details>
-
-      {/* Video Analyzer — draw on a student clip (client-only, lazy) */}
-      <VideoAnalyzerLauncher variant="card" />
-
-      {/* Board Selector — recommend board volume/type/fins (client-only, lazy) */}
-      <BoardSelectorLauncher variant="card" />
-
-      {/* Venue Scout — analyze a surf spot (standalone tool, full-screen) */}
-      <VenueScoutLauncher variant="light" />
-
-      {/* Guided breathing — box / 4-7-8 / coherent / breath of fire */}
-      <BreathingLauncher variant="light" />
 
       {sequences.map(([key, g]) => (
         <SequenceGroup key={key} group={g} token={coach.portal_token} />
@@ -1561,6 +1503,61 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
           <p className="text-sm text-gray-500">No steps available yet.</p>
         </div>
       )}
+
+      {/* ── FIELD TOOLS ── */}
+      <p className="text-[10px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>Field tools</p>
+      <VideoAnalyzerLauncher variant="card" />
+      <BoardSelectorLauncher variant="card" />
+      <VenueScoutLauncher variant="light" />
+      <BreathingLauncher variant="light" />
+
+      {/* ── SAFETY ── */}
+      <p className="text-[10px] px-1 pt-2" style={{ ...F_LABEL, color: '#FF6B6B' }}>Safety</p>
+
+      {/* Emergency plan — coral-bordered, English copy (brand rule) */}
+      <details className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ border: '1.5px solid rgba(255,107,107,.55)' }}>
+        <summary className="cursor-pointer list-none p-4 flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(255,107,107,.12)' }}>
+            <LifeBuoy size={18} strokeWidth={1.75} style={{ color: '#FF6B6B' }} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm" style={{ ...F_DISPLAY, color: '#061C2B' }}>Emergency plan</span>
+            <span className="block text-[11px] text-gray-500 leading-snug">Numbers, hospital, protocol</span>
+          </span>
+          <span className="text-[9px] shrink-0" style={{ ...F_LABEL, color: hasEmergency ? '#0090B0' : '#FF6B6B' }}>{hasEmergency ? 'View' : 'Not set'}</span>
+        </summary>
+        <div className="px-4 pb-4 space-y-2.5 border-t border-gray-50 pt-3">
+          {hasEmergency ? (
+            <>
+              {emergencyPlan!.emergency_numbers && <EmRowLight label="Numbers" value={emergencyPlan!.emergency_numbers} />}
+              {emergencyPlan!.nearest_hospital && <EmRowLight label="Hospital" value={emergencyPlan!.nearest_hospital} />}
+              {emergencyPlan!.lifeguard_contact && <EmRowLight label="Lifeguard" value={emergencyPlan!.lifeguard_contact} />}
+              {emergencyPlan!.emergency_address && <EmRowLight label="Location" value={emergencyPlan!.emergency_address} />}
+              {emergencyPlan!.emergency_protocol && <EmRowLight label="Protocol" value={emergencyPlan!.emergency_protocol} />}
+            </>
+          ) : (
+            <p className="text-xs text-gray-400 italic">
+              Your academy hasn&apos;t set the emergency plan yet — ask your coordinator to complete it.
+            </p>
+          )}
+        </div>
+      </details>
+
+      {/* Report an incident */}
+      <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
+
+      {/* Problem Protocol — reference PDF */}
+      <a
+        href="/docs/sistema-resolver-problemas.pdf"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 hover:shadow-md transition-shadow flex items-center gap-3"
+      >
+        <FileText size={18} strokeWidth={1.75} className="shrink-0" style={{ color: '#061C2B' }} />
+        <span className="min-w-0 flex-1 text-sm font-semibold truncate" style={{ color: '#061C2B' }}>Problem Protocol — reference guide</span>
+        <span className="shrink-0 text-[9px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-600" style={{ ...F_LABEL }}>PDF</span>
+        <ChevronRight size={15} className="text-gray-300 shrink-0" />
+      </a>
     </div>
   );
 }
@@ -1581,16 +1578,13 @@ function SequenceGroup({
         onClick={() => setOpen((o) => !o)}
         className={`w-full flex items-center justify-between px-4 py-3 border-l-4 ${beltAccent}`}
       >
-        <div className="text-left">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-            {group.belt === 'yellow' ? 'Yellow Belt' : 'White Belt'}
+        <div className="text-left min-w-0">
+          <p className="text-[8px]" style={{ ...F_LABEL, color: '#9CA3AF' }}>
+            {group.belt === 'yellow' ? 'Yellow Belt' : 'White Belt'} · {group.items.length} steps
           </p>
-          <p className="text-sm font-bold text-[var(--tss-navy)]">{group.name}</p>
+          <p className="text-[13px] mt-0.5 truncate" style={{ ...F_LABEL, color: '#061C2B', letterSpacing: '0.1em' }}>{group.name}</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] font-mono text-gray-400">{group.items.length} STPs</span>
-          <ChevronDown size={14} className={`text-gray-400 transition ${open ? 'rotate-180' : ''}`} />
-        </div>
+        <ChevronDown size={14} className={`text-gray-400 transition shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
         <div className="divide-y divide-gray-50">
@@ -1600,11 +1594,11 @@ function SequenceGroup({
               href={`/coach-portal/${token}/tools/${s.id}`}
               className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
             >
-              <div className="min-w-0">
-                <p className="text-[10px] font-mono text-gray-400">{s.id}</p>
-                <p className="text-sm font-medium text-gray-800 truncate">{s.title}</p>
+              <div className="min-w-0 flex items-baseline gap-2">
+                <span className="text-[10px] shrink-0" style={{ ...F_LABEL, color: '#0090B0' }}>{s.id}</span>
+                <span className="text-sm font-medium truncate" style={{ color: '#061C2B' }}>{s.title}</span>
               </div>
-              <ArrowRight size={14} className="text-gray-400 shrink-0" />
+              <ChevronRight size={14} className="text-gray-300 shrink-0" />
             </Link>
           ))}
         </div>
