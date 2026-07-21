@@ -15,6 +15,7 @@ interface Props {
   isRefresher: boolean;
   saleType?: string | null;       // full | discount | courtesy (M145 · F2)
   discountReason?: string | null;
+  listPriceCents?: number | null; // official service price (F2b)
 }
 
 // Seat-level sale (M145 · F2): paid/reserved toggle + HOW it was sold — full
@@ -26,6 +27,7 @@ export function EnrollmentPaymentControl({
   amountCents,
   saleType = null,
   discountReason = null,
+  listPriceCents = null,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -43,7 +45,10 @@ export function EnrollmentPaymentControl({
   };
 
   const saveSale = () => {
-    const amt = type === 'courtesy' ? 0 : Math.round((parseFloat(amount) || 0) * 100);
+    // Full price is the official service price when one is set.
+    const amt = type === 'courtesy' ? 0
+      : type === 'full' && listPriceCents != null ? listPriceCents
+      : Math.round((parseFloat(amount) || 0) * 100);
     startTransition(async () => {
       await updateEnrollmentPayment({
         participantId,
@@ -111,7 +116,11 @@ export function EnrollmentPaymentControl({
               <button
                 key={v}
                 type="button"
-                onClick={() => { setType(v); if (v === 'courtesy') setAmount('0'); }}
+                onClick={() => {
+                  setType(v);
+                  if (v === 'courtesy') setAmount('0');
+                  if (v === 'full' && listPriceCents != null) setAmount(String(listPriceCents / 100));
+                }}
                 className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border ${type === v ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-white text-gray-600 border-gray-200'}`}
               >
                 {l}
@@ -126,11 +135,14 @@ export function EnrollmentPaymentControl({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              disabled={type === 'courtesy'}
+              disabled={type === 'courtesy' || (type === 'full' && listPriceCents != null)}
               placeholder="Sold for…"
               className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm disabled:bg-gray-50 disabled:text-gray-400"
             />
           </div>
+          {type === 'discount' && listPriceCents != null && (
+            <p className="text-[10px] text-gray-400">List price: ${(listPriceCents / 100).toLocaleString('en-US')}</p>
+          )}
           {type !== 'full' && (
             <input
               value={reason}

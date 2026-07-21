@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import {
-  upsertCostRate, deleteCostRate, saveCoachPayRate, setTemplateCostItem,
+  upsertCostRate, deleteCostRate, saveCoachPayRate, setTemplateCostItem, setTemplateListPrice,
   DRIVER_LABEL, type CostRate, type CoachPayRate, type CostDriver, type RecipeRow,
 } from '@/lib/actions/costs';
 import { Plus, Trash2, Check } from 'lucide-react';
@@ -20,7 +20,7 @@ const $ = (cents: number) => (cents / 100).toFixed(cents % 100 === 0 ? 0 : 2);
 type Settings = {
   rates: CostRate[];
   matrix: CoachPayRate[];
-  templates: Array<{ id: string; template_name: string; level_name: string | null; service_kind: string | null; duration_days: number | null }>;
+  templates: Array<{ id: string; template_name: string; level_name: string | null; service_kind: string | null; duration_days: number | null; list_price_cents: number | null }>;
   recipes: Array<RecipeRow & { template_id: string }>;
 };
 
@@ -214,6 +214,41 @@ function AddRateForm({ pending, onAdd }: {
   );
 }
 
+// Official sale price of the service — every enrolled seat is auto-priced
+// at this value (full sale) unless the seller marks a discount/courtesy.
+function TemplatePriceRow({ template, pending, start }: {
+  template: Settings['templates'][number];
+  pending: boolean;
+  start: (fn: () => Promise<void>) => void;
+}) {
+  const [val, setVal] = useState(template.list_price_cents != null ? $(template.list_price_cents) : '');
+  const [saved, setSaved] = useState(false);
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-[var(--tss-navy)]/[.03] px-3 py-2 mb-2">
+      <div className="min-w-0">
+        <p className="text-[12px] font-semibold text-[var(--tss-navy)]">Sale price</p>
+        <p className="text-[10px] text-gray-400">Seats are auto-priced at this on enrollment (full price).</p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-gray-400 text-sm">$</span>
+        <input
+          type="number" min={0} step="1" value={val} disabled={pending}
+          onChange={(e) => { setVal(e.target.value); setSaved(false); }}
+          onBlur={() => start(async () => {
+            const cents = val.trim() === '' ? null : Math.round((parseFloat(val) || 0) * 100);
+            const res = await setTemplateListPrice(template.id, cents);
+            if (!res.ok) { alert(res.error); return; }
+            setSaved(true);
+          })}
+          placeholder="—"
+          className="w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-right font-semibold"
+        />
+        {saved && <Check size={14} className="text-emerald-600" />}
+      </div>
+    </div>
+  );
+}
+
 function RecipesSection({ rates, templates, recipes, setRecipes, pending, start }: {
   rates: CostRate[];
   templates: Settings['templates'];
@@ -240,6 +275,7 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
       </select>
       {tplId && (
         <div className="space-y-1">
+          <TemplatePriceRow key={tplId} template={templates.find((t) => t.id === tplId)!} pending={pending} start={start} />
           {!hasRecipe && (
             <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2">
               This service has no recipe yet → all active items apply. Untick any item to create its custom recipe.

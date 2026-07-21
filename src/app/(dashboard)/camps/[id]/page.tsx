@@ -183,6 +183,7 @@ export default async function CampDetailPage({ params }: Props) {
                     amountCents={p.amount_cents ?? null}
                     saleType={p.sale_type ?? null}
                     discountReason={p.discount_reason ?? null}
+                    listPriceCents={p.list_price_cents ?? null}
                     currency={p.currency ?? 'USD'}
                     isRefresher={!!p.is_refresher}
                   />

@@ -485,10 +485,14 @@ export async function createCampInstance(input: {
 
   // Add participants
   if (input.student_ids.length > 0) {
+    // Seats default to the service's official price at full sale type; the
+    // seller only edits the seat when there's a discount or courtesy.
+    const listPrice = await getTemplateListPriceCents(input.template_id);
     const participants = input.student_ids.map(sid => ({
       camp_instance_id: instance.id,
       student_id: sid,
       enrollment_status: 'active' as const,
+      ...(listPrice != null ? { amount_cents: listPrice, list_price_cents: listPrice, sale_type: 'full' } : {}),
     }));
     const { error: partErr } = await supabase.from('camp_participants').insert(participants);
     if (partErr) throw new Error(`Failed to add participants: ${partErr.message}`);
@@ -1028,6 +1032,11 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
       /* capacity lookup failed — don't block enrollment on a read error */
     }
 
+    let listPrice: number | null = null;
+    try {
+      const { data: inst } = await createAdminClient().from('camp_instances').select('template_id').eq('id', campInstanceId).maybeSingle();
+      listPrice = await getTemplateListPriceCents((inst as any)?.template_id ?? null);
+    } catch { /* price optional */ }
     const { error } = await supabase.from('camp_participants').insert({
       camp_instance_id: campInstanceId,
       student_id: studentId,
@@ -1036,6 +1045,7 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
       sold_by: me?.id ?? null,
       is_refresher: isRefresher,
       reserved_at: new Date().toISOString(),
+      ...(listPrice != null ? { amount_cents: isRefresher ? Math.round(listPrice / 2) : listPrice, list_price_cents: listPrice, sale_type: isRefresher ? 'discount' : 'full', ...(isRefresher ? { discount_reason: 'Refresher (50%)' } : {}) } : {}),
     });
     if (error) throw new Error(error.message);
   }
@@ -1043,6 +1053,17 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
   revalidatePath(`/camps/${campInstanceId}`);
   revalidatePath('/camps');
   return { success: true, isRefresher };
+}
+
+// Official list price of a service (camp_templates.list_price_cents).
+// Null pre-migration or when the template has no price set.
+async function getTemplateListPriceCents(templateId: string | null): Promise<number | null> {
+  if (!templateId) return null;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from('camp_templates').select('list_price_cents').eq('id', templateId).maybeSingle();
+    return (data as any)?.list_price_cents ?? null;
+  } catch { return null; }
 }
 
 // Update the payment state of an enrolment — reserve amount/method, or

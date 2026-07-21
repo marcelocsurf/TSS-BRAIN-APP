@@ -66,12 +66,36 @@ export async function getCostSettings() {
     recipeQ,
   ]);
 
+  // Official sale price per service (F2b) — separate query so a missing
+  // column (pre-migration 00141) degrades to "no price" instead of failing.
+  const priceMap = new Map<string, number | null>();
+  try {
+    const { data: prices } = await admin.from('camp_templates').select('id, list_price_cents');
+    for (const r of prices ?? []) priceMap.set((r as any).id, (r as any).list_price_cents ?? null);
+  } catch { /* column not there yet */ }
+
+  const templates = (((tplRes as any).data ?? []) as Array<{ id: string; template_name: string; level_name: string | null; service_kind: string | null; duration_days: number | null }>)
+    .map((t) => ({ ...t, list_price_cents: priceMap.get(t.id) ?? null }));
+
   return {
     rates: (rates ?? []) as CostRate[],
     matrix: (matrix ?? []) as CoachPayRate[],
-    templates: ((tplRes as any).data ?? []) as Array<{ id: string; template_name: string; level_name: string | null; service_kind: string | null; duration_days: number | null }>,
+    templates,
     recipes: (recipes ?? []) as Array<RecipeRow & { template_id: string }>,
   };
+}
+
+// Official sale price of a service — every enrolled seat defaults to this
+// at full price; the seller only intervenes for discounts/courtesies.
+export async function setTemplateListPrice(templateId: string, cents: number | null): Promise<{ ok: boolean; error?: string }> {
+  await assertStaff();
+  const admin = createAdminClient();
+  const { error } = await admin.from('camp_templates')
+    .update({ list_price_cents: cents == null ? null : Math.max(0, Math.round(cents)) })
+    .eq('id', templateId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/costs');
+  return { ok: true };
 }
 
 export async function upsertCostRate(input: {
