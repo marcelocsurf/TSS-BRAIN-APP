@@ -26,7 +26,7 @@ export function StudentPresentations({ token }: { token: string }) {
         <button
           key={r.id}
           type="button"
-          onClick={() => setOpen(r)}
+          onClick={() => window.open(r.file_url, '_blank', 'noopener')}
           className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 flex items-center gap-3 transition-colors hover:border-gray-300 shadow-sm"
           style={{ borderLeft: '4px solid var(--tss-cyan, #5AC3E7)' }}
         >

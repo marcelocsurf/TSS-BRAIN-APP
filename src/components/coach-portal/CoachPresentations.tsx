@@ -25,7 +25,7 @@ export function CoachPresentations({ token }: { token: string }) {
         <button
           key={r.id}
           type="button"
-          onClick={() => setOpen(r)}
+          onClick={() => window.open(r.file_url, '_blank', 'noopener')}
           className="w-full text-left rounded-2xl border border-white/10 p-4 flex items-center gap-3 transition-colors hover:border-white/25"
           style={{ background: '#0F1E33', borderLeft: '4px solid #5AC3E7' }}
         >
