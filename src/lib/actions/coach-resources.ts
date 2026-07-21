@@ -75,10 +75,17 @@ export async function createCoachResource(formData: FormData): Promise<{ ok: boo
     .upload(path, bytes, { contentType: 'application/pdf', upsert: false });
   if (upErr) return { ok: false, error: upErr.message };
 
+  const audience = ((formData.get('audience') as string | null) || 'both') as 'coaches' | 'students' | 'both';
   const { error } = await admin
     .from('coach_resources')
-    .insert({ title, description, file_url: '', storage_path: path, kind: 'pdf' });
-  if (error) return { ok: false, error: error.message };
+    .insert({ title, description, file_url: '', storage_path: path, kind: 'pdf', audience });
+  if (error) {
+    // Pre-migration fallback: audience column not there yet.
+    const { error: e2 } = await admin
+      .from('coach_resources')
+      .insert({ title, description, file_url: '', storage_path: path, kind: 'pdf' });
+    if (e2) return { ok: false, error: e2.message };
+  }
 
   revalidatePath('/presentations');
   return { ok: true };
@@ -127,15 +134,22 @@ export async function getMyStudentResources(portalToken: string): Promise<CoachR
       .maybeSingle();
     if (!student) return [];
 
-    const { data, error } = await admin
+    let { data, error } = await admin
       .from('student_resource_grants')
-      .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, active)')
+      .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, audience, active)')
       .eq('student_id', student.id);
-    if (error) return [];
+    if (error) {
+      const retry = await admin
+        .from('student_resource_grants')
+        .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, active)')
+        .eq('student_id', student.id);
+      if (retry.error) return [];
+      data = retry.data as any;
+    }
 
     const rows = (data ?? [])
       .map((r: any) => r.coach_resources)
-      .filter((r: any) => r && r.active);
+      .filter((r: any) => r && r.active && r.audience !== 'coaches');
 
     const out: CoachResource[] = [];
     for (const r of rows) {
@@ -170,6 +184,17 @@ export async function listStudentResourceGrants(studentId: string): Promise<stri
   }
 }
 
+// Audience guard (M143): who a resource may be granted to. Soft — if the
+// column doesn't exist yet, everything is allowed.
+async function resourceAudience(resourceId: string): Promise<string> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin.from('coach_resources').select('audience').eq('id', resourceId).maybeSingle();
+    if (error) return 'both';
+    return (data as any)?.audience ?? 'both';
+  } catch { return 'both'; }
+}
+
 // Admin: grant or revoke one presentation for one student.
 export async function setStudentResourceGrant(
   studentId: string,
@@ -179,6 +204,9 @@ export async function setStudentResourceGrant(
   await assertAdmin();
   const admin = createAdminClient();
   if (granted) {
+    if ((await resourceAudience(resourceId)) === 'coaches') {
+      return { ok: false, error: 'This resource is for coaches only.' };
+    }
     const { error } = await admin
       .from('student_resource_grants')
       .upsert({ student_id: studentId, resource_id: resourceId }, { onConflict: 'student_id,resource_id' });
@@ -215,6 +243,9 @@ export async function setCoachResourceGrant(
   await assertAdmin();
   const admin = createAdminClient();
   if (granted) {
+    if ((await resourceAudience(resourceId)) === 'students') {
+      return { ok: false, error: 'This resource is for students only.' };
+    }
     const { error } = await admin
       .from('coach_resource_grants')
       .upsert({ coach_id: coachId, resource_id: resourceId }, { onConflict: 'coach_id,resource_id' });
@@ -243,6 +274,7 @@ export interface LibraryItem {
   file_url: string | null;
   storage_path: string | null;
   kind: string; // pdf | video | link
+  audience: string; // coaches | students | both
   active: boolean;
   created_at: string;
   coachIds: string[];
@@ -266,8 +298,21 @@ export async function getLibraryOverview(): Promise<LibraryOverview> {
   const me = await getCurrentCoach().catch(() => null);
   const academyId = (me as any)?.academy_id ?? null;
 
-  const [{ data: resources }, { data: cGrants }, { data: sGrants }] = await Promise.all([
-    admin.from('coach_resources').select('id, title, description, file_url, storage_path, kind, active, created_at').order('created_at', { ascending: false }),
+  // audience column is new (00137) — retry without it pre-migration.
+  let resources: any[] | null = null;
+  const first = await admin
+    .from('coach_resources')
+    .select('id, title, description, file_url, storage_path, kind, audience, active, created_at')
+    .order('created_at', { ascending: false });
+  resources = first.data as any[] | null;
+  if (first.error) {
+    const retry = await admin
+      .from('coach_resources')
+      .select('id, title, description, file_url, storage_path, kind, active, created_at')
+      .order('created_at', { ascending: false });
+    resources = retry.data as any[] | null;
+  }
+  const [{ data: cGrants }, { data: sGrants }] = await Promise.all([
     admin.from('coach_resource_grants').select('coach_id, resource_id'),
     admin.from('student_resource_grants').select('student_id, resource_id'),
   ]);
@@ -302,6 +347,7 @@ export async function getLibraryOverview(): Promise<LibraryOverview> {
     }
     items.push({
       ...r,
+      audience: (r as any).audience ?? 'both',
       coachIds: cByRes.get(r.id) ?? [],
       studentIds: sByRes.get(r.id) ?? [],
       open_url: openUrl,
@@ -321,6 +367,7 @@ export async function createLinkResource(input: {
   description?: string | null;
   kind: 'video' | 'link';
   url: string;
+  audience?: 'coaches' | 'students' | 'both';
 }): Promise<{ ok: boolean; error?: string }> {
   await assertAdmin();
   const title = input.title?.trim();
@@ -330,8 +377,14 @@ export async function createLinkResource(input: {
   const admin = createAdminClient();
   const { error } = await admin
     .from('coach_resources')
-    .insert({ title, description: input.description?.trim() || null, file_url: url, storage_path: null, kind: input.kind });
-  if (error) return { ok: false, error: error.message };
+    .insert({ title, description: input.description?.trim() || null, file_url: url, storage_path: null, kind: input.kind, audience: input.audience ?? 'both' });
+  if (error) {
+    // Pre-migration fallback: audience column not there yet.
+    const { error: e2 } = await admin
+      .from('coach_resources')
+      .insert({ title, description: input.description?.trim() || null, file_url: url, storage_path: null, kind: input.kind });
+    if (e2) return { ok: false, error: e2.message };
+  }
   revalidatePath('/library');
   return { ok: true };
 }
@@ -345,6 +398,10 @@ export async function grantResourceToAll(
   const admin = createAdminClient();
   const me = await getCurrentCoach().catch(() => null);
   const academyId = (me as any)?.academy_id ?? null;
+
+  const allowed = await resourceAudience(resourceId);
+  if (audience === 'students' && allowed === 'coaches') return { ok: false, error: 'This resource is for coaches only.' };
+  if (audience === 'coaches' && allowed === 'students') return { ok: false, error: 'This resource is for students only.' };
 
   if (audience === 'coaches') {
     let q = admin.from('coaches').select('id').eq('active_status', true);

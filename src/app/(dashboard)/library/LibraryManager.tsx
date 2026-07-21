@@ -81,7 +81,7 @@ export function LibraryManager({ initial }: { initial: LibraryOverview }) {
 function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
   pending: boolean;
   onAddPdf: (fd: FormData) => void;
-  onAddLink: (input: { title: string; description?: string | null; kind: 'video' | 'link'; url: string }) => void;
+  onAddLink: (input: { title: string; description?: string | null; kind: 'video' | 'link'; url: string; audience: 'coaches' | 'students' | 'both' }) => void;
   onCancel: () => void;
 }) {
   const [mode, setMode] = useState<'pdf' | 'video' | 'link'>('pdf');
@@ -89,6 +89,7 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [audience, setAudience] = useState<'coaches' | 'students' | 'both'>('both');
 
   const submit = () => {
     if (mode === 'pdf') {
@@ -97,9 +98,10 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
       fd.set('file', file);
       fd.set('title', title);
       fd.set('description', description);
+      fd.set('audience', audience);
       onAddPdf(fd);
     } else {
-      onAddLink({ title, description, kind: mode, url });
+      onAddLink({ title, description, kind: mode, url, audience });
     }
   };
 
@@ -133,6 +135,28 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
       ) : (
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={mode === 'video' ? 'Video URL (YouTube, Vimeo, Drive…)' : 'https://…'} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
       )}
+      {/* Who is this for? Grants outside the audience are refused server-side. */}
+      <div>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Who is this for?</p>
+        <div className="flex gap-1.5">
+          {([
+            { v: 'both', label: 'Everyone' },
+            { v: 'coaches', label: 'Coaches only' },
+            { v: 'students', label: 'Students only' },
+          ] as const).map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              onClick={() => setAudience(o.v)}
+              className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+                audience === o.v ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <button
         type="button"
         disabled={pending}
@@ -165,6 +189,8 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold text-[var(--tss-navy)]">{item.title}</p>
             <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${meta.tint}14`, color: meta.tint }}>{meta.label}</span>
+            {item.audience === 'coaches' && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">Coaches only</span>}
+            {item.audience === 'students' && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-50 text-sky-600">Students only</span>}
             {!item.active && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Archived</span>}
           </div>
           {item.description && <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{item.description}</p>}
@@ -221,7 +247,8 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
       </button>
 
       {showGrants && (
-        <div className="px-4 pb-4 grid sm:grid-cols-2 gap-4 border-t border-gray-50 pt-3">
+        <div className={`px-4 pb-4 grid gap-4 border-t border-gray-50 pt-3 ${item.audience === 'both' ? 'sm:grid-cols-2' : ''}`}>
+          {item.audience !== 'students' && (
           <GrantColumn
             label="Coaches"
             people={roster.coaches}
@@ -238,6 +265,8 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
             })}
             pending={pending}
           />
+          )}
+          {item.audience !== 'coaches' && (
           <GrantColumn
             label="Students"
             people={roster.students}
@@ -254,6 +283,7 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
             })}
             pending={pending}
           />
+          )}
         </div>
       )}
     </div>
