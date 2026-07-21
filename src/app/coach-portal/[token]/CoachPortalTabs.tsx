@@ -122,7 +122,7 @@ export function CoachPortalTabs({
   return (
     <div
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
-      style={plannerOpen ? undefined : { background: (activeTab === 'home' || activeTab === 'tools') && !isSupport ? '#F7F9FA' : '#000' }}
+      style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses'].includes(activeTab) && !isSupport ? '#F7F9FA' : '#000' }}
     >
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
@@ -986,6 +986,8 @@ function CoursesTab({
     ['COACH-BB-EXIT-01', 'COACH-BB-CONDUCT-01'].includes(c.id),
   );
 
+  const doneIn = (arr: any[]) => arr.filter((c) => completedSet.has(c.id)).length;
+
   const renderCard = (c: any) => {
     const isCompleted = completedSet.has(c.id);
     const isInProgress = !isCompleted && !!progress[c.id]?.started;
@@ -1023,41 +1025,31 @@ function CoursesTab({
         type="button"
         onClick={() => !isLocked && openLesson(c.id)}
         disabled={isLocked}
-        className={`w-full text-left rounded-2xl border border-white/10 p-4 transition-all ${
-          isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/25'
+        className={`w-full text-left rounded-xl border border-gray-100 bg-white p-3.5 transition-all shadow-sm ${
+          isLocked ? 'opacity-45 cursor-not-allowed' : 'hover:border-[#00D2FF]/40'
         }`}
-        style={{ background: '#0F1E33', borderLeft: `4px solid ${accent}` }}
+        style={{ borderLeft: `3px solid ${isCompleted ? '#06D6A0' : isInProgress ? '#00D2FF' : accent}` }}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-mono text-white/40">
-              {c.id} · ~{c.estimated_minutes ?? '?'} min
-              {isLocked && ` · locked — finish ${lockedBy} first`}
-            </p>
-            <p className="text-sm font-medium text-white mt-0.5">{c.title}</p>
-          </div>
-          <div className="shrink-0 flex items-center">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1 flex items-center gap-2.5">
             {isCompleted ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/15 border border-emerald-400/30 rounded-full px-2 py-0.5">
-                <CheckCircle2 size={11} strokeWidth={2} />
-                Done
-              </span>
-            ) : isInProgress ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/15 border border-amber-400/30 rounded-full px-2 py-0.5">
-                <Clock size={11} strokeWidth={2} />
-                In progress
-              </span>
+              <CheckCircle2 size={17} strokeWidth={2} className="shrink-0" style={{ color: '#06D6A0' }} />
             ) : isLocked ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
-                <Lock size={11} strokeWidth={2} />
-                Locked
-              </span>
+              <Lock size={15} strokeWidth={2} className="shrink-0 text-gray-400" />
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
-                Not started
-              </span>
+              <span className="shrink-0 w-[15px] h-[15px] rounded-full border-2" style={{ borderColor: isInProgress ? '#00D2FF' : '#CBD5E1', background: isInProgress ? 'rgba(0,210,255,.25)' : 'transparent' }} />
             )}
+            <span className="min-w-0">
+              <span className="block text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>
+                {c.id} · ~{c.estimated_minutes ?? '?'} min
+              </span>
+              <span className="block text-[13px] font-medium truncate mt-0.5" style={{ color: '#061C2B' }}>{c.title}</span>
+              {isLocked && (
+                <span className="block text-[10px] text-gray-400 mt-0.5">Finish {lockedBy} first</span>
+              )}
+            </span>
           </div>
+          <ChevronRight size={15} className="text-gray-300 shrink-0" />
         </div>
       </button>
     );
@@ -1065,31 +1057,38 @@ function CoursesTab({
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
-          Coach Courses
+      <p className="text-[10px] px-1" style={{ ...F_LABEL, color: '#55666E' }}>Your certification path</p>
+
+      {/* Progress hero (M141) — overall count + continue-where-you-left-off. */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-5">
+        <p className="text-[9px] mb-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
+          Coach course · {coach.max_belt_permission?.replace(/_/g, ' ')}
+          {coach.certification_level ? ` · ${coach.certification_level}` : ''}
         </p>
-        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>Your certification path</h2>
-        <p className="text-[11px] text-white/50 mt-1 leading-relaxed capitalize">
-          {coach.max_belt_permission?.replace(/_/g, ' ')}
-          {coach.certification_level ? ` · ${coach.certification_level}` : ''}.
-        </p>
+        <h2 className="text-[21px]" style={{ ...F_DISPLAY, color: '#061C2B' }}>
+          {completedCount} of {courses.length} lessons
+        </h2>
         {courses.length > 0 && (
-          <div className="mt-3">
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1f344a' }}>
-              <div
-                className="h-full transition-all"
-                style={{
-                  width: `${(completedCount / courses.length) * 100}%`,
-                  background: BRAND.colors.cyan,
-                }}
-              />
-            </div>
-            <p className="text-[10px] text-white/50 mt-1 font-mono">
-              {completedCount} / {courses.length} completed
-            </p>
+          <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: 'rgba(6,28,43,.08)' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${(completedCount / courses.length) * 100}%`, background: '#00D2FF' }} />
           </div>
         )}
+        {(() => {
+          const next = courses.find((c: any) =>
+            !completedSet.has(c.id) && !((c.prerequisites ?? []) as string[]).some((pid) => !completedSet.has(pid))
+          );
+          if (!next) return null;
+          return (
+            <button
+              type="button"
+              onClick={() => openLesson(next.id)}
+              className="mt-4 w-full rounded-full py-3 text-[10px] tracking-[0.16em]"
+              style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}
+            >
+              Continue · {next.id} {String(next.title || '').slice(0, 26)}
+            </button>
+          );
+        })()}
       </div>
 
       {/* The Surf Sequence Method — first item in Courses (reference doctrine) */}
@@ -1109,42 +1108,50 @@ function CoursesTab({
             label="Tier 1 — Foundations"
             sub="The TSS method, architecture, and coaching framework."
             items={tierFoundations}
+            done={doneIn(tierFoundations)}
             render={renderCard}
           />
           <TierGroup
             label="Tier 2 — Pre-Course + Onboarding"
             sub="The gate before water + the 6 onboarding items."
             items={tierPreOnboard}
+            done={doneIn(tierPreOnboard)}
             render={renderCard}
           />
           <TierGroup
             label="Tier 3 — The 25 Steps"
             sub="One lesson per STP. Tabs: What · Deliver · Errors · Validate · Drill · Mission."
             items={tierStps}
+            done={doneIn(tierStps)}
             render={renderCard}
           />
           <TierGroup
             label="Tier 4 — Diagnostics + Evaluation"
             sub="Error taxonomy + the Exit Test evaluation protocol."
             items={tierDiagnostics}
+            done={doneIn(tierDiagnostics)}
             render={renderCard}
           />
           <TierGroup
             label="Exit Test — Component 1"
             sub="50-question theoretical exam. 80% to pass."
             items={exitTest}
+            done={doneIn(exitTest)}
             render={renderCard}
           />
           <TierGroup
             label="Tier 5 — Career"
             sub="The 5-level coach certification ladder + code of conduct."
             items={tierCareer}
+            done={doneIn(tierCareer)}
             render={renderCard}
           />
           <TierGroup
             label="Safety Canon — Certification Module"
             sub="The governing safety doctrine. Required for L1 certification · final exam 80% · annual renewal."
+            accent="#FF6B6B"
             items={tierSafety}
+            done={doneIn(tierSafety)}
             render={renderCard}
           />
           {/* ── YB Coach Course (unlocks after WB Exit Test) ── */}
@@ -1152,18 +1159,21 @@ function CoursesTab({
             label="YB Tier 1 — Foundations + Belt Value Shift"
             sub="L1 authorization scope for YB · the mental shift from humility to resilience."
             items={ybFoundations}
+            done={doneIn(ybFoundations)}
             render={renderCard}
           />
           <TierGroup
             label="YB Tier 2 — The 8 YB STPs"
             sub="Sequence 6.0 + 7.0. Each lesson: How to Teach · How to Correct · How to Validate."
             items={ybStps}
+            done={doneIn(ybStps)}
             render={renderCard}
           />
           <TierGroup
             label="YB Tier 3 — Complete Ride + Exit Test"
             sub="Coach the 11-stage integration · administer the YB Exit Test with integrity."
             items={ybIntegration}
+            done={doneIn(ybIntegration)}
             render={renderCard}
           />
 
@@ -1172,24 +1182,28 @@ function CoursesTab({
             label="BB Tier 1 — Foundations + Belt Value"
             sub="L2 authorization · the Audit/Refinement stance · frameworks · Compromiso Consciente · Foundation Sequence."
             items={bbFoundations}
+            done={doneIn(bbFoundations)}
             render={renderCard}
           />
           <TierGroup
             label="BB Tier 2 — The 6 Sequences (15 STPs)"
             sub="Seq #8–#13. Each lesson: How to Teach · How to Correct · How to Validate · Coach Cue."
             items={bbSequences}
+            done={doneIn(bbSequences)}
             render={renderCard}
           />
           <TierGroup
             label="BB Tier 3 — Concepts + Integration"
             sub="The 4 Blue Belt Concepts · coaching the complete Infinite Circle ride."
             items={bbConcepts}
+            done={doneIn(bbConcepts)}
             render={renderCard}
           />
           <TierGroup
             label="BB Tier 4 — Exit Test + Code of Conduct"
             sub="Administer the BB Exit Test (audit the self-evaluation) · 12-question quiz · code of conduct + appendices."
             items={bbExit}
+            done={doneIn(bbExit)}
             render={renderCard}
           />
 
@@ -1197,6 +1211,7 @@ function CoursesTab({
             label="Master Manual — Canon Reference"
             sub="Single source of truth. 15 reference lessons (no prerequisites)."
             items={master}
+            done={doneIn(master)}
             render={renderCard}
           />
         </>
@@ -1210,20 +1225,37 @@ function TierGroup({
   sub,
   items,
   render,
+  done = 0,
+  accent,
 }: {
   label: string;
   sub: string;
   items: any[];
   render: (c: any) => React.ReactNode;
+  done?: number;
+  accent?: string; // e.g. coral for the Safety tier
 }) {
+  // Open by default only when the tier is in progress — finished and
+  // untouched tiers stay folded so the path reads at a glance (M141).
+  const inProgress = done > 0 && done < items.length;
+  const [open, setOpen] = useState(inProgress);
   if (items.length === 0) return null;
+  const complete = done === items.length;
   return (
-    <div>
-      <p className="text-[10px] font-mono uppercase tracking-wider mb-1 px-1" style={{ color: '#5AC3E7' }}>
-        {label} ({items.length})
-      </p>
-      <p className="text-[11px] text-white/40 mb-2 px-1">{sub}</p>
-      <div className="space-y-1.5">{items.map(render)}</div>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" style={accent ? { borderTop: `3px solid ${accent}` } : undefined}>
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-2 px-4 py-3.5 text-left">
+        <span className="min-w-0">
+          <span className="block text-[11px] truncate" style={{ ...F_LABEL, color: accent ?? '#061C2B', letterSpacing: '0.12em' }}>{label}</span>
+          {open && <span className="block text-[11px] text-gray-500 mt-1 normal-case tracking-normal" style={{ fontFamily: 'inherit' }}>{sub}</span>}
+        </span>
+        <span className="shrink-0 inline-flex items-center gap-2">
+          <span className="text-[10px]" style={{ ...F_LABEL, color: complete ? '#06D6A0' : done > 0 ? '#0090B0' : '#9CA3AF' }}>
+            {complete ? '✓ ' : ''}{done}/{items.length}
+          </span>
+          <ChevronDown size={14} className={`text-gray-400 transition ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+      {open && <div className="px-3 pb-3 space-y-1.5">{items.map(render)}</div>}
     </div>
   );
 }
