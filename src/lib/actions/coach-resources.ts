@@ -230,3 +230,150 @@ export async function setCoachResourceGrant(
   revalidatePath(`/coaches/${coachId}`);
   return { ok: true };
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// ADMIN LIBRARY (M142) — one place to see every resource, add videos and
+// links alongside PDFs, and grant access to any coach or student.
+// ═══════════════════════════════════════════════════════════════════
+
+export interface LibraryItem {
+  id: string;
+  title: string;
+  description: string | null;
+  file_url: string | null;
+  storage_path: string | null;
+  kind: string; // pdf | video | link
+  active: boolean;
+  created_at: string;
+  coachIds: string[];
+  studentIds: string[];
+  /** Short-lived signed URL for stored files (else external file_url). */
+  open_url: string | null;
+}
+
+export interface LibraryOverview {
+  items: LibraryItem[];
+  coaches: { id: string; name: string }[];
+  students: { id: string; name: string }[];
+}
+
+// Everything the Library page needs in one call. Roster is scoped to the
+// acting academy (platform admin act-as included); platform admin with no
+// academy context sees everyone.
+export async function getLibraryOverview(): Promise<LibraryOverview> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const me = await getCurrentCoach().catch(() => null);
+  const academyId = (me as any)?.academy_id ?? null;
+
+  const [{ data: resources }, { data: cGrants }, { data: sGrants }] = await Promise.all([
+    admin.from('coach_resources').select('id, title, description, file_url, storage_path, kind, active, created_at').order('created_at', { ascending: false }),
+    admin.from('coach_resource_grants').select('coach_id, resource_id'),
+    admin.from('student_resource_grants').select('student_id, resource_id'),
+  ]);
+
+  let coachQ = admin.from('coaches').select('id, display_name').eq('active_status', true).order('display_name');
+  if (academyId) coachQ = coachQ.eq('academy_id', academyId);
+  let studentQ = admin.from('students').select('id, first_name, last_name').eq('status', 'active').order('first_name');
+  if (academyId) studentQ = studentQ.eq('academy_id', academyId);
+  const [{ data: coaches }, { data: students }] = await Promise.all([coachQ, studentQ]);
+
+  const cByRes = new Map<string, string[]>();
+  for (const g of cGrants ?? []) {
+    const arr = cByRes.get(g.resource_id) ?? [];
+    arr.push(g.coach_id);
+    cByRes.set(g.resource_id, arr);
+  }
+  const sByRes = new Map<string, string[]>();
+  for (const g of sGrants ?? []) {
+    const arr = sByRes.get(g.resource_id) ?? [];
+    arr.push(g.student_id);
+    sByRes.set(g.resource_id, arr);
+  }
+
+  const items: LibraryItem[] = [];
+  for (const r of resources ?? []) {
+    let openUrl: string | null = r.file_url || null;
+    if (r.storage_path) {
+      const { data: signed } = await admin.storage
+        .from('coach-presentations')
+        .createSignedUrl(r.storage_path, 60 * 60);
+      if (signed?.signedUrl) openUrl = signed.signedUrl;
+    }
+    items.push({
+      ...r,
+      coachIds: cByRes.get(r.id) ?? [],
+      studentIds: sByRes.get(r.id) ?? [],
+      open_url: openUrl,
+    });
+  }
+
+  return {
+    items,
+    coaches: (coaches ?? []).map((c: any) => ({ id: c.id, name: c.display_name })),
+    students: (students ?? []).map((s: any) => ({ id: s.id, name: `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim() })),
+  };
+}
+
+// Add a VIDEO or LINK item (external URL — no upload).
+export async function createLinkResource(input: {
+  title: string;
+  description?: string | null;
+  kind: 'video' | 'link';
+  url: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const title = input.title?.trim();
+  const url = input.url?.trim();
+  if (!title || !url) return { ok: false, error: 'Title and URL are required.' };
+  if (!/^https?:\/\//i.test(url)) return { ok: false, error: 'The URL must start with http(s)://.' };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('coach_resources')
+    .insert({ title, description: input.description?.trim() || null, file_url: url, storage_path: null, kind: input.kind });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/library');
+  return { ok: true };
+}
+
+// Bulk grant: give one resource to every coach or every student in scope.
+export async function grantResourceToAll(
+  resourceId: string,
+  audience: 'coaches' | 'students',
+): Promise<{ ok: boolean; count?: number; error?: string }> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const me = await getCurrentCoach().catch(() => null);
+  const academyId = (me as any)?.academy_id ?? null;
+
+  if (audience === 'coaches') {
+    let q = admin.from('coaches').select('id').eq('active_status', true);
+    if (academyId) q = q.eq('academy_id', academyId);
+    const { data } = await q;
+    const rows = (data ?? []).map((c: any) => ({ coach_id: c.id, resource_id: resourceId }));
+    if (rows.length === 0) return { ok: true, count: 0 };
+    const { error } = await admin.from('coach_resource_grants').upsert(rows, { onConflict: 'coach_id,resource_id' });
+    if (error) return { ok: false, error: error.message };
+    revalidatePath('/library');
+    return { ok: true, count: rows.length };
+  }
+  let q = admin.from('students').select('id').eq('status', 'active');
+  if (academyId) q = q.eq('academy_id', academyId);
+  const { data } = await q;
+  const rows = (data ?? []).map((s: any) => ({ student_id: s.id, resource_id: resourceId }));
+  if (rows.length === 0) return { ok: true, count: 0 };
+  const { error } = await admin.from('student_resource_grants').upsert(rows, { onConflict: 'student_id,resource_id' });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/library');
+  return { ok: true, count: rows.length };
+}
+
+// Archive / restore without deleting (keeps grants + history).
+export async function setResourceActive(id: string, active: boolean): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from('coach_resources').update({ active }).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/library');
+  return { ok: true };
+}

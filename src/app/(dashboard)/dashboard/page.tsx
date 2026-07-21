@@ -49,6 +49,7 @@ import {
   Ticket,
   DollarSign,
   Receipt,
+  BookOpen,
 } from 'lucide-react';
 
 export default async function DashboardHome() {
@@ -227,8 +228,9 @@ export default async function DashboardHome() {
             <Zap size={11} strokeWidth={1.75} />
             Quick actions
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
             {[
+              { href: '/library', label: 'Library', Icon: BookOpen },
               { href: '/spaces', label: 'Espacios', Icon: CalendarClock },
               { href: '/venue-scout', label: 'Venue Scout', Icon: MapPin },
               { href: '/course-codes', label: 'Course Codes', Icon: Ticket },
