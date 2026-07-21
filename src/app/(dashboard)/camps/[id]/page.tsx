@@ -181,6 +181,8 @@ export default async function CampDetailPage({ params }: Props) {
                     studentId={p.students?.id}
                     paymentStatus={p.payment_status ?? null}
                     amountCents={p.amount_cents ?? null}
+                    saleType={p.sale_type ?? null}
+                    discountReason={p.discount_reason ?? null}
                     currency={p.currency ?? 'USD'}
                     isRefresher={!!p.is_refresher}
                   />

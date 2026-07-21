@@ -135,17 +135,23 @@ export async function setTemplateCostItem(templateId: string, costRateId: string
 }
 
 // ── The engine: estimated cost of one camp instance ───────────────
-export interface CostLine { name: string; category: string | null; driver: string; unit_cents: number; qty: number; qty_label: string; total_cents: number }
+export interface CostLine { name: string; category: string | null; driver: string; unit_cents: number; qty: number; qty_label: string; total_cents: number; real_qty: number; real_qty_label: string; real_total_cents: number }
 export interface CampCostBreakdown {
   students: number; days: number; transportDays: number; assistants: number; filmers: number;
   level: string | null;
   lines: CostLine[];
   coachLine: CostLine | null;
   totalCents: number;
+  // Real delivery (F2): only CLOSED days count.
+  deliveredDays: number;
+  realTransportDays: number;
+  realTotalCents: number;
   revenueCollectedCents: number;
   revenueCommittedCents: number;
   marginCents: number;
   marginPct: number | null;
+  realMarginCents: number;
+  saleMix: { full: number; discount: number; courtesy: number; unset: number };
   matrixMissing: boolean;
 }
 
@@ -174,13 +180,17 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
 
   const sessIds = (sessions ?? []).map((s: any) => s.id);
   let transportDays = 0;
+  let deliveredDays = 0;
+  let realTransportDays = 0;
   if (sessIds.length) {
-    const { count } = await admin
-      .from('service_plans')
-      .select('*', { count: 'exact', head: true })
-      .in('camp_session_id', sessIds)
-      .eq('transport_needed', true);
-    transportDays = count ?? 0;
+    const [{ count: t }, { count: d }, { count: rt }] = await Promise.all([
+      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('transport_needed', true),
+      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('completion_state', 'closed'),
+      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('transport_needed', true).eq('completion_state', 'closed'),
+    ]);
+    transportDays = t ?? 0;
+    deliveredDays = d ?? 0;
+    realTransportDays = rt ?? 0;
   }
 
   const activeParts = (camp.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
@@ -199,15 +209,22 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
     return row ? row.enabled : false;
   });
 
-  const qtyFor = (driver: string): { qty: number; label: string } => {
+  // qty for a driver — estimated (all days, planned transport) or real
+  // (closed days only; one-off items accrue once delivery started).
+  const qtyFor = (driver: string, real: boolean): { qty: number; label: string } => {
+    const d = real ? deliveredDays : days;
+    const started = real ? deliveredDays > 0 : true;
     switch (driver) {
-      case 'per_student_flat': return { qty: students, label: `${students} student${students === 1 ? '' : 's'}` };
-      case 'per_student_per_day': return { qty: students * days, label: `${students} × ${days}d` };
-      case 'per_group_flat': return { qty: 1, label: 'once' };
-      case 'per_group_per_day': return { qty: days, label: `${days}d` };
-      case 'transport_per_day': return { qty: transportDays, label: `${transportDays} transport day${transportDays === 1 ? '' : 's'}` };
-      case 'per_assistant_per_day': return { qty: assistants * days, label: `${assistants} × ${days}d` };
-      case 'per_filmer_per_day': return { qty: filmers * days, label: `${filmers} × ${days}d` };
+      case 'per_student_flat': return { qty: started ? students : 0, label: `${students} student${students === 1 ? '' : 's'}` };
+      case 'per_student_per_day': return { qty: students * d, label: `${students} × ${d}d` };
+      case 'per_group_flat': return { qty: started ? 1 : 0, label: 'once' };
+      case 'per_group_per_day': return { qty: d, label: `${d}d` };
+      case 'transport_per_day': {
+        const td = real ? realTransportDays : transportDays;
+        return { qty: td, label: `${td} transport day${td === 1 ? '' : 's'}` };
+      }
+      case 'per_assistant_per_day': return { qty: assistants * d, label: `${assistants} × ${d}d` };
+      case 'per_filmer_per_day': return { qty: filmers * d, label: `${filmers} × ${d}d` };
       default: return { qty: 0, label: '—' };
     }
   };
@@ -215,8 +232,13 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
   const lines: CostLine[] = rates.map((r) => {
     const override = recipeMap.get(r.id)?.override_cents ?? null;
     const unit = override ?? r.amount_cents;
-    const { qty, label } = qtyFor(r.driver);
-    return { name: r.name, category: r.category, driver: r.driver, unit_cents: unit, qty, qty_label: label, total_cents: unit * qty };
+    const { qty, label } = qtyFor(r.driver, false);
+    const rq = qtyFor(r.driver, true);
+    return {
+      name: r.name, category: r.category, driver: r.driver, unit_cents: unit,
+      qty, qty_label: label, total_cents: unit * qty,
+      real_qty: rq.qty, real_qty_label: rq.label, real_total_cents: unit * rq.qty,
+    };
   }).filter((l) => l.total_cents > 0);
 
   // Coach pay from the matrix — per enrolled student count, per day.
@@ -232,6 +254,8 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
         category: 'coaching', driver: 'coach_matrix',
         unit_cents: hit.per_day_cents, qty: days, qty_label: `${days}d`,
         total_cents: hit.per_day_cents * days,
+        real_qty: deliveredDays, real_qty_label: `${deliveredDays}d`,
+        real_total_cents: hit.per_day_cents * deliveredDays,
       };
     } else {
       matrixMissing = true;
@@ -239,11 +263,18 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
   }
 
   const totalCents = lines.reduce((n, l) => n + l.total_cents, 0) + (coachLine?.total_cents ?? 0);
+  const realTotalCents = lines.reduce((n, l) => n + l.real_total_cents, 0) + (coachLine?.real_total_cents ?? 0);
   let collected = 0, committed = 0;
+  const saleMix = { full: 0, discount: 0, courtesy: 0, unset: 0 };
   for (const p of activeParts) {
     const amt = p.amount_cents ?? 0;
     committed += amt;
     if (p.payment_status === 'paid') collected += amt;
+    const st = (p as any).sale_type as string | null;
+    if (st === 'full') saleMix.full++;
+    else if (st === 'discount') saleMix.discount++;
+    else if (st === 'courtesy') saleMix.courtesy++;
+    else saleMix.unset++;
   }
   const marginCents = committed - totalCents;
 
@@ -251,10 +282,13 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
     students, days, transportDays, assistants, filmers, level,
     lines: [...(coachLine ? [coachLine] : []), ...lines],
     coachLine, totalCents,
+    deliveredDays, realTransportDays, realTotalCents,
     revenueCollectedCents: collected,
     revenueCommittedCents: committed,
     marginCents,
     marginPct: committed > 0 ? Math.round((marginCents / committed) * 100) : null,
+    realMarginCents: committed - realTotalCents,
+    saleMix,
     matrixMissing,
   };
 }

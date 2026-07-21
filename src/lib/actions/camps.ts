@@ -1054,6 +1054,9 @@ export async function updateEnrollmentPayment(input: {
   amount_cents?: number | null;
   payment_method?: string | null;
   is_refresher?: boolean;
+  sale_type?: 'full' | 'discount' | 'courtesy' | null;
+  list_price_cents?: number | null;
+  discount_reason?: string | null;
 }) {
   const admin = createAdminClient();
   const me = await getCurrentCoach();
@@ -1068,6 +1071,9 @@ export async function updateEnrollmentPayment(input: {
   if (input.amount_cents !== undefined) updates.amount_cents = input.amount_cents;
   if (input.payment_method !== undefined) updates.payment_method = input.payment_method;
   if (input.is_refresher !== undefined) updates.is_refresher = input.is_refresher;
+  if (input.sale_type !== undefined) updates.sale_type = input.sale_type;
+  if (input.list_price_cents !== undefined) updates.list_price_cents = input.list_price_cents;
+  if (input.discount_reason !== undefined) updates.discount_reason = input.discount_reason;
 
   const { data: row, error } = await admin
     .from('camp_participants')
