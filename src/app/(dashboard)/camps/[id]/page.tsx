@@ -1,3 +1,4 @@
+import { CampCostPanel } from '@/components/camps/CampCostPanel';
 import { getCampDetail, getCampEvaluations, getScheduledEvaluations } from '@/lib/actions/camps';
 import { getCampPlanForRead } from '@/lib/actions/service-planner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
@@ -221,6 +222,9 @@ export default async function CampDetailPage({ params }: Props) {
           templateMeta={planForRead.templateMeta}
         />
       )}
+
+      {/* Cost & margin — estimated from real drivers (M145) */}
+      <CampCostPanel campInstanceId={id} />
 
       {/* Final Evaluations CTA */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">

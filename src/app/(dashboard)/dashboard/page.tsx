@@ -231,6 +231,7 @@ export default async function DashboardHome() {
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
             {[
               { href: '/library', label: 'Library', Icon: BookOpen },
+              { href: '/costs', label: 'Costs', Icon: DollarSign },
               { href: '/spaces', label: 'Espacios', Icon: CalendarClock },
               { href: '/venue-scout', label: 'Venue Scout', Icon: MapPin },
               { href: '/course-codes', label: 'Course Codes', Icon: Ticket },
