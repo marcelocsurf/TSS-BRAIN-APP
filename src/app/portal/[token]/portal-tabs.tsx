@@ -845,18 +845,18 @@ function HomeTab({
       </details>
 
       {/* Feedback — collapsible at the bottom (moved out of the nav) */}
-      <details className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
+      <details className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm">
         <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-            <MessageCircle size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-            Feedback
+          <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#061C2B' }}>
+            <MessageCircle size={15} strokeWidth={1.75} style={{ color: '#0090B0' }} />
+            My Feedback
             {data.pendingSurveys.length > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">{data.pendingSurveys.length}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/10 text-[#FF6B6B] font-bold">{data.pendingSurveys.length}</span>
             )}
           </span>
-          <ChevronDown size={16} className="text-white/40" />
+          <ChevronDown size={16} className="text-gray-300" />
         </summary>
-        <div className="px-3 pb-3 pt-1 border-t border-white/5">
+        <div className="px-3 pb-3 pt-1 border-t border-gray-100">
           <FeedbackTab data={data} />
         </div>
       </details>

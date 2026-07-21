@@ -79,11 +79,11 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
   }
 
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4" style={{ borderLeft: '4px solid #00D2FF' }}>
       <div className="flex items-start gap-2.5 mb-3">
-        <CalendarClock size={18} className="text-amber-600 shrink-0 mt-0.5" />
+        <CalendarClock size={18} className="shrink-0 mt-0.5" style={{ color: '#0090B0' }} />
         <div className="min-w-0">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700">
+          <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#0090B0]">
             New service — please confirm
           </p>
           <p className="text-sm font-bold text-[var(--tss-navy)] truncate">{assignment.camp_name}</p>
@@ -101,14 +101,14 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             onChange={(e) => setNote(e.target.value)}
             placeholder="Reason (optional) — e.g. I'm not available that week"
             rows={2}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-300"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#00D2FF]/50"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => respond('rejected')}
               disabled={pending}
-              className="flex-1 py-2.5 bg-rose-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              className="flex-1 py-2.5 text-white rounded-full text-sm font-bold disabled:opacity-50" style={{ background: '#FF6B6B' }}
             >
               {pending ? 'Sending…' : 'Confirm decline'}
             </button>
@@ -127,7 +127,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             type="button"
             onClick={() => respond('accepted')}
             disabled={pending}
-            className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-full text-sm font-bold inline-flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ background: '#00D2FF', color: '#061C2B' }}
           >
             <Check size={16} /> {pending ? 'Sending…' : 'Accept'}
           </button>
@@ -135,7 +135,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             type="button"
             onClick={() => setMode('rejecting')}
             disabled={pending}
-            className="flex-1 py-2.5 border border-rose-300 text-rose-700 rounded-lg text-sm font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-full text-sm font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-gray-50 disabled:opacity-50"
           >
             <X size={16} /> Decline
           </button>

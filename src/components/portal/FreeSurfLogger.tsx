@@ -4,7 +4,18 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { BRAND } from '@/lib/constants/brand';
 import { logFreeSurf } from '@/lib/actions/portal';
-import { Waves, Clock, ThumbsUp } from 'lucide-react';
+import { Clock, ThumbsUp } from 'lucide-react';
+
+// Surfboard glyph — compass geometry (two symmetric arcs + stringer), matching
+// the TSS icon language.
+function SurfboardIcon({ size = 22, color = '#061C2B' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 2 A14 14 0 0 1 12 22 A14 14 0 0 1 12 2 Z" />
+      <path d="M12 5 V19" />
+    </svg>
+  );
+}
 
 // Free Surf quick-logger — for days the student surfed without a mission.
 // All logged time counts toward "Free Surfing" in the bitácora.
@@ -23,15 +34,25 @@ export function FreeSurfLogger({ token }: { token: string }) {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="w-full py-3 rounded-2xl text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2 hover:brightness-110 transition-all"
-        style={{ background: BRAND.colors.navy }}
-      >
-        <Waves size={16} strokeWidth={1.75} />
-        Registrar Free Surf
-      </button>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,210,255,.12)' }}>
+          <SurfboardIcon />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] font-extrabold uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), var(--font-heading), sans-serif', fontStretch: '125%', color: '#061C2B' }}>
+            Log free surf
+          </p>
+          <p className="text-[11px] text-gray-500 leading-snug">Your free surfing counts toward your water hours.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="shrink-0 rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em]"
+          style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-plex), DM Mono, monospace' }}
+        >
+          Log it
+        </button>
+      </div>
     );
   }
 
@@ -48,7 +69,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
     <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--tss-navy)]">
-          <Waves size={15} strokeWidth={1.75} />
+          <SurfboardIcon size={15} />
           Log Free Surf
         </h3>
         <button
@@ -72,9 +93,9 @@ export function FreeSurfLogger({ token }: { token: string }) {
               type="button"
               onClick={() => setMinutes(m)}
               className={`py-2 rounded-lg text-xs font-medium border ${
-                minutes === m ? 'border-transparent text-white' : 'border-gray-200 text-gray-600'
+                minutes === m ? 'border-transparent font-bold' : 'border-gray-200 text-gray-600'
               }`}
-              style={minutes === m ? { background: BRAND.colors.navy } : {}}
+              style={minutes === m ? { background: '#00D2FF', color: '#061C2B' } : {}}
             >
               {m >= 60 ? `${m / 60}h` : `${m}m`}
             </button>
