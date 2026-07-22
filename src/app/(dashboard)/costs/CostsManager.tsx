@@ -305,11 +305,11 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
                         ]);
                         return;
                       }
-                      const res = await setTemplateCostItem(tplId, r.id, on, row?.override_cents ?? null);
+                      const res = await setTemplateCostItem(tplId, r.id, on, row?.override_cents ?? null, row?.qty ?? null);
                       if (!res.ok) { alert(res.error); return; }
                       setRecipes((prev) => [
                         ...prev.filter((x) => !(x.template_id === tplId && x.cost_rate_id === r.id)),
-                        { template_id: tplId, cost_rate_id: r.id, enabled: on, override_cents: row?.override_cents ?? null },
+                        { template_id: tplId, cost_rate_id: r.id, enabled: on, override_cents: row?.override_cents ?? null, qty: row?.qty ?? 1 },
                       ]);
                     });
                   }}
@@ -319,6 +319,40 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
                   <span className="block text-[13px] font-medium text-[var(--tss-navy)] truncate">{r.name}</span>
                   <span className="block text-[10px] text-gray-400">{DRIVER_LABEL[r.driver]}</span>
                 </span>
+                {enabled && (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] text-gray-400" onClick={(e) => e.preventDefault()}>
+                    qty
+                    <input
+                      type="number" min={0} step="1" defaultValue={Number(row?.qty ?? 1)} disabled={pending}
+                      onClick={(e) => e.preventDefault()}
+                      onBlur={(e) => {
+                        const q = Math.max(0, parseFloat(e.target.value) || 1);
+                        if (q === Number(row?.qty ?? 1)) return;
+                        start(async () => {
+                          // Editing qty on a recipe-less template materializes the
+                          // full recipe first (same as the first untick).
+                          if (!hasRecipe) {
+                            for (const other of rates.filter((x) => x.active)) {
+                              await setTemplateCostItem(tplId, other.id, true, null, other.id === r.id ? q : null);
+                            }
+                            setRecipes((prev) => [
+                              ...prev.filter((x) => x.template_id !== tplId),
+                              ...rates.filter((x) => x.active).map((x) => ({ template_id: tplId, cost_rate_id: x.id, enabled: true, override_cents: null, qty: x.id === r.id ? q : 1 })),
+                            ]);
+                            return;
+                          }
+                          const res = await setTemplateCostItem(tplId, r.id, true, row?.override_cents ?? null, q);
+                          if (!res.ok) { alert(res.error); return; }
+                          setRecipes((prev) => [
+                            ...prev.filter((x) => !(x.template_id === tplId && x.cost_rate_id === r.id)),
+                            { template_id: tplId, cost_rate_id: r.id, enabled: true, override_cents: row?.override_cents ?? null, qty: q },
+                          ]);
+                        });
+                      }}
+                      className="w-12 px-1 py-0.5 border border-gray-200 rounded text-[12px] text-center font-semibold text-[var(--tss-navy)]"
+                    />
+                  </span>
+                )}
                 <span className="text-sm font-semibold text-gray-600 shrink-0">${$(row?.override_cents ?? r.amount_cents)}</span>
               </label>
             );

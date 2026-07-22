@@ -30,7 +30,7 @@ export interface CostRate {
   notes: string | null;
 }
 export interface CoachPayRate { level_name: string; group_size: number; per_day_cents: number }
-export interface RecipeRow { cost_rate_id: string; enabled: boolean; override_cents: number | null }
+export interface RecipeRow { cost_rate_id: string; enabled: boolean; override_cents: number | null; qty?: number | null }
 export interface CostLine { name: string; category: string | null; driver: string; unit_cents: number; qty: number; qty_label: string; total_cents: number; real_qty: number; real_qty_label: string; real_total_cents: number }
 export interface CampCostBreakdown {
   students: number; days: number; transportDays: number; assistants: number; filmers: number;

@@ -27,7 +27,7 @@ export async function getCostSettings() {
   const matrixQ = admin.from('coach_pay_rates').select('level_name, group_size, per_day_cents').order('level_name').order('group_size');
   const tplQ = admin.from('camp_templates').select('id, template_name, level_name, service_kind, duration_days').eq('active', true).order('template_name')
     .then((r: any) => (r.error ? admin.from('camp_templates').select('id, template_name, level_name, service_kind, duration_days').order('template_name') : r));
-  const recipeQ = admin.from('template_cost_items').select('template_id, cost_rate_id, enabled, override_cents');
+  const recipeQ = admin.from('template_cost_items').select('*');
 
   const [{ data: rates }, { data: matrix }, tplRes, { data: recipes }] = await Promise.all([
     academyId ? rateQ.eq('academy_id', academyId) : rateQ,
@@ -117,11 +117,14 @@ export async function saveCoachPayRate(level_name: string, group_size: number, p
   return { ok: true };
 }
 
-export async function setTemplateCostItem(templateId: string, costRateId: string, enabled: boolean, overrideCents?: number | null): Promise<{ ok: boolean; error?: string }> {
+export async function setTemplateCostItem(templateId: string, costRateId: string, enabled: boolean, overrideCents?: number | null, qty?: number | null): Promise<{ ok: boolean; error?: string }> {
   await assertStaff();
   const admin = createAdminClient();
   const { error } = await admin.from('template_cost_items').upsert(
-    { template_id: templateId, cost_rate_id: costRateId, enabled, override_cents: overrideCents ?? null },
+    {
+      template_id: templateId, cost_rate_id: costRateId, enabled, override_cents: overrideCents ?? null,
+      ...(qty != null ? { qty: Math.max(0, qty) } : {}),
+    },
     { onConflict: 'template_id,cost_rate_id' },
   );
   if (error) return { ok: false, error: error.message };
@@ -148,7 +151,7 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
     admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId),
     admin.from('service_staff').select('role, status').eq('camp_instance_id', campInstanceId).eq('status', 'accepted'),
     admin.from('cost_rates').select('*').eq('active', true).then((r: any) => r),
-    admin.from('template_cost_items').select('cost_rate_id, enabled, override_cents').eq('template_id', camp.template_id ?? ''),
+    admin.from('template_cost_items').select('*').eq('template_id', camp.template_id ?? ''),
     admin.from('coach_pay_rates').select('level_name, group_size, per_day_cents'),
   ]);
   if ((ratesRes as any).error) return null; // pre-migration
@@ -175,7 +178,7 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
   const filmers = (staff ?? []).filter((s: any) => /photo|film/i.test(s.role ?? '')).length;
 
   // Recipe: explicit rows win; a template with NO rows uses every active rate.
-  const recipeRows = ((recipeRes as any).data ?? []) as Array<{ cost_rate_id: string; enabled: boolean; override_cents: number | null }>;
+  const recipeRows = ((recipeRes as any).data ?? []) as Array<{ cost_rate_id: string; enabled: boolean; override_cents: number | null; qty?: number | null }>;
   const hasRecipe = recipeRows.length > 0;
   const recipeMap = new Map(recipeRows.map((r) => [r.cost_rate_id, r]));
   const rates = (((ratesRes as any).data ?? []) as CostRate[]).filter((r) => {
@@ -205,14 +208,16 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
   };
 
   const lines: CostLine[] = rates.map((r) => {
-    const override = recipeMap.get(r.id)?.override_cents ?? null;
-    const unit = override ?? r.amount_cents;
+    const rec = recipeMap.get(r.id);
+    const unit = rec?.override_cents ?? r.amount_cents;
+    // Per-service quantity (e.g. 2 massages per camp) — multiplies the driver.
+    const perSvc = Number(rec?.qty ?? 1);
     const { qty, label } = qtyFor(r.driver, false);
     const rq = qtyFor(r.driver, true);
     return {
       name: r.name, category: r.category, driver: r.driver, unit_cents: unit,
-      qty, qty_label: label, total_cents: unit * qty,
-      real_qty: rq.qty, real_qty_label: rq.label, real_total_cents: unit * rq.qty,
+      qty: qty * perSvc, qty_label: perSvc !== 1 ? `${label} × ${perSvc}` : label, total_cents: Math.round(unit * qty * perSvc),
+      real_qty: rq.qty * perSvc, real_qty_label: perSvc !== 1 ? `${rq.label} × ${perSvc}` : rq.label, real_total_cents: Math.round(unit * rq.qty * perSvc),
     };
   }).filter((l) => l.total_cents > 0);
 
