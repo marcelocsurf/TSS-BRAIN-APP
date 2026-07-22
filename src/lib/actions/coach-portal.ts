@@ -227,7 +227,9 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     white: 1, yellow: 2, blue: 3, purple: 4, brown: 5, black: 6,
   };
   const myBeltShort = (coach.max_belt_permission || '').replace('_belt', '');
-  const myRank = beltRank[myBeltShort] ?? 6;
+  // Unset belt permission defaults to the MOST restrictive (white only) —
+  // content is earned per level, never granted by omission.
+  const myRank = beltRank[myBeltShort] ?? 1;
   const availableDrills = (drillsResult.data ?? []).filter((d: any) => {
     const r = beltRank[d.belt] ?? 1;
     return r <= myRank;
