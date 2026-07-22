@@ -467,7 +467,19 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     academyServices,
     academySchedule,
     todayLogistics,
-    coachCourses: coachCoursesResult.data ?? [],
+    // Belt-gated courses: a coach only sees the belt courses up to their
+    // max_belt_permission (same ladder used for drills). Non-belt coach
+    // courses (Method, Foundations Tier 1, Career, Safety Canon, …) are
+    // universal — any course_section not in the belt map shows to everyone.
+    coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => {
+      const sectionBelt: Record<string, string> = {
+        coach_wb: 'white', coach_wb_master: 'white', coach_yb: 'yellow',
+        coach_bb: 'blue', coach_pb: 'purple', coach_brb: 'brown', coach_blb: 'black',
+      };
+      const belt = sectionBelt[l.course_section];
+      if (!belt) return true; // universal course
+      return (beltRank[belt] ?? 1) <= myRank;
+    }),
     courseProgress,
     availableDrills,
     stps: await listCoachStps(token),
