@@ -45,7 +45,7 @@ export default async function ManagerPortalPage({ params }: { params: Promise<{ 
 
   return (
     <div className={`min-h-screen pb-16 ${archivo.variable} ${plexMono.variable}`} style={{ background: '#F7F9FA' }}>
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+      <div className="max-w-lg lg:max-w-5xl mx-auto px-4 pt-4 lg:pt-8 space-y-4">
 
         {/* ── Ink hero ── */}
         <div className="rounded-3xl overflow-hidden" style={{ background: '#061C2B' }}>
@@ -71,6 +71,8 @@ export default async function ManagerPortalPage({ params }: { params: Promise<{ 
         {/* ── Sales / occupancy with period tabs ── */}
         <SalesPanel periods={data.periods} targetCents={data.monthlyTargetCents} />
 
+        <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+        <div className="space-y-4">
         {/* ── Programmed calendar (next 14 days) ── */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
           <p className="text-[9px] mb-2.5 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
@@ -132,6 +134,8 @@ export default async function ManagerPortalPage({ params }: { params: Promise<{ 
           )}
         </div>
 
+        </div>
+        <div className="space-y-4">
         {/* ── Inventory alerts ── */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
           <p className="text-[9px] mb-2.5 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
@@ -179,6 +183,9 @@ export default async function ManagerPortalPage({ params }: { params: Promise<{ 
               ))}
             </div>
           )}
+        </div>
+
+        </div>
         </div>
 
         <p className="text-center text-[9px] text-gray-400 pt-2" style={{ ...F_LABEL }}>

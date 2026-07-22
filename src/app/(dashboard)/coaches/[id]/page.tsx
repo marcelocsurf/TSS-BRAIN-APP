@@ -206,12 +206,12 @@ export default async function CoachProfilePage({ params }: Props) {
             </Link>
             {coach.portal_token && (
               <Link
-                href={`/coach-portal/${coach.portal_token}`}
+                href={coach.portal_category === 'manager' ? `/manager-portal/${coach.portal_token}` : `/coach-portal/${coach.portal_token}`}
                 target="_blank"
                 className="px-3 py-2 bg-gray-50 text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-gray-100 inline-flex items-center gap-1"
-                title="Open this coach's personal portal in a new tab"
+                title="Open this person's personal portal in a new tab"
               >
-                Open Coach Portal
+                {coach.portal_category === 'manager' ? 'Open Manager Portal' : 'Open Coach Portal'}
                 <ExternalLink size={11} strokeWidth={1.75} />
               </Link>
             )}
@@ -223,13 +223,15 @@ export default async function CoachProfilePage({ params }: Props) {
         {coach.portal_token && (
           <div className="mt-3 pt-3 border-t border-gray-50">
             <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-              Coach Portal Link
+              {coach.portal_category === 'manager' ? 'Manager Portal Link' : 'Coach Portal Link'}
             </p>
             <code className="text-[10px] text-gray-600 break-all block bg-gray-50 px-2 py-1.5 rounded">
-              /coach-portal/{coach.portal_token}
+              {coach.portal_category === 'manager' ? '/manager-portal/' : '/coach-portal/'}{coach.portal_token}
             </code>
             <p className="text-[9px] text-gray-400 italic mt-1">
-              Share with the coach so they can access their personal portal (courses + tools + their stats).
+              {coach.portal_category === 'manager'
+                ? 'Share with the manager — read-only academy overview (sales, services, incidents, inventory).'
+                : 'Share with the coach so they can access their personal portal (courses + tools + their stats).'}
             </p>
           </div>
         )}

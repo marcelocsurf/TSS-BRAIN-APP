@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { getCoachPortalData } from '@/lib/actions/coach-portal';
 import { CoachPortalTabs } from './CoachPortalTabs';
@@ -24,6 +24,17 @@ interface Props {
 export default async function CoachPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
   const { tab } = await searchParams;
+
+  // Managers have their own read-only portal — send them there even if they
+  // were given (or bookmarked) the coach-portal form of their link.
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { data: who } = await createAdminClient()
+      .from('coaches').select('portal_category').eq('portal_token', token).maybeSingle();
+    if ((who as any)?.portal_category === 'manager') redirect(`/manager-portal/${token}`);
+  } catch (e) {
+    if ((e as any)?.digest?.startsWith?.('NEXT_REDIRECT')) throw e;
+  }
 
   const data = await getCoachPortalData(token);
   if (!data) {
