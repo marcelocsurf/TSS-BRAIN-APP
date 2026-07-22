@@ -1082,6 +1082,21 @@ export async function updateEnrollmentPayment(input: {
   const admin = createAdminClient();
   const me = await getCurrentCoach();
 
+  // Waiver gate for 'class' services (yoga, skate, ice bath, jiujitsu…):
+  // a seat can't be marked PAID until the student signed the waiver.
+  if (input.payment_status === 'paid') {
+    const { data: seat } = await admin
+      .from('camp_participants')
+      .select('students(waiver_signed, first_name, last_name), camp_instances:camp_instance_id(camp_templates:template_id(service_kind))')
+      .eq('id', input.participantId)
+      .maybeSingle();
+    const kind = (seat as any)?.camp_instances?.camp_templates?.service_kind;
+    const st = (seat as any)?.students;
+    if (kind === 'class' && st && !st.waiver_signed) {
+      throw new Error(`${st.first_name ?? 'This student'} has not signed the waiver — send their intake link before marking this class as paid.`);
+    }
+  }
+
   const updates: Record<string, unknown> = {};
   if (input.payment_status) {
     updates.payment_status = input.payment_status;
