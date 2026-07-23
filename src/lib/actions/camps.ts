@@ -1096,7 +1096,12 @@ export async function updateEnrollmentPayment(input: {
     const kind = (seat as any)?.camp_instances?.camp_templates?.service_kind;
     const st = (seat as any)?.students;
     if (kind === 'class' && st && !st.waiver_signed) {
-      throw new Error(`${st.first_name ?? 'This student'} has not signed the waiver — send their intake link before marking this class as paid.`);
+      // Returned (not thrown): thrown server-action errors are masked in
+      // production, so the coordinator would only see a generic digest.
+      return {
+        success: false,
+        error: `${st.first_name ?? 'This student'} has not signed the waiver — send their intake link before marking this class as paid.`,
+      };
     }
   }
 

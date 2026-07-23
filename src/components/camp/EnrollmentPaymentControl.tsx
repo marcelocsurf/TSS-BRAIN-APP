@@ -51,7 +51,8 @@ export function EnrollmentPaymentControl({
   const markPaid = (method: string) => {
     startTransition(async () => {
       try {
-        await updateEnrollmentPayment({ participantId, payment_status: 'paid', payment_method: method });
+        const r: any = await updateEnrollmentPayment({ participantId, payment_status: 'paid', payment_method: method });
+        if (r && r.success === false) { alert(r.error); return; }
         setPayOpen(false);
         router.refresh();
       } catch (e: any) {
@@ -61,12 +62,13 @@ export function EnrollmentPaymentControl({
   };
 
   const saveSale = () => {
+    // (courtesy path can also hit the waiver gate — handled below)
     // Full price is the official service price when one is set.
     const amt = type === 'courtesy' ? 0
       : type === 'full' && listPriceCents != null ? listPriceCents
       : Math.round((parseFloat(amount) || 0) * 100);
     startTransition(async () => {
-      await updateEnrollmentPayment({
+      const r: any = await updateEnrollmentPayment({
         participantId,
         amount_cents: amt,
         sale_type: type as any,
@@ -74,6 +76,7 @@ export function EnrollmentPaymentControl({
         // A courtesy seat is settled by definition.
         ...(type === 'courtesy' ? { payment_status: 'paid' as const } : {}),
       });
+      if (r && r.success === false) { alert(r.error); return; }
       setOpen(false);
       router.refresh();
     });
