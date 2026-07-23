@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import Link from 'next/link';
-import { AlertTriangle, CalendarCheck2, Waves } from 'lucide-react';
+import { AlertTriangle, CalendarCheck2, Waves, UserX } from 'lucide-react';
+import { getCoordinatorDashboardData } from '@/lib/actions/dashboard';
 
 // OPERATIONS BOARD (M148) — the coordinator's control center. Everything is
 // derived from signals the system already records: service_plans.created_at
@@ -127,8 +128,19 @@ const Bar = ({ on }: { on: boolean }) => <span className="h-[3px] flex-1 rounded
 export async function OperationsBoard({ academyId }: { academyId: string }) {
   let data;
   try { data = await getOps(academyId); } catch { return null; }
+  // Student-level alerts (waiver / intake / inactive) — merged into the same
+  // Needs-attention card so there is ONE exceptions list on the page.
+  let studentAlerts: { label: string; count: number; href: string; sev: 'red' | 'amber' }[] = [];
+  try {
+    const cd = await getCoordinatorDashboardData();
+    if (cd) {
+      if (cd.noWaiver.length > 0) studentAlerts.push({ label: 'Missing waiver', count: cd.noWaiver.length, href: '/students?filter=no_waiver', sev: 'red' });
+      if (cd.pendingIntake.length > 0) studentAlerts.push({ label: 'Pending intake', count: cd.pendingIntake.length, href: '/students?filter=no_intake', sev: 'amber' });
+      if ((cd.stuckStudentsCount ?? cd.stuckStudents.length) > 0) studentAlerts.push({ label: 'No session in 30+ days', count: cd.stuckStudentsCount ?? cd.stuckStudents.length, href: '/students', sev: 'amber' });
+    }
+  } catch { /* alerts are additive */ }
   const { rows, today } = data;
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && studentAlerts.length === 0) return null;
 
   const todayRows = rows.filter((r) => r.date === today);
   const fmtD = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -195,20 +207,37 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
           <p className="text-[9px] mb-1 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
             <AlertTriangle size={12} /> Needs attention
           </p>
-          {attention.length === 0 ? (
+          {attention.length === 0 && studentAlerts.length === 0 ? (
             <p className="text-sm text-gray-400 mt-3">All clear — every service is following the process. 🤙</p>
           ) : (
-            <div className="divide-y divide-gray-50">
-              {attention.slice(0, 4).map((a, i) => (
-                <Link key={i} href={a.href} className="block py-2 hover:bg-gray-50 rounded-lg px-1 -mx-1">
-                  <p className="text-[13px] font-bold text-[var(--tss-navy)]">
-                    {a.title}{' '}
-                    <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 align-middle ${a.sev === 'red' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{a.chip}</span>
-                  </p>
-                  <p className="text-[11px] text-gray-400">{a.detail}</p>
-                </Link>
-              ))}
-            </div>
+            <>
+              {attention.length > 0 && (
+                <div className="divide-y divide-gray-50">
+                  {attention.slice(0, 4).map((a, i) => (
+                    <Link key={i} href={a.href} className="block py-2 hover:bg-gray-50 rounded-lg px-1 -mx-1">
+                      <p className="text-[13px] font-bold text-[var(--tss-navy)]">
+                        {a.title}{' '}
+                        <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 align-middle ${a.sev === 'red' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{a.chip}</span>
+                      </p>
+                      <p className="text-[11px] text-gray-400">{a.detail}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              {studentAlerts.length > 0 && (
+                <div className={attention.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
+                  <p className="text-[8px] text-gray-400 mb-1 inline-flex items-center gap-1" style={F_LABEL}><UserX size={10} /> Students</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {studentAlerts.map((a) => (
+                      <Link key={a.label} href={a.href}
+                        className={`text-[11px] font-semibold rounded-full px-2.5 py-1 border ${a.sev === 'red' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                        {a.count} · {a.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

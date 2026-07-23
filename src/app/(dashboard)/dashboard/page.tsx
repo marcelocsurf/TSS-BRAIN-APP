@@ -201,7 +201,9 @@ export default async function DashboardHome() {
 
       <NotificationsPanel notifications={notifications} />
 
-      {/* Quick-access reference cards — side by side to use the width neatly */}
+      {/* Quick-access reference cards — for coordinator these moved to the
+          Tools & reference band at the bottom (M148). */}
+      {role !== 'coordinator' && (
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <a
           href="/docs/sistema-resolver-problemas.pdf"
@@ -220,6 +222,7 @@ export default async function DashboardHome() {
 
         {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
       </div>
+      )}
 
       {/* Quick actions — the tools the admin reaches for daily, one tap from
           Home instead of hunting the sidebar. */}
@@ -275,7 +278,12 @@ export default async function DashboardHome() {
 
       {/* Operations board (M148) — the coordinator's control center: today's
           pipeline, exceptions, week compliance and coach discipline. */}
-      {role === 'coordinator' && academyId && <OperationsBoard academyId={academyId} />}
+      {role === 'coordinator' && academyId && (
+        <>
+          <OperationsBoard academyId={academyId} />
+          <div className="mb-6"><TideWidget isAdmin={false} /></div>
+        </>
+      )}
 
       {/* Action panels — paired two-up on desktop so the page reads as an
           ordered grid instead of one long stack. Each panel self-gates. */}
@@ -327,8 +335,8 @@ export default async function DashboardHome() {
         </>
       )}
 
-      {/* Pending Drafts (coaches/coordinators/admins) */}
-      {drafts.length > 0 && (
+      {/* Pending Drafts — legacy session flow; hidden for coordinator (M148) */}
+      {role !== 'coordinator' && drafts.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
@@ -362,7 +370,7 @@ export default async function DashboardHome() {
 
       {/* Tides — surfaced high up: whoever schedules/runs sessions needs it
           at a glance alongside today's plan. */}
-      {(role === 'admin' || role === 'coordinator' || role === 'coach') && (
+      {(role === 'admin' || role === 'coach') && (
         <div className="mb-6">
           <TideWidget isAdmin={role === 'admin'} />
         </div>
@@ -373,7 +381,7 @@ export default async function DashboardHome() {
       {role === 'coordinator' && <CoordinatorDashboard />}
 
       {/* Coach closes + feedback oversight (M137) — bottom, collapsible. */}
-      {(role === 'admin' || role === 'coordinator') && (
+      {role === 'admin' && (
         <div className="mt-6"><RecentClosesPanel /></div>
       )}
       {role === 'coach' && coach && <CoachDashboard coachId={coach.id} />}
@@ -513,23 +521,8 @@ async function CoordinatorDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* ── Today's services ── */}
-      <TodayPanel camps={todaysCamps} />
-
-      {/* ── Tools ── */}
-      {me?.academy_id && (
-        <div className="grid sm:grid-cols-2 gap-3">
-          <BoardInventoryLauncher academyId={me.academy_id} variant="card" />
-          <InventoryLauncher />
-          <BoardSelectorLauncher variant="card" />
-          {/* Ratio Decision Engine — Safety Canon coach-to-student ratio by
-              conditions; opens in an in-app overlay (X to close, never
-              leaves the app). */}
-          <div className="sm:col-span-2">
-            <RatioEngineLauncher />
-          </div>
-        </div>
-      )}
+      {/* Today's services + mid-page tools removed (M148): today lives in the
+          Operations board pipeline; tools moved to the band at the bottom. */}
 
       {/* ── Mi academia — single stats home (analytics + operational KPIs) ── */}
       {academyAnalytics ? (
@@ -543,80 +536,40 @@ async function CoordinatorDashboard() {
         </div>
       )}
 
-      {/* Quick Actions block removed — it duplicated the left-side navigation
-          (Students / Coaches / Services) and confused the coordinator view. */}
+      {/* Student alerts + Active Services collapsibles removed (M148):
+          student alerts merged into the Operations "Needs attention" card;
+          active services live in the pipeline / week matrix / Services page. */}
 
-      {/* ── Action items — compact, collapsible notification cards ── */}
-      {(coordData.pendingIntake.length > 0 || coordData.noWaiver.length > 0 || coordData.stuckStudents.length > 0) && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Needs attention</h3>
+      {/* ── Cierres y feedback — the detail behind the week matrix ── */}
+      <RecentClosesPanel />
 
-          {coordData.pendingIntake.length > 0 && (
-            <CollapsibleAlert title="Pending Intake" count={coordData.pendingIntake.length} tone="amber">
-              {coordData.pendingIntake.map((s: any) => (
-                <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-amber-50/30 transition-colors">
-                  <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
-                  <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">No Intake</span>
-                </Link>
-              ))}
-            </CollapsibleAlert>
-          )}
-
-          {coordData.noWaiver.length > 0 && (
-            <CollapsibleAlert title="Missing Waiver" count={coordData.noWaiver.length} tone="red">
-              {coordData.noWaiver.map((s: any) => (
-                <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/30 transition-colors">
-                  <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
-                  <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-full">No Waiver</span>
-                </Link>
-              ))}
-            </CollapsibleAlert>
-          )}
-
-          {coordData.stuckStudents.length > 0 && (
-            <CollapsibleAlert title="No session in 30+ days" count={coordData.stuckStudentsCount} tone="orange">
-              {coordData.stuckStudents.map((s: any) => (
-                <Link key={s.id} href={`/students/${s.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-orange-50/30 transition-colors">
-                  <div>
-                    <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
-                    <p className="text-[10px] text-gray-400">
-                      {s.last_session_date
-                        ? `Last session: ${new Date(s.last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                        : 'Never had an in-person session'}
-                    </p>
-                  </div>
-                  <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full capitalize">
-                    {s.belt_level?.replace('_belt', '') ?? '—'}
-                  </span>
-                </Link>
-              ))}
-            </CollapsibleAlert>
-          )}
+      {/* ── Tools & reference — one band, end of page ── */}
+      {me?.academy_id && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Tools &amp; reference</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <BoardInventoryLauncher academyId={me.academy_id} variant="card" />
+            <InventoryLauncher />
+            <BoardSelectorLauncher variant="card" />
+            <a
+              href="/docs/sistema-resolver-problemas.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white">
+                <LifeBuoy size={20} strokeWidth={1.75} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
+                <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
+              </span>
+            </a>
+            <div className="sm:col-span-2">
+              <RatioEngineLauncher />
+            </div>
+          </div>
         </div>
-      )}
-
-      {coordData.activeCamps.length > 0 && (
-        <CollapsibleAlert title="Active Services" count={coordData.activeCamps.length} tone="gray">
-          {coordData.activeCamps.map((c: any) => {
-            const coachRel = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
-            return (
-              <Link key={c.id} href={`/camps/${c.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-700 truncate">{c.camp_name}</p>
-                  <p className="text-[10px] text-gray-400">
-                    {c.start_date} - {c.end_date}
-                    {coachRel?.display_name ? ` · ${coachRel.display_name}` : ''}
-                  </p>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${
-                  c.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
-                }`}>
-                  {c.status}
-                </span>
-              </Link>
-            );
-          })}
-        </CollapsibleAlert>
       )}
     </div>
   );
