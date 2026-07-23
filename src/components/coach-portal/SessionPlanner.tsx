@@ -1392,11 +1392,14 @@ function ApplyToWeekButton({
   label?: string;
   doneLabel?: string;
 }) {
+  // 'done' is sticky — reverting the ✓ after a timeout read as "it un-applied
+  // itself" to coaches, even though the save had succeeded. The button stays
+  // confirmed (and clickable, in case they change the board and re-apply).
   const [state, setState] = useState<'idle' | 'saving' | 'done'>('idle');
   return (
     <button
       type="button"
-      disabled={state !== 'idle'}
+      disabled={state === 'saving'}
       onClick={async () => {
         setState('saving');
         try {
@@ -1406,7 +1409,6 @@ function ApplyToWeekButton({
             alert(`Aplicado a ${r.days} día(s). ${r.skipped} día(s) quedaron sin esa tabla porque ya estaba asignada a otro servicio ese día.`);
           }
           setState('done');
-          setTimeout(() => setState('idle'), 2500);
         } catch { setState('idle'); }
       }}
       className="mt-2 w-full py-2 rounded-lg border border-dashed text-[12px] font-semibold transition-colors disabled:opacity-70"
