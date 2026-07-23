@@ -25,8 +25,11 @@ export async function getCostSettings() {
 
   const rateQ = admin.from('cost_rates').select('*').order('category').order('name');
   const matrixQ = admin.from('coach_pay_rates').select('level_name, group_size, per_day_cents').order('level_name').order('group_size');
-  const tplQ = admin.from('camp_templates').select('id, template_name, level_name, service_kind, duration_days').eq('active', true).order('template_name')
-    .then((r: any) => (r.error ? admin.from('camp_templates').select('id, template_name, level_name, service_kind, duration_days').order('template_name') : r));
+  // Templates scoped to the caller's academy (own + globals) — without this,
+  // an admin sees every academy's templates duplicated in recipes/QRs.
+  const tplScope = (q: any) => (academyId ? q.or(`academy_id.eq.${academyId},academy_id.is.null`) : q);
+  const tplQ = tplScope(admin.from('camp_templates').select('id, template_name, level_name, service_kind, duration_days, academy_id').eq('active_status', true)).order('template_name')
+    .then((r: any) => (r.error ? tplScope(admin.from('camp_templates').select('id, template_name, level_name, service_kind, duration_days, academy_id')).order('template_name') : r));
   const recipeQ = admin.from('template_cost_items').select('*');
 
   const [{ data: rates }, { data: matrix }, tplRes, { data: recipes }] = await Promise.all([
