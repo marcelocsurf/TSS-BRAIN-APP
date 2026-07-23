@@ -201,6 +201,10 @@ export default async function DashboardHome() {
 
       <NotificationsPanel notifications={notifications} />
 
+      {/* Incidents — SAFETY FIRST (Safety Override Rule): if something
+          happened, it outranks everything else on this page. */}
+      <div className="mb-4"><IncidentsPanel incidents={incidents} /></div>
+
       {/* Quick-access reference cards — for coordinator these moved to the
           Tools & reference band at the bottom (M148). */}
       {role !== 'coordinator' && (
@@ -290,7 +294,6 @@ export default async function DashboardHome() {
       {/* Full-width stack: panel heights vary wildly day to day (collapsed
           strip vs tall board), so side-by-side pairing always left voids. */}
       <div className="space-y-4 mb-4">
-        <IncidentsPanel incidents={incidents} />
         {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
         <PendingPromotionsPanel />
         {(role === 'admin' || role === 'coordinator') && <RequisitionsPanel />}
