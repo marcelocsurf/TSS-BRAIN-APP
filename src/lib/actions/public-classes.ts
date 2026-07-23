@@ -60,7 +60,17 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
     };
   });
 
-  return { academy: { name: academy.name, logo_url: academy.logo_url }, classes };
+  // Prefer a light-background version of the logo when one was uploaded
+  // (convention: avatars/academies/<id>-light.png).
+  let logoLight: string | null = null;
+  try {
+    const { data: files } = await admin.storage.from('avatars').list('academies', { search: `${academy.id}-light` });
+    if (files && files.length > 0) {
+      logoLight = admin.storage.from('avatars').getPublicUrl(`academies/${academy.id}-light.png`).data.publicUrl;
+    }
+  } catch { /* storage lookup is cosmetic */ }
+
+  return { academy: { name: academy.name, logo_url: academy.logo_url, logo_light_url: logoLight }, classes };
 }
 
 // Minimal-disclosure lookup: given an email, say only whether a profile
