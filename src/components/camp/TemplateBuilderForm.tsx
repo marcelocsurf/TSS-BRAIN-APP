@@ -106,7 +106,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
   const [includesCourse, setIncludesCourse] = useState<'white_belt' | 'yellow_belt' | 'blue_belt' | ''>(
     initialData?.includes_course_key ?? '',
   );
-  const [serviceKind, setServiceKind] = useState<'surf_camp' | 'surf_lesson' | 'custom' | ''>(
+  const [serviceKind, setServiceKind] = useState<'surf_camp' | 'surf_lesson' | 'class' | 'custom' | ''>(
     initialData?.service_kind ?? '',
   );
   const [capacityMax, setCapacityMax] = useState<number>(initialData?.capacity_max ?? 4);
@@ -272,7 +272,8 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
       };
 
       if (mode === 'edit' && templateId) {
-        await updateCampTemplate(templateId, input);
+        const r: any = await updateCampTemplate(templateId, input);
+        if (r?.error) { setError(r.error); setLoading(false); return; }
       } else {
         await createCampTemplate(input);
       }
@@ -328,6 +329,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 onChange={(e) => setLevelName(e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
               >
+                <option value="Custom">Custom — no belt (classes)</option>
                 {LEVEL_OPTIONS.map((l) => (
                   <option key={l} value={l}>
                     {l} ({LEVEL_BELT_LABEL[l] ?? 'Belt'})
@@ -349,6 +351,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               <option value="">— Unspecified</option>
               <option value="surf_camp">Surf Camp (multi-day)</option>
               <option value="surf_lesson">Surf / Skate Lesson (single)</option>
+              <option value="class">Class (yoga, ice bath, jiujitsu… no TSS evaluation)</option>
               <option value="custom">Custom</option>
             </select>
             <p className="text-[10px] text-gray-400 mt-1">

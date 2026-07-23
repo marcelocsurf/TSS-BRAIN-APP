@@ -1444,7 +1444,7 @@ export interface CreateTemplateInput {
   description: string;
   days: TemplateDayInput[];
   includes_course_key?: 'white_belt' | 'yellow_belt' | 'blue_belt' | null;
-  service_kind?: 'surf_lesson' | 'surf_camp' | 'custom' | null;
+  service_kind?: 'surf_lesson' | 'surf_camp' | 'class' | 'custom' | null;
   capacity_max?: number | null;
   session_duration_minutes?: number | null;
   card_color?: string | null;
@@ -1570,10 +1570,13 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
       .eq('template_id', templateId)
       .not('status', 'in', '("completed","cancelled")');
     if ((count ?? 0) > 0) {
-      throw new Error(
-        `This template has ${count} active service(s) using it. Editing it would break their day plans. ` +
-          `Duplicate the template and edit the copy, or wait until those services finish.`,
-      );
+      // Returned (not thrown) so the message survives production builds —
+      // thrown errors from server actions are masked with a generic digest.
+      return {
+        error:
+          `This template has ${count} active service(s) using it. Editing it would break their day plans. ` +
+          `Cancel or complete those services first (or duplicate the template and edit the copy).`,
+      };
     }
   }
 
