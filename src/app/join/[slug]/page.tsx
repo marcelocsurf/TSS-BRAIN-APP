@@ -33,8 +33,12 @@ export default async function JoinPage({ params, searchParams }: {
       <div className="max-w-md mx-auto px-4 pt-6">
         <div className="flex flex-col items-center text-center mb-4">
           {data.academy.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.academy.logo_url} alt={data.academy.name} className="h-20 w-20 rounded-2xl object-cover shadow-sm" />
+            // Wide logos must not be cropped to a square; the academy logo is
+            // white-on-transparent, so it sits on an ink card to stay visible.
+            <div className="rounded-2xl px-6 py-4 shadow-sm" style={{ background: '#061C2B' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={data.academy.logo_url} alt={data.academy.name} className="h-14 w-auto max-w-[240px] object-contain" />
+            </div>
           ) : null}
           <h1 className="mt-3 text-[22px]" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.08, color: '#061C2B' }}>
             {data.academy.name}

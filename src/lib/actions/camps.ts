@@ -424,6 +424,9 @@ export async function createCampInstance(input: {
       1;
 
     const newDays = Array.from({ length: durationDays }, (_, i) => ({
+      // camp_template_days.id is TEXT with no default — it must be supplied
+      // or the insert fails for any template without pre-seeded days.
+      id: `TPLD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${i + 1}`,
       template_id: input.template_id,
       day_number: i + 1,
       // One-day services read much better titled by what they ARE
