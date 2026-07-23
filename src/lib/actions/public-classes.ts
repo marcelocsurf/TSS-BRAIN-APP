@@ -28,7 +28,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
   const today = new Date().toISOString().slice(0, 10);
   let q = admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color), coaches:coach_id(display_name), camp_participants(id, enrollment_status)')
+    .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description), coaches:coach_id(display_name), camp_participants(id, enrollment_status)')
     .eq('academy_id', academy.id)
     .eq('camp_templates.service_kind', 'class')
     .gte('start_date', today)
@@ -52,6 +52,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
       minutes: tpl?.session_duration_minutes ?? null,
       coach: coach?.display_name ?? null,
       color: tpl?.card_color ?? null,
+      description: tpl?.description ?? null,
       price_cents: tpl?.list_price_cents ?? null,
       enrolled,
       capacity,

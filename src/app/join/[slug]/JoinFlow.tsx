@@ -13,6 +13,7 @@ const F_DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-
 type Klass = {
   id: string; name: string; date: string; time: string | null; minutes: number | null;
   coach: string | null; color: string | null; price_cents: number | null;
+  description: string | null;
   enrolled: number; capacity: number; full: boolean;
 };
 
@@ -109,6 +110,14 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                 {c.full ? 'Full' : `${Math.max(0, c.capacity - c.enrolled)} spots`}
               </span>
             </div>
+            {c.description && (
+              <details className="mt-2 group">
+                <summary className="cursor-pointer list-none text-[10px]" style={{ ...F_LABEL, color: '#0090B0' }}>
+                  About this class <span className="group-open:hidden">＋</span><span className="hidden group-open:inline">−</span>
+                </summary>
+                <p className="mt-2 text-[12px] leading-relaxed text-gray-600 whitespace-pre-line">{c.description}</p>
+              </details>
+            )}
             {!c.full && (
               <button type="button" onClick={() => { setSel(c); setStep('email'); setErr(null); }}
                 className="mt-3 w-full rounded-full py-2.5 text-[10px]" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
