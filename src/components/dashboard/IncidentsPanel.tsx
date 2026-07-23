@@ -30,8 +30,8 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
   if (incidents.length === 0) return null;
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className={`flex items-center justify-between ${open ? 'mb-3' : ''}`}>
         <button
           onClick={() => setOpen((v) => !v)}
           className="text-sm font-semibold text-red-700 uppercase tracking-wider inline-flex items-center gap-1.5"

@@ -287,9 +287,9 @@ export default async function DashboardHome() {
 
       {/* Action panels — paired two-up on desktop so the page reads as an
           ordered grid instead of one long stack. Each panel self-gates. */}
-      {/* Masonry-style two columns: panels pack into available space, so an
-          empty/collapsed panel never leaves a void next to a tall one. */}
-      <div className="md:columns-2 md:gap-4 [&>*]:break-inside-avoid [&>*]:mb-4">
+      {/* Full-width stack: panel heights vary wildly day to day (collapsed
+          strip vs tall board), so side-by-side pairing always left voids. */}
+      <div className="space-y-4 mb-4">
         <IncidentsPanel incidents={incidents} />
         {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
         <PendingPromotionsPanel />
