@@ -21,6 +21,7 @@ import { getPlatformOverview } from '@/lib/actions/platform-overview';
 import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
+import { OperationsBoard } from '@/components/dashboard/OperationsBoard';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
@@ -272,19 +273,18 @@ export default async function DashboardHome() {
       {/* Platform control tower — per-academy pulse for the admin. */}
       {platformOverview && <PlatformOverview data={platformOverview} />}
 
-      {/* Incident reports — coordinator + admin. Unread badge + mark-as-read. */}
-      <IncidentsPanel incidents={incidents} />
+      {/* Operations board (M148) — the coordinator's control center: today's
+          pipeline, exceptions, week compliance and coach discipline. */}
+      {role === 'coordinator' && academyId && <OperationsBoard academyId={academyId} />}
 
-      {/* Belt promotions recommended by under-certified coaches — admin /
-          head coach confirms. Self-gates + renders nothing when empty. */}
-      <PendingPromotionsPanel />
-
-      {/* Transport board — rides the coaches asked for this week (M133).
-          Coordinator marks each one taken/cancelled. Renders nothing if empty. */}
-      {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
-
-      {/* Purchase requisitions built from low-stock inventory (M136). */}
-      {(role === 'admin' || role === 'coordinator') && <RequisitionsPanel />}
+      {/* Action panels — paired two-up on desktop so the page reads as an
+          ordered grid instead of one long stack. Each panel self-gates. */}
+      <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
+        <IncidentsPanel incidents={incidents} />
+        {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
+        <PendingPromotionsPanel />
+        {(role === 'admin' || role === 'coordinator') && <RequisitionsPanel />}
+      </div>
 
       {/* To-do list — coordinator + admin create + assign academy tasks. */}
       {(role === 'admin' || role === 'coordinator') && (

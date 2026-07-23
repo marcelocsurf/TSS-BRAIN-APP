@@ -40,7 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/',              label: 'Home',         Icon: Home,        roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/students',      label: 'Students',     Icon: Users,       roles: ['admin', 'coordinator', 'coach', 'assistant'] },
   { href: '/camps',         label: 'Services',     Icon: Tent,        roles: ['admin', 'coordinator'] },
-  { href: '/coaches',       label: 'Coaches',      Icon: Star,        roles: ['admin', 'coordinator'] },
+  { href: '/coaches',       label: 'Staff',        Icon: Star,        roles: ['admin', 'coordinator'] },
   // Espacios / Venue Scout / Course Codes / Pricing / Billing left the ADMIN
   // sidebar — they live in the dashboard Quick Actions now (less clutter).
   // Other roles keep their entries.
