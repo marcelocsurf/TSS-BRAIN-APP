@@ -287,7 +287,9 @@ export default async function DashboardHome() {
 
       {/* Action panels — paired two-up on desktop so the page reads as an
           ordered grid instead of one long stack. Each panel self-gates. */}
-      <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
+      {/* Masonry-style two columns: panels pack into available space, so an
+          empty/collapsed panel never leaves a void next to a tall one. */}
+      <div className="md:columns-2 md:gap-4 [&>*]:break-inside-avoid [&>*]:mb-4">
         <IncidentsPanel incidents={incidents} />
         {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
         <PendingPromotionsPanel />
