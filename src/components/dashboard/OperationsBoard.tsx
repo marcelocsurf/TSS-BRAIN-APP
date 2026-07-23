@@ -78,7 +78,9 @@ async function getOps(academyId: string) {
       date: s.session_date,
       dayNumber: s.day_number,
       campId: s.camp_instance_id,
-      name: inst?.camp_name ?? tpl?.template_name ?? 'Service',
+      // Auto-named services carry the date ("Discover Surfing · 2026-07-23");
+      // strip it — the date is already the row's context.
+      name: String(inst?.camp_name ?? tpl?.template_name ?? 'Service').replace(/ · \d{4}-\d{2}-\d{2}$/, ''),
       kind: tpl?.service_kind ?? 'custom',
       time: inst?.scheduled_time ?? null,
       coach: head?.display_name ?? co?.display_name ?? null,
@@ -185,10 +187,12 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
     <div className="mb-6 space-y-4">
       {/* ── Row 1: hero + attention ── */}
       <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
-        <div className="rounded-3xl p-6" style={{ background: '#061C2B' }}>
-          <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Coordination · today</p>
-          <h2 className="text-[26px] mt-2" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{dayName}<br />operations</h2>
-          <div className="flex gap-6 mt-4">
+        <div className="rounded-3xl p-6 flex flex-col justify-between min-h-64" style={{ background: '#061C2B' }}>
+          <div>
+            <p className="text-[10px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Coordination · today</p>
+            <h2 className="text-[34px] mt-2" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{dayName}<br />operations</h2>
+          </div>
+          <div className="grid grid-cols-4 gap-3 mt-6 pt-4" style={{ borderTop: '1px solid rgba(247,249,250,.1)' }}>
             {[
               { v: todayRows.length, label: 'services', color: '#00D2FF' },
               { v: onTrack, label: 'on track', color: '#06D6A0' },
@@ -196,8 +200,8 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
               { v: inWater, label: 'in water', color: '#F7F9FA' },
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-[22px]" style={{ ...F_DISPLAY, color: s.color }}>{s.v}</p>
-                <p className="text-[7px] mt-0.5" style={{ ...F_LABEL, color: 'rgba(247,249,250,.5)' }}>{s.label}</p>
+                <p className="text-[38px] leading-none" style={{ ...F_DISPLAY, color: s.color }}>{s.v}</p>
+                <p className="text-[8px] mt-1.5" style={{ ...F_LABEL, color: 'rgba(247,249,250,.5)' }}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -266,7 +270,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                 : { t: 'No plan', c: 'bg-red-50 text-red-700' };
               return (
                 <Link key={r.id} href={`/camps/${r.campId}`} className="flex items-center gap-3 py-2.5 hover:bg-gray-50 rounded-lg px-1 -mx-1">
-                  <div className="w-44 min-w-44">
+                  <div className="w-56 min-w-56">
                     <p className="text-[13px] font-bold text-[var(--tss-navy)] truncate">{r.name}{r.dayNumber && r.kind === 'surf_camp' ? ` · D${r.dayNumber}` : ''}</p>
                     <p className="text-[10px] text-gray-400 truncate">{r.coach ?? '—'}{r.time ? ` · ${r.time}` : ''} · {r.students} student{r.students === 1 ? '' : 's'}</p>
                   </div>
