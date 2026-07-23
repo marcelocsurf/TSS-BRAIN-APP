@@ -331,6 +331,7 @@ export async function createStudent(input: CreateStudentInput) {
 // ═══════════════════════════════════════
 
 export interface StudentFilters {
+  sort?: 'newest' | 'name';
   belt_level?: BeltLevel;
   status?: string;
   search?: string;
@@ -363,8 +364,11 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
 
   let query = supabase
     .from('students')
-    .select('*', { count: 'exact' })
-    .order('last_name', { ascending: true });
+    .select('*', { count: 'exact' });
+  // Sort: alphabetical by default; 'newest' = most recently created first.
+  query = filters?.sort === 'newest'
+    ? query.order('created_at', { ascending: false })
+    : query.order('last_name', { ascending: true });
 
   if (me && !me.is_platform_admin) {
     // Academy scope for non-platform-admins

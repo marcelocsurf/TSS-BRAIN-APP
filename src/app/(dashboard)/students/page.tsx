@@ -62,6 +62,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
     returning: params.returning,
     waiver: params.waiver,
     ocean_level: params.ocean_level,
+    sort: params.sort === 'newest' ? 'newest' : 'name',
   });
 
   const totalPages = Math.ceil(total / limit);
@@ -153,6 +154,23 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             {lk === 'member' ? 'Members' : lk === 'lead' ? 'Leads' : 'Inactive'}
           </Link>
         ))}
+      </div>
+
+      {/* Sort toggle — A–Z vs newest enrolled first */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-[10px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Sort</span>
+        {([['name', 'A–Z'], ['newest', 'Último inscrito']] as const).map(([key, label]) => {
+          const p2 = new URLSearchParams();
+          for (const [k, v] of Object.entries(params)) if (v && k !== 'page' && k !== 'sort') p2.set(k, v);
+          if (key === 'newest') p2.set('sort', 'newest');
+          const active = (params.sort === 'newest') === (key === 'newest');
+          return (
+            <Link key={key} href={`/students?${p2.toString()}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${active ? 'bg-[var(--tss-navy)] text-white border-transparent shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+              {label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Belt filter tabs */}
