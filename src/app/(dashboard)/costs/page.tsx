@@ -1,5 +1,7 @@
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { getCostSettings } from '@/lib/actions/costs';
+import { listCoupons } from '@/lib/actions/coupons';
+import { CouponsSection } from './CouponsSection';
 import { redirect } from 'next/navigation';
 import { CostsManager } from './CostsManager';
 
@@ -18,6 +20,8 @@ export default async function CostsPage() {
   } catch {
     settings = { rates: [], matrix: [], templates: [], recipes: [] };
   }
+  let couponsData: Awaited<ReturnType<typeof listCoupons>> = { coupons: [], academySlug: null };
+  try { couponsData = await listCoupons(); } catch { /* pre-migration */ }
 
   return (
     <div>
@@ -30,6 +34,9 @@ export default async function CostsPage() {
         </p>
       </div>
       <CostsManager initial={settings} />
+      <div className="mt-4">
+        <CouponsSection coupons={couponsData.coupons} academySlug={couponsData.academySlug} templates={settings.templates as any} />
+      </div>
     </div>
   );
 }

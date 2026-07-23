@@ -35,12 +35,28 @@ export function EnrollmentPaymentControl({
   const [type, setType] = useState<string>(saleType ?? 'full');
   const [amount, setAmount] = useState(amountCents != null ? String(amountCents / 100) : '');
   const [reason, setReason] = useState(discountReason ?? '');
+  // Payment-method picker (front-desk reality: cash, card, transfer, or a
+  // hotel room charge with the room number as reference).
+  const [payOpen, setPayOpen] = useState(false);
+  const [room, setRoom] = useState('');
   const isPaid = paymentStatus === 'paid';
 
-  const togglePaid = (next: 'paid' | 'reserved') => {
+  const markUnpaid = () => {
     startTransition(async () => {
-      await updateEnrollmentPayment({ participantId, payment_status: next });
+      await updateEnrollmentPayment({ participantId, payment_status: 'reserved' });
       router.refresh();
+    });
+  };
+
+  const markPaid = (method: string) => {
+    startTransition(async () => {
+      try {
+        await updateEnrollmentPayment({ participantId, payment_status: 'paid', payment_method: method });
+        setPayOpen(false);
+        router.refresh();
+      } catch (e: any) {
+        alert(e?.message || 'Could not mark as paid');
+      }
     });
   };
 
@@ -80,7 +96,7 @@ export function EnrollmentPaymentControl({
       {isPaid ? (
         <button
           type="button"
-          onClick={() => togglePaid('reserved')}
+          onClick={markUnpaid}
           disabled={pending}
           title="Mark as not paid"
           className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 disabled:opacity-50"
@@ -90,13 +106,38 @@ export function EnrollmentPaymentControl({
       ) : (
         <button
           type="button"
-          onClick={() => togglePaid('paid')}
+          onClick={() => setPayOpen(!payOpen)}
           disabled={pending}
           title="Mark seat as paid"
           className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-50"
         >
           <DollarSign size={11} /> {pending ? '…' : 'Reserved'}
         </button>
+      )}
+
+      {payOpen && !isPaid && (
+        <div className="absolute right-0 top-7 z-30 w-52 rounded-xl border border-gray-200 bg-white shadow-lg p-3 space-y-1.5">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">How was it paid?</p>
+          {([['cash', '💵 Cash'], ['card', '💳 Card'], ['transfer', '🏦 Transfer']] as const).map(([v, l]) => (
+            <button key={v} type="button" disabled={pending} onClick={() => markPaid(v)}
+              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[var(--tss-navy)] bg-gray-50 hover:bg-gray-100 disabled:opacity-50">
+              {l}
+            </button>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <input
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+              placeholder="Room #"
+              className="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+            />
+            <button type="button" disabled={pending || !room.trim()} onClick={() => markPaid(`room:${room.trim()}`)}
+              className="flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-[var(--tss-navy)] text-white disabled:opacity-40">
+              🏨 Charge to room
+            </button>
+          </div>
+          <button type="button" onClick={() => setPayOpen(false)} className="w-full py-1 rounded-lg text-[11px] text-gray-400 hover:bg-gray-50">Cancel</button>
+        </div>
       )}
 
       <button
