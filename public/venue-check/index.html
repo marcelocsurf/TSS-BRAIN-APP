@@ -99,6 +99,7 @@ body{background:var(--ink);font-family:'Archivo',sans-serif;color:var(--paper);d
   <div id="topbar">
     <button class="tb" id="backTo1">←</button>
     <span class="mini lbl" id="condMini"></span>
+    <button class="tb" id="timerBtn">⏱ Timer</button>
     <button class="tb cyan" id="toSummary">Listo ✓</button>
   </div>
   <div id="mapWrap">
@@ -123,8 +124,8 @@ body{background:var(--ink);font-family:'Archivo',sans-serif;color:var(--paper);d
 'use strict';
 // ─── estado ───
 const LS='tss-venue-check-v1';
-let S={mode:'personal',wave:null,tide:null,wind:null,insideY:null,els:[],go:null};
-try{const p=JSON.parse(localStorage.getItem(LS)||'null'); if(p&&p.els) S=p;}catch(e){}
+let S={mode:'personal',wave:null,tide:null,wind:null,outY:null,inY:null,photo:null,timerEnd:null,els:[],go:null};
+try{const p=JSON.parse(localStorage.getItem(LS)||'null'); if(p&&p.els){ if(p.insideY!=null&&p.inY==null) p.inY=p.insideY; S={...S,...p}; }}catch(e){}
 const save=()=>localStorage.setItem(LS,JSON.stringify(S));
 const uid=()=>Math.random().toString(36).slice(2,9);
 
@@ -148,7 +149,7 @@ document.getElementById('toMap').onclick=()=>show('s2');
 document.getElementById('backTo1').onclick=()=>show('s1');
 document.getElementById('toSummary').onclick=()=>show('s3');
 document.getElementById('backTo2').onclick=()=>show('s2');
-document.getElementById('restart').onclick=()=>{ if(confirm('¿Empezar un análisis nuevo? Se borra el actual.')){S={mode:'personal',wave:null,tide:null,wind:null,insideY:null,els:[],go:null};save();location.reload();} };
+document.getElementById('restart').onclick=()=>{ if(confirm('¿Empezar un análisis nuevo? Se borra el actual.')){S={mode:'personal',wave:null,tide:null,wind:null,outY:null,inY:null,photo:null,timerEnd:null,els:[],go:null};save();location.reload();} };
 
 // ─── herramientas ───
 const TOOLS=[
@@ -156,10 +157,13 @@ const TOOLS=[
   {id:'exit',ico:'🔴',t:'Salida',hint:'Tocá DONDE SALÍS del agua'},
   {id:'peak',ico:'⭐',t:'Pico',hint:'Tocá donde revientan las olas (podés poner varios)'},
   {id:'current',ico:'➡️',t:'Corriente',hint:'DIBUJÁ con el dedo la corriente — la flecha sigue tu trazo'},
-  {id:'io',ico:'〰️',t:'In/Out',hint:'Tocá la altura donde separa el INSIDE del OUTSIDE'},
+  {id:'out',ico:'🌊',t:'Outside',hint:'Tocá la altura donde empieza el OUTSIDE (línea de afuera)'},
+  {id:'in',ico:'〰️',t:'Inside',hint:'Tocá la altura donde empieza el INSIDE (línea de adentro)'},
+  {id:'photo',ico:'📷',t:'Foto',hint:'Subí una foto real del spot como fondo (opcional)'},
   {id:'zone',ico:'🎯',t:'Zona',hint:S.mode==='group'?'Tocá donde se ubica EL GRUPO':'Tocá donde te vas a ubicar'},
   {id:'hazard',ico:'⚠️',t:'Peligro',hint:'Tocá donde está el peligro y elegí cuál'},
   {id:'ref',ico:'🏠',t:'Ref. tierra',hint:'Tocá tu punto de referencia EN LA PLAYA'},
+  {id:'pen',ico:'✏️',t:'Lápiz',hint:'Dibujá libre lo que quieras señalar'},
   {id:'erase',ico:'🧽',t:'Borrar',hint:'Tocá cualquier elemento para borrarlo',danger:true},
 ];
 let tool=null;
@@ -179,7 +183,8 @@ function hint(msg,sticky){ const h=document.getElementById('hint'); h.textConten
 
 function undo(){
   if(S.els.length){ S.els.pop(); }
-  else if(S.insideY!=null){ S.insideY=null; }
+  else if(S.inY!=null){ S.inY=null; }
+  else if(S.outY!=null){ S.outY=null; }
   save(); render(); hint('Deshecho ↩');
 }
 
@@ -203,27 +208,47 @@ function render(){
       <path d="M0,0 L10,5 L0,10 z" fill="#FFD166"/>
     </marker>
   </defs>`;
-  out+=`<rect x="0" y="0" width="100" height="${SAND_Y}" fill="url(#sea)"/>`;
+  if(S.photo){
+    out+=`<image href="${S.photo}" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid slice"/>`;
+    out+=`<rect x="0" y="0" width="100" height="100" fill="rgba(6,28,43,.28)"/>`;
+  } else {
+    out+=`<rect x="0" y="0" width="100" height="${SAND_Y}" fill="url(#sea)"/>`;
+  }
   // olitas decorativas
-  for(let i=1;i<4;i++) out+=`<path d="M0 ${SAND_Y-8*i} q 5 -1.4 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0" stroke="rgba(247,249,250,.07)" stroke-width=".5" fill="none"/>`;
-  out+=`<rect x="0" y="${SAND_Y}" width="100" height="${100-SAND_Y}" fill="#C9A96A"/>`;
-  out+=`<text x="50" y="${SAND_Y+6}" text-anchor="middle" font-size="3.2" fill="rgba(6,28,43,.55)" font-family="IBM Plex Mono" letter-spacing="1">P L A Y A</text>`;
+  if(!S.photo) for(let i=1;i<4;i++) out+=`<path d="M0 ${SAND_Y-8*i} q 5 -1.4 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0" stroke="rgba(247,249,250,.07)" stroke-width=".5" fill="none"/>`;
+  if(!S.photo){
+    out+=`<rect x="0" y="${SAND_Y}" width="100" height="${100-SAND_Y}" fill="#C9A96A"/>`;
+    out+=`<text x="50" y="${SAND_Y+6}" text-anchor="middle" font-size="3.2" fill="rgba(6,28,43,.55)" font-family="IBM Plex Mono" letter-spacing="1">P L A Y A</text>`;
+  } else {
+    out+=`<line x1="0" y1="${SAND_Y}" x2="100" y2="${SAND_Y}" stroke="rgba(201,169,106,.9)" stroke-width=".7" stroke-dasharray="3 1.5"/>`;
+    out+=`<text x="50" y="${SAND_Y+5}" text-anchor="middle" font-size="3" fill="#F2E3C6" font-family="IBM Plex Mono" letter-spacing="1">P L A Y A</text>`;
+  }
 
-  // línea inside/outside
-  if(S.insideY!=null){
-    out+=`<line x1="0" y1="${S.insideY}" x2="100" y2="${S.insideY}" stroke="#00D2FF" stroke-width=".6" stroke-dasharray="2.5 1.6"/>`;
-    out+=`<text x="2.5" y="${S.insideY-2}" font-size="3" fill="#00D2FF" font-family="IBM Plex Mono" letter-spacing="1">OUTSIDE</text>`;
-    out+=`<text x="2.5" y="${S.insideY+4.5}" font-size="3" fill="#7FE3FF" font-family="IBM Plex Mono" letter-spacing="1">INSIDE</text>`;
+  // líneas outside / inside (independientes)
+  if(S.outY!=null){
+    out+=`<line x1="0" y1="${S.outY}" x2="100" y2="${S.outY}" stroke="#00D2FF" stroke-width=".6" stroke-dasharray="2.5 1.6"/>`;
+    out+=`<text x="2.5" y="${S.outY-1.8}" font-size="3" fill="#00D2FF" font-family="IBM Plex Mono" letter-spacing="1">OUTSIDE</text>`;
+  }
+  if(S.inY!=null){
+    out+=`<line x1="0" y1="${S.inY}" x2="100" y2="${S.inY}" stroke="#7FE3FF" stroke-width=".6" stroke-dasharray="1.6 1.6"/>`;
+    out+=`<text x="2.5" y="${S.inY+4.3}" font-size="3" fill="#7FE3FF" font-family="IBM Plex Mono" letter-spacing="1">INSIDE</text>`;
   }
   // elementos
   for(const e of S.els){
+    if(e.type==='draw'){
+      const d='M'+e.pts.map(p=>p[0]+' '+p[1]).join(' L ');
+      out+=`<path d="${d}" fill="none" stroke="#F7F9FA" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>`;
+    }
     if(e.type==='current'){
       const d='M'+e.pts.map(p=>p[0]+' '+p[1]).join(' L ');
       out+=`<path d="${d}" fill="none" stroke="#FFD166" stroke-width="1" stroke-linecap="round" marker-end="url(#arr)" opacity=".92"/>`;
     }
     if(e.type==='entry') out+=pin(e,'#06D6A0','ENTRADA','▲');
     if(e.type==='exit') out+=pin(e,'#FF6B6B','SALIDA','▼');
-    if(e.type==='peak') out+=`<g><text x="${e.x}" y="${e.y+1.8}" text-anchor="middle" font-size="6">⭐</text><text x="${e.x}" y="${e.y+6.5}" text-anchor="middle" font-size="2.6" fill="#FFD166" font-family="IBM Plex Mono">PICO</text></g>`;
+    if(e.type==='peak'){
+      const n=S.els.filter(x=>x.type==='peak').indexOf(e)+1;
+      out+=`<g><text x="${e.x}" y="${e.y+1.8}" text-anchor="middle" font-size="6">⭐</text><text x="${e.x}" y="${e.y+6.5}" text-anchor="middle" font-size="2.7" fill="#FFD166" font-family="IBM Plex Mono" font-weight="700">PICO ${n}</text></g>`;
+    }
     if(e.type==='zone'){
       out+=`<circle cx="${e.x}" cy="${e.y}" r="8" fill="rgba(0,210,255,.14)" stroke="#00D2FF" stroke-width=".5" stroke-dasharray="1.5 1"/>`;
       out+=`<text x="${e.x}" y="${e.y+1}" text-anchor="middle" font-size="2.8" fill="#00D2FF" font-family="IBM Plex Mono" letter-spacing="1">${S.mode==='group'?'GRUPO':'MI ZONA'}</text>`;
@@ -245,7 +270,7 @@ svg.addEventListener('pointerdown',ev=>{
   if(!tool) { hint('Primero elegí una herramienta abajo 👇'); return; }
   ev.preventDefault();
   const [x,y]=pt(ev);
-  if(tool==='current'){ drawing={pts:[[x,y]]}; svg.setPointerCapture(ev.pointerId); return; }
+  if(tool==='current'||tool==='pen'){ drawing={tool,pts:[[x,y]]}; svg.setPointerCapture(ev.pointerId); return; }
 });
 svg.addEventListener('pointermove',ev=>{
   if(!drawing) return;
@@ -256,19 +281,24 @@ svg.addEventListener('pointermove',ev=>{
 svg.addEventListener('pointerup',ev=>{
   const [x,y]=pt(ev);
   if(drawing){
-    if(drawing.pts.length>=3){ S.els.push({id:uid(),type:'current',pts:drawing.pts}); hint('Corriente marcada ✓ — la flecha apunta hacia donde va'); }
-    else hint('Dibujá un trazo más largo para la corriente');
+    if(drawing.pts.length>=3){
+      if(drawing.tool==='pen'){ S.els.push({id:uid(),type:'draw',pts:drawing.pts}); hint('Trazo dibujado ✓'); }
+      else { S.els.push({id:uid(),type:'current',pts:drawing.pts}); hint('Corriente marcada ✓ — la flecha apunta hacia donde va'); }
+    }
+    else hint('Dibujá un trazo más largo');
     drawing=null; save(); render(); return;
   }
   if(!tool) return;
   handleTap(x,y);
 });
-function renderTemp(){ render(); if(drawing&&drawing.pts.length>1){ const d='M'+drawing.pts.map(p=>p[0]+' '+p[1]).join(' L '); svg.innerHTML+=`<path d="${d}" fill="none" stroke="#FFD166" stroke-width="1" stroke-dasharray="2 1.2" opacity=".7"/>`; } }
+function renderTemp(){ render(); if(drawing&&drawing.pts.length>1){ const d='M'+drawing.pts.map(p=>p[0]+' '+p[1]).join(' L '); svg.innerHTML+=`<path d="${d}" fill="none" stroke="${drawing.tool==='pen'?'#F7F9FA':'#FFD166'}" stroke-width="1" stroke-dasharray="2 1.2" opacity=".7"/>`; } }
 
 const HAZ=[['🪨','Piedras'],['👥','Crowd'],['🦶','Fondo duro'],['🌀','Remolino'],['❗','Otro']];
 function handleTap(x,y){
   if(tool==='erase'){ eraseAt(x,y); return; }
-  if(tool==='io'){ S.insideY=Math.min(y,SAND_Y-6); save(); render(); hint('Línea Inside/Outside puesta — tocá de nuevo para moverla'); return; }
+  if(tool==='out'){ S.outY=Math.min(y,SAND_Y-6); save(); render(); hint('Línea OUTSIDE puesta — tocá de nuevo para moverla'); return; }
+  if(tool==='in'){ S.inY=Math.min(y,SAND_Y-4); save(); render(); hint('Línea INSIDE puesta — tocá de nuevo para moverla'); return; }
+  if(tool==='photo'){ document.getElementById('photoInput').click(); return; }
   if(tool==='hazard'){ showHazMenu(x,y); return; }
   if(tool==='ref'){
     if(y<SAND_Y-2){ hint('La referencia va EN LA PLAYA (parte de abajo) 🏖'); return; }
@@ -313,7 +343,9 @@ function eraseAt(x,y){
     if(d<bd){bd=d;best=e;}
   }
   if(best){ S.els=S.els.filter(e=>e.id!==best.id); save(); render(); hint('Borrado ✓'); return; }
-  if(S.insideY!=null && Math.abs(y-S.insideY)<5){ S.insideY=null; save(); render(); hint('Línea In/Out borrada ✓'); return; }
+  if(S.inY!=null && Math.abs(y-S.inY)<4){ S.inY=null; save(); render(); hint('Línea INSIDE borrada ✓'); return; }
+  if(S.outY!=null && Math.abs(y-S.outY)<4){ S.outY=null; save(); render(); hint('Línea OUTSIDE borrada ✓'); return; }
+  if(S.photo && confirm('¿Quitar la foto de fondo?')){ S.photo=null; save(); render(); return; }
   hint('Tocá más cerca del elemento que querés borrar');
 }
 
@@ -352,7 +384,7 @@ function renderSummary(){
   const items=[];
   items.push(has('entry')?'🟢 Entrada definida — entrar SIEMPRE por ahí':'⚠️ Falta marcar la ENTRADA — volvé al mapa');
   items.push(has('exit')?'🔴 Salida definida — si algo pasa, salir por ahí caminando':'⚠️ Falta marcar la SALIDA — volvé al mapa');
-  if(S.insideY!=null) items.push('〰️ Inside/Outside definidos — los novatos se quedan del lado INSIDE');
+  if(S.outY!=null||S.inY!=null) items.push('〰️ Zonas definidas — los novatos se quedan del lado INSIDE'+(S.outY!=null&&S.inY!=null?' (entre la línea inside y la playa)':''));
   if(has('peak')) items.push(`⭐ ${S.els.filter(e=>e.type==='peak').length} pico(s) identificado(s)`);
   if(dir) items.push(`➡️ Corriente ${dir} — ${dir.includes('AFUERA')?'NO pelear contra ella: nadar en diagonal y pedir ayuda si cansa':'usarla para posicionarse, no para pelearla; si te arrastra, salí caminando y volvé por la playa'}`);
   if(has('zone')) items.push(g?'🎯 Zona del grupo definida — nadie se aleja de la zona sin avisar':'🎯 Tu zona definida — chequeá que sigas ahí cada pocas olas');
@@ -379,8 +411,54 @@ function updMini(){ document.getElementById('condMini').textContent=[S.wave,S.ti
 document.getElementById('toMap').addEventListener('click',updMini);
 updMini();
 
+// ── foto custom de fondo ──
+const photoInput=document.createElement('input');
+photoInput.type='file'; photoInput.accept='image/*'; photoInput.id='photoInput'; photoInput.style.display='none';
+document.body.appendChild(photoInput);
+photoInput.addEventListener('change',()=>{
+  const f=photoInput.files&&photoInput.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{
+    const MAX=1280; const sc=Math.min(1,MAX/Math.max(img.width,img.height));
+    const cv=document.createElement('canvas'); cv.width=img.width*sc; cv.height=img.height*sc;
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    try{ S.photo=cv.toDataURL('image/jpeg',.6); save(); render(); hint('Foto puesta ✓ — dibujá encima. (Goma sobre el fondo la quita)'); }
+    catch(e){ hint('No se pudo usar esa foto'); }
+    URL.revokeObjectURL(img.src);
+  };
+  img.src=URL.createObjectURL(f);
+  photoInput.value='';
+});
+
+// ── timer de análisis ──
+let timerInt=null;
+function fmtT(ms){ const s2=Math.max(0,Math.round(ms/1000)); return Math.floor(s2/60)+':'+String(s2%60).padStart(2,'0'); }
+function tickTimer(){
+  const b=document.getElementById('timerBtn');
+  if(!S.timerEnd){ b.textContent='⏱ Timer'; b.style.color=''; b.style.borderColor=''; clearInterval(timerInt); timerInt=null; return; }
+  const left=S.timerEnd-Date.now();
+  if(left<=0){
+    b.textContent='⏱ 0:00'; b.style.color='#FF6B6B'; b.style.borderColor='#FF6B6B';
+    hint('⏱ ¡Tiempo de análisis terminado! Cerrá tu plan.',true);
+    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    S.timerEnd=null; save(); clearInterval(timerInt); timerInt=null; return;
+  }
+  b.textContent='⏱ '+fmtT(left);
+  b.style.color=left<60000?'#FF6B6B':'#00D2FF'; b.style.borderColor=left<60000?'#FF6B6B':'#00D2FF';
+}
+document.getElementById('timerBtn').addEventListener('click',()=>{
+  if(S.timerEnd){ if(confirm('¿Cancelar el timer?')){ S.timerEnd=null; save(); tickTimer(); } return; }
+  const m=prompt('¿Cuántos minutos de análisis? (ej. 5, 10, 15)','10');
+  const min=parseFloat(m);
+  if(!min||min<=0) return;
+  S.timerEnd=Date.now()+min*60000; save();
+  tickTimer(); if(!timerInt) timerInt=setInterval(tickTimer,1000);
+  hint('⏱ Timer de '+min+' min corriendo — analizá el spot');
+});
+if(S.timerEnd){ tickTimer(); timerInt=setInterval(tickTimer,1000); }
+
 // arranque: si ya había condiciones, seguir donde estaba
-if(S.wave&&S.tide&&S.wind&&(S.els.length||S.insideY!=null)) show('s2');
+if(S.wave&&S.tide&&S.wind&&(S.els.length||S.inY!=null||S.outY!=null)) show('s2');
 </script>
 </body>
 </html>
