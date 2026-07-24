@@ -8,7 +8,7 @@ import { MapPin, X } from 'lucide-react';
 // (localStorage); nothing is saved server-side. Used by coach + athlete.
 export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   // null = closed · 'check' = free-session Venue Check · 'scout' = competition
-  const [open, setOpen] = useState<null | 'check' | 'scout'>(null);
+  const [open, setOpen] = useState<null | 'check' | 'train' | 'comp'>(null);
   const [chooser, setChooser] = useState(false);
   const dark = variant === 'dark';
 
@@ -44,13 +44,18 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
             <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#00D2FF]">¿Qué vas a hacer?</p>
             <button type="button" onClick={() => { setChooser(false); setOpen('check'); }}
               className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
-              <p className="text-[15px] font-bold text-white">🌊 Sesión libre / training</p>
-              <p className="text-[12px] text-white/50 mt-0.5">Venue Check — condiciones, entrada/salida, corrientes y tu zona. Simple, dibujás todo en el mapa.</p>
+              <p className="text-[15px] font-bold text-white">🌊 Venue Check · sencillo</p>
+              <p className="text-[12px] text-white/50 mt-0.5">Para novatos e intermedios — entrada/salida, corrientes, picos y tu zona. Todo se dibuja en el mapa.</p>
             </button>
-            <button type="button" onClick={() => { setChooser(false); setOpen('scout'); }}
+            <button type="button" onClick={() => { setChooser(false); setOpen('train'); }}
+              className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
+              <p className="text-[15px] font-bold text-white">🏄 Sesión de entreno</p>
+              <p className="text-[12px] text-white/50 mt-0.5">Análisis avanzado — conteo de olas buenas, zona ideal, hazards con reporte completo.</p>
+            </button>
+            <button type="button" onClick={() => { setChooser(false); setOpen('comp'); }}
               className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
               <p className="text-[15px] font-bold text-white">🏁 Competencia</p>
-              <p className="text-[12px] text-white/50 mt-0.5">Venue Scout — análisis táctico completo para heats.</p>
+              <p className="text-[12px] text-white/50 mt-0.5">Plan táctico del heat — observación, simulación y estrategia por zonas.</p>
             </button>
             <button type="button" onClick={() => setChooser(false)} className="w-full py-2 text-[12px] text-white/40">Cancelar</button>
           </div>
@@ -71,7 +76,9 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
           >
             <X size={15} /> Cerrar
           </button>
-          <iframe src={open === 'check' ? '/venue-check/index.html' : '/venue-scout/index.html'} title="Venue tool" className="flex-1 w-full h-full border-0" />
+          <iframe
+            src={open === 'check' ? '/venue-check/index.html' : `/venue-scout/index.html?mode=${open === 'train' ? 'free' : 'comp'}`}
+            title="Venue tool" className="flex-1 w-full h-full border-0" />
         </div>
       )}
     </>
