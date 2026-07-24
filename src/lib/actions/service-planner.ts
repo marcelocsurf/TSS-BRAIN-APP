@@ -1532,6 +1532,26 @@ export async function closeCampFinal(
     throw new Error('You are not assigned to this service.');
   }
 
+  // M150 — the final evaluation (normal OR forced-early) is the moment the
+  // coach-rating survey unlocks for every student: take each student's most
+  // recent session result of this camp and unlock it.
+  try {
+    const { data: campSess } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
+    const sessIds = (campSess ?? []).map((x: any) => x.id);
+    if (sessIds.length) {
+      const { data: res } = await admin
+        .from('student_session_results')
+        .select('id, student_id, created_at')
+        .in('camp_session_id', sessIds)
+        .order('created_at', { ascending: false });
+      const latest = new Map<string, string>();
+      for (const r of res ?? []) if (!latest.has((r as any).student_id)) latest.set((r as any).student_id, (r as any).id);
+      if (latest.size) {
+        await admin.from('student_session_results').update({ survey_unlocked: true }).in('id', Array.from(latest.values()));
+      }
+    }
+  } catch { /* survey unlock is best-effort */ }
+
   // Accreditation authority (policy 2026-07-11): EVERY coach — including the
   // camp's head coach — can only promote UP TO their own certification
   // (max_belt_permission). Only admins bypass. An under-certified coach's
@@ -1960,6 +1980,24 @@ export async function closeServicePlan(
     .eq('id', campSessionId);
   const campSession = { id: campSessionId };
 
+  // ── Survey cadence (M150) ──
+  // Rating the coach every single day of a camp is survey fatigue. Rule:
+  //   • 1-day services (classes, lessons, trips) → survey on close.
+  //   • Multi-day camps → survey only on day 3 and the final day.
+  //   • A forced early finalization unlocks the survey via closeCampFinal.
+  const { data: sessMeta } = await admin
+    .from('camp_sessions')
+    .select('day_number')
+    .eq('id', campSessionId)
+    .maybeSingle();
+  const { count: totalDaysCount } = await admin
+    .from('camp_sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('camp_instance_id', sessionAny.camp_instance_id);
+  const dayNo = (sessMeta as any)?.day_number ?? 1;
+  const totalDays = totalDaysCount ?? 1;
+  const unlockSurveyToday = totalDays <= 1 || dayNo === 3 || dayNo === totalDays;
+
   // Board inventory: boards used today return to 'available' on close, unless
   // they were flagged 'in_repair' (e.g. by a damage incident). Phase 3.
   const usedBoardIds = Array.from(
@@ -2096,7 +2134,7 @@ export async function closeServicePlan(
         whats_next: firstBlock.whats_next ?? null,
         homework: null,
         completion_state: 'closed',
-        survey_unlocked: true,
+        survey_unlocked: unlockSurveyToday,
         portal_token: stud?.portal_token ?? null,
         // M50 — surface session hours in the student's portal totals.
         duration_minutes: sessionDurationMinutes,
@@ -2127,13 +2165,22 @@ export async function closeServicePlan(
       }
     }
 
+    // 4b. One-day CLASS services (yoga, trips…) have no final-evaluation
+    //     flow — closing the day IS the end of the service. Mark the camp
+    //     completed so student portals stop showing it "in progress".
+    //     (Done once per close; cheap idempotent update.)
+    // NOTE: kept above the survey email so tplForEmail is in scope below.
     // 4. Coach-survey email (M135). Fase 3: no more daily reports. The student
     //    gets ONE survey email — and for a multi-day camp that goes out after
     //    the official FINAL evaluation (closeCampFinal), NOT on a daily close.
     //    A one-day lesson (surf_lesson / Discover Surfing) has no separate
     //    final eval, so its close IS the moment to send the survey.
     const tplForEmail = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
-    const isOneDayLesson = (tplForEmail?.service_kind ?? null) === 'surf_lesson';
+    const kindForClose = tplForEmail?.service_kind ?? null;
+    if (totalDays <= 1 && kindForClose === 'class') {
+      await admin.from('camp_instances').update({ status: 'completed' }).eq('id', sessionAny.camp_instance_id);
+    }
+    const isOneDayLesson = kindForClose === 'surf_lesson' || (totalDays <= 1 && kindForClose === 'class');
     if (isOneDayLesson && !alreadyClosed && stud?.email && result) {
       try {
         const { sendCoachSurveyEmail } = await import('@/lib/actions/email');
