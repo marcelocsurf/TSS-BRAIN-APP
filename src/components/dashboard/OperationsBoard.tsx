@@ -6,7 +6,7 @@ import { getCoordinatorDashboardData } from '@/lib/actions/dashboard';
 // OPERATIONS BOARD (M148) — the coordinator's control center. Everything is
 // derived from signals the system already records: service_plans.created_at
 // (planned), started_at (opened), closed_at (closed) and the per-student
-// light evaluation on block 0 (feedback). Nothing is invented.
+// light evaluation on ANY of the student's blocks (feedback). Nothing is invented.
 
 const F_DISPLAY = { fontFamily: 'var(--font-archivo), var(--font-heading), sans-serif', fontStretch: '125%' as const, fontWeight: 800, textTransform: 'uppercase' as const, lineHeight: 1.05 };
 const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.16em' };
@@ -55,7 +55,7 @@ async function getOps(academyId: string) {
   const ids = (sess ?? []).map((s: any) => s.id);
   const [{ data: plans }, { data: blocks }] = await Promise.all([
     ids.length ? admin.from('service_plans').select('camp_session_id, completion_state, started_at, closed_at').in('camp_session_id', ids) : Promise.resolve({ data: [] } as any),
-    ids.length ? admin.from('service_plan_blocks').select('camp_session_id, student_id, focus_level, flow_channel, day_objective_status, notes_post').in('camp_session_id', ids).eq('order_index', 0) : Promise.resolve({ data: [] } as any),
+    ids.length ? admin.from('service_plan_blocks').select('camp_session_id, student_id, focus_level, flow_channel, day_objective_status, notes_post').in('camp_session_id', ids) : Promise.resolve({ data: [] } as any),
   ]);
   const planByS = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p]));
   const fbByS = new Map<string, Set<string>>();

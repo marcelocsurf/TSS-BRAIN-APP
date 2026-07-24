@@ -1436,6 +1436,20 @@ export async function applyTemplateDayToStudents(
   const studentIds = (parts ?? []).map((p: any) => p.student_id);
   if (studentIds.length === 0) return;
 
+  // Preserve per-student board assignments (e.g. "use this board all week",
+  // M136) before wiping — the re-seed below would otherwise erase them.
+  const { data: prevBlocks } = await admin
+    .from('service_plan_blocks')
+    .select('student_id, board_id, board_type, board_size_feet, board_size_inches')
+    .eq('camp_session_id', campSessionId)
+    .in('student_id', studentIds);
+  const savedBoard = new Map<string, any>();
+  for (const b of prevBlocks ?? []) {
+    if ((b.board_id || b.board_type) && !savedBoard.has(b.student_id)) {
+      savedBoard.set(b.student_id, { board_id: b.board_id, board_type: b.board_type, board_size_feet: b.board_size_feet, board_size_inches: b.board_size_inches });
+    }
+  }
+
   // Wipe existing blocks for this session × these students
   await admin
     .from('service_plan_blocks')
@@ -1470,6 +1484,19 @@ export async function applyTemplateDayToStudents(
       ({ error } = await admin.from('service_plan_blocks').insert(legacy));
     }
     if (error) throw new Error(error.message);
+
+    // Re-apply the preserved board to each student's FIRST block.
+    if (savedBoard.size > 0) {
+      const minIdx = Math.min(...templateBlocks.map((tb: any) => tb.order_index ?? 0));
+      for (const [studentId, board] of savedBoard) {
+        await admin
+          .from('service_plan_blocks')
+          .update(board)
+          .eq('camp_session_id', campSessionId)
+          .eq('student_id', studentId)
+          .eq('order_index', minIdx);
+      }
+    }
   }
 }
 
