@@ -44,6 +44,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/manager-portal') || // token-gated read-only manager view
     pathname.startsWith('/front-desk') ||     // token-gated reception check-in screen
     pathname.startsWith('/join') ||           // public class signup (QR)
+    pathname.startsWith('/venue-scout') ||    // standalone analysis tool (no data server-side)
+    pathname.startsWith('/venue-check') ||    // standalone simple venue tool
     pathname.startsWith('/feedback') ||       // token-gated standalone survey
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
