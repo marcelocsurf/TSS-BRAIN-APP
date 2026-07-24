@@ -440,6 +440,95 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     setIncidents((prev) => prev.filter((i) => i.id !== id));
   };
 
+  // ── LIGHT MODE (M150) — class / trip services carry no TSS curriculum:
+  // no venue analysis, no blocks, no per-student evaluation. The whole day
+  // sheet is: start time (+ spot for trips), one general note, open, close.
+  const isLightService = data.camp.service_kind === 'class' || data.camp.service_kind === 'trip';
+  if (isLightService) {
+    const isTrip = data.camp.service_kind === 'trip';
+    const finalizeLight = () => {
+      if (!confirm(isTrip
+        ? 'Cerrar el trip?\n\n• Tu nota general le llega a todos los participantes\n• Se les pide evaluar el servicio (guía, transporte, spot)'
+        : 'Cerrar la clase?\n\n• Tu nota general (opcional) le llega a todos\n• Se les pide evaluar la experiencia')) return;
+      startTransition(async () => {
+        try {
+          await closeServicePlan(token, data.selectedDay.camp_session_id, [], { generalFeedback: plan.notes_general ?? null });
+          setPlan((p) => ({ ...p, completion_state: 'closed' }));
+        } catch (e: any) { alert(e.message || 'No se pudo cerrar'); }
+      });
+    };
+    return (
+      <div className="space-y-4 pb-32 max-w-lg">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            {isTrip ? '🚐 Surf trip · guided' : '🧘 Class · no TSS evaluation'}
+          </p>
+          <p className="text-lg font-bold text-[var(--tss-navy)] mt-1">{data.camp.camp_name}</p>
+          <p className="text-[12px] text-gray-500">{students.length} participant{students.length === 1 ? '' : 's'}
+            {state === 'closed' ? ' · ✓ cerrado' : state === 'in_progress' ? ' · en curso' : ''}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Hora de inicio</p>
+            <input type="time" defaultValue={plan.class_start_time ?? ''} disabled={state === 'closed'}
+              onBlur={(e) => commitPlanField('class_start_time', e.target.value || null)}
+              className="w-40 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          </div>
+          {isTrip && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Spot elegido</p>
+              <input type="text" defaultValue={plan.surf_venue ?? ''} disabled={state === 'closed'}
+                onBlur={(e) => commitPlanField('surf_venue', e.target.value || null)}
+                placeholder="Punta Roca, K59…"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            </div>
+          )}
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              Nota general {state !== 'closed' ? '· le llega a todos al cerrar' : ''}
+            </p>
+            <textarea defaultValue={plan.notes_general ?? ''} disabled={state === 'closed'} rows={3}
+              onBlur={(e) => commitPlanField('notes_general', e.target.value || null)}
+              placeholder={isTrip ? 'Condiciones épicas, surfeamos 2h en Punta Roca…' : 'Gran clase, buena energía…'}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Participants</p>
+          <div className="flex flex-wrap gap-1.5">
+            {students.map((st) => (
+              <span key={st.student_id} className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 text-[var(--tss-navy)]">
+                {st.display_name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {state === 'planned' ? (
+          <button type="button" disabled={pending}
+            onClick={() => startTransition(async () => {
+              try {
+                await startServicePlan(token, data.selectedDay.camp_session_id);
+                setPlan((p) => ({ ...p, completion_state: 'in_progress' }));
+              } catch (e: any) { alert(e.message || 'No se pudo abrir'); }
+            })}
+            className="w-full py-3.5 rounded-full bg-[#00D2FF] text-[#061C2B] text-[11px] font-mono uppercase tracking-[0.14em] font-semibold disabled:opacity-50">
+            {isTrip ? 'Salir al trip →' : 'Abrir la clase →'}
+          </button>
+        ) : state === 'in_progress' ? (
+          <button type="button" disabled={pending} onClick={finalizeLight}
+            className="w-full py-3.5 rounded-full bg-[#06D6A0] text-[#061C2B] text-[11px] font-mono uppercase tracking-[0.14em] font-semibold disabled:opacity-50">
+            {isTrip ? 'Cerrar el trip ✓' : 'Cerrar la clase ✓'}
+          </button>
+        ) : (
+          <p className="text-center text-[12px] text-gray-400 py-2">✓ Cerrado — los participantes recibieron tu nota y su encuesta.</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 pb-32">
       {/* M47 — Drill / mission detail popover. */}

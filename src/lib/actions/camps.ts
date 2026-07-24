@@ -1095,7 +1095,7 @@ export async function updateEnrollmentPayment(input: {
       .maybeSingle();
     const kind = (seat as any)?.camp_instances?.camp_templates?.service_kind;
     const st = (seat as any)?.students;
-    if (kind === 'class' && st && !st.waiver_signed) {
+    if ((kind === 'class' || kind === 'trip') && st && !st.waiver_signed) {
       // Returned (not thrown): thrown server-action errors are masked in
       // production, so the coordinator would only see a generic digest.
       return {
@@ -1449,7 +1449,7 @@ export interface CreateTemplateInput {
   description: string;
   days: TemplateDayInput[];
   includes_course_key?: 'white_belt' | 'yellow_belt' | 'blue_belt' | null;
-  service_kind?: 'surf_lesson' | 'surf_camp' | 'class' | 'custom' | null;
+  service_kind?: 'surf_lesson' | 'surf_camp' | 'class' | 'trip' | 'custom' | null;
   capacity_max?: number | null;
   session_duration_minutes?: number | null;
   card_color?: string | null;

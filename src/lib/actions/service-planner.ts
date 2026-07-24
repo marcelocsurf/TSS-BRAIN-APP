@@ -1889,6 +1889,7 @@ export async function closeServicePlan(
   token: string,
   campSessionId: string,
   incidents?: IncidentReport[],
+  opts?: { generalFeedback?: string | null },
 ): Promise<void> {
   const admin = createAdminClient();
 
@@ -1971,7 +1972,31 @@ export async function closeServicePlan(
       .filter((p: any) => p.finalized_at || p.enrollment_status !== 'active')
       .map((p: any) => p.student_id),
   );
-  const allBlocks = (blocks ?? []).filter((b: any) => !departed.has(b.student_id));
+  let allBlocks = (blocks ?? []).filter((b: any) => !departed.has(b.student_id));
+
+  // ── Light services (class / trip, M150) — no per-student blocks exist.
+  // Synthesize one block per active participant so every student still gets
+  // a session result (bitácora + survey). The coach's single general note
+  // becomes everyone's feedback.
+  {
+    const tplLight = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
+    const kindLight = tplLight?.service_kind ?? null;
+    if (kindLight === 'class' || kindLight === 'trip') {
+      const activeIds = (activeParts ?? [])
+        .filter((p: any) => !departed.has(p.student_id))
+        .map((p: any) => p.student_id);
+      for (const sid of activeIds) {
+        if (!allBlocks.some((b: any) => b.student_id === sid)) {
+          allBlocks.push({ student_id: sid, order_index: 0, status: null, notes_post: null } as any);
+        }
+      }
+      if (opts?.generalFeedback?.trim()) {
+        for (const b of allBlocks) if (b.order_index === 0 || !allBlocks.some((x: any) => x.student_id === b.student_id && x.order_index < b.order_index)) {
+          (b as any).notes_post = opts.generalFeedback.trim();
+        }
+      }
+    }
+  }
 
   // Mark session completed.
   await admin
@@ -2177,10 +2202,10 @@ export async function closeServicePlan(
     //    final eval, so its close IS the moment to send the survey.
     const tplForEmail = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
     const kindForClose = tplForEmail?.service_kind ?? null;
-    if (totalDays <= 1 && kindForClose === 'class') {
+    if (totalDays <= 1 && (kindForClose === 'class' || kindForClose === 'trip')) {
       await admin.from('camp_instances').update({ status: 'completed' }).eq('id', sessionAny.camp_instance_id);
     }
-    const isOneDayLesson = kindForClose === 'surf_lesson' || (totalDays <= 1 && kindForClose === 'class');
+    const isOneDayLesson = kindForClose === 'surf_lesson' || (totalDays <= 1 && (kindForClose === 'class' || kindForClose === 'trip'));
     if (isOneDayLesson && !alreadyClosed && stud?.email && result) {
       try {
         const { sendCoachSurveyEmail } = await import('@/lib/actions/email');

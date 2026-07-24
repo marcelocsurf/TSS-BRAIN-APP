@@ -30,7 +30,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description), coaches:coach_id(display_name), camp_participants(id, enrollment_status)')
     .eq('academy_id', academy.id)
-    .eq('camp_templates.service_kind', 'class')
+    .in('camp_templates.service_kind', ['class', 'trip'])
     .gte('start_date', today)
     .neq('status', 'cancelled')
     .order('start_date')
@@ -122,7 +122,7 @@ export async function publicEnroll(input: {
     .eq('academy_id', academy.id)
     .maybeSingle();
   const tpl = camp ? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates) : null;
-  if (!camp || tpl?.service_kind !== 'class') return { ok: false, error: 'Class not found.' };
+  if (!camp || !['class', 'trip'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
   const active = ((camp as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const capacity = (camp as any).capacity_override ?? tpl?.capacity_max ?? 0;
   if (capacity > 0 && active.length >= capacity) return { ok: false, error: 'This class is full.' };

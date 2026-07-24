@@ -19,7 +19,47 @@ interface Props {
 // Schema-wise we still have the legacy 7-column survey_responses table —
 // the server action backfills the obsolete columns with coach_rating so
 // existing aggregates keep working without a migration.
-export function SurveyForm({ resultId, studentId, token: _token }: Props) {
+const QUESTIONS: Record<string, { header: string; sub: string; q: string[]; flow: string }> = {
+  coaching: {
+    header: 'Rate Your Coach',
+    sub: 'A few quick questions. Your honest feedback becomes part of their record.',
+    q: [
+      '1. How was your coach overall?',
+      '2. Were the instructions and explanations clear and easy to follow?',
+      '3. Did you feel safe and well looked after in the water?',
+      '4. Did you learn something and feel you improved?',
+      '5. Would you take another class with this coach?',
+    ],
+    flow: '6. How did the class feel?',
+  },
+  class: {
+    header: 'Rate Your Class',
+    sub: 'A few quick questions about your experience.',
+    q: [
+      '1. How was your instructor overall?',
+      '2. Were the instructions clear and easy to follow?',
+      '3. Did you feel safe and comfortable during the class?',
+      '4. How were the space, the equipment and the overall experience?',
+      '5. Would you take another class with us?',
+    ],
+    flow: '6. How did the class feel?',
+  },
+  trip: {
+    header: 'Rate Your Trip',
+    sub: 'A few quick questions about your surf trip.',
+    q: [
+      '1. How was your guide overall?',
+      '2. Was the communication clear (plan, timing, safety)?',
+      '3. How were the transport and overall comfort?',
+      '4. Did the guide take you to a spot that fit your needs and level?',
+      '5. Would you book another trip with us?',
+    ],
+    flow: '6. How did the trip feel?',
+  },
+};
+
+export function SurveyForm({ resultId, studentId, token: _token, variant = 'coaching' }: Props & { variant?: 'coaching' | 'class' | 'trip' }) {
+  const Q = QUESTIONS[variant] ?? QUESTIONS.coaching;
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
@@ -123,40 +163,40 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
       <div className="px-4 py-4 text-center" style={{ background: BRAND.colors.navy }}>
-        <h3 className="text-sm font-bold text-white">Rate Your Coach</h3>
+        <h3 className="text-sm font-bold text-white">{Q.header}</h3>
         <p className="text-xs mt-0.5" style={{ color: BRAND.colors.gold }}>
-          A few quick questions. Your honest feedback becomes part of their record.
+          {Q.sub}
         </p>
       </div>
 
       <div className="p-4 space-y-5">
 
         <StarQuestion
-          label="1. How was your coach overall?"
+          label={Q.q[0]}
           value={form.coach_rating}
           onChange={v => set('coach_rating', v)}
         />
 
         <StarQuestion
-          label="2. Were the instructions and explanations clear and easy to follow?"
+          label={Q.q[1]}
           value={form.feedback_clarity}
           onChange={v => set('feedback_clarity', v)}
         />
 
         <StarQuestion
-          label="3. Did you feel safe and well looked after in the water?"
+          label={Q.q[2]}
           value={form.safety_rating}
           onChange={v => set('safety_rating', v)}
         />
 
         <StarQuestion
-          label="4. Did you learn something and feel you improved?"
+          label={Q.q[3]}
           value={form.improvement_value}
           onChange={v => set('improvement_value', v)}
         />
 
         <StarQuestion
-          label="5. Would you take another class with this coach?"
+          label={Q.q[4]}
           value={form.recommend_rating}
           onChange={v => set('recommend_rating', v)}
         />
@@ -166,7 +206,7 @@ export function SurveyForm({ resultId, studentId, token: _token }: Props) {
             mismatches (coach thought it was optimal, student felt
             frustrated → next class needs less exigency). */}
         <FlowChannelQuestion
-          label="6. How did the class feel?"
+          label={Q.flow}
           value={form.flow_channel}
           onChange={v => set('flow_channel', v)}
         />

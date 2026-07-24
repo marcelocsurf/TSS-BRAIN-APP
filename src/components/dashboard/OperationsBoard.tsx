@@ -98,7 +98,7 @@ async function getOps(academyId: string) {
 
 // Day status color for the week matrix + discipline math.
 function dayStatus(r: SessionRow, today: string): 'green' | 'amber' | 'red' | 'blue' | 'gray' {
-  const isClass = r.kind === 'class';
+  const isClass = r.kind === 'class' || r.kind === 'trip';
   const fbOk = isClass || r.students === 0 || r.fbCount > 0;
   if (r.date > today) return 'gray';
   if (r.date === today) {
@@ -151,7 +151,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
   const attention: { title: string; chip: string; detail: string; href: string; sev: 'red' | 'amber' }[] = [];
   for (const r of todayRows) {
     if (!r.planned && !r.closed) attention.push({ title: r.name + (r.dayNumber ? ` · Day ${r.dayNumber}` : ''), chip: 'no plan yet', detail: `${r.coach ?? '—'}${r.time ? ` · ${r.time}` : ''}`, href: `/camps/${r.campId}`, sev: 'red' });
-    if (r.kind === 'class' && r.unpaid > 0) attention.push({ title: r.name, chip: `${r.unpaid} unpaid`, detail: `${r.students} enrolled · settle at front desk`, href: `/camps/${r.campId}`, sev: 'amber' });
+    if ((r.kind === 'class' || r.kind === 'trip') && r.unpaid > 0) attention.push({ title: r.name, chip: `${r.unpaid} unpaid`, detail: `${r.students} enrolled · settle at front desk`, href: `/camps/${r.campId}`, sev: 'amber' });
   }
   for (const r of rows.filter((x) => x.date < today)) {
     const st = dayStatus(r, today);
@@ -160,7 +160,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
   }
 
   const inWater = todayRows.filter((r) => r.opened && !r.closed).reduce((n, r) => n + r.students, 0);
-  const onTrack = todayRows.filter((r) => ['green', 'blue'].includes(dayStatus(r, today)) && (r.planned || r.kind === 'class')).length;
+  const onTrack = todayRows.filter((r) => ['green', 'blue'].includes(dayStatus(r, today)) && (r.planned || r.kind === 'class' || r.kind === 'trip')).length;
   const dayName = new Date(today + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
 
   // ── week matrix, grouped by camp ──
@@ -259,7 +259,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
         ) : (
           <div className="divide-y divide-gray-50">
             {todayRows.map((r) => {
-              const isClass = r.kind === 'class';
+              const isClass = r.kind === 'class' || r.kind === 'trip';
               const fbOk = r.students > 0 && r.fbCount > 0;
               const chip = r.closed
                 ? (isClass || fbOk ? { t: 'Complete', c: 'bg-emerald-50 text-emerald-700' } : { t: 'Closed · no feedback', c: 'bg-amber-50 text-amber-700' })

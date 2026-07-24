@@ -106,7 +106,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
   const [includesCourse, setIncludesCourse] = useState<'white_belt' | 'yellow_belt' | 'blue_belt' | ''>(
     initialData?.includes_course_key ?? '',
   );
-  const [serviceKind, setServiceKind] = useState<'surf_camp' | 'surf_lesson' | 'class' | 'custom' | ''>(
+  const [serviceKind, setServiceKind] = useState<'surf_camp' | 'surf_lesson' | 'class' | 'trip' | 'custom' | ''>(
     initialData?.service_kind ?? '',
   );
   const [capacityMax, setCapacityMax] = useState<number>(initialData?.capacity_max ?? 4);
@@ -352,6 +352,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               <option value="surf_camp">Surf Camp (multi-day)</option>
               <option value="surf_lesson">Surf / Skate Lesson (single)</option>
               <option value="class">Class (yoga, ice bath, jiujitsu… no TSS evaluation)</option>
+              <option value="trip">Trip (guided surf trip — no coaching)</option>
               <option value="custom">Custom</option>
             </select>
             <p className="text-[10px] text-gray-400 mt-1">

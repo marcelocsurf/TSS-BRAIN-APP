@@ -1810,6 +1810,13 @@ function FeedbackTab({
                   resultId={result.id}
                   studentId={student.id}
                   token={token}
+                  variant={(() => {
+                    const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;
+                    const inst = ci ? (Array.isArray(ci.camp_instances) ? ci.camp_instances[0] : ci.camp_instances) : null;
+                    const tpl = inst ? (Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates) : null;
+                    const k = tpl?.service_kind;
+                    return k === 'trip' ? 'trip' : k === 'class' ? 'class' : 'coaching';
+                  })()}
                 />
               )}
             </div>

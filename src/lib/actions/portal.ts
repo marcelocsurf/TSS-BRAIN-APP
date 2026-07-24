@@ -646,7 +646,7 @@ export async function getPendingSurveys(studentId: string) {
   // Get all session results that have survey_unlocked=true
   const { data: results } = await admin
     .from('student_session_results')
-    .select('id, created_at, status, coach_feedback, standalone_sessions(*), coaches:coach_id(display_name)')
+    .select('id, created_at, status, coach_feedback, standalone_sessions(*), coaches:coach_id(display_name), camp_sessions:camp_session_id(camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))')
     .eq('student_id', studentId)
     .eq('survey_unlocked', true)
     .order('created_at', { ascending: false });
