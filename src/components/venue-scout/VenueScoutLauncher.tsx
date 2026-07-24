@@ -77,7 +77,7 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
             <X size={15} /> Cerrar
           </button>
           <iframe
-            src={open === 'check' ? '/venue-check/index.html' : `/venue-scout/index.html?mode=${open === 'train' ? 'free' : 'comp'}`}
+            src={open === 'check' ? `/venue-check/index.html?v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'train' ? 'free' : 'comp'}&v=${Date.now()}`}
             title="Venue tool" className="flex-1 w-full h-full border-0" />
         </div>
       )}
