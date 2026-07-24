@@ -70,8 +70,8 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
           <button
             type="button"
             onClick={() => setOpen(null)}
-            className="absolute left-3 z-[110] inline-flex items-center gap-1 rounded-lg bg-black/70 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur"
-            style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
+            className="absolute right-3 z-[110] inline-flex items-center gap-1 rounded-lg bg-black/70 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur border border-white/20"
+            style={{ top: 'calc(env(safe-area-inset-top) + 4.5rem)' }}
             aria-label="Cerrar"
           >
             <X size={15} /> Cerrar
