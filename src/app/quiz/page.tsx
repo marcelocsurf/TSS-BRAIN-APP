@@ -1,4 +1,9 @@
 import { QuizClient } from './quiz-client';
+import { Archivo, IBM_Plex_Mono, Lora } from 'next/font/google';
+
+const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
+const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
+const lora = Lora({ subsets: ['latin'], style: ['italic'], variable: '--font-lora' });
 
 export const dynamic = 'force-dynamic';
 
@@ -13,5 +18,5 @@ export default async function QuizPage({
   searchParams: Promise<{ a?: string }>;
 }) {
   const { a } = await searchParams;
-  return <QuizClient academySlug={a ?? null} />;
+  return <div className={`${archivo.variable} ${plexMono.variable} ${lora.variable}`}><QuizClient academySlug={a ?? null} /></div>;
 }
