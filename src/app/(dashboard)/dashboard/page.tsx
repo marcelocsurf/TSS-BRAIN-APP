@@ -365,9 +365,9 @@ export default async function DashboardHome() {
         </div>
       )}
 
-      {/* Role-specific content — admin: Audit + Cierres en par simétrico */}
+      {/* Role-specific content — admin: full-width, apilado (sin huecos) */}
       {role === 'admin' && (
-        <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start space-y-4 md:space-y-0 mt-2">
+        <div className="space-y-4 mt-2">
           <AdminDashboard />
           <RecentClosesPanel />
         </div>
@@ -401,6 +401,11 @@ export default async function DashboardHome() {
       {role === 'admin' && (
         <div className="mt-8">
           <p className="tss-section-label"><Zap size={11} strokeWidth={1.75} /> Tools &amp; access</p>
+          <div className="grid sm:grid-cols-3 gap-3 mb-4">
+            <VideoAnalyzerLauncher variant="card" />
+            <BoardSelectorLauncher variant="card" />
+            {academyId && <BoardInventoryLauncher academyId={academyId} variant="card" />}
+          </div>
           {[
             { fam: 'Operación', items: [
               { href: '/sessions/new', label: 'Session', Icon: Play },
@@ -484,14 +489,6 @@ async function AdminDashboard() {
 
   return (
     <div className="space-y-4">
-      {/* System Stats fusionadas en el AdminOpsBoard (M152); los launchers
-          de herramientas viven en la banda Tools & access. */}
-      <div className="grid sm:grid-cols-3 gap-3">
-        <VideoAnalyzerLauncher variant="card" />
-        <BoardSelectorLauncher variant="card" />
-        {adminAcademyId && <BoardInventoryLauncher academyId={adminAcademyId} variant="card" />}
-      </div>
-
       {/* Recent Audit Events */}
       {auditEvents.length > 0 && (
         <div>
