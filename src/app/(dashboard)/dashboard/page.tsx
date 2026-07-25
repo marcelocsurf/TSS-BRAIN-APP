@@ -240,6 +240,7 @@ export default async function DashboardHome() {
             {[
               { href: '/library', label: 'Library', Icon: BookOpen },
               { href: '/costs', label: 'Costs', Icon: DollarSign },
+              { href: '/admin/tool-leads', label: 'Tool Leads', Icon: MapPin },
               { href: '/spaces', label: 'Espacios', Icon: CalendarClock },
               { href: '/venue-scout', label: 'Venue Scout', Icon: MapPin },
               { href: '/course-codes', label: 'Course Codes', Icon: Ticket },
