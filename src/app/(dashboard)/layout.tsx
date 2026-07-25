@@ -161,7 +161,7 @@ export default async function DashboardLayout({
                 <span className="text-[8px] text-white/35 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Lineage</span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/tss-logo-white.png?v=2"
+                  src="/tss-logo-white.png?v=3"
                   alt="The Surf Sequence"
                   className="h-4 w-auto object-contain opacity-70"
                 />
@@ -169,11 +169,11 @@ export default async function DashboardLayout({
             </div>
           ) : (
             <Image
-              src="/tss-logo-white.png?v=2"
+              src="/tss-logo-white.png?v=3"
               alt="The Surf Sequence"
-              width={170}
-              height={85}
-              className="opacity-95"
+              width={190}
+              height={95}
+              className="opacity-100"
               priority
             />
           )}
@@ -219,14 +219,14 @@ export default async function DashboardLayout({
               {/* The Surf Sequence lineage logo — always present. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/tss-logo-white.png?v=2"
+                src="/tss-logo-white.png?v=3"
                 alt="The Surf Sequence"
                 className="h-4 w-auto object-contain opacity-70 shrink-0"
               />
             </div>
           ) : (
             <Image
-              src="/tss-logo-white.png?v=2"
+              src="/tss-logo-white.png?v=3"
               alt="The Surf Sequence"
               width={132}
               height={66}
