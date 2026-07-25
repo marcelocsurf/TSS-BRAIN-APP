@@ -400,7 +400,11 @@ export default async function DashboardHome() {
       {/* ── ADMIN · Tools & access band (M152) — TODO junto, sin duplicados ── */}
       {role === 'admin' && (
         <div className="mt-8">
-          <p className="tss-section-label"><Zap size={11} strokeWidth={1.75} /> Tools &amp; access</p>
+          <div className="flex items-center gap-2 mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/venue-scout/tss-wave.png?v=1" alt="" className="h-6 w-auto" />
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--tss-navy)] font-semibold" style={{ fontFamily: 'DM Mono, monospace' }}>Tools &amp; access</p>
+          </div>
           <div className="grid sm:grid-cols-3 gap-3 mb-4">
             <VideoAnalyzerLauncher variant="card" />
             <BoardSelectorLauncher variant="card" />
@@ -434,22 +438,28 @@ export default async function DashboardHome() {
               { href: '/audit', label: 'Audit', Icon: ShieldCheck },
               { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3 },
             ]},
-          ].map((g) => (
+          ].map((g) => {
+            const FAM_COLOR: Record<string, string> = { 'Operación': '#00D2FF', 'Gente': '#06D6A0', 'Contenido': '#FFD166', 'Negocio': '#061C2B', 'Sistema': '#55666E' };
+            const c = FAM_COLOR[g.fam] ?? '#00D2FF';
+            return (
             <div key={g.fam} className="mb-3">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-gray-400 mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>{g.fam}</p>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <p className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-gray-400 mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+                <span className="inline-block w-2 h-2 rounded-full" style={{ background: c }} /> {g.fam}
+              </p>
+              <div className="flex flex-wrap gap-2">
                 {g.items.map(({ href, label, Icon }) => (
                   <Link key={href} href={href}
-                    className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-white px-2 py-3 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors text-center">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)]">
+                    className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:border-[#00D2FF] hover:shadow-md transition-all text-center"
+                    style={{ width: 118, height: 92 }}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)] group-hover:bg-[var(--tss-navy)] group-hover:text-[#00D2FF] transition-colors">
                       <Icon size={17} strokeWidth={1.75} />
                     </span>
-                    <span className="text-[11px] font-semibold text-[var(--tss-navy)] leading-tight">{label}</span>
+                    <span className="text-[9px] uppercase tracking-[0.08em] font-medium text-[var(--tss-navy)] leading-tight px-1" style={{ fontFamily: 'DM Mono, monospace' }}>{label}</span>
                   </Link>
                 ))}
               </div>
             </div>
-          ))}
+          );})}
           <div className="grid gap-3 sm:grid-cols-2 mt-3">
             <a href="/docs/sistema-resolver-problemas.pdf" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors">
