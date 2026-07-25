@@ -53,7 +53,13 @@ export function FinalCampEvaluation({
   canAccreditTarget = true,
   onCancel,
   onCompleted,
-}: Props) {
+  savedIds,
+  onStudentSaved,
+}: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void }) {
+  // M153 — per-student persistence: each save writes immediately, so closing
+  // the app never loses finished students again.
+  const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds ?? []));
+  const [savingId, setSavingId] = useState<string | null>(null);
   // Seed from the ratings already given during the camp days so they show
   // up here (deep-copied so edits don't mutate the parent's map).
   const [ratings, setRatings] = useState<RatingsMap>(() => {
@@ -164,6 +170,42 @@ export function FinalCampEvaluation({
   };
   const [promote, setPromote] = useState<Record<string, boolean>>({});
   const willPromote = (s: ServicePlanStudent) => canPromote(s) && (promote[s.student_id] ?? true);
+
+  const buildStudentPayload = (s: ServicePlanStudent) => {
+    const ratingsPayload: Array<{ student_id: string; step_id: string; rating: number }> = [];
+    for (const stepId of Object.keys(ratings[s.student_id] ?? {})) {
+      ratingsPayload.push({ student_id: s.student_id, step_id: stepId, rating: ratings[s.student_id][stepId] });
+    }
+    const result = {
+      student_id: s.student_id,
+      approved: studentApproved(s.student_id),
+      readiness_summary: readinessSummary(s.student_id),
+      ocean_level: oceanLevel[s.student_id] || '',
+      student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
+      coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
+    };
+    const promos = willPromote(s) ? [{ student_id: s.student_id, belt_level: targetBelt as string }] : [];
+    return { ratingsPayload, result, promos };
+  };
+
+  const saveOneStudent = (s: ServicePlanStudent) => {
+    const { ratingsPayload, result, promos } = buildStudentPayload(s);
+    setSavingId(s.student_id);
+    startTransition(async () => {
+      try {
+        await closeCampFinal(token, campInstanceId, ratingsPayload, [result], promos, { finalize: false });
+        setSavedSet((prev) => new Set(prev).add(s.student_id));
+        onStudentSaved?.(s.student_id);
+        // saltar al siguiente sin guardar
+        const next = students.find((x) => x.student_id !== s.student_id && !savedSet.has(x.student_id));
+        setOpenStudent(next?.student_id ?? null);
+      } catch (e: any) {
+        alert(e.message || 'No se pudo guardar este alumno.');
+      } finally {
+        setSavingId(null);
+      }
+    });
+  };
 
   const submit = () => {
     const payload: Array<{ student_id: string; step_id: string; rating: number }> = [];
@@ -291,6 +333,9 @@ export function FinalCampEvaluation({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {savedSet.has(s.student_id) && (
+                      <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">Guardado ✓</span>
+                    )}
                     {studentApproved(s.student_id) ? (
                       <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
                         Ready
@@ -308,6 +353,15 @@ export function FinalCampEvaluation({
 
                 {isOpen && (
                   <div className="p-3 border-t border-gray-100 space-y-2.5">
+                    <button
+                      type="button"
+                      onClick={() => saveOneStudent(s)}
+                      disabled={pending || savingId === s.student_id}
+                      className="w-full py-2.5 text-[12px] font-bold rounded-xl text-white disabled:opacity-50"
+                      style={{ background: savedSet.has(s.student_id) ? '#047857' : 'var(--tss-navy)' }}
+                    >
+                      {savingId === s.student_id ? 'Guardando…' : savedSet.has(s.student_id) ? '✓ Guardado — guardar cambios de nuevo' : '💾 Guardar este alumno (no se pierde)'}
+                    </button>
                     {stpCatalog.map((stp) => {
                       const current = ratings[s.student_id]?.[stp.id] ?? null;
                       const weak = current != null && current < rule.stpThreshold;

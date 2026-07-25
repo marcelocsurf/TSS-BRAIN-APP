@@ -394,6 +394,19 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const isLastDay = data.selectedDay.day_number === lastDayNumber;
   const [showFinalEval, setShowFinalEval] = useState(false);
 
+  // M153 — final evaluation is re-entrant: students already saved + the
+  // pending banner that brings the coach back until everyone is evaluated.
+  const [finalSaved, setFinalSaved] = useState<Set<string>>(
+    () => new Set((data as any).finalEvaluatedIds ?? []),
+  );
+  const allDaysClosed = data.daySummaries.length > 0 && data.daySummaries.every((d) => d.completion_state === 'closed');
+  const finalPendingCount = students.filter((s) => !finalSaved.has(s.student_id)).length;
+  const finalEvalPending =
+    allDaysClosed &&
+    (data.camp as any).status !== 'completed' &&
+    data.camp.service_kind !== 'class' && data.camp.service_kind !== 'trip' &&
+    finalPendingCount > 0;
+
   // M47 — Drill / mission detail modal. Tapping a drill name anywhere in
   // the planner opens this with the full canonical content (description,
   // key words, success criteria) so the coach can refresh how to teach it.
@@ -531,6 +544,24 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
   return (
     <div className="space-y-4 pb-32">
+      {/* M153 — the final evaluation stays reachable until EVERY student is
+          evaluated (Stanley case: filled 1, closed the app, lost the rest). */}
+      {finalEvalPending && !showFinalEval && (
+        <button
+          type="button"
+          onClick={() => setShowFinalEval(true)}
+          className="w-full text-left rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3.5 flex items-center justify-between gap-3"
+        >
+          <div>
+            <p className="text-[13px] font-bold text-amber-900">🏁 Evaluación final pendiente</p>
+            <p className="text-[11px] text-amber-700 mt-0.5">
+              {finalPendingCount} de {students.length} alumno{students.length === 1 ? '' : 's'} sin evaluar — tu avance se guarda alumno por alumno.
+            </p>
+          </div>
+          <span className="shrink-0 text-[11px] font-bold text-amber-900 bg-amber-200 rounded-full px-3 py-1.5">Continuar →</span>
+        </button>
+      )}
+
       {/* M47 — Drill / mission detail popover. */}
       {drillDetail && (
         <DrillDetailModal drill={drillDetail} onClose={() => setDrillDetailId(null)} />
@@ -541,6 +572,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <FinalCampEvaluation
           token={token}
           campInstanceId={data.camp.id}
+          savedIds={Array.from(finalSaved)}
+          onStudentSaved={(id: string) => setFinalSaved((prev) => new Set(prev).add(id))}
           campName={data.camp.camp_name}
           students={students}
           stpCatalog={data.graduationCatalog}

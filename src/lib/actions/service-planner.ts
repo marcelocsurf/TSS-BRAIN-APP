@@ -30,6 +30,8 @@ export interface ServicePlanData {
     coach_max_belt: string | null;
     viewer_is_head_coach: boolean;
   };
+  // M153 — students whose official final evaluation is already saved.
+  finalEvaluatedIds: string[];
   // M45 — list of all days (one camp_session per day) so the UI can render
   // a day picker. `selectedDay` is the day currently loaded in `plan` and
   // `students[].block` below.
@@ -327,6 +329,14 @@ export async function getServicePlan(
     .in('camp_session_id', sessionIds);
   const planBySessionId = new Map<string, any>();
   for (const p of plansForCamp ?? []) planBySessionId.set(p.camp_session_id, p);
+
+  // M153 — final-eval progress: which students already have their official
+  // final evaluation saved (partial saves included).
+  const { data: fevs } = await admin
+    .from('camp_final_evaluations')
+    .select('student_id')
+    .eq('camp_instance_id', (camp as any).id);
+  const finalEvaluatedIds = Array.from(new Set((fevs ?? []).map((f: any) => f.student_id)));
 
   const daySummaries: ServiceDaySummary[] = sessions.map((s: any) => ({
     camp_session_id: s.id,
@@ -808,6 +818,7 @@ export async function getServicePlan(
     daySummaries,
     selectedDay,
     students,
+    finalEvaluatedIds,
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
     graduationCatalog: (gradRows ?? stpRows ?? []) as any[],
@@ -1512,7 +1523,11 @@ export async function closeCampFinal(
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
   results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
+  opts?: { finalize?: boolean },
 ): Promise<void> {
+  // finalize=false → per-student partial save (M153): writes ratings/acta/
+  // promotion but does NOT complete the camp nor unlock surveys yet.
+  const finalize = opts?.finalize !== false;
   const admin = createAdminClient();
 
   const { data: coach } = await admin
@@ -1535,7 +1550,7 @@ export async function closeCampFinal(
   // M150 — the final evaluation (normal OR forced-early) is the moment the
   // coach-rating survey unlocks for every student: take each student's most
   // recent session result of this camp and unlock it.
-  try {
+  if (finalize) try {
     const { data: campSess } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
     const sessIds = (campSess ?? []).map((x: any) => x.id);
     if (sessIds.length) {
