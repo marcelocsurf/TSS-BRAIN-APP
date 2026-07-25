@@ -22,6 +22,7 @@ import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { OperationsBoard } from '@/components/dashboard/OperationsBoard';
+import { AdminOpsBoard } from '@/components/dashboard/AdminOpsBoard';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
@@ -47,6 +48,12 @@ import {
   Zap,
   CalendarClock,
   MapPin,
+  Play,
+  Star,
+  Dumbbell,
+  Presentation,
+  ShieldCheck,
+  ShoppingBag,
   Ticket,
   DollarSign,
   Receipt,
@@ -205,9 +212,17 @@ export default async function DashboardHome() {
           happened, it outranks everything else on this page. */}
       <div className="mb-4"><IncidentsPanel incidents={incidents} /></div>
 
+      {/* Admin ops board (M152) — ONE stats block + platform attention. */}
+      {role === 'admin' && (
+        <AdminOpsBoard
+          unreadIncidents={incidents.filter((i: any) => !i.acknowledged).length}
+          pendingSurveys={pendingSurveys ?? 0}
+        />
+      )}
+
       {/* Quick-access reference cards — for coordinator these moved to the
           Tools & reference band at the bottom (M148). */}
-      {role !== 'coordinator' && (
+      {(role === 'coach' || role === 'assistant') && (
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <a
           href="/docs/sistema-resolver-problemas.pdf"
@@ -228,39 +243,7 @@ export default async function DashboardHome() {
       </div>
       )}
 
-      {/* Quick actions — the tools the admin reaches for daily, one tap from
-          Home instead of hunting the sidebar. */}
-      {role === 'admin' && (
-        <div className="mb-6">
-          <p className="tss-section-label">
-            <Zap size={11} strokeWidth={1.75} />
-            Quick actions
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
-            {[
-              { href: '/library', label: 'Library', Icon: BookOpen },
-              { href: '/costs', label: 'Costs', Icon: DollarSign },
-              { href: '/admin/tool-leads', label: 'Tool Leads', Icon: MapPin },
-              { href: '/spaces', label: 'Espacios', Icon: CalendarClock },
-              { href: '/venue-scout', label: 'Venue Scout', Icon: MapPin },
-              { href: '/course-codes', label: 'Course Codes', Icon: Ticket },
-              { href: '/admin/pricing', label: 'Pricing', Icon: DollarSign },
-              { href: '/admin/billing', label: 'Billing', Icon: Receipt },
-            ].map(({ href, label, Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-white px-2 py-3.5 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors text-center"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)]">
-                  <Icon size={17} strokeWidth={1.75} />
-                </span>
-                <span className="text-[11px] font-semibold text-[var(--tss-navy)] leading-tight">{label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Admin quick actions merged into the Tools band at the bottom (M152). */}
 
       {/* Academy setup checklist — coordinator, until filled */}
       {academySetup && (academySetup.emergencyMissing || academySetup.boardsMissing) && (
@@ -307,7 +290,7 @@ export default async function DashboardHome() {
 
       {/* Quick stats — telemetry strip. Hidden for coordinators, whose own
           dashboard has a richer academy-scoped stats block (no duplication). */}
-      {role !== 'coordinator' && (
+      {(role === 'coach' || role === 'assistant') && (
         <>
           <p className="tss-section-label">
             <BarChart3 size={11} strokeWidth={1.75} />
@@ -342,7 +325,7 @@ export default async function DashboardHome() {
       )}
 
       {/* Pending Drafts — legacy session flow; hidden for coordinator (M148) */}
-      {role !== 'coordinator' && drafts.length > 0 && (
+      {(role === 'coach') && drafts.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
@@ -382,34 +365,28 @@ export default async function DashboardHome() {
         </div>
       )}
 
-      {/* Role-specific content */}
-      {role === 'admin' && <AdminDashboard />}
+      {/* Role-specific content — admin: Audit + Cierres en par simétrico */}
+      {role === 'admin' && (
+        <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start space-y-4 md:space-y-0 mt-2">
+          <AdminDashboard />
+          <RecentClosesPanel />
+        </div>
+      )}
       {role === 'coordinator' && <CoordinatorDashboard />}
 
       {/* Coach closes + feedback oversight (M137) — bottom, collapsible. */}
-      {role === 'admin' && (
-        <div className="mt-6"><RecentClosesPanel /></div>
-      )}
+      {/* RecentClosesPanel del admin vive arriba, en par con Audit (M152). */}
       {role === 'coach' && coach && <CoachDashboard coachId={coach.id} />}
       {role === 'assistant' && <AssistantDashboard />}
 
       {/* Quick actions — only for non-coordinator roles. Coordinator has
           its own Quick Actions block inside CoordinatorDashboard above. */}
-      {role !== 'coordinator' && (
+      {(role === 'coach' || role === 'assistant') && (
         <>
           <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {(role === 'admin' || role === 'coach') && (
+            {role === 'coach' && (
               <QuickAction href="/sessions/new" label="Start Session" desc="6-step coach flow" accentColor="var(--tss-cyan)" />
-            )}
-            {role === 'admin' && (
-              <>
-                <QuickAction href="/students/new" label="Add Student" desc="Quick registration" accentColor="var(--tss-gold)" />
-                <QuickAction href="/camps" label="View Services" desc="Calendar & templates" accentColor="var(--tss-navy-light)" />
-                <QuickAction href="/coaches/new" label="Create Coach" desc="Add team member" accentColor="var(--tss-cyan)" />
-                <QuickAction href="/audit" label="View Audit" desc="System audit log" accentColor="var(--tss-warm)" />
-                <QuickAction href="/admin/pricing" label="Pricing & Invoices" desc="Set course prices, generate monthly invoices" accentColor="var(--tss-gold)" />
-              </>
             )}
             {role === 'coach' && (
               <QuickAction href="/students" label="My Students" desc="View student list" accentColor="var(--tss-gold)" />
@@ -419,6 +396,67 @@ export default async function DashboardHome() {
             )}
           </div>
         </>
+      )}
+      {/* ── ADMIN · Tools & access band (M152) — TODO junto, sin duplicados ── */}
+      {role === 'admin' && (
+        <div className="mt-8">
+          <p className="tss-section-label"><Zap size={11} strokeWidth={1.75} /> Tools &amp; access</p>
+          {[
+            { fam: 'Operación', items: [
+              { href: '/sessions/new', label: 'Session', Icon: Play },
+              { href: '/camps', label: 'Services', Icon: Tent },
+              { href: '/spaces', label: 'Espacios', Icon: CalendarClock },
+              { href: '/venue-scout', label: 'Venue Scout', Icon: MapPin },
+            ]},
+            { fam: 'Gente', items: [
+              { href: '/students/new', label: 'Add Student', Icon: Users },
+              { href: '/coaches/new', label: 'Add Staff', Icon: Star },
+              { href: '/course-codes', label: 'Course Codes', Icon: Ticket },
+            ]},
+            { fam: 'Contenido', items: [
+              { href: '/library', label: 'Library', Icon: BookOpen },
+              { href: '/drill-library', label: 'Drills', Icon: Dumbbell },
+              { href: '/presentations', label: 'Presentations', Icon: Presentation },
+            ]},
+            { fam: 'Negocio', items: [
+              { href: '/costs', label: 'Costs', Icon: DollarSign },
+              { href: '/admin/pricing', label: 'Pricing', Icon: DollarSign },
+              { href: '/admin/billing', label: 'Billing', Icon: Receipt },
+              { href: '/sales-log', label: 'Sales Log', Icon: ShoppingBag },
+              { href: '/admin/tool-leads', label: 'Tool Leads', Icon: MapPin },
+            ]},
+            { fam: 'Sistema', items: [
+              { href: '/audit', label: 'Audit', Icon: ShieldCheck },
+              { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3 },
+            ]},
+          ].map((g) => (
+            <div key={g.fam} className="mb-3">
+              <p className="text-[9px] uppercase tracking-[0.16em] text-gray-400 mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>{g.fam}</p>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {g.items.map(({ href, label, Icon }) => (
+                  <Link key={href} href={href}
+                    className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-white px-2 py-3 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors text-center">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)]">
+                      <Icon size={17} strokeWidth={1.75} />
+                    </span>
+                    <span className="text-[11px] font-semibold text-[var(--tss-navy)] leading-tight">{label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="grid gap-3 sm:grid-cols-2 mt-3">
+            <a href="/docs/sistema-resolver-problemas.pdf" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white"><LifeBuoy size={20} strokeWidth={1.75} /></span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
+                <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
+              </span>
+            </a>
+            {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -445,23 +483,13 @@ async function AdminDashboard() {
   const adminAcademyId = adminMe?.academy_id ?? null;
 
   return (
-    <div className="space-y-6">
-      {/* Tools — quick client-only utilities (lazy-loaded) */}
-      <div className="grid sm:grid-cols-2 gap-3">
+    <div className="space-y-4">
+      {/* System Stats fusionadas en el AdminOpsBoard (M152); los launchers
+          de herramientas viven en la banda Tools & access. */}
+      <div className="grid sm:grid-cols-3 gap-3">
         <VideoAnalyzerLauncher variant="card" />
         <BoardSelectorLauncher variant="card" />
         {adminAcademyId && <BoardInventoryLauncher academyId={adminAcademyId} variant="card" />}
-      </div>
-
-      {/* System Stats */}
-      <div>
-        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>System Stats</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <MiniStat label="Total Students" value={adminData.totalStudents} />
-          <MiniStat label="Total Coaches" value={adminData.totalCoaches} />
-          <MiniStat label="Total Sessions" value={adminData.totalSessions} />
-          <MiniStat label="Total Services" value={adminData.totalCamps} />
-        </div>
       </div>
 
       {/* Recent Audit Events */}
