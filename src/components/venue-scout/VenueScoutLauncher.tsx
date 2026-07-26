@@ -8,7 +8,7 @@ import { MapPin, X } from 'lucide-react';
 // (localStorage); nothing is saved server-side. Used by coach + athlete.
 export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   // null = closed · 'check' = free-session Venue Check · 'scout' = competition
-  const [open, setOpen] = useState<null | 'check' | 'train' | 'comp'>(null);
+  const [open, setOpen] = useState<null | 'check' | 'train' | 'comp' | 'game'>(null);
   const [chooser, setChooser] = useState(false);
   const dark = variant === 'dark';
 
@@ -57,6 +57,11 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
               <p className="text-[15px] font-bold text-white">🏁 Competencia</p>
               <p className="text-[12px] text-white/50 mt-0.5">Plan táctico del heat — observación, simulación y estrategia por zonas.</p>
             </button>
+            <button type="button" onClick={() => { setChooser(false); setOpen('game'); }}
+              className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#FFD166]/60">
+              <p className="text-[15px] font-bold text-white">🎮 Lineup Game <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFD166] ml-1">código</span></p>
+              <p className="text-[12px] text-white/50 mt-0.5">Juego de posicionamiento: los atletas eligen dónde sentarse, el coach marca las olas reales. Prioridad ISA.</p>
+            </button>
             <button type="button" onClick={() => setChooser(false)} className="w-full py-2 text-[12px] text-white/40">Cancelar</button>
           </div>
         </div>
@@ -77,7 +82,7 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
             <X size={15} /> Cerrar
           </button>
           <iframe
-            src={open === 'check' ? `/venue-check/index.html?src=portal&v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'train' ? 'free' : 'comp'}&src=portal&v=${Date.now()}`}
+            src={open === 'check' ? `/venue-check/index.html?src=portal&v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'game' ? 'game' : open === 'train' ? 'free' : 'comp'}&src=portal&v=${Date.now()}`}
             title="Venue tool" className="flex-1 w-full h-full border-0" />
         </div>
       )}
