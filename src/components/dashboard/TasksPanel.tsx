@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight, Pencil, Repeat, ListChecks, History } from 'lucide-react';
-import { createTask, updateTask, setTaskDone, deleteTask, listTaskHistory, type AcademyTask, type TaskReport } from '@/lib/actions/tasks';
+import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight, Pencil, Repeat, ListChecks, History, BarChart3, ChevronLeft } from 'lucide-react';
+import { createTask, updateTask, setTaskDone, deleteTask, listTaskHistory, monthlyTaskReport, type AcademyTask, type TaskReport, type MonthlyTaskSummary } from '@/lib/actions/tasks';
 
 // Standard recurring academy chores — one tap pre-fills the title.
 const PRESETS = [
@@ -242,6 +242,8 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
             </ul>
           )}
 
+          <MonthlyReport academyId={academyId} />
+
           {/* Done tasks */}
           {doneTasks.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
@@ -262,6 +264,103 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                 </li>
               ))}
             </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The month in one view: every report logged by the team, by person and by
+// task — the coordinator's compliance report. Loads on demand.
+function MonthlyReport({ academyId }: { academyId: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [data, setData] = useState<MonthlyTaskSummary | null>(null);
+  const [pending, start] = useTransition();
+
+  function load(m: string) {
+    setMonth(m);
+    start(async () => {
+      try { setData(await monthlyTaskReport(academyId, m)); } catch { setData(null); }
+    });
+  }
+  function shift(delta: number) {
+    const d = new Date(month + '-01T00:00:00');
+    d.setMonth(d.getMonth() + delta);
+    load(d.toISOString().slice(0, 7));
+  }
+  const monthLabel = new Date(month + '-01T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const rate = data && data.total > 0 ? Math.round((100 * data.done) / data.total) : null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <button
+        onClick={() => { if (!open && !data) load(month); setOpen((o) => !o); }}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--tss-navy)] hover:underline"
+      >
+        <BarChart3 size={13} /> Monthly report {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+      </button>
+      {open && (
+        <div className="mt-2 rounded-xl border border-gray-100 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={() => shift(-1)} className="p-1 text-gray-400 hover:text-[var(--tss-navy)]" aria-label="Previous month"><ChevronLeft size={14} /></button>
+            <p className="text-xs font-semibold text-[var(--tss-navy)]">{monthLabel}</p>
+            <button onClick={() => shift(1)} className="p-1 text-gray-400 hover:text-[var(--tss-navy)]" aria-label="Next month"><ChevronRight size={14} /></button>
+          </div>
+          {pending ? (
+            <p className="text-[11px] text-gray-400 italic">Loading…</p>
+          ) : !data || data.total === 0 ? (
+            <p className="text-[11px] text-gray-400">No task reports logged this month.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="rounded-lg bg-gray-50 px-2 py-1.5 text-center">
+                  <p className="text-lg font-extrabold text-[var(--tss-navy)] leading-none">{data.total}</p>
+                  <p className="text-[9px] uppercase tracking-wide text-gray-400 mt-1">reports</p>
+                </div>
+                <div className="rounded-lg bg-emerald-50 px-2 py-1.5 text-center">
+                  <p className="text-lg font-extrabold text-emerald-600 leading-none">{data.done}</p>
+                  <p className="text-[9px] uppercase tracking-wide text-emerald-600/70 mt-1">done</p>
+                </div>
+                <div className="rounded-lg bg-red-50 px-2 py-1.5 text-center">
+                  <p className="text-lg font-extrabold text-red-600 leading-none">{data.notDone}</p>
+                  <p className="text-[9px] uppercase tracking-wide text-red-500/70 mt-1">not done</p>
+                </div>
+              </div>
+              {rate !== null && (
+                <p className="text-[11px] text-gray-500 mb-3">Completion rate: <strong className={rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-600'}>{rate}%</strong></p>
+              )}
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-300 mb-1">By person</p>
+              <ul className="space-y-0.5 mb-3">
+                {data.byPerson.map((p) => (
+                  <li key={p.name} className="flex items-center justify-between text-[12px]">
+                    <span className="text-gray-700">{p.name}</span>
+                    <span className="font-mono text-[11px]">
+                      <span className="text-emerald-600">{p.done} ✓</span>
+                      {p.notDone > 0 && <span className="text-red-500"> · {p.notDone} ✗</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-300 mb-1">By task</p>
+              <ul className="space-y-1">
+                {data.byTask.map((t) => (
+                  <li key={t.title} className="text-[12px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-700 truncate">{t.title}</span>
+                      <span className="font-mono text-[11px] shrink-0 ml-2">
+                        <span className="text-emerald-600">{t.done} ✓</span>
+                        {t.notDone > 0 && <span className="text-red-500"> · {t.notDone} ✗</span>}
+                      </span>
+                    </div>
+                    {t.notDoneComments.length > 0 && (
+                      <p className="text-[10px] text-red-400 italic truncate">“{t.notDoneComments[t.notDoneComments.length - 1]}”</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
       )}

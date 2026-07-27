@@ -183,11 +183,21 @@ export async function updateTask(id: string, patch: {
 export async function setTaskDone(id: string, done: boolean): Promise<{ ok: boolean; error?: string }> {
   const me = await assertManager();
   const admin = createAdminClient();
-  const { error } = await admin
+  const { data: task, error } = await admin
     .from('academy_tasks')
     .update({ status: done ? 'done' : 'open', done_at: done ? new Date().toISOString() : null, done_by: done ? ((me as any).id ?? null) : null })
-    .eq('id', id);
+    .eq('id', id)
+    .select('academy_id')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  // Log the quick-tick in the control trail too, so the monthly report
+  // counts coordinator completions the same as assignee reports.
+  if (done) {
+    await admin.from('task_completions').insert({
+      task_id: id, academy_id: task?.academy_id ?? null, outcome: 'done',
+      comment: null, checklist_state: null, completed_by: (me as any).id ?? null,
+    }).then(() => {}, () => {});
+  }
   revalidatePath('/dashboard');
   return { ok: true };
 }
@@ -307,6 +317,62 @@ export async function listTaskHistory(taskId: string): Promise<TaskReport[]> {
     completed_by_name: (Array.isArray(r.coaches) ? r.coaches[0] : r.coaches)?.display_name ?? null,
     created_at: r.created_at,
   }));
+}
+
+export interface MonthlyTaskSummary {
+  month: string;                 // 'YYYY-MM'
+  total: number;
+  done: number;
+  notDone: number;
+  byPerson: { name: string; done: number; notDone: number }[];
+  byTask: { title: string; done: number; notDone: number; notDoneComments: string[] }[];
+}
+
+// Coordinator/admin: the month in one view — every report logged that month,
+// rolled up by person and by task. Reads task_completions (the control trail),
+// so tasks deleted later still count through their logged reports.
+export async function monthlyTaskReport(academyId: string | null, month: string): Promise<MonthlyTaskSummary> {
+  await assertManager();
+  const admin = createAdminClient();
+  const start = month + '-01';
+  const d = new Date(start + 'T00:00:00');
+  d.setMonth(d.getMonth() + 1);
+  const end = d.toISOString().slice(0, 10);
+  let q = admin
+    .from('task_completions')
+    .select('outcome, comment, created_at, coaches:completed_by(display_name), academy_tasks:task_id(title)')
+    .gte('created_at', start)
+    .lt('created_at', end)
+    .limit(1000);
+  if (academyId) q = q.eq('academy_id', academyId);
+  const { data } = await q;
+  const rows = (data ?? []).map((r: any) => ({
+    outcome: r.outcome as string,
+    comment: r.comment as string | null,
+    name: ((Array.isArray(r.coaches) ? r.coaches[0] : r.coaches)?.display_name as string) || '—',
+    title: ((Array.isArray(r.academy_tasks) ? r.academy_tasks[0] : r.academy_tasks)?.title as string) || '(deleted task)',
+  }));
+  const byPerson = new Map<string, { name: string; done: number; notDone: number }>();
+  const byTask = new Map<string, { title: string; done: number; notDone: number; notDoneComments: string[] }>();
+  let done = 0, notDone = 0;
+  for (const r of rows) {
+    const ok = r.outcome === 'done';
+    if (ok) done++; else notDone++;
+    const p = byPerson.get(r.name) ?? { name: r.name, done: 0, notDone: 0 };
+    ok ? p.done++ : p.notDone++;
+    byPerson.set(r.name, p);
+    const t = byTask.get(r.title) ?? { title: r.title, done: 0, notDone: 0, notDoneComments: [] };
+    ok ? t.done++ : t.notDone++;
+    if (!ok && r.comment) t.notDoneComments.push(r.comment);
+    byTask.set(r.title, t);
+  }
+  const desc = (a: { done: number; notDone: number }, b: { done: number; notDone: number }) =>
+    (b.done + b.notDone) - (a.done + a.notDone);
+  return {
+    month, total: rows.length, done, notDone,
+    byPerson: [...byPerson.values()].sort(desc),
+    byTask: [...byTask.values()].sort(desc),
+  };
 }
 
 // Coordinator/admin: latest reports across the academy — the "not done +
