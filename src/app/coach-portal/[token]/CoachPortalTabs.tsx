@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BRAND } from '@/lib/constants/brand';
 import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-portal';
 import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/lib/actions/coach-portal';
+import { sellerSearchStudents, sellerReserveSpot, sellerMySales, type SellerSale } from '@/lib/actions/seller';
 import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
@@ -137,7 +138,7 @@ export function CoachPortalTabs({
           </div>
         )}
         {activeTab === 'sell' && canSell && (
-          <SellTab services={data.academyServices} />
+          <SellTab services={data.academyServices} token={coach.portal_token} />
         )}
         {activeTab === 'courses' && (
           <CoursesTab
@@ -394,10 +395,14 @@ function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
   );
 }
 
-// Seller "Sell" tab (Fase 2A): sales chart with goal + services calendar with
-// real availability. Read-only for now — the reserve/sell flow comes in 2C.
-function SellTab({ services }: { services: any[] }) {
+// Seller "Sell" tab: goal chart (2A) + selling decks (2B) + reserve-a-spot
+// flow (2C) + the seller's own sales log (2D). Sellers reserve; the
+// coordinator confirms payment.
+function SellTab({ services, token }: { services: any[]; token: string }) {
   const live = (services ?? []).filter((s) => s.status !== 'cancelled');
+  const [reservingId, setReservingId] = useState<string | null>(null);
+  const [sales, setSales] = useState<SellerSale[] | null>(null);
+  useEffect(() => { sellerMySales(token).then(setSales).catch(() => setSales([])); }, [token]);
 
   // Per-service unit price = what's actually being charged there; fall back to
   // the academy-wide average, then to $99, so the goal is never zero.
@@ -463,33 +468,162 @@ function SellTab({ services }: { services: any[] }) {
             {rows.map(({ s, cap, available }) => {
               const full = available === 0;
               return (
-                <div key={s.id} className="rounded-lg bg-white/[0.04] px-3 py-2.5 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{s.camp_name}</p>
-                    <p className="text-[10px] text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>
-                      {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                      {s.scheduled_time ? ` · ${s.scheduled_time.slice(0, 5)}` : ''}
-                    </p>
-                    {s.sales_deck_url && (
-                      <a href={s.sales_deck_url} target="_blank" rel="noreferrer"
-                        className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-[#5AC3E7]/50 text-[#5AC3E7] hover:bg-[#5AC3E7]/10">
-                        📽 Selling deck →
-                      </a>
-                    )}
+                <div key={s.id} className="rounded-lg bg-white/[0.04] px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{s.camp_name}</p>
+                      <p className="text-[10px] text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>
+                        {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {s.scheduled_time ? ` · ${s.scheduled_time.slice(0, 5)}` : ''}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {s.sales_deck_url && (
+                          <a href={s.sales_deck_url} target="_blank" rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-[#5AC3E7]/50 text-[#5AC3E7] hover:bg-[#5AC3E7]/10">
+                            📽 Selling deck →
+                          </a>
+                        )}
+                        {!full && (
+                          <button onClick={() => setReservingId(reservingId === s.id ? null : s.id)}
+                            className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full ${reservingId === s.id ? 'bg-white/15 text-white' : 'text-[#0A1628]'}`}
+                            style={reservingId === s.id ? undefined : { background: '#06D6A0' }}>
+                            {reservingId === s.id ? '× Close' : '+ Reserve a spot'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${full ? 'bg-white/10 text-white/50' : 'text-[#0A1628]'}`} style={!full ? { background: '#5AC3E7' } : undefined}>
+                      {full ? 'Full' : `${available} of ${cap} free`}
+                    </span>
                   </div>
-                  <span className={`text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${full ? 'bg-white/10 text-white/50' : 'text-[#0A1628]'}`} style={!full ? { background: '#5AC3E7' } : undefined}>
-                    {full ? 'Full' : `${available} of ${cap} free`}
-                  </span>
+                  {reservingId === s.id && (
+                    <ReserveForm token={token} campId={s.id}
+                      onDone={() => { setReservingId(null); sellerMySales(token).then(setSales).catch(() => {}); }} />
+                  )}
                 </div>
               );
             })}
           </div>
         )}
-        <p className="text-[10px] text-white/30 mt-3">Reserving a spot from here comes next — for now this shows live availability so you can sell.</p>
+        <p className="text-[10px] text-white/30 mt-3">You reserve, the coordinator confirms the payment.</p>
+      </div>
+
+      {/* 2D — My sales (form component below) */}
+      <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-3">
+          My sales {sales && sales.length > 0 && <span className="text-white/40">· {sales.length}</span>}
+        </p>
+        {!sales ? (
+          <p className="text-[12px] text-white/40">Loading…</p>
+        ) : sales.length === 0 ? (
+          <p className="text-[13px] text-white/40">No reservations yet — your sales will show up here with their payment status.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {sales.map((v) => (
+              <div key={v.id} className="rounded-lg bg-white/[0.04] px-3 py-2 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[13px] text-white font-medium truncate">{v.student_name}</p>
+                  <p className="text-[10px] text-white/40 truncate" style={{ fontFamily: 'DM Mono, monospace' }}>
+                    {v.camp_name}{v.start_date ? ` · ${new Date(v.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  </p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${v.enrollment_status !== 'active' ? 'bg-white/10 text-white/40' : v.payment_status === 'paid' ? 'bg-[#06D6A0]/20 text-[#06D6A0]' : 'bg-[#FFD166]/15 text-[#FFD166]'}`}>
+                  {v.enrollment_status !== 'active' ? v.enrollment_status : v.payment_status === 'paid' ? `Paid${v.amount_cents ? ' $' + Math.round(v.amount_cents / 100) : ''}` : 'Payment pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+// 2C — inline reserve form: existing client (search) or a new one (name +
+// contact). The reservation lands as payment-pending with sold_by set.
+function ReserveForm({ token, campId, onDone }: { token: string; campId: string; onDone: () => void }) {
+  const [mode, setMode] = useState<'search' | 'new'>('search');
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string; email: string | null }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [first, setFirst] = useState(''); const [last, setLast] = useState('');
+  const [email, setEmail] = useState(''); const [phone, setPhone] = useState('');
+  const [note, setNote] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (mode !== 'search' || q.trim().length < 2) { setResults([]); return; }
+    const t = setTimeout(() => { sellerSearchStudents(token, q).then(setResults).catch(() => {}); }, 350);
+    return () => clearTimeout(t);
+  }, [q, mode, token]);
+
+  const submit = async () => {
+    setBusy(true); setMsg(null);
+    const res = await sellerReserveSpot(token, campId,
+      picked ? { studentId: picked.id, note } : { firstName: first, lastName: last, email, phone, note });
+    setBusy(false);
+    if (!res.ok) { setMsg(res.error || 'Could not reserve.'); return; }
+    setMsg(null);
+    onDone();
+  };
+
+  const inp = 'w-full text-[13px] px-3 py-2 rounded-lg bg-white/[0.06] border border-white/15 text-white placeholder-white/30 focus:outline-none focus:border-[#5AC3E7]';
+  return (
+    <div className="mt-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
+      <div className="flex gap-1.5">
+        {(['search', 'new'] as const).map((m) => (
+          <button key={m} onClick={() => { setMode(m); setPicked(null); setMsg(null); }}
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${mode === m ? 'text-[#0A1628]' : 'text-white/50 border border-white/15'}`}
+            style={mode === m ? { background: '#5AC3E7' } : undefined}>
+            {m === 'search' ? 'Existing client' : 'New client'}
+          </button>
+        ))}
+      </div>
+      {mode === 'search' ? (
+        picked ? (
+          <div className="flex items-center justify-between rounded-lg bg-[#5AC3E7]/10 border border-[#5AC3E7]/40 px-3 py-2">
+            <p className="text-[13px] text-white font-medium">{picked.name}</p>
+            <button onClick={() => setPicked(null)} className="text-white/50 text-xs">change</button>
+          </div>
+        ) : (
+          <>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email…" className={inp} />
+            {results.length > 0 && (
+              <div className="rounded-lg overflow-hidden border border-white/10 divide-y divide-white/5">
+                {results.map((r) => (
+                  <button key={r.id} onClick={() => setPicked(r)} className="w-full text-left px-3 py-2 bg-white/[0.04] hover:bg-white/[0.09]">
+                    <p className="text-[13px] text-white">{r.name}</p>
+                    {r.email && <p className="text-[10px] text-white/40">{r.email}</p>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name *" className={inp} />
+            <input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" className={inp} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className={inp} />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp" className={inp} />
+          </div>
+        </>
+      )}
+      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for the coordinator (optional)" className={inp} />
+      {msg && <p className="text-[11px] text-[#FF6B6B]">{msg}</p>}
+      <button onClick={submit} disabled={busy || (mode === 'search' ? !picked : !first.trim())}
+        className="w-full py-2.5 rounded-full text-[12px] font-bold text-[#0A1628] disabled:opacity-40"
+        style={{ background: '#06D6A0' }}>
+        {busy ? 'Reserving…' : 'Reserve — coordinator confirms payment'}
+      </button>
+    </div>
+  );
+}
+
 
 function HomeTab({
   coach,
