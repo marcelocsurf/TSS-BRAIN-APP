@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BRAND } from '@/lib/constants/brand';
 import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-portal';
@@ -400,6 +401,7 @@ function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
 // coordinator confirms payment.
 function SellTab({ services, token }: { services: any[]; token: string }) {
   const live = (services ?? []).filter((s) => s.status !== 'cancelled');
+  const router = useRouter();
   const [reservingId, setReservingId] = useState<string | null>(null);
   const [sales, setSales] = useState<SellerSale[] | null>(null);
   useEffect(() => { sellerMySales(token).then(setSales).catch(() => setSales([])); }, [token]);
@@ -498,7 +500,7 @@ function SellTab({ services, token }: { services: any[]; token: string }) {
                   </div>
                   {reservingId === s.id && (
                     <ReserveForm token={token} campId={s.id}
-                      onDone={() => { setReservingId(null); sellerMySales(token).then(setSales).catch(() => {}); }} />
+                      onDone={() => { setReservingId(null); sellerMySales(token).then(setSales).catch(() => {}); router.refresh(); }} />
                   )}
                 </div>
               );
