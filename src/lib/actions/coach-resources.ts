@@ -434,3 +434,37 @@ export async function setResourceActive(id: string, active: boolean): Promise<{ 
   revalidatePath('/library');
   return { ok: true };
 }
+
+// ── Seller 2B: link a deck to service templates as their "selling process" ──
+
+export interface DeckTemplate {
+  id: string;
+  template_name: string;
+  service_kind: string | null;
+  sales_deck_resource_id: string | null;
+}
+
+// Admin: active service templates with their current sales deck (if any).
+export async function listTemplatesForDecks(): Promise<DeckTemplate[]> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_templates')
+    .select('id, template_name, service_kind, sales_deck_resource_id')
+    .eq('active_status', true)
+    .order('template_name');
+  return (data ?? []) as DeckTemplate[];
+}
+
+// Admin: point a template at a deck (or clear it with null).
+export async function setTemplateSalesDeck(templateId: string, resourceId: string | null): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('camp_templates')
+    .update({ sales_deck_resource_id: resourceId })
+    .eq('id', templateId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/presentations');
+  return { ok: true };
+}

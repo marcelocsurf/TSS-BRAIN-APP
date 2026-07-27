@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listCoachResources, createCoachResource, deleteCoachResource, type CoachResource } from '@/lib/actions/coach-resources';
+import { listCoachResources, createCoachResource, deleteCoachResource, listTemplatesForDecks, setTemplateSalesDeck, type CoachResource, type DeckTemplate } from '@/lib/actions/coach-resources';
 import { Presentation, Upload, Trash2 } from 'lucide-react';
 
 export function PresentationsManager() {
@@ -11,9 +11,21 @@ export function PresentationsManager() {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<DeckTemplate[]>([]);
 
-  const load = () => { listCoachResources().then(setItems).catch(() => {}); };
+  const load = () => {
+    listCoachResources().then(setItems).catch(() => {});
+    listTemplatesForDecks().then(setTemplates).catch(() => {});
+  };
   useEffect(() => { load(); }, []);
+
+  // Toggle: this resource becomes (or stops being) the selling deck of a template.
+  const toggleDeck = async (t: DeckTemplate, resourceId: string) => {
+    const next = t.sales_deck_resource_id === resourceId ? null : resourceId;
+    setTemplates((prev) => prev.map((x) => (x.id === t.id ? { ...x, sales_deck_resource_id: next } : x)));
+    const res = await setTemplateSalesDeck(t.id, next);
+    if (!res.ok) { alert(res.error || 'Could not save.'); load(); }
+  };
 
   const upload = async () => {
     if (!file || !title.trim()) { setError('Add a title and pick a PDF.'); return; }
@@ -63,17 +75,37 @@ export function PresentationsManager() {
         {items.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-6">No presentations yet.</p>
         ) : items.map((r) => (
-          <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--tss-cyan,#5AC3E7)]/15">
-              <Presentation size={16} className="text-[var(--tss-cyan,#5AC3E7)]" />
+          <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--tss-cyan,#5AC3E7)]/15">
+                <Presentation size={16} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-[var(--tss-navy)] truncate">{r.title}</p>
+                {r.description && <p className="text-[11px] text-gray-500 truncate">{r.description}</p>}
+              </div>
+              <button onClick={() => remove(r.id, r.title)} className="text-red-400 hover:text-red-600 shrink-0" aria-label="Delete">
+                <Trash2 size={16} />
+              </button>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-[var(--tss-navy)] truncate">{r.title}</p>
-              {r.description && <p className="text-[11px] text-gray-500 truncate">{r.description}</p>}
-            </div>
-            <button onClick={() => remove(r.id, r.title)} className="text-red-400 hover:text-red-600 shrink-0" aria-label="Delete">
-              <Trash2 size={16} />
-            </button>
+            {templates.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-50">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Selling deck for… (sellers see it on those services)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {templates.map((t) => {
+                    const on = t.sales_deck_resource_id === r.id;
+                    const taken = !on && !!t.sales_deck_resource_id;
+                    return (
+                      <button key={t.id} onClick={() => toggleDeck(t, r.id)}
+                        title={taken ? 'Currently using another deck — click to switch it to this one' : undefined}
+                        className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${on ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : taken ? 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                        {on ? '✓ ' : ''}{t.template_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -470,6 +470,12 @@ function SellTab({ services }: { services: any[] }) {
                       {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       {s.scheduled_time ? ` · ${s.scheduled_time.slice(0, 5)}` : ''}
                     </p>
+                    {s.sales_deck_url && (
+                      <a href={s.sales_deck_url} target="_blank" rel="noreferrer"
+                        className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-[#5AC3E7]/50 text-[#5AC3E7] hover:bg-[#5AC3E7]/10">
+                        📽 Selling deck →
+                      </a>
+                    )}
                   </div>
                   <span className={`text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${full ? 'bg-white/10 text-white/50' : 'text-[#0A1628]'}`} style={!full ? { background: '#5AC3E7' } : undefined}>
                     {full ? 'Full' : `${available} of ${cap} free`}
