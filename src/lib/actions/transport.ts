@@ -22,6 +22,7 @@ export interface TransportDay {
   transport_return: string | null;
   transport_status: string | null; // 'taken' | 'cancelled' | null = pending
   transport_actual_depart: string | null; // real 'HH:MM' the ride left (coordinator)
+  transport_actual_return: string | null; // real 'HH:MM' the ride got back (coordinator)
 }
 
 export async function listWeekTransports(): Promise<TransportDay[]> {
@@ -39,7 +40,7 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
     'camp_instances:camp_instance_id(id, camp_name, academy_id, ' +
     'head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status)))';
   const fullSelect =
-    'id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status, transport_actual_depart, ' +
+    'id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status, transport_actual_depart, transport_actual_return, ' +
     campJoin;
   let { data, error } = await admin.from('service_plans').select(fullSelect).eq('transport_needed', true);
   if (error) {
@@ -72,6 +73,7 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
       transport_return: (p as any).transport_return ?? null,
       transport_status: (p as any).transport_status ?? null,
       transport_actual_depart: (p as any).transport_actual_depart ?? null,
+      transport_actual_return: (p as any).transport_actual_return ?? null,
     });
   }
   rows.sort((a, b) => a.session_date.localeCompare(b.session_date) || (a.transport_depart ?? '').localeCompare(b.transport_depart ?? ''));
@@ -101,6 +103,21 @@ export async function setTransportActualDepart(
   if (!me) return { ok: false, error: 'Not authorized.' };
   const admin = createAdminClient();
   const { error } = await admin.from('service_plans').update({ transport_actual_depart: time }).eq('id', planId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/dashboard');
+  return { ok: true };
+}
+
+// Coordinator validates the REAL return time too — the coach programs both
+// times, the coordinator confirms both realities.
+export async function setTransportActualReturn(
+  planId: string,
+  time: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  const me = await getCurrentCoach();
+  if (!me) return { ok: false, error: 'Not authorized.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('service_plans').update({ transport_actual_return: time }).eq('id', planId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/dashboard');
   return { ok: true };

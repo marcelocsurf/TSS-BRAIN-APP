@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { Bus, Check, X, RotateCcw, Download, Copy, Clock, ChevronDown } from 'lucide-react';
-import { listWeekTransports, setTransportStatus, setTransportActualDepart, type TransportDay } from '@/lib/actions/transport';
+import { listWeekTransports, setTransportStatus, setTransportActualDepart, setTransportActualReturn, type TransportDay } from '@/lib/actions/transport';
 
 // Coordinator's transport board: every upcoming class day where the coach asked
 // for transport. The coordinator resolves each ride (taken / cancelled) and can
@@ -67,13 +67,21 @@ export function TransportPanel() {
     });
   }
 
+  function saveActualReturn(planId: string, time: string | null) {
+    start(async () => {
+      const r = await setTransportActualReturn(planId, time);
+      if (!r.ok) { alert(r.error || 'Could not save.'); return; }
+      refresh();
+    });
+  }
+
   // Only the rides that are actually needed (drop cancelled ones) — this is
   // the list the coordinator forwards to whoever arranges transport.
   const exportRows = (rows ?? []).filter((r) => r.transport_status !== 'cancelled');
   const statusEs = (s: string | null) => (s === 'taken' ? 'Tomado' : s === 'cancelled' ? 'Cancelado' : 'Pendiente');
 
   function downloadCsv() {
-    const header = ['Fecha', 'Servicio', 'Coach', 'Playa', 'Hora clase', 'Salida planeada', 'Salida real', 'Atraso (min)', 'Regreso', 'Alumnos', 'Estado'];
+    const header = ['Fecha', 'Servicio', 'Coach', 'Playa', 'Hora clase', 'Salida planeada', 'Salida real', 'Atraso (min)', 'Regreso planeado', 'Regreso real', 'Alumnos', 'Estado'];
     const cell = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = exportRows.map((r) => {
       const d = delayMin(r.transport_depart, r.transport_actual_depart);
@@ -81,7 +89,7 @@ export function TransportPanel() {
         fmtDate(r.session_date), r.camp_name ?? '', r.coach_name ?? '', r.surf_venue ?? '',
         fmtTime(r.class_start_time), fmtTime(r.transport_depart),
         r.transport_actual_depart ? fmtTime(r.transport_actual_depart) : '', d ?? '',
-        fmtTime(r.transport_return), r.students, statusEs(r.transport_status),
+        fmtTime(r.transport_return), r.transport_actual_return ? fmtTime(r.transport_actual_return) : '', r.students, statusEs(r.transport_status),
       ].map(cell).join(',');
     });
     const csv = ['﻿' + header.map(cell).join(','), ...lines].join('\r\n');
@@ -236,13 +244,24 @@ export function TransportPanel() {
                         </div>
                       </div>
                       {r.transport_status !== 'cancelled' && (
-                        <ActualDepartField
-                          planId={r.plan_id}
-                          planned={r.transport_depart}
-                          value={r.transport_actual_depart}
-                          pending={pending}
-                          onSave={saveActual}
-                        />
+                        <div className="flex flex-wrap gap-x-4">
+                          <ActualTimeField
+                            label="Salió a las:"
+                            planId={r.plan_id}
+                            planned={r.transport_depart}
+                            value={r.transport_actual_depart}
+                            pending={pending}
+                            onSave={saveActual}
+                          />
+                          <ActualTimeField
+                            label="Regresó a las:"
+                            planId={r.plan_id}
+                            planned={r.transport_return}
+                            value={r.transport_actual_return}
+                            pending={pending}
+                            onSave={saveActualReturn}
+                          />
+                        </div>
                       )}
                     </div>
                   ))}
@@ -256,9 +275,10 @@ export function TransportPanel() {
   );
 }
 
-// Optional "real departure time" input. Saves on blur; shows the delay vs the
-// planned departure right next to it.
-function ActualDepartField({ planId, planned, value, pending, onSave }: {
+// Optional "real time" input (departure or return). Saves on blur; shows the
+// delay vs the planned time right next to it.
+function ActualTimeField({ label, planId, planned, value, pending, onSave }: {
+  label: string;
   planId: string;
   planned: string | null;
   value: string | null;
@@ -270,7 +290,7 @@ function ActualDepartField({ planId, planned, value, pending, onSave }: {
   const d = delayMin(planned, local || null);
   return (
     <div className="flex items-center gap-1.5 mt-1">
-      <span className="text-[11px] text-gray-500 shrink-0">Salió a las:</span>
+      <span className="text-[11px] text-gray-500 shrink-0">{label}</span>
       <input
         type="time"
         value={local}
