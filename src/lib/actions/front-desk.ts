@@ -89,7 +89,8 @@ export async function frontDeskSettle(token: string, participantId: string, meth
 
   const { error } = await admin
     .from('camp_participants')
-    .update({ payment_status: 'paid', paid_at: new Date().toISOString(), payment_method: method })
+    .update({ payment_status: 'paid', paid_at: new Date().toISOString(), payment_method: method,
+      ...((seat as any).amount_cents == null && (seat as any).list_price_cents != null ? { amount_cents: (seat as any).list_price_cents } : {}) })
     .eq('id', participantId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };

@@ -53,7 +53,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   // Service must be in the seller's academy, upcoming and sellable.
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, academy_id, status, capacity_override, camp_templates:template_id(capacity_max)')
+    .select('id, camp_name, academy_id, status, capacity_override, camp_templates:template_id(capacity_max, list_price_cents)')
     .eq('id', campId)
     .maybeSingle();
   if (!camp || camp.academy_id !== coach.academy_id) return { ok: false, error: 'Service not found.' };
@@ -108,11 +108,13 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     return { ok: false, error: `${studentName || 'This client'} already has a spot in this service.` };
   }
 
+  const listPrice = (tpl as any)?.list_price_cents ?? null;
   const { error: insErr } = await admin.from('camp_participants').insert({
     camp_instance_id: campId,
     student_id: studentId,
     enrollment_status: 'active',
     payment_status: 'pending',
+    ...(listPrice != null ? { amount_cents: listPrice, list_price_cents: listPrice, sale_type: 'full' } : {}),
     sold_by: coach.id,
     reserved_at: new Date().toISOString(),
     notes: input.note?.trim() ? `Seller note: ${input.note.trim()}` : `Reserved by seller ${coach.display_name || ''}`.trim(),

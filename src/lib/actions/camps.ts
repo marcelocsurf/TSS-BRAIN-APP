@@ -1063,6 +1063,18 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
 
   revalidatePath(`/camps/${campInstanceId}`);
   revalidatePath('/camps');
+  // Misma promesa que al crear el camp: curso del nivel + 6 meses de membresía
+  // también cuando el alumno se agrega a un camp YA existente (M156/#17).
+  try {
+    const { data: inst2 } = await createAdminClient().from('camp_instances').select('camp_name, camp_templates:template_id(includes_course_key)').eq('id', campInstanceId).maybeSingle();
+    const key = (Array.isArray((inst2 as any)?.camp_templates) ? (inst2 as any).camp_templates[0] : (inst2 as any)?.camp_templates)?.includes_course_key ?? null;
+    if (key && !isRefresher) {
+      const { grantCourseToStudent } = await import('./course-grants');
+      await grantCourseToStudent(studentId, key, 'auto_on_camp_enrol');
+    }
+    const { extendMembership } = await import('@/lib/actions/memberships');
+    await extendMembership(studentId, 6, 'camp_enrollment', { note: `Camp: ${(inst2 as any)?.camp_name ?? campInstanceId}` });
+  } catch (e) { console.error('[addStudentToCamp] grant/membership hook failed', e); }
   return { success: true, isRefresher };
 }
 
