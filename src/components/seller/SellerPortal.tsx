@@ -21,6 +21,19 @@ const FILTERS = [
   { id: 'class', label: '🧘 Clases' },
 ] as const;
 
+function mondayOf(iso: string) {
+  const d = new Date(iso + 'T00:00:00');
+  const shift = (d.getDay() + 6) % 7; // lunes=0
+  d.setDate(d.getDate() - shift);
+  return d.toISOString().slice(0, 10);
+}
+function addDays(iso: string, n: number) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+const DOW_ES = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+
 function money(c: number) { return `$${(c / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`; }
 function dayLabel(iso: string, today: string) {
   if (iso === today) return 'HOY';
@@ -37,6 +50,8 @@ export function SellerPortal({ token, sellerName, services }: { token: string; s
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
   const [q, setQ] = useState('');
   const [reservingId, setReservingId] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [weekStart, setWeekStart] = useState<string>('');
   const [sales, setSales] = useState<SellerSale[] | null>(null);
   const [material, setMaterial] = useState<CoachResource[] | null>(null);
 
@@ -49,6 +64,29 @@ export function SellerPortal({ token, sellerName, services }: { token: string; s
 
   const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
   const live = (services ?? []).filter((s) => s.status !== 'cancelled');
+
+  // Tira de semana: arranca en la semana del primer servicio próximo.
+  useEffect(() => {
+    if (!weekStart) {
+      const first = [...live].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+      setWeekStart(mondayOf(first ? (first.start_date > today ? first.start_date : today) : today));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live.length]);
+
+  // Disponibilidad por día (para los puntitos de la tira)
+  const dayInfo = useMemo(() => {
+    const m = new Map<string, { n: number; free: boolean }>();
+    for (const s of live) {
+      const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
+      const cap = s.capacity_override ?? tpl?.capacity_max ?? 4;
+      const act = (s.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
+      const cur = m.get(s.start_date) ?? { n: 0, free: false };
+      cur.n += 1; cur.free = cur.free || act < cap;
+      m.set(s.start_date, cur);
+    }
+    return m;
+  }, [live]);
 
   // Meta global (misma matemática del Sell tab clásico)
   const goal = useMemo(() => {
@@ -116,10 +154,39 @@ export function SellerPortal({ token, sellerName, services }: { token: string; s
         </div>
       </div>
 
-      {/* Contenido */}
-      <div className="px-4 pt-4 max-w-lg mx-auto space-y-3">
+      {/* Contenido — se adapta: teléfono 1 col · tablet 2 · desktop 3 */}
+      <div className="px-4 pt-4 max-w-lg md:max-w-3xl xl:max-w-5xl mx-auto space-y-3">
         {tab === 'vender' && (
           <>
+            {/* Tira de semana */}
+            {weekStart && (
+              <div className="flex items-center gap-1">
+                <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="shrink-0 px-2 py-2 text-[16px]" style={{ color: 'rgba(247,249,250,.55)' }}>‹</button>
+                <div className="flex-1 grid grid-cols-7 gap-1">
+                  {Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).map((iso, i) => {
+                    const info = dayInfo.get(iso);
+                    const on = selectedDay === iso;
+                    return (
+                      <button key={iso} onClick={() => setSelectedDay(on ? null : iso)}
+                        className="rounded-xl py-1.5 text-center"
+                        style={on ? { background: CYAN, color: INK } : { background: '#0A2438', border: iso === today ? `1.5px solid ${GOLD}` : '1px solid rgba(247,249,250,.08)' }}>
+                        <span style={{ ...F_M, fontSize: 7, color: on ? INK : 'rgba(247,249,250,.45)' }}>{DOW_ES[i]}</span>
+                        <span className="block text-[14px] font-extrabold" style={{ color: on ? INK : PAPER }}>{parseInt(iso.slice(8), 10)}</span>
+                        <span className="block text-[8px] leading-none" style={{ color: !info ? 'transparent' : info.free ? (on ? INK : GREEN) : 'rgba(247,249,250,.3)' }}>
+                          {info ? '●'.repeat(Math.min(info.n, 3)) : '·'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="shrink-0 px-2 py-2 text-[16px]" style={{ color: 'rgba(247,249,250,.55)' }}>›</button>
+              </div>
+            )}
+            {selectedDay && (
+              <button onClick={() => setSelectedDay(null)} className="text-[11px] font-bold px-3 py-1.5 rounded-full" style={{ border: '1.5px solid rgba(247,249,250,.25)', color: 'rgba(247,249,250,.7)' }}>
+                × Ver todos los días
+              </button>
+            )}
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar servicio…"
               className="w-full text-[14px] px-4 py-3 rounded-full"
               style={{ background: 'rgba(247,249,250,.06)', border: '1.5px solid rgba(247,249,250,.15)', color: PAPER }} />
@@ -133,10 +200,10 @@ export function SellerPortal({ token, sellerName, services }: { token: string; s
               ))}
             </div>
             {grouped.length === 0 && <p className="text-[13px] py-6 text-center" style={{ color: 'rgba(247,249,250,.4)' }}>Nada que coincida — probá otro filtro.</p>}
-            {grouped.slice(0, 30).map(([day, rows]) => (
+            {(selectedDay ? grouped.filter(([d]) => d === selectedDay) : grouped).slice(0, 30).map(([day, rows]) => (
               <div key={day}>
                 <p style={{ ...F_M, color: GOLD }} className="text-[9px] mb-1.5 mt-2">{dayLabel(day, today)}</p>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-2">
                   {rows.map((s: any) => {
                     const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
                     const cap = s.capacity_override ?? tpl?.capacity_max ?? 4;
