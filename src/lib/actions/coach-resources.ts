@@ -442,6 +442,7 @@ export interface DeckTemplate {
   template_name: string;
   service_kind: string | null;
   sales_deck_resource_id: string | null;
+  video_url: string | null;
 }
 
 // Admin: active service templates with their current sales deck (if any).
@@ -450,7 +451,7 @@ export async function listTemplatesForDecks(): Promise<DeckTemplate[]> {
   const admin = createAdminClient();
   const { data } = await admin
     .from('camp_templates')
-    .select('id, template_name, service_kind, sales_deck_resource_id')
+    .select('id, template_name, service_kind, sales_deck_resource_id, video_url')
     .eq('active_status', true)
     .order('template_name');
   return (data ?? []) as DeckTemplate[];
@@ -489,6 +490,18 @@ export async function registerCoachResource(input: { storagePath: string; title:
     title: input.title.trim(), description: input.description?.trim() || null,
     file_url: '', storage_path: input.storagePath, kind: 'pdf', audience: 'both',
   });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/presentations');
+  return { ok: true };
+}
+
+// #video — link promocional por plantilla (QR público + portal del vendedor).
+export async function setTemplateVideoUrl(templateId: string, url: string | null): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  const clean = url?.trim() || null;
+  if (clean && !/^https?:\/\//i.test(clean)) return { ok: false, error: 'Pegá un link completo (https://…).' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('camp_templates').update({ video_url: clean }).eq('id', templateId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/presentations');
   return { ok: true };

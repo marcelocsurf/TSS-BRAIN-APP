@@ -224,6 +224,11 @@ export function SellerPortal({ token, sellerName, services }: { token: string; s
                           </span>
                         </div>
                         <div className="flex gap-1.5 mt-2">
+                          {(() => { const tv = (Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates)?.video_url; return tv ? (
+                            <a href={tv} target="_blank" rel="noreferrer"
+                              className="text-[11px] font-bold px-3 py-1.5 rounded-full"
+                              style={{ border: '1.5px solid rgba(247,249,250,.3)', color: PAPER }}>🎬 Video</a>
+                          ) : null; })()}
                           {s.sales_deck_url && (
                             <a href={s.sales_deck_url} target="_blank" rel="noreferrer"
                               className="text-[11px] font-bold px-3 py-1.5 rounded-full"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listCoachResources, deleteCoachResource, listTemplatesForDecks, setTemplateSalesDeck, createPresentationUploadUrl, registerCoachResource, type CoachResource, type DeckTemplate } from '@/lib/actions/coach-resources';
+import { listCoachResources, deleteCoachResource, listTemplatesForDecks, setTemplateSalesDeck, setTemplateVideoUrl, createPresentationUploadUrl, registerCoachResource, type CoachResource, type DeckTemplate } from '@/lib/actions/coach-resources';
 import { createClient } from '@/lib/supabase/client';
 import { Presentation, Upload, Trash2 } from 'lucide-react';
 
@@ -81,6 +81,27 @@ export function PresentationsManager() {
           {busy ? 'Uploading…' : 'Upload presentation'}
         </button>
         <p className="text-[11px] text-gray-400">Export your deck as PDF (PowerPoint/Keynote → Export → PDF), then upload it here.</p>
+      </div>
+
+      {/* Videos por servicio — QR público + portal del vendedor */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-2">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">🎬 Video por servicio (YouTube/Vimeo) — se muestra en el QR público y al vendedor</p>
+        {templates.map((t) => (
+          <div key={t.id} className="flex items-center gap-2">
+            <span className="text-[12px] text-gray-700 w-56 truncate shrink-0">{t.template_name}</span>
+            <input
+              defaultValue={t.video_url ?? ''}
+              placeholder="https://youtu.be/…"
+              onBlur={async (e) => {
+                const v = e.target.value.trim();
+                if (v === (t.video_url ?? '')) return;
+                const res = await setTemplateVideoUrl(t.id, v || null);
+                if (!res.ok) alert(res.error || 'No se pudo guardar.');
+              }}
+              className="flex-1 text-[12px] px-2.5 py-1.5 border border-gray-200 rounded-lg"
+            />
+          </div>
+        ))}
       </div>
 
       {/* List */}

@@ -14,6 +14,7 @@ type Klass = {
   id: string; name: string; date: string; time: string | null; minutes: number | null;
   coach: string | null; color: string | null; price_cents: number | null;
   description: string | null;
+  video_url?: string | null;
   enrolled: number; capacity: number; full: boolean;
 };
 
@@ -110,6 +111,13 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                 {c.full ? 'Full' : `${Math.max(0, c.capacity - c.enrolled)} spots`}
               </span>
             </div>
+            {(c as any).video_url && (
+              <a href={(c as any).video_url} target="_blank" rel="noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full"
+                style={{ background: '#061C2B', color: '#00D2FF' }}>
+                ▶ Watch what it&apos;s like
+              </a>
+            )}
             {c.description && (
               <details className="mt-2 group">
                 <summary className="cursor-pointer list-none text-[10px]" style={{ ...F_LABEL, color: '#0090B0' }}>
