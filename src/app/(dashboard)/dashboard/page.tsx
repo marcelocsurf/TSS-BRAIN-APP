@@ -240,6 +240,15 @@ export default async function DashboardHome() {
         </a>
 
         {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
+
+        <a href="/manual/index.html?role=coordinador" target="_blank" rel="noreferrer"
+          className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white shadow-sm px-4 py-3 hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors">
+          <span className="text-xl">📘</span>
+          <span>
+            <span className="block text-sm font-semibold text-[var(--tss-navy)]">Manual operativo</span>
+            <span className="block text-xs text-gray-500">Cómo usar el app, paso a paso — tu capítulo</span>
+          </span>
+        </a>
       </div>
       )}
 
@@ -470,6 +479,10 @@ export default async function DashboardHome() {
               </span>
             </a>
             {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
+            <a href="/manual/index.html?role=admin" target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-100 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-[var(--tss-navy)] hover:border-[var(--tss-cyan,#5AC3E7)]">
+              📘 Manual operativo
+            </a>
           </div>
         </div>
       )}

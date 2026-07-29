@@ -129,6 +129,19 @@ export function CoachPortalTabs({
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: isSupport ? '#000' : 'transparent' }}>
+            {/* Manual de uso, abierto directo en el capítulo de este rol */}
+            <div className="flex gap-2">
+              <a href={`/manual/index.html?role=${isSupport ? 'support' : 'coach'}`} target="_blank" rel="noreferrer"
+                className="flex-1 text-center text-[11px] font-mono uppercase tracking-[0.14em] font-semibold px-3 py-2.5 rounded-full border border-[var(--tss-cyan,#5AC3E7)]/40 text-[var(--tss-cyan,#5AC3E7)] hover:bg-[var(--tss-cyan,#5AC3E7)]/10">
+                📘 Cómo usar el app
+              </a>
+              {canSell && (
+                <a href="/manual/index.html?role=seller" target="_blank" rel="noreferrer"
+                  className="flex-1 text-center text-[11px] font-mono uppercase tracking-[0.14em] font-semibold px-3 py-2.5 rounded-full border border-[#FFD166]/50 text-[#FFD166] hover:bg-[#FFD166]/10">
+                  📘 Manual del seller
+                </a>
+              )}
+            </div>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
 
             {isSupport ? (
