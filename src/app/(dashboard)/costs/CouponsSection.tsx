@@ -26,7 +26,9 @@ export function CouponsSection({ coupons, academySlug, templates }: {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const joinUrl = (tpl?: string) => `${origin}/join/${academySlug}${tpl ? `?tpl=${tpl}` : ''}`;
   const qrImg = (url: string) => `https://api.qrserver.com/v1/create-qr-code/?size=340x340&margin=12&data=${encodeURIComponent(url)}`;
-  const classTemplates = templates.filter((t) => t.service_kind === 'class' || t.service_kind === 'trip');
+  // QR walk-in signup: clases + trips + lecciones de surf (Discover / drop-in).
+  // Los camps quedan fuera a propósito — se venden por seller/coordinador.
+  const classTemplates = templates.filter((t) => ['class', 'trip', 'surf_lesson'].includes(t.service_kind ?? ''));
 
   return (
     <div className="space-y-4">
