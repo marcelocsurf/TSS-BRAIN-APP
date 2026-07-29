@@ -8,7 +8,7 @@ import { createNotification } from '@/lib/actions/notifications';
 // intactos y el portal muestra la pantalla de renovación. El alumno SOLICITA;
 // el coordinador confirma el pago (mismo patrón de confianza que el seller).
 
-export const MEMBERSHIP_PLANS = [
+const MEMBERSHIP_PLANS = [
   { months: 1, cents: 999, label: '1 month' },
   { months: 6, cents: 4999, label: '6 months' },
   { months: 12, cents: 9990, label: '12 months' },
