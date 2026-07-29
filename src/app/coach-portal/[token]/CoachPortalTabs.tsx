@@ -15,6 +15,7 @@ import { CoachPresentations } from '@/components/coach-portal/CoachPresentations
 import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
 import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
+import { SellerPortal } from '@/components/seller/SellerPortal';
 import { PortalInventory } from '@/components/coach-portal/PortalInventory';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
@@ -105,7 +106,13 @@ export function CoachPortalTabs({
   const [plannerOpen, setPlannerOpen] = useState(false);
   const { coach, stats } = data;
   const isSupport = (coach as any).portal_category === 'support';
-  const canSell = !!(coach as any).portal_can_sell;
+  const isSeller = (coach as any).role === 'seller';
+  const canSell = !!(coach as any).portal_can_sell || isSeller;
+
+  // Rol seller: su propia casa — 3 pestañas, cero ruido de coaching.
+  if (isSeller) {
+    return <SellerPortal token={coach.portal_token} sellerName={coach.display_name || 'Seller'} services={data.academyServices} />;
+  }
 
   // Support (non-coaching) members get an operations-focused nav: Home
   // (schedule + tasks), Espacios (they prepare/clean the rooms), Courses,
