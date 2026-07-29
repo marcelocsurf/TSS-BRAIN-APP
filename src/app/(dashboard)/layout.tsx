@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { GlobalBackBar } from '@/components/ui/GlobalBackBar';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -246,6 +247,7 @@ export default async function DashboardLayout({
       {/* Main content — offset by sidebar width on desktop */}
       <div className="md:flex md:flex-col" style={{ marginLeft: '0' }}>
         <main className="p-4 md:p-6 max-w-5xl mx-auto w-full md:ml-56">
+          <GlobalBackBar />
           {children}
         </main>
       </div>
