@@ -170,9 +170,9 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
   let realTransportDays = 0;
   if (sessIds.length) {
     const [{ count: t }, { count: d }, { count: rt }] = await Promise.all([
-      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('transport_needed', true),
+      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('transport_needed', true).neq('transport_status', 'cancelled'),
       admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('completion_state', 'closed'),
-      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('transport_needed', true).eq('completion_state', 'closed'),
+      admin.from('service_plans').select('*', { count: 'exact', head: true }).in('camp_session_id', sessIds).eq('transport_needed', true).neq('transport_status', 'cancelled').eq('completion_state', 'closed'),
     ]);
     transportDays = t ?? 0;
     deliveredDays = d ?? 0;
