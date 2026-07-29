@@ -603,3 +603,16 @@ export async function setStudentLearningProfile(input: {
   if (error) throw new Error(error.message);
   revalidatePath(`/students/${input.studentId}`);
 }
+
+// Resolve display names for a specific set of student ids — used by the
+// camp quick-panel so participant chips never fall back to raw UUIDs
+// (e.g. a lead created by a seller that isn't in the first page of students).
+export async function getStudentNames(ids: string[]): Promise<Record<string, string>> {
+  if (!ids.length) return {};
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const admin = createAdminClient();
+  const { data } = await admin.from('students').select('id, first_name, last_name').in('id', ids.slice(0, 100));
+  const out: Record<string, string> = {};
+  for (const s of data ?? []) out[s.id] = [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Student';
+  return out;
+}

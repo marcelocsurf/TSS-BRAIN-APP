@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { listStudents, type StudentRow } from '@/lib/actions/students';
+import { listStudents, type StudentRow, getStudentNames } from '@/lib/actions/students';
 import { addStudentToCamp, removeStudentFromCamp } from '@/lib/actions/camps';
 import { createLead } from '@/lib/actions/leads';
 import { sendLeadInvitation } from '@/lib/actions/lead-invitation';
@@ -27,6 +27,13 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
 
   // ── Existing tab data — server-side search by name (scales past 100s
   // of students). Debounced so we don't query on every keystroke. ──
+  const [extraNames, setExtraNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const missing = currentParticipantIds.filter((pid) => !students.some((st) => st.id === pid) && !extraNames[pid]);
+    if (missing.length) getStudentNames(missing).then((m) => setExtraNames((prev) => ({ ...prev, ...m }))).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentParticipantIds, students]);
+
   useEffect(() => {
     if (!showManager) return;
     const term = search.trim();
@@ -224,7 +231,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                           disabled={actionId === pid}
                           className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full hover:bg-red-100 disabled:opacity-50"
                         >
-                          {s ? `${s.first_name} ${s.last_name}` : pid.slice(0, 8)} &times;
+                          {s ? `${s.first_name} ${s.last_name}` : extraNames[pid] ?? pid.slice(0, 8)} &times;
                         </button>
                       );
                     })}
