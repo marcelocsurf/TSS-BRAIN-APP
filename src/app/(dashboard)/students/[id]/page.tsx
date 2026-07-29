@@ -26,6 +26,8 @@ import { StudentPresentationGrants } from './StudentPresentationGrants';
 import { listStudentCourseGrants } from '@/lib/actions/course-grants';
 import { getCampNotesForStudent } from '@/lib/actions/camps';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
+import { MembershipPanel } from '@/components/student/MembershipPanel';
+import { getMembershipInfo } from '@/lib/actions/memberships';
 import { LearningProfileCard } from '@/components/student/LearningProfileCard';
 import { OfficialEvaluationPanel } from '@/components/student/OfficialEvaluationPanel';
 import { ArchiveSessionButton } from '@/components/session/ArchiveSessionButton';
@@ -245,6 +247,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     duration: c.total_duration || null,
     venue: c.training_venue || null,
   }));
+
+  // M156 — estado de membresía para el panel del perfil
+  const membershipInfo = await getMembershipInfo(student.id);
 
   // Portal activity — shaped for PortalActivityPanel
   const selfTraining = (selfTrainingResult.data ?? []).map((s: any) => ({
@@ -772,6 +777,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             }
             defaultOpen={strugglingCount > 0}
           >
+            <MembershipPanel studentId={student.id} info={membershipInfo} />
             <PortalActivityPanel
               selfTraining={selfTraining}
               stepRatings={stepRatings}

@@ -542,6 +542,14 @@ export async function createCampInstance(input: {
           } catch (err) {
             console.error('[createCampInstance] auto-grant failed', s.id, courseKey, err);
           }
+          // M156 — el camp incluye 6 meses de membresía del portal (se suma
+          // al final de la vigente; nunca se pierden meses ya pagados).
+          try {
+            const { extendMembership } = await import('@/lib/actions/memberships');
+            await extendMembership(s.id, 6, 'camp_enrollment', { note: `Camp: ${name}` });
+          } catch (err) {
+            console.error('[createCampInstance] membership extend failed', s.id, err);
+          }
         } else {
           // Repeater: already holds the course but is doing the level again.
           // No new access grant — instead log a refresher charge at 50% of

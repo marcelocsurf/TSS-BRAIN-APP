@@ -15,6 +15,8 @@ import { validateStudentSession } from '@/lib/actions/student-pin';
 import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
+import { RenewalGate } from './RenewalGate';
+import { getMembershipInfo } from '@/lib/actions/memberships';
 
 // Always fetch fresh data — no caching of student portal
 
@@ -53,6 +55,26 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
 
   const { student } = portalData;
   const beltLevel = student.belt_level as BeltLevel;
+
+  // M156 — membresía: solo gatea a MIEMBROS (leads/drop-ins pasan; el waiver,
+  // el intake y las encuestas viven fuera de esta puerta o dentro de camps
+  // activos, que extienden membresía al inscribirse).
+  if ((student as any).lifecycle_status === 'member') {
+    const membership = await getMembershipInfo(student.id);
+    if (!membership.active) {
+      return (
+        <div className={`${archivo.variable} ${plexMono.variable}`}>
+          <RenewalGate
+            token={token}
+            firstName={student.first_name || 'surfer'}
+            beltLabel={String(student.belt_level || 'surf').replace(/_/g, ' ')}
+            endedAt={membership.ends_at}
+            alreadyRequested={membership.pending_request}
+          />
+        </div>
+      );
+    }
+  }
 
   const coachUnlocked = !!(student as any).coach_profile_unlocked_at;
 
