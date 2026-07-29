@@ -766,3 +766,20 @@ export async function markCoachLessonRead(token: string, lessonId: string): Prom
     );
   if (error) throw new Error(error.message);
 }
+
+// ── Waiver de staff (#12b) — firma desde el portal, token-gated ──
+export async function signStaffWaiver(token: string, typedName: string): Promise<{ ok: boolean; error?: string }> {
+  const name = typedName?.trim();
+  if (!name || name.length < 5) return { ok: false, error: 'Type your full legal name to sign.' };
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id, waiver_signed').eq('portal_token', token).maybeSingle();
+  if (!coach) return { ok: false, error: 'Not found.' };
+  if (coach.waiver_signed) return { ok: true };
+  const { error } = await admin.from('coaches').update({
+    waiver_signed: true,
+    waiver_signed_at: new Date().toISOString(),
+    waiver_signature: name,
+  }).eq('id', coach.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
