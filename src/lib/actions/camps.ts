@@ -623,6 +623,37 @@ export async function createCampInstance(input: {
     .select('id, template_day_id, day_number');
   if (sessErr) throw new Error(`Failed to create sessions: ${sessErr.message}`);
 
+  // M157 (#16) — Auto-reserva del espacio físico del servicio: si el nombre
+  // de la plantilla mapea a un espacio de la academia, cada sesión bloquea
+  // su sala/mat/zona en el calendario de Espacios. Best-effort: nunca frena
+  // la creación del servicio.
+  try {
+    const SPACE_MAP: [RegExp, string][] = [
+      [/jiu/i, 'BJJ'], [/yoga/i, 'Yoga'], [/ice/i, 'Ice Bath'],
+      [/skate/i, 'Concrete'], [/natural/i, 'Gym'],
+    ];
+    const { data: tplRow } = await createAdminClient().from('camp_templates').select('template_name').eq('id', input.template_id).maybeSingle();
+    const tplName = (tplRow as any)?.template_name ?? '';
+    const rule = SPACE_MAP.find(([re]) => re.test(tplName));
+    if (rule && academyId && createdSessions?.length) {
+      const adminC = createAdminClient();
+      const { data: spaces } = await adminC.from('academy_spaces').select('id, name').eq('academy_id', academyId).eq('active', true);
+      const space = (spaces ?? []).find((sp: any) => sp.name.includes(rule[1]));
+      if (space) {
+        const t = (input.scheduled_time || '08:00').slice(0, 5);
+        const endH = String((parseInt(t.slice(0, 2), 10) + 1) % 24).padStart(2, '0');
+        const bookings = sessionsToInsert.map((sess: any) => ({
+          space_id: space.id, academy_id: academyId, coach_id: input.coach_id,
+          title: input.camp_name, camp_instance_id: instance.id,
+          starts_at: `${sess.session_date}T${t}:00-06:00`,
+          ends_at: `${sess.session_date}T${endH}${t.slice(2, 5)}:00-06:00`,
+          status: 'confirmed',
+        }));
+        await adminC.from('space_bookings').insert(bookings);
+      }
+    }
+  } catch (e) { console.error('[createCampInstance] auto space booking failed', e); }
+
   // M45 — Auto-seed service_plans + service_plan_blocks from the template.
   // For every (camp_session × participant × template_block) we create one
   // block pre-populated with step_id + drill_id + mission_id so the coach
