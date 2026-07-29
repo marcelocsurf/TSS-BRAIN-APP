@@ -29,14 +29,25 @@ export function PresentationsManager() {
 
   const upload = async () => {
     if (!file || !title.trim()) { setError('Add a title and pick a PDF.'); return; }
+    // Vercel corta las subidas server-side en ~4.5MB — avisar ANTES, no crashear.
+    if (file.size > 4 * 1024 * 1024) {
+      setError(`Este PDF pesa ${(file.size / 1e6).toFixed(1)}MB — el máximo es 4MB. Exportalo en tamaño reducido (Keynote/PowerPoint → Export → PDF calidad media) y volvé a intentar.`);
+      return;
+    }
     setBusy(true); setError(null);
-    const fd = new FormData();
-    fd.set('file', file); fd.set('title', title); fd.set('description', description);
-    const res = await createCoachResource(fd);
-    setBusy(false);
-    if (!res.ok) { setError(res.error || 'Upload failed.'); return; }
-    setTitle(''); setDescription(''); setFile(null);
-    load();
+    try {
+      const fd = new FormData();
+      fd.set('file', file); fd.set('title', title); fd.set('description', description);
+      const res = await createCoachResource(fd);
+      if (!res.ok) { setError(res.error || 'Upload failed.'); return; }
+      setTitle(''); setDescription(''); setFile(null);
+      load();
+    } catch (e: any) {
+      // Pestaña vieja tras un deploy, red caída, 413 del server — mensaje, no crash.
+      setError('La subida falló — recargá la página (⌘R) y volvé a intentar.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const remove = async (id: string, name: string) => {
