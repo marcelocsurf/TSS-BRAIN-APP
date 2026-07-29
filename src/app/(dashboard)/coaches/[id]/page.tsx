@@ -198,12 +198,14 @@ export default async function CoachProfilePage({ params }: Props) {
               isActive={coach.active_status}
               currentUserRole={currentCoach.role}
             />
-            <Link
-              href={`/coaches/${id}/evaluate`}
-              className="px-3 py-2 bg-[var(--tss-navy)] text-white text-xs rounded-lg hover:opacity-90"
-            >
-              + Evaluate
-            </Link>
+            {(coach as any).role !== 'seller' && (
+              <Link
+                href={`/coaches/${id}/evaluate`}
+                className="px-3 py-2 bg-[var(--tss-navy)] text-white text-xs rounded-lg hover:opacity-90"
+              >
+                + Evaluate
+              </Link>
+            )}
             {coach.portal_token && (
               <Link
                 href={coach.portal_category === 'manager' ? `/manager-portal/${coach.portal_token}` : `/coach-portal/${coach.portal_token}`}
@@ -247,14 +249,35 @@ export default async function CoachProfilePage({ params }: Props) {
         )}
       </div>
 
-      {/* STATS GRID */}
+      {/* STATS GRID — un vendedor se mide en ventas, no en sesiones (M158/#13) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
+        {((coach as any).role === 'seller'
+          ? await (async () => {
+              const { createAdminClient } = await import('@/lib/supabase/admin');
+              const adminC = createAdminClient();
+              const monthStart = new Date().toISOString().slice(0, 7) + '-01';
+              const { data: sales } = await adminC
+                .from('camp_participants')
+                .select('payment_status, enrollment_status, amount_cents, reserved_at')
+                .eq('sold_by', coach.id);
+              const rows = (sales ?? []).filter((r: any) => r.enrollment_status === 'active');
+              const month = rows.filter((r: any) => (r.reserved_at ?? '') >= monthStart);
+              const paid = rows.filter((r: any) => r.payment_status === 'paid');
+              const conv = rows.length ? Math.round((100 * paid.length) / rows.length) : 0;
+              const usd = paid.reduce((a: number, r: any) => a + (r.amount_cents || 0), 0);
+              return [
+                { label: 'Reservas del mes', value: month.length },
+                { label: 'Confirmadas (total)', value: paid.length },
+                { label: 'Conversión', value: `${conv}%` },
+                { label: 'USD confirmado', value: `$${Math.round(usd / 100)}` },
+              ];
+            })()
+          : [
           { label: 'Total Sessions', value: stats.total_sessions },
           { label: 'Total Hours', value: stats.total_hours },
           { label: 'Unique Students', value: stats.unique_students },
           { label: 'This Month', value: stats.sessions_this_month },
-        ].map(stat => (
+        ]).map(stat => (
           <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
             <p className="text-2xl font-bold text-[var(--tss-navy)]">{stat.value}</p>
             <p
