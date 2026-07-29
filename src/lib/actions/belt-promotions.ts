@@ -142,3 +142,102 @@ export async function resolvePromotion(
   revalidatePath(`/students/${rec.student_id}`);
   return { ok: true };
 }
+
+// ── #12a — Autoridad del head coach desde SU portal (token-gated) ──
+// Misma política 2026-07-11: puede confirmar quien pueda acreditar la cinta
+// (max_belt_permission >= recomendada) Y tenga posición de autoridad sobre el
+// camp de origen (head coach del camp, o rol head_coach dueño del servicio).
+
+export interface PortalPendingPromotion {
+  id: string;
+  student_name: string;
+  from_belt: string | null;
+  recommended_belt: string;
+  camp_name: string | null;
+  can_confirm: boolean;   // false = la cinta supera su certificación
+  created_at: string;
+}
+
+export async function listMyPendingPromotions(token: string): Promise<PortalPendingPromotion[]> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches')
+    .select('id, role, max_belt_permission')
+    .eq('portal_token', token).maybeSingle();
+  if (!coach) return [];
+
+  // Camps donde este coach tiene autoridad
+  const or = coach.role === 'head_coach'
+    ? `head_coach_id.eq.${coach.id},coach_id.eq.${coach.id}`
+    : `head_coach_id.eq.${coach.id}`;
+  const { data: camps } = await admin.from('camp_instances').select('id, camp_name').or(or);
+  const campIds = (camps ?? []).map((c: any) => c.id);
+  if (!campIds.length) return [];
+
+  const { data: recs } = await admin
+    .from('belt_promotion_recommendations')
+    .select('id, from_belt, recommended_belt, camp_instance_id, created_at, students!inner(first_name, last_name)')
+    .eq('status', 'pending')
+    .in('camp_instance_id', campIds)
+    .order('created_at', { ascending: false });
+
+  const cap = (coach.max_belt_permission || 'white_belt') as BeltLevel;
+  return (recs ?? []).map((r: any) => {
+    const st = Array.isArray(r.students) ? r.students[0] : r.students;
+    return {
+      id: r.id,
+      student_name: [st?.first_name, st?.last_name].filter(Boolean).join(' '),
+      from_belt: r.from_belt,
+      recommended_belt: r.recommended_belt,
+      camp_name: (camps ?? []).find((c: any) => c.id === r.camp_instance_id)?.camp_name ?? null,
+      can_confirm: (BELT_RANK[cap] ?? 0) >= (BELT_RANK[r.recommended_belt as BeltLevel] ?? 99),
+      created_at: r.created_at,
+    };
+  });
+}
+
+export async function resolvePromotionByToken(
+  token: string,
+  recommendationId: string,
+  confirm: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches')
+    .select('id, role, max_belt_permission')
+    .eq('portal_token', token).maybeSingle();
+  if (!coach) return { ok: false, error: 'Not found.' };
+
+  const { data: rec } = await admin
+    .from('belt_promotion_recommendations')
+    .select('id, student_id, recommended_belt, camp_instance_id, status')
+    .eq('id', recommendationId).single();
+  if (!rec || rec.status !== 'pending') return { ok: false, error: 'Already resolved.' };
+
+  // Autoridad: posición sobre el camp + certificación que cubra la cinta.
+  let positionOk = false;
+  if (rec.camp_instance_id) {
+    const { data: camp } = await admin.from('camp_instances')
+      .select('head_coach_id, coach_id').eq('id', rec.camp_instance_id).single();
+    positionOk = camp?.head_coach_id === coach.id ||
+      (coach.role === 'head_coach' && camp?.coach_id === coach.id);
+  }
+  const cap = (coach.max_belt_permission || 'white_belt') as BeltLevel;
+  const beltOk = (BELT_RANK[cap] ?? 0) >= (BELT_RANK[rec.recommended_belt as BeltLevel] ?? 99);
+  if (!positionOk) return { ok: false, error: 'Solo el head coach de ese servicio puede resolver esto.' };
+  if (!beltOk && confirm) return { ok: false, error: 'Tu certificación no cubre esa cinta — pedile la confirmación a alguien certificado para ella.' };
+
+  if (confirm) {
+    const newBelt = rec.recommended_belt as BeltLevel;
+    if (newBelt in BELT_RANK) {
+      const { data: stu } = await admin.from('students').select('belt_level').eq('id', rec.student_id).single();
+      const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
+      if (BELT_RANK[newBelt] > currentRank) {
+        await admin.from('students').update({ belt_level: newBelt }).eq('id', rec.student_id);
+      }
+    }
+  }
+  const { error } = await admin.from('belt_promotion_recommendations')
+    .update({ status: confirm ? 'confirmed' : 'rejected', resolved_by: coach.id, resolved_at: new Date().toISOString() })
+    .eq('id', recommendationId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

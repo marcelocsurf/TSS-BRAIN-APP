@@ -17,6 +17,7 @@ import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
 import { SellerPortal } from '@/components/seller/SellerPortal';
 import { StaffWaiverCard } from '@/components/coach-portal/StaffWaiverCard';
+import { PendingPromotions } from '@/components/coach-portal/PendingPromotions';
 import { PortalInventory } from '@/components/coach-portal/PortalInventory';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
@@ -138,6 +139,7 @@ export function CoachPortalTabs({
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: isSupport ? '#000' : 'transparent' }}>
             {!(coach as any).waiver_signed && <StaffWaiverCard token={coach.portal_token} />}
+            <PendingPromotions token={coach.portal_token} />
             {/* Manual de uso, abierto directo en el capítulo de este rol */}
             <div className="flex gap-2">
               <a href={`/manual/index.html?role=${isSupport ? 'support' : 'coach'}`} target="_blank" rel="noreferrer"
