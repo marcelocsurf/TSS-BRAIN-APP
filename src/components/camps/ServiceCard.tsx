@@ -89,8 +89,13 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
   const enrolled = active.length;
   const paidCount = active.filter((p) => p.payment_status === 'paid').length;
   const reservedCount = enrolled - paidCount;
-  const coachName =
-    camp.head_coach?.display_name ?? camp.coaches?.display_name ?? null;
+  // Un admin como coach asignado = placeholder del llenado de calendario:
+  // sin head coach real, la tarjeta debe pedir asignación, no mostrar ✓.
+  const isPlaceholderCoach =
+    !camp.head_coach?.display_name && (camp.coaches as any)?.role === 'admin';
+  const coachName = isPlaceholderCoach
+    ? null
+    : camp.head_coach?.display_name ?? camp.coaches?.display_name ?? null;
 
   const { backgroundColor, accentColor, onDark } = paletteFor(
     tpl?.card_color,
