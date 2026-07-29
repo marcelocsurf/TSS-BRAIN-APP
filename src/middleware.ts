@@ -45,6 +45,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/front-desk') ||     // token-gated reception check-in screen
     pathname.startsWith('/join') ||           // public class signup (QR)
     pathname.startsWith('/venue-scout') ||    // standalone analysis tool (no data server-side)
+    pathname.startsWith('/manual') ||          // in-app operations manual (static, per-role)
     pathname.startsWith('/venue-check') ||    // standalone simple venue tool
     pathname.startsWith('/feedback') ||       // token-gated standalone survey
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
