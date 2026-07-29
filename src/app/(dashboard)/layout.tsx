@@ -46,7 +46,9 @@ const NAV_ITEMS: NavItem[] = [
   // Other roles keep their entries.
   { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['coordinator', 'coach', 'assistant'] },
   { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['coach'] },
-  { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
+  // Course Codes (vouchers del curso online): funcionalidad dormida hasta que
+  // el curso se venda suelto / se cobren las herramientas — la ruta sigue viva.
+  // { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
   { href: '/costs',         label: 'Costs',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
