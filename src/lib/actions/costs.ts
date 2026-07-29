@@ -23,7 +23,12 @@ export async function getCostSettings() {
   const admin = createAdminClient();
   const academyId = me.academy_id ?? null;
 
-  const rateQ = admin.from('cost_rates').select('*').order('category').order('name');
+  // Rates share the same scoping as templates: own academy + globals. Without
+  // it, a platform admin (or anyone) sees every academy's catalog mixed.
+  const rateQ = (academyId
+    ? admin.from('cost_rates').select('*').or(`academy_id.eq.${academyId},academy_id.is.null`)
+    : admin.from('cost_rates').select('*')
+  ).order('category').order('name');
   const matrixQ = admin.from('coach_pay_rates').select('level_name, group_size, per_day_cents').order('level_name').order('group_size');
   // Templates scoped to the caller's academy (own + globals) — without this,
   // an admin sees every academy's templates duplicated in recipes/QRs.
@@ -153,7 +158,7 @@ export async function getCampCostBreakdown(campInstanceId: string): Promise<Camp
   const [{ data: sessions }, { data: staff }, ratesRes, recipeRes, matrixRes] = await Promise.all([
     admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId),
     admin.from('service_staff').select('role, status').eq('camp_instance_id', campInstanceId).eq('status', 'accepted'),
-    admin.from('cost_rates').select('*').eq('active', true).then((r: any) => r),
+    admin.from('cost_rates').select('*').eq('active', true).or(`academy_id.eq.${camp.academy_id},academy_id.is.null`).then((r: any) => r),
     admin.from('template_cost_items').select('*').eq('template_id', camp.template_id ?? ''),
     admin.from('coach_pay_rates').select('level_name, group_size, per_day_cents'),
   ]);
