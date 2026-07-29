@@ -120,11 +120,20 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
               {level} · {kind === 'surf_camp' ? 'CAMP' : kind === 'surf_lesson' ? 'LESSON' : 'CUSTOM'}
             </p>
             <p
-              className={`text-sm font-semibold leading-snug mt-0.5 truncate ${
+              title={camp.camp_name}
+              className={`text-sm font-semibold leading-snug mt-0.5 line-clamp-2 ${
                 onDark ? 'text-white' : 'text-black/85'
               }`}
             >
-              {camp.camp_name}
+              {(() => {
+                const k = (camp as any).camp_templates?.service_kind ?? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0]?.service_kind : null);
+                const n = camp.camp_name || '';
+                const icon = k === 'surf_camp' ? '🏄 ' : k === 'surf_lesson' ? '🌊 '
+                  : /yoga/i.test(n) ? '🧘 ' : /jiu/i.test(n) ? '🥋 ' : /ice/i.test(n) ? '🧊 '
+                  : /skate/i.test(n) ? '🛹 ' : /natural/i.test(n) ? '💪 ' : '';
+                // El nombre ya lleva fecha/hora en las clases generadas — en la tarjeta sobra
+                return icon + n.replace(/ · (Mon|Tue|Wed|Thu|Fri|Sat|Sun)[^·]*·?/, ' ·').replace(/ ·\s*$/, '');
+              })()}
             </p>
             {(() => {
               // Compose a small DM-mono meta line: "09:00–10:30 · 1h 30m" /
