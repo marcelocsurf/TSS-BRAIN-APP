@@ -19,3 +19,6 @@ CREATE TABLE IF NOT EXISTS memberships (
   created_at timestamptz DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_memberships_student ON memberships(student_id, ends_at DESC);
+
+-- Recordatorio de vencimiento (cron diario): estampado para no repetir envío.
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS expiry_reminder_sent_at timestamptz;
