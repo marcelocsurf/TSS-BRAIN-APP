@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // PDF decks (catálogos de servicios) superan el límite default de 1MB de
+  // las server actions — sin esto, subir una presentación falla en silencio.
+  experimental: {
+    serverActions: { bodySizeLimit: '25mb' },
+  },
   images: {
     remotePatterns: [
       {
