@@ -468,3 +468,28 @@ export async function setTemplateSalesDeck(templateId: string, resourceId: strin
   revalidatePath('/presentations');
   return { ok: true };
 }
+
+// ── Subida DIRECTA al storage (#15) — sin el límite de 4.5MB de Vercel ──
+// Paso 1: URL firmada. Paso 2 (browser sube). Paso 3: registrar la fila.
+export async function createPresentationUploadUrl(filename: string): Promise<{ ok: boolean; error?: string; path?: string; token?: string }> {
+  await assertAdmin();
+  const slug = filename.toLowerCase().replace(/\.pdf$/i, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'deck';
+  const path = `${slug}-${Date.now()}.pdf`;
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from('coach-presentations').createSignedUploadUrl(path);
+  if (error || !data) return { ok: false, error: error?.message ?? 'Could not start upload.' };
+  return { ok: true, path: data.path, token: data.token };
+}
+
+export async function registerCoachResource(input: { storagePath: string; title: string; description?: string | null }): Promise<{ ok: boolean; error?: string }> {
+  await assertAdmin();
+  if (!input.title?.trim()) return { ok: false, error: 'A title is required.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('coach_resources').insert({
+    title: input.title.trim(), description: input.description?.trim() || null,
+    file_url: '', storage_path: input.storagePath, kind: 'pdf', audience: 'both',
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/presentations');
+  return { ok: true };
+}

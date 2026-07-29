@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listCoachResources, createCoachResource, deleteCoachResource, listTemplatesForDecks, setTemplateSalesDeck, type CoachResource, type DeckTemplate } from '@/lib/actions/coach-resources';
+import { listCoachResources, deleteCoachResource, listTemplatesForDecks, setTemplateSalesDeck, createPresentationUploadUrl, registerCoachResource, type CoachResource, type DeckTemplate } from '@/lib/actions/coach-resources';
+import { createClient } from '@/lib/supabase/client';
 import { Presentation, Upload, Trash2 } from 'lucide-react';
 
 export function PresentationsManager() {
@@ -29,21 +30,22 @@ export function PresentationsManager() {
 
   const upload = async () => {
     if (!file || !title.trim()) { setError('Add a title and pick a PDF.'); return; }
-    // Vercel corta las subidas server-side en ~4.5MB — avisar ANTES, no crashear.
-    if (file.size > 4 * 1024 * 1024) {
-      setError(`Este PDF pesa ${(file.size / 1e6).toFixed(1)}MB — el máximo es 4MB. Exportalo en tamaño reducido (Keynote/PowerPoint → Export → PDF calidad media) y volvé a intentar.`);
-      return;
-    }
+    if (file.size > 50 * 1024 * 1024) { setError('Máximo 50MB.'); return; }
     setBusy(true); setError(null);
     try {
-      const fd = new FormData();
-      fd.set('file', file); fd.set('title', title); fd.set('description', description);
-      const res = await createCoachResource(fd);
+      // Directo al storage — sin pasar por el servidor (sin límite de 4.5MB).
+      const up = await createPresentationUploadUrl(file.name);
+      if (!up.ok || !up.path || !up.token) { setError(up.error || 'Could not start upload.'); return; }
+      const supabase = createClient();
+      const { error: upErr } = await supabase.storage
+        .from('coach-presentations')
+        .uploadToSignedUrl(up.path, up.token, file, { contentType: 'application/pdf' });
+      if (upErr) { setError(upErr.message); return; }
+      const res = await registerCoachResource({ storagePath: up.path, title, description });
       if (!res.ok) { setError(res.error || 'Upload failed.'); return; }
       setTitle(''); setDescription(''); setFile(null);
       load();
     } catch (e: any) {
-      // Pestaña vieja tras un deploy, red caída, 413 del server — mensaje, no crash.
       setError('La subida falló — recargá la página (⌘R) y volvé a intentar.');
     } finally {
       setBusy(false);
