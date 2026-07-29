@@ -47,6 +47,23 @@ interface Props {
 
 type Mode = 'summary' | 'detail';
 
+// Vista light: los bloques del día agrupados en los 4 momentos de una clase.
+const MOMENTS = ['Tierra', 'Calentamiento', 'Agua', 'Cierre'] as const;
+function blockTitle(b: Block): string {
+  return (
+    b.pilar_part || b.mission_custom || b.mission?.title || b.drill_custom || b.drill?.title ||
+    (b.block_type ? String(b.block_type).replace(/_/g, ' ') : 'Activity')
+  );
+}
+function momentOf(b: Block): (typeof MOMENTS)[number] {
+  const t = String(b.block_type || '').toLowerCase();
+  const title = blockTitle(b).toLowerCase();
+  if (t.includes('warm') || title.includes('warm-up') || title.includes('warm up')) return 'Calentamiento';
+  if (t.includes('mission') || t.includes('water') || title.includes('agua') || title.includes('water')) return 'Agua';
+  if (title.includes('cierre') || t.includes('clos') || t.includes('wrap') || t.includes('debrief')) return 'Cierre';
+  return 'Tierra';
+}
+
 export function CampPlanReader({
   instanceId,
   coachToken,
@@ -55,6 +72,10 @@ export function CampPlanReader({
 }: Props) {
   const [mode, setMode] = useState<Mode>('summary');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  // Acordeón por bloque dentro del día (vista light): cerrado por defecto.
+  const [openBlocks, setOpenBlocks] = useState<Set<string>>(new Set());
+  const toggleBlock = (k: string) =>
+    setOpenBlocks((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const toggleDay = (n: number) =>
     setExpanded((prev) => {
@@ -180,31 +201,17 @@ export function CampPlanReader({
               {/* Collapsed preview — list the day's activities at a glance so
                   the plan reads as "full" without expanding every day. */}
               {!isOpen && d.blocks.length > 0 && (
-                <ul className="px-5 pb-4 -mt-1 space-y-1">
-                  {d.blocks.map((b) => {
-                    const title =
-                      b.pilar_part ||
-                      b.mission_custom ||
-                      b.mission?.title ||
-                      b.drill_custom ||
-                      b.drill?.title ||
-                      (b.block_type ? String(b.block_type).replace(/_/g, ' ') : 'Activity');
+                <div className="px-5 pb-4 -mt-1 flex flex-wrap gap-1.5">
+                  {MOMENTS.map((m) => {
+                    const n = d.blocks.filter((b) => momentOf(b) === m).length;
+                    if (!n) return null;
                     return (
-                      <li
-                        key={b.block_order}
-                        className="flex items-start gap-2 text-[12px] text-gray-600 leading-snug"
-                      >
-                        <span className="text-[var(--tss-cyan)] shrink-0">·</span>
-                        <span className="truncate">{title}</span>
-                        {b.mission_time && (
-                          <span className="ml-auto shrink-0 text-[10px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
-                            {b.mission_time}m
-                          </span>
-                        )}
-                      </li>
+                      <span key={m} className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+                        {m} · {n}
+                      </span>
                     );
                   })}
-                </ul>
+                </div>
               )}
 
               {/* Day body — visible in detail mode or when expanded */}
@@ -240,9 +247,38 @@ export function CampPlanReader({
                   {d.blocks.length === 0 ? (
                     <p className="text-xs text-gray-400 italic">No blocks defined for this day yet.</p>
                   ) : (
-                    d.blocks.map((b) => (
-                      <BlockCard key={b.block_order} block={b} coachToken={coachToken} />
-                    ))
+                    MOMENTS.map((m) => {
+                      const list = d.blocks.filter((b) => momentOf(b) === m);
+                      if (!list.length) return null;
+                      return (
+                        <div key={m}>
+                          <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--tss-cyan)] mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>{m}</p>
+                          <div className="space-y-1.5 mb-3">
+                            {list.map((b) => {
+                              const k = d.day_number + ':' + b.block_order;
+                              const open = openBlocks.has(k);
+                              return (
+                                <div key={b.block_order} className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+                                  <button type="button" onClick={() => toggleBlock(k)}
+                                    className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left">
+                                    <span className="text-[13px] font-semibold text-[var(--tss-navy)] truncate">{blockTitle(b)}</span>
+                                    <span className="flex items-center gap-2 shrink-0">
+                                      {b.mission_time && <span className="text-[10px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>{b.mission_time}m</span>}
+                                      <ChevronRight size={14} className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+                                    </span>
+                                  </button>
+                                  {open && (
+                                    <div className="border-t border-gray-100 p-2">
+                                      <BlockCard block={b} coachToken={coachToken} />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
 
                   {d.day_notes && (
