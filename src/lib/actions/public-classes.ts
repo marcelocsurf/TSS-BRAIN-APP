@@ -9,6 +9,20 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 const norm = (e: string) => e.trim().toLowerCase();
 
+// Edad a partir de la fecha de nacimiento (para el waiver de menores).
+export async function ageFromDob(dob: string | null | undefined): Promise<number | null> {
+  if (!dob) return null;
+  const d = new Date(dob + 'T00:00:00');
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let a = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+  return a;
+}
+const MIN_AGE = 7;   // el método TSS arranca a los 7 (Canon)
+const ADULT = 18;
+
 async function academyBySlug(slug: string) {
   const admin = createAdminClient();
   const { data } = await admin
@@ -108,6 +122,9 @@ export async function publicEnroll(input: {
     emergency_contact_name: string | null;
     emergency_contact_phone: string | null;
     medical_notes: string | null;
+    date_of_birth?: string | null;
+    guardian_name?: string | null;   // adulto que firma cuando es menor
+    guardian_phone?: string | null;
   } | null;
   accept_waiver: boolean;
   signed_name?: string | null;
@@ -179,6 +196,17 @@ export async function publicEnroll(input: {
     const p = input.profile;
     if (!p?.first_name?.trim()) return { ok: false, error: 'We could not find that email — complete your profile to join.' };
     if (!input.accept_waiver) return { ok: false, error: 'The waiver must be accepted to join.' };
+    // Menores: un menor NO puede firmar su propia exención — la firma el
+    // padre/madre/tutor, y su nombre queda registrado como firmante.
+    const age = await ageFromDob(p.date_of_birth);
+    if (p.date_of_birth && age == null) return { ok: false, error: 'Check the date of birth.' };
+    if (age != null && age < MIN_AGE) {
+      return { ok: false, error: `For surfers under ${MIN_AGE} we set things up in person — please stop by front desk.` };
+    }
+    const isMinor = age != null && age < ADULT;
+    if (isMinor && !p.guardian_name?.trim()) {
+      return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
+    }
     const { data: created, error: createErr } = await admin
       .from('students')
       .insert({
@@ -190,13 +218,17 @@ export async function publicEnroll(input: {
         emergency_contact_name: p.emergency_contact_name?.trim() || null,
         emergency_contact_phone: p.emergency_contact_phone?.trim() || null,
         medical_notes: p.medical_notes?.trim() || null,
+        date_of_birth: p.date_of_birth?.trim() || null,
         status: 'active',
         lifecycle_status: 'lead',
         student_type: 'drop_in',
         how_did_you_hear: 'class_qr',
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
-        waiver_signed_by: input.signed_name?.trim() || p.first_name.trim(),
+        waiver_signed_by: isMinor
+          ? `${p.guardian_name!.trim()} (parent/guardian)`
+          : (input.signed_name?.trim() || p.first_name.trim()),
+        ...(isMinor && p.guardian_phone?.trim() ? { emergency_contact_phone: p.emergency_contact_phone?.trim() || p.guardian_phone.trim() } : {}),
       })
       .select('id, first_name')
       .single();
@@ -252,4 +284,90 @@ export async function publicEnroll(input: {
       first_name: firstName,
     },
   };
+}
+
+// ── Familia (#familia): agregar acompañantes a la MISMA clase reusando el
+// contacto y el adulto responsable de quien ya reservó. Cada persona queda
+// como su propio alumno (bitácora propia) pero con el mismo firmante.
+export async function publicAddCompanion(input: {
+  slug: string;
+  campId: string;
+  bookerEmail: string;          // el adulto que ya reservó
+  first_name: string;
+  last_name?: string | null;
+  date_of_birth?: string | null;
+  medical_notes?: string | null;
+}): Promise<{ ok: boolean; error?: string; name?: string; amount_cents?: number | null }> {
+  const academy = await academyBySlug(input.slug);
+  if (!academy) return { ok: false, error: 'Academy not found.' };
+  const admin = createAdminClient();
+
+  const { data: booker } = await admin
+    .from('students')
+    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by')
+    .eq('academy_id', academy.id)
+    .ilike('email', norm(input.bookerEmail))
+    .limit(1)
+    .maybeSingle();
+  if (!booker) return { ok: false, error: 'Start by booking your own spot first.' };
+
+  const name = input.first_name?.trim();
+  if (!name) return { ok: false, error: 'Add their first name.' };
+
+  // Clase + cupo disponible en vivo.
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, capacity_override, camp_templates:template_id(service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status)')
+    .eq('id', input.campId).eq('academy_id', academy.id).maybeSingle();
+  const tpl: any = camp ? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates) : null;
+  if (!camp || !['class', 'trip', 'surf_lesson'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
+  const active = ((camp as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+  const capacity = (camp as any).capacity_override ?? tpl?.capacity_max ?? 0;
+  if (capacity > 0 && active.length >= capacity) return { ok: false, error: 'No spots left for another person.' };
+
+  const age = await ageFromDob(input.date_of_birth);
+  if (input.date_of_birth && age == null) return { ok: false, error: 'Check the date of birth.' };
+  if (age != null && age < MIN_AGE) {
+    return { ok: false, error: `For surfers under ${MIN_AGE} we set things up in person — please stop by front desk.` };
+  }
+  const bookerName = [booker.first_name, booker.last_name].filter(Boolean).join(' ');
+
+  const { data: created, error: cErr } = await admin
+    .from('students')
+    .insert({
+      academy_id: academy.id,
+      first_name: name,
+      last_name: (input.last_name ?? '').trim(),
+      email: null,                                   // el contacto es el adulto
+      phone: booker.phone,
+      emergency_contact_name: booker.emergency_contact_name || bookerName,
+      emergency_contact_phone: booker.emergency_contact_phone || booker.phone,
+      medical_notes: input.medical_notes?.trim() || null,
+      date_of_birth: input.date_of_birth?.trim() || null,
+      status: 'active',
+      lifecycle_status: 'lead',
+      student_type: 'drop_in',
+      how_did_you_hear: 'class_qr',
+      waiver_signed: true,
+      waiver_signed_at: new Date().toISOString(),
+      waiver_signed_by: `${bookerName} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
+      notes: `Booked by ${bookerName} (${norm(input.bookerEmail)})`,
+    })
+    .select('id, first_name')
+    .single();
+  if (cErr || !created) return { ok: false, error: 'Could not add them — ask at front desk.' };
+
+  const list = tpl?.list_price_cents ?? null;
+  const { error: eErr } = await admin.from('camp_participants').insert({
+    camp_instance_id: (camp as any).id,
+    student_id: created.id,
+    enrollment_status: 'active',
+    payment_status: 'reserved',
+    reserved_at: new Date().toISOString(),
+    ...(list != null ? { amount_cents: list, list_price_cents: list } : {}),
+    sale_type: 'full',
+    notes: `Family booking · ${bookerName}`,
+  });
+  if (eErr) return { ok: false, error: 'Could not save their spot — ask at front desk.' };
+  return { ok: true, name: created.first_name, amount_cents: list };
 }

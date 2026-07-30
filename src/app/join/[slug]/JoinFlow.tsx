@@ -5,7 +5,7 @@
 // always settled at front desk; a courtesy coupon just skips the charge.
 
 import { useState, useTransition } from 'react';
-import { lookupPublicStudent, publicEnroll } from '@/lib/actions/public-classes';
+import { lookupPublicStudent, publicEnroll, publicAddCompanion } from '@/lib/actions/public-classes';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
 const F_DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.08 };
@@ -80,8 +80,27 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const [err, setErr] = useState<string | null>(null);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [signedName, setSignedName] = useState('');
-  const [form, setForm] = useState({ first_name: '', last_name: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '', medical_notes: '' });
+  const [form, setForm] = useState({ first_name: '', last_name: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '', medical_notes: '', date_of_birth: '', guardian_name: '', guardian_phone: '' });
+  // Familia: acompañantes agregados después de reservar
+  const [companion, setCompanion] = useState({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '' });
+  const [added, setAdded] = useState<string[]>([]);
+  const [showCompanion, setShowCompanion] = useState(false);
   const [summary, setSummary] = useState<any>(null);
+
+  // Edad para adaptar el waiver: un menor NO firma — firma su adulto.
+  const ageOf = (dob: string): number | null => {
+    if (!dob) return null;
+    const d = new Date(dob + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return null;
+    const n = new Date();
+    let a = n.getFullYear() - d.getFullYear();
+    const m = n.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && n.getDate() < d.getDate())) a--;
+    return a;
+  };
+  const myAge = ageOf(form.date_of_birth);
+  const isMinor = myAge != null && myAge < 18;
+  const tooYoung = myAge != null && myAge < 7;
 
   const enroll = (profile: boolean) => {
     setErr(null);
@@ -96,7 +115,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         signed_name: signedName || form.first_name || known?.first_name || null,
       });
       if (!r.ok) { setErr(r.error ?? 'Something went wrong.'); return; }
-      setSummary(r.summary);
+      setSummary({ ...r.summary, camp_id: sel!.id });
       setStep('done');
     });
   };
@@ -125,6 +144,64 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
             <p className="text-[11px] mt-1 font-semibold" style={{ color: '#0090B0' }}>Coupon {summary.coupon_applied} applied ✓</p>
           )}
         </div>
+        {/* Familia: sumar acompañantes reusando contacto y adulto responsable */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>Bringing family or friends?</p>
+          {added.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {added.map((n) => (
+                <li key={n} className="text-[13px]" style={{ color: '#061C2B' }}>✓ {n} — spot saved</li>
+              ))}
+            </ul>
+          )}
+          {!showCompanion ? (
+            <button type="button" onClick={() => setShowCompanion(true)}
+              className="mt-2 w-full rounded-full py-2.5 text-[10px]" style={{ ...F_LABEL, background: '#06D6A0', color: '#061C2B' }}>
+              + Add another person
+            </button>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <input value={companion.first_name} onChange={(e) => setCompanion({ ...companion, first_name: e.target.value })}
+                  placeholder="First name *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+                <input value={companion.last_name} onChange={(e) => setCompanion({ ...companion, last_name: e.target.value })}
+                  placeholder="Last name" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+              </div>
+              <label className="flex flex-col justify-center px-3 py-1 border border-gray-200 rounded-xl">
+                <span className="text-[9px] text-gray-400" style={F_LABEL}>Date of birth *</span>
+                <input type="date" value={companion.date_of_birth} onChange={(e) => setCompanion({ ...companion, date_of_birth: e.target.value })}
+                  className="text-sm outline-none bg-transparent" />
+              </label>
+              <input value={companion.medical_notes} onChange={(e) => setCompanion({ ...companion, medical_notes: e.target.value })}
+                placeholder="Medical conditions or 'none'" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+              <p className="text-[11px] text-gray-500 leading-snug">
+                You sign the waiver for them as {ageOf(companion.date_of_birth) != null && ageOf(companion.date_of_birth)! < 18 ? 'their parent or guardian' : 'the person booking'}. Same contact and emergency details as yours.
+              </p>
+              {err && <p className="text-[11px] text-red-600">{err}</p>}
+              <div className="flex gap-2">
+                <button type="button" disabled={pending || !companion.first_name.trim() || !companion.date_of_birth}
+                  onClick={() => start(async () => {
+                    setErr(null);
+                    const r = await publicAddCompanion({
+                      slug, campId: sel?.id ?? summary.camp_id, bookerEmail: email,
+                      first_name: companion.first_name, last_name: companion.last_name,
+                      date_of_birth: companion.date_of_birth, medical_notes: companion.medical_notes,
+                    });
+                    if (!r.ok) { setErr(r.error ?? 'Could not add them.'); return; }
+                    setAdded((a) => [...a, [companion.first_name, companion.last_name].filter(Boolean).join(' ')]);
+                    setCompanion({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '' });
+                    setShowCompanion(false);
+                  })}
+                  className="flex-1 rounded-full py-2.5 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
+                  {pending ? 'Saving…' : 'Save their spot'}
+                </button>
+                <button type="button" onClick={() => { setShowCompanion(false); setErr(null); }}
+                  className="px-4 rounded-full text-[10px]" style={{ ...F_LABEL, color: '#6B7A82' }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="rounded-2xl p-4" style={{ background: '#061C2B' }}>
           <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Before your class</p>
           <p className="text-[13px] mt-1.5 leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
@@ -346,7 +423,29 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           <input value={form.first_name} onChange={set('first_name')} placeholder="First name *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
           <input value={form.last_name} onChange={set('last_name')} placeholder="Last name" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
         </div>
-        <input value={form.phone} onChange={set('phone')} placeholder="Phone / WhatsApp" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+        <div className="grid grid-cols-2 gap-2">
+          <input value={form.phone} onChange={set('phone')} placeholder="Phone / WhatsApp" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+          <label className="flex flex-col justify-center px-3 py-1 border border-gray-200 rounded-xl">
+            <span className="text-[9px] text-gray-400" style={F_LABEL}>Date of birth *</span>
+            <input type="date" value={form.date_of_birth} onChange={set('date_of_birth')} className="text-sm outline-none bg-transparent" />
+          </label>
+        </div>
+        {tooYoung && (
+          <p className="text-[12px] rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
+            For surfers under 7 we set everything up in person — please stop by front desk. 🤙
+          </p>
+        )}
+        {isMinor && !tooYoung && (
+          <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.35)' }}>
+            <p className="text-[11px] font-bold" style={{ color: '#0090B0' }}>
+              {form.first_name || 'This surfer'} is under 18 — a parent or legal guardian signs.
+            </p>
+            <input value={form.guardian_name} onChange={set('guardian_name')} placeholder="Parent / guardian full name *"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
+            <input value={form.guardian_phone} onChange={set('guardian_phone')} placeholder="Their phone"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <input value={form.emergency_contact_name} onChange={set('emergency_contact_name')} placeholder="Emergency contact *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
           <input value={form.emergency_contact_phone} onChange={set('emergency_contact_phone')} placeholder="Their phone *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
@@ -358,11 +457,17 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mt-3 space-y-2" style={{ borderTop: '3px solid #FF6B6B' }}>
         <p className="text-[9px]" style={{ ...F_LABEL, color: '#FF6B6B' }}>Liability waiver · required</p>
         <div className="text-[10px] text-gray-500 max-h-24 overflow-y-auto leading-snug bg-gray-50 rounded-xl p-3">{WAIVER_TEXT}</div>
+        {isMinor && !tooYoung && (
+          <p className="text-[11px] leading-snug rounded-lg px-2.5 py-2" style={{ background: 'rgba(0,210,255,.07)', color: '#0F5A6B' }}>
+            I am the parent or legal guardian of <strong>{[form.first_name, form.last_name].filter(Boolean).join(' ') || 'this minor'}</strong>, and I accept this waiver on their behalf.
+          </p>
+        )}
         <label className="flex items-start gap-2 text-[12px]" style={{ color: '#061C2B' }}>
           <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} className="mt-0.5 h-4 w-4" />
-          I have read and accept the waiver
+          {isMinor && !tooYoung ? 'I have read and accept the waiver as their guardian' : 'I have read and accept the waiver'}
         </label>
-        <input value={signedName} onChange={(e) => setSignedName(e.target.value)} placeholder="Type your full name to sign"
+        <input value={signedName} onChange={(e) => setSignedName(e.target.value)}
+          placeholder={isMinor && !tooYoung ? 'Guardian: type your full name to sign' : 'Type your full name to sign'}
           className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
       </div>
 
@@ -370,7 +475,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         {CouponField}
         {err && <p className="text-[11px] text-red-600">{err}</p>}
         <button type="button"
-          disabled={pending || !form.first_name.trim() || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
+          disabled={pending || tooYoung || !form.first_name.trim() || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
           onClick={() => enroll(true)}
           className="w-full rounded-full py-3.5 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
           {pending ? 'Saving…' : 'Sign & save my spot'}
