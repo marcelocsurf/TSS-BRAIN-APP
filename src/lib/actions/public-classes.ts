@@ -126,7 +126,10 @@ export async function publicEnroll(input: {
     .eq('academy_id', academy.id)
     .maybeSingle();
   const tpl = camp ? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates) : null;
-  if (!camp || !['class', 'trip'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
+  // Debe aceptar exactamente lo mismo que lista getPublicClasses — incluidas
+  // las lecciones de surf (Discover), o el cliente ve la clase pero no puede
+  // reservarla ("Class not found").
+  if (!camp || !['class', 'trip', 'surf_lesson'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
   const active = ((camp as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const capacity = (camp as any).capacity_override ?? tpl?.capacity_max ?? 0;
   if (capacity > 0 && active.length >= capacity) return { ok: false, error: 'This class is full.' };
