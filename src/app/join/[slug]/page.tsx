@@ -44,12 +44,23 @@ export default async function JoinPage({ params, searchParams }: {
               <img src={data.academy.logo_url} alt={data.academy.name} className="h-14 w-auto max-w-[240px] object-contain" />
             </div>
           ) : null}
-          <h1 className="mt-3 text-[22px]" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.08, color: '#061C2B' }}>
-            {data.academy.name}
-          </h1>
+          <p className="mt-2 text-[13px] text-gray-500">Book your spot in seconds</p>
           <p className="text-[9px] mt-1 text-gray-400" style={{ fontFamily: 'var(--font-plex), monospace', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
             Powered by The Surf Sequence
           </p>
+        </div>
+        {/* Qué va a pasar: quita la fricción del "¿me van a pedir tarjeta?" */}
+        <div className="rounded-2xl grid grid-cols-3 gap-1 px-2 py-3 mb-4" style={{ background: '#061C2B' }}>
+          {[
+            { t: 'Pick', d: 'an activity' },
+            { t: 'Book', d: 'your time' },
+            { t: 'Pay', d: 'at front desk' },
+          ].map((s2) => (
+            <div key={s2.t} className="text-center">
+              <p className="text-[10px]" style={{ fontFamily: 'var(--font-plex), monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#00D2FF' }}>{s2.t}</p>
+              <p className="text-[9px] mt-0.5" style={{ color: 'rgba(247,249,250,.45)' }}>{s2.d}</p>
+            </div>
+          ))}
         </div>
         <JoinFlow slug={slug} classes={data.classes} />
       </div>

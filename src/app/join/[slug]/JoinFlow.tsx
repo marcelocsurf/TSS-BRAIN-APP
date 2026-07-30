@@ -183,30 +183,40 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           return (
             <div key={a.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
               style={{ borderLeft: `4px solid ${a.color ?? '#00D2FF'}` }}>
-              {/* Cabecera de la actividad: miniatura del video + datos clave */}
-              <button type="button" onClick={() => setOpenActivity(isOpen ? null : a.key)} className="w-full text-left flex items-stretch gap-3">
-                {thumb ? (
-                  <span className="relative shrink-0 w-[92px] h-[92px] bg-black">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumb} alt="" className="w-full h-full object-cover opacity-90" />
+              {/* Portada ancha: video como imagen de la actividad; sin video,
+                  el color de la actividad con su ícono — nunca una tarjeta vacía. */}
+              <button type="button" onClick={() => setOpenActivity(isOpen ? null : a.key)} className="w-full text-left block">
+                <span className="relative block h-[104px]" style={{ background: a.color && a.color !== '#F7F9FA' ? a.color : '#0F6E56' }}>
+                  {thumb && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  )}
+                  <span className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,28,43,.15) 30%, rgba(6,28,43,.78) 100%)' }} />
+                  {a.price_cents != null && (
+                    <span className="absolute top-2 right-2 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                      style={{ background: '#FFD166', color: '#412402' }}>{money(a.price_cents)}</span>
+                  )}
+                  {a.video_url && (
                     <span
-                      role="button"
-                      tabIndex={0}
+                      role="button" tabIndex={0}
                       onClick={(e) => { e.stopPropagation(); setVideoOf(a); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); setVideoOf(a); } }}
-                      className="absolute inset-0 flex items-center justify-center text-[26px] cursor-pointer"
-                      style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,.6)' }}
+                      className="absolute inset-0 flex items-center justify-center text-[34px] cursor-pointer"
+                      style={{ color: 'rgba(255,255,255,.92)', textShadow: '0 2px 12px rgba(0,0,0,.5)' }}
                       aria-label={`Play ${a.label} video`}
                     >▶</span>
+                  )}
+                  <span className="absolute left-3 bottom-2 right-3 block font-bold text-[17px] truncate" style={{ color: '#fff' }}>{a.label}</span>
+                </span>
+                <span className="flex items-center justify-between gap-2 px-3 py-2.5">
+                  <span className="text-[11.5px] text-gray-500">
+                    {a.minutes ? `${a.minutes} min` : ''}{next.length ? ` · ${next.length} date${next.length === 1 ? '' : 's'}` : ''}
                   </span>
-                ) : null}
-                <span className="flex-1 min-w-0 py-3 pr-3">
-                  <span className="block font-bold text-[15px] truncate" style={{ color: '#061C2B' }}>{a.label}</span>
-                  <span className="block text-[11px] text-gray-400 mt-0.5">
-                    {a.minutes ? `${a.minutes} min` : ''}{a.price_cents != null ? ` · ${money(a.price_cents)}` : ''}
-                  </span>
-                  <span className="block text-[11px] mt-1 font-semibold" style={{ color: next.length ? '#0090B0' : '#c04545' }}>
-                    {next.length ? `${next.length} date${next.length === 1 ? '' : 's'} available · ${isOpen ? 'hide' : 'see times'}` : 'Fully booked'}
+                  <span className="text-[11.5px] font-bold px-3 py-1.5 rounded-full shrink-0"
+                    style={next.length
+                      ? { border: '1.5px solid #00D2FF', color: '#061C2B' }
+                      : { border: '1px solid #eee', color: '#c04545' }}>
+                    {next.length ? (isOpen ? 'Hide times' : 'See times') : 'Fully booked'}
                   </span>
                 </span>
               </button>
@@ -235,7 +245,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                         {list.map((s) => (
                           <button key={s.id} type="button" disabled={s.full}
                             onClick={() => { setSel(s); setStep('email'); setErr(null); }}
-                            className="text-[12px] font-bold px-3 py-2 rounded-xl disabled:opacity-40"
+                            className="text-[13px] font-bold px-3.5 py-2.5 rounded-xl disabled:opacity-40"
                             style={s.full
                               ? { background: '#fff', border: '1px solid #eee', color: '#999' }
                               : { background: '#fff', border: '1.5px solid #00D2FF', color: '#061C2B' }}>
