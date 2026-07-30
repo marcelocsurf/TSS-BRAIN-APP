@@ -33,8 +33,11 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson'])
     .gte('start_date', today)
     .neq('status', 'cancelled')
+    // Ventana de 6 semanas: suficiente para que un huésped planifique su
+    // estadía sin traer el trimestre entero al navegador.
+    .lte('start_date', new Date(Date.now() + 42 * 86400000).toISOString().slice(0, 10))
     .order('start_date')
-    .limit(30);
+    .limit(400);
   if (templateId) q = q.eq('template_id', templateId);
   const { data } = await q;
 

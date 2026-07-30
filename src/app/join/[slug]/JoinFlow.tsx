@@ -14,12 +14,55 @@ type Klass = {
   id: string; name: string; date: string; time: string | null; minutes: number | null;
   coach: string | null; color: string | null; price_cents: number | null;
   description: string | null;
+  template_name?: string | null;
   video_url?: string | null;
   enrolled: number; capacity: number; full: boolean;
 };
 
 const money = (c: number | null) => c == null ? null : `$${(c / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+const fmtDayShort = (d: string, today: string) => {
+  if (d === today) return 'TODAY';
+  const dt = new Date(d + 'T00:00:00'), t = new Date(today + 'T00:00:00');
+  if (Math.round((dt.getTime() - t.getTime()) / 86400000) === 1) return 'TOMORROW';
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+};
+
+// YouTube (incl. Shorts) y Vimeo → miniatura + reproducción EMBEBIDA, para que
+// el cliente nunca salga de la página de la academia.
+function videoIds(url: string | null | undefined): { thumb: string | null; embed: string | null } {
+  if (!url) return { thumb: null, embed: null };
+  const yt = url.match(/(?:youtu\.be\/|\/shorts\/|[?&]v=|\/embed\/)([A-Za-z0-9_-]{6,})/);
+  if (yt) return { thumb: `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`, embed: `https://www.youtube.com/embed/${yt[1]}?rel=0&playsinline=1&autoplay=1` };
+  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vm) return { thumb: null, embed: `https://player.vimeo.com/video/${vm[1]}?autoplay=1` };
+  return { thumb: null, embed: null };
+}
+
+// Un "tipo de actividad" agrupa todas las fechas del mismo servicio: el cliente
+// elige QUÉ quiere hacer y después CUÁNDO (en vez de una lista cronológica
+// revuelta de cientos de sesiones).
+type Activity = {
+  key: string; label: string; color: string | null; price_cents: number | null;
+  minutes: number | null; description: string | null; video_url: string | null;
+  sessions: Klass[]; openCount: number;
+};
+function groupActivities(classes: Klass[]): Activity[] {
+  const map = new Map<string, Activity>();
+  for (const c of classes) {
+    const key = c.template_name || (c.name || '').split(' · ')[0].trim() || 'Class';
+    const a = map.get(key) ?? {
+      key, label: key, color: c.color, price_cents: c.price_cents, minutes: c.minutes,
+      description: c.description, video_url: c.video_url ?? null, sessions: [], openCount: 0,
+    };
+    a.sessions.push(c);
+    if (!c.full) a.openCount++;
+    if (!a.video_url && c.video_url) a.video_url = c.video_url;
+    if (!a.description && c.description) a.description = c.description;
+    map.set(key, a);
+  }
+  return [...map.values()].sort((x, y) => (y.openCount - x.openCount) || x.label.localeCompare(y.label));
+}
 
 const WAIVER_TEXT = `I acknowledge that participation in physical activities (surf, yoga, skate, ice bath, jiujitsu and related training) involves inherent risks, including injury. I declare I am physically able to participate, I have disclosed any relevant medical conditions, and I release the academy and The Surf Sequence from liability arising from ordinary negligence, to the maximum extent permitted by law. I consent to receive first aid / emergency care if needed.`;
 
@@ -27,6 +70,10 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const [pending, start] = useTransition();
   const [sel, setSel] = useState<Klass | null>(null);
   const [step, setStep] = useState<'list' | 'email' | 'confirm' | 'profile' | 'done'>('list');
+  // Menú por actividad + video embebido (nunca sacamos al cliente de la página)
+  const [openActivity, setOpenActivity] = useState<string | null>(null);
+  const [videoOf, setVideoOf] = useState<Activity | null>(null);
+  const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
   const [email, setEmail] = useState('');
   const [known, setKnown] = useState<{ first_name: string; waiver_signed: boolean } | null>(null);
   const [coupon, setCoupon] = useState('');
@@ -91,49 +138,122 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
     );
   }
 
+  // Ventana de video: se abre SOBRE la página; al cerrar, el cliente sigue
+  // exactamente donde estaba (nada de mandarlo a YouTube y perderlo).
+  const VideoModal = videoOf && (() => {
+    const { embed } = videoIds(videoOf.video_url);
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(6,28,43,.88)' }}
+        onClick={() => setVideoOf(null)}>
+        <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{videoOf.label}</p>
+            <button type="button" onClick={() => setVideoOf(null)} className="text-[22px] leading-none px-2" style={{ color: 'rgba(247,249,250,.7)' }} aria-label="Close">×</button>
+          </div>
+          {embed ? (
+            <div className="rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '9 / 16', maxHeight: '70vh' }}>
+              <iframe src={embed} title={videoOf.label} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen
+                className="w-full h-full" style={{ border: 0 }} />
+            </div>
+          ) : (
+            <a href={videoOf.video_url ?? '#'} target="_blank" rel="noreferrer" className="block text-center rounded-2xl py-4 text-[12px]"
+              style={{ background: '#0A2438', color: '#00D2FF' }}>Open video ↗</a>
+          )}
+          <button type="button" onClick={() => setVideoOf(null)}
+            className="mt-3 w-full rounded-full py-3 text-[10px]" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
+            Back to classes
+          </button>
+        </div>
+      </div>
+    );
+  })();
+
   if (step === 'list') {
+    const activities = groupActivities(classes);
     return (
       <div className="space-y-2.5">
-        <p className="text-[10px] text-gray-400 px-1" style={F_LABEL}>Upcoming classes</p>
-        {classes.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No classes scheduled right now — check with front desk.</p>}
-        {classes.map((c) => (
-          <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4" style={{ borderLeft: `4px solid ${c.color ?? '#00D2FF'}` }}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>{fmtDate(c.date)}{c.time ? ` · ${c.time}` : ''}</p>
-                <p className="font-bold text-[15px] mt-0.5 truncate" style={{ color: '#061C2B' }}>{c.name}</p>
-                <p className="text-[11px] text-gray-400">
-                  {c.minutes ? `${c.minutes} min` : ''}{c.coach ? ` · ${c.coach}` : ''}{c.price_cents != null ? ` · ${money(c.price_cents)}` : ''}
-                </p>
-              </div>
-              <span className="shrink-0 text-[10px] font-bold rounded-full px-2 py-0.5"
-                style={c.full ? { background: 'rgba(255,107,107,.14)', color: '#c04545' } : { background: 'rgba(0,210,255,.12)', color: '#0090B0' }}>
-                {c.full ? 'Full' : `${Math.max(0, c.capacity - c.enrolled)} spots`}
-              </span>
-            </div>
-            {(c as any).video_url && (
-              <a href={(c as any).video_url} target="_blank" rel="noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full"
-                style={{ background: '#061C2B', color: '#00D2FF' }}>
-                ▶ Watch what it&apos;s like
-              </a>
-            )}
-            {c.description && (
-              <details className="mt-2 group">
-                <summary className="cursor-pointer list-none text-[10px]" style={{ ...F_LABEL, color: '#0090B0' }}>
-                  About this class <span className="group-open:hidden">＋</span><span className="hidden group-open:inline">−</span>
-                </summary>
-                <p className="mt-2 text-[12px] leading-relaxed text-gray-600 whitespace-pre-line">{c.description}</p>
-              </details>
-            )}
-            {!c.full && (
-              <button type="button" onClick={() => { setSel(c); setStep('email'); setErr(null); }}
-                className="mt-3 w-full rounded-full py-2.5 text-[10px]" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
-                Join this class
+        {VideoModal}
+        <p className="text-[10px] text-gray-400 px-1" style={F_LABEL}>What do you want to do?</p>
+        {activities.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No classes scheduled right now — check with front desk.</p>}
+
+        {activities.map((a) => {
+          const isOpen = openActivity === a.key;
+          const { thumb } = videoIds(a.video_url);
+          const next = a.sessions.filter((s) => !s.full);
+          return (
+            <div key={a.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+              style={{ borderLeft: `4px solid ${a.color ?? '#00D2FF'}` }}>
+              {/* Cabecera de la actividad: miniatura del video + datos clave */}
+              <button type="button" onClick={() => setOpenActivity(isOpen ? null : a.key)} className="w-full text-left flex items-stretch gap-3">
+                {thumb ? (
+                  <span className="relative shrink-0 w-[92px] h-[92px] bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumb} alt="" className="w-full h-full object-cover opacity-90" />
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); setVideoOf(a); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); setVideoOf(a); } }}
+                      className="absolute inset-0 flex items-center justify-center text-[26px] cursor-pointer"
+                      style={{ color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,.6)' }}
+                      aria-label={`Play ${a.label} video`}
+                    >▶</span>
+                  </span>
+                ) : null}
+                <span className="flex-1 min-w-0 py-3 pr-3">
+                  <span className="block font-bold text-[15px] truncate" style={{ color: '#061C2B' }}>{a.label}</span>
+                  <span className="block text-[11px] text-gray-400 mt-0.5">
+                    {a.minutes ? `${a.minutes} min` : ''}{a.price_cents != null ? ` · ${money(a.price_cents)}` : ''}
+                  </span>
+                  <span className="block text-[11px] mt-1 font-semibold" style={{ color: next.length ? '#0090B0' : '#c04545' }}>
+                    {next.length ? `${next.length} date${next.length === 1 ? '' : 's'} available · ${isOpen ? 'hide' : 'see times'}` : 'Fully booked'}
+                  </span>
+                </span>
               </button>
-            )}
-          </div>
-        ))}
+
+              {/* Horarios de ESTA actividad, agrupados por día */}
+              {isOpen && (
+                <div className="border-t border-gray-100 bg-gray-50/60 px-3 py-3 space-y-2.5">
+                  {a.description && (
+                    <p className="text-[12px] leading-relaxed text-gray-600 whitespace-pre-line">{a.description}</p>
+                  )}
+                  {a.video_url && (
+                    <button type="button" onClick={() => setVideoOf(a)}
+                      className="inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full"
+                      style={{ background: '#061C2B', color: '#00D2FF' }}>
+                      ▶ Watch what it&apos;s like
+                    </button>
+                  )}
+                  {Object.entries(
+                    a.sessions.reduce((acc: Record<string, Klass[]>, s) => {
+                      (acc[s.date] = acc[s.date] ?? []).push(s); return acc;
+                    }, {})
+                  ).slice(0, 14).map(([date, list]) => (
+                    <div key={date}>
+                      <p className="text-[9px] mb-1" style={{ ...F_LABEL, color: '#0090B0' }}>{fmtDayShort(date, today)}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {list.map((s) => (
+                          <button key={s.id} type="button" disabled={s.full}
+                            onClick={() => { setSel(s); setStep('email'); setErr(null); }}
+                            className="text-[12px] font-bold px-3 py-2 rounded-xl disabled:opacity-40"
+                            style={s.full
+                              ? { background: '#fff', border: '1px solid #eee', color: '#999' }
+                              : { background: '#fff', border: '1.5px solid #00D2FF', color: '#061C2B' }}>
+                            {s.time ? s.time.slice(0, 5) : 'Any time'}
+                            <span className="ml-1.5 text-[10px] font-normal text-gray-400">
+                              {s.full ? 'full' : `${Math.max(0, s.capacity - s.enrolled)} left`}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-gray-400">Pick a time to sign up · pay at front desk.</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -141,7 +261,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const Header = (
     <div className="rounded-2xl px-4 py-3 mb-3" style={{ background: '#061C2B' }}>
       <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{sel!.name} · {fmtDate(sel!.date)}{sel!.time ? ` · ${sel!.time}` : ''}</p>
-      <button type="button" onClick={() => { setStep('list'); setErr(null); }} className="text-[10px] mt-1" style={{ color: 'rgba(247,249,250,.5)' }}>← change class</button>
+      <button type="button" onClick={() => { setStep('list'); setErr(null); }} className="text-[10px] mt-1" style={{ color: 'rgba(247,249,250,.5)' }}>← change class or time</button>
     </div>
   );
 
