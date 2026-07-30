@@ -304,7 +304,7 @@ export async function publicAddCompanion(input: {
 
   const { data: booker } = await admin
     .from('students')
-    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by')
+    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by, date_of_birth')
     .eq('academy_id', academy.id)
     .ilike('email', norm(input.bookerEmail))
     .limit(1)
@@ -331,6 +331,15 @@ export async function publicAddCompanion(input: {
     return { ok: false, error: `For surfers under ${MIN_AGE} we set things up in person — please stop by front desk.` };
   }
   const bookerName = [booker.first_name, booker.last_name].filter(Boolean).join(' ');
+  // Si quien reserva es a su vez menor, el firmante NO puede ser él: se hereda
+  // el adulto que firmó su propio waiver ("Ana Pérez (parent/guardian)").
+  const bookerAge = await ageFromDob((booker as any).date_of_birth);
+  const bookerIsMinor = bookerAge != null && bookerAge < ADULT;
+  const guardianOfBooker = ((booker as any).waiver_signed_by || '').replace(/\s*\((parent\/guardian|booked together)\)\s*$/i, '').trim();
+  if (bookerIsMinor && !guardianOfBooker) {
+    return { ok: false, error: 'A parent or guardian must add other people — please ask at front desk.' };
+  }
+  const responsibleAdult = bookerIsMinor ? guardianOfBooker : bookerName;
 
   const { data: created, error: cErr } = await admin
     .from('students')
@@ -350,8 +359,8 @@ export async function publicAddCompanion(input: {
       how_did_you_hear: 'class_qr',
       waiver_signed: true,
       waiver_signed_at: new Date().toISOString(),
-      waiver_signed_by: `${bookerName} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
-      coach_notes_general: `Booked by ${bookerName} (${norm(input.bookerEmail)}) — family booking from the public QR.`,
+      waiver_signed_by: `${responsibleAdult} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
+      coach_notes_general: `Booked by ${responsibleAdult}${bookerIsMinor ? ` (via ${bookerName})` : ''} (${norm(input.bookerEmail)}) — family booking from the public QR.`,
     })
     .select('id, first_name')
     .single();
@@ -366,7 +375,7 @@ export async function publicAddCompanion(input: {
     reserved_at: new Date().toISOString(),
     ...(list != null ? { amount_cents: list, list_price_cents: list } : {}),
     sale_type: 'full',
-    notes: `Family booking · ${bookerName}`,
+    notes: `Family booking · ${responsibleAdult}`,
   });
   if (eErr) return { ok: false, error: 'Could not save their spot — ask at front desk.' };
   return { ok: true, name: created.first_name, amount_cents: list };
