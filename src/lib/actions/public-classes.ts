@@ -351,7 +351,7 @@ export async function publicAddCompanion(input: {
       waiver_signed: true,
       waiver_signed_at: new Date().toISOString(),
       waiver_signed_by: `${bookerName} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
-      notes: `Booked by ${bookerName} (${norm(input.bookerEmail)})`,
+      coach_notes_general: `Booked by ${bookerName} (${norm(input.bookerEmail)}) — family booking from the public QR.`,
     })
     .select('id, first_name')
     .single();
