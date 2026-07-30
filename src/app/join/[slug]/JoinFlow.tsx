@@ -4,7 +4,7 @@
 // confirm / new: profile + waiver) → optional coupon → done. Payment is
 // always settled at front desk; a courtesy coupon just skips the charge.
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { lookupPublicStudent, publicEnroll, publicAddCompanion } from '@/lib/actions/public-classes';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
@@ -73,6 +73,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   // Menú por actividad + video embebido (nunca sacamos al cliente de la página)
   const [openActivity, setOpenActivity] = useState<string | null>(null);
   const [videoOf, setVideoOf] = useState<Activity | null>(null);
+  const [videoRatio, setVideoRatio] = useState<'landscape' | 'portrait'>('landscape');
   const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
   const [email, setEmail] = useState('');
   const [known, setKnown] = useState<{ first_name: string; waiver_signed: boolean } | null>(null);
@@ -101,6 +102,20 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const myAge = ageOf(form.date_of_birth);
   const isMinor = myAge != null && myAge < 18;
   const tooYoung = myAge != null && myAge < 7;
+
+  // Al abrir un video, medir su miniatura real: maxresdefault conserva la
+  // proporción original (1280×720 horizontal · 1080×1920 en Shorts verticales).
+  useEffect(() => {
+    if (!videoOf?.video_url) return;
+    setVideoRatio('landscape');
+    const m = videoOf.video_url.match(/(?:youtu\.be\/|\/shorts\/|[?&]v=|\/embed\/)([A-Za-z0-9_-]{6,})/);
+    if (!m) return;
+    const probe = new Image();
+    probe.onload = () => {
+      if (probe.naturalHeight > probe.naturalWidth) setVideoRatio('portrait');
+    };
+    probe.src = `https://img.youtube.com/vi/${m[1]}/maxresdefault.jpg`;
+  }, [videoOf]);
 
   const enroll = (profile: boolean) => {
     setErr(null);
@@ -219,17 +234,21 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   // exactamente donde estaba (nada de mandarlo a YouTube y perderlo).
   const VideoModal = videoOf && (() => {
     const { embed } = videoIds(videoOf.video_url);
+    // La forma del marco sigue al video real (medida con la miniatura de
+    // máxima resolución): horizontal 16:9, vertical 9:16 — sin franjas negras.
+    const ratio = videoRatio === 'portrait' ? '9 / 16' : '16 / 9';
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(6,28,43,.88)' }}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(6,28,43,.92)' }}
         onClick={() => setVideoOf(null)}>
         <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{videoOf.label}</p>
-            <button type="button" onClick={() => setVideoOf(null)} className="text-[22px] leading-none px-2" style={{ color: 'rgba(247,249,250,.7)' }} aria-label="Close">×</button>
+            <button type="button" onClick={() => setVideoOf(null)} className="text-[26px] leading-none px-2" style={{ color: 'rgba(247,249,250,.75)' }} aria-label="Close">×</button>
           </div>
           {embed ? (
-            <div className="rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '9 / 16', maxHeight: '70vh' }}>
-              <iframe src={embed} title={videoOf.label} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen
+            <div className="rounded-2xl overflow-hidden bg-black mx-auto"
+              style={{ aspectRatio: ratio, maxHeight: '68vh', width: videoRatio === 'portrait' ? 'auto' : '100%', height: videoRatio === 'portrait' ? '68vh' : 'auto' }}>
+              <iframe src={embed} title={videoOf.label} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen
                 className="w-full h-full" style={{ border: 0 }} />
             </div>
           ) : (
