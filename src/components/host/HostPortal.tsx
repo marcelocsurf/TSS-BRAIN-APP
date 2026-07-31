@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { SellerPortal } from '@/components/seller/SellerPortal';
 import { DeskBoard } from '@/app/front-desk/[token]/DeskBoard';
-import { getFrontDeskData } from '@/lib/actions/front-desk';
+import { getFrontDeskData, getRecentBookings } from '@/lib/actions/front-desk';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
   hostRecentIncidents, hostSendIntakeEmail, type HostStudentRow,
@@ -122,12 +122,14 @@ export function HostPortal({ token, hostName, services }: { token: string; hostN
   const [tab, setTab] = useState<Tab>('hoy');
   const [board, setBoard] = useState<any>(null);
   const [incidents, setIncidents] = useState<any[] | null>(null);
+  const [recent, setRecent] = useState<any[] | null>(null);
   const [attention, setAttention] = useState<HostStudentRow[] | null>(null);
   const [q, setQ] = useState('');
   const [results, setResults] = useState<HostStudentRow[] | null>(null);
 
   useEffect(() => { getFrontDeskData(token).then(setBoard).catch(() => setBoard({ classes: [] })); }, [token]);
   useEffect(() => { if (tab === 'hoy' && incidents === null) hostRecentIncidents(token).then(setIncidents).catch(() => setIncidents([])); }, [tab, incidents, token]);
+  useEffect(() => { if (tab === 'hoy' && recent === null) getRecentBookings(token).then(setRecent).catch(() => setRecent([])); }, [tab, recent, token]);
   useEffect(() => { if (tab === 'clientes' && attention === null) hostAttentionList(token).then(setAttention).catch(() => setAttention([])); }, [tab, attention, token]);
 
   useEffect(() => {
@@ -165,6 +167,26 @@ export function HostPortal({ token, hostName, services }: { token: string; hostN
       <div className="max-w-md lg:max-w-3xl mx-auto px-4 pt-4">
         {tab === 'hoy' && (
           <div className="space-y-4">
+            {/* Quién acaba de reservar (48 h) — QR o vendedor, pagado o pendiente */}
+            {recent !== null && recent.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <p className="text-[9px] text-gray-400" style={F_M}>🔔 Reservas recientes · 48 h</p>
+                <div className="mt-2 space-y-2">
+                  {recent.map((r: any) => (
+                    <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
+                      <div className="min-w-0">
+                        <p className="font-bold truncate" style={{ color: INK }}>{r.name}</p>
+                        <p className="text-[10.5px] text-gray-400 truncate">{(r.class_name ?? '').split(' · ').slice(0, 2).join(' · ')} · vía {r.source}</p>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full"
+                        style={r.paid ? { background: 'rgba(6,214,160,.15)', color: '#0a7c5d' } : { background: 'rgba(255,209,102,.2)', color: '#7a5c00' }}>
+                        {r.paid ? '✓ pagado' : (r.amount_cents != null ? `$${(r.amount_cents / 100).toFixed(0)} pend.` : 'pendiente')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {board === null ? <p className="text-sm text-gray-400 text-center py-8">Cargando clases…</p>
               : <DeskBoard token={token} classes={(board?.classes ?? []) as any} />}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">

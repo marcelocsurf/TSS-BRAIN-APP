@@ -6,6 +6,27 @@
 // in the same flow. Payment is NEVER settled here — front desk does that.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createNotification } from '@/lib/actions/notifications';
+
+// Aviso interno de una reserva del QR público: campanita para coordinadores,
+// admins y hosts (servicio al cliente). No bloquea la reserva si falla.
+async function notifyBooking(academyId: string, studentName: string, className: string, amountCents: number | null, studentId: string) {
+  try {
+    const admin = createAdminClient();
+    const { data: staff } = await admin.from('coaches').select('id')
+      .eq('academy_id', academyId).in('role', ['coordinator', 'admin', 'host']).eq('active_status', true);
+    for (const c of staff ?? []) {
+      await createNotification({
+        recipientCoachId: c.id,
+        type: 'qr_booking',
+        title: `Reserva por QR: ${studentName}`,
+        body: `${className}${amountCents != null ? ` — $${(amountCents / 100).toFixed(2)} pendiente de cobro en recepción` : ''}`,
+        link: `/students/${studentId}`,
+        metadata: { studentId, source: 'public_qr' },
+      }).catch(() => {});
+    }
+  } catch { /* el aviso nunca debe romper la reserva */ }
+}
 
 const norm = (e: string) => e.trim().toLowerCase();
 
@@ -265,6 +286,7 @@ export async function publicEnroll(input: {
     ...(reason ? { discount_reason: reason } : {}),
   });
   if (enrollErr) return { ok: false, error: 'Could not save your spot — ask at front desk.' };
+  notifyBooking(academy.id, firstName, (camp as any).camp_name, amount, studentId);
 
   if (coupon) {
     // Plain read-modify-write — signup volume makes a race here harmless.
@@ -378,5 +400,6 @@ export async function publicAddCompanion(input: {
     notes: `Family booking · ${responsibleAdult}`,
   });
   if (eErr) return { ok: false, error: 'Could not save their spot — ask at front desk.' };
+  notifyBooking(academy.id, `${created.first_name} (familia de ${bookerName})`, (camp as any).camp_name, list, created.id);
   return { ok: true, name: created.first_name, amount_cents: list };
 }

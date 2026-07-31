@@ -95,3 +95,34 @@ export async function frontDeskSettle(token: string, participantId: string, meth
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+// Reservas de las últimas 48 h — para que recepción/host/coordinador vean de
+// un vistazo QUIÉN acaba de reservar, por dónde entró y si ya pagó.
+export async function getRecentBookings(token: string) {
+  const who = await resolveDesk(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - 48 * 3600_000).toISOString();
+  const { data } = await admin
+    .from('camp_participants')
+    .select('id, reserved_at, payment_status, amount_cents, sold_by, camp_instances:camp_instance_id!inner(academy_id, camp_name, start_date, scheduled_time), students(first_name, last_name), seller:sold_by(display_name)')
+    .eq('camp_instances.academy_id', who.academy_id)
+    .eq('enrollment_status', 'active')
+    .gte('reserved_at', since)
+    .order('reserved_at', { ascending: false })
+    .limit(25);
+  return (data ?? []).map((p: any) => {
+    const st = Array.isArray(p.students) ? p.students[0] : p.students;
+    const c = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;
+    const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller;
+    return {
+      id: p.id,
+      name: [st?.first_name, st?.last_name].filter(Boolean).join(' '),
+      class_name: c?.camp_name ?? '',
+      when: p.reserved_at,
+      paid: p.payment_status === 'paid',
+      amount_cents: p.amount_cents,
+      source: seller?.display_name ?? 'QR público',
+    };
+  });
+}

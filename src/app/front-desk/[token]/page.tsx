@@ -2,6 +2,7 @@ import { getFrontDeskData } from '@/lib/actions/front-desk';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { Lock } from 'lucide-react';
 import { DeskBoard } from './DeskBoard';
+import { getRecentBookings } from '@/lib/actions/front-desk';
 
 // FRONT DESK (M147) — token-gated screen for reception: today's classes,
 // who owes what, and one-tap settle (cash / card / transfer / room charge).
@@ -15,6 +16,7 @@ export const revalidate = 0;
 export default async function FrontDeskPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const data = await getFrontDeskData(token);
+  const recent = data ? await getRecentBookings(token) : [];
 
   if (!data) {
     return (
@@ -38,6 +40,25 @@ export default async function FrontDeskPage({ params }: { params: Promise<{ toke
           </h1>
           <p className="text-[11px] mt-1" style={{ color: 'rgba(247,249,250,.55)' }}>{data.desk.name} · next 7 days · hand a ticket only when the row is green</p>
         </div>
+        {recent.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
+            <p className="text-[9px] text-gray-400" style={{ fontFamily: 'var(--font-plex), monospace', textTransform: 'uppercase', letterSpacing: '0.16em' }}>🔔 Recent bookings · last 48 h</p>
+            <div className="mt-2 space-y-2">
+              {recent.map((r: any) => (
+                <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
+                  <div className="min-w-0">
+                    <p className="font-bold truncate" style={{ color: '#061C2B' }}>{r.name}</p>
+                    <p className="text-[10.5px] text-gray-400 truncate">{(r.class_name ?? '').split(' · ').slice(0, 2).join(' · ')} · via {r.source}</p>
+                  </div>
+                  <span className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full"
+                    style={r.paid ? { background: 'rgba(6,214,160,.15)', color: '#0a7c5d' } : { background: 'rgba(255,209,102,.2)', color: '#7a5c00' }}>
+                    {r.paid ? '✓ paid' : (r.amount_cents != null ? `$${(r.amount_cents / 100).toFixed(0)} due` : 'due')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <DeskBoard token={token} classes={data.classes as any} />
       </div>
     </div>
