@@ -183,3 +183,101 @@ export async function hostSendIntakeEmail(token: string, studentId: string): Pro
   const r = await sendIntakeLinkEmail({ toEmail: s.email, firstName: s.first_name, intakeUrl: `${BASE()}/intake/${s.portal_token}` });
   return r.success ? { ok: true } : { ok: false, error: r.error };
 }
+
+// ── OPERACIÓN: la línea de tiempo del día (reemplaza el Excel semanal) ──
+// Todo lo que pasa en una fecha: servicios/camps con coach, alumnos y su
+// semáforo, avance del camp (día X de Y), espacio reservado y transporte.
+export interface HostDayEvent {
+  camp_id: string;
+  name: string;
+  kind: string | null;
+  time: string | null;
+  coach: string | null;
+  day_number: number | null;
+  total_days: number | null;
+  session_status: string | null;
+  capacity: number;
+  enrolled: number;
+  students: { name: string; paid: boolean; waiver: boolean }[];
+  spaces: string[];
+  transport: { depart: string | null; ret: string | null; status: string | null } | null;
+  venue: string | null;
+}
+
+export async function hostDayOperation(token: string, dateISO: string): Promise<HostDayEvent[]> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+
+  const { data: instances } = await admin
+    .from('camp_instances')
+    .select(`id, camp_name, start_date, end_date, scheduled_time, capacity_override, status,
+      camp_templates:template_id(template_name, service_kind, capacity_max),
+      coaches:coach_id(display_name),
+      camp_participants(enrollment_status, payment_status, students(first_name, last_name, waiver_signed)),
+      camp_sessions(id, day_number, session_date, session_status)`)
+    .eq('academy_id', who.academy_id)
+    .lte('start_date', dateISO)
+    .gte('end_date', dateISO)
+    .neq('status', 'cancelled');
+
+  const ids = (instances ?? []).map((i: any) => i.id);
+  if (!ids.length) return [];
+
+  // Espacios y transporte del día, en paralelo.
+  const dayStart = `${dateISO}T00:00:00-06:00`, dayEnd = `${dateISO}T23:59:59-06:00`;
+  const sessionIds = (instances ?? []).flatMap((i: any) => (i.camp_sessions ?? []).filter((s: any) => s.session_date === dateISO).map((s: any) => s.id));
+  const [{ data: spaces }, { data: plans }] = await Promise.all([
+    admin.from('space_bookings')
+      .select('camp_instance_id, starts_at, academy_spaces:space_id(name)')
+      .in('camp_instance_id', ids)
+      .gte('starts_at', dayStart).lte('starts_at', dayEnd)
+      .neq('status', 'cancelled'),
+    sessionIds.length
+      ? admin.from('service_plans')
+          .select('camp_instance_id, camp_session_id, transport_needed, transport_depart, transport_return, transport_status, surf_venue, class_start_time')
+          .in('camp_session_id', sessionIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const spacesByCamp = new Map<string, string[]>();
+  for (const sp of (spaces as any[]) ?? []) {
+    const nm = (Array.isArray(sp.academy_spaces) ? sp.academy_spaces[0] : sp.academy_spaces)?.name;
+    if (!nm) continue;
+    const hh = new Date(sp.starts_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/El_Salvador' });
+    spacesByCamp.set(sp.camp_instance_id, [...(spacesByCamp.get(sp.camp_instance_id) ?? []), `${nm} ${hh}`]);
+  }
+  const planByCamp = new Map<string, any>();
+  for (const p of (plans as any[]) ?? []) planByCamp.set(p.camp_instance_id, p);
+
+  const events: HostDayEvent[] = ((instances ?? []) as any[]).map((i: any) => {
+    const tpl = Array.isArray(i.camp_templates) ? i.camp_templates[0] : i.camp_templates;
+    const coach = Array.isArray(i.coaches) ? i.coaches[0] : i.coaches;
+    const act = (i.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+    const session = (i.camp_sessions ?? []).find((s: any) => s.session_date === dateISO) ?? null;
+    const plan = planByCamp.get(i.id);
+    return {
+      camp_id: i.id,
+      name: (i.camp_name ?? tpl?.template_name ?? '').split(' · ')[0],
+      kind: tpl?.service_kind ?? null,
+      time: plan?.class_start_time ?? i.scheduled_time ?? null,
+      coach: coach?.display_name ?? null,
+      day_number: session?.day_number ?? null,
+      total_days: (i.camp_sessions ?? []).length || null,
+      session_status: session?.session_status ?? null,
+      capacity: i.capacity_override ?? tpl?.capacity_max ?? 0,
+      enrolled: act.length,
+      students: act.map((p: any) => {
+        const st = Array.isArray(p.students) ? p.students[0] : p.students;
+        return { name: [st?.first_name, st?.last_name].filter(Boolean).join(' '), paid: p.payment_status === 'paid', waiver: !!st?.waiver_signed };
+      }),
+      spaces: spacesByCamp.get(i.id) ?? [],
+      transport: plan?.transport_needed
+        ? { depart: plan.transport_depart, ret: plan.transport_return, status: plan.transport_status }
+        : null,
+      venue: plan?.surf_venue ?? null,
+    };
+  });
+
+  return events.sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
+}
