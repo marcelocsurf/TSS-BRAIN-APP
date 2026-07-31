@@ -254,12 +254,12 @@ export function IntakeForm({ token, student }: Props) {
 
           <label className="flex items-start gap-2 text-[13px] text-gray-800 cursor-pointer">
             <input type="checkbox" checked={woAccept} onChange={(e) => setWoAccept(e.target.checked)} className="mt-0.5 h-4 w-4" />
-            <span>He leído y ACEPTO este acuerdo de exención de responsabilidad. / I have read and I AGREE to this release of liability. *</span>
+            <span>I have read and I AGREE to this release of liability. / He leído y ACEPTO este acuerdo de exención de responsabilidad. *</span>
           </label>
 
           <label className="flex items-start gap-2 text-[12px] text-gray-600 cursor-pointer rounded-lg bg-gray-50 p-3">
             <input type="checkbox" checked={woMedia} onChange={(e) => setWoMedia(e.target.checked)} className="mt-0.5 h-4 w-4" />
-            <span>Autorizo el uso de fotos y videos con fines educativos y promocionales (opcional). / I authorize photos & videos for educational and promotional purposes (optional).</span>
+            <span>I authorize photos & videos for educational and promotional purposes (optional). / Autorizo el uso de fotos y videos con fines educativos y promocionales (opcional).</span>
           </label>
 
           <input value={woName} onChange={(e) => setWoName(e.target.value)}
@@ -490,7 +490,7 @@ export function IntakeForm({ token, student }: Props) {
               <WaiverContent />
 
               <Checkbox
-                label="He leído y ACEPTO este acuerdo de exención de responsabilidad. / I have read and I AGREE to this release of liability. *"
+                label="I have read and I AGREE to this release of liability. / He leído y ACEPTO este acuerdo de exención de responsabilidad. *"
                 checked={basicForm.waiver_signed}
                 onChange={(v) => setBasic('waiver_signed', v)}
                 required
@@ -498,11 +498,11 @@ export function IntakeForm({ token, student }: Props) {
 
               <div className="rounded-lg bg-gray-50 p-3">
                 <Checkbox
-                  label="Autorizo el uso de mis fotos y videos con fines educativos y promocionales (Sección 10). / I authorize the use of my photos and videos for educational and promotional purposes (Section 10)."
+                  label="I authorize the use of my photos and videos for educational and promotional purposes (Section 10). / Autorizo el uso de mis fotos y videos con fines educativos y promocionales (Sección 10)."
                   checked={!!basicForm.media_release_consent}
                   onChange={(v) => setBasic('media_release_consent', v)}
                 />
-                <p className="mt-1 text-[11px] text-gray-400">Opcional — podés desmarcarlo. / Optional — you may uncheck it.</p>
+                <p className="mt-1 text-[11px] text-gray-400">Optional — you may uncheck it. / Opcional — podés desmarcarlo.</p>
               </div>
             </div>
           </div>

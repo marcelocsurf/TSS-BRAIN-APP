@@ -17,6 +17,16 @@ const SUMMARY_ES = [
   'Debés seguir siempre las instrucciones de los coaches y las reglas de seguridad.',
 ];
 
+// Student-facing copy is ENGLISH-FIRST (brand rule); the Spanish legal text
+// still prevails legally (Section 11), so both languages stay side by side.
+const SUMMARY_EN = [
+  'Surfing and water activities are dangerous and can cause serious injury or death.',
+  'You participate at your own risk and release The Surf Sequence®, Puro Surf and their team from liability for ordinary negligence.',
+  'You declare you are physically fit, can swim, and have disclosed your medical conditions.',
+  'Portal courses and videos are reference material; practicing them unsupervised or above your level is at your own risk.',
+  'Always follow your coaches’ instructions and the safety rules.',
+];
+
 // Extra plain-language points shown only in the coach waiver.
 const COACH_SUMMARY_ES = [
   'El método, materiales, videos y portal de The Surf Sequence® son confidenciales y propiedad de la empresa: no los copies, compartas ni enseñes fuera de tu rol.',
@@ -72,7 +82,9 @@ const SECTIONS: Section[] = [
 ];
 
 export function WaiverContent({ variant = 'student' }: { variant?: 'student' | 'coach' }) {
-  const summary = variant === 'coach' ? [...SUMMARY_ES, ...COACH_SUMMARY_ES] : SUMMARY_ES;
+  // Alumnos: inglés primero. Coaches (equipo local): español primero.
+  const englishFirst = variant !== 'coach';
+  const summary = variant === 'coach' ? [...SUMMARY_ES, ...COACH_SUMMARY_ES] : SUMMARY_EN;
   const sections = variant === 'coach' ? [...SECTIONS, ...COACH_SECTIONS] : SECTIONS;
   const label = (n: number) => (n >= 100 ? `C${n - 100}` : String(n));
 
@@ -80,7 +92,7 @@ export function WaiverContent({ variant = 'student' }: { variant?: 'student' | '
     <div className="space-y-4">
       {/* Plain-language summary */}
       <div className="rounded-xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 p-4">
-        <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-navy)] mb-2">En resumen / In short</p>
+        <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-navy)] mb-2">{englishFirst ? 'In short / En resumen' : 'En resumen / In short'}</p>
         <ul className="space-y-1.5">
           {summary.map((s, i) => (
             <li key={i} className="flex gap-2 text-[13px] text-gray-700">
@@ -90,34 +102,38 @@ export function WaiverContent({ variant = 'student' }: { variant?: 'student' | '
           ))}
         </ul>
         <p className="mt-3 text-[11px] text-gray-500 italic">
-          El texto legal completo está abajo. Al firmar aceptás el documento completo, no solo este resumen.
+          {englishFirst
+            ? 'The full legal text is below. By signing you accept the entire document, not just this summary.'
+            : 'El texto legal completo está abajo. Al firmar aceptás el documento completo, no solo este resumen.'}
         </p>
       </div>
 
       {/* Full legal text — collapsible per section */}
       <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
         <p className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 bg-gray-50">
-          Exención de responsabilidad, asunción de riesgo e indemnización · Release of liability
+          {englishFirst
+            ? 'Release of liability, assumption of risk and indemnification · Exención de responsabilidad'
+            : 'Exención de responsabilidad, asunción de riesgo e indemnización · Release of liability'}
         </p>
         {sections.map((sec) => (
           <details key={sec.n} className="group">
             <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-2 hover:bg-gray-50">
               <span className="text-[13px] font-semibold text-[var(--tss-navy)]">
-                {label(sec.n)}. {sec.es_t} <span className="font-normal text-gray-400">/ {sec.en_t}</span>
+                {label(sec.n)}. {englishFirst ? sec.en_t : sec.es_t} <span className="font-normal text-gray-400">/ {englishFirst ? sec.es_t : sec.en_t}</span>
               </span>
               <span className="text-gray-300 group-open:rotate-90 transition-transform">›</span>
             </summary>
             <div className="px-4 pb-4 space-y-2 border-t border-gray-50 pt-3">
-              <p className="text-[12.5px] text-gray-700 leading-relaxed text-justify">{sec.es}</p>
-              <p className="text-[12px] text-gray-500 italic leading-relaxed text-justify">{sec.en}</p>
+              <p className="text-[12.5px] text-gray-700 leading-relaxed text-justify">{englishFirst ? sec.en : sec.es}</p>
+              <p className="text-[12px] text-gray-500 italic leading-relaxed text-justify">{englishFirst ? sec.es : sec.en}</p>
             </div>
           </details>
         ))}
       </div>
 
       <p className="text-[11px] text-gray-500 leading-relaxed">
-        <strong>HE LEÍDO ESTE ACUERDO, LO ENTIENDO Y LO FIRMO LIBRE Y VOLUNTARIAMENTE.</strong>{' '}
-        <span className="italic">I HAVE READ THIS AGREEMENT, I UNDERSTAND IT AND I SIGN IT FREELY AND VOLUNTARILY.</span>
+        <strong>{englishFirst ? 'I HAVE READ THIS AGREEMENT, I UNDERSTAND IT AND I SIGN IT FREELY AND VOLUNTARILY.' : 'HE LEÍDO ESTE ACUERDO, LO ENTIENDO Y LO FIRMO LIBRE Y VOLUNTARIAMENTE.'}</strong>{' '}
+        <span className="italic">{englishFirst ? 'HE LEÍDO ESTE ACUERDO, LO ENTIENDO Y LO FIRMO LIBRE Y VOLUNTARIAMENTE.' : 'I HAVE READ THIS AGREEMENT, I UNDERSTAND IT AND I SIGN IT FREELY AND VOLUNTARILY.'}</span>
       </p>
     </div>
   );
