@@ -165,3 +165,12 @@ input:focus, select:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--tss-gray-500);
 }
+
+/* ── Brand Manual v10 scope (student portal): headings in Archivo
+   Expanded — overrides the app-wide Lora heading rule. ── */
+.tss-v10 h1, .tss-v10 h2, .tss-v10 h3 {
+  font-family: var(--font-archivo), sans-serif;
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}

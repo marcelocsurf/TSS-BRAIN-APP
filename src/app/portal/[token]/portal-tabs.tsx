@@ -281,7 +281,7 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
 type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'feedback' | 'glossary' | 'my-coach';
 
 // ── Brand v10 type + color helpers (M140 student-home redesign) ──
-const F_DISPLAY = { fontFamily: 'var(--font-archivo), var(--font-heading), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.08 } as const;
+const F_DISPLAY = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.08 } as const;
 const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' } as const;
 
 const ALL_TABS: { key: Tab; label: string; icon: LucideIcon; lockedUntilCoachUnlock?: boolean }[] = [
@@ -611,7 +611,7 @@ function HomeTab({
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className="font-bold leading-none" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '22px' }}>
+                <p className="font-bold leading-none" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '22px' }}>
                   {fmtHm(surf.totalMinutes)}
                 </p>
                 <p className="text-[8px] font-mono uppercase tracking-wider mt-1" style={{ color: '#8aa0b2' }}>In the water</p>
@@ -619,7 +619,7 @@ function HomeTab({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Level progress</p>
-              <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa' }}>
+              <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa' }}>
                 Level {BELT_RANK[beltLevel] ?? 1} of 6
               </p>
               <div className="h-1.5 rounded-full overflow-hidden mt-2 mb-2" style={{ background: '#1f344a' }}>
@@ -651,9 +651,9 @@ function HomeTab({
               <div key={s.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
                 <div className="flex items-center gap-2">
                   <span style={{ width: 4, height: 18, borderRadius: 3, background: s.accent, display: 'inline-block' }} />
-                  <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>{s.label}</span>
+                  <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>{s.label}</span>
                 </div>
-                <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-heading)', color: '#00D2FF', fontSize: '30px', lineHeight: 1 }}>{s.value}</p>
+                <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#00D2FF', fontSize: '30px', lineHeight: 1 }}>{s.value}</p>
               </div>
             ))}
           </div>
@@ -729,7 +729,7 @@ function HomeTab({
         <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(6,28,43,.08)' }}>
             <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#0090B0' }}>Latest session</p>
-            <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-heading)', color: '#061C2B' }}>
+            <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#061C2B' }}>
               {latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}
             </h3>
           </div>
@@ -907,7 +907,7 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span style={{ width: 4, height: 18, borderRadius: 3, background: '#00D2FF', display: 'inline-block' }} />
-          <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>Flow Channel</span>
+          <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>Flow Channel</span>
         </div>
         {hasData && <span className="text-[9px]" style={{ color: '#8aa0b2' }}>from your session ratings</span>}
       </div>
@@ -924,8 +924,8 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
           {hasData ? (
             <>
               <div className="flex items-baseline gap-2">
-                <span className="font-bold" style={{ fontFamily: 'var(--font-heading)', color: '#f0f7fa', fontSize: '28px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
-                <span className="font-semibold" style={{ fontFamily: 'var(--font-heading)', color: '#00D2FF', fontSize: '15px' }}>{label}</span>
+                <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '28px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
+                <span className="font-semibold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#00D2FF', fontSize: '15px' }}>{label}</span>
               </div>
               <p className="text-[11px] mt-1" style={{ color: '#8aa0b2' }}>Flow (3) = challenge and ability in balance</p>
             </>

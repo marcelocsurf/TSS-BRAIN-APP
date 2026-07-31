@@ -63,7 +63,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     const membership = await getMembershipInfo(student.id);
     if (!membership.active) {
       return (
-        <div className={`${archivo.variable} ${plexMono.variable}`}>
+        <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
           <RenewalGate
             token={token}
             firstName={student.first_name || 'surfer'}

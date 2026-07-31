@@ -36,7 +36,7 @@ export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
       </p>
       <h3
         className="text-2xl text-white leading-tight mt-1"
-        style={{ fontFamily: 'var(--font-heading)', fontWeight: 600 }}
+        style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 600 }}
       >
         {current.levelName}{' '}
         <span className="text-white/55 font-normal text-lg">· {current.en}</span>
@@ -77,7 +77,7 @@ export function BeltJourney({ currentBelt }: { currentBelt: BeltLevel }) {
             </p>
             <p
               className="text-sm text-white mt-0.5"
-              style={{ fontFamily: 'var(--font-heading)' }}
+              style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' }}
             >
               {nextDisplay.levelName} · {nextDisplay.en}
             </p>

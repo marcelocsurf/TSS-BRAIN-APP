@@ -39,7 +39,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
           <SurfboardIcon />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-extrabold uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), var(--font-heading), sans-serif', fontStretch: '125%', color: '#061C2B' }}>
+          <p className="text-[14px] font-extrabold uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#061C2B' }}>
             Log free surf
           </p>
           <p className="text-[11px] text-gray-500 leading-snug">Your free surfing counts toward your water hours.</p>
