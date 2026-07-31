@@ -29,7 +29,7 @@ import {
 import { SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
 import {
   Target, Dumbbell, Waves, Clock, Repeat, Check, CircleDot, X, Star,
-  Lightbulb, Save, Brain, Play, ChevronDown,
+  Lightbulb, Save, Brain, Play, ChevronDown, Moon, Smile, Flame, AlertTriangle,
 } from 'lucide-react';
 
 type Phase = 'loading' | 'plan' | 'ready' | 'evaluation' | 'done' | 'error';
@@ -186,14 +186,14 @@ export function LinkedTrainingFlow({
             })}
             {!checks.level && (
               <p className="text-[11px] leading-snug rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
-                If today isn’t safe for your level, it’s not your day — the ocean will be here tomorrow. 🤙
+                If today isn’t safe for your level, it’s not your day — the ocean will be here tomorrow.
               </p>
             )}
 
             {/* Análisis profundo: para el que quiere leer el mar en serio */}
             <details className="rounded-xl border border-gray-200 bg-white">
               <summary className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer text-[11px] text-gray-500 select-none" style={F_M}>
-                <span>🌊 Deep venue analysis (optional)</span>
+                <span className="inline-flex items-center gap-1.5"><Waves size={12} /> Deep venue analysis (optional)</span>
                 <ChevronDown size={14} className="text-gray-400" />
               </summary>
               <div className="px-3.5 pb-3.5 space-y-3">
@@ -235,7 +235,7 @@ export function LinkedTrainingFlow({
           </div>
           <details className="rounded-xl border border-gray-200 bg-white">
             <summary className="px-3.5 py-2.5 cursor-pointer text-[11px] text-gray-500 select-none" style={F_M}>
-              🎯 Specific objective (optional)
+              <Target size={12} className="inline mr-1.5 -mt-0.5" />Specific objective (optional)
             </summary>
             <div className="px-3.5 pb-3">
               <textarea value={intention} onChange={(e) => setIntention(e.target.value)} rows={2}
@@ -288,6 +288,27 @@ export function LinkedTrainingFlow({
             <p className="text-[11px] italic mt-3" style={{ color: 'rgba(247,249,250,.6)' }}>“{intention}”</p>
           )}
         </div>
+
+        {/* El plan completo a la vista: qué va a hacer y qué cuenta como
+            lograrlo — con esto decide si ancla la mente o rema directo. */}
+        {successCriteria.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-3.5">
+            <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Check size={11} className="inline mr-1 -mt-0.5" />Today’s plan · what success looks like</p>
+            <ul className="space-y-1">
+              {successCriteria.map((sc, i) => (
+                <li key={i} className="text-[12px] leading-snug flex gap-2" style={{ color: INK }}>
+                  <span className="font-bold shrink-0" style={{ color: '#0090B0' }}>{i + 1}.</span>
+                  <span>{sc}</span>
+                </li>
+              ))}
+            </ul>
+            {drill.key_words && drill.key_words.length > 0 && (
+              <p className="text-[10.5px] text-gray-400 mt-2 pt-2 border-t border-gray-100">
+                Keys: {drill.key_words.join(' · ')}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Warm-up: un toque, no un paso */}
         <div>
@@ -447,21 +468,21 @@ export function LinkedTrainingFlow({
           <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
           <p className="text-[11px] text-gray-500 mb-2">Flow lives between boredom and frustration. This feeds your Flow Channel.</p>
           <div className="grid grid-cols-5 gap-1.5">
-            {[
-              { n: 1, label: 'Bored', emoji: '😴' },
-              { n: 2, label: 'Easy', emoji: '🙂' },
-              { n: 3, label: 'Flow', emoji: '🤙' },
-              { n: 4, label: 'Hard', emoji: '😅' },
-              { n: 5, label: 'Too much', emoji: '😰' },
-            ].map((o) => {
+            {([
+              { n: 1, label: 'Bored', Icon: Moon },
+              { n: 2, label: 'Easy', Icon: Smile },
+              { n: 3, label: 'Flow', Icon: Waves },
+              { n: 4, label: 'Hard', Icon: Flame },
+              { n: 5, label: 'Too much', Icon: AlertTriangle },
+            ] as const).map((o) => {
               const sel = flowChannel === o.n;
               return (
                 <button key={o.n} onClick={() => setFlowChannel(o.n)}
-                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
+                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
                   style={sel
                     ? o.n === 3 ? { background: CYAN, borderColor: CYAN, color: INK } : { background: INK, borderColor: INK, color: PAPER }
                     : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                  <span className="text-base leading-none">{o.emoji}</span>
+                  <o.Icon size={16} strokeWidth={1.75} />
                   <span className="text-[8.5px] leading-tight">{o.label}</span>
                 </button>
               );
@@ -516,7 +537,7 @@ export function LinkedTrainingFlow({
 
           {weekCount != null && weekCount > 0 && (
             <p className="text-[12px] font-bold rounded-full inline-block px-4 py-1.5" style={{ background: 'rgba(0,210,255,.12)', color: '#0090B0' }}>
-              🔥 {weekCount} practice{weekCount === 1 ? '' : 's'} in the last 7 days
+              <Flame size={12} className="inline -mt-0.5 mr-1" /> {weekCount} practice{weekCount === 1 ? '' : 's'} in the last 7 days
             </p>
           )}
 
@@ -575,7 +596,7 @@ function BreathCard({ keyWords, selected, onSelect }: {
     timers.current.forEach(clearTimeout);
     timers.current = [];
     // 4s inhala · 4s sostené · 4s exhala — un ciclo guiado y cierra.
-    const seq: Array<[string, number]> = [['Inhale', 0], ['Hold', 4000], ['Exhale', 8000], ['🤙 Go play', 12000]];
+    const seq: Array<[string, number]> = [['Inhale', 0], ['Hold', 4000], ['Exhale', 8000], ['Go play', 12000]];
     seq.forEach(([label, at]) => timers.current.push(setTimeout(() => setBreathLabel(label), at)));
     timers.current.push(setTimeout(() => setBreathing(false), 15000));
   };
@@ -607,11 +628,11 @@ function BreathCard({ keyWords, selected, onSelect }: {
       </button>
       {keyWords && (
         <button type="button" onClick={() => onSelect(selected === 'key_words' ? 'none' : 'key_words')}
-          className="mt-1.5 w-full rounded-full px-3 py-2 text-[10.5px] transition-colors"
+          className="mt-1.5 w-full rounded-full px-3 py-2 text-[10.5px] transition-colors inline-flex items-center justify-center gap-1.5"
           style={selected === 'key_words'
             ? { background: INK, color: CYAN }
             : { background: '#fff', border: '1px solid #e5e7eb', color: '#6b7280' }}>
-          🎯 {selected === 'key_words' ? '✓ ' : ''}Mission key words: {keyWords}
+          <Target size={12} className="shrink-0" /> {selected === 'key_words' ? '✓ ' : ''}Mission key words: {keyWords}
         </button>
       )}
     </div>
