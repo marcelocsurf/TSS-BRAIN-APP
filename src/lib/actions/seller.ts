@@ -12,10 +12,13 @@ async function sellerByToken(token: string) {
   const admin = createAdminClient();
   const { data: coach } = await admin
     .from('coaches')
-    .select('id, display_name, academy_id, portal_can_sell')
+    .select('id, display_name, academy_id, portal_can_sell, role')
     .eq('portal_token', token)
     .maybeSingle();
-  if (!coach || !(coach as any).portal_can_sell || !coach.academy_id) return null;
+  // Vende quien tiene el flag O cuyo ROL vende por definición: seller y host
+  // (Servicio al cliente reserva y cobra en mostrador).
+  const roleSells = ['seller', 'host', 'admin', 'coordinator'].includes((coach as any)?.role);
+  if (!coach || (!(coach as any).portal_can_sell && !roleSells) || !coach.academy_id) return null;
   return coach;
 }
 
