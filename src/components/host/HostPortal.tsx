@@ -86,7 +86,7 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                   <p className="text-[9px] text-gray-400" style={F_M}>Próximas reservas</p>
                   {detail.upcoming.map((u: any, i: number) => (
                     <p key={i} className="text-[12px]" style={{ color: INK }}>
-                      {u.name} · {u.date}{u.time ? ` · ${u.time.slice(0, 5)}` : ''} — {u.paid ? '✓ pagado' : '💰 debe pagar'}
+                      {(u.name ?? '').split(' · ')[0]} · {u.date}{u.time ? ` · ${u.time.slice(0, 5)}` : ''} — {u.paid ? '✓ pagado' : '💰 debe pagar'}
                     </p>
                   ))}
                 </div>
