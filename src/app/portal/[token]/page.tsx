@@ -138,7 +138,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
       {isImpersonatingThisStudent && impersonation && (
         <ImpersonateBanner kind="student" name={impersonation.name} />
       )}
-      <div className={`${archivo.variable} ${plexMono.variable}`}>
+      <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       <PortalTabs
         data={{
           ...portalData,
