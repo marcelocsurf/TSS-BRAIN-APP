@@ -120,9 +120,9 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
       </div>
 
       {/* Instructions */}
-      <div className="rounded-2xl p-3.5" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.3)' }}>
-        <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0090B0' }}>How it works</p>
-        <p className="text-[12px] leading-snug" style={{ color: INK }}>
+      <div className="rounded-2xl p-3.5" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
+        <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
+        <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
           Tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.
         </p>
       </div>

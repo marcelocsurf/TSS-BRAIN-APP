@@ -119,7 +119,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
 
       {/* Pedagogy doctrine note (when both drill + mission available) */}
       {drill && mission && (
-        <div className="rounded-2xl p-3.5 text-[11.5px] leading-relaxed" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.3)', color: INK }}>
+        <div className="rounded-2xl p-3.5 text-[11.5px] leading-relaxed" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)', color: 'rgba(247,249,250,.85)' }}>
           <strong>Drill</strong> = how the skill is trained (on land or calm water).
           <br />
           <strong>Mission</strong> = how the learning is applied (in real water conditions).
