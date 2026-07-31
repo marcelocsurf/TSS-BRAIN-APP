@@ -7,14 +7,14 @@ export const BRAND = {
   tagline: 'Evolve through play',
   appName: 'The Surf Sequence',
 
-  // TSS Brand Manual v4.2 §3 — paleta primaria
+  // TSS Brand Manual v10 — paleta oficial
   colors: {
-    navy: '#0A1628',      // Ocean Navy
-    brandBlue: '#0D2D5E', // Brand Blue
-    cyan: '#5AC3E7',      // Signature Cyan — acento de identidad
+    navy: '#061C2B',      // Ink — fondo primario / autoridad
+    brandBlue: '#0A2438', // Ink claro — tarjetas sobre ink
+    cyan: '#00D2FF',      // Signature Cyan v10 — acento de identidad
     grey: '#4E4D4D',      // Structural Grey
-    gold: '#5AC3E7',      // alias del acento oficial (Signature Cyan)
-    white: '#FFFFFF',
+    gold: '#FFD166',      // Pop dorado v10 (ratings, progreso)
+    white: '#F7F9FA',     // Paper
   },
 
   vocabulary: [

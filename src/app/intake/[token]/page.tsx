@@ -1,8 +1,12 @@
+import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { getStudentForIntake } from '@/lib/actions/intake';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { BRAND } from '@/lib/constants/brand';
 import { notFound } from 'next/navigation';
 import { IntakeForm } from './intake-form';
+
+const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
+const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 
 interface Props {
   params: Promise<{ token: string }>;
@@ -17,19 +21,12 @@ export default async function IntakePage({ params }: Props) {
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
 
   return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)]">
-      {/* Header */}
-      <div style={{ background: BRAND.colors.navy }} className="px-4 py-6 text-center">
-        <h1
-          className="text-2xl font-bold text-white leading-tight"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          The Surf Sequence
-        </h1>
-        <p
-          className="text-[10px] mt-2 uppercase tracking-[0.22em] font-semibold"
-          style={{ color: BRAND.colors.cyan, fontFamily: 'DM Mono, monospace' }}
-        >
+    <div className={`tss-v10 min-h-screen ${archivo.variable} ${plexMono.variable}`} style={{ background: '#F7F9FA' }}>
+      {/* Header v10 — logo + etiqueta mono, regla cyan */}
+      <div style={{ background: BRAND.colors.navy, borderBottom: `3px solid ${BRAND.colors.cyan}` }} className="px-4 py-6 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/tss-logo-white-h.png" alt="The Surf Sequence" className="h-10 mx-auto object-contain" />
+        <p className="text-[10px] mt-2.5" style={{ color: BRAND.colors.cyan, fontFamily: 'var(--font-plex), monospace', textTransform: 'uppercase', letterSpacing: '0.22em' }}>
           Your Profile
         </p>
       </div>

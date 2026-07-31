@@ -125,20 +125,22 @@ function escapeHtmlBasic(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// Brand Manual v10: header ink con el logo, etiqueta mono espaciada en cyan,
+// CTA como píldora cyan con texto ink. Una sola shell viste TODOS los correos.
 function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background:#F7F9FA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
-    <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:24px;text-align:center;">
+    <div style="background:${BRAND.colors.navy};border-radius:16px 16px 0 0;padding:28px 24px 22px;text-align:center;border-bottom:3px solid ${BRAND.colors.cyan};">
       ${EMAIL_LOGO}
-      <p style="margin:4px 0 0;color:${BRAND.colors.cyan};font-size:12px;">${BRAND.tagline}</p>
+      <p style="margin:10px 0 0;color:${BRAND.colors.cyan};font-size:10px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:3px;">${BRAND.tagline}</p>
     </div>
-    <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
-      <h2 style="margin:0 0 14px;font-size:16px;color:#111827;">${title}</h2>
+    <div style="background:white;padding:26px 24px;border-radius:0 0 16px 16px;border:1px solid #E5E9EC;border-top:none;">
+      <h2 style="margin:0 0 14px;font-size:17px;font-weight:800;color:${BRAND.colors.navy};text-transform:uppercase;letter-spacing:-0.2px;line-height:1.15;">${title}</h2>
       ${bodyHtml}
-      ${cta ? `<a href="${cta.url}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:13px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;margin-top:18px;">${cta.label}</a>` : ''}
+      ${cta ? `<a href="${cta.url}" style="display:block;background:${BRAND.colors.cyan};color:${BRAND.colors.navy};text-align:center;padding:14px;border-radius:999px;text-decoration:none;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-top:20px;">${cta.label}</a>` : ''}
     </div>
-    <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">${BRAND.name}® · ${BRAND.tagline}</p>
+    <p style="text-align:center;font-size:9px;color:#9CA3AF;margin:16px 0 0;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:2px;">${BRAND.name}® · ${BRAND.tagline}</p>
   </div>
 </body></html>`;
 }
@@ -146,7 +148,7 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
 // "Install the app" instructions — appended to student-facing emails so the
 // portal lives one tap away on their phone. English, brand name in full.
 const INSTALL_APP_HTML = `
-<div style="margin-top:20px;padding:14px 16px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
+<div style="margin-top:20px;padding:14px 16px;background:#E5FAFF;border:1px solid #99E9FF;border-radius:12px;">
   <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#0d2240;">📲 Add The Surf Sequence to your phone</p>
   <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>iPhone:</strong> open your portal link in Safari → tap the Share button → <strong>"Add to Home Screen"</strong>.</p>
   <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>Android:</strong> open it in Chrome → tap the ⋮ menu → <strong>"Add to Home screen"</strong>.</p>
