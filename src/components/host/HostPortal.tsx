@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DeskBoard } from '@/app/front-desk/[token]/DeskBoard';
+import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
 import { getFrontDeskData, getRecentBookings } from '@/lib/actions/front-desk';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
@@ -19,7 +20,7 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GR
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
 
-type Tab = 'hoy' | 'operacion' | 'clientes';
+type Tab = 'hoy' | 'operacion' | 'espacios' | 'clientes';
 
 function Check({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -128,7 +129,7 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
   );
 }
 
-export function HostPortal({ token, hostName, services }: { token: string; hostName: string; services: any[] }) {
+export function HostPortal({ token, hostName, services, hostId }: { token: string; hostName: string; services: any[]; hostId?: string }) {
   const [tab, setTab] = useState<Tab>('hoy');
   const [board, setBoard] = useState<any>(null);
   const [incidents, setIncidents] = useState<any[] | null>(null);
@@ -164,7 +165,7 @@ export function HostPortal({ token, hostName, services }: { token: string; hostN
         <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Servicio al cliente</p>
         <h1 style={{ ...F_D, color: PAPER }} className="text-[24px] mt-1">{hostName}</h1>
         <div className="flex gap-2 mt-3">
-          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Operación'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
+          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Operación'], ['espacios', '🏛 Espacios'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               className="flex-1 rounded-full py-2.5 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
@@ -289,6 +290,12 @@ export function HostPortal({ token, hostName, services }: { token: string; hostN
                 );
               })}
           </div>
+        )}
+
+        {tab === 'espacios' && (
+          /* El MISMO tablero de espacios de coaches/coordinadores — quién usa
+             qué sala/lugar y cuándo (yoga deck, BJJ, gym, ice bath, skate). */
+          <PortalSpaces token={token} coachId={hostId ?? ''} />
         )}
 
         {tab === 'clientes' && (
