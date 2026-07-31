@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/manager-portal') || // token-gated read-only manager view
     pathname.startsWith('/front-desk') ||     // token-gated reception check-in screen
     pathname.startsWith('/join') ||           // public class signup (QR)
+    pathname.startsWith('/booking') ||        // public manage-booking (email link, 24h policy)
     pathname.startsWith('/venue-scout') ||    // standalone analysis tool (no data server-side)
     pathname.startsWith('/manual') ||          // in-app operations manual (static, per-role)
     pathname.startsWith('/venue-check') ||    // standalone simple venue tool
