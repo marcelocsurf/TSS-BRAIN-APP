@@ -700,3 +700,32 @@ function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName:
   </div>
 </body></html>`;
 }
+
+// Confirmación de reserva del QR público — lleva el link de gestión para
+// cancelar o mover la reserva (política de 24 h aplicada en esa página).
+export async function sendBookingConfirmationEmail(data: {
+  toEmail: string;
+  firstName: string;
+  className: string;
+  dateLabel: string;
+  amountLabel: string | null;
+  manageUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `You're booked: ${data.className} 🌊`,
+      html: assignmentEmailShell(
+        `See you in the water, ${data.firstName}!`,
+        `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;"><strong>${data.className}</strong><br/>${data.dateLabel}${data.amountLabel ? `<br/>${data.amountLabel} — pay at front desk (cash or card)` : ''}</p>
+         <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">Plans changed? Use the button below to move or cancel your booking. Cancel more than 24 hours before class and it's free; within 24 hours the full class price is due.</p>`,
+        { url: data.manageUrl, label: 'Manage my booking' },
+      ),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Booking confirmation email failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}

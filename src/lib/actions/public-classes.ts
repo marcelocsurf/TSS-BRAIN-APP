@@ -149,7 +149,7 @@ export async function publicEnroll(input: {
   } | null;
   accept_waiver: boolean;
   signed_name?: string | null;
-}): Promise<{ ok: boolean; error?: string; summary?: { class_name: string; date: string; time: string | null; amount_cents: number | null; sale_type: string; coupon_applied: string | null; first_name: string } }> {
+}): Promise<{ ok: boolean; error?: string; summary?: { class_name: string; date: string; time: string | null; amount_cents: number | null; sale_type: string; coupon_applied: string | null; first_name: string; booking_id?: string | null } }> {
   const academy = await academyBySlug(input.slug);
   if (!academy) return { ok: false, error: 'Academy not found.' };
   const admin = createAdminClient();
@@ -273,7 +273,7 @@ export async function publicEnroll(input: {
     }
   }
 
-  const { error: enrollErr } = await admin.from('camp_participants').insert({
+  const { data: seatRow, error: enrollErr } = await admin.from('camp_participants').insert({
     camp_instance_id: (camp as any).id,
     student_id: studentId,
     enrollment_status: 'active',
@@ -284,9 +284,23 @@ export async function publicEnroll(input: {
     ...(list != null ? { list_price_cents: list } : {}),
     sale_type,
     ...(reason ? { discount_reason: reason } : {}),
-  });
+  }).select('id').single();
   if (enrollErr) return { ok: false, error: 'Could not save your spot — ask at front desk.' };
   notifyBooking(academy.id, firstName, (camp as any).camp_name, amount, studentId);
+  // Confirmación con link de gestión (cancelar/mover con política de 24 h).
+  try {
+    const { sendBookingConfirmationEmail } = await import('@/lib/actions/email');
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+    const dt = new Date(((camp as any).start_date) + 'T00:00:00');
+    sendBookingConfirmationEmail({
+      toEmail: email,
+      firstName,
+      className: ((camp as any).camp_name ?? '').split(' · ')[0],
+      dateLabel: dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + ((camp as any).scheduled_time ? ` · ${(camp as any).scheduled_time.slice(0, 5)}` : ''),
+      amountLabel: amount != null && amount > 0 ? `$${(amount / 100).toFixed(2)}` : null,
+      manageUrl: `${base}/booking/${(seatRow as any)?.id}`,
+    }).catch(() => {});
+  } catch { /* el email nunca bloquea la reserva */ }
 
   if (coupon) {
     // Plain read-modify-write — signup volume makes a race here harmless.
@@ -304,6 +318,7 @@ export async function publicEnroll(input: {
       sale_type,
       coupon_applied: coupon?.code ?? null,
       first_name: firstName,
+      booking_id: (seatRow as any)?.id ?? null,
     },
   };
 }
@@ -402,4 +417,139 @@ export async function publicAddCompanion(input: {
   if (eErr) return { ok: false, error: 'Could not save their spot — ask at front desk.' };
   notifyBooking(academy.id, `${created.first_name} (familia de ${bookerName})`, (camp as any).camp_name, list, created.id);
   return { ok: true, name: created.first_name, amount_cents: list };
+}
+
+
+// ── Gestión de la reserva por el CLIENTE (link del email de confirmación) ──
+// El id del participante (uuid) actúa como token de capacidad — mismo patrón
+// que portal_token. Política de 24 h: cancelar antes es gratis; dentro de las
+// 24 h se debe la clase completa (regla de Marcelo, 2026-07-31).
+
+function classStart(camp: any): Date {
+  return new Date(`${camp.start_date}T${(camp.scheduled_time || '23:59').slice(0, 5)}:00-06:00`);
+}
+const hoursUntil = (camp: any) => (classStart(camp).getTime() - Date.now()) / 3600_000;
+
+async function bookingById(bookingId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_participants')
+    .select('id, enrollment_status, payment_status, amount_cents, list_price_cents, student_id, notes, camp_instances:camp_instance_id!inner(id, academy_id, camp_name, start_date, scheduled_time, template_id, status), students(first_name, last_name, email)')
+    .eq('id', bookingId)
+    .maybeSingle();
+  if (!data) return null;
+  const camp = Array.isArray((data as any).camp_instances) ? (data as any).camp_instances[0] : (data as any).camp_instances;
+  const student = Array.isArray((data as any).students) ? (data as any).students[0] : (data as any).students;
+  return { seat: data as any, camp, student };
+}
+
+export async function getPublicBooking(bookingId: string) {
+  const b = await bookingById(bookingId);
+  if (!b) return null;
+  const { seat, camp, student } = b;
+  return {
+    id: seat.id,
+    class_name: (camp.camp_name ?? '').split(' · ')[0],
+    date: camp.start_date,
+    time: camp.scheduled_time ?? null,
+    first_name: student?.first_name ?? 'surfer',
+    amount_cents: seat.amount_cents,
+    paid: seat.payment_status === 'paid',
+    active: seat.enrollment_status === 'active' && camp.status !== 'cancelled',
+    hours_left: Math.floor(hoursUntil(camp)),
+    free_cancel: hoursUntil(camp) >= 24,
+    template_id: camp.template_id,
+  };
+}
+
+// Otras fechas de la MISMA clase con cupo (para mover la reserva).
+export async function getPublicMoveTargets(bookingId: string) {
+  const b = await bookingById(bookingId);
+  if (!b) return [];
+  const admin = createAdminClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status)')
+    .eq('academy_id', b.camp.academy_id)
+    .eq('template_id', b.camp.template_id)
+    .gte('start_date', today)
+    .neq('status', 'cancelled')
+    .neq('id', b.camp.id)
+    .order('start_date')
+    .limit(14);
+  return (data ?? []).map((c: any) => {
+    const tpl = Array.isArray(c.camp_templates) ? c.camp_templates[0] : c.camp_templates;
+    const act = (c.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
+    const cap = c.capacity_override ?? tpl?.capacity_max ?? 0;
+    return { id: c.id, date: c.start_date, time: c.scheduled_time, left: cap > 0 ? cap - act : null };
+  }).filter((c: any) => c.left == null || c.left > 0);
+}
+
+async function notifyStaffChange(academyId: string, title: string, body: string, studentId: string | null) {
+  try {
+    const admin = createAdminClient();
+    const { data: staff } = await admin.from('coaches').select('id')
+      .eq('academy_id', academyId).in('role', ['coordinator', 'admin', 'host']).eq('active_status', true);
+    for (const c of staff ?? []) {
+      await createNotification({
+        recipientCoachId: c.id, type: 'booking_change', title, body,
+        link: studentId ? `/students/${studentId}` : null, metadata: { studentId },
+      }).catch(() => {});
+    }
+  } catch { /* aviso best-effort */ }
+}
+
+export async function publicCancelBooking(bookingId: string, actor: 'student' | 'desk' = 'student'): Promise<{ ok: boolean; error?: string; late?: boolean }> {
+  const b = await bookingById(bookingId);
+  if (!b || b.seat.enrollment_status !== 'active') return { ok: false, error: 'Booking not found or already cancelled.' };
+  if (hoursUntil(b.camp) < 0) return { ok: false, error: 'This class already happened.' };
+  const admin = createAdminClient();
+  const late = hoursUntil(b.camp) < 24; // la política de 24 h aplica igual para todos
+  const name = [b.student?.first_name, b.student?.last_name].filter(Boolean).join(' ');
+  const price = b.seat.amount_cents ?? b.seat.list_price_cents;
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  const note = late
+    ? `LATE CANCEL (${actor === 'desk' ? 'front desk' : 'self'}, <24h) ${stamp} — full charge due${price != null ? ` $${(price / 100).toFixed(2)}` : ''}`
+    : `Cancelled ${actor === 'desk' ? 'at front desk' : 'by student'} (≥24h, free) ${stamp}`;
+  const { error } = await admin.from('camp_participants')
+    .update({ enrollment_status: 'removed', notes: [b.seat.notes, note].filter(Boolean).join(' | ') })
+    .eq('id', bookingId);
+  if (error) return { ok: false, error: 'Could not cancel — contact front desk.' };
+  await notifyStaffChange(
+    b.camp.academy_id,
+    `${late ? '⚠ Cancelación tardía' : 'Cancelación'}: ${name}`,
+    `${b.camp.camp_name}${late ? ` — dentro de 24h: DEBE la clase completa${price != null ? ` ($${(price / 100).toFixed(2)})` : ''}${b.seat.payment_status === 'paid' ? ' (ya pagada, sin reembolso)' : ''}` : b.seat.payment_status === 'paid' ? ' — ya había pagado: coordinar crédito o reembolso.' : ' — cupo liberado, sin cargo.'}`,
+    b.seat.student_id,
+  );
+  return { ok: true, late };
+}
+
+export async function publicMoveBooking(bookingId: string, targetCampId: string, actor: 'student' | 'desk' = 'student'): Promise<{ ok: boolean; error?: string; new_date?: string; new_time?: string | null }> {
+  const b = await bookingById(bookingId);
+  if (!b || b.seat.enrollment_status !== 'active') return { ok: false, error: 'Booking not found or already cancelled.' };
+  const admin = createAdminClient();
+  const { data: target } = await admin
+    .from('camp_instances')
+    .select('id, academy_id, template_id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status, student_id)')
+    .eq('id', targetCampId).neq('status', 'cancelled').maybeSingle();
+  if (!target || (target as any).academy_id !== b.camp.academy_id || (target as any).template_id !== b.camp.template_id) {
+    return { ok: false, error: 'That date is not available.' };
+  }
+  const act = ((target as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+  const tpl = Array.isArray((target as any).camp_templates) ? (target as any).camp_templates[0] : (target as any).camp_templates;
+  const cap = (target as any).capacity_override ?? tpl?.capacity_max ?? 0;
+  if (cap > 0 && act.length >= cap) return { ok: false, error: 'That date is full — pick another.' };
+  if (act.some((p: any) => p.student_id === b.seat.student_id)) return { ok: false, error: 'You are already booked on that date.' };
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const { error } = await admin.from('camp_participants')
+    .update({ camp_instance_id: targetCampId, notes: [b.seat.notes, `Moved ${actor === 'desk' ? 'at front desk' : 'by student'} ${stamp}: ${b.camp.start_date} → ${(target as any).start_date}`].filter(Boolean).join(' | ') })
+    .eq('id', bookingId);
+  if (error) return { ok: false, error: 'Could not move — contact front desk.' };
+  const name = [b.student?.first_name, b.student?.last_name].filter(Boolean).join(' ');
+  await notifyStaffChange(b.camp.academy_id, `Cambio de fecha: ${name}`,
+    `${(b.camp.camp_name ?? '').split(' · ')[0]}: ${b.camp.start_date} → ${(target as any).start_date}${(target as any).scheduled_time ? ` ${(target as any).scheduled_time.slice(0, 5)}` : ''}. Pago ${b.seat.payment_status === 'paid' ? 'ya realizado' : 'pendiente en recepción'}.`,
+    b.seat.student_id);
+  return { ok: true, new_date: (target as any).start_date, new_time: (target as any).scheduled_time ?? null };
 }

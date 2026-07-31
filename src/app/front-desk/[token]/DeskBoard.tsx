@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { frontDeskSettle } from '@/lib/actions/front-desk';
+import { publicCancelBooking, publicMoveBooking, getPublicMoveTargets } from '@/lib/actions/public-classes';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
 const money = (c: number | null) => c == null ? '—' : `$${(c / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
@@ -21,6 +22,41 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
   const [payFor, setPayFor] = useState<string | null>(null);
   const [room, setRoom] = useState('');
   const [q, setQ] = useState('');
+  // Mover / cancelar en el mostrador — mismo motor y política de 24 h que el
+  // link del cliente (publicCancel/MoveBooking con actor 'desk').
+  const [manageFor, setManageFor] = useState<string | null>(null);
+  const [targets, setTargets] = useState<Record<string, any[]>>({});
+
+  const hoursTo = (c: Klass) => (new Date(`${c.date}T${(c.time || '23:59').slice(0, 5)}:00-06:00`).getTime() - Date.now()) / 3600_000;
+
+  const cancelSeat = (s: Seat, c: Klass) => {
+    const late = hoursTo(c) < 24;
+    const msg = late
+      ? `Cancelar a ${s.name} DENTRO de las 24 h: debe la clase completa (${money(s.amount_cents)}). ¿Cancelar igual?`
+      : `Cancelar a ${s.name} (falta más de 24 h — sin cargo). ¿Confirmar?`;
+    if (!window.confirm(msg)) return;
+    start(async () => {
+      const r = await publicCancelBooking(s.participant_id, 'desk');
+      if (!r.ok) { alert(r.error); return; }
+      setManageFor(null);
+      router.refresh();
+    });
+  };
+
+  const openMove = (s: Seat) => {
+    if (!targets[s.participant_id]) {
+      getPublicMoveTargets(s.participant_id).then((t) => setTargets((p) => ({ ...p, [s.participant_id]: t }))).catch(() => setTargets((p) => ({ ...p, [s.participant_id]: [] })));
+    }
+  };
+
+  const moveSeat = (s: Seat, targetId: string) => {
+    start(async () => {
+      const r = await publicMoveBooking(s.participant_id, targetId, 'desk');
+      if (!r.ok) { alert(r.error); return; }
+      setManageFor(null);
+      router.refresh();
+    });
+  };
 
   const settle = (participantId: string, method: string) => {
     start(async () => {
@@ -69,6 +105,9 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
                         </p>
                       </div>
                       <div className="shrink-0 flex items-center gap-1.5">
+                        <button type="button" aria-label="Mover o cancelar"
+                          onClick={() => { const next = manageFor === s.participant_id ? null : s.participant_id; setManageFor(next); if (next) openMove(s); }}
+                          className="text-[13px] font-bold rounded-full w-6 h-6 leading-none border border-gray-200 text-gray-400">⋯</button>
                         {!s.waiver_signed && (
                           <span className="text-[9px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,107,107,.14)', color: '#c04545' }}>Waiver ✗</span>
                         )}
@@ -86,6 +125,27 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
                         )}
                       </div>
                     </div>
+
+                    {manageFor === s.participant_id && (
+                      <div className="mt-2 space-y-1.5 rounded-xl p-2.5" style={{ background: '#F7F9FA' }}>
+                        <p className="text-[8px] text-gray-400" style={F_LABEL}>Mover de fecha · {(c.name ?? '').split(' · ')[0]}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(targets[s.participant_id] ?? []).length === 0
+                            ? <span className="text-[11px] text-gray-400">{targets[s.participant_id] ? 'Sin otras fechas con cupo.' : 'Cargando fechas…'}</span>
+                            : (targets[s.participant_id] ?? []).slice(0, 8).map((t: any) => (
+                              <button key={t.id} type="button" disabled={pending} onClick={() => moveSeat(s, t.id)}
+                                className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white border border-gray-200 disabled:opacity-50" style={{ color: '#061C2B' }}>
+                                {fmtDate(t.date)}{t.time ? ` · ${t.time.slice(0, 5)}` : ''}{t.left != null ? ` (${t.left})` : ''}
+                              </button>
+                            ))}
+                        </div>
+                        <button type="button" disabled={pending} onClick={() => cancelSeat(s, c)}
+                          className="w-full mt-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border-2 disabled:opacity-50"
+                          style={{ borderColor: '#FF6B6B', color: '#c04545', background: '#fff' }}>
+                          ✕ Cancelar reserva {hoursTo(c) < 24 ? '(⚠ <24 h: debe la clase completa)' : '(sin cargo, +24 h)'}
+                        </button>
+                      </div>
+                    )}
 
                     {payFor === s.participant_id && !paid && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">

@@ -226,6 +226,12 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           </p>
           <p className="text-[11px] mt-2" style={{ color: 'rgba(247,249,250,.5)' }}>Hand your ticket to the instructor. Arrive 10 minutes early. 🤙</p>
         </div>
+        {summary.booking_id && (
+          <a href={`/booking/${summary.booking_id}`}
+            className="block text-center text-[11px] py-2.5 rounded-full border" style={{ borderColor: 'rgba(0,210,255,.5)', color: '#0090B0' }}>
+            Plans changed? Move or cancel your booking here — also in your email ✉️
+          </a>
+        )}
       </div>
     );
   }
