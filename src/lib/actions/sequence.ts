@@ -382,3 +382,16 @@ export async function saveLinkedTrainingSession(
 
   return { ok: true, session, stepId: drillMission.step_id };
 }
+
+// Práctica de la semana (para la racha del cierre del Let's Play).
+export async function getWeeklyPracticeCount(studentId: string): Promise<number> {
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - 6 * 86400000);
+  since.setHours(0, 0, 0, 0);
+  const { count } = await admin
+    .from('self_training_sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+    .gte('created_at', since.toISOString());
+  return count ?? 0;
+}
