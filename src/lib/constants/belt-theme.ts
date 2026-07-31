@@ -2,7 +2,7 @@
 // so every level reads with one consistent color language.
 //
 // White uses a pearl gray (pure white is invisible on white cards); Pre-Course
-// gets a cool teal so it reads as foundational, not a belt.
+// gets the v10 Signature Cyan so it reads as foundational, not a belt.
 //   accent — solid line / left border
 //   bright — pops on the dark bg (rings + eyebrow)
 //   tint   — soft card-header wash
@@ -17,7 +17,7 @@ export interface BeltTheme {
 }
 
 export const BELT_THEMES: Record<BeltLevel, BeltTheme> = {
-  pre:    { accent: '#0EA5A4', bright: '#2DD4BF', tint: '#F0FDFA', ink: '#0F766E' },
+  pre:    { accent: '#00D2FF', bright: '#00D2FF', tint: '#E5FAFF', ink: '#0F5A6B' },
   white:  { accent: '#94A3B8', bright: '#CBD5E1', tint: '#F8FAFC', ink: '#475569' },
   yellow: { accent: '#EAB308', bright: '#FACC15', tint: '#FEFCE8', ink: '#A16207' },
   blue:   { accent: '#3B82F6', bright: '#60A5FA', tint: '#EFF6FF', ink: '#1D4ED8' },

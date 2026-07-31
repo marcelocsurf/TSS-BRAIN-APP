@@ -5,12 +5,12 @@
   /* Core palette */
   --tss-navy: #0A1628;            /* Ocean Navy — fondo primario / autoridad */
   --tss-navy-light: #0D2D5E;      /* Brand Blue — secundario / estructura */
-  --tss-cyan: #5AC3E7;            /* Signature Cyan — acento / identidad */
-  --tss-cyan-light: #C2EBF8;      /* Cyan Light — highlights / hover */
+  --tss-cyan: #00D2FF;            /* Signature Cyan v10 — acento / identidad */
+  --tss-cyan-light: #B3F1FF;      /* Cyan Light v10 — highlights / hover */
   --tss-grey-structural: #4E4D4D; /* Structural Grey — texto neutral / wordmark */
   /* --tss-gold: alias del acento oficial (Signature Cyan). El dorado NO es
      un color de marca TSS — se mantiene el nombre por compatibilidad. */
-  --tss-gold: #5AC3E7;
+  --tss-gold: #FFD166;            /* Pop dorado v10 (progreso, ratings) */
   --tss-white: #FFFFFF;
 
   /* Grays — manual: Light Grey / Mid Grey / Text Soft */

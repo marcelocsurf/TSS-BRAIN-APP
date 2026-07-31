@@ -501,7 +501,7 @@ function GroupHeader({
               <span className="inline-block w-4 h-0.5" style={{ background: theme.bright }} />
               <span
                 className="text-[10px] tracking-[0.14em] uppercase font-medium"
-                style={{ color: theme.bright, fontFamily: 'DM Mono, monospace' }}
+                style={{ color: theme.bright, fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.14em' }}
               >
                 {eyebrow}
               </span>
