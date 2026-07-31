@@ -213,7 +213,7 @@ export function SellerPortal({ token, sellerName, services, heading = 'Seller' }
                       <div key={s.id} className="rounded-2xl p-3" style={{ background: '#0A2438', border: '1px solid rgba(247,249,250,.08)' }}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-[14px] font-bold truncate" style={{ color: PAPER }}>{s.camp_name}</p>
+                            <p className="text-[14px] font-bold truncate" style={{ color: PAPER }}>{(s.camp_name ?? '').split(' · ')[0]}</p>
                             <p style={{ ...F_M, color: 'rgba(247,249,250,.4)' }} className="text-[8px] mt-0.5">
                               {s.scheduled_time ? s.scheduled_time.slice(0, 5) : ''}{s.end_date !== s.start_date ? ` · hasta ${s.end_date.slice(5)}` : ''}
                             </p>

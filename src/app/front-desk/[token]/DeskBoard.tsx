@@ -48,7 +48,7 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
             <div className="flex items-center justify-between gap-2 mb-2.5">
               <div>
                 <p className="text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>{fmtDate(c.date)}{c.time ? ` · ${c.time}` : ''}</p>
-                <p className="font-bold text-[15px]" style={{ color: '#061C2B' }}>{c.name}{c.coach ? <span className="text-gray-400 font-normal text-[12px]"> · {c.coach}</span> : null}</p>
+                <p className="font-bold text-[15px]" style={{ color: '#061C2B' }}>{(c.name ?? '').split(' · ')[0]}{c.coach ? <span className="text-gray-400 font-normal text-[12px]"> · {c.coach}</span> : null}</p>
               </div>
               <span className="text-[10px] font-bold rounded-full px-2 py-0.5 bg-gray-100 text-gray-600">{c.seats.length}/{c.capacity || '∞'}</span>
             </div>
