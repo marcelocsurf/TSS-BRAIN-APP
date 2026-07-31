@@ -453,6 +453,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       </div>
 
+      {/* Membresía = acceso al portal — visible siempre, no enterrado (pedido Marcelo) */}
+      <MembershipPanel studentId={student.id} info={membershipInfo} />
+
       {/* ── Tabbed body (M138): Bitácora / Progresión / Perfil ── */}
       <ProfileTabs
         bitacora={<>
@@ -777,7 +780,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             }
             defaultOpen={strugglingCount > 0}
           >
-            <MembershipPanel studentId={student.id} info={membershipInfo} />
             <PortalActivityPanel
               selfTraining={selfTraining}
               stepRatings={stepRatings}
