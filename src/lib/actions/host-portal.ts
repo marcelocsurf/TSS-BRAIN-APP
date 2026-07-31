@@ -134,7 +134,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
     goals: [(s as any).primary_goal, (s as any).goal_short_term].filter(Boolean).join(' · ') || null,
     fears: (s as any).fears_phobias ?? null,
     injuries: (s as any).injuries ?? null,
-    experience: (s as any).surf_experience_years != null ? `${(s as any).surf_experience_years} años surfeando` : null,
+    experience: (s as any).surf_experience_years ?? null,
     age: (s as any).age ?? null,
     emergency: [(s as any).emergency_contact_name, (s as any).emergency_contact_phone].filter(Boolean).join(' · ') || null,
     upcoming: (next ?? []).map((p: any) => {
