@@ -210,6 +210,8 @@ export interface StudentProfileSnapshot {
   coach_notes_general: string | null;
   learning_profile_primary: string | null;
   ocean_quiz_score: number | null;
+  intake_completed_at?: string | null;
+  intake_url?: string | null;
 }
 
 // One entry in a student's recent training history — coach session or
@@ -378,7 +380,7 @@ export async function getServicePlan(
         'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
         'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, media_release_consent, ' +
         'last_session_date, last_session_mission, last_session_status, last_homework, ' +
-        'current_focus_area, next_recommended_focus, coach_notes_general, learning_profile_primary' +
+        'current_focus_area, next_recommended_focus, coach_notes_general, learning_profile_primary, intake_completed_at, portal_token' +
       ')'
     )
     .eq('camp_instance_id', campInstanceId)
@@ -541,6 +543,8 @@ export async function getServicePlan(
         coach_notes_general: s?.coach_notes_general ?? null,
         learning_profile_primary: s?.learning_profile_primary ?? null,
         ocean_quiz_score: s?.ocean_quiz_score ?? null,
+        intake_completed_at: s?.intake_completed_at ?? null,
+        intake_url: s?.portal_token ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com'}/intake/${s.portal_token}` : null,
       },
       blocks: studentBlocks.map((b: any) => ({
         id: b.id ?? null,

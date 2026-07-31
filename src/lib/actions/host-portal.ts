@@ -103,7 +103,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
   const admin = createAdminClient();
   const { data: s } = await admin
     .from('students')
-    .select(`${STUDENT_COLS}, ocean_level, medical_notes, emergency_contact_name, emergency_contact_phone`)
+    .select(`${STUDENT_COLS}, ocean_level, medical_notes, emergency_contact_name, emergency_contact_phone, primary_goal, goal_short_term, fears_phobias, injuries, surf_experience_years, age`)
     .eq('id', studentId)
     .eq('academy_id', who.academy_id)
     .maybeSingle();
@@ -131,6 +131,11 @@ export async function hostStudentDetail(token: string, studentId: string) {
     student: toRow(s),
     ocean_level: (s as any).ocean_level ?? null,
     medical_notes: (s as any).medical_notes ?? null,
+    goals: [(s as any).primary_goal, (s as any).goal_short_term].filter(Boolean).join(' · ') || null,
+    fears: (s as any).fears_phobias ?? null,
+    injuries: (s as any).injuries ?? null,
+    experience: (s as any).surf_experience_years != null ? `${(s as any).surf_experience_years} años surfeando` : null,
+    age: (s as any).age ?? null,
     emergency: [(s as any).emergency_contact_name, (s as any).emergency_contact_phone].filter(Boolean).join(' · ') || null,
     upcoming: (next ?? []).map((p: any) => {
       const c = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;

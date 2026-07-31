@@ -2071,7 +2071,23 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
             )}
           </div>
 
-          {quickFacts.length === 0 && !hasMedical && goals.length === 0 && (
+          {/* Ficha incompleta: decir POR QUÉ no hay metas/miedos y dar el
+              link de intake para resolverlo ahí mismo (coach o recepción). */}
+          {goals.length === 0 && !profile.fears_phobias && !(profile as any).intake_completed_at && (
+            <div className="rounded-lg p-2.5" style={{ background: 'rgba(255,209,102,.16)' }}>
+              <p className="text-[11px] leading-snug" style={{ color: '#7a5c00' }}>
+                <strong>Intake incompleto</strong> — este alumno aún no llenó sus metas, miedos ni info médica. Pedile que complete su intake antes de la sesión (o avisá a recepción).
+              </p>
+              {(profile as any).intake_url && (
+                <button type="button"
+                  onClick={() => navigator.clipboard.writeText((profile as any).intake_url).then(() => alert('Link de intake copiado — mandáselo por WhatsApp.')).catch(() => {})}
+                  className="mt-1.5 text-[10px] font-bold underline" style={{ color: '#8a6d1c' }}>
+                  📋 Copiar link de intake
+                </button>
+              )}
+            </div>
+          )}
+          {quickFacts.length === 0 && !hasMedical && goals.length === 0 && (profile as any).intake_completed_at && (
             <p className="text-[11px] text-gray-400 italic">
               No profile data filled in for this student yet.
             </p>

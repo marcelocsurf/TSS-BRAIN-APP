@@ -109,6 +109,15 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                   ))}
                 </div>
               )}
+              {(detail.goals || detail.fears || detail.injuries || detail.experience) && (
+                <div>
+                  <p className="text-[9px] text-gray-400" style={F_M}>Perfil</p>
+                  {detail.goals && <p className="text-[11px] text-gray-600">🎯 Metas: {detail.goals}</p>}
+                  {detail.fears && <p className="text-[11px] text-gray-600">😰 Miedos: {detail.fears}</p>}
+                  {detail.injuries && <p className="text-[11px] text-gray-600">🩹 Lesiones: {detail.injuries}</p>}
+                  {detail.experience && <p className="text-[11px] text-gray-600">🏄 {detail.experience}</p>}
+                </div>
+              )}
               {detail.medical_notes && <p className="text-[11px] text-gray-500">🩺 {detail.medical_notes}</p>}
             </div>
           ) : <p className="text-[11px] text-gray-400">Cargando ficha…</p>}
