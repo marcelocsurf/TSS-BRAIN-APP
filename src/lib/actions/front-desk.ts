@@ -16,7 +16,7 @@ async function resolveDesk(token: string) {
     .eq('portal_token', token)
     .maybeSingle();
   if (!data || !data.active_status) return null;
-  const allowed = ['support', 'manager'].includes((data as any).portal_category) || ['admin', 'coordinator'].includes((data as any).role);
+  const allowed = ['support', 'manager'].includes((data as any).portal_category) || ['admin', 'coordinator', 'host'].includes((data as any).role);
   return allowed ? data : null;
 }
 
@@ -31,7 +31,7 @@ export async function getFrontDeskData(token: string) {
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
     .eq('academy_id', who.academy_id)
-    .in('camp_templates.service_kind', ['class', 'trip'])
+    .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson'])
     .gte('start_date', today)
     .lte('start_date', horizon)
     .neq('status', 'cancelled')

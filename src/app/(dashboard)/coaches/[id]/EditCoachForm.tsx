@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { updateCoachIdentity, deleteCoach } from '@/lib/actions/coach-admin';
 import { Pencil, Trash2, X } from 'lucide-react';
 
-const ROLES = ['admin', 'coordinator', 'coach', 'assistant'];
+const ROLES = ['admin', 'coordinator', 'head_coach', 'coach', 'assistant', 'seller', 'host'];
 
 export function EditCoachForm({ coach, academies = [] }: { coach: any; academies?: { id: string; name: string }[] }) {
   const router = useRouter();

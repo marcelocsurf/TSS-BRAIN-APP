@@ -44,7 +44,7 @@ function dayLabel(iso: string, today: string) {
   return diff === 1 ? 'MAÑANA' : s.toUpperCase();
 }
 
-export function SellerPortal({ token, sellerName, services }: { token: string; sellerName: string; services: any[] }) {
+export function SellerPortal({ token, sellerName, services, heading = 'Seller' }: { token: string; sellerName: string; services: any[]; heading?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('vender');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
@@ -132,7 +132,7 @@ export function SellerPortal({ token, sellerName, services }: { token: string; s
     <div style={{ background: INK, minHeight: '100vh' }} className="pb-24">
       {/* Header v10 */}
       <div className="px-4 pt-5 pb-4" style={{ background: '#04141F', borderBottom: `2px solid ${CYAN}4D` }}>
-        <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Seller</p>
+        <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · {heading}</p>
         <h1 style={{ ...F_D, color: PAPER }} className="text-[26px] mt-1">{sellerName}</h1>
         {/* Meta siempre visible */}
         <div className="mt-3 rounded-2xl p-3" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.25)' }}>

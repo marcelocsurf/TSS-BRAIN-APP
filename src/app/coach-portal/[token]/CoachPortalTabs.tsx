@@ -16,6 +16,7 @@ import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
 import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
 import { SellerPortal } from '@/components/seller/SellerPortal';
+import { HostPortal } from '@/components/host/HostPortal';
 import { StaffWaiverCard } from '@/components/coach-portal/StaffWaiverCard';
 import { PendingPromotions } from '@/components/coach-portal/PendingPromotions';
 import { PortalInventory } from '@/components/coach-portal/PortalInventory';
@@ -112,6 +113,9 @@ export function CoachPortalTabs({
   const canSell = !!(coach as any).portal_can_sell || isSeller;
 
   // Rol seller: su propia casa — 3 pestañas, cero ruido de coaching.
+  if ((coach as any).role === 'host') {
+    return <HostPortal token={coach.portal_token} hostName={coach.display_name || 'Host'} services={data.academyServices} />;
+  }
   if (isSeller) {
     return <SellerPortal token={coach.portal_token} sellerName={coach.display_name || 'Seller'} services={data.academyServices} />;
   }

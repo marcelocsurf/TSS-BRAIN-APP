@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 const ROLES = [
   { value: 'admin', label: 'Admin', desc: 'Full access. Can manage everything.' },
   { value: 'coordinator', label: 'Coordinator', desc: 'Manages schedule, assigns coaches, creates students.' },
+  { value: 'head_coach', label: 'Head coach', desc: 'Runs their own services, confirms belt promotions up to their cert.' },
   { value: 'coach', label: 'Coach', desc: 'Executes sessions, evaluates students.' },
   { value: 'assistant', label: 'Assistant', desc: 'View-only for assigned sessions. No login in Stage 1.' },
+  { value: 'seller', label: 'Vendedor', desc: 'Sells spots from their portal. Reserves; front desk charges.' },
+  { value: 'host', label: 'Servicio al cliente', desc: 'Guest services: sells, charges at the desk, chases intake/waivers, sees incidents. No coach assignment.' },
 ];
 
 const BELT_PERMISSIONS = [

@@ -324,7 +324,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   // Sellers see ALL upcoming academy services (with availability), not just
   // the ones they're assigned to. Skip the query for everyone else.
   let academyServices: any[] = [];
-  if (((coach as any).portal_can_sell || (coach as any).role === 'seller') && coach.academy_id) {
+  if (((coach as any).portal_can_sell || ['seller', 'host'].includes((coach as any).role)) && coach.academy_id) {
     const { data: svc } = await admin
       .from('camp_instances')
       .select('id, camp_name, start_date, end_date, status, scheduled_time, capacity_override, template_id, camp_templates:template_id(template_name, service_kind, capacity_max, level_name, sales_deck_resource_id, video_url), camp_participants(id, enrollment_status, payment_status, amount_cents)')
