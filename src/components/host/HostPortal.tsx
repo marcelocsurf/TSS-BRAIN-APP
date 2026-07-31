@@ -111,13 +111,27 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                   ))}
                 </div>
               )}
-              {(detail.goals || detail.fears || detail.injuries || detail.experience) && (
-                <div>
-                  <p className="text-[9px] text-gray-400" style={F_M}>Perfil</p>
+              {(detail.goals || detail.fears || detail.experience || detail.board) && (
+                <div className="space-y-0.5">
+                  <p className="text-[9px] text-gray-400" style={F_M}>Perfil completo</p>
+                  {(detail.age || detail.languages || detail.body) && (
+                    <p className="text-[11px] text-gray-600">👤 {[detail.age ? `${detail.age} años` : null, detail.languages, detail.body].filter(Boolean).join(' · ')}</p>
+                  )}
+                  {(detail.experience || detail.frequency || detail.self_level) && (
+                    <p className="text-[11px] text-gray-600">🏄 {[detail.experience, detail.frequency ? detail.frequency.split(' / ')[0] : null, detail.self_level].filter(Boolean).join(' · ')}</p>
+                  )}
+                  {(detail.board || detail.stance || detail.wave_size) && (
+                    <p className="text-[11px] text-gray-600">🛹 {[detail.board, detail.stance, detail.wave_size ? `ola ${detail.wave_size.split(' - ')[0]}` : null].filter(Boolean).join(' · ')}</p>
+                  )}
                   {detail.goals && <p className="text-[11px] text-gray-600">🎯 Metas: {detail.goals}</p>}
+                  {detail.goal_mid && <p className="text-[11px] text-gray-500 pl-4">3-6 meses: {detail.goal_mid}</p>}
+                  {detail.goal_long && <p className="text-[11px] text-gray-500 pl-4">1-3 años: {detail.goal_long}</p>}
+                  {detail.week_wish && <p className="text-[11px] text-gray-600">⭐ Esta semana: {detail.week_wish}</p>}
+                  {detail.barrier && <p className="text-[11px] text-gray-600">🧱 Barrera: {detail.barrier}</p>}
                   {detail.fears && <p className="text-[11px] text-gray-600">😰 Miedos: {detail.fears}</p>}
                   {detail.injuries && <p className="text-[11px] text-gray-600">🩹 Lesiones: {detail.injuries}</p>}
-                  {detail.experience && <p className="text-[11px] text-gray-600">🏄 {detail.experience}</p>}
+                  {detail.allergies && <p className="text-[11px] text-gray-600">⚠ Alergias: {detail.allergies}</p>}
+                  {detail.emergency && <p className="text-[11px] text-gray-600">🆘 Emergencia: {detail.emergency}</p>}
                 </div>
               )}
               {detail.medical_notes && <p className="text-[11px] text-gray-500">🩺 {detail.medical_notes}</p>}

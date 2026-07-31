@@ -311,3 +311,45 @@ export async function getStudentForIntake(token: string) {
   if (error || !data) return null;
   return data;
 }
+
+// Firma de waiver SOLO — para alumnos cuyo intake ya está completo (p. ej.
+// fichas importadas de Word) y únicamente les falta la exención. Menores:
+// firma el padre/madre/tutor y queda registrado como firmante.
+export async function signWaiverOnly(token: string, input: {
+  signed_name: string;
+  guardian_name?: string | null;
+  media_release_consent?: boolean;
+  waiver_version: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { data: st } = await admin
+    .from('students')
+    .select('id, first_name, date_of_birth, waiver_signed')
+    .eq('portal_token', token)
+    .maybeSingle();
+  if (!st) return { ok: false, error: 'Link not valid.' };
+  if (st.waiver_signed) return { ok: true };
+  if (!input.signed_name?.trim() || input.signed_name.trim().length < 5) {
+    return { ok: false, error: 'Type the full legal name to sign.' };
+  }
+  // Menor → exige nombre del guardián y lo registra como firmante real
+  let minor = false;
+  if (st.date_of_birth) {
+    const d = new Date(st.date_of_birth + 'T00:00:00'); const n = new Date();
+    let a = n.getFullYear() - d.getFullYear();
+    if (n.getMonth() - d.getMonth() < 0 || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+    minor = a < 18;
+  }
+  if (minor && !input.guardian_name?.trim()) {
+    return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
+  }
+  const { error } = await admin.from('students').update({
+    waiver_signed: true,
+    waiver_signed_at: new Date().toISOString(),
+    waiver_signed_by: minor ? `${input.guardian_name!.trim()} (parent/guardian)` : input.signed_name.trim(),
+    waiver_version: input.waiver_version,
+    ...(input.media_release_consent != null ? { media_release_consent: input.media_release_consent } : {}),
+  }).eq('id', st.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

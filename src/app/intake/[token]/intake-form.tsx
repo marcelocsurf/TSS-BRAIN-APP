@@ -6,6 +6,7 @@ import { BRAND } from '@/lib/constants/brand';
 import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
 import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
+import { signWaiverOnly } from '@/lib/actions/intake';
 
 interface StudentData {
   student_type?: string | null;
@@ -62,7 +63,7 @@ interface Props {
   student: StudentData;
 }
 
-type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done';
+type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done' | 'waiver_only';
 
 export function IntakeForm({ token, student }: Props) {
   // New 3-part order: Profile & Safety (ficha) FIRST → Level quiz (members) →
@@ -74,7 +75,8 @@ export function IntakeForm({ token, student }: Props) {
     student.intake_tier === 'extended' ||
     (!!student.waiver_signed && !!student.emergency_contact_name);
   const initialStage: Stage =
-    student.intake_tier === 'extended' ? 'all_done'
+    student.intake_tier === 'extended' && !student.waiver_signed ? 'waiver_only'
+    : student.intake_tier === 'extended' ? 'all_done'
     : !basicDone ? 'basic'
     : isDropin ? 'basic_done'
     : student.ocean_quiz_completed_at ? 'extended'
@@ -83,6 +85,18 @@ export function IntakeForm({ token, student }: Props) {
   const [stage, setStage] = useState<Stage>(initialStage);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Solo-waiver (fichas importadas): firma + guardián si es menor
+  const [woName, setWoName] = useState('');
+  const [woGuardian, setWoGuardian] = useState('');
+  const [woMedia, setWoMedia] = useState(true);
+  const [woAccept, setWoAccept] = useState(false);
+  const woMinor = (() => {
+    if (!student.date_of_birth) return false;
+    const d = new Date(student.date_of_birth + 'T00:00:00'), n = new Date();
+    let a = n.getFullYear() - d.getFullYear();
+    if (n.getMonth() - d.getMonth() < 0 || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+    return a < 18;
+  })();
   const [extendedStep, setExtendedStep] = useState(0);
 
   // Adaptive branch: true if the student has never surfed outside whitewater
@@ -213,6 +227,66 @@ export function IntakeForm({ token, student }: Props) {
   // ═══════════════════════════════════════
   // ALL DONE
   // ═══════════════════════════════════════
+
+  // Ficha completa importada → SOLO firmar la exención (y guardián si menor)
+  if (stage === 'waiver_only') {
+    return (
+      <div className="space-y-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+          <div>
+            <p className="text-lg font-bold text-[var(--tss-navy)]">Hi {(student as any).first_name || 'surfer'} — one last step</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Your profile is already on file. To surf with us, please read and sign the liability waiver below.
+            </p>
+          </div>
+
+          <WaiverContent />
+
+          {woMinor && (
+            <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.35)' }}>
+              <p className="text-[12px] font-bold" style={{ color: '#0090B0' }}>
+                {(student as any).first_name || 'This surfer'} is under 18 — a parent or legal guardian signs this waiver.
+              </p>
+              <input value={woGuardian} onChange={(e) => setWoGuardian(e.target.value)} placeholder="Parent / guardian full legal name *"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
+            </div>
+          )}
+
+          <label className="flex items-start gap-2 text-[13px] text-gray-800 cursor-pointer">
+            <input type="checkbox" checked={woAccept} onChange={(e) => setWoAccept(e.target.checked)} className="mt-0.5 h-4 w-4" />
+            <span>He leído y ACEPTO este acuerdo de exención de responsabilidad. / I have read and I AGREE to this release of liability. *</span>
+          </label>
+
+          <label className="flex items-start gap-2 text-[12px] text-gray-600 cursor-pointer rounded-lg bg-gray-50 p-3">
+            <input type="checkbox" checked={woMedia} onChange={(e) => setWoMedia(e.target.checked)} className="mt-0.5 h-4 w-4" />
+            <span>Autorizo el uso de fotos y videos con fines educativos y promocionales (opcional). / I authorize photos & videos for educational and promotional purposes (optional).</span>
+          </label>
+
+          <input value={woName} onChange={(e) => setWoName(e.target.value)}
+            placeholder={woMinor ? 'Guardian: type your full legal name to sign *' : 'Type your full legal name to sign *'}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <button type="button" disabled={loading || !woAccept || woName.trim().length < 5 || (woMinor && !woGuardian.trim())}
+            onClick={async () => {
+              setLoading(true); setError('');
+              const r = await signWaiverOnly(token, {
+                signed_name: woName, guardian_name: woMinor ? (woGuardian || woName) : null,
+                media_release_consent: woMedia, waiver_version: WAIVER_VERSION,
+              });
+              setLoading(false);
+              if (!r.ok) { setError(r.error || 'Could not save the signature.'); return; }
+              setStage('all_done');
+            }}
+            className="w-full py-3.5 rounded-full text-sm font-bold disabled:opacity-40"
+            style={{ background: '#00D2FF', color: '#061C2B' }}>
+            {loading ? 'Saving…' : 'Sign the waiver ✓'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (stage === 'all_done') {
     return (
