@@ -132,3 +132,20 @@ export async function confirmMembershipRenewal(studentId: string, paymentMethod?
   });
   return { ok: true };
 }
+
+// Coordinador/admin OTORGA membresía a mano (alta inicial, regalo de
+// lanzamiento, cortesía). Esto es lo que "abre" el portal a un member.
+export async function grantMembership(studentId: string, months: number, gift = false): Promise<{ ok: boolean; error?: string; portal_url?: string }> {
+  const { getCurrentCoach, isCoordinatorOrAbove } = await import('@/lib/actions/auth');
+  const me = await getCurrentCoach().catch(() => null);
+  if (!me || !(await isCoordinatorOrAbove(me.role))) return { ok: false, error: 'Solo coordinador o admin.' };
+  if (![1, 6, 12].includes(months)) return { ok: false, error: 'Plan inválido.' };
+  await extendMembership(studentId, months, gift ? 'launch_gift' : 'renewal', {
+    paymentMethod: gift ? 'gift' : 'manual', createdBy: (me as any).id ?? null,
+    note: gift ? 'Otorgada manualmente (regalo/lanzamiento)' : 'Otorgada manualmente desde el perfil',
+  });
+  const admin = createAdminClient();
+  const { data: st } = await admin.from('students').select('portal_token').eq('id', studentId).maybeSingle();
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+  return { ok: true, portal_url: st?.portal_token ? `${base}/portal/${st.portal_token}` : undefined };
+}
