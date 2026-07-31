@@ -6,6 +6,11 @@ import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { Dumbbell, Waves, Target, BookOpen, Check, PenLine } from 'lucide-react';
 
+// Brand Manual v10
+const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
+const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.05 };
+const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em' };
+
 interface Props {
   stepId: string;
   studentId: string;
@@ -71,25 +76,25 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
           ← Back to My Sequence
         </button>
 
-        <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5">
-          <div className="text-xs text-white/60 mb-1">{stepId}</div>
-          <h1 className="text-xl font-bold">{lesson.title}</h1>
+        <div className="text-white rounded-2xl p-5" style={{ background: INK, borderLeft: `4px solid ${CYAN}` }}>
+          <div className="text-[9px]" style={{ ...F_M, color: CYAN }}>{stepId}</div>
+          <h1 className="text-[20px] mt-1.5" style={F_D}>{lesson.title}</h1>
           {lesson.subtitle && (
-            <p className="text-sm text-white/80 mt-1 italic">{lesson.subtitle}</p>
+            <p className="text-sm mt-1.5" style={{ color: 'rgba(247,249,250,.7)' }}>{lesson.subtitle}</p>
           )}
           {lesson.pillar && (
-            <p className="text-xs text-amber-300 mt-2">Pillar: {lesson.pillar}</p>
+            <p className="text-[9px] mt-2.5" style={{ ...F_M, color: GOLD }}>Pillar · {lesson.pillar}</p>
           )}
         </div>
       </div>
 
       {/* Self-rating */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-          <Target size={13} strokeWidth={1.75} />
-          Your Self-Evaluation
+        <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
+          <Target size={12} strokeWidth={1.75} />
+          Your self-evaluation
         </div>
-        <h3 className="font-bold text-sm mb-3">
+        <h3 className="text-[15px] mb-3" style={{ ...F_D, color: INK }}>
           How well do you execute this step?
         </h3>
 
@@ -107,19 +112,19 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
           </div>
         )}
 
-        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-800">
-          <strong>Be honest.</strong> Your rating reflects your real execution today. As you practice and improve, update it. Your coach will review and validate during in-person sessions.
+        <div className="mt-4 p-3 rounded-xl text-[11px] leading-snug" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
+          <strong>Be honest.</strong> Your rating reflects your real execution today. As you practice and improve, update it. Your coach validates in person.
         </div>
       </div>
 
       {/* Pedagogy doctrine note (when both drill + mission available) */}
       {drill && mission && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900">
+        <div className="rounded-2xl p-3.5 text-[11.5px] leading-relaxed" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.3)', color: INK }}>
           <strong>Drill</strong> = how the skill is trained (on land or calm water).
           <br />
           <strong>Mission</strong> = how the learning is applied (in real water conditions).
           <br />
-          Choose the practice that fits today's session.
+          Choose the practice that fits today&apos;s session.
         </div>
       )}
 
@@ -141,14 +146,14 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
 
       {/* Session history */}
       {sessionHistory && sessionHistory.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-            <Waves size={13} strokeWidth={1.75} />
-            Recent Practice Sessions
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
+            <Waves size={12} strokeWidth={1.75} />
+            Recent practice sessions
           </div>
           <div className="space-y-2">
             {sessionHistory.map((s: any) => (
-              <div key={s.id} className="border-l-4 border-blue-200 pl-3 py-1">
+              <div key={s.id} className="pl-3 py-1" style={{ borderLeft: `3px solid ${CYAN}66` }}>
                 <div className="text-xs text-gray-500">
                   {new Date(s.created_at).toLocaleDateString()}
                 </div>
@@ -164,13 +169,13 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
       )}
 
       {/* Theory link */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-        <div className="inline-flex items-center gap-1.5 text-xs text-blue-700">
-          <BookOpen size={13} strokeWidth={1.75} />
-          Want to review the theory of this step?
+      <div className="rounded-2xl p-4 text-center" style={{ background: INK }}>
+        <div className="inline-flex items-center gap-1.5 text-[10px]" style={{ ...F_M, color: CYAN }}>
+          <BookOpen size={12} strokeWidth={1.75} />
+          Review the theory
         </div>
-        <div className="text-[11px] text-blue-600 mt-1">
-          Go to <strong>Course tab</strong> → find {stepId} in White Belt section
+        <div className="text-[11px] mt-1" style={{ color: 'rgba(247,249,250,.65)' }}>
+          Course tab → {stepId} in your belt section
         </div>
       </div>
     </div>
@@ -189,53 +194,45 @@ function DrillOrMissionCard({
   const isDrill = item.type === 'drill';
   const TypeIcon = isDrill ? Dumbbell : Waves;
   const typeLabel = isDrill ? 'Drill — training mechanic' : 'Mission — water application';
-  const accent = isDrill ? 'amber' : 'blue';
+  const accentHex = isDrill ? GOLD : CYAN;
+  const accentText = isDrill ? '#7a5c00' : '#0090B0';
 
   return (
-    <div
-      className="bg-white rounded-xl shadow-sm border-2 p-5"
-      style={{
-        borderColor: isDrill ? '#fde68a' : '#bfdbfe', // amber-200 / blue-200
-      }}
-    >
+    <div className="bg-white rounded-2xl shadow-sm p-5" style={{ border: `2px solid ${accentHex}55` }}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
-          <div
-            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold ${
-              isDrill ? 'text-amber-700' : 'text-blue-700'
-            }`}
-          >
-            <TypeIcon size={13} strokeWidth={1.75} />
-            {isDrill ? 'DRILL' : 'MISSION'}
+          <div className="flex items-center gap-1.5 text-[9px]" style={{ ...F_M, color: accentText }}>
+            <TypeIcon size={12} strokeWidth={1.75} />
+            {isDrill ? 'Drill' : 'Mission'}
           </div>
-          <h3 className="font-bold text-base mt-0.5">{item.title}</h3>
-          <div className="text-xs text-gray-500 mt-0.5">{typeLabel}</div>
+          <h3 className="text-[16px] mt-1" style={{ ...F_D, color: INK }}>{item.title}</h3>
+          <div className="text-xs text-gray-500 mt-1">{typeLabel}</div>
         </div>
       </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-gray-50 rounded p-2 text-center">
-          <div className="text-[10px] uppercase text-gray-500">Time</div>
-          <div className="text-sm font-bold">{item.time_estimate || '—'}</div>
+        <div className="rounded-xl p-2.5 text-center" style={{ background: PAPER }}>
+          <div className="text-[8px] text-gray-400" style={F_M}>Time</div>
+          <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{item.time_estimate || '—'}</div>
         </div>
-        <div className="bg-gray-50 rounded p-2 text-center">
-          <div className="text-[10px] uppercase text-gray-500">Reps</div>
-          <div className="text-sm font-bold">{item.reps_recommended || '—'}</div>
+        <div className="rounded-xl p-2.5 text-center" style={{ background: PAPER }}>
+          <div className="text-[8px] text-gray-400" style={F_M}>Reps</div>
+          <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{item.reps_recommended || '—'}</div>
         </div>
       </div>
 
       {/* 5 Key Words — only on drill (canonical chain) */}
       {isDrill && item.key_words && item.key_words.length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
-            5 Key Words (canonical chain)
+          <div className="text-[9px] text-gray-400 mb-2" style={F_M}>
+            5 key words · canonical chain
           </div>
           <div className="flex flex-wrap gap-1.5">
             {item.key_words.map((kw: string, i: number) => (
               <span
                 key={i}
-                className="px-2 py-0.5 bg-[var(--tss-navy)] text-white text-[11px] font-bold rounded-full"
+                className="px-2.5 py-1 text-[11px] font-bold rounded-full" style={{ background: INK, color: CYAN }}
               >
                 {kw}
               </span>
@@ -247,7 +244,7 @@ function DrillOrMissionCard({
       {/* Description / Procedure */}
       {item.description_md && (
         <div className="mt-4">
-          <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
+          <div className="text-[9px] text-gray-400 mb-2" style={F_M}>
             {isDrill ? 'Procedure' : 'What to do in the water'}
           </div>
           <div className="prose prose-sm max-w-none">
@@ -258,14 +255,14 @@ function DrillOrMissionCard({
 
       {/* Success criteria */}
       {item.success_criteria && item.success_criteria.length > 0 && (
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-green-700 font-bold mb-2">
-            <Check size={13} strokeWidth={2} />
-            Success Criteria
+        <div className="mt-4 p-3.5 rounded-xl" style={{ background: 'rgba(6,214,160,.08)', border: '1px solid rgba(6,214,160,.35)' }}>
+          <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0a7c5d' }}>
+            <Check size={12} strokeWidth={2} />
+            Success criteria
           </div>
           <ul className="space-y-1">
             {item.success_criteria.map((sc: string, i: number) => (
-              <li key={i} className="text-xs text-green-800 flex gap-2">
+              <li key={i} className="text-xs flex gap-2" style={{ color: '#085041' }}>
                 <span className="font-bold">{i + 1}.</span>
                 <span>{sc}</span>
               </li>
@@ -278,16 +275,11 @@ function DrillOrMissionCard({
       <button
         onClick={() => onPractice?.(item.id)}
         disabled={!onPractice}
-        className={`mt-5 w-full rounded-lg py-3 text-sm font-bold transition-colors ${
-          onPractice
-            ? isDrill
-              ? 'bg-amber-500 text-white hover:bg-amber-600'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-        }`}
+        className="mt-5 w-full rounded-full py-3.5 text-[11px] transition-all active:scale-[0.98] disabled:opacity-40"
+        style={{ ...F_M, background: onPractice ? accentHex : '#e5e7eb', color: INK, fontWeight: 700 }}
       >
         <span className="inline-flex items-center gap-1.5">
-          <PenLine size={15} strokeWidth={1.75} />
+          <PenLine size={14} strokeWidth={1.75} />
           Practice this {isDrill ? 'drill' : 'mission'} →
         </span>
       </button>

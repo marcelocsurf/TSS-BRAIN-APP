@@ -8,6 +8,11 @@ import { Dumbbell, Waves, Target } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 
+// Brand Manual v10
+const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
+const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.05 };
+const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em' };
+
 interface Props {
   studentId: string;
   belt?: string;
@@ -73,7 +78,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
   return (
     <div className="space-y-5">
       {/* Header — belt-colored rings + accent line, matching the course view */}
-      <div className="bg-[var(--tss-navy)] text-white rounded-xl p-5 shadow-lg border-l-4" style={{ borderColor: theme.accent }}>
+      <div className="text-white rounded-2xl p-5 shadow-lg border-l-4" style={{ background: INK, borderColor: theme.accent }}>
         {/* The Surf Sequence logo — prominent on the sequence screen */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -82,21 +87,18 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
           className="h-9 mb-3 object-contain"
         />
         <div className="flex items-center justify-between mb-2">
-          <h2 className="inline-flex items-center gap-2.5 text-lg font-bold">
+          <h2 className="inline-flex items-center gap-2.5 text-[20px]" style={F_D}>
             <ConcentricRings color={theme.bright} size={22} />
             My Sequence
           </h2>
-          <span
-            className="text-xs px-2.5 py-0.5 rounded-full capitalize font-medium"
-            style={{ background: theme.tint, color: theme.ink }}
-          >
+          <span className="text-[9px] px-2.5 py-1 rounded-full" style={{ ...F_M, background: theme.tint, color: theme.ink }}>
             {data.belt} Belt
           </span>
         </div>
 
         <div className="mt-3">
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-xs text-white/70">Overall execution</span>
+            <span className="text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.6)' }}>Overall execution</span>
             {data.overallRating !== null ? (
               <span className="text-lg font-bold">
                 {data.overallRating.toFixed(1)}<span className="text-xs opacity-70">/5</span>
@@ -118,8 +120,11 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
       </div>
 
       {/* Instructions */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-        <strong>How to use:</strong> Tap a step to see its drill or mission. Self-rate your execution honestly (1-5). Practice the drill in Train tab. Your rating updates as you progress.
+      <div className="rounded-2xl p-3.5" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.3)' }}>
+        <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0090B0' }}>How it works</p>
+        <p className="text-[12px] leading-snug" style={{ color: INK }}>
+          Tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.
+        </p>
       </div>
 
       {/* Blocks */}
@@ -156,13 +161,13 @@ function BlockSection({
     : null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" style={{ borderLeft: `4px solid ${theme.accent}` }}>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ borderLeft: `4px solid ${theme.accent}` }}>
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between" style={{ background: theme.tint }}>
         <div>
-          <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: theme.ink }}>
+          <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
             Block {blockNumber}
           </div>
-          <div className="font-bold text-sm">{blockName}</div>
+          <div className="text-[13px] mt-0.5" style={{ ...F_D, color: INK }}>{blockName}</div>
         </div>
         <div className="text-right text-xs">
           {avgRating !== null ? (
@@ -198,7 +203,7 @@ function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-gray-400">{item.step_id}</span>
+            <span className="text-[9px] text-gray-400" style={F_M}>{item.step_id}</span>
           </div>
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
