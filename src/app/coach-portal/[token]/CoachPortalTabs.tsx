@@ -114,7 +114,7 @@ export function CoachPortalTabs({
 
   // Rol seller: su propia casa — 3 pestañas, cero ruido de coaching.
   if ((coach as any).role === 'host') {
-    return <HostPortal token={coach.portal_token} hostName={coach.display_name || 'Host'} services={data.academyServices} hostId={coach.id} />;
+    return <HostPortal token={coach.portal_token} hostName={coach.display_name || 'Host'} services={data.academyServices} hostId={coach.id} academyId={(coach as any).academy_id} />;
   }
   if (isSeller) {
     return <SellerPortal token={coach.portal_token} sellerName={coach.display_name || 'Seller'} services={data.academyServices} />;

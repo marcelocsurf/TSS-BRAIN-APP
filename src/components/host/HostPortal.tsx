@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { DeskBoard } from '@/app/front-desk/[token]/DeskBoard';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
+import { BoardInventoryManager } from '@/components/board-inventory/BoardInventoryManager';
+import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
+import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { getFrontDeskData, getRecentBookings } from '@/lib/actions/front-desk';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
@@ -20,7 +23,7 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GR
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
 
-type Tab = 'hoy' | 'operacion' | 'espacios' | 'clientes';
+type Tab = 'hoy' | 'operacion' | 'espacios' | 'tablas' | 'clientes';
 
 function Check({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -143,7 +146,7 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
   );
 }
 
-export function HostPortal({ token, hostName, services, hostId }: { token: string; hostName: string; services: any[]; hostId?: string }) {
+export function HostPortal({ token, hostName, services, hostId, academyId }: { token: string; hostName: string; services: any[]; hostId?: string; academyId?: string }) {
   const [tab, setTab] = useState<Tab>('hoy');
   const [board, setBoard] = useState<any>(null);
   const [incidents, setIncidents] = useState<any[] | null>(null);
@@ -179,7 +182,7 @@ export function HostPortal({ token, hostName, services, hostId }: { token: strin
         <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Servicio al cliente</p>
         <h1 style={{ ...F_D, color: PAPER }} className="text-[24px] mt-1">{hostName}</h1>
         <div className="flex gap-2 mt-3">
-          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Operación'], ['espacios', '🏛 Espacios'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
+          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['espacios', '🏛 Espacios'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               className="flex-1 rounded-full py-2.5 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
@@ -192,6 +195,8 @@ export function HostPortal({ token, hostName, services, hostId }: { token: strin
       <div className="max-w-md lg:max-w-3xl mx-auto px-4 pt-4">
         {tab === 'hoy' && (
           <div className="space-y-4">
+            {/* Tareas que el coordinador le asignó — con reporte hecho/no hecho */}
+            <CoachTasks token={token} />
             {/* Quién acaba de reservar (48 h) — QR o vendedor, pagado o pendiente */}
             {recent !== null && recent.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -214,6 +219,14 @@ export function HostPortal({ token, hostName, services, hostId }: { token: strin
             )}
             {board === null ? <p className="text-sm text-gray-400 text-center py-8">Cargando clases…</p>
               : <DeskBoard token={token} classes={(board?.classes ?? []) as any} />}
+            {/* Protocolo oficial cuando algo sale mal — referencia de un toque */}
+            <a href="/docs/sistema-resolver-problemas.pdf" target="_blank" rel="noopener noreferrer"
+              className="block bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-bold" style={{ color: INK }}>🧭 Protocolo de resolución de problemas</span>
+                <span className="text-[9px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-600" style={F_M}>PDF</span>
+              </span>
+            </a>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <p className="text-[9px] text-gray-400" style={F_M}>⚠ Incidentes · últimos 14 días</p>
               {incidents === null ? <p className="text-[12px] text-gray-400 mt-2">Cargando…</p>
@@ -303,6 +316,17 @@ export function HostPortal({ token, hostName, services, hostId }: { token: strin
                   </div>
                 );
               })}
+          </div>
+        )}
+
+        {tab === 'tablas' && (
+          <div className="space-y-4">
+            {/* Calculadora de tabla ideal (volumen, tipo, medidas, quillas) */}
+            <BoardSelectorLauncher variant="card" title="Board Calculator" subtitle="Recomienda volumen, tipo, medidas y quillas según la persona." />
+            {/* Sistema de renta: inventario + rentas con waiver y firma */}
+            {academyId
+              ? <BoardInventoryManager academyId={academyId} portalToken={token} />
+              : <p className="text-[12px] text-gray-400 text-center py-6">Sin academia asignada.</p>}
           </div>
         )}
 
