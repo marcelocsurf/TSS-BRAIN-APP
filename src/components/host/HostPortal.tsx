@@ -303,7 +303,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                       </div>
                       <span className="shrink-0 flex flex-col items-end gap-1">
                         {e.price_cents != null && (
-                          <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>${'{'}(e.price_cents / 100).toFixed(0){'}'}</span>
+                          <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>${(e.price_cents / 100).toFixed(0)}</span>
                         )}
                         <span className="text-[10px] font-bold rounded-full px-2 py-1"
                           style={{ background: 'rgba(0,210,255,.1)', color: '#0090B0' }}>{e.enrolled}/{e.capacity || '∞'}</span>
@@ -354,7 +354,11 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             <BoardSelectorLauncher variant="card" title="Board Calculator" subtitle="Recomienda volumen, tipo, medidas y quillas según la persona." />
             {/* Sistema de renta: inventario + rentas con waiver y firma */}
             {academyId
-              ? <BoardInventoryManager academyId={academyId} portalToken={token} />
+              ? (
+                <div className="rounded-2xl p-4" style={{ background: INK }}>
+                  <BoardInventoryManager academyId={academyId} portalToken={token} />
+                </div>
+              )
               : <p className="text-[12px] text-gray-400 text-center py-6">Sin academia asignada.</p>}
           </div>
         )}
