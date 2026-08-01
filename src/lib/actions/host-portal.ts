@@ -214,6 +214,7 @@ export interface HostDayEvent {
   spaces: string[];
   transport: { depart: string | null; ret: string | null; status: string | null } | null;
   venue: string | null;
+  price_cents: number | null;
 }
 
 export async function hostDayOperation(token: string, dateISO: string): Promise<HostDayEvent[]> {
@@ -224,7 +225,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
   const { data: instances } = await admin
     .from('camp_instances')
     .select(`id, camp_name, start_date, end_date, scheduled_time, capacity_override, status,
-      camp_templates:template_id(template_name, service_kind, capacity_max),
+      camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents),
       coaches:coach_id(display_name),
       camp_participants(enrollment_status, payment_status, students(first_name, last_name, waiver_signed)),
       camp_sessions(id, day_number, session_date, session_status)`)
@@ -278,6 +279,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       total_days: (i.camp_sessions ?? []).length || null,
       session_status: session?.session_status ?? null,
       capacity: i.capacity_override ?? tpl?.capacity_max ?? 0,
+      price_cents: tpl?.list_price_cents ?? null,
       enrolled: act.length,
       students: act.map((p: any) => {
         const st = Array.isArray(p.students) ? p.students[0] : p.students;

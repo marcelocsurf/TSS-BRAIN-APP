@@ -156,6 +156,14 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   const [results, setResults] = useState<HostStudentRow[] | null>(null);
   // Operación: línea de tiempo del día seleccionado
   const [opDate, setOpDate] = useState(() => new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10));
+  // Inicio de la tira visible — navegable semana a semana por TODO el año
+  const [stripStart, setStripStart] = useState(() => new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10));
+  const shiftStrip = (days: number) => {
+    const d = new Date(stripStart + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    const iso = d.toISOString().slice(0, 10);
+    setStripStart(iso);
+  };
   const [opEvents, setOpEvents] = useState<HostDayEvent[] | null>(null);
   const [reserveFor, setReserveFor] = useState<HostDayEvent | null>(null);
 
@@ -244,16 +252,32 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
 
         {tab === 'operacion' && (
           <div className="space-y-3">
-            {/* Tira de 7 días */}
+            {/* Calendario de todo el año: flechas por semana + salto a cualquier fecha */}
+            <div className="flex items-center justify-between gap-2">
+              <button type="button" onClick={() => shiftStrip(-7)} className="rounded-full w-9 h-9 bg-white border border-gray-200 text-gray-500 font-bold">‹</button>
+              <p className="text-[10px]" style={{ ...F_M, color: '#6b7280' }}>
+                {new Date(stripStart + 'T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+              </p>
+              <label className="rounded-full px-3 h-9 bg-white border border-gray-200 text-[11px] text-gray-500 inline-flex items-center gap-1 cursor-pointer">
+                📅 Ir a
+                <input type="date" value={opDate}
+                  onChange={(e) => { if (e.target.value) { setOpDate(e.target.value); setStripStart(e.target.value); } }}
+                  className="w-0 opacity-0 absolute" style={{ pointerEvents: 'none' }}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker?.()} />
+              </label>
+              <button type="button" onClick={() => shiftStrip(7)} className="rounded-full w-9 h-9 bg-white border border-gray-200 text-gray-500 font-bold">›</button>
+            </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               {Array.from({ length: 7 }).map((_, i) => {
-                const d = new Date(Date.now() - 6 * 3600_000 + i * 86400000);
+                const d = new Date(stripStart + 'T00:00:00');
+                d.setDate(d.getDate() + i);
                 const iso = d.toISOString().slice(0, 10);
                 const sel = iso === opDate;
+                const isToday = iso === new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
                 return (
                   <button key={iso} type="button" onClick={() => setOpDate(iso)}
                     className="shrink-0 rounded-2xl px-3 py-2 text-center"
-                    style={sel ? { background: CYAN, color: INK } : { background: '#fff', border: '1px solid #e5e7eb', color: '#6b7280' }}>
+                    style={sel ? { background: CYAN, color: INK } : { background: '#fff', border: isToday ? `2px solid ${CYAN}` : '1px solid #e5e7eb', color: '#6b7280' }}>
                     <span className="block text-[8px]" style={F_M}>{d.toLocaleDateString('es-ES', { weekday: 'short' })}</span>
                     <span className="block text-[15px] font-bold">{d.getDate()}</span>
                   </button>
@@ -277,8 +301,13 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                         <p className="font-bold text-[15px] truncate" style={{ color: INK }}>{e.name}</p>
                         <p className="text-[11px] text-gray-400 truncate">{e.coach ? `Coach ${e.coach}` : 'Sin coach asignado ⚠'}{e.venue ? ` · 📍 ${e.venue}` : ''}</p>
                       </div>
-                      <span className="shrink-0 text-[10px] font-bold rounded-full px-2 py-1"
-                        style={{ background: 'rgba(0,210,255,.1)', color: '#0090B0' }}>{e.enrolled}/{e.capacity || '∞'}</span>
+                      <span className="shrink-0 flex flex-col items-end gap-1">
+                        {e.price_cents != null && (
+                          <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>${'{'}(e.price_cents / 100).toFixed(0){'}'}</span>
+                        )}
+                        <span className="text-[10px] font-bold rounded-full px-2 py-1"
+                          style={{ background: 'rgba(0,210,255,.1)', color: '#0090B0' }}>{e.enrolled}/{e.capacity || '∞'}</span>
+                      </span>
                     </div>
 
                     {(e.transport || e.spaces.length > 0) && (
