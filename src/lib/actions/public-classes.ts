@@ -286,13 +286,13 @@ export async function publicEnroll(input: {
     ...(reason ? { discount_reason: reason } : {}),
   }).select('id').single();
   if (enrollErr) return { ok: false, error: 'Could not save your spot — ask at front desk.' };
-  notifyBooking(academy.id, firstName, (camp as any).camp_name, amount, studentId);
+  await notifyBooking(academy.id, firstName, (camp as any).camp_name, amount, studentId);
   // Confirmación con link de gestión (cancelar/mover con política de 24 h).
   try {
     const { sendBookingConfirmationEmail } = await import('@/lib/actions/email');
     const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
     const dt = new Date(((camp as any).start_date) + 'T00:00:00');
-    sendBookingConfirmationEmail({
+    await sendBookingConfirmationEmail({
       toEmail: email,
       firstName,
       className: ((camp as any).camp_name ?? '').split(' · ')[0],
@@ -415,7 +415,7 @@ export async function publicAddCompanion(input: {
     notes: `Family booking · ${responsibleAdult}`,
   });
   if (eErr) return { ok: false, error: 'Could not save their spot — ask at front desk.' };
-  notifyBooking(academy.id, `${created.first_name} (familia de ${bookerName})`, (camp as any).camp_name, list, created.id);
+  await notifyBooking(academy.id, `${created.first_name} (familia de ${bookerName})`, (camp as any).camp_name, list, created.id);
   return { ok: true, name: created.first_name, amount_cents: list };
 }
 
