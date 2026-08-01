@@ -14,3 +14,8 @@ CREATE TABLE IF NOT EXISTS coach_payments (
   created_at timestamptz DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_coach_payments_coach ON coach_payments(coach_id, period_start);
+
+-- Staff externo (staff_members) también cobra: la fila de pago apunta a coach
+-- O a staff_member.
+ALTER TABLE coach_payments ADD COLUMN IF NOT EXISTS staff_member_id uuid REFERENCES staff_members(id);
+ALTER TABLE coach_payments ALTER COLUMN coach_id DROP NOT NULL;

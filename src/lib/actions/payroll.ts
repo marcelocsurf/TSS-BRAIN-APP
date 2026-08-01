@@ -19,10 +19,15 @@ export interface PayrollDay {
   students: number;
   closed: boolean;
   rate_cents: number | null;   // null = falta tarifa en la matriz
+  role: 'coach' | 'assistant' | 'filmer';
 }
 
 export interface PayrollPerson {
-  coach_id: string;
+  person_key: string;          // coach:<id> | staff:<id>
+  coach_id: string | null;
+  staff_member_id: string | null;
+  is_coach: boolean;
+  roles: string[];             // Coach / Asistente / Filmer (los que jugó esta semana)
   name: string;
   cert: string | null;
   days: PayrollDay[];
@@ -71,7 +76,7 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
   end.setDate(end.getDate() + 6);
   const weekEnd = end.toISOString().slice(0, 10);
 
-  const [{ data: sessions }, { data: rates }, { data: payments }] = await Promise.all([
+  const [{ data: sessions }, { data: rates }, { data: payments }, { data: staffRates }] = await Promise.all([
     admin.from('camp_sessions')
       .select(`id, session_date, session_status, camp_instances:camp_instance_id!inner(
         id, academy_id, camp_name, coach_id, status,
@@ -82,42 +87,93 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
       .gte('session_date', weekStartISO)
       .lte('session_date', weekEnd),
     admin.from('coach_pay_rates').select('*'),
-    admin.from('coach_payments').select('coach_id, amount_cents')
+    admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents')
       .eq('academy_id', academyId)
       .eq('period_start', weekStartISO)
       .eq('period_end', weekEnd),
+    admin.from('cost_rates').select('name, driver, amount_cents, academy_id, active')
+      .in('driver', ['per_assistant_per_day', 'per_filmer_per_day']),
   ]);
 
-  const byCoach = new Map<string, PayrollPerson>();
+  // Tarifa de staff por rol (asistente/filmer): preferir la de la academia.
+  const staffRate = (driver: string): number | null => {
+    const rows = ((staffRates as any[]) ?? []).filter((r) => r.driver === driver && r.active !== false);
+    if (!rows.length) return null;
+    return (rows.find((r) => r.academy_id === academyId) ?? rows[0]).amount_cents;
+  };
+
+  // Staff aceptado por servicio (asistentes / filmers) — cobran por día
+  // trabajado, con el MISMO candado: el día paga cuando la sesión cierra.
+  const instIds = [...new Set(((sessions as any[]) ?? []).map((s: any) => {
+    const i = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
+    return i?.id;
+  }).filter(Boolean))];
+  const { data: staffRows } = instIds.length
+    ? await admin.from('service_staff')
+        .select('camp_instance_id, role, status, coaches:coach_id(id, display_name, certification_level), staff_members:staff_member_id(id, name)')
+        .in('camp_instance_id', instIds)
+        .eq('status', 'accepted')
+    : { data: [] as any[] };
+  const staffByInstance = new Map<string, any[]>();
+  for (const r of (staffRows as any[]) ?? []) {
+    staffByInstance.set(r.camp_instance_id, [...(staffByInstance.get(r.camp_instance_id) ?? []), r]);
+  }
+
+  const byPerson = new Map<string, PayrollPerson>();
+  const ensure = (key: string, name: string, cert: string | null, coachId: string | null, staffId: string | null): PayrollPerson => {
+    const found = byPerson.get(key);
+    if (found) return found;
+    const fresh: PayrollPerson = {
+      person_key: key, coach_id: coachId, staff_member_id: staffId, is_coach: !!coachId, roles: [],
+      name, cert, days: [], payable_cents: 0, held_cents: 0, missing_rate: false, paid_cents: 0, open_count: 0,
+    };
+    byPerson.set(key, fresh);
+    return fresh;
+  };
+  const addDay = (p: PayrollPerson, day: PayrollDay, roleLabel: string) => {
+    p.days.push(day);
+    if (!p.roles.includes(roleLabel)) p.roles.push(roleLabel);
+    if (day.rate_cents == null) p.missing_rate = true;
+    else if (day.closed) p.payable_cents += day.rate_cents;
+    else p.held_cents += day.rate_cents;
+    if (!day.closed) p.open_count++;
+  };
+
   for (const s of (sessions as any[]) ?? []) {
     const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
-    if (!inst || inst.academy_id !== academyId || inst.status === 'cancelled' || !inst.coach_id) continue;
-    const coach = Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches;
+    if (!inst || inst.academy_id !== academyId || inst.status === 'cancelled') continue;
     const tpl = Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates;
     const students = (inst.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
     const level = tpl?.level_name ?? null;
-    const rate = rateFor((rates as any[]) ?? [], academyId, level, students);
-    const p: PayrollPerson = byCoach.get(inst.coach_id) ?? {
-      coach_id: inst.coach_id,
-      name: coach?.display_name ?? '—',
-      cert: coach?.certification_level ?? null,
-      days: [], payable_cents: 0, held_cents: 0, missing_rate: false, paid_cents: 0, open_count: 0,
-    };
     const closed = s.session_status === 'completed';
-    p.days.push({
-      session_id: s.id, camp_id: inst.id, date: s.session_date,
-      service: (inst.camp_name ?? tpl?.template_name ?? '').split(' · ')[0],
-      level, kind: tpl?.service_kind ?? null, students, closed, rate_cents: rate,
-    });
-    if (rate == null) p.missing_rate = true;
-    else if (closed) p.payable_cents += rate;
-    else { p.held_cents += rate; }
-    if (!closed) p.open_count++;
-    byCoach.set(inst.coach_id, p);
+    const service = (inst.camp_name ?? tpl?.template_name ?? '').split(' · ')[0];
+    const base = { session_id: s.id, camp_id: inst.id, date: s.session_date, service, level, kind: tpl?.service_kind ?? null, students, closed };
+
+    // 1) Coach titular — matriz nivel × grupo
+    if (inst.coach_id) {
+      const coach = Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches;
+      const p = ensure(`coach:${inst.coach_id}`, coach?.display_name ?? '—', coach?.certification_level ?? null, inst.coach_id, null);
+      addDay(p, { ...base, rate_cents: rateFor((rates as any[]) ?? [], academyId, level, students), role: 'coach' }, 'Coach');
+    }
+
+    // 2) Staff aceptado del servicio — tarifa por rol del catálogo
+    for (const st of staffByInstance.get(inst.id) ?? []) {
+      const isFilmer = /film|foto|cam/i.test(st.role ?? '');
+      const rate = staffRate(isFilmer ? 'per_filmer_per_day' : 'per_assistant_per_day');
+      const c = Array.isArray(st.coaches) ? st.coaches[0] : st.coaches;
+      const m = Array.isArray(st.staff_members) ? st.staff_members[0] : st.staff_members;
+      if (c?.id) {
+        const p = ensure(`coach:${c.id}`, c.display_name ?? '—', c.certification_level ?? null, c.id, null);
+        addDay(p, { ...base, rate_cents: rate, role: isFilmer ? 'filmer' : 'assistant' }, isFilmer ? 'Filmer' : 'Asistente');
+      } else if (m?.id) {
+        const p = ensure(`staff:${m.id}`, m.name ?? '—', null, null, m.id);
+        addDay(p, { ...base, rate_cents: rate, role: isFilmer ? 'filmer' : 'assistant' }, isFilmer ? 'Filmer' : 'Asistente');
+      }
+    }
   }
 
   for (const pay of (payments as any[]) ?? []) {
-    const p = byCoach.get(pay.coach_id);
+    const p = byPerson.get(pay.coach_id ? `coach:${pay.coach_id}` : `staff:${pay.staff_member_id}`);
     if (p) p.paid_cents += pay.amount_cents;
   }
 
@@ -135,7 +191,7 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
       return { level, size: Number(size), values: [...v].map((c) => `$${(c / 100).toFixed(0)}`) };
     });
 
-  const people = [...byCoach.values()].sort((a, b) => (b.held_cents + b.payable_cents) - (a.held_cents + a.payable_cents));
+  const people = [...byPerson.values()].sort((a, b) => (b.held_cents + b.payable_cents) - (a.held_cents + a.payable_cents));
   people.forEach((p) => p.days.sort((a, b) => a.date.localeCompare(b.date)));
   return { people, duplicates, week_start: weekStartISO, week_end: weekEnd };
 }
@@ -156,7 +212,8 @@ export async function remindClosures(coachId: string, dates: string[]): Promise<
 
 // Emitir el pago del período: SOLO las sesiones cerradas con tarifa.
 export async function markWeekPaid(input: {
-  coachId: string;
+  coachId?: string | null;
+  staffMemberId?: string | null;
   weekStart: string;
   weekEnd: string;
   amountCents: number;
@@ -167,9 +224,11 @@ export async function markWeekPaid(input: {
   const me = await requireCoordinator();
   if (input.amountCents <= 0) return { ok: false, error: 'Nada pagable en este período.' };
   const admin = createAdminClient();
+  if (!input.coachId && !input.staffMemberId) return { ok: false, error: 'Persona inválida.' };
   const { error } = await admin.from('coach_payments').insert({
     academy_id: (me as any).academy_id,
-    coach_id: input.coachId,
+    coach_id: input.coachId ?? null,
+    staff_member_id: input.staffMemberId ?? null,
     period_start: input.weekStart,
     period_end: input.weekEnd,
     amount_cents: input.amountCents,
@@ -179,7 +238,7 @@ export async function markWeekPaid(input: {
     created_by: (me as any).id ?? null,
   });
   if (error) return { ok: false, error: error.message };
-  await createNotification({
+  if (input.coachId) await createNotification({
     recipientCoachId: input.coachId,
     type: 'payment_issued',
     title: `Pago emitido: $${(input.amountCents / 100).toFixed(2)} 🌊`,
@@ -191,12 +250,13 @@ export async function markWeekPaid(input: {
 }
 
 // Historial de pagos de una persona (control por persona).
-export async function getCoachPaymentHistory(coachId: string) {
+export async function getCoachPaymentHistory(personKey: string) {
   await requireCoordinator();
   const admin = createAdminClient();
+  const [kind, id] = personKey.split(':');
   const { data } = await admin.from('coach_payments')
     .select('id, period_start, period_end, amount_cents, method, note, created_at')
-    .eq('coach_id', coachId)
+    .eq(kind === 'staff' ? 'staff_member_id' : 'coach_id', id)
     .order('period_start', { ascending: false })
     .limit(26);
   return data ?? [];

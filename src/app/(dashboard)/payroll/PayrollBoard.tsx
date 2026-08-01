@@ -81,7 +81,7 @@ export function PayrollBoard() {
       {data && data.people.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Nadie dictó servicios esta semana.</p>}
 
       {(data?.people ?? []).map((p) => (
-        <PersonCard key={p.coach_id} p={p} weekStart={data!.week_start} weekEnd={data!.week_end}
+        <PersonCard key={p.person_key} p={p} weekStart={data!.week_start} weekEnd={data!.week_end}
           pending={pending} start={start} reload={() => load(weekStart)} />
       ))}
     </div>
@@ -103,7 +103,7 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="font-bold text-[15px]" style={{ color: INK }}>{p.name}{p.cert ? <span className="text-gray-400 font-normal text-[12px]"> · {p.cert}</span> : null}</p>
-          <p className="text-[11px] text-gray-400">{p.days.length} día(s) dictado(s)</p>
+          <p className="text-[11px] text-gray-400">{p.roles.join(' + ')} · {p.days.length} día(s)</p>
         </div>
         <div className="text-right">
           <p className="text-[15px] font-bold" style={{ color: '#0a7c5d' }}>{money(p.payable_cents)}</p>
@@ -119,6 +119,11 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
               <span className="font-mono text-[10px] text-gray-400 mr-1.5">{fmtDay(d.date)}</span>
               {d.service}
               <span className="text-gray-400"> · {d.students} alumno{d.students === 1 ? '' : 's'}</span>
+              {d.role !== 'coach' && (
+                <span className="ml-1.5 text-[8px] font-bold rounded-full px-1.5 py-0.5 align-middle" style={{ background: 'rgba(0,210,255,.12)', color: '#0090B0' }}>
+                  {d.role === 'filmer' ? 'FILMER' : 'ASISTENTE'}
+                </span>
+              )}
             </span>
             <span className="shrink-0 flex items-center gap-1.5">
               <span className="font-bold" style={{ color: d.rate_cents == null ? '#c04545' : INK }}>
@@ -138,9 +143,9 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
       )}
 
       <div className="flex flex-wrap gap-2 mt-3">
-        {openDates.length > 0 && (
+        {openDates.length > 0 && p.is_coach && (
           <button type="button" disabled={pending}
-            onClick={() => start(async () => { await remindClosures(p.coach_id, openDates); setNote('🔔 Recordatorio de cierre enviado.'); })}
+            onClick={() => start(async () => { await remindClosures(p.coach_id!, openDates); setNote('🔔 Recordatorio de cierre enviado.'); })}
             className="flex-1 min-w-[140px] rounded-full py-2.5 text-[11px] font-bold border-2 disabled:opacity-50"
             style={{ borderColor: GOLD, color: '#7a5c00', background: '#fff' }}>
             🔔 Recordar cierre ({openDates.length})
@@ -150,7 +155,7 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
           onClick={() => {
             if (!window.confirm(`Emitir pago de ${money(p.payable_cents)} a ${p.name} por ${payableSessions.length} sesión(es) cerradas de la semana?`)) return;
             start(async () => {
-              const r = await markWeekPaid({ coachId: p.coach_id, weekStart, weekEnd, amountCents: p.payable_cents, sessionIds: payableSessions });
+              const r = await markWeekPaid({ coachId: p.coach_id, staffMemberId: p.staff_member_id, weekStart, weekEnd, amountCents: p.payable_cents, sessionIds: payableSessions });
               setNote(r.ok ? '✓ Pago registrado y notificado.' : (r.error ?? 'Error'));
               if (r.ok) reload();
             });
@@ -160,7 +165,7 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
           {alreadyPaid ? '✓ Semana pagada' : `💵 Marcar pagado ${money(p.payable_cents)}`}
         </button>
         <button type="button"
-          onClick={() => history === null ? getCoachPaymentHistory(p.coach_id).then(setHistory).catch(() => setHistory([])) : setHistory(null)}
+          onClick={() => history === null ? getCoachPaymentHistory(p.person_key).then(setHistory).catch(() => setHistory([])) : setHistory(null)}
           className="rounded-full px-3 py-2.5 text-[11px] border border-gray-200 text-gray-500">
           Historial
         </button>
