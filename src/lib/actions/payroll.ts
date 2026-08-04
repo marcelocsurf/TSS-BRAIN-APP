@@ -231,8 +231,19 @@ export async function markWeekPaid(input: {
   if (input.amountCents <= 0) return { ok: false, error: 'Nada pagable en este período.' };
   const admin = createAdminClient();
   if (!input.coachId && !input.staffMemberId) return { ok: false, error: 'Persona inválida.' };
+  // Platform admin no tiene academia propia: se toma la de la persona pagada.
+  let payAcademy = (me as any).academy_id ?? null;
+  if (!payAcademy) {
+    if (input.coachId) {
+      const { data: c } = await admin.from('coaches').select('academy_id').eq('id', input.coachId).maybeSingle();
+      payAcademy = c?.academy_id ?? null;
+    } else if (input.staffMemberId) {
+      const { data: m } = await admin.from('staff_members').select('academy_id').eq('id', input.staffMemberId).maybeSingle();
+      payAcademy = (m as any)?.academy_id ?? null;
+    }
+  }
   const { error } = await admin.from('coach_payments').insert({
-    academy_id: (me as any).academy_id,
+    academy_id: payAcademy,
     coach_id: input.coachId ?? null,
     staff_member_id: input.staffMemberId ?? null,
     period_start: input.weekStart,
