@@ -31,7 +31,7 @@ export async function getFrontDeskData(token: string) {
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
     .eq('academy_id', who.academy_id)
-    .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson'])
+    .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson', 'surf_camp'])
     .gte('start_date', today)
     .lte('start_date', horizon)
     .neq('status', 'cancelled')
