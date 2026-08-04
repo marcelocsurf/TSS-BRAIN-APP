@@ -88,19 +88,20 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
       .gte('session_date', weekStartISO)
       .lte('session_date', weekEnd),
     admin.from('coach_pay_rates').select('*'),
-    admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents')
-      .eq('academy_id', academyId)
-      .eq('period_start', weekStartISO)
-      .eq('period_end', weekEnd),
+    (academyId
+      ? admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents')
+          .eq('academy_id', academyId).eq('period_start', weekStartISO).eq('period_end', weekEnd)
+      : admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents')
+          .eq('period_start', weekStartISO).eq('period_end', weekEnd)),
     admin.from('cost_rates').select('name, driver, amount_cents, academy_id, active')
       .in('driver', ['per_assistant_per_day', 'per_filmer_per_day']),
   ]);
 
-  // Tarifa de staff por rol (asistente/filmer): preferir la de la academia.
-  const staffRate = (driver: string): number | null => {
+  // Tarifa de staff por rol (asistente/filmer): preferir la de ESA academia.
+  const staffRate = (driver: string, acId: string | null): number | null => {
     const rows = ((staffRates as any[]) ?? []).filter((r) => r.driver === driver && r.active !== false);
     if (!rows.length) return null;
-    return (rows.find((r) => r.academy_id === academyId) ?? rows[0]).amount_cents;
+    return (rows.find((r) => r.academy_id === acId) ?? rows[0]).amount_cents;
   };
 
   // Staff aceptado por servicio (asistentes / filmers) — cobran por día
@@ -142,7 +143,8 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
 
   for (const s of (sessions as any[]) ?? []) {
     const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
-    if (!inst || inst.academy_id !== academyId || inst.status === 'cancelled') continue;
+    // Platform admin (academy_id null) ve TODAS las academias.
+    if (!inst || (academyId && inst.academy_id !== academyId) || inst.status === 'cancelled') continue;
     const tpl = Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates;
     const students = (inst.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
     const level = tpl?.level_name ?? null;
@@ -157,13 +159,13 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
     const respCoach = useHead ? hcRow : (Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches);
     if (respId) {
       const p = ensure(`coach:${respId}`, respCoach?.display_name ?? '—', respCoach?.certification_level ?? null, respId, null);
-      addDay(p, { ...base, rate_cents: rateFor((rates as any[]) ?? [], academyId, level, students), role: 'coach' }, 'Coach');
+      addDay(p, { ...base, rate_cents: rateFor((rates as any[]) ?? [], inst.academy_id, level, students), role: 'coach' }, 'Coach');
     }
 
     // 2) Staff aceptado del servicio — tarifa por rol del catálogo
     for (const st of staffByInstance.get(inst.id) ?? []) {
       const isFilmer = /film|foto|cam/i.test(st.role ?? '');
-      const rate = staffRate(isFilmer ? 'per_filmer_per_day' : 'per_assistant_per_day');
+      const rate = staffRate(isFilmer ? 'per_filmer_per_day' : 'per_assistant_per_day', inst.academy_id);
       const c = Array.isArray(st.coaches) ? st.coaches[0] : st.coaches;
       const m = Array.isArray(st.staff_members) ? st.staff_members[0] : st.staff_members;
       if (c?.id) {
