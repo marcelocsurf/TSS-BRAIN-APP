@@ -167,10 +167,11 @@ export async function getTransferTargets(token: string, participantId: string) {
       end_date: c.end_date,
       time: c.scheduled_time,
       left: cap > 0 ? cap - act.length : null,
+      full: cap > 0 && act.length >= cap,
       price_cents: tpl?.list_price_cents ?? null,
       already_in: act.some((p: any) => p.student_id === (seat as any).student_id),
     };
-  }).filter((c: any) => (c.left == null || c.left > 0) && !c.already_in);
+  }).filter((c: any) => !c.already_in);
 }
 
 export async function deskTransferSeat(token: string, participantId: string, targetCampId: string): Promise<{ ok: boolean; error?: string }> {
@@ -195,8 +196,8 @@ export async function deskTransferSeat(token: string, participantId: string, tar
   const tTpl = Array.isArray((target as any).camp_templates) ? (target as any).camp_templates[0] : (target as any).camp_templates;
   const tAct = ((target as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const tCap = (target as any).capacity_override ?? tTpl?.capacity_max ?? 0;
-  if (tCap > 0 && tAct.length >= tCap) return { ok: false, error: 'El grupo destino está lleno.' };
   if (tAct.some((p: any) => p.student_id === (seat as any).student_id)) return { ok: false, error: 'Ya está inscrito en ese grupo.' };
+  const overCap = tCap > 0 && tAct.length >= tCap; // sobrecupo permitido en transferencias (decisión de mostrador)
 
   const st = Array.isArray((seat as any).students) ? (seat as any).students[0] : (seat as any).students;
   const name = [st?.first_name, st?.last_name].filter(Boolean).join(' ');
@@ -211,6 +212,7 @@ export async function deskTransferSeat(token: string, participantId: string, tar
   const priceDiff = paid && targetPrice != null && (seat as any).amount_cents != null && targetPrice !== (seat as any).amount_cents
     ? targetPrice - (seat as any).amount_cents : 0;
   const note = `Transferido ${fromName} → ${toName} (${stamp}, mostrador)` +
+    (overCap ? ` · SOBRECUPO (${tAct.length + 1}/${tCap})` : '') +
     (priceDiff !== 0 ? ` · dif. de precio ${priceDiff > 0 ? '+' : ''}$${(priceDiff / 100).toFixed(2)} — ajustar en recepción` : '');
 
   const { error } = await admin.from('camp_participants').update({

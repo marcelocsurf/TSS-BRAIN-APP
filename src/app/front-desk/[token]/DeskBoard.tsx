@@ -176,8 +176,8 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
                                   <span className="min-w-0 truncate" style={{ color: '#061C2B' }}>
                                     <strong>{t.name}</strong> · {fmtDate(t.date)}{t.time ? ` ${t.time.slice(0, 5)}` : ''}
                                   </span>
-                                  <span className="shrink-0 text-[10px] text-gray-400 ml-1">
-                                    {t.price_cents != null ? `$${(t.price_cents / 100).toFixed(0)}` : ''}{t.left != null ? ` · ${t.left} libre${t.left === 1 ? '' : 's'}` : ''}
+                                  <span className="shrink-0 text-[10px] ml-1" style={{ color: t.full ? '#b45309' : '#9ca3af' }}>
+                                    {t.price_cents != null ? `$${(t.price_cents / 100).toFixed(0)}` : ''}{t.full ? ' · LLENO (sobrecupo)' : t.left != null ? ` · ${t.left} libre${t.left === 1 ? '' : 's'}` : ''}
                                   </span>
                                 </button>
                               ))}

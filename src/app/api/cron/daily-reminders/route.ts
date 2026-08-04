@@ -183,6 +183,44 @@ async function handle(req: NextRequest) {
     }
   } catch (e) { console.error('[daily-reminders] membership section failed', e); }
 
+  // ── 4. Cierres pendientes → correo al coach (candado de nómina) ──
+  // Sesiones de los últimos 7 días sin cerrar, agrupadas por coach. Se envía
+  // en cada corrida (mañana y fin de día): el recordatorio ES el producto.
+  let closureEmails = 0;
+  try {
+    const svNow = new Date(Date.now() - 6 * 3600_000);
+    const svToday = svNow.toISOString().slice(0, 10);
+    const weekAgo = new Date(svNow.getTime() - 6 * 86400000).toISOString().slice(0, 10);
+    const { data: openSes } = await admin
+      .from('camp_sessions')
+      .select('session_date, session_status, camp_instances:camp_instance_id!inner(camp_name, status, coach_id, coaches:coach_id(id, display_name, email, portal_token))')
+      .gte('session_date', weekAgo)
+      .lte('session_date', svToday)
+      .neq('session_status', 'completed');
+    const byCoach = new Map<string, { name: string; email: string; token: string; pending: { service: string; date: string }[] }>();
+    for (const ses of (openSes as any[]) ?? []) {
+      const inst = Array.isArray(ses.camp_instances) ? ses.camp_instances[0] : ses.camp_instances;
+      if (!inst || inst.status === 'cancelled' || !inst.coach_id) continue;
+      const coach = Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches;
+      if (!coach?.email) continue;
+      const e = byCoach.get(coach.id) ?? { name: coach.display_name ?? 'Coach', email: coach.email, token: coach.portal_token, pending: [] as { service: string; date: string }[] };
+      e.pending.push({ service: (inst.camp_name ?? '').split(' · ')[0], date: ses.session_date });
+      byCoach.set(coach.id, e);
+    }
+    const { sendClosureReminderEmail } = await import('@/lib/actions/email');
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+    for (const [, c] of byCoach) {
+      const r = await sendClosureReminderEmail({
+        toEmail: c.email, coachName: c.name,
+        pending: c.pending.sort((a, b) => a.date.localeCompare(b.date)),
+        portalUrl: `${base}/coach-portal/${c.token}`,
+      });
+      if (r.success) closureEmails++;
+    }
+  } catch (e) {
+    console.error('closure reminders section failed', e);
+  }
+
   return NextResponse.json({
     ok: true,
     date: today,
@@ -191,6 +229,7 @@ async function handle(req: NextRequest) {
     servicesTomorrow: liveServices.length,
     serviceEmails,
     membershipEmails,
+    closureEmails,
     notificationsPruned,
   });
 }

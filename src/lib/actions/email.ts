@@ -731,3 +731,30 @@ export async function sendBookingConfirmationEmail(data: {
     return { success: false, error: err.message };
   }
 }
+
+// Fin de día: cierres pendientes → el cierre es requisito para emitir pago.
+export async function sendClosureReminderEmail(data: {
+  toEmail: string;
+  coachName: string;
+  pending: { service: string; date: string }[];
+  portalUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const rows = data.pending.map((p) => `<li style="margin:0 0 4px;">${p.service} — <strong>${p.date}</strong></li>`).join('');
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `Tenés ${data.pending.length} cierre(s) pendiente(s) 🔒`,
+      html: assignmentEmailShell(
+        `${data.coachName}, te falta cerrar:`,
+        `<ul style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;padding-left:18px;">${rows}</ul>
+         <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">El cierre del día alimenta la bitácora de tus alumnos y es <strong>requisito para emitir tu pago</strong>. Te toma 2 minutos desde tu portal.</p>`,
+        { url: data.portalUrl, label: 'Cerrar mis sesiones' },
+      ),
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Closure reminder email failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
