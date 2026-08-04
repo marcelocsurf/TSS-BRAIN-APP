@@ -255,7 +255,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                   )}
                   {alerts.unclosed.length > 0 && (
                     <p className="text-[12px]" style={{ color: '#7a5c00' }}>
-                      🔒 {alerts.unclosed.length} sesión{alerts.unclosed.length === 1 ? '' : 'es'} sin cierre: {alerts.unclosed.slice(0, 3).map((u) => `${u.service} ${u.date.slice(5)}${u.coach ? ` (${u.coach})` : ''}`).join(' · ')}{alerts.unclosed.length > 3 ? ` +${alerts.unclosed.length - 3} más` : ''}
+                      🔒 {alerts.unclosed.length} {alerts.unclosed.length === 1 ? 'sesión' : 'sesiones'} sin cierre: {alerts.unclosed.slice(0, 3).map((u) => `${u.service} ${u.date.slice(5)}${u.coach ? ` (${u.coach})` : ''}`).join(' · ')}{alerts.unclosed.length > 3 ? ` +${alerts.unclosed.length - 3} más` : ''}
                     </p>
                   )}
                 </div>
