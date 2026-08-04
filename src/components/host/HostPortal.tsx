@@ -11,8 +11,11 @@ import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
   hostRecentIncidents, hostSendIntakeEmail, hostDayOperation,
   hostAdhocTemplates, hostCreateAdhocClass,
-  type HostStudentRow, type HostDayEvent,
+  hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
+  hostRescheduleClass, hostCancelClass,
+  type HostStudentRow, type HostDayEvent, type HostDayAlerts,
 } from '@/lib/actions/host-portal';
+import { HostGuide } from '@/components/host/HostGuide';
 import { sellerSearchStudents, sellerReserveSpot } from '@/lib/actions/seller';
 
 // ═══ PORTAL DEL HOST — "Servicio al cliente" (Brand Manual v10) ═══
@@ -177,6 +180,18 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   const [adhocTime, setAdhocTime] = useState('16:00');
   const [adhocMsg, setAdhocMsg] = useState<string | null>(null);
   const [adhocBusy, setAdhocBusy] = useState(false);
+  // Modo cobertura + semáforo del día + guía de uso
+  const [canCoordinate, setCanCoordinate] = useState(false);
+  const [alerts, setAlerts] = useState<HostDayAlerts | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  useEffect(() => { hostPortalFlags(token).then((f) => setCanCoordinate(f.canCoordinate)).catch(() => {}); }, [token]);
+  useEffect(() => { hostDayAlerts(token).then(setAlerts).catch(() => {}); }, [token]);
+  useEffect(() => {
+    // Primera visita: la guía se abre sola; después queda en el botón 📖.
+    try { if (!localStorage.getItem('tss_host_guide_v1')) setGuideOpen(true); } catch {}
+  }, []);
+  const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_host_guide_v1', '1'); } catch {} };
 
   useEffect(() => { getFrontDeskData(token).then(setBoard).catch(() => setBoard({ classes: [] })); }, [token]);
   useEffect(() => { if (tab === 'hoy' && incidents === null) hostRecentIncidents(token).then(setIncidents).catch(() => setIncidents([])); }, [tab, incidents, token]);
@@ -198,8 +213,16 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   return (
     <div style={{ background: PAPER, minHeight: '100vh' }} className="pb-10">
       <div className="px-4 pt-5 pb-4" style={{ background: INK }}>
-        <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Servicio al cliente</p>
-        <h1 style={{ ...F_D, color: PAPER }} className="text-[24px] mt-1">{hostName}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Servicio al cliente</p>
+            <h1 style={{ ...F_D, color: PAPER }} className="text-[24px] mt-1">{hostName}</h1>
+          </div>
+          <button type="button" onClick={() => setGuideOpen(true)}
+            className="shrink-0 rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,.1)', color: CYAN }}>
+            📖 Guía
+          </button>
+        </div>
         <div className="flex gap-2 mt-3">
           {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['espacios', '🏛 Espacios'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
@@ -214,6 +237,34 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
       <div className="max-w-md lg:max-w-3xl mx-auto px-4 pt-4">
         {tab === 'hoy' && (
           <div className="space-y-4">
+            {/* Semáforo del día: los incendios de coordinación, a la vista */}
+            {alerts && (
+              (alerts.no_coach.length || alerts.pending_coach.length || alerts.unclosed.length || alerts.overcap.length) ? (
+                <div className="rounded-2xl p-3.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(255,209,102,.5)' }}>
+                  <p className="text-[9px]" style={{ ...F_M, color: '#7a5c00' }}>🚦 Semáforo del día</p>
+                  {alerts.no_coach.length > 0 && (
+                    <p className="text-[12px] font-bold" style={{ color: '#c04545' }}>
+                      ⚠ Sin coach hoy: {alerts.no_coach.join(', ')}{canCoordinate ? ' — asignalo en AGENDA' : ' — avisale a coordinación'}
+                    </p>
+                  )}
+                  {alerts.pending_coach.length > 0 && (
+                    <p className="text-[12px]" style={{ color: '#7a5c00' }}>⏳ Coach por confirmar: {alerts.pending_coach.join(', ')}</p>
+                  )}
+                  {alerts.overcap.length > 0 && (
+                    <p className="text-[12px]" style={{ color: '#7a5c00' }}>📈 Sobrecupo: {alerts.overcap.join(' · ')}</p>
+                  )}
+                  {alerts.unclosed.length > 0 && (
+                    <p className="text-[12px]" style={{ color: '#7a5c00' }}>
+                      🔒 {alerts.unclosed.length} sesión{alerts.unclosed.length === 1 ? '' : 'es'} sin cierre: {alerts.unclosed.slice(0, 3).map((u) => `${u.service} ${u.date.slice(5)}${u.coach ? ` (${u.coach})` : ''}`).join(' · ')}{alerts.unclosed.length > 3 ? ` +${alerts.unclosed.length - 3} más` : ''}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] font-semibold rounded-2xl px-3.5 py-2.5" style={{ background: 'rgba(6,214,160,.1)', color: '#0a7c5d' }}>
+                  🚦 Día en orden — servicios con coach y cierres al día. 🤙
+                </p>
+              )
+            )}
             {/* Tareas que el coordinador le asignó — con reporte hecho/no hecho */}
             <CoachTasks token={token} />
             {/* Quién acaba de reservar (48 h) — QR o vendedor, pagado o pendiente */}
@@ -298,64 +349,11 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
 
             {opEvents === null ? <p className="text-[12px] text-gray-400 text-center py-8">Cargando el día…</p>
               : opEvents.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">Nada programado este día.</p>
-              : opEvents.map((e) => {
-                const spotsLeft = e.capacity > 0 ? e.capacity - e.enrolled : null;
-                const unpaid = e.students.filter((s) => !s.paid).length;
-                const noWaiver = e.students.filter((s) => !s.waiver).length;
-                return (
-                  <div key={e.camp_id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>
-                          {e.time ? e.time.slice(0, 5) : 'Sin hora'}{e.day_number ? ` · Día ${e.day_number} de ${e.total_days}` : ''}{e.session_status ? ` · ${e.session_status}` : ''}
-                        </p>
-                        <p className="font-bold text-[15px] truncate" style={{ color: INK }}>{e.name}</p>
-                        <p className="text-[11px] text-gray-400 truncate">{e.coach ? `Coach ${e.coach}` : 'Sin coach asignado ⚠'}{e.venue ? ` · 📍 ${e.venue}` : ''}</p>
-                      </div>
-                      <span className="shrink-0 flex flex-col items-end gap-1">
-                        {e.price_cents != null && (
-                          <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>${(e.price_cents / 100).toFixed(0)}</span>
-                        )}
-                        <span className="text-[10px] font-bold rounded-full px-2 py-1"
-                          style={{ background: 'rgba(0,210,255,.1)', color: '#0090B0' }}>{e.enrolled}/{e.capacity || '∞'}</span>
-                      </span>
-                    </div>
-
-                    {(e.transport || e.spaces.length > 0) && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {e.transport && (
-                          <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
-                            🚐 Sale {e.transport.depart?.slice(0, 5) ?? '—'} · vuelve {e.transport.ret?.slice(0, 5) ?? '—'}{e.transport.status ? ` · ${e.transport.status}` : ''}
-                          </span>
-                        )}
-                        {e.spaces.map((sp, i) => (
-                          <span key={i} className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'rgba(6,214,160,.12)', color: '#0a7c5d' }}>🏛 {sp}</span>
-                        ))}
-                      </div>
-                    )}
-
-                    {e.students.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-50">
-                        <p className="text-[8px] text-gray-400 mb-1" style={F_M}>
-                          Alumnos{unpaid ? ` · ${unpaid} por cobrar` : ''}{noWaiver ? ` · ${noWaiver} sin waiver ⚠` : ''}
-                        </p>
-                        <p className="text-[11.5px] leading-relaxed" style={{ color: INK }}>
-                          {e.students.map((s, i) => (
-                            <span key={i}>{i > 0 ? ' · ' : ''}{s.name}{!s.paid ? ' 💰' : ''}{!s.waiver ? ' ⚠' : ''}</span>
-                          ))}
-                        </p>
-                      </div>
-                    )}
-
-                    {spotsLeft !== null && spotsLeft > 0 && (
-                      <button type="button" onClick={() => setReserveFor(e)}
-                        className="mt-2.5 w-full rounded-full py-2.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>
-                        + Reservar ({spotsLeft} libre{spotsLeft === 1 ? '' : 's'})
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+              : opEvents.map((e) => (
+                <OpEventCard key={e.camp_id} token={token} e={e} canCoordinate={canCoordinate}
+                  onReserve={() => setReserveFor(e)}
+                  onChanged={() => { hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); hostDayAlerts(token).then(setAlerts).catch(() => {}); }} />
+              ))}
 
             {/* Clase FUERA de horario (pedido de Rick): plantilla + hora en el
                 día seleccionado; avisa a coordinación para asignar coach. */}
@@ -450,6 +448,163 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           onClose={() => setReserveFor(null)}
           onDone={() => { setReserveFor(null); hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); }} />
       )}
+      {guideOpen && <HostGuide canCoordinate={canCoordinate} onClose={closeGuide} />}
+    </div>
+  );
+}
+
+// ── Tarjeta de un servicio en AGENDA + controles de MODO COBERTURA ──
+// (asignar coach cuando falta, reprogramar o cancelar clases de un día).
+function OpEventCard({ token, e, canCoordinate, onReserve, onChanged }: {
+  token: string; e: HostDayEvent; canCoordinate: boolean; onReserve: () => void; onChanged: () => void;
+}) {
+  const spotsLeft = e.capacity > 0 ? e.capacity - e.enrolled : null;
+  const unpaid = e.students.filter((s) => !s.paid).length;
+  const noWaiver = e.students.filter((s) => !s.waiver).length;
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [coachOpts, setCoachOpts] = useState<any[] | null>(null);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [mvDate, setMvDate] = useState('');
+  const [mvTime, setMvTime] = useState(e.time ? e.time.slice(0, 5) : '16:00');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const singleDayClass = e.total_days === 1 && ['class', 'surf_lesson', 'trip'].includes(e.kind ?? '');
+  const coachPending = !!e.coach && e.coach_status === 'pending';
+  const needsCoach = !e.coach || coachPending;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>
+            {e.time ? e.time.slice(0, 5) : 'Sin hora'}{e.day_number ? ` · Día ${e.day_number} de ${e.total_days}` : ''}{e.session_status ? ` · ${e.session_status}` : ''}
+          </p>
+          <p className="font-bold text-[15px] truncate" style={{ color: INK }}>{e.name}</p>
+          <p className="text-[11px] text-gray-400 truncate">
+            {e.coach ? `Coach ${e.coach}${coachPending ? ' · por confirmar ⏳' : ''}` : 'Sin coach asignado ⚠'}{e.venue ? ` · 📍 ${e.venue}` : ''}
+          </p>
+        </div>
+        <span className="shrink-0 flex flex-col items-end gap-1">
+          {e.price_cents != null && (
+            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>${(e.price_cents / 100).toFixed(0)}</span>
+          )}
+          <span className="text-[10px] font-bold rounded-full px-2 py-1"
+            style={{ background: 'rgba(0,210,255,.1)', color: '#0090B0' }}>{e.enrolled}/{e.capacity || '∞'}</span>
+        </span>
+      </div>
+
+      {(e.transport || e.spaces.length > 0) && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {e.transport && (
+            <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
+              🚐 Sale {e.transport.depart?.slice(0, 5) ?? '—'} · vuelve {e.transport.ret?.slice(0, 5) ?? '—'}{e.transport.status ? ` · ${e.transport.status}` : ''}
+            </span>
+          )}
+          {e.spaces.map((sp, i) => (
+            <span key={i} className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'rgba(6,214,160,.12)', color: '#0a7c5d' }}>🏛 {sp}</span>
+          ))}
+        </div>
+      )}
+
+      {e.students.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-50">
+          <p className="text-[8px] text-gray-400 mb-1" style={F_M}>
+            Alumnos{unpaid ? ` · ${unpaid} por cobrar` : ''}{noWaiver ? ` · ${noWaiver} sin waiver ⚠` : ''}
+          </p>
+          <p className="text-[11.5px] leading-relaxed" style={{ color: INK }}>
+            {e.students.map((s, i) => (
+              <span key={i}>{i > 0 ? ' · ' : ''}{s.name}{!s.paid ? ' 💰' : ''}{!s.waiver ? ' ⚠' : ''}</span>
+            ))}
+          </p>
+        </div>
+      )}
+
+      {spotsLeft !== null && spotsLeft > 0 && (
+        <button type="button" onClick={onReserve}
+          className="mt-2.5 w-full rounded-full py-2.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>
+          + Reservar ({spotsLeft} libre{spotsLeft === 1 ? '' : 's'})
+        </button>
+      )}
+
+      {/* MODO COBERTURA: asignar coach / reprogramar / cancelar */}
+      {canCoordinate && (needsCoach || singleDayClass) && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {needsCoach && (
+            <button type="button" disabled={busy}
+              onClick={() => { setAssignOpen(!assignOpen); setMoveOpen(false); if (coachOpts === null) hostCoachOptions(token).then(setCoachOpts).catch(() => setCoachOpts([])); }}
+              className="flex-1 min-w-[130px] rounded-full py-2 text-[9px] border-2" style={{ ...F_M, borderColor: coachPending ? GOLD : CORAL, color: coachPending ? '#7a5c00' : '#c04545', background: '#fff' }}>
+              {coachPending ? '↺ Cambiar coach' : '⚠ Asignar coach'}
+            </button>
+          )}
+          {singleDayClass && (
+            <>
+              <button type="button" disabled={busy} onClick={() => { setMoveOpen(!moveOpen); setAssignOpen(false); setMsg(null); }}
+                className="rounded-full px-3 py-2 text-[9px] border border-gray-200 text-gray-500" style={F_M}>🕐 Reprogramar</button>
+              <button type="button" disabled={busy}
+                onClick={async () => {
+                  const warn = e.students.length ? ` OJO: tiene ${e.students.length} alumno(s) — el sistema te dirá a quién avisar.` : '';
+                  if (!window.confirm(`¿Cancelar ${e.name}?${warn}`)) return;
+                  setBusy(true); setMsg(null);
+                  const r = await hostCancelClass(token, e.camp_id);
+                  setBusy(false);
+                  if (!r.ok) { setMsg(r.error ?? 'No se pudo cancelar.'); return; }
+                  setMsg(r.students?.length ? `✓ Cancelada — avisales a: ${r.students.join(', ')}` : '✓ Clase cancelada.');
+                  setTimeout(onChanged, 1600);
+                }}
+                className="rounded-full px-3 py-2 text-[9px] border border-gray-200 text-gray-400" style={F_M}>✕ Cancelar</button>
+            </>
+          )}
+        </div>
+      )}
+
+      {assignOpen && (
+        <div className="mt-2 rounded-xl bg-gray-50 p-2.5 space-y-1.5">
+          <p className="text-[9px] text-gray-400" style={F_M}>Invitar coach — debe aceptar desde su portal</p>
+          {coachOpts === null ? <p className="text-[11px] text-gray-400">Cargando coaches…</p>
+            : coachOpts.length === 0 ? <p className="text-[11px] text-gray-400">No hay coaches activos.</p>
+            : coachOpts.map((c: any) => (
+              <button key={c.id} type="button" disabled={busy}
+                onClick={async () => {
+                  setBusy(true); setMsg(null);
+                  const r = await hostAssignCoach(token, e.camp_id, c.id);
+                  setBusy(false);
+                  if (!r.ok) { setMsg(r.error ?? 'No se pudo asignar.'); return; }
+                  setMsg(`✓ Invitación enviada a ${r.coachName ?? 'coach'} — le llega email y debe aceptar.`);
+                  setAssignOpen(false);
+                  setTimeout(onChanged, 1200);
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg bg-white border border-gray-200 text-[12px] disabled:opacity-50" style={{ color: INK }}>
+                <span className="font-bold">{c.display_name}</span>{c.certification_level ? <span className="text-gray-400 text-[10px]"> · {c.certification_level}</span> : null}
+              </button>
+            ))}
+        </div>
+      )}
+
+      {moveOpen && (
+        <div className="mt-2 rounded-xl bg-gray-50 p-2.5 space-y-1.5">
+          <p className="text-[9px] text-gray-400" style={F_M}>Nueva fecha y hora</p>
+          <div className="flex items-center gap-1.5">
+            <input type="date" value={mvDate} onChange={(ev) => setMvDate(ev.target.value)} className="flex-1 px-2.5 py-2 border border-gray-200 rounded-xl text-sm bg-white" />
+            <input type="time" value={mvTime} onChange={(ev) => setMvTime(ev.target.value)} className="px-2.5 py-2 border border-gray-200 rounded-xl text-sm bg-white" />
+            <button type="button" disabled={busy || !mvDate || !mvTime}
+              onClick={async () => {
+                setBusy(true); setMsg(null);
+                const r = await hostRescheduleClass(token, e.camp_id, { dateISO: mvDate, time: mvTime });
+                setBusy(false);
+                if (!r.ok) { setMsg(r.error ?? 'No se pudo mover.'); return; }
+                setMsg(`✓ Movida: ${r.name}. Si tenía espacio reservado, reagendalo en ESPACIOS.`);
+                setMoveOpen(false);
+                setTimeout(onChanged, 1600);
+              }}
+              className="rounded-full px-4 py-2 text-[10px] disabled:opacity-40" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
+              {busy ? 'Moviendo…' : 'Mover'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {msg && <p className="mt-2 text-[11px] font-semibold" style={{ color: msg.startsWith('✓') ? '#0a7c5d' : '#c04545' }}>{msg}</p>}
     </div>
   );
 }

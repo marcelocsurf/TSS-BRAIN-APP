@@ -15,6 +15,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
   const [email, setEmail] = useState(coach.email || '');
   const [role, setRole] = useState(coach.role || 'assistant');
   const [academyId, setAcademyId] = useState(coach.academy_id || '');
+  const [canCoordinate, setCanCoordinate] = useState(coach.portal_can_coordinate === true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
       email,
       role,
       academy_id: academyId || undefined,
+      portal_can_coordinate: canCoordinate,
     });
     setSaving(false);
     if (!res.ok) {
@@ -86,6 +88,15 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
+        {role === 'host' && (
+          <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
+            <input type="checkbox" checked={canCoordinate} onChange={(e) => setCanCoordinate(e.target.checked)} className="mt-0.5" />
+            <span>
+              <span className="font-semibold text-[var(--tss-navy)]">Coverage mode (coordination)</span><br />
+              On coordinator-off days this host can assign coaches and reschedule/cancel one-day classes from their portal. Money and configuration stay dashboard-only.
+            </span>
+          </label>
+        )}
         {academies.length > 0 && (
           <label className="text-xs text-gray-500 block">Academy
             <select value={academyId} onChange={(e) => setAcademyId(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white">

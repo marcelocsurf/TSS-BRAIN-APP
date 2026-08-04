@@ -18,7 +18,7 @@ async function assertAdmin() {
 // so it bypasses RLS, and keeps the auth account email in sync when one exists.
 export async function updateCoachIdentity(
   coachId: string,
-  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string },
+  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string; portal_can_coordinate?: boolean },
 ): Promise<{ ok: boolean; error?: string }> {
   await assertAdmin();
   const admin = createAdminClient();
@@ -39,8 +39,15 @@ export async function updateCoachIdentity(
   if (email) patch.email = email;
   if (input.role) patch.role = input.role;
   if (input.academy_id) patch.academy_id = input.academy_id;
+  // Modo cobertura del host (migración 00156). Si la columna aún no
+  // existe, se reintenta sin ella para no bloquear la edición de identidad.
+  if (typeof input.portal_can_coordinate === 'boolean') patch.portal_can_coordinate = input.portal_can_coordinate;
 
-  const { error } = await admin.from('coaches').update(patch).eq('id', coachId);
+  let { error } = await admin.from('coaches').update(patch).eq('id', coachId);
+  if (error && /portal_can_coordinate/.test(error.message)) {
+    delete patch.portal_can_coordinate;
+    ({ error } = await admin.from('coaches').update(patch).eq('id', coachId));
+  }
   if (error) return { ok: false, error: error.message };
 
   // Keep the login account's email aligned with the coaches row.
