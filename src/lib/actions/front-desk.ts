@@ -32,7 +32,9 @@ export async function getFrontDeskData(token: string) {
     .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
     .eq('academy_id', who.academy_id)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson', 'surf_camp'])
-    .gte('start_date', today)
+    // Visible mientras el servicio NO haya terminado: un camp de 6 días en
+    // curso (día 2, 3…) debe seguir en el mostrador para cobrar/transferir.
+    .gte('end_date', today)
     .lte('start_date', horizon)
     .neq('status', 'cancelled')
     .order('start_date');
