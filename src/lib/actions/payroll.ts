@@ -79,10 +79,11 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
   const [{ data: sessions }, { data: rates }, { data: payments }, { data: staffRates }] = await Promise.all([
     admin.from('camp_sessions')
       .select(`id, session_date, session_status, camp_instances:camp_instance_id!inner(
-        id, academy_id, camp_name, coach_id, status,
+        id, academy_id, camp_name, coach_id, head_coach_id, head_coach_status, status,
         camp_templates:template_id(level_name, service_kind, template_name),
         camp_participants(enrollment_status),
-        coaches:coach_id(id, display_name, certification_level)
+        coaches:coach_id(id, display_name, certification_level),
+        hc:head_coach_id(id, display_name, certification_level)
       )`)
       .gte('session_date', weekStartISO)
       .lte('session_date', weekEnd),
@@ -149,10 +150,13 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
     const service = (inst.camp_name ?? tpl?.template_name ?? '').split(' · ')[0];
     const base = { session_id: s.id, camp_id: inst.id, date: s.session_date, service, level, kind: tpl?.service_kind ?? null, students, closed };
 
-    // 1) Coach titular — matriz nivel × grupo
-    if (inst.coach_id) {
-      const coach = Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches;
-      const p = ensure(`coach:${inst.coach_id}`, coach?.display_name ?? '—', coach?.certification_level ?? null, inst.coach_id, null);
+    // 1) Responsable del día: head coach ACEPTADO (flujo moderno) o coach_id
+    const hcRow = Array.isArray(inst.hc) ? inst.hc[0] : inst.hc;
+    const useHead = inst.head_coach_id && inst.head_coach_status === 'accepted';
+    const respId = useHead ? inst.head_coach_id : inst.coach_id;
+    const respCoach = useHead ? hcRow : (Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches);
+    if (respId) {
+      const p = ensure(`coach:${respId}`, respCoach?.display_name ?? '—', respCoach?.certification_level ?? null, respId, null);
       addDay(p, { ...base, rate_cents: rateFor((rates as any[]) ?? [], academyId, level, students), role: 'coach' }, 'Coach');
     }
 

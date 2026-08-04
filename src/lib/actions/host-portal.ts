@@ -227,6 +227,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
     .select(`id, camp_name, start_date, end_date, scheduled_time, capacity_override, status,
       camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents),
       coaches:coach_id(display_name),
+      hc:head_coach_id(display_name),
       camp_participants(enrollment_status, payment_status, students(first_name, last_name, waiver_signed)),
       camp_sessions(id, day_number, session_date, session_status)`)
     .eq('academy_id', who.academy_id)
@@ -265,7 +266,8 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
 
   const events: HostDayEvent[] = ((instances ?? []) as any[]).map((i: any) => {
     const tpl = Array.isArray(i.camp_templates) ? i.camp_templates[0] : i.camp_templates;
-    const coach = Array.isArray(i.coaches) ? i.coaches[0] : i.coaches;
+    const hcRow = Array.isArray((i as any).hc) ? (i as any).hc[0] : (i as any).hc;
+    const coach = hcRow ?? (Array.isArray(i.coaches) ? i.coaches[0] : i.coaches);
     const act = (i.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
     const session = (i.camp_sessions ?? []).find((s: any) => s.session_date === dateISO) ?? null;
     const plan = planByCamp.get(i.id);

@@ -29,7 +29,7 @@ export async function getFrontDeskData(token: string) {
   const horizon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const { data } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
+    .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
     .eq('academy_id', who.academy_id)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson', 'surf_camp'])
     // Visible mientras el servicio NO haya terminado: un camp de 6 días en
@@ -41,7 +41,8 @@ export async function getFrontDeskData(token: string) {
 
   const classes = (data ?? []).map((c: any) => {
     const tpl = Array.isArray(c.camp_templates) ? c.camp_templates[0] : c.camp_templates;
-    const coach = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
+    const hcRow = Array.isArray((c as any).hc) ? (c as any).hc[0] : (c as any).hc;
+    const coach = hcRow ?? (Array.isArray(c.coaches) ? c.coaches[0] : c.coaches);
     const seats = (c.camp_participants ?? [])
       .filter((p: any) => p.enrollment_status === 'active')
       .map((p: any) => {
@@ -181,14 +182,14 @@ export async function deskTransferSeat(token: string, participantId: string, tar
 
   const { data: seat } = await admin
     .from('camp_participants')
-    .select('id, student_id, payment_status, amount_cents, list_price_cents, notes, camp_instances:camp_instance_id!inner(id, academy_id, camp_name, coach_id, start_date), students(first_name, last_name)')
+    .select('id, student_id, payment_status, amount_cents, list_price_cents, notes, camp_instances:camp_instance_id!inner(id, academy_id, camp_name, coach_id, head_coach_id, start_date), students(first_name, last_name)')
     .eq('id', participantId).maybeSingle();
   const cur = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
   if (!cur || cur.academy_id !== who.academy_id) return { ok: false, error: 'Reserva no encontrada.' };
 
   const { data: target } = await admin
     .from('camp_instances')
-    .select('id, academy_id, camp_name, coach_id, capacity_override, status, camp_templates:template_id(template_name, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
+    .select('id, academy_id, camp_name, coach_id, head_coach_id, capacity_override, status, camp_templates:template_id(template_name, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
     .eq('id', targetCampId).maybeSingle();
   if (!target || (target as any).academy_id !== who.academy_id || (target as any).status === 'cancelled') {
     return { ok: false, error: 'Servicio destino no disponible.' };
@@ -228,8 +229,8 @@ export async function deskTransferSeat(token: string, participantId: string, tar
     const { createNotification } = await import('@/lib/actions/notifications');
     await createNotification({ recipientCoachId: coachId, type: 'group_transfer', title, body, link: `/students/${(seat as any).student_id}`, metadata: { participantId } }).catch(() => {});
   };
-  await notify(cur.coach_id, `Transferencia: ${name} sale de tu grupo`, `${fromName} → ${toName}. Su bitácora queda en su perfil.`);
-  await notify((target as any).coach_id, `Transferencia: ${name} entra a tu grupo`, `Viene de ${fromName} — revisá su perfil y bitácora antes de planear.`);
+  await notify(cur.head_coach_id ?? cur.coach_id, `Transferencia: ${name} sale de tu grupo`, `${fromName} → ${toName}. Su bitácora queda en su perfil.`);
+  await notify((target as any).head_coach_id ?? (target as any).coach_id, `Transferencia: ${name} entra a tu grupo`, `Viene de ${fromName} — revisá su perfil y bitácora antes de planear.`);
   const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
   for (const c of coords ?? []) {
     if (c.id === cur.coach_id || c.id === (target as any).coach_id) continue;
