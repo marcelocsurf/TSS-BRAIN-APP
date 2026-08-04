@@ -10,6 +10,7 @@ import { getFrontDeskData, getRecentBookings } from '@/lib/actions/front-desk';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
   hostRecentIncidents, hostSendIntakeEmail, hostDayOperation,
+  hostAdhocTemplates, hostCreateAdhocClass,
   type HostStudentRow, type HostDayEvent,
 } from '@/lib/actions/host-portal';
 import { sellerSearchStudents, sellerReserveSpot } from '@/lib/actions/seller';
@@ -118,7 +119,10 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                 <div className="space-y-0.5">
                   <p className="text-[9px] text-gray-400" style={F_M}>Perfil completo</p>
                   {(detail.age || detail.languages || detail.body) && (
-                    <p className="text-[11px] text-gray-600">👤 {[detail.age ? `${detail.age} años` : null, detail.languages, detail.body].filter(Boolean).join(' · ')}</p>
+                    <p className="text-[11px] text-gray-600">👤 {[detail.age ? `${detail.age} años` : null, detail.dob ? `nac. ${detail.dob}` : null, detail.languages, detail.body].filter(Boolean).join(' · ')}</p>
+                  )}
+                  {(row.phone || detail.instagram) && (
+                    <p className="text-[11px] text-gray-600">📱 {[row.phone, detail.instagram ? `@${String(detail.instagram).replace(/^@/, '')}` : null].filter(Boolean).join(' · ')}</p>
                   )}
                   {(detail.experience || detail.frequency || detail.self_level) && (
                     <p className="text-[11px] text-gray-600">🏄 {[detail.experience, detail.frequency ? detail.frequency.split(' / ')[0] : null, detail.self_level].filter(Boolean).join(' · ')}</p>
@@ -166,6 +170,13 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   };
   const [opEvents, setOpEvents] = useState<HostDayEvent[] | null>(null);
   const [reserveFor, setReserveFor] = useState<HostDayEvent | null>(null);
+  // Clase fuera de horario (pedido de Rick): plantilla + hora en el día visto
+  const [adhocOpen, setAdhocOpen] = useState(false);
+  const [adhocTpls, setAdhocTpls] = useState<any[] | null>(null);
+  const [adhocTpl, setAdhocTpl] = useState('');
+  const [adhocTime, setAdhocTime] = useState('16:00');
+  const [adhocMsg, setAdhocMsg] = useState<string | null>(null);
+  const [adhocBusy, setAdhocBusy] = useState(false);
 
   useEffect(() => { getFrontDeskData(token).then(setBoard).catch(() => setBoard({ classes: [] })); }, [token]);
   useEffect(() => { if (tab === 'hoy' && incidents === null) hostRecentIncidents(token).then(setIncidents).catch(() => setIncidents([])); }, [tab, incidents, token]);

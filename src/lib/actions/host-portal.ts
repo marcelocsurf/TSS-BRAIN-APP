@@ -103,7 +103,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
   const admin = createAdminClient();
   const { data: s } = await admin
     .from('students')
-    .select(`${STUDENT_COLS}, ocean_level, medical_notes, emergency_contact_name, emergency_contact_phone, primary_goal, goal_short_term, goal_mid_term, goal_long_term, personal_goal, biggest_barrier, fears_phobias, injuries, allergies, surf_experience_years, surf_frequency, board_type, goofy_or_regular, favorite_wave_size, age, languages, height, weight, surf_self_level`)
+    .select(`${STUDENT_COLS}, ocean_level, medical_notes, emergency_contact_name, emergency_contact_phone, primary_goal, goal_short_term, goal_mid_term, goal_long_term, personal_goal, biggest_barrier, fears_phobias, injuries, allergies, surf_experience_years, surf_frequency, board_type, goofy_or_regular, favorite_wave_size, age, languages, height, weight, surf_self_level, date_of_birth, instagram`)
     .eq('id', studentId)
     .eq('academy_id', who.academy_id)
     .maybeSingle();
@@ -146,6 +146,8 @@ export async function hostStudentDetail(token: string, studentId: string) {
     wave_size: (s as any).favorite_wave_size ?? null,
     self_level: (s as any).surf_self_level ?? null,
     age: (s as any).age ?? null,
+    dob: (s as any).date_of_birth ?? null,
+    instagram: (s as any).instagram ?? null,
     languages: (s as any).languages ?? null,
     body: [(s as any).height, (s as any).weight].filter(Boolean).join(' · ') || null,
     emergency: [(s as any).emergency_contact_name, (s as any).emergency_contact_phone].filter(Boolean).join(' · ') || null,
@@ -296,4 +298,75 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
   });
 
   return events.sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
+}
+
+// ── Clase fuera de horario (pedido de Rick): el host agenda una sesión
+// ad-hoc de una plantilla existente (Skate un martes 2pm, etc.) y ahí
+// mismo puede reservar al cliente. Queda como instancia normal del sistema.
+export async function hostAdhocTemplates(token: string) {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_templates')
+    .select('id, template_name, service_kind, list_price_cents, session_duration_minutes, capacity_max')
+    .eq('academy_id', who.academy_id)
+    .eq('active_status', true)
+    .in('service_kind', ['class', 'surf_lesson', 'trip'])
+    .order('template_name');
+  return data ?? [];
+}
+
+export async function hostCreateAdhocClass(token: string, input: {
+  templateId: string;
+  dateISO: string;   // YYYY-MM-DD
+  time: string;      // HH:MM
+}): Promise<{ ok: boolean; error?: string; camp_id?: string; name?: string }> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return { ok: false, error: 'No autorizado.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateISO) || !/^\d{2}:\d{2}$/.test(input.time)) {
+    return { ok: false, error: 'Fecha u hora inválida.' };
+  }
+  const admin = createAdminClient();
+  const { data: tpl } = await admin
+    .from('camp_templates')
+    .select('id, template_name, service_kind')
+    .eq('id', input.templateId)
+    .eq('academy_id', who.academy_id)
+    .maybeSingle();
+  if (!tpl || !['class', 'surf_lesson', 'trip'].includes((tpl as any).service_kind)) {
+    return { ok: false, error: 'Plantilla no válida.' };
+  }
+  const d = new Date(input.dateISO + 'T00:00:00');
+  const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const h = parseInt(input.time.slice(0, 2), 10);
+  const ampm = h === 0 ? '12 AM' : h < 12 ? `${h}${input.time.slice(3) !== '00' ? ':' + input.time.slice(3) : ''} AM` : h === 12 ? `12${input.time.slice(3) !== '00' ? ':' + input.time.slice(3) : ''} PM` : `${h - 12}${input.time.slice(3) !== '00' ? ':' + input.time.slice(3) : ''} PM`;
+  const name = `${(tpl as any).template_name} · ${label} · ${ampm}`;
+
+  const { data: inst, error } = await admin.from('camp_instances').insert({
+    template_id: tpl.id,
+    camp_name: name,
+    start_date: input.dateISO,
+    end_date: input.dateISO,
+    scheduled_time: input.time,
+    modality: 'group',
+    status: 'planned',
+    academy_id: who.academy_id,
+  }).select('id').single();
+  if (error || !inst) return { ok: false, error: error?.message ?? 'No se pudo crear.' };
+  await admin.from('camp_sessions').insert({
+    camp_instance_id: inst.id, day_number: 1, session_date: input.dateISO, session_status: 'planned',
+  });
+  // Aviso a coordinación: hay una clase nueva fuera de la parrilla, asignarle coach.
+  const { createNotification } = await import('@/lib/actions/notifications');
+  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+  for (const c of coords ?? []) {
+    await createNotification({
+      recipientCoachId: c.id, type: 'adhoc_class',
+      title: `Clase fuera de horario: ${name}`,
+      body: `Creada por ${who.display_name ?? 'host'} desde el mostrador — asignale coach.`,
+      link: null, metadata: { campInstanceId: inst.id },
+    }).catch(() => {});
+  }
+  return { ok: true, camp_id: inst.id, name };
 }

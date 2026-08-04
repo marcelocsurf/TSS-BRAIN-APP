@@ -449,7 +449,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           <input value={form.last_name} onChange={set('last_name')} placeholder="Last name" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <input value={form.phone} onChange={set('phone')} placeholder="Phone / WhatsApp" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+          <input value={form.phone} onChange={set('phone')} placeholder="Your phone / WhatsApp" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
           <label className="flex flex-col justify-center px-3 py-1 border border-gray-200 rounded-xl">
             <span className="text-[9px] text-gray-400" style={F_LABEL}>Date of birth *</span>
             <input type="date" value={form.date_of_birth} onChange={set('date_of_birth')} className="text-sm outline-none bg-transparent" />
@@ -467,13 +467,13 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
             </p>
             <input value={form.guardian_name} onChange={set('guardian_name')} placeholder="Parent / guardian full name *"
               className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
-            <input value={form.guardian_phone} onChange={set('guardian_phone')} placeholder="Their phone"
+            <input value={form.guardian_phone} onChange={set('guardian_phone')} placeholder="Guardian phone"
               className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
           </div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <input value={form.emergency_contact_name} onChange={set('emergency_contact_name')} placeholder="Emergency contact *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
-          <input value={form.emergency_contact_phone} onChange={set('emergency_contact_phone')} placeholder="Their phone *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+          <input value={form.emergency_contact_phone} onChange={set('emergency_contact_phone')} placeholder="Emergency contact's phone *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
         </div>
         <textarea value={form.medical_notes} onChange={set('medical_notes')} rows={2} placeholder="Medical conditions, allergies, injuries… or 'none' *"
           className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
