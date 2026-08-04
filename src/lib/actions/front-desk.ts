@@ -126,3 +126,110 @@ export async function getRecentBookings(token: string) {
     };
   });
 }
+
+// ── Transferencia de grupo (p. ej. Novice día 2 → Foundation) ──────
+// El MISMO asiento se muda de servicio: el pago viaja con él, la bitácora
+// ya es del alumno (student_id) así que lo sigue sola. Queda nota de
+// trazabilidad y avisos a ambos coaches.
+
+export async function getTransferTargets(token: string, participantId: string) {
+  const who = await resolveDesk(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+  const { data: seat } = await admin
+    .from('camp_participants')
+    .select('id, student_id, camp_instances:camp_instance_id!inner(id, academy_id)')
+    .eq('id', participantId).maybeSingle();
+  const cur = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
+  if (!cur || cur.academy_id !== who.academy_id) return [];
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
+    .eq('academy_id', who.academy_id)
+    .gte('end_date', today)
+    .neq('status', 'cancelled')
+    .neq('id', cur.id)
+    .order('start_date')
+    .limit(40);
+  return (data ?? []).map((c: any) => {
+    const tpl = Array.isArray(c.camp_templates) ? c.camp_templates[0] : c.camp_templates;
+    const act = (c.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+    const cap = c.capacity_override ?? tpl?.capacity_max ?? 0;
+    return {
+      id: c.id,
+      name: (c.camp_name ?? tpl?.template_name ?? '').split(' · ')[0],
+      kind: tpl?.service_kind ?? null,
+      date: c.start_date,
+      end_date: c.end_date,
+      time: c.scheduled_time,
+      left: cap > 0 ? cap - act.length : null,
+      price_cents: tpl?.list_price_cents ?? null,
+      already_in: act.some((p: any) => p.student_id === (seat as any).student_id),
+    };
+  }).filter((c: any) => (c.left == null || c.left > 0) && !c.already_in);
+}
+
+export async function deskTransferSeat(token: string, participantId: string, targetCampId: string): Promise<{ ok: boolean; error?: string }> {
+  const who = await resolveDesk(token);
+  if (!who?.academy_id) return { ok: false, error: 'No autorizado.' };
+  const admin = createAdminClient();
+
+  const { data: seat } = await admin
+    .from('camp_participants')
+    .select('id, student_id, payment_status, amount_cents, list_price_cents, notes, camp_instances:camp_instance_id!inner(id, academy_id, camp_name, coach_id, start_date), students(first_name, last_name)')
+    .eq('id', participantId).maybeSingle();
+  const cur = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
+  if (!cur || cur.academy_id !== who.academy_id) return { ok: false, error: 'Reserva no encontrada.' };
+
+  const { data: target } = await admin
+    .from('camp_instances')
+    .select('id, academy_id, camp_name, coach_id, capacity_override, status, camp_templates:template_id(template_name, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
+    .eq('id', targetCampId).maybeSingle();
+  if (!target || (target as any).academy_id !== who.academy_id || (target as any).status === 'cancelled') {
+    return { ok: false, error: 'Servicio destino no disponible.' };
+  }
+  const tTpl = Array.isArray((target as any).camp_templates) ? (target as any).camp_templates[0] : (target as any).camp_templates;
+  const tAct = ((target as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+  const tCap = (target as any).capacity_override ?? tTpl?.capacity_max ?? 0;
+  if (tCap > 0 && tAct.length >= tCap) return { ok: false, error: 'El grupo destino está lleno.' };
+  if (tAct.some((p: any) => p.student_id === (seat as any).student_id)) return { ok: false, error: 'Ya está inscrito en ese grupo.' };
+
+  const st = Array.isArray((seat as any).students) ? (seat as any).students[0] : (seat as any).students;
+  const name = [st?.first_name, st?.last_name].filter(Boolean).join(' ');
+  const fromName = (cur.camp_name ?? '').split(' · ')[0];
+  const toName = ((target as any).camp_name ?? tTpl?.template_name ?? '').split(' · ')[0];
+  const paid = (seat as any).payment_status === 'paid';
+  const targetPrice = tTpl?.list_price_cents ?? null;
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  // Precio: sin pagar → adopta el del destino. Pagado → se conserva y queda
+  // nota de la diferencia para que el coordinador ajuste (cobrar o dejar).
+  const priceDiff = paid && targetPrice != null && (seat as any).amount_cents != null && targetPrice !== (seat as any).amount_cents
+    ? targetPrice - (seat as any).amount_cents : 0;
+  const note = `Transferido ${fromName} → ${toName} (${stamp}, mostrador)` +
+    (priceDiff !== 0 ? ` · dif. de precio ${priceDiff > 0 ? '+' : ''}$${(priceDiff / 100).toFixed(2)} — ajustar en recepción` : '');
+
+  const { error } = await admin.from('camp_participants').update({
+    camp_instance_id: targetCampId,
+    notes: [(seat as any).notes, note].filter(Boolean).join(' | '),
+    ...(!paid && targetPrice != null ? { amount_cents: targetPrice, list_price_cents: targetPrice } : {}),
+  }).eq('id', participantId);
+  if (error) return { ok: false, error: error.message };
+
+  // Avisos: coach que lo pierde, coach que lo recibe, y coordinación.
+  const notify = async (coachId: string | null, title: string, body: string) => {
+    if (!coachId) return;
+    const { createNotification } = await import('@/lib/actions/notifications');
+    await createNotification({ recipientCoachId: coachId, type: 'group_transfer', title, body, link: `/students/${(seat as any).student_id}`, metadata: { participantId } }).catch(() => {});
+  };
+  await notify(cur.coach_id, `Transferencia: ${name} sale de tu grupo`, `${fromName} → ${toName}. Su bitácora queda en su perfil.`);
+  await notify((target as any).coach_id, `Transferencia: ${name} entra a tu grupo`, `Viene de ${fromName} — revisá su perfil y bitácora antes de planear.`);
+  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+  for (const c of coords ?? []) {
+    if (c.id === cur.coach_id || c.id === (target as any).coach_id) continue;
+    await notify(c.id, `Transferencia de grupo: ${name}`, `${fromName} → ${toName}${priceDiff !== 0 ? ` · dif. $${(priceDiff / 100).toFixed(2)} por ajustar` : ''}. Pago ${paid ? 'ya realizado' : 'pendiente en recepción'}.`);
+  }
+  return { ok: true };
+}

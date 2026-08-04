@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { frontDeskSettle } from '@/lib/actions/front-desk';
+import { frontDeskSettle, getTransferTargets, deskTransferSeat } from '@/lib/actions/front-desk';
 import { publicCancelBooking, publicMoveBooking, getPublicMoveTargets } from '@/lib/actions/public-classes';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
@@ -26,6 +26,28 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
   // link del cliente (publicCancel/MoveBooking con actor 'desk').
   const [manageFor, setManageFor] = useState<string | null>(null);
   const [targets, setTargets] = useState<Record<string, any[]>>({});
+  // Transferencia de GRUPO (otro servicio): Novice día 2 → Foundation, etc.
+  const [transferFor, setTransferFor] = useState<string | null>(null);
+  const [transferTargets, setTransferTargets] = useState<Record<string, any[]>>({});
+
+  const openTransfer = (s: Seat) => {
+    setTransferFor(transferFor === s.participant_id ? null : s.participant_id);
+    if (!transferTargets[s.participant_id]) {
+      getTransferTargets(token, s.participant_id)
+        .then((t) => setTransferTargets((p) => ({ ...p, [s.participant_id]: t })))
+        .catch(() => setTransferTargets((p) => ({ ...p, [s.participant_id]: [] })));
+    }
+  };
+
+  const transferSeat = (s: Seat, target: any) => {
+    if (!window.confirm(`Transferir a ${s.name} al grupo "${target.name}" (${target.date})? El pago y la bitácora viajan con él.`)) return;
+    start(async () => {
+      const r = await deskTransferSeat(token, s.participant_id, target.id);
+      if (!r.ok) { alert(r.error); return; }
+      setTransferFor(null); setManageFor(null);
+      router.refresh();
+    });
+  };
 
   const hoursTo = (c: Klass) => (new Date(`${c.date}T${(c.time || '23:59').slice(0, 5)}:00-06:00`).getTime() - Date.now()) / 3600_000;
 
@@ -139,6 +161,28 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
                               </button>
                             ))}
                         </div>
+                        <button type="button" disabled={pending} onClick={() => openTransfer(s)}
+                          className="w-full mt-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50"
+                          style={{ borderColor: '#00D2FF', color: '#0090B0', background: '#fff' }}>
+                          🔁 Transferir a otro grupo/servicio
+                        </button>
+                        {transferFor === s.participant_id && (
+                          <div className="mt-1.5 space-y-1 max-h-52 overflow-y-auto">
+                            {(transferTargets[s.participant_id] ?? []).length === 0
+                              ? <p className="text-[11px] text-gray-400">{transferTargets[s.participant_id] ? 'Sin grupos con cupo.' : 'Cargando grupos…'}</p>
+                              : (transferTargets[s.participant_id] ?? []).map((t: any) => (
+                                <button key={t.id} type="button" disabled={pending} onClick={() => transferSeat(s, t)}
+                                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] bg-white border border-gray-200 disabled:opacity-50 text-left">
+                                  <span className="min-w-0 truncate" style={{ color: '#061C2B' }}>
+                                    <strong>{t.name}</strong> · {fmtDate(t.date)}{t.time ? ` ${t.time.slice(0, 5)}` : ''}
+                                  </span>
+                                  <span className="shrink-0 text-[10px] text-gray-400 ml-1">
+                                    {t.price_cents != null ? `$${(t.price_cents / 100).toFixed(0)}` : ''}{t.left != null ? ` · ${t.left} libre${t.left === 1 ? '' : 's'}` : ''}
+                                  </span>
+                                </button>
+                              ))}
+                          </div>
+                        )}
                         <button type="button" disabled={pending} onClick={() => cancelSeat(s, c)}
                           className="w-full mt-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border-2 disabled:opacity-50"
                           style={{ borderColor: '#FF6B6B', color: '#c04545', background: '#fff' }}>
