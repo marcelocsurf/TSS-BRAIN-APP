@@ -356,6 +356,51 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                   </div>
                 );
               })}
+
+            {/* Clase FUERA de horario (pedido de Rick): plantilla + hora en el
+                día seleccionado; avisa a coordinación para asignar coach. */}
+            {!adhocOpen ? (
+              <button type="button"
+                onClick={() => { setAdhocOpen(true); setAdhocMsg(null); if (adhocTpls === null) hostAdhocTemplates(token).then((t) => { setAdhocTpls(t); if (t[0]) setAdhocTpl(t[0].id); }).catch(() => setAdhocTpls([])); }}
+                className="w-full rounded-full py-3 text-[9px] border-2 border-dashed" style={{ ...F_M, borderColor: '#00D2FF', color: '#0090B0', background: '#fff' }}>
+                + Clase en otro horario ({new Date(opDate + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })})
+              </button>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
+                <p className="text-[9px] text-gray-400" style={F_M}>Nueva clase · {new Date(opDate + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+                {adhocTpls === null ? <p className="text-[12px] text-gray-400">Cargando plantillas…</p> : (
+                  <>
+                    <select value={adhocTpl} onChange={(ev) => setAdhocTpl(ev.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white">
+                      {adhocTpls.map((t: any) => (
+                        <option key={t.id} value={t.id}>{t.template_name}{t.list_price_cents != null ? ` — $${(t.list_price_cents / 100).toFixed(0)}` : ''}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <input type="time" value={adhocTime} onChange={(ev) => setAdhocTime(ev.target.value)}
+                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
+                      <button type="button" disabled={adhocBusy || !adhocTpl}
+                        onClick={async () => {
+                          setAdhocBusy(true); setAdhocMsg(null);
+                          const r = await hostCreateAdhocClass(token, { templateId: adhocTpl, dateISO: opDate, time: adhocTime });
+                          setAdhocBusy(false);
+                          if (!r.ok) { setAdhocMsg(r.error ?? 'No se pudo crear.'); return; }
+                          setAdhocMsg(`✓ ${r.name} creada — reservale al cliente acá abajo.`);
+                          setAdhocOpen(false);
+                          hostDayOperation(token, opDate).then(setOpEvents).catch(() => {});
+                        }}
+                        className="rounded-full px-5 py-2.5 text-[10px] disabled:opacity-40" style={{ ...F_M, background: '#00D2FF', color: INK, fontWeight: 700 }}>
+                        {adhocBusy ? 'Creando…' : 'Crear'}
+                      </button>
+                      <button type="button" onClick={() => setAdhocOpen(false)} className="px-3 py-2.5 text-[11px] text-gray-400">Cancelar</button>
+                    </div>
+                    <p className="text-[10px] text-gray-400">Se avisa a coordinación para asignarle coach. El cobro, como siempre, en recepción.</p>
+                  </>
+                )}
+                {adhocMsg && <p className="text-[11px] font-semibold" style={{ color: adhocMsg.startsWith('✓') ? '#0a7c5d' : '#c04545' }}>{adhocMsg}</p>}
+              </div>
+            )}
+            {adhocMsg && !adhocOpen && <p className="text-[11px] font-semibold text-center" style={{ color: '#0a7c5d' }}>{adhocMsg}</p>}
           </div>
         )}
 
