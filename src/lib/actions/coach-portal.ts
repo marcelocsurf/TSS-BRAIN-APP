@@ -123,7 +123,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   const { data: coach } = await admin
     .from('coaches')
     .select(
-      'id, first_name, last_name, display_name, email, role, portal_category, job_title, portal_can_sell, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted, photo_url, intake_completed_at, waiver_signed'
+      'id, first_name, last_name, display_name, email, role, portal_category, job_title, portal_can_sell, certification_level, max_belt_permission, languages, specialty_area, portal_token, academy_id, course_access_granted, course_access_scope, photo_url, intake_completed_at, waiver_signed'
     )
     .eq('portal_token', token)
     .single();
@@ -503,6 +503,11 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     // courses (Method, Foundations Tier 1, Career, Safety Canon, …) are
     // universal — any course_section not in the belt map shows to everyone.
     coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => {
+      // Alcance restringido: instructores en formación inicial ven SOLO
+      // Safety Canon + Foundations (método) hasta que se les abra el resto.
+      if ((coach as any).course_access_scope === 'safety_method') {
+        return l.id.startsWith('COACH-SAFETY-') || l.id.startsWith('COACH-FOUND-');
+      }
       const sectionBelt: Record<string, string> = {
         coach_wb: 'white', coach_wb_master: 'white', coach_yb: 'yellow',
         coach_bb: 'blue', coach_pb: 'purple', coach_brb: 'brown', coach_blb: 'black',
