@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "brand": "The Surf Sequence®",
+    "version": "10.0",
+    "source": "Brand Manual v10.0 Final (2026)",
+    "owner": "Enkrateia SA de CV"
+  },
+  "color": {
+    "official": {
+      "sequenceCyan": "#00D2FF"
+    },
+    "supports": {
+      "abyssNavyInk": "#061C2B",
+      "foamPaper": "#F7F9FA",
+      "tideGrey": "#55666E",
+      "sand": "#E9E2D2"
+    },
+    "derived": {
+      "deepCyan": "#00A8CC",
+      "headingInk": "#0E2029",
+      "band": "#EDF3F5",
+      "panelOnInk": "#0A2532",
+      "error": "#B03A2E"
+    },
+    "usageRatio": {
+      "paper": 0.6,
+      "ink": 0.25,
+      "cyan": 0.1,
+      "grey": 0.05
+    },
+    "pop": {
+      "coral": "#FF6B6B",
+      "sunset": "#FF8C42",
+      "golden": "#FFD166",
+      "foam": "#06D6A0",
+      "rule": "UI feedback only; never branding/marketing"
+    },
+    "belts": {
+      "white": "#E8E8E8",
+      "yellow": "#F5C518",
+      "blue": "#1E6FBF",
+      "purple": "#7B4FBE",
+      "brown": "#7D4E27",
+      "black": "#111111",
+      "rule": "progression identity only; never marketing"
+    },
+    "rules": [
+      "No gradients on the mark",
+      "No shadows on the mark",
+      "Sand never in digital UI",
+      "Cyan is accent or scale moment, never wallpaper"
+    ]
+  },
+  "typography": {
+    "display": {
+      "family": "Archivo",
+      "stretch": "118-125%",
+      "weight": "700-900",
+      "case": "uppercase",
+      "tracking": "-0.02em",
+      "leading": "0.92-1.1"
+    },
+    "body": {
+      "family": "Archivo",
+      "weight": "400-700",
+      "case": "sentence",
+      "leading": "1.6-1.7"
+    },
+    "mono": {
+      "family": "IBM Plex Mono",
+      "weight": "400-500",
+      "case": "uppercase",
+      "tracking": "0.18-0.22em",
+      "use": "labels, data, codes, specs"
+    },
+    "tagline": {
+      "family": "Lora",
+      "style": "italic",
+      "text": "Evolve through play",
+      "rules": [
+        "always italic",
+        "sentence case only",
+        "cyan on dark / ink on light",
+        "min 14px digital / 10pt print"
+      ]
+    },
+    "wordmark": {
+      "family": "Biennale Medium (Latinotype)",
+      "rule": "logo artwork only — never in UI or text"
+    },
+    "scale": [
+      13,
+      21,
+      34,
+      55,
+      89,
+      144
+    ]
+  },
+  "spacing": {
+    "scale": [
+      5,
+      8,
+      13,
+      21,
+      34,
+      55,
+      89,
+      144,
+      233
+    ],
+    "rule": "Fibonacci only; never invent intermediate values"
+  },
+  "logo": {
+    "files": {
+      "markCyan": "assets/tss-mark.png",
+      "markWhite": "assets/tss-mark-white.png",
+      "markInk": "assets/tss-mark-ink.png",
+      "fullColor": "assets/tss-logo-full.png",
+      "fullWhite": "assets/tss-logo-full-white.png",
+      "stackedOutline": "assets/tss-stacked-outline.png",
+      "horizontalPrimary": "assets/tss-horizontal-primary.png"
+    },
+    "approvedVersions": [
+      "full color on light",
+      "white on dark",
+      "ink on light or cyan",
+      "outline on light",
+      "monochrome for embroidery/legal"
+    ],
+    "clearSpace": "1× the smallest Fibonacci square of the spiral, all sides",
+    "minSize": {
+      "fullLogo": "4cm",
+      "markOnly": "1cm",
+      "digital": "24px"
+    },
+    "misuse": [
+      "never stretch/distort",
+      "never recolor",
+      "never flip (wave direction is sacred)",
+      "never rotate",
+      "no shadows/effects",
+      "no busy backgrounds",
+      "never recreate — use master files"
+    ]
+  },
+  "naming": {
+    "public": "The Surf Sequence (never abbreviate externally)",
+    "internal": "TSS",
+    "exceptions": [
+      "TSS Brain (product)",
+      "TSS High Performance (product)",
+      "TSS® badge on physical goods",
+      "TSS Certified Coach credential"
+    ],
+    "tagline": "Evolve through play",
+    "never": [
+      "'surf school'",
+      "interchangeable with Puro Surf",
+      "TSS as first introduction to new audiences"
+    ]
+  },
+  "voice": {
+    "traits": [
+      "Expert, not elite",
+      "Precise, not cold",
+      "Playful, not casual"
+    ],
+    "messageHierarchy": {
+      "promise": "Clarity changes everything.",
+      "method": "Train with intention. Learn with structure.",
+      "identity": "Evolve through play."
+    },
+    "say": [
+      "Mission. Session. Level. Belt. Coach. Methodology.",
+      "active direct sentences",
+      "ocean as teacher"
+    ],
+    "never": [
+      "stoke/shred/hang ten",
+      "overpromising",
+      "passive hedging"
+    ]
+  }
+}

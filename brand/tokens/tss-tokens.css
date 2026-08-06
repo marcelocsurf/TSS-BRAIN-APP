@@ -1,0 +1,48 @@
+/* The Surf Sequence — Design Tokens v10.0 (from official Brand Manual)
+   Import this file first. Never hardcode brand values elsewhere. */
+:root {
+  /* ── COLOR ─ Official */
+  --tss-cyan: #00D2FF;          /* Sequence Cyan — THE trademark color, from the logo. Never altered. */
+  /* ── COLOR ─ Supports */
+  --tss-ink: #061C2B;           /* Abyss Navy Ink — dark surfaces, depth, authority */
+  --tss-paper: #F7F9FA;         /* Foam Paper — light surfaces */
+  --tss-grey: #55666E;          /* Tide Grey — working neutral: body text, labels, borders */
+  --tss-sand: #E9E2D2;          /* Sand — PHYSICAL WORLD ONLY (merch, packaging, print). Never digital UI. */
+  /* ── COLOR ─ Derived (used throughout the manual) */
+  --tss-cyan-deep: #00A8CC;     /* Deep Cyan — cyan for small text on light backgrounds (contrast) */
+  --tss-ink-heading: #0E2029;   /* Heading ink on light */
+  --tss-band: #EDF3F5;          /* Alternate light band background */
+  --tss-panel: #0A2532;         /* Raised panel on ink */
+  --tss-error: #B03A2E;         /* "Never" / misuse labels on light */
+  /* Usage ratio: paper 60% · ink 25% · cyan 10% · grey 5% */
+
+  /* ── POP COLORS ─ UI feedback ONLY (alerts/status in digital products; never branding) */
+  --tss-pop-coral: #FF6B6B; --tss-pop-sunset: #FF8C42;
+  --tss-pop-golden: #FFD166; --tss-pop-foam: #06D6A0;
+
+  /* ── BELT COLORS ─ progression identity ONLY (app levels, certificates); never marketing */
+  --tss-belt-white: #E8E8E8; --tss-belt-yellow: #F5C518; --tss-belt-blue: #1E6FBF;
+  --tss-belt-purple: #7B4FBE; --tss-belt-brown: #7D4E27; --tss-belt-black: #111111;
+
+  /* ── TYPE ── */
+  --tss-font-display: 'Archivo', sans-serif;   /* headlines: font-stretch 118–125%, weight 700–900, UPPERCASE, tight leading, -2% tracking */
+  --tss-font-body: 'Archivo', sans-serif;      /* body: weight 400–700, sentence case, 1.6–1.7 leading */
+  --tss-font-mono: 'IBM Plex Mono', monospace; /* labels/data: 400–500, UPPERCASE, +18–22% tracking */
+  --tss-font-tagline: 'Lora', serif;           /* tagline ONLY, always italic: "Evolve through play" */
+  /* Biennale Medium = wordmark only. NEVER use in UI. Always use logo image files. */
+
+  /* ── FIBONACCI SCALE ─ the brand is built on the number it stands for.
+     ALL spacing and type sizes come from: 5 8 13 21 34 55 89 144 233 */
+  --tss-space-1: 5px;  --tss-space-2: 8px;  --tss-space-3: 13px; --tss-space-4: 21px;
+  --tss-space-5: 34px; --tss-space-6: 55px; --tss-space-7: 89px; --tss-space-8: 144px;
+  --tss-text-1: 13px; --tss-text-2: 21px; --tss-text-3: 34px;
+  --tss-text-4: 55px; --tss-text-5: 89px; --tss-text-6: 144px;
+
+  /* ── MISC ── */
+  --tss-border-light: rgba(14,32,41,0.16);   /* hairlines on light */
+  --tss-border-dark: rgba(247,249,250,0.16); /* hairlines on ink */
+  --tss-radius: 0;   /* the system is square. Radius only on app icons (34px tile) and pills. */
+}
+::selection { background: var(--tss-cyan); color: var(--tss-ink); }
+a { color: var(--tss-cyan-deep); text-decoration: none; }
+a:hover { color: var(--tss-cyan); }

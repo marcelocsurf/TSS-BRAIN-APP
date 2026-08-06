@@ -226,3 +226,14 @@ Plan file (running design + decision log): `~/.claude/plans/quiero-expresarte-el
 ---
 
 *Last updated after commit `8868caf` — design system applied to coach portal + coordinator dashboard.*
+
+---
+
+## Brand system (Manual v10) — ALWAYS APPLY
+
+The official brand system lives in **`brand/`** (added 2026-08-06):
+
+- **`brand/CLAUDE.md`** — operating summary of Brand Manual v10: hard rules for color (Sequence Cyan `#00D2FF` is the only official color), Archivo/IBM Plex Mono typography, Fibonacci spacing/type scale, logo usage, naming ("The Surf Sequence" in public copy, never bare "TSS"), voice, and doctrine vocabulary. **Read it before building any user-facing surface, email, or marketing material.**
+- **`brand/tokens/tss-tokens.css` + `tss-tokens.json`** — machine-readable design tokens. Import/read these instead of hardcoding values.
+- **`brand/assets/`** — the ONLY approved logo files (never recreate or recolor the mark).
+- **`brand/brand-manual/The Surf Sequence Brand Manual.html`** — the full manual (open in a browser).
