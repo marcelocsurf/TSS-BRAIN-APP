@@ -61,6 +61,10 @@ export async function reportIncident(input: {
 // their academy coordinator.
 
 export interface CoachPortalData {
+  pendingStaffInvites: {
+    id: string; role: string; response_token: string; camp_name: string;
+    start_date: string; end_date: string; scheduled_time: string | null;
+  }[];
   coach: {
     id: string;
     first_name: string;
@@ -480,8 +484,34 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     }
   } catch { /* non-blocking */ }
 
+  // Invitaciones de staff (asistente/filmer/fotógrafo) SIN responder, de
+  // servicios vigentes — se muestran en el Home del portal para aceptar o
+  // rechazar ahí mismo (antes solo iban por email y quedaban en el limbo).
+  const { data: staffInviteRows } = await admin
+    .from('service_staff')
+    .select('id, role, status, response_token, camp_instances:camp_instance_id!inner(id, camp_name, start_date, end_date, scheduled_time, status)')
+    .eq('coach_id', coach.id)
+    .eq('status', 'invited')
+    .gte('camp_instances.end_date', today);
+  const pendingStaffInvites = ((staffInviteRows as any[]) ?? [])
+    .map((r: any) => {
+      const inst = Array.isArray(r.camp_instances) ? r.camp_instances[0] : r.camp_instances;
+      if (!inst || inst.status === 'cancelled') return null;
+      return {
+        id: r.id,
+        role: r.role,
+        response_token: r.response_token,
+        camp_name: inst.camp_name,
+        start_date: inst.start_date,
+        end_date: inst.end_date,
+        scheduled_time: inst.scheduled_time ?? null,
+      };
+    })
+    .filter(Boolean) as CoachPortalData['pendingStaffInvites'];
+
   return {
     coach,
+    pendingStaffInvites,
     stats: {
       totalServicesAsHead: totalServicesAsHead ?? 0,
       upcomingServicesCount: (upcomingResult.data ?? []).length,

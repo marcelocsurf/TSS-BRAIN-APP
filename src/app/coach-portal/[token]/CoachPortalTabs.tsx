@@ -10,6 +10,7 @@ import { sellerSearchStudents, sellerReserveSpot, sellerMySales, type SellerSale
 import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
+import { PendingStaffInvites } from './PendingStaffInvites';
 import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
 import { CoachPresentations } from '@/components/coach-portal/CoachPresentations';
 import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
@@ -158,6 +159,7 @@ export function CoachPortalTabs({
               )}
             </div>
             <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
+            <PendingStaffInvites invites={(data as any).pendingStaffInvites ?? []} />
 
             {isSupport ? (
               <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} emergencyPlan={data.emergencyPlan} onGoTo={setActiveTab} />
