@@ -184,11 +184,14 @@ async function handle(req: NextRequest) {
   } catch (e) { console.error('[daily-reminders] membership section failed', e); }
 
   // ── 4. Cierres pendientes → correo al coach (candado de nómina) ──
-  // Sesiones de los últimos 7 días sin cerrar, agrupadas por coach. Se envía
-  // en cada corrida (mañana y fin de día): el recordatorio ES el producto.
+  // Regla de Marcelo (2026-08-06): UN solo correo, a las 5 PM de El Salvador.
+  // Incluye la sesión de HOY (a esa hora ya debió cerrarse) + los 6 días
+  // previos. La corrida de la mañana NO manda esto — a las 7 AM la clase
+  // del día ni siquiera empezó (Stanley recibió ese falso reclamo).
   let closureEmails = 0;
-  try {
-    const svNow = new Date(Date.now() - 6 * 3600_000);
+  const svNow = new Date(Date.now() - 6 * 3600_000);
+  const closureRun = svNow.getUTCHours() >= 16; // corrida vespertina (cron 23:00 UTC = 5 PM SV)
+  if (closureRun) try {
     const svToday = svNow.toISOString().slice(0, 10);
     const weekAgo = new Date(svNow.getTime() - 6 * 86400000).toISOString().slice(0, 10);
     const { data: openSes } = await admin
@@ -226,6 +229,7 @@ async function handle(req: NextRequest) {
   }
 
   return NextResponse.json({
+    closureRun,
     ok: true,
     date: today,
     overdueTasks: (tasks ?? []).length,
