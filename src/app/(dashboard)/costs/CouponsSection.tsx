@@ -6,6 +6,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveCoupon, toggleCoupon, deleteCoupon, type Coupon } from '@/lib/actions/coupons';
+import { isPublicBookableServiceKind } from '@/lib/constants/service-kinds';
 import { Plus, Trash2, QrCode } from 'lucide-react';
 
 type Tpl = { id: string; template_name: string; service_kind: string | null };
@@ -28,7 +29,7 @@ export function CouponsSection({ coupons, academySlug, templates }: {
   const qrImg = (url: string) => `https://api.qrserver.com/v1/create-qr-code/?size=340x340&margin=12&data=${encodeURIComponent(url)}`;
   // QR walk-in signup: clases + trips + lecciones de surf (Discover / drop-in).
   // Los camps quedan fuera a propósito — se venden por seller/coordinador.
-  const classTemplates = templates.filter((t) => ['class', 'trip', 'surf_lesson'].includes(t.service_kind ?? ''));
+  const classTemplates = templates.filter((t) => isPublicBookableServiceKind(t.service_kind));
 
   return (
     <div className="space-y-4">

@@ -6,6 +6,7 @@
 // in the same flow. Payment is NEVER settled here — front desk does that.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { PUBLIC_BOOKABLE_SERVICE_KINDS, isPublicBookableServiceKind } from '@/lib/constants/service-kinds';
 
 const norm = (e: string) => e.trim().toLowerCase();
 
@@ -30,7 +31,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description, video_url), coaches:coach_id(display_name), camp_participants(id, enrollment_status)')
     .eq('academy_id', academy.id)
-    .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson'])
+    .in('camp_templates.service_kind', [...PUBLIC_BOOKABLE_SERVICE_KINDS])
     .gte('start_date', today)
     .neq('status', 'cancelled')
     // Ventana de 6 semanas: suficiente para que un huésped planifique su
@@ -126,7 +127,9 @@ export async function publicEnroll(input: {
     .eq('academy_id', academy.id)
     .maybeSingle();
   const tpl = camp ? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates) : null;
-  if (!camp || !['class', 'trip'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
+  // Mismo criterio que el listado: si el QR la muestra, el QR la tiene que
+  // poder reservar.
+  if (!camp || !isPublicBookableServiceKind(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
   const active = ((camp as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const capacity = (camp as any).capacity_override ?? tpl?.capacity_max ?? 0;
   if (capacity > 0 && active.length >= capacity) return { ok: false, error: 'This class is full.' };
