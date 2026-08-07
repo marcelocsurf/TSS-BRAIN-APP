@@ -24,19 +24,19 @@ const GRID: React.CSSProperties = {
 };
 
 const PATTERNS: Pattern[] = [
-  { id: 'wimhof', name: 'Wim Hof', desc: '30 resp · retención · 3 rondas', phases: [] },
-  { id: 'box', name: 'Box', desc: 'Foco · 4·4·4·4', phases: [
-    { label: 'Inhalá', sec: 4, scale: BIG }, { label: 'Sostené', sec: 4, scale: BIG },
-    { label: 'Exhalá', sec: 4, scale: SMALL }, { label: 'Sostené', sec: 4, scale: SMALL },
+  { id: 'wimhof', name: 'Wim Hof', desc: '30 breaths · retention · 3 rounds', phases: [] },
+  { id: 'box', name: 'Box', desc: 'Focus · 4·4·4·4', phases: [
+    { label: 'Inhale', sec: 4, scale: BIG }, { label: 'Hold', sec: 4, scale: BIG },
+    { label: 'Exhale', sec: 4, scale: SMALL }, { label: 'Hold', sec: 4, scale: SMALL },
   ] },
-  { id: '478', name: '4 · 7 · 8', desc: 'Calmar · dormir', phases: [
-    { label: 'Inhalá', sec: 4, scale: BIG }, { label: 'Sostené', sec: 7, scale: BIG }, { label: 'Exhalá', sec: 8, scale: SMALL },
+  { id: '478', name: '4 · 7 · 8', desc: 'Calm · sleep', phases: [
+    { label: 'Inhale', sec: 4, scale: BIG }, { label: 'Hold', sec: 7, scale: BIG }, { label: 'Exhale', sec: 8, scale: SMALL },
   ] },
-  { id: 'coherent', name: 'Coherente', desc: 'Equilibrio · 5·5', phases: [
-    { label: 'Inhalá', sec: 5, scale: BIG }, { label: 'Exhalá', sec: 5, scale: SMALL },
+  { id: 'coherent', name: 'Coherent', desc: 'Balance · 5·5', phases: [
+    { label: 'Inhale', sec: 5, scale: BIG }, { label: 'Exhale', sec: 5, scale: SMALL },
   ] },
-  { id: 'fire', name: 'Fire', desc: 'Energía · rápido', phases: [
-    { label: 'Inhalá', sec: 0.7, scale: BIG }, { label: 'Exhalá', sec: 0.7, scale: SMALL },
+  { id: 'fire', name: 'Fire', desc: 'Energy · fast', phases: [
+    { label: 'Inhale', sec: 0.7, scale: BIG }, { label: 'Exhale', sec: 0.7, scale: SMALL },
   ] },
 ];
 
@@ -142,8 +142,8 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       const ph = phases[i];
       setPhaseIdx(i);
       setScale(ph.scale);
-      if (ph.label === 'Inhalá') playBreath('in', ph.sec);
-      else if (ph.label === 'Exhalá') playBreath('out', ph.sec);
+      if (ph.label === 'Inhale') playBreath('in', ph.sec);
+      else if (ph.label === 'Exhale') playBreath('out', ph.sec);
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
 
       if (countRef.current) clearInterval(countRef.current);
@@ -248,20 +248,20 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
   const transitionSec = running ? (isWim ? (wimIn ? WIM_IN : WIM_OUT) : phase?.sec ?? 0.6) : 0.6;
 
   // Qué mostrar en el centro
-  let word = 'Listo', numeral: string | null = null, sub: string | null = null;
+  let word = 'Ready', numeral: string | null = null, sub: string | null = null;
   if (running && isWim) {
-    if (wimMode === 'breaths') { word = wimIn ? 'Inhalá' : 'Exhalá'; numeral = String(wimBreath); sub = `Ronda ${wimRound} de ${WIM_ROUNDS}`; }
-    else if (wimMode === 'retention') { word = 'Retené'; numeral = mmss(retSec); sub = 'Pulmones vacíos · tocá el círculo para terminar'; }
-    else if (wimMode === 'recovery') { word = 'Sostené'; numeral = String(recSec); sub = 'Inhalaste hondo — aguantá 15 s'; }
-    else if (wimMode === 'rest') { word = 'Soltá'; numeral = null; sub = `Ronda ${wimRound + 1} arranca ya…`; }
+    if (wimMode === 'breaths') { word = wimIn ? 'Inhale' : 'Exhale'; numeral = String(wimBreath); sub = `Round ${wimRound} of ${WIM_ROUNDS}`; }
+    else if (wimMode === 'retention') { word = 'Hold'; numeral = mmss(retSec); sub = 'Empty lungs · tap the circle to finish'; }
+    else if (wimMode === 'recovery') { word = 'Hold'; numeral = String(recSec); sub = 'Deep breath in — hold 15 s'; }
+    else if (wimMode === 'rest') { word = 'Release'; numeral = null; sub = `Round ${wimRound + 1} starts now…`; }
   } else if (!running && isWim && wimMode === 'done') {
-    word = 'Completo'; numeral = null;
-    sub = retentions.length ? `Retenciones: ${retentions.map(mmss).join(' · ')}` : null;
+    word = 'Complete'; numeral = null;
+    sub = retentions.length ? `Retentions: ${retentions.map(mmss).join(' · ')}` : null;
   } else if (running && !isWim) {
     word = phase.label; numeral = count > 0 ? String(count) : null;
-    sub = `${cycles} ciclo${cycles === 1 ? '' : 's'}`;
+    sub = `${cycles} cycle${cycles === 1 ? '' : 's'}`;
   } else {
-    sub = 'Elegí un patrón y empezá';
+    sub = 'Pick a pattern and start';
   }
 
   const tapRetention = () => { if (running && isWim && wimMode === 'retention') endRetentionRef.current(); };
@@ -272,11 +272,11 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       <div className="flex items-center justify-between px-[21px] pt-[13px] pb-[8px]" style={{ borderBottom: '1px solid rgba(247,249,250,0.16)' }}>
         <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>Breathwork · The Surf Sequence</p>
         <div className="flex items-center gap-[8px]">
-          <button onClick={() => setMuted((m) => !m)} className="p-2 text-white/60 hover:text-white" aria-label={muted ? 'Activar sonido' : 'Silenciar'}>
+          <button onClick={() => setMuted((m) => !m)} className="p-2 text-white/60 hover:text-white" aria-label={muted ? 'Unmute' : 'Mute'}>
             {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
           </button>
-          <button onClick={onClose} className="inline-flex items-center gap-1 px-[13px] py-[5px] text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,0.1)', color: PAPER }} aria-label="Cerrar">
-            <X size={13} /> Cerrar
+          <button onClick={onClose} className="inline-flex items-center gap-1 px-[13px] py-[5px] text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,0.1)', color: PAPER }} aria-label="Close">
+            <X size={13} /> Close
           </button>
         </div>
       </div>
@@ -306,7 +306,7 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
           {[233, 144, 89].map((d, i) => (
             <div key={d} className="absolute rounded-full" style={{
               width: d, height: d,
-              border: `1px solid rgba(0,210,255,${0.16 + i * 0.14})`,
+              border: `1px solid rgba(0,210,255,${(0.16 + i * 0.14) * (numeral !== null ? 0.35 : 1)})`,
               transform: `scale(${reduce ? 0.9 : scale})`,
               transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out`,
             }} />
@@ -319,7 +319,7 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
           }} />
           {/* Numeral gigante delineado (como los numerales de capítulo v10) */}
           {numeral !== null && (
-            <p className="relative select-none tabular-nums text-[89px] leading-none" style={{ ...F_D, color: 'transparent', WebkitTextStroke: `2px ${CYAN}` }}>
+            <p className="relative select-none tabular-nums text-[89px] leading-none" style={{ ...F_D, color: PAPER }}>
               {numeral}
             </p>
           )}
@@ -335,11 +335,11 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       <div className="px-[21px] pb-[34px]">
         {running ? (
           <button onClick={stop} className="w-full inline-flex items-center justify-center gap-2 rounded-full py-[16px] text-[11px]" style={{ ...F_M, background: 'rgba(247,249,250,0.1)', color: PAPER, fontWeight: 700 }}>
-            <Pause size={16} /> Pausar
+            <Pause size={16} /> Pause
           </button>
         ) : (
           <button onClick={() => { setWimMode('breaths'); setRunning(true); }} className="w-full inline-flex items-center justify-center gap-2 rounded-full py-[16px] text-[11px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 800 }}>
-            <Play size={16} /> {isWim ? `Empezar · ${WIM_ROUNDS} rondas` : 'Empezar'}
+            <Play size={16} /> {isWim ? `Start · ${WIM_ROUNDS} rounds` : 'Start'}
           </button>
         )}
       </div>
