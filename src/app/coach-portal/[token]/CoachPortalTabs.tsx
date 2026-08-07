@@ -11,6 +11,7 @@ import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-plan
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
+import { CoachGuide } from './CoachGuide';
 import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
 import { CoachPresentations } from '@/components/coach-portal/CoachPresentations';
 import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
@@ -108,6 +109,12 @@ export function CoachPortalTabs({
   // tab-nav hidden, so the planner isn't a light screen floating on black with
   // two stacked bottom bars.
   const [plannerOpen, setPlannerOpen] = useState(false);
+  // Guía rápida integrada: se abre sola la primera vez, después queda en su botón.
+  const [guideOpen, setGuideOpen] = useState(false);
+  useEffect(() => {
+    try { if (!localStorage.getItem('tss_coach_guide_v1')) setGuideOpen(true); } catch {}
+  }, []);
+  const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_coach_guide_v1', '1'); } catch {} };
   const { coach, stats } = data;
   const isSupport = (coach as any).portal_category === 'support';
   const isSeller = (coach as any).role === 'seller';
@@ -147,6 +154,11 @@ export function CoachPortalTabs({
             <PendingPromotions token={coach.portal_token} />
             {/* Manual de uso, abierto directo en el capítulo de este rol */}
             <div className="flex gap-2">
+              <button type="button" onClick={() => setGuideOpen(true)}
+                className="flex-1 text-center text-[11px] font-mono uppercase tracking-[0.14em] font-semibold px-3 py-2.5 rounded-full"
+                style={{ background: '#00D2FF', color: '#061C2B' }}>
+                📖 Guía rápida
+              </button>
               <a href={`/manual/index.html?role=${isSupport ? 'support' : 'coach'}`} target="_blank" rel="noreferrer"
                 className="flex-1 text-center text-[11px] font-mono uppercase tracking-[0.14em] font-semibold px-3 py-2.5 rounded-full border border-[var(--tss-cyan,#5AC3E7)]/40 text-[var(--tss-cyan,#5AC3E7)] hover:bg-[var(--tss-cyan,#5AC3E7)]/10">
                 📘 Cómo usar el app
@@ -190,6 +202,7 @@ export function CoachPortalTabs({
           <PlanTab
             upcoming={data.upcomingServices}
             past={data.pastServices}
+            unclosed={(data as any).unclosedPast ?? []}
             token={coach.portal_token}
             onOpenChange={setPlannerOpen}
           />
@@ -200,6 +213,7 @@ export function CoachPortalTabs({
           </div>
         )}
       </div>
+      {guideOpen && <CoachGuide onClose={closeGuide} />}
 
       {/* Bottom nav — hidden while the planner is open (focused mode). */}
       {!plannerOpen && (
@@ -1924,11 +1938,13 @@ function ToolCard({ d, bg }: { d: any; bg: string }) {
 function PlanTab({
   upcoming,
   past,
+  unclosed = [],
   token,
   onOpenChange,
 }: {
   upcoming: any[];
   past: any[];
+  unclosed?: { camp_id: string; camp_name: string; day_number: number; date: string }[];
   token: string;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -1945,10 +1961,11 @@ function PlanTab({
   // the coach lands on the full plan with support material first.
   const [planView, setPlanView] = useState<'read' | 'run'>('read');
 
-  const openPlanner = async (campId: string, dayNumber?: number) => {
+  const openPlanner = async (campId: string, dayNumber?: number, view?: 'read' | 'run') => {
     setSelectedCampId(campId);
     setLoading(true);
     setPlanData(null);
+    setPlanView(view ?? 'read');
     try {
       const d = await getServicePlan(token, campId, dayNumber);
       setPlanData(d);
@@ -2060,6 +2077,37 @@ function PlanTab({
           drills + missions.
         </p>
       </div>
+
+      {/* Días pasados SIN CIERRE — un toque abre el planner en ese día.
+          El cierre es requisito para liberar el pago (candado de nómina). */}
+      {unclosed.length > 0 && (
+        <div className="rounded-2xl border p-4" style={{ background: 'rgba(255,209,102,.14)', borderColor: 'rgba(255,209,102,.6)' }}>
+          <p className="text-[10px] font-mono uppercase tracking-wider font-semibold mb-2" style={{ color: '#7a5c00' }}>
+            ⚠ Needs closing ({unclosed.length}) — required to release your pay
+          </p>
+          <div className="space-y-1.5">
+            {unclosed.map((u) => (
+              <button
+                key={`${u.camp_id}-${u.day_number}`}
+                type="button"
+                onClick={() => openPlanner(u.camp_id, u.day_number, 'run')}
+                className="w-full text-left bg-white border rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2 hover:border-amber-400 transition-colors"
+                style={{ borderColor: 'rgba(255,209,102,.7)' }}
+              >
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-gray-800 truncate">{(u.camp_name ?? '').split(' · ')[0]}</span>
+                  <span className="block text-[10.5px] text-gray-500">
+                    {new Date(u.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Day {u.day_number}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[10px] font-bold rounded-full px-2.5 py-1" style={{ background: '#FFD166', color: '#061C2B' }}>
+                  Close now →
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {upcoming.length > 0 && (
         <CoachMiniCalendar services={upcoming} onOpen={openPlanner} token={token} />

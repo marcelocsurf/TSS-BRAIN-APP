@@ -61,6 +61,9 @@ export async function reportIncident(input: {
 // their academy coordinator.
 
 export interface CoachPortalData {
+  unclosedPast: {
+    camp_id: string; camp_name: string; day_number: number; date: string;
+  }[];
   pendingStaffInvites: {
     id: string; role: string; response_token: string; camp_name: string;
     start_date: string; end_date: string; scheduled_time: string | null;
@@ -509,8 +512,31 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     })
     .filter(Boolean) as CoachPortalData['pendingStaffInvites'];
 
+  // Días PASADOS sin cierre (14 días) de servicios donde este coach es el
+  // responsable — tarjeta "Needs closing" en Plan: un toque abre el planner
+  // en ese día. Antes vivían enterrados en "Past" y nadie los encontraba.
+  const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const { data: unclosedRows } = await admin
+    .from('camp_sessions')
+    .select('id, day_number, session_date, session_status, camp_instances:camp_instance_id!inner(id, camp_name, status, coach_id, head_coach_id, camp_participants(enrollment_status))')
+    .gte('session_date', twoWeeksAgo)
+    .lt('session_date', today)
+    .neq('session_status', 'completed');
+  const unclosedPast = ((unclosedRows as any[]) ?? [])
+    .map((r: any) => {
+      const inst = Array.isArray(r.camp_instances) ? r.camp_instances[0] : r.camp_instances;
+      if (!inst || inst.status === 'cancelled') return null;
+      if (inst.coach_id !== coach.id && inst.head_coach_id !== coach.id) return null;
+      const hasStudents = (inst.camp_participants ?? []).some((p: any) => p.enrollment_status === 'active');
+      if (!hasStudents) return null; // clase vacía que pasó = ruido, no deuda
+      return { camp_id: inst.id, camp_name: inst.camp_name, day_number: r.day_number, date: r.session_date };
+    })
+    .filter(Boolean)
+    .sort((a: any, b: any) => a.date.localeCompare(b.date)) as CoachPortalData['unclosedPast'];
+
   return {
     coach,
+    unclosedPast,
     pendingStaffInvites,
     stats: {
       totalServicesAsHead: totalServicesAsHead ?? 0,

@@ -29,6 +29,15 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 
 type Tab = 'hoy' | 'operacion' | 'espacios' | 'tablas' | 'clientes';
 
+// Cinta legible + nivel entre paréntesis mientras el equipo aprende los
+// colores (pedido de Rick): "Purple Belt (Emerging)" en vez de "purple_belt".
+const BELT_PRETTY: Record<string, string> = {
+  white_belt: 'White Belt (Beginner)', yellow_belt: 'Yellow Belt (Novice)',
+  blue_belt: 'Blue Belt (Foundation)', purple_belt: 'Purple Belt (Emerging)',
+  brown_belt: 'Brown Belt (Pre-Elite)', black_belt: 'Black Belt (Elite)',
+};
+const beltPretty = (b: string) => BELT_PRETTY[b] ?? `Cinta ${b}`;
+
 function Check({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
@@ -59,7 +68,7 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="font-bold text-[14px] truncate" style={{ color: INK }}>{row.name}</p>
-            <p className="text-[11px] text-gray-400 truncate">{row.belt ? `Cinta ${row.belt}` : 'Sin cinta'}{row.email ? ` · ${row.email}` : ''}</p>
+            <p className="text-[11px] text-gray-400 truncate">{row.belt ? beltPretty(row.belt) : 'Sin cinta'}{row.email ? ` · ${row.email}` : ''}</p>
           </div>
           <span className="text-[18px] shrink-0">{complete ? '🟢' : '🟠'}</span>
         </div>

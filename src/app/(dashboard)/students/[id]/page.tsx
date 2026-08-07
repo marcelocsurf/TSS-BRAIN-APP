@@ -390,7 +390,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                 className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold"
                 style={{ backgroundColor: belt?.color || '#999' }}
               >
-                {belt?.en}
+                {belt?.en}{belt?.levelName ? ` (${belt.levelName})` : ''}
               </span>
               {/* Critical flags — always visible, whatever tab is open (M138). */}
               {hasSafetyData && (

@@ -249,7 +249,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
                   {s.first_name} {s.last_name}
                 </p>
                 <p className="text-xs text-[var(--tss-gray-500)]">
-                  {BELT_DISPLAY[s.belt_level]?.en} — Seq {s.current_sequence_number} / Step {s.current_step_order}
+                  {BELT_DISPLAY[s.belt_level]?.en}{BELT_DISPLAY[s.belt_level]?.levelName ? ` (${BELT_DISPLAY[s.belt_level].levelName})` : ''} — Seq {s.current_sequence_number} / Step {s.current_step_order}
                 </p>
               </div>
 
