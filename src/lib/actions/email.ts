@@ -780,29 +780,45 @@ export async function sendCoachWelcomeEmail(data: {
   firstName: string;
   academyName: string;
   tempPassword: string;
+  variant?: 'coach' | 'host';
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    const body = `
-      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hola <strong>${escapeHtmlBasic(data.firstName)}</strong> 👋</p>
-      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Ya sos parte del equipo de instructores de <strong>${escapeHtmlBasic(data.academyName)}</strong> dentro de <strong>The Surf Sequence</strong>. Tu formación arranca con dos cursos que ya tenés desbloqueados en tu portal:</p>
-      <ul style="margin:0 0 14px;padding-left:18px;font-size:13px;color:#374151;line-height:1.8;">
-        <li><strong>Safety Canon</strong> — 10 lecciones + examen final (requisito de tu certificación L1). Empezá por acá.</li>
-        <li><strong>El Método</strong> — Foundations: la filosofía y estructura de The Surf Sequence en 6 lecciones.</li>
-      </ul>
-      <div style="margin:0 0 14px;padding:14px 16px;background:#F7F9FA;border:1px solid #E5E9EC;border-radius:12px;">
-        <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#061C2B;">🔑 Cómo entrar</p>
-        <p style="margin:0 0 4px;font-size:13px;color:#374151;line-height:1.7;">1. Abrí <strong>app.thesurfsequence.com</strong></p>
-        <p style="margin:0 0 4px;font-size:13px;color:#374151;line-height:1.7;">2. Iniciá sesión con este correo y la contraseña temporal: <strong style="font-family:'Courier New',monospace;">${escapeHtmlBasic(data.tempPassword)}</strong></p>
-        <p style="margin:0;font-size:12px;color:#6B7280;line-height:1.6;">Podés cambiarla cuando quieras desde tu perfil.</p>
-      </div>
-      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#061C2B;">🧭 Tu portal, en 30 segundos</p>
+    const isHost = data.variant === 'host';
+    const tour = isHost
+      ? `<p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#061C2B;">🧭 Tu portal, en 30 segundos</p>
+      <p style="margin:0 0 14px;font-size:13px;color:#374151;line-height:1.8;">
+        <strong>HOY</strong> — el mostrador: check-in, cobros y transferencias del día.<br/>
+        <strong>AGENDA</strong> — todo el calendario: reservale a un cliente en segundos o creá una clase fuera de horario.<br/>
+        <strong>TABLAS</strong> — calculadora de tablas y sistema de rentas con firma.<br/>
+        <strong>ESPACIOS</strong> — qué sala está ocupada y cuándo.<br/>
+        <strong>CLIENTES</strong> — fichas completas y el semáforo de waivers pendientes.
+      </p>
+      <p style="margin:0 0 14px;font-size:12px;color:#6B7280;line-height:1.6;">La primera vez que entres se abre sola la <strong>Guía de uso 📖</strong> con todo explicado paso a paso — y queda siempre en el botón 📖 de arriba.</p>`
+      : `<p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#061C2B;">🧭 Tu portal, en 30 segundos</p>
       <p style="margin:0 0 14px;font-size:13px;color:#374151;line-height:1.8;">
         <strong>Home</strong> — tu día: clases asignadas, tareas y avisos.<br/>
         <strong>Courses</strong> — tus cursos (Safety + Método) con tu progreso.<br/>
         <strong>Tools</strong> — recursos y herramientas de coaching.<br/>
         <strong>Plan</strong> — la planeación de tus sesiones cuando tengas clases.<br/>
         <strong>Espacios</strong> — las salas y lugares de la academia.
-      </p>
+      </p>`;
+    const intro = isHost
+      ? `Ya sos parte del equipo de <strong>${escapeHtmlBasic(data.academyName)}</strong> como <strong>Host — Servicio al cliente</strong> dentro de <strong>The Surf Sequence</strong>. Tu portal es el mostrador completo de la academia: con él atendés clientes, cobrás, reservás y ves todo lo que pasa en el día.`
+      : null;
+    const body = `
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hola <strong>${escapeHtmlBasic(data.firstName)}</strong> 👋</p>
+      <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">${intro ?? `Ya sos parte del equipo de instructores de <strong>${escapeHtmlBasic(data.academyName)}</strong> dentro de <strong>The Surf Sequence</strong>. Tu formación arranca con dos cursos que ya tenés desbloqueados en tu portal:`}</p>
+      ${isHost ? '' : `<ul style="margin:0 0 14px;padding-left:18px;font-size:13px;color:#374151;line-height:1.8;">
+        <li><strong>Safety Canon</strong> — 10 lecciones + examen final (requisito de tu certificación L1). Empezá por acá.</li>
+        <li><strong>El Método</strong> — Foundations: la filosofía y estructura de The Surf Sequence en 6 lecciones.</li>
+      </ul>`}
+      <div style="margin:0 0 14px;padding:14px 16px;background:#F7F9FA;border:1px solid #E5E9EC;border-radius:12px;">
+        <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#061C2B;">🔑 Cómo entrar</p>
+        <p style="margin:0 0 4px;font-size:13px;color:#374151;line-height:1.7;">1. Abrí <strong>app.thesurfsequence.com</strong></p>
+        <p style="margin:0 0 4px;font-size:13px;color:#374151;line-height:1.7;">2. Iniciá sesión con este correo y la contraseña temporal: <strong style="font-family:'Courier New',monospace;">${escapeHtmlBasic(data.tempPassword)}</strong></p>
+        <p style="margin:0;font-size:12px;color:#6B7280;line-height:1.6;">Podés cambiarla cuando quieras desde tu perfil.</p>
+      </div>
+      ${tour}
       <div style="margin-top:4px;padding:14px 16px;background:#E5FAFF;border:1px solid #99E9FF;border-radius:12px;">
         <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#0d2240;">📲 Instalá el app en tu teléfono (recomendado)</p>
         <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>iPhone:</strong> abrí tu portal en Safari → botón Compartir → <strong>"Agregar a pantalla de inicio"</strong>.</p>
