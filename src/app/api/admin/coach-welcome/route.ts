@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization');
   if (auth !== `Bearer ${secret}`) return NextResponse.json({ ok: false, error: 'Unauthorized.' }, { status: 401 });
 
-  const { emails, tempPassword } = await req.json().catch(() => ({}));
+  const { emails, tempPassword, variantOverride } = await req.json().catch(() => ({}));
   if (!Array.isArray(emails) || !emails.length || !tempPassword) {
     return NextResponse.json({ ok: false, error: 'Body: { emails: string[], tempPassword: string }' }, { status: 400 });
   }
@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
       firstName: coach.first_name || 'Coach',
       academyName: academy?.name ?? 'tu academia',
       tempPassword: String(tempPassword),
-      variant: (coach as any).role === 'host' ? 'host' : 'coach',
+      variant: variantOverride === 'host' || variantOverride === 'coach'
+        ? variantOverride
+        : ((coach as any).role === 'host' ? 'host' : 'coach'),
     });
     results.push({ email, sent: r.success, error: r.error });
   }
