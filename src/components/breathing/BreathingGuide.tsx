@@ -3,30 +3,46 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
-// Guided breathing — box, 4-7-8, coherent, breath of fire. Pure client: a CSS
-// scale animation + Web Audio tones (no audio files) + optional haptics.
-// Nothing loads over the network, nothing is saved.
+// ═══ RESPIRACIÓN GUIADA — Brand Manual v10 ═══
+// Ink + blueprint grid Fibonacci + numerales gigantes delineados en cyan +
+// Archivo Expanded para las órdenes (INHALÁ / EXHALÁ) + mono para datos.
+// Patrones clásicos (box, 4-7-8, coherente, fire) + MÉTODO WIM HOF completo:
+// 30 respiraciones contadas → retención con cronómetro (tocás para terminar)
+// → recuperación 15 s → 3 rondas. Todo client-side: Web Audio, sin archivos.
 
 type Phase = { label: string; sec: number; scale: number };
-type Pattern = { id: string; name: string; desc: string; accent: string; phases: Phase[] };
+type Pattern = { id: string; name: string; desc: string; phases: Phase[] };
 
 const BIG = 1, SMALL = 0.42;
+const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
+const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
+const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
+// Blueprint grid v10: líneas 1px cyan al 6% en celdas Fibonacci (34px).
+const GRID: React.CSSProperties = {
+  backgroundImage: `linear-gradient(rgba(0,210,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,210,255,0.06) 1px, transparent 1px)`,
+  backgroundSize: '34px 34px',
+};
 
 const PATTERNS: Pattern[] = [
-  { id: 'box', name: 'Box breathing', desc: 'Foco y calma · 4·4·4·4', accent: '#5AC3E7', phases: [
+  { id: 'wimhof', name: 'Wim Hof', desc: '30 resp · retención · 3 rondas', phases: [] },
+  { id: 'box', name: 'Box', desc: 'Foco · 4·4·4·4', phases: [
     { label: 'Inhalá', sec: 4, scale: BIG }, { label: 'Sostené', sec: 4, scale: BIG },
     { label: 'Exhalá', sec: 4, scale: SMALL }, { label: 'Sostené', sec: 4, scale: SMALL },
   ] },
-  { id: '478', name: '4 · 7 · 8', desc: 'Calmar · dormir', accent: '#A78BFA', phases: [
+  { id: '478', name: '4 · 7 · 8', desc: 'Calmar · dormir', phases: [
     { label: 'Inhalá', sec: 4, scale: BIG }, { label: 'Sostené', sec: 7, scale: BIG }, { label: 'Exhalá', sec: 8, scale: SMALL },
   ] },
-  { id: 'coherent', name: 'Coherente', desc: 'Equilibrio · 5·5', accent: '#34D399', phases: [
+  { id: 'coherent', name: 'Coherente', desc: 'Equilibrio · 5·5', phases: [
     { label: 'Inhalá', sec: 5, scale: BIG }, { label: 'Exhalá', sec: 5, scale: SMALL },
   ] },
-  { id: 'fire', name: 'Breath of Fire', desc: 'Energía · rápido', accent: '#F59E0B', phases: [
+  { id: 'fire', name: 'Fire', desc: 'Energía · rápido', phases: [
     { label: 'Inhalá', sec: 0.7, scale: BIG }, { label: 'Exhalá', sec: 0.7, scale: SMALL },
   ] },
 ];
+
+// Estado del modo Wim Hof
+type WimMode = 'breaths' | 'retention' | 'recovery' | 'rest' | 'done';
+const WIM_BREATHS = 30, WIM_ROUNDS = 3, WIM_IN = 1.5, WIM_OUT = 1.5, WIM_RECOVERY = 15;
 
 function usePrefersReducedMotion() {
   const [r, setR] = useState(false);
@@ -40,23 +56,37 @@ function usePrefersReducedMotion() {
   return r;
 }
 
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
 export function BreathingGuide({ onClose }: { onClose: () => void }) {
-  const [patternId, setPatternId] = useState('box');
+  const [patternId, setPatternId] = useState('wimhof');
   const pattern = PATTERNS.find((p) => p.id === patternId)!;
+  const isWim = patternId === 'wimhof';
   const [running, setRunning] = useState(false);
   const [phaseIdx, setPhaseIdx] = useState(0);
   const [scale, setScale] = useState(SMALL);
   const [count, setCount] = useState(0);
   const [cycles, setCycles] = useState(0);
   const [muted, setMuted] = useState(false);
+  // Wim Hof
+  const [wimMode, setWimMode] = useState<WimMode>('breaths');
+  const [wimRound, setWimRound] = useState(1);
+  const [wimBreath, setWimBreath] = useState(0);
+  const [wimIn, setWimIn] = useState(true);      // inhalando (true) / exhalando
+  const [retSec, setRetSec] = useState(0);       // cronómetro de retención
+  const [recSec, setRecSec] = useState(WIM_RECOVERY);
+  const [retentions, setRetentions] = useState<number[]>([]);
   const reduce = usePrefersReducedMotion();
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const retRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const noiseRef = useRef<AudioBuffer | null>(null);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
+  const wimModeRef = useRef<WimMode>('breaths');
+  wimModeRef.current = wimMode;
 
   function ensureAudio() {
     if (!audioRef.current) audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -70,8 +100,7 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
     return ctx;
   }
 
-  // Soft breath whoosh: filtered noise that swells up (inhale) or eases down
-  // (exhale). No tones, no beeps — sounds like breathing.
+  // Soplo suave: ruido filtrado que sube (inhala) o baja (exhala).
   function playBreath(kind: 'in' | 'out', durationSec: number) {
     if (mutedRef.current) return;
     try {
@@ -86,20 +115,25 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       const g = ctx.createGain();
       const peak = 0.05;
       const d = Math.max(0.4, durationSec);
-      // Volume swells then eases — the shape of a breath.
       g.gain.setValueAtTime(0.0001, t);
       g.gain.linearRampToValueAtTime(peak, t + d * 0.45);
       g.gain.linearRampToValueAtTime(0.0001, t + d);
-      // Filter sweeps up on inhale, down on exhale.
       if (kind === 'in') { filter.frequency.setValueAtTime(480, t); filter.frequency.linearRampToValueAtTime(1200, t + d); }
       else { filter.frequency.setValueAtTime(1200, t); filter.frequency.linearRampToValueAtTime(420, t + d); }
       src.connect(filter); filter.connect(g); g.connect(ctx.destination);
       src.start(t); src.stop(t + d + 0.05);
-    } catch { /* audio not available */ }
+    } catch { /* sin audio */ }
   }
 
+  const clearTimers = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (countRef.current) clearInterval(countRef.current);
+    if (retRef.current) clearInterval(retRef.current);
+  };
+
+  // ── Motor de patrones clásicos ──────────────────────────────
   useEffect(() => {
-    if (!running) return;
+    if (!running || isWim) return;
     let cancelled = false;
     const phases = pattern.phases;
 
@@ -110,7 +144,6 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       setScale(ph.scale);
       if (ph.label === 'Inhalá') playBreath('in', ph.sec);
       else if (ph.label === 'Exhalá') playBreath('out', ph.sec);
-      // holds stay silent
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
 
       if (countRef.current) clearInterval(countRef.current);
@@ -118,9 +151,7 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
         let left = Math.ceil(ph.sec);
         setCount(left);
         countRef.current = setInterval(() => { left -= 1; setCount(left > 0 ? left : 0); }, 1000);
-      } else {
-        setCount(0);
-      }
+      } else setCount(0);
 
       timeoutRef.current = setTimeout(() => {
         const next = (i + 1) % phases.length;
@@ -131,89 +162,184 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
 
     setCycles(0);
     runPhase(0);
-    return () => {
-      cancelled = true;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (countRef.current) clearInterval(countRef.current);
-    };
+    return () => { cancelled = true; clearTimers(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, patternId]);
+
+  // ── Motor WIM HOF ───────────────────────────────────────────
+  useEffect(() => {
+    if (!running || !isWim) return;
+    let cancelled = false;
+
+    function breathe(round: number, n: number) {
+      if (cancelled) return;
+      if (n > WIM_BREATHS) { startRetention(round); return; }
+      setWimMode('breaths'); setWimRound(round); setWimBreath(n);
+      // inhala
+      setWimIn(true); setScale(BIG); playBreath('in', WIM_IN);
+      timeoutRef.current = setTimeout(() => {
+        if (cancelled) return;
+        // exhala
+        setWimIn(false); setScale(SMALL); playBreath('out', WIM_OUT);
+        timeoutRef.current = setTimeout(() => breathe(round, n + 1), WIM_OUT * 1000);
+      }, WIM_IN * 1000);
+    }
+
+    function startRetention(round: number) {
+      if (cancelled) return;
+      setWimMode('retention'); setScale(SMALL); setRetSec(0);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([40, 60, 40]);
+      let s = 0;
+      retRef.current = setInterval(() => {
+        s += 1; setRetSec(s);
+        if (s >= 210) endRetention(round); // tope de seguridad 3:30
+      }, 1000);
+    }
+
+    function endRetention(round: number) {
+      if (cancelled || wimModeRef.current !== 'retention') return;
+      if (retRef.current) clearInterval(retRef.current);
+      setRetentions((r) => [...r, retSecRef.current]);
+      // recuperación: inhalá hondo y sostené 15 s
+      setWimMode('recovery'); setScale(BIG); playBreath('in', 2);
+      let left = WIM_RECOVERY;
+      setRecSec(left);
+      retRef.current = setInterval(() => {
+        left -= 1; setRecSec(left);
+        if (left <= 0) {
+          if (retRef.current) clearInterval(retRef.current);
+          if (round >= WIM_ROUNDS) { setWimMode('done'); setRunning(false); setScale(SMALL); }
+          else {
+            setWimMode('rest'); setScale(SMALL);
+            timeoutRef.current = setTimeout(() => breathe(round + 1, 1), 3000);
+          }
+        }
+      }, 1000);
+    }
+
+    // handler para "tocá para terminar la retención"
+    endRetentionRef.current = () => {
+      const r = wimRoundRef.current;
+      endRetention(r);
+    };
+
+    setRetentions([]);
+    breathe(1, 1);
+    return () => { cancelled = true; clearTimers(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, patternId]);
+
+  // refs para el tap de retención
+  const retSecRef = useRef(0); retSecRef.current = retSec;
+  const wimRoundRef = useRef(1); wimRoundRef.current = wimRound;
+  const endRetentionRef = useRef<() => void>(() => {});
 
   function stop() {
     setRunning(false);
     setScale(SMALL);
     setPhaseIdx(0);
     setCount(0);
+    setWimMode('breaths');
+    setWimBreath(0);
+    clearTimers();
   }
 
   const phase = pattern.phases[phaseIdx];
-  const label = running ? phase.label : 'Listo';
-  const transitionSec = running ? phase.sec : 0.6;
+  const transitionSec = running ? (isWim ? (wimIn ? WIM_IN : WIM_OUT) : phase?.sec ?? 0.6) : 0.6;
+
+  // Qué mostrar en el centro
+  let word = 'Listo', numeral: string | null = null, sub: string | null = null;
+  if (running && isWim) {
+    if (wimMode === 'breaths') { word = wimIn ? 'Inhalá' : 'Exhalá'; numeral = String(wimBreath); sub = `Ronda ${wimRound} de ${WIM_ROUNDS}`; }
+    else if (wimMode === 'retention') { word = 'Retené'; numeral = mmss(retSec); sub = 'Pulmones vacíos · tocá el círculo para terminar'; }
+    else if (wimMode === 'recovery') { word = 'Sostené'; numeral = String(recSec); sub = 'Inhalaste hondo — aguantá 15 s'; }
+    else if (wimMode === 'rest') { word = 'Soltá'; numeral = null; sub = `Ronda ${wimRound + 1} arranca ya…`; }
+  } else if (!running && isWim && wimMode === 'done') {
+    word = 'Completo'; numeral = null;
+    sub = retentions.length ? `Retenciones: ${retentions.map(mmss).join(' · ')}` : null;
+  } else if (running && !isWim) {
+    word = phase.label; numeral = count > 0 ? String(count) : null;
+    sub = `${cycles} ciclo${cycles === 1 ? '' : 's'}`;
+  } else {
+    sub = 'Elegí un patrón y empezá';
+  }
+
+  const tapRetention = () => { if (running && isWim && wimMode === 'retention') endRetentionRef.current(); };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: '#0A1628', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50">Respiración guiada</p>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setMuted((m) => !m)} className="p-2 rounded-lg text-white/60 hover:bg-white/10" aria-label={muted ? 'Activar sonido' : 'Silenciar'}>
-            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: INK, ...GRID, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* Barra superior — riel v10 */}
+      <div className="flex items-center justify-between px-[21px] pt-[13px] pb-[8px]" style={{ borderBottom: '1px solid rgba(247,249,250,0.16)' }}>
+        <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>Breathwork · The Surf Sequence</p>
+        <div className="flex items-center gap-[8px]">
+          <button onClick={() => setMuted((m) => !m)} className="p-2 text-white/60 hover:text-white" aria-label={muted ? 'Activar sonido' : 'Silenciar'}>
+            {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
           </button>
-          <button onClick={onClose} className="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white" aria-label="Cerrar"><X size={15} /> Cerrar</button>
+          <button onClick={onClose} className="inline-flex items-center gap-1 px-[13px] py-[5px] text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,0.1)', color: PAPER }} aria-label="Cerrar">
+            <X size={13} /> Cerrar
+          </button>
         </div>
       </div>
 
-      {/* Pattern chips */}
-      <div className="flex gap-2 px-4 pb-2 overflow-x-auto">
-        {PATTERNS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => { setPatternId(p.id); if (running) { /* effect restarts */ } }}
-            className="shrink-0 rounded-xl px-3 py-2 text-left border transition-colors"
-            style={{
-              borderColor: patternId === p.id ? p.accent : 'rgba(255,255,255,.12)',
-              background: patternId === p.id ? p.accent + '22' : 'transparent',
-            }}
-          >
-            <span className="block text-[13px] font-semibold" style={{ color: patternId === p.id ? '#fff' : 'rgba(255,255,255,.75)' }}>{p.name}</span>
-            <span className="block text-[10px]" style={{ color: 'rgba(255,255,255,.4)' }}>{p.desc}</span>
-          </button>
-        ))}
+      {/* Patrones — chips rectilíneos v10 */}
+      <div className="flex gap-[8px] px-[21px] py-[13px] overflow-x-auto">
+        {PATTERNS.map((p) => {
+          const on = patternId === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => { stop(); setPatternId(p.id); }}
+              className="shrink-0 px-[13px] py-[8px] text-left transition-colors"
+              style={{ border: `1px solid ${on ? CYAN : 'rgba(247,249,250,0.16)'}`, background: on ? 'rgba(0,210,255,0.08)' : 'transparent' }}
+            >
+              <span className="block text-[12px]" style={{ ...F_D, fontWeight: 700, color: on ? CYAN : 'rgba(247,249,250,.8)' }}>{p.name}</span>
+              <span className="block text-[8px] mt-[3px]" style={{ ...F_M, color: 'rgba(247,249,250,.4)' }}>{p.desc}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Circle */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-6">
-        <div className="relative flex items-center justify-center" style={{ width: 280, height: 280 }}>
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: 240, height: 240,
-              background: `radial-gradient(circle, ${pattern.accent}33, ${pattern.accent}11)`,
-              border: `2px solid ${pattern.accent}`,
-              transform: `scale(${reduce ? 0.85 : scale})`,
+      {/* Centro: anillos Fibonacci que respiran + numeral gigante delineado */}
+      <button type="button" onClick={tapRetention} className="flex-1 flex flex-col items-center justify-center gap-[21px] outline-none" style={{ cursor: running && isWim && wimMode === 'retention' ? 'pointer' : 'default' }}>
+        <div className="relative flex items-center justify-center" style={{ width: 288, height: 288 }}>
+          {/* Anillos concéntricos 89 · 144 · 233 (escala Fibonacci) */}
+          {[233, 144, 89].map((d, i) => (
+            <div key={d} className="absolute rounded-full" style={{
+              width: d, height: d,
+              border: `1px solid rgba(0,210,255,${0.16 + i * 0.14})`,
+              transform: `scale(${reduce ? 0.9 : scale})`,
               transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out`,
-            }}
-          />
-          <div className="relative text-center">
-            <p className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>{label}</p>
-            {count > 0 && <p className="text-4xl font-bold tabular-nums mt-1" style={{ color: pattern.accent, fontFamily: 'DM Mono, monospace' }}>{count}</p>}
-          </div>
+            }} />
+          ))}
+          {/* Disco central */}
+          <div className="absolute rounded-full" style={{
+            width: 55, height: 55, background: CYAN, opacity: 0.9,
+            transform: `scale(${reduce ? 0.9 : scale})`,
+            transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out`,
+          }} />
+          {/* Numeral gigante delineado (como los numerales de capítulo v10) */}
+          {numeral !== null && (
+            <p className="relative select-none tabular-nums text-[89px] leading-none" style={{ ...F_D, color: 'transparent', WebkitTextStroke: `2px ${CYAN}` }}>
+              {numeral}
+            </p>
+          )}
         </div>
 
-        <p className="text-[11px] font-mono uppercase tracking-wider text-white/30">
-          {running ? `${cycles} ciclo${cycles === 1 ? '' : 's'}` : 'Elegí un patrón y empezá'}
-        </p>
-      </div>
+        <div className="text-center px-[21px]">
+          <p className="text-[34px] leading-none" style={{ ...F_D, color: PAPER }}>{word}</p>
+          {sub && <p className="text-[9px] mt-[13px]" style={{ ...F_M, color: 'rgba(247,249,250,.45)' }}>{sub}</p>}
+        </div>
+      </button>
 
-      {/* Controls */}
-      <div className="px-6 pb-8">
+      {/* CTA — píldora cyan v10 */}
+      <div className="px-[21px] pb-[34px]">
         {running ? (
-          <button onClick={stop} className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-semibold text-white bg-white/10 active:scale-[0.98] transition-transform">
-            <Pause size={20} /> Pausar
+          <button onClick={stop} className="w-full inline-flex items-center justify-center gap-2 rounded-full py-[16px] text-[11px]" style={{ ...F_M, background: 'rgba(247,249,250,0.1)', color: PAPER, fontWeight: 700 }}>
+            <Pause size={16} /> Pausar
           </button>
         ) : (
-          <button onClick={() => setRunning(true)} className="w-full inline-flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold active:scale-[0.98] transition-transform" style={{ background: pattern.accent, color: '#0A1628' }}>
-            <Play size={20} /> Empezar
+          <button onClick={() => { setWimMode('breaths'); setRunning(true); }} className="w-full inline-flex items-center justify-center gap-2 rounded-full py-[16px] text-[11px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 800 }}>
+            <Play size={16} /> {isWim ? `Empezar · ${WIM_ROUNDS} rondas` : 'Empezar'}
           </button>
         )}
       </div>
