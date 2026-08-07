@@ -217,7 +217,7 @@ export async function hostSendIntakeEmail(token: string, studentId: string): Pro
   if (!s) return { ok: false, error: 'Cliente no encontrado.' };
   if (!s.email) return { ok: false, error: 'Este cliente no tiene email — usá el botón de copiar link y mandalo por WhatsApp.' };
   if (!s.portal_token) return { ok: false, error: 'Este cliente no tiene link de intake.' };
-  const r = await sendIntakeLinkEmail({ toEmail: s.email, firstName: s.first_name, intakeUrl: `${BASE()}/intake/${s.portal_token}` });
+  const r = await sendIntakeLinkEmail({ toEmail: s.email, firstName: s.first_name, intakeUrl: `${BASE()}/intake/${s.portal_token}`, academyId: who.academy_id });
   return r.success ? { ok: true } : { ok: false, error: r.error };
 }
 
@@ -530,6 +530,7 @@ export async function hostAssignCoach(token: string, campId: string, coachId: st
       serviceName: (camp as any).camp_name,
       dateRange,
       portalUrl: coach.portal_token ? `${BASE()}/coach-portal/${coach.portal_token}` : BASE(),
+      academyId: who.academy_id,
     }).catch(() => {});
   }
   // Trazabilidad: coordinación se entera de que el host cubrió esto.

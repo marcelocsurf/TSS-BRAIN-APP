@@ -81,7 +81,7 @@ export async function updateCampHeadCoach(
     try {
       const admin = createAdminClient();
       const [{ data: camp }, { data: coach }] = await Promise.all([
-        admin.from('camp_instances').select('camp_name, start_date, end_date, scheduled_time, camp_templates:template_id(duration_days)').eq('id', campInstanceId).single(),
+        admin.from('camp_instances').select('camp_name, start_date, end_date, scheduled_time, academy_id, camp_templates:template_id(duration_days)').eq('id', campInstanceId).single(),
         admin.from('coaches').select('id, first_name, email, portal_token').eq('id', headCoachId).single(),
       ]);
       if (camp && coach) {
@@ -111,6 +111,7 @@ export async function updateCampHeadCoach(
             serviceName: camp.camp_name,
             dateRange,
             portalUrl: coach.portal_token ? `${appUrl}/coach-portal/${coach.portal_token}` : appUrl,
+                      academyId: (camp as any).academy_id ?? null,
           });
         }
       }
@@ -192,6 +193,7 @@ export async function respondToAssignment(input: {
             serviceName: camp.camp_name,
             accepted,
             note: input.note?.trim() || null,
+                      academyId: (camp as any)?.academy_id ?? null,
           });
         }
       }

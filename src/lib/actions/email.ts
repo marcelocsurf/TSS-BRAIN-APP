@@ -1,6 +1,7 @@
 'use server';
 
 import { Resend } from 'resend';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { BRAND } from '@/lib/constants/brand';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
@@ -116,6 +117,19 @@ export async function sendCoachSurveyEmail(data: CoachSurveyEmailData): Promise<
 
 // ─── Service assignment emails ───────────────────────────────────────
 
+// Co-branding por academia (pedido de Marcelo): si el correo pertenece a
+// una academia con logo (ej. Puro Surf), va una banda blanca con su logo
+// bajo el header ink de TSS. Sin logo → correo TSS puro, sin banda.
+async function academyBrand(academyId?: string | null): Promise<{ name: string; logoUrl: string } | undefined> {
+  if (!academyId) return undefined;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from('academies').select('name, logo_url').eq('id', academyId).maybeSingle();
+    if (!data?.logo_url) return undefined;
+    return { name: data.name, logoUrl: data.logo_url };
+  } catch { return undefined; }
+}
+
 function escapeHtmlBasic(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -127,7 +141,7 @@ function escapeHtmlBasic(s: string): string {
 
 // Brand Manual v10: header ink con el logo, etiqueta mono espaciada en cyan,
 // CTA como píldora cyan con texto ink. Una sola shell viste TODOS los correos.
-function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }): string {
+function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }, academy?: { name: string; logoUrl: string }): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F7F9FA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
@@ -135,6 +149,7 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
       ${EMAIL_LOGO}
       <p style="margin:10px 0 0;color:${BRAND.colors.cyan};font-size:10px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:3px;">${BRAND.tagline}</p>
     </div>
+    ${academy ? `<div style="background:white;padding:10px 24px;border:1px solid #E5E9EC;border-top:none;text-align:center;"><img src="${academy.logoUrl}" alt="${escapeHtmlBasic(academy.name)}" style="height:34px;max-width:60%;object-fit:contain;" /></div>` : ''}
     <div style="background:white;padding:26px 24px;border-radius:0 0 16px 16px;border:1px solid #E5E9EC;border-top:none;">
       <h2 style="margin:0 0 14px;font-size:17px;font-weight:800;color:${BRAND.colors.navy};text-transform:uppercase;letter-spacing:-0.2px;line-height:1.15;">${title}</h2>
       ${bodyHtml}
@@ -161,6 +176,7 @@ export async function sendIntakeLinkEmail(data: {
   toEmail: string;
   firstName: string;
   intakeUrl: string;
+  academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await resend.emails.send({
@@ -171,6 +187,7 @@ export async function sendIntakeLinkEmail(data: {
         `Welcome, ${data.firstName || 'surfer'}!`,
         `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">Before your session, please complete your quick intake — it only takes a couple of minutes: your details, a short safety check, and the waiver.</p>${INSTALL_APP_HTML}`,
         { url: data.intakeUrl, label: 'Complete my intake' },
+        await academyBrand(data.academyId),
       ),
     });
     return { success: true };
@@ -221,6 +238,7 @@ export async function sendAssignmentEmail(data: {
   serviceName: string;
   dateRange: string;
   portalUrl: string;
+  academyId?: string | null;
 }): Promise<void> {
   try {
     const body = `
@@ -235,7 +253,7 @@ export async function sendAssignmentEmail(data: {
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `New service assigned — please confirm`,
-      html: assignmentEmailShell('You have a new service to confirm', body, { url: data.portalUrl, label: 'Open my portal' }),
+      html: assignmentEmailShell('You have a new service to confirm', body, { url: data.portalUrl, label: 'Open my portal' }, await academyBrand(data.academyId)),
     });
   } catch (err: any) {
     console.error('Assignment email failed:', err.message);
@@ -249,6 +267,7 @@ export async function sendAssignmentResponseEmail(data: {
   serviceName: string;
   accepted: boolean;
   note?: string | null;
+  academyId?: string | null;
 }): Promise<void> {
   try {
     const verb = data.accepted ? 'accepted' : 'declined';
@@ -267,7 +286,7 @@ export async function sendAssignmentResponseEmail(data: {
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `${data.coachName} ${verb} — ${data.serviceName}`,
-      html: assignmentEmailShell(`Service ${verb}`, body),
+      html: assignmentEmailShell(`Service ${verb}`, body, undefined, await academyBrand(data.academyId)),
     });
   } catch (err: any) {
     console.error('Assignment response email failed:', err.message);
@@ -725,6 +744,7 @@ export async function sendBookingConfirmationEmail(data: {
   dateLabel: string;
   amountLabel: string | null;
   manageUrl: string;
+  academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await resend.emails.send({
@@ -736,6 +756,7 @@ export async function sendBookingConfirmationEmail(data: {
         `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;"><strong>${data.className}</strong><br/>${data.dateLabel}${data.amountLabel ? `<br/>${data.amountLabel} — pay at front desk (cash or card)` : ''}</p>
          <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">Plans changed? Use the button below to move or cancel your booking. Cancel more than 24 hours before class and it's free; within 24 hours the full class price is due.</p>`,
         { url: data.manageUrl, label: 'Manage my booking' },
+        await academyBrand(data.academyId),
       ),
     });
     return { success: true };
@@ -751,6 +772,7 @@ export async function sendClosureReminderEmail(data: {
   coachName: string;
   pending: { service: string; date: string }[];
   portalUrl: string;
+  academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const rows = data.pending.map((p) => `<li style="margin:0 0 4px;">${p.service} — <strong>${p.date}</strong></li>`).join('');
@@ -763,6 +785,7 @@ export async function sendClosureReminderEmail(data: {
         `<ul style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;padding-left:18px;">${rows}</ul>
          <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">El cierre del día alimenta la bitácora de tus alumnos y es <strong>requisito para emitir tu pago</strong>. Te toma 2 minutos desde tu portal.</p>`,
         { url: data.portalUrl, label: 'Cerrar mis sesiones' },
+        await academyBrand(data.academyId),
       ),
     });
     return { success: true };
@@ -781,6 +804,7 @@ export async function sendCoachWelcomeEmail(data: {
   academyName: string;
   tempPassword: string;
   variant?: 'coach' | 'host';
+  academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const isHost = data.variant === 'host';
@@ -829,7 +853,7 @@ export async function sendCoachWelcomeEmail(data: {
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `Bienvenido al equipo, ${data.firstName} 🌊 — tu acceso a The Surf Sequence`,
-      html: assignmentEmailShell('¡Ya sos parte del equipo!', body, { url: 'https://app.thesurfsequence.com/login', label: 'Entrar a mi portal' }),
+      html: assignmentEmailShell('¡Ya sos parte del equipo!', body, { url: 'https://app.thesurfsequence.com/login', label: 'Entrar a mi portal' }, await academyBrand(data.academyId)),
     });
     return { success: true };
   } catch (err: any) {

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   for (const email of emails) {
     const { data: coach } = await admin
       .from('coaches')
-      .select('first_name, email, auth_user_id, role, academies:academy_id(name)')
+      .select('first_name, email, auth_user_id, role, academy_id, academies:academy_id(name)')
       .eq('email', String(email).trim().toLowerCase())
       .maybeSingle();
     if (!coach?.email) { results.push({ email, sent: false, error: 'coach not found' }); continue; }
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
       firstName: coach.first_name || 'Coach',
       academyName: academy?.name ?? 'tu academia',
       tempPassword: String(tempPassword),
+      academyId: (coach as any).academy_id ?? null,
       variant: variantOverride === 'host' || variantOverride === 'coach'
         ? variantOverride
         : ((coach as any).role === 'host' ? 'host' : 'coach'),

@@ -158,6 +158,7 @@ export async function createLead(input: CreateLeadInput): Promise<CreateLeadResu
       toEmail: email,
       firstName: input.first_name.trim(),
       intakeUrl,
+      academyId: me?.academy_id ?? null,
     }).catch(() => ({ success: false }));
     emailSent = !!r.success;
   }
@@ -286,3 +287,4 @@ export async function promoteLeadToMember(
 
   revalidatePath('/students');
 }
+

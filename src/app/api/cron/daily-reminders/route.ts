@@ -196,11 +196,11 @@ async function handle(req: NextRequest) {
     const weekAgo = new Date(svNow.getTime() - 6 * 86400000).toISOString().slice(0, 10);
     const { data: openSes } = await admin
       .from('camp_sessions')
-      .select('session_date, session_status, camp_instances:camp_instance_id!inner(camp_name, status, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
+      .select('session_date, session_status, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
       .gte('session_date', weekAgo)
       .lte('session_date', svToday)
       .neq('session_status', 'completed');
-    const byCoach = new Map<string, { name: string; email: string; token: string; pending: { service: string; date: string }[] }>();
+    const byCoach = new Map<string, { name: string; email: string; token: string; academyId: string | null; pending: { service: string; date: string }[] }>();
     for (const ses of (openSes as any[]) ?? []) {
       const inst = Array.isArray(ses.camp_instances) ? ses.camp_instances[0] : ses.camp_instances;
       if (!inst || inst.status === 'cancelled') continue;
@@ -210,7 +210,7 @@ async function handle(req: NextRequest) {
         : (Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches);
       if (!coach?.id) continue;
       if (!coach?.email) continue;
-      const e = byCoach.get(coach.id) ?? { name: coach.display_name ?? 'Coach', email: coach.email, token: coach.portal_token, pending: [] as { service: string; date: string }[] };
+      const e = byCoach.get(coach.id) ?? { name: coach.display_name ?? 'Coach', email: coach.email, token: coach.portal_token, academyId: inst.academy_id as string | null, pending: [] as { service: string; date: string }[] };
       e.pending.push({ service: (inst.camp_name ?? '').split(' · ')[0], date: ses.session_date });
       byCoach.set(coach.id, e);
     }
@@ -221,6 +221,7 @@ async function handle(req: NextRequest) {
         toEmail: c.email, coachName: c.name,
         pending: c.pending.sort((a, b) => a.date.localeCompare(b.date)),
         portalUrl: `${base}/coach-portal/${c.token}`,
+        academyId: c.academyId,
       });
       if (r.success) closureEmails++;
     }

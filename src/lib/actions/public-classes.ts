@@ -299,6 +299,7 @@ export async function publicEnroll(input: {
       dateLabel: dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + ((camp as any).scheduled_time ? ` · ${(camp as any).scheduled_time.slice(0, 5)}` : ''),
       amountLabel: amount != null && amount > 0 ? `$${(amount / 100).toFixed(2)}` : null,
       manageUrl: `${base}/booking/${(seatRow as any)?.id}`,
+      academyId: (camp as any)?.academy_id ?? null,
     }).catch(() => {});
   } catch { /* el email nunca bloquea la reserva */ }
 

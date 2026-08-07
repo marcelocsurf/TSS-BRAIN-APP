@@ -105,7 +105,7 @@ export async function assignServiceStaff(input: {
 
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, end_date, scheduled_time, camp_templates:template_id(duration_days)')
+    .select('id, camp_name, start_date, end_date, scheduled_time, academy_id, camp_templates:template_id(duration_days)')
     .eq('id', input.campInstanceId)
     .single();
   if (!camp) return { ok: false, error: 'Service not found.' };
@@ -151,6 +151,7 @@ export async function assignServiceStaff(input: {
           serviceName: `${camp.camp_name} · ${input.role}`,
           dateRange,
           portalUrl: respondUrl,
+          academyId: (camp as any).academy_id ?? null,
         });
       }
     } else if (input.staffMemberId) {
@@ -162,6 +163,7 @@ export async function assignServiceStaff(input: {
           serviceName: `${camp.camp_name} · ${input.role}`,
           dateRange,
           portalUrl: respondUrl,
+          academyId: (camp as any).academy_id ?? null,
         });
       }
     }
@@ -214,7 +216,7 @@ export async function respondToServiceStaffByToken(
   const admin = createAdminClient();
   const { data: row } = await admin
     .from('service_staff')
-    .select('id, camp_instance_id, role, invited_by, coach_id, staff_member_id, coaches:coach_id(display_name), staff_members:staff_member_id(name), camp_instances:camp_instance_id(camp_name)')
+    .select('id, camp_instance_id, role, invited_by, coach_id, staff_member_id, coaches:coach_id(display_name), staff_members:staff_member_id(name), camp_instances:camp_instance_id(camp_name, academy_id)')
     .eq('response_token', token)
     .maybeSingle();
   if (!row) return { ok: false, error: 'Invalid or expired link.' };
@@ -248,6 +250,7 @@ export async function respondToServiceStaffByToken(
           serviceName: camp?.camp_name ?? 'Service',
           accepted,
           note: note?.trim() || null,
+                  academyId: (camp as any)?.academy_id ?? null,
         });
       }
     }
