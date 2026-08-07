@@ -703,6 +703,19 @@ function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName:
 </body></html>`;
 }
 
+// "Nos vemos en…" según el tipo de clase (pedido de Marcelo: yoga no es
+// "in the water"). Keyword sobre el nombre del servicio; surf → academy.
+// NO exportada: este módulo es 'use server' y solo admite exports async.
+function seeYouSpot(className: string): { line: string; emoji: string } {
+  const n = (className || '').toLowerCase();
+  if (/yoga/.test(n)) return { line: 'See you in the yoga studio', emoji: '🧘' };
+  if (/jiu|jitsu|bjj/.test(n)) return { line: 'See you on the mat', emoji: '🥋' };
+  if (/skate/.test(n)) return { line: 'See you at the skate ramp', emoji: '🛹' };
+  if (/ice/.test(n)) return { line: 'See you at the ice bath', emoji: '❄️' };
+  if (/breath|respir/.test(n)) return { line: 'See you at the studio', emoji: '🌬️' };
+  return { line: 'See you at the academy', emoji: '🌊' };
+}
+
 // Confirmación de reserva del QR público — lleva el link de gestión para
 // cancelar o mover la reserva (política de 24 h aplicada en esa página).
 export async function sendBookingConfirmationEmail(data: {
@@ -717,9 +730,9 @@ export async function sendBookingConfirmationEmail(data: {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
-      subject: `You're booked: ${data.className} 🌊`,
+      subject: `You're booked: ${data.className} ${seeYouSpot(data.className).emoji}`,
       html: assignmentEmailShell(
-        `See you in the water, ${data.firstName}!`,
+        `${seeYouSpot(data.className).line}, ${data.firstName}!`,
         `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;"><strong>${data.className}</strong><br/>${data.dateLabel}${data.amountLabel ? `<br/>${data.amountLabel} — pay at front desk (cash or card)` : ''}</p>
          <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">Plans changed? Use the button below to move or cancel your booking. Cancel more than 24 hours before class and it's free; within 24 hours the full class price is due.</p>`,
         { url: data.manageUrl, label: 'Manage my booking' },

@@ -150,6 +150,17 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         <div className="text-center py-4">
           <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl" style={{ background: 'rgba(6,214,160,.15)' }}>✓</div>
           <h2 className="mt-3 text-[22px]" style={{ ...F_DISPLAY, color: '#061C2B' }}>You&apos;re in, {summary.first_name}!</h2>
+          {/* Venue-aware farewell: yoga ≠ "in the water" */}
+          <p className="mt-1 text-[13px] font-semibold" style={{ color: '#0090B0' }}>
+            {(() => {
+              const n = (summary.class_name || '').toLowerCase();
+              if (/yoga/.test(n)) return 'See you in the yoga studio 🧘';
+              if (/jiu|jitsu|bjj/.test(n)) return 'See you on the mat 🥋';
+              if (/skate/.test(n)) return 'See you at the skate ramp 🛹';
+              if (/ice/.test(n)) return 'See you at the ice bath ❄️';
+              return 'See you at the academy 🌊';
+            })()}
+          </p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>Your class</p>
