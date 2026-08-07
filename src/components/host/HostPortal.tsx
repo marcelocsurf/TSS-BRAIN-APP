@@ -641,8 +641,10 @@ function ReserveModal({ token, event, onClose, onDone }: {
     const r = await sellerReserveSpot(token, event.camp_id, input);
     setBusy(false);
     if (!r.ok) { setMsg(r.error ?? 'No se pudo reservar.'); return; }
-    setMsg(`✓ ${r.studentName ?? 'Cliente'} reservado — cobrar en HOY cuando llegue.`);
-    setTimeout(onDone, 1400);
+    setMsg((r as any).included
+      ? `✓ ${r.studentName ?? 'Cliente'} reservado — INCLUIDO en ${(r as any).includedIn ?? 'su camp'}, NO cobrar. 🎁`
+      : `✓ ${r.studentName ?? 'Cliente'} reservado — cobrar en HOY cuando llegue.`);
+    setTimeout(onDone, 1800);
   };
 
   return (

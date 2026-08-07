@@ -48,7 +48,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   email?: string;
   phone?: string;
   note?: string;
-}): Promise<{ ok: boolean; error?: string; studentName?: string }> {
+}): Promise<{ ok: boolean; error?: string; studentName?: string; included?: boolean; includedIn?: string | null }> {
   const coach = await sellerByToken(token);
   if (!coach) return { ok: false, error: 'Not authorized to sell.' };
   const admin = createAdminClient();
@@ -56,7 +56,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   // Service must be in the seller's academy, upcoming and sellable.
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, academy_id, status, capacity_override, camp_templates:template_id(capacity_max, list_price_cents)')
+    .select('id, camp_name, academy_id, status, start_date, capacity_override, camp_templates:template_id(capacity_max, list_price_cents, service_kind)')
     .eq('id', campId)
     .maybeSingle();
   if (!camp || camp.academy_id !== coach.academy_id) return { ok: false, error: 'Service not found.' };
@@ -111,16 +111,42 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     return { ok: false, error: `${studentName || 'This client'} already has a spot in this service.` };
   }
 
+  // ¿Huésped de SURF CAMP activo ese día? Las CLASES (yoga, U.Natural,
+  // BJJ, ice bath…) vienen incluidas en su camp: cupo a $0, marcado
+  // pagado, nota de NO cobrar. Lessons privadas y trips SÍ se cobran.
+  let includedIn: string | null = null;
+  if ((tpl as any)?.service_kind === 'class' && studentId) {
+    const { data: campSeats } = await admin
+      .from('camp_participants')
+      .select('camp_instances:camp_instance_id!inner(camp_name, start_date, end_date, status, camp_templates:template_id(service_kind))')
+      .eq('student_id', studentId)
+      .eq('enrollment_status', 'active');
+    for (const s of (campSeats as any[]) ?? []) {
+      const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
+      const kind = (Array.isArray(inst?.camp_templates) ? inst?.camp_templates[0] : inst?.camp_templates)?.service_kind;
+      if (kind === 'surf_camp' && inst.status !== 'cancelled'
+          && inst.start_date <= (camp as any).start_date && (camp as any).start_date <= inst.end_date) {
+        includedIn = (inst.camp_name ?? 'Surf Camp').split(' · ')[0];
+        break;
+      }
+    }
+  }
+
   const listPrice = (tpl as any)?.list_price_cents ?? null;
   const { error: insErr } = await admin.from('camp_participants').insert({
     camp_instance_id: campId,
     student_id: studentId,
     enrollment_status: 'active',
-    payment_status: 'pending',
-    ...(listPrice != null ? { amount_cents: listPrice, list_price_cents: listPrice, sale_type: 'full' } : {}),
+    payment_status: includedIn ? 'paid' : 'pending',
+    ...(includedIn
+      ? { amount_cents: 0, ...(listPrice != null ? { list_price_cents: listPrice } : {}) }
+      : (listPrice != null ? { amount_cents: listPrice, list_price_cents: listPrice, sale_type: 'full' } : {})),
     sold_by: coach.id,
     reserved_at: new Date().toISOString(),
-    notes: input.note?.trim() ? `Seller note: ${input.note.trim()}` : `Reserved by seller ${coach.display_name || ''}`.trim(),
+    notes: [
+      includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null,
+      input.note?.trim() ? `Seller note: ${input.note.trim()}` : `Reserved by seller ${coach.display_name || ''}`.trim(),
+    ].filter(Boolean).join(' '),
   });
   if (insErr) return { ok: false, error: insErr.message };
 
@@ -142,7 +168,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
       metadata: { campId, studentId, soldBy: coach.id },
     }).catch(() => {});
   }
-  return { ok: true, studentName };
+  return { ok: true, studentName, included: !!includedIn, includedIn };
 }
 
 export interface SellerSale {
