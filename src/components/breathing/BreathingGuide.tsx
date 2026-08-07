@@ -81,6 +81,10 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const retRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const energyRef = useRef(0.35);   // intensidad del campo de energía (0..1)
+  const scaleRef = useRef(SMALL);
+  const runningRef = useRef(false);
   const audioRef = useRef<AudioContext | null>(null);
   const noiseRef = useRef<AudioBuffer | null>(null);
   const mutedRef = useRef(muted);
@@ -124,6 +128,89 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       src.start(t); src.stop(t + d + 0.05);
     } catch { /* sin audio */ }
   }
+
+  // ═══ CAMPO DE ENERGÍA (referencia: video del espiral en neón) ═══
+  // Filamentos cyan caleidoscópicos (8 espejos) que nacen del centro y
+  // fluyen hacia afuera con glow. La intensidad respira con el usuario:
+  // inhala → se expande y brilla; exhala → se contrae y calma.
+  scaleRef.current = scale;
+  runningRef.current = running;
+  useEffect(() => {
+    if (reduce) return; // respeto a prefers-reduced-motion: fondo estático
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let raf = 0;
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const fit = () => {
+      canvas.width = canvas.clientWidth * DPR;
+      canvas.height = canvas.clientHeight * DPR;
+    };
+    fit();
+    window.addEventListener('resize', fit);
+
+    const SEGMENTS = 8;
+    type P = { r: number; a: number; v: number; drift: number; life: number; max: number; w: number };
+    const parts: P[] = [];
+    const spawn = (): P => ({
+      r: 21 + Math.random() * 34,
+      a: Math.random() * (Math.PI * 2 / SEGMENTS),
+      v: 0.25 + Math.random() * 0.6,
+      drift: (Math.random() - 0.5) * 0.004,
+      life: 0,
+      max: 240 + Math.random() * 240,
+      w: 0.6 + Math.random() * 1.1,
+    });
+    for (let i = 0; i < 26; i++) { const p = spawn(); p.life = Math.random() * p.max; parts.push(p); }
+
+    const tick = () => {
+      const W = canvas.width, H = canvas.height;
+      const cx = W / 2, cy = H * 0.42; // centro donde viven los anillos
+      // energía objetivo: corre → sigue la respiración; idle → latido suave
+      const target = runningRef.current ? (scaleRef.current === BIG ? 1 : 0.45) : 0.3;
+      energyRef.current += (target - energyRef.current) * 0.03;
+      const E = energyRef.current;
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.globalCompositeOperation = 'lighter';
+
+      for (const p of parts) {
+        p.life += 1;
+        p.r += p.v * (0.6 + E * 1.8);
+        p.a += p.drift;
+        const maxR = Math.min(W, H) * (0.38 + E * 0.28);
+        if (p.life > p.max || p.r > maxR) Object.assign(p, spawn());
+        const fade = Math.sin(Math.min(1, p.life / p.max) * Math.PI); // entra y sale suave
+        const alpha = fade * (0.10 + E * 0.4);
+        const tail = p.r * (0.12 + E * 0.1);
+        for (let s = 0; s < SEGMENTS; s++) {
+          ctx.save();
+          ctx.rotate((Math.PI * 2 / SEGMENTS) * s + (s % 2 ? -p.a : p.a));
+          ctx.beginPath();
+          ctx.moveTo(p.r - tail, 0);
+          ctx.lineTo(p.r, 0);
+          ctx.strokeStyle = `rgba(0,210,255,${alpha})`;
+          ctx.lineWidth = p.w * DPR;
+          ctx.shadowColor = 'rgba(0,210,255,0.9)';
+          ctx.shadowBlur = 8 * DPR * (0.5 + E);
+          ctx.stroke();
+          // nodo brillante en la punta
+          ctx.beginPath();
+          ctx.arc(p.r, 0, p.w * DPR * 0.9, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180,240,255,${alpha * 1.4})`;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', fit); };
+  }, [reduce]);
 
   const clearTimers = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -268,9 +355,15 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: INK, ...GRID, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* Campo de energía caleidoscópico (canvas, detrás de todo) */}
+      {!reduce && <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden />}
       {/* Barra superior — riel v10 */}
       <div className="flex items-center justify-between px-[21px] pt-[13px] pb-[8px]" style={{ borderBottom: '1px solid rgba(247,249,250,0.16)' }}>
-        <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>Breathwork · The Surf Sequence</p>
+        <div className="flex items-center gap-[13px] min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/tss-logo-white-h.png" alt="The Surf Sequence" className="h-[21px] w-auto shrink-0" />
+          <p className="text-[9px] truncate" style={{ ...F_M, color: CYAN }}>Breathwork</p>
+        </div>
         <div className="flex items-center gap-[8px]">
           <button onClick={() => setMuted((m) => !m)} className="p-2 text-white/60 hover:text-white" aria-label={muted ? 'Unmute' : 'Mute'}>
             {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
@@ -311,11 +404,14 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
               transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out`,
             }} />
           ))}
-          {/* Disco central — se atenúa cuando hay numeral encima */}
-          <div className="absolute rounded-full" style={{
-            width: 55, height: 55, background: CYAN, opacity: numeral !== null ? 0.15 : 0.9,
-            transform: `scale(${reduce ? 0.9 : scale})`,
+          {/* El espiral Fibonacci respirando al centro — glow neón cyan.
+              Se atenúa cuando hay numeral encima. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/tss-mark-white.png" alt="" aria-hidden className="absolute select-none" style={{
+            width: 89, height: 'auto', opacity: numeral !== null ? 0.14 : 0.95,
+            transform: `scale(${reduce ? 0.9 : scale * 1.6})`,
             transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out, opacity 0.4s`,
+            filter: `drop-shadow(0 0 8px rgba(0,210,255,0.9)) drop-shadow(0 0 21px rgba(0,210,255,0.55))`,
           }} />
           {/* Numeral gigante delineado (como los numerales de capítulo v10) */}
           {numeral !== null && (
