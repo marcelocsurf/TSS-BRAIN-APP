@@ -145,7 +145,7 @@ export function CoachPortalTabs({
   return (
     <div
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
-      style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses'].includes(activeTab) && !isSupport ? '#F7F9FA' : '#000' }}
+      style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses', 'plan'].includes(activeTab) && !isSupport ? '#F7F9FA' : '#000' }}
     >
       <div className="max-w-lg mx-auto px-4 py-4">
         {activeTab === 'home' && (
@@ -2063,45 +2063,55 @@ function PlanTab({
     );
   }
 
+  // ── Vista de agenda, Brand Manual v10: capítulo en ink + rieles de
+  // sección mono sobre regla de 2px + filas tipo ficha técnica. Esquinas
+  // rectas (el sistema es rectilíneo), espacios de la escala Fibonacci.
+  const F_DISP: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
+  const F_MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
+  const HAIR = 'rgba(14,32,41,0.16)';
+
   return (
-    <div className="space-y-4 pb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-5">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">
-          Plan the Session
-        </p>
-        <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
-          Your assigned classes
-        </h2>
-        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-          Tap a class to plan the venue read, warm-up, mental hack, and per-student
-          drills + missions.
+    <div className="space-y-[21px] pb-4">
+      {/* Portada de capítulo — ink, numeral cyan delineado, regla cyan */}
+      <div className="relative overflow-hidden px-[21px] py-[21px]" style={{ background: '#061C2B', borderBottom: '3px solid #00D2FF' }}>
+        <span aria-hidden className="absolute -top-3 right-2 select-none text-[89px] leading-none" style={{ ...F_DISP, color: 'transparent', WebkitTextStroke: '1px rgba(0,210,255,0.22)' }}>
+          {String(upcoming.length).padStart(2, '0')}
+        </span>
+        <p className="text-[9px]" style={{ ...F_MONO, color: '#00D2FF' }}>Plan the session</p>
+        <h2 className="text-[21px] mt-[5px]" style={{ ...F_DISP, color: '#F7F9FA' }}>Your classes</h2>
+        <p className="text-[11px] mt-[8px] leading-relaxed" style={{ color: 'rgba(247,249,250,0.7)' }}>
+          Tap a class → read the plan, run the session, close the day.
         </p>
       </div>
 
       {/* Días pasados SIN CIERRE — un toque abre el planner en ese día.
           El cierre es requisito para liberar el pago (candado de nómina). */}
       {unclosed.length > 0 && (
-        <div className="rounded-2xl border p-4" style={{ background: 'rgba(255,209,102,.14)', borderColor: 'rgba(255,209,102,.6)' }}>
-          <p className="text-[10px] font-mono uppercase tracking-wider font-semibold mb-2" style={{ color: '#7a5c00' }}>
-            ⚠ Needs closing ({unclosed.length}) — required to release your pay
-          </p>
-          <div className="space-y-1.5">
-            {unclosed.map((u) => (
+        <div>
+          <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: '2px solid #061C2B' }}>
+            <p className="text-[9px]" style={{ ...F_MONO, color: '#7a5c00' }}>Needs closing</p>
+            <p className="text-[9px]" style={{ ...F_MONO, color: '#7a5c00' }}>{unclosed.length} · pay on hold</p>
+          </div>
+          <div style={{ border: `1px solid ${HAIR}`, borderLeft: '3px solid #FFD166', background: '#fff' }}>
+            {unclosed.map((u, i) => (
               <button
                 key={`${u.camp_id}-${u.day_number}`}
                 type="button"
                 onClick={() => openPlanner(u.camp_id, u.day_number, 'run')}
-                className="w-full text-left bg-white border rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2 hover:border-amber-400 transition-colors"
-                style={{ borderColor: 'rgba(255,209,102,.7)' }}
+                className="w-full text-left px-[13px] py-[13px] flex items-center justify-between gap-2 hover:bg-amber-50 transition-colors"
+                style={i > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
               >
-                <span className="min-w-0">
-                  <span className="block text-[13px] font-semibold text-gray-800 truncate">{(u.camp_name ?? '').split(' · ')[0]}</span>
-                  <span className="block text-[10.5px] text-gray-500">
-                    {new Date(u.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Day {u.day_number}
+                <span className="min-w-0 flex items-baseline gap-[8px]">
+                  <span className="shrink-0 text-[9px]" style={{ ...F_MONO, color: '#7a5c00' }}>
+                    {new Date(u.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
                   </span>
+                  <span className="text-[13px] truncate" style={{ ...F_DISP, color: '#061C2B', fontWeight: 700 }}>
+                    {(u.camp_name ?? '').split(' · ')[0]}
+                  </span>
+                  <span className="shrink-0 text-[9px] text-gray-400" style={F_MONO}>D{u.day_number}</span>
                 </span>
-                <span className="shrink-0 text-[10px] font-bold rounded-full px-2.5 py-1" style={{ background: '#FFD166', color: '#061C2B' }}>
-                  Close now →
+                <span className="shrink-0 text-[9px] px-[13px] py-[5px]" style={{ ...F_MONO, background: '#FFD166', color: '#061C2B', fontWeight: 700 }}>
+                  Close →
                 </span>
               </button>
             ))}
@@ -2115,9 +2125,6 @@ function PlanTab({
 
       {upcoming.length > 0 && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 mb-1.5">
-            Upcoming + active ({upcoming.length})
-          </p>
           {(() => {
             // Agenda view: group upcoming services by their start day, ordered,
             // with friendly Today / Tomorrow / weekday headers.
@@ -2143,36 +2150,43 @@ function PlanTab({
               return `${hr % 12 || 12}:${m ?? '00'} ${hr >= 12 ? 'PM' : 'AM'}`;
             };
             return (
-              <div className="space-y-4">
+              <div className="space-y-[21px]">
                 {days.map((k) => (
                   <div key={k}>
-                    <p className="text-[11px] font-bold text-emerald-800 mb-1.5 flex items-center gap-1.5">
-                      <CalendarDays size={12} strokeWidth={2} /> {dayLabel(k)}
-                    </p>
-                    <div className="space-y-1.5">
-                      {byDay.get(k)!.map((s: any) => {
+                    {/* Riel de sección v10: día + fecha mono sobre regla ink */}
+                    <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: '2px solid #061C2B' }}>
+                      <p className="text-[9px]" style={{ ...F_MONO, color: '#061C2B' }}>{dayLabel(k)}</p>
+                      <p className="text-[9px] text-gray-400" style={F_MONO}>
+                        {new Date(k + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
+                      </p>
+                    </div>
+                    {/* Filas tipo ficha técnica: hora mono cyan · nombre Archivo · datos mono */}
+                    <div style={{ border: `1px solid ${HAIR}`, background: '#fff' }}>
+                      {byDay.get(k)!.map((s: any, i: number) => {
                         const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
+                        const multi = s.start_date !== s.end_date;
                         return (
                           <button
                             key={s.id}
                             type="button"
                             onClick={() => openPlanner(s.id)}
-                            className="w-full text-left bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 hover:border-emerald-300 transition-colors"
+                            className="w-full text-left px-[13px] py-[13px] flex items-center gap-[13px] hover:bg-[#E5FAFF]/40 transition-colors"
+                            style={{ borderLeft: '3px solid #00D2FF', ...(i > 0 ? { borderTop: `1px solid ${HAIR}` } : {}) }}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-semibold text-gray-800">
-                                  {s.scheduled_time ? `${fmtTime(s.scheduled_time)} · ` : ''}{s.camp_name}
-                                </p>
-                                <p className="text-[10px] font-mono text-emerald-700 mt-0.5">
-                                  {tpl?.service_kind?.replace(/_/g, ' ') || s.status}
-                                  {' · '}
-                                  {s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
-                                  {s.start_date !== s.end_date ? ` · until ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-                                </p>
-                              </div>
-                              <span className="text-emerald-700 shrink-0 text-sm">→</span>
-                            </div>
+                            <span className="shrink-0 w-[55px] text-[11px] leading-tight" style={{ ...F_MONO, color: '#0090B0', fontWeight: 600 }}>
+                              {s.scheduled_time ? fmtTime(s.scheduled_time).replace(' ', ' ') : '—'}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#061C2B', fontWeight: 800 }}>
+                                {(s.camp_name ?? '').split(' · ')[0]}
+                              </span>
+                              <span className="block text-[8.5px] mt-[3px] text-gray-500" style={F_MONO}>
+                                {(tpl?.service_kind ?? s.status ?? '').replace(/_/g, ' ')}
+                                {' · '}{s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
+                                {multi ? ` · until ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[13px]" style={{ color: '#00D2FF' }}>→</span>
                           </button>
                         );
                       })}
@@ -2187,23 +2201,27 @@ function PlanTab({
 
       {past.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
-            <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
-            Past ({past.length})
+          <summary className="cursor-pointer list-none flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: `1px solid ${HAIR}` }}>
+            <span className="flex items-center gap-1.5 text-[9px] text-gray-400" style={F_MONO}>
+              <ChevronRight size={11} className="transition-transform group-open:rotate-90" />
+              Past
+            </span>
+            <span className="text-[9px] text-gray-400" style={F_MONO}>{past.length}</span>
           </summary>
-          <div className="space-y-1.5">
-            {past.map((s: any) => (
+          <div style={{ border: `1px solid ${HAIR}`, background: '#fff' }}>
+            {past.map((s: any, i: number) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => openPlanner(s.id)}
-                className="w-full text-left bg-white border border-gray-100 rounded-2xl p-4 hover:border-gray-300 transition-colors"
+                className="w-full text-left px-[13px] py-[10px] flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors"
+                style={i > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
               >
-                <p className="text-sm font-medium text-gray-700">{s.camp_name}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                </p>
+                <span className="text-[12px] text-gray-600 truncate">{(s.camp_name ?? '').split(' · ')[0]}</span>
+                <span className="shrink-0 text-[9px] text-gray-400" style={F_MONO}>
+                  {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
+                  {s.start_date !== s.end_date && ` → ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}`}
+                </span>
               </button>
             ))}
           </div>
@@ -2211,11 +2229,11 @@ function PlanTab({
       )}
 
       {upcoming.length === 0 && past.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-500">No services assigned yet.</p>
-          <p className="text-[11px] text-gray-400 mt-1">
-            When the coordinator assigns you to a class, it&apos;ll show up here.
+        <div className="text-center px-[21px] py-[34px]" style={{ border: `1px solid ${HAIR}`, background: '#fff' }}>
+          <Waves size={34} strokeWidth={1.5} className="mx-auto mb-[8px] text-gray-300" />
+          <p className="text-[13px] text-gray-600">No services assigned yet.</p>
+          <p className="text-[9px] mt-[5px] text-gray-400" style={F_MONO}>
+            Assigned classes appear here
           </p>
         </div>
       )}
