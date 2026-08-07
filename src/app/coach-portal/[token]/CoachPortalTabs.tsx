@@ -1955,22 +1955,29 @@ function PlanTab({
   const [trDep, setTrDep] = useState('07:00');
   const [trRet, setTrRet] = useState('12:00');
   const [trBusy, setTrBusy] = useState(false);
+  const [trDay, setTrDay] = useState<string | null>(null);
   const [trSaved, setTrSaved] = useState<Record<string, string>>({});
+  const pickTrDay = (d: any) => {
+    setTrDay(d.session_id);
+    if (d.depart) setTrDep(String(d.depart).slice(0, 5));
+    if (d.ret) setTrRet(String(d.ret).slice(0, 5));
+  };
   const openTransport = async (campId: string) => {
     if (trOpen === campId) { setTrOpen(null); return; }
-    setTrOpen(campId); setTrInfo(null);
+    setTrOpen(campId); setTrInfo(null); setTrDay(null);
     try {
       const r = await coachQuickTransport(token, campId);
       setTrInfo(r);
-      if (r.ok) {
-        if (r.depart) setTrDep(String(r.depart).slice(0, 5));
-        if (r.ret) setTrRet(String(r.ret).slice(0, 5));
+      if (r.ok && r.days?.length) {
+        const first = r.days.find((d: any) => !d.closed) ?? r.days[0];
+        pickTrDay(first);
       }
     } catch { setTrInfo({ ok: false, error: 'Could not load.' }); }
   };
   const saveTransport = async (campId: string, needed: boolean) => {
+    if (!trDay) return;
     setTrBusy(true);
-    const r = await coachQuickTransport(token, campId, { needed, depart: trDep, ret: trRet });
+    const r = await coachQuickTransport(token, campId, { sessionId: trDay, needed, depart: trDep, ret: trRet });
     setTrBusy(false);
     if (!r.ok) { setTrInfo({ ...trInfo, error: r.error }); return; }
     setTrSaved((m) => ({ ...m, [campId]: needed ? `🚐 ${trDep}–${trRet} ✓` : 'no transport' }));
@@ -2235,9 +2242,24 @@ function PlanTab({
                                   <p className="text-[11px] text-red-600">{trInfo.error}</p>
                                 ) : (
                                   <>
+                                    {(() => { const d = (trInfo.days ?? []).find((x: any) => x.session_id === trDay); return (
+                                    <>
+                                    {/* Elegir el DÍA del camp (pedido de Bauti) */}
+                                    {(trInfo.days?.length ?? 0) > 1 && (
+                                      <div className="flex gap-[5px] mb-[8px] flex-wrap">
+                                        {trInfo.days.map((x: any) => (
+                                          <button key={x.session_id} type="button" disabled={x.closed}
+                                            onClick={() => pickTrDay(x)}
+                                            className="px-[8px] py-[5px] text-[8.5px] disabled:opacity-35"
+                                            style={{ ...F_MONO, border: `1px solid ${trDay === x.session_id ? '#00D2FF' : HAIR}`, background: trDay === x.session_id ? 'rgba(0,210,255,.12)' : '#fff', color: trDay === x.session_id ? '#0090B0' : '#6b7280' }}>
+                                            {new Date(x.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}{x.needed ? ' 🚐' : ''}{x.closed ? ' ✕' : ''}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
                                     <p className="text-[8.5px] mb-[8px] text-gray-500" style={F_MONO}>
-                                      Transport · {new Date(trInfo.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                      {trInfo.needed ? ` · requested ${String(trInfo.depart ?? '').slice(0, 5)}–${String(trInfo.ret ?? '').slice(0, 5)}` : ' · not requested'}
+                                      Transport · {d ? new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '—'}
+                                      {d?.needed ? ` · requested ${String(d.depart ?? '').slice(0, 5)}–${String(d.ret ?? '').slice(0, 5)}` : ' · not requested'}
                                     </p>
                                     <div className="flex items-center gap-[8px] flex-wrap">
                                       <label className="text-[8.5px] text-gray-500" style={F_MONO}>Out</label>
@@ -2248,13 +2270,15 @@ function PlanTab({
                                         className="px-[13px] py-[8px] text-[9px] disabled:opacity-40" style={{ ...F_MONO, background: '#00D2FF', color: '#061C2B', fontWeight: 700 }}>
                                         {trBusy ? '…' : 'Request 🚐'}
                                       </button>
-                                      {trInfo.needed && (
+                                      {d?.needed && (
                                         <button type="button" disabled={trBusy} onClick={() => saveTransport(s.id, false)}
                                           className="px-[8px] py-[8px] text-[9px] text-gray-500 disabled:opacity-40" style={F_MONO}>
                                           Cancel request
                                         </button>
                                       )}
                                     </div>
+                                    </>
+                                    ); })()}
                                   </>
                                 )}
                               </div>

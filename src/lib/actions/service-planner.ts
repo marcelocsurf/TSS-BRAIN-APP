@@ -2362,8 +2362,11 @@ export async function saveStudentInternalNote(
 export async function coachQuickTransport(
   token: string,
   campInstanceId: string,
-  input?: { needed: boolean; depart?: string | null; ret?: string | null },
-): Promise<{ ok: boolean; error?: string; date?: string; needed?: boolean | null; depart?: string | null; ret?: string | null }> {
+  input?: { sessionId?: string; needed: boolean; depart?: string | null; ret?: string | null },
+): Promise<{
+  ok: boolean; error?: string; date?: string; needed?: boolean | null; depart?: string | null; ret?: string | null;
+  days?: { session_id: string; date: string; day_number: number; needed: boolean | null; depart: string | null; ret: string | null; closed: boolean }[];
+}> {
   const admin = createAdminClient();
   const { data: coach } = await admin
     .from('coaches')
@@ -2382,34 +2385,45 @@ export async function coachQuickTransport(
     return { ok: false, error: 'You are not assigned to this service.' };
   }
 
-  // Próximo día del servicio (hoy incluido, hora de El Salvador).
+  // Días PRÓXIMOS del servicio (hoy incluido, hora de El Salvador) con el
+  // estado de transporte de cada uno — Bauti: en camps multi-día el coach
+  // elige a QUÉ día pedirle la van, no solo el siguiente.
   const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
-  const { data: nextSes } = await admin
+  const { data: upSes } = await admin
     .from('camp_sessions')
-    .select('id, session_date')
+    .select('id, session_date, day_number')
     .eq('camp_instance_id', campInstanceId)
     .gte('session_date', today)
-    .order('session_date')
-    .limit(1)
-    .maybeSingle();
-  if (!nextSes) return { ok: false, error: 'No upcoming day on this service.' };
+    .order('session_date');
+  if (!upSes?.length) return { ok: false, error: 'No upcoming day on this service.' };
 
-  const { data: plan } = await admin
+  const { data: planRows } = await admin
     .from('service_plans')
-    .select('id, completion_state, transport_needed, transport_depart, transport_return')
-    .eq('camp_session_id', nextSes.id)
-    .maybeSingle();
+    .select('id, camp_session_id, completion_state, transport_needed, transport_depart, transport_return')
+    .in('camp_session_id', upSes.map((x: any) => x.id));
+  const planBy = new Map(((planRows as any[]) ?? []).map((p: any) => [p.camp_session_id, p]));
 
-  // Solo lectura
+  // Solo lectura: lista de días con su estado
   if (!input) {
     return {
-      ok: true, date: nextSes.session_date,
-      needed: plan?.transport_needed ?? null,
-      depart: plan?.transport_depart ?? null,
-      ret: plan?.transport_return ?? null,
+      ok: true,
+      days: upSes.map((x: any) => {
+        const pl = planBy.get(x.id);
+        return {
+          session_id: x.id, date: x.session_date, day_number: x.day_number,
+          needed: pl?.transport_needed ?? null,
+          depart: pl?.transport_depart ?? null,
+          ret: pl?.transport_return ?? null,
+          closed: pl?.completion_state === 'closed',
+        };
+      }),
     };
   }
 
+  const target = input.sessionId ? upSes.find((x: any) => x.id === input.sessionId) : upSes[0];
+  if (!target) return { ok: false, error: 'Day not found on this service.' };
+  const nextSes = target as any;
+  const plan = planBy.get(nextSes.id);
   if (plan?.completion_state === 'closed') return { ok: false, error: 'That day is already closed.' };
   const patch = {
     transport_needed: input.needed,
