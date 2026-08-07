@@ -112,7 +112,7 @@ export async function publicEnroll(input: {
   } | null;
   accept_waiver: boolean;
   signed_name?: string | null;
-}): Promise<{ ok: boolean; error?: string; summary?: { class_name: string; date: string; time: string | null; amount_cents: number | null; sale_type: string; coupon_applied: string | null; first_name: string } }> {
+}): Promise<{ ok: boolean; error?: string; summary?: { class_name: string; date: string; time: string | null; amount_cents: number | null; sale_type: string; coupon_applied: string | null; first_name: string; service_kind: string | null } }> {
   const academy = await academyBySlug(input.slug);
   if (!academy) return { ok: false, error: 'Academy not found.' };
   const admin = createAdminClient();
@@ -250,6 +250,9 @@ export async function publicEnroll(input: {
       sale_type,
       coupon_applied: coupon?.code ?? null,
       first_name: firstName,
+      // La pantalla de confirmación cambia según el servicio: las lecciones
+      // de surf se cobran por link de pago, el resto en front desk.
+      service_kind: tpl?.service_kind ?? null,
     },
   };
 }

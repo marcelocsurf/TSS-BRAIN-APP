@@ -111,11 +111,15 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
 
   if (step === 'done' && summary) {
     const free = summary.sale_type === 'courtesy';
+    // Las lecciones de surf no se pagan en el mostrador: se cobra por link.
+    const payByLink = !free && summary.service_kind === 'surf_lesson';
     return (
       <div className="space-y-3">
         <div className="text-center py-4">
           <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl" style={{ background: 'rgba(6,214,160,.15)' }}>✓</div>
-          <h2 className="mt-3 text-[22px]" style={{ ...F_DISPLAY, color: '#061C2B' }}>You&apos;re in, {summary.first_name}!</h2>
+          <h2 className="mt-3 text-[22px]" style={{ ...F_DISPLAY, color: '#061C2B' }}>
+            {payByLink ? `Spot reserved, ${summary.first_name}!` : `You’re in, ${summary.first_name}!`}
+          </h2>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>Your class</p>
@@ -126,13 +130,19 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           )}
         </div>
         <div className="rounded-2xl p-4" style={{ background: '#061C2B' }}>
-          <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Before your class</p>
+          <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{payByLink ? 'One more step' : 'Before your class'}</p>
           <p className="text-[13px] mt-1.5 leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
             {free
               ? 'Stop by FRONT DESK to pick up your class ticket — you’re all covered.'
-              : `Stop by FRONT DESK to pay ${money(summary.amount_cents) ?? 'for your spot'} (cash, card, or charge to your room if you’re a hotel guest) and pick up your class ticket.`}
+              : payByLink
+                ? `We’ll send you a payment link${money(summary.amount_cents) ? ` for ${money(summary.amount_cents)}` : ''} to complete your booking. Your spot is on hold until then.`
+                : `Stop by FRONT DESK to pay ${money(summary.amount_cents) ?? 'for your spot'} (cash, card, or charge to your room if you’re a hotel guest) and pick up your class ticket.`}
           </p>
-          <p className="text-[11px] mt-2" style={{ color: 'rgba(247,249,250,.5)' }}>Hand your ticket to the instructor. Arrive 10 minutes early. 🤙</p>
+          <p className="text-[11px] mt-2" style={{ color: 'rgba(247,249,250,.5)' }}>
+            {payByLink
+              ? 'Any questions before then, front desk has you covered. Arrive 10 minutes early. 🤙'
+              : 'Hand your ticket to the instructor. Arrive 10 minutes early. 🤙'}
+          </p>
         </div>
       </div>
     );
