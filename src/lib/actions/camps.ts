@@ -1067,16 +1067,15 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
         if ((count ?? 0) >= cap) {
           // El cupo es SUGERIDO: el coordinador puede sumar uno más a
           // propósito (allowOverbook) y queda como SOBRECUPO auditado.
+          // OJO: se RETORNA (no se lanza) — Next enmascara los errores de
+          // server actions en producción y el mensaje nunca llega al cliente.
           if (!opts?.allowOverbook) {
-            throw new Error(
-              `FULL:${count}/${cap}`,
-            );
+            return { success: false as const, full: { act: count ?? 0, cap } };
           }
           overbookNote = `SOBRECUPO (${(count ?? 0) + 1}/${cap}) — autorizado por ${me?.display_name ?? 'coordinación'}`;
         }
       }
-    } catch (e: any) {
-      if (e?.message?.startsWith('FULL:')) throw e;
+    } catch {
       /* capacity lookup failed — don't block enrollment on a read error */
     }
 
