@@ -7,6 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PUBLIC_BOOKABLE_SERVICE_KINDS, isPublicBookableServiceKind } from '@/lib/constants/service-kinds';
+import { createNotification } from '@/lib/actions/notifications';
 
 const norm = (e: string) => e.trim().toLowerCase();
 
@@ -238,6 +239,33 @@ export async function publicEnroll(input: {
     // Plain read-modify-write — signup volume makes a race here harmless.
     const { data: cur } = await admin.from('class_coupons').select('uses').eq('id', coupon.id).single();
     await admin.from('class_coupons').update({ uses: ((cur as any)?.uses ?? 0) + 1 }).eq('id', coupon.id);
+  }
+
+  // Avisar al coordinador/admin. Una reserva por QR no la vendió nadie —
+  // si nadie la ve, nadie manda el link de pago y el cupo se queda muerto.
+  // Best-effort: el alumno ya tiene su lugar aunque el aviso falle.
+  if (sale_type !== 'courtesy') {
+    const className = (camp as any).camp_name || tpl?.template_name || 'Clase';
+    const when = `${(camp as any).start_date}${(camp as any).scheduled_time ? ` ${(camp as any).scheduled_time}` : ''}`;
+    const isLesson = tpl?.service_kind === 'surf_lesson';
+    const { data: staff } = await admin
+      .from('coaches')
+      .select('id')
+      .eq('academy_id', academy.id)
+      .in('role', ['coordinator', 'admin'])
+      .eq('active_status', true);
+    for (const s of staff ?? []) {
+      await createNotification({
+        recipientCoachId: s.id,
+        type: isLesson ? 'qr_lesson_reservation' : 'qr_class_reservation',
+        title: `Reserva por QR: ${firstName} — ${className}`,
+        body: isLesson
+          ? `${when}. Lección de surf — enviarle el link de pago a ${email} para confirmar el cupo.`
+          : `${when}. Cupo reservado, se cobra en front desk.`,
+        link: `/camps/${(camp as any).id}`,
+        metadata: { campId: (camp as any).id, studentId, serviceKind: tpl?.service_kind ?? null, email, source: 'class_qr' },
+      }).catch(() => {});
+    }
   }
 
   return {

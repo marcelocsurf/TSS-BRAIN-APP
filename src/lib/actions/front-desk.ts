@@ -7,6 +7,7 @@
 // coordinator/admin.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { PUBLIC_BOOKABLE_SERVICE_KINDS } from '@/lib/constants/service-kinds';
 
 async function resolveDesk(token: string) {
   const admin = createAdminClient();
@@ -29,9 +30,11 @@ export async function getFrontDeskData(token: string) {
   const horizon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const { data } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
+    .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone, email))')
     .eq('academy_id', who.academy_id)
-    .in('camp_templates.service_kind', ['class', 'trip'])
+    // Mismo set que el QR público: lo que se puede reservar solo, se tiene
+    // que poder cobrar acá. Las lecciones de surf quedaban fuera.
+    .in('camp_templates.service_kind', [...PUBLIC_BOOKABLE_SERVICE_KINDS])
     .gte('start_date', today)
     .lte('start_date', horizon)
     .neq('status', 'cancelled')
@@ -48,6 +51,7 @@ export async function getFrontDeskData(token: string) {
           participant_id: p.id,
           name: `${st?.first_name ?? '?'} ${st?.last_name ?? ''}`.trim(),
           phone: st?.phone ?? null,
+          email: st?.email ?? null,
           waiver_signed: !!st?.waiver_signed,
           payment_status: p.payment_status,
           payment_method: p.payment_method,
@@ -59,6 +63,7 @@ export async function getFrontDeskData(token: string) {
     return {
       id: c.id,
       name: c.camp_name || tpl?.template_name,
+      service_kind: tpl?.service_kind ?? null,
       date: c.start_date,
       time: c.scheduled_time,
       coach: coach?.display_name ?? null,

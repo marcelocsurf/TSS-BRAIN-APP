@@ -9,11 +9,16 @@ const money = (c: number | null) => c == null ? '—' : `$${(c / 100).toLocaleSt
 const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
 type Seat = {
-  participant_id: string; name: string; phone: string | null; waiver_signed: boolean;
+  participant_id: string; name: string; phone: string | null; email: string | null; waiver_signed: boolean;
   payment_status: string | null; payment_method: string | null; amount_cents: number | null;
   sale_type: string | null; discount_reason: string | null;
 };
-type Klass = { id: string; name: string; date: string; time: string | null; coach: string | null; capacity: number; seats: Seat[] };
+type Klass = { id: string; name: string; service_kind: string | null; date: string; time: string | null; coach: string | null; capacity: number; seats: Seat[] };
+
+// Las lecciones de surf no se cobran en el mostrador: al alumno se le manda
+// un link de pago. El mensaje va prellenado — solo falta pegar el link.
+const payLinkMsg = (firstName: string, className: string, date: string) =>
+  `Hola ${firstName}, tu lugar en ${className} (${fmtDate(date)}) está apartado. Para confirmarlo, este es tu link de pago: `;
 
 export function DeskBoard({ token, classes }: { token: string; classes: Klass[] }) {
   const router = useRouter();
@@ -58,6 +63,12 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
               {seats.map((s) => {
                 const paid = s.payment_status === 'paid';
                 const free = s.sale_type === 'courtesy';
+                const needsLink = !paid && !free && c.service_kind === 'surf_lesson';
+                const msg = payLinkMsg(s.name.split(' ')[0] || s.name, c.name, c.date);
+                const wa = s.phone ? `https://wa.me/${s.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}` : null;
+                const mail = s.email
+                  ? `mailto:${s.email}?subject=${encodeURIComponent(`${c.name} — payment link`)}&body=${encodeURIComponent(msg)}`
+                  : null;
                 return (
                   <div key={s.participant_id} className="py-2.5">
                     <div className="flex items-center justify-between gap-2">
@@ -86,6 +97,27 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
                         )}
                       </div>
                     </div>
+
+                    {needsLink && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[9px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(255,209,102,.3)', color: '#8a6d1c' }}>
+                          Send payment link
+                        </span>
+                        {wa && (
+                          <a href={wa} target="_blank" rel="noreferrer"
+                            className="text-[10px] font-bold rounded-full px-2.5 py-1 bg-[#061C2B] text-white">
+                            📱 WhatsApp
+                          </a>
+                        )}
+                        {mail && (
+                          <a href={mail}
+                            className="text-[10px] font-bold rounded-full px-2.5 py-1 border border-gray-200 text-gray-600">
+                            ✉️ Email
+                          </a>
+                        )}
+                        {!wa && !mail && <span className="text-[10px] text-gray-400">No phone or email on file</span>}
+                      </div>
+                    )}
 
                     {payFor === s.participant_id && !paid && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
