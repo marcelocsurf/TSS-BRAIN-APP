@@ -1000,7 +1000,7 @@ export async function closeCampSessionResult(input: {
 // ADD STUDENT TO CAMP
 // ═══════════════════════════════════════
 
-export async function addStudentToCamp(campInstanceId: string, studentId: string) {
+export async function addStudentToCamp(campInstanceId: string, studentId: string, opts?: { allowOverbook?: boolean }) {
   const supabase = await createClient();
   const me = await getCurrentCoach();
 
@@ -1042,10 +1042,11 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
       .update({ enrollment_status: 'active' })
       .eq('id', existing.id);
   } else {
-    // Capacity guard — never silently over-book. Capacity is the instance
-    // override or the template's capacity_max; when neither is set there is
-    // no cap. Coordinators who really need to over-book can raise
-    // capacity_override on the service.
+    // Guardia de cupo — nunca sobre-reservar EN SILENCIO. El cupo es el
+    // override de la instancia o el capacity_max de la plantilla; sin cupo
+    // definido no hay tope. Con allowOverbook (decisión explícita del
+    // coordinador/host) se permite +1 y queda auditado en el asiento.
+    let overbookNote: string | null = null;
     try {
       const admin = createAdminClient();
       const { data: campCap } = await admin
@@ -1064,13 +1065,18 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
           .eq('camp_instance_id', campInstanceId)
           .eq('enrollment_status', 'active');
         if ((count ?? 0) >= cap) {
-          throw new Error(
-            `This service is full (${count}/${cap}). Raise its capacity to enroll more students.`,
-          );
+          // El cupo es SUGERIDO: el coordinador puede sumar uno más a
+          // propósito (allowOverbook) y queda como SOBRECUPO auditado.
+          if (!opts?.allowOverbook) {
+            throw new Error(
+              `FULL:${count}/${cap}`,
+            );
+          }
+          overbookNote = `SOBRECUPO (${(count ?? 0) + 1}/${cap}) — autorizado por ${me?.display_name ?? 'coordinación'}`;
         }
       }
     } catch (e: any) {
-      if (e?.message?.includes('is full')) throw e;
+      if (e?.message?.startsWith('FULL:')) throw e;
       /* capacity lookup failed — don't block enrollment on a read error */
     }
 
@@ -1087,6 +1093,7 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
       sold_by: me?.id ?? null,
       is_refresher: isRefresher,
       reserved_at: new Date().toISOString(),
+      ...(overbookNote ? { notes: overbookNote } : {}),
       ...(listPrice != null ? { amount_cents: isRefresher ? Math.round(listPrice / 2) : listPrice, list_price_cents: listPrice, sale_type: isRefresher ? 'discount' : 'full', ...(isRefresher ? { discount_reason: 'Refresher (50%)' } : {}) } : {}),
     });
     if (error) throw new Error(error.message);

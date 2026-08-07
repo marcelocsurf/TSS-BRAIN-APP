@@ -46,11 +46,35 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
     return () => clearTimeout(t);
   }, [showManager, search]);
 
-  const handleAdd = async (studentId: string) => {
-    setActionId(studentId);
+  // Cupo LLENO → el cupo del servicio es sugerido: ofrecer +1 en sobrecupo
+  // (pedido de Rick — antes tocaba borrar el servicio y recrearlo más grande).
+  const addWithOverbook = async (studentId: string) => {
     try {
       await addStudentToCamp(campInstanceId, studentId);
       router.refresh();
+      return;
+    } catch (err: any) {
+      const m = String(err?.message ?? '');
+      if (m.startsWith('FULL:')) {
+        const [act, cap] = m.slice(5).split('/');
+        const ok = window.confirm(
+          `This service is full (${act}/${cap} — suggested capacity).\n\nAdd 1 more as OVERBOOK anyway? It will be flagged on the seat.`,
+        );
+        if (ok) {
+          await addStudentToCamp(campInstanceId, studentId, { allowOverbook: true });
+          router.refresh();
+          return;
+        }
+        return;
+      }
+      throw err;
+    }
+  };
+
+  const handleAdd = async (studentId: string) => {
+    setActionId(studentId);
+    try {
+      await addWithOverbook(studentId);
     } catch (err: any) {
       alert(err.message);
     }
@@ -119,7 +143,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
           alert(res.error || 'Could not create student.');
           return false;
         }
-        await addStudentToCamp(campInstanceId, res.studentId);
+        await addWithOverbook(res.studentId);
         const result = await sendLeadInvitation(res.studentId);
         setJustCreated({
           studentId: res.studentId,

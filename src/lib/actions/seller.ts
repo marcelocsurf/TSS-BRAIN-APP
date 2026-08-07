@@ -48,7 +48,8 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   email?: string;
   phone?: string;
   note?: string;
-}): Promise<{ ok: boolean; error?: string; studentName?: string; included?: boolean; includedIn?: string | null }> {
+  allowOverbook?: boolean;
+}): Promise<{ ok: boolean; error?: string; full?: boolean; studentName?: string; included?: boolean; includedIn?: string | null; overbooked?: boolean }> {
   const coach = await sellerByToken(token);
   if (!coach) return { ok: false, error: 'Not authorized to sell.' };
   const admin = createAdminClient();
@@ -70,7 +71,14 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     .select('id, student_id, enrollment_status')
     .eq('camp_instance_id', campId);
   const active = (parts ?? []).filter((p: any) => p.enrollment_status === 'active');
-  if (active.length >= cap) return { ok: false, error: 'This service is already full.' };
+  // Cupo SUGERIDO: host/coordinador/admin pueden meter +1 a propósito
+  // (sobrecupo auditado). Vendedores puros no — que llamen a recepción.
+  let overbookNote: string | null = null;
+  if (cap > 0 && active.length >= cap) {
+    const mayOverbook = input.allowOverbook && ['host', 'admin', 'coordinator'].includes((coach as any).role);
+    if (!mayOverbook) return { ok: false, full: true, error: `Lleno (${active.length}/${cap}).` };
+    overbookNote = `SOBRECUPO (${active.length + 1}/${cap}) — mostrador`;
+  }
 
   // Existing student or minimal new lead.
   let studentId = input.studentId ?? null;
@@ -144,6 +152,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     sold_by: coach.id,
     reserved_at: new Date().toISOString(),
     notes: [
+      overbookNote,
       includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null,
       input.note?.trim() ? `Seller note: ${input.note.trim()}` : `Reserved by seller ${coach.display_name || ''}`.trim(),
     ].filter(Boolean).join(' '),
@@ -168,7 +177,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
       metadata: { campId, studentId, soldBy: coach.id },
     }).catch(() => {});
   }
-  return { ok: true, studentName, included: !!includedIn, includedIn };
+  return { ok: true, studentName, included: !!includedIn, includedIn, overbooked: !!overbookNote };
 }
 
 export interface SellerSale {

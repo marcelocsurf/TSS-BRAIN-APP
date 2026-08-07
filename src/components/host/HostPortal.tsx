@@ -535,6 +535,13 @@ function OpEventCard({ token, e, canCoordinate, onReserve, onChanged }: {
           + Reservar ({spotsLeft} libre{spotsLeft === 1 ? '' : 's'})
         </button>
       )}
+      {/* LLENO: el cupo es sugerido — el host puede meter +1 en sobrecupo */}
+      {spotsLeft !== null && spotsLeft <= 0 && (
+        <button type="button" onClick={onReserve}
+          className="mt-2.5 w-full rounded-full py-2.5 text-[9px] border-2" style={{ ...F_M, borderColor: GOLD, color: '#7a5c00', background: 'rgba(255,209,102,.12)' }}>
+          + Sobrecupo (lleno {e.enrolled}/{e.capacity})
+        </button>
+      )}
 
       {/* MODO COBERTURA: asignar coach / reprogramar / cancelar */}
       {canCoordinate && (needsCoach || singleDayClass) && (
@@ -636,14 +643,17 @@ function ReserveModal({ token, event, onClose, onDone }: {
     return () => clearTimeout(t);
   }, [q, mode, token]);
 
+  const isFull = event.capacity > 0 && event.enrolled >= event.capacity;
+
   const reserve = async (input: any) => {
     setBusy(true); setMsg(null);
-    const r = await sellerReserveSpot(token, event.camp_id, input);
+    const r = await sellerReserveSpot(token, event.camp_id, { ...input, allowOverbook: isFull });
     setBusy(false);
     if (!r.ok) { setMsg(r.error ?? 'No se pudo reservar.'); return; }
+    const tail = (r as any).overbooked ? ' · entró como SOBRECUPO' : '';
     setMsg((r as any).included
-      ? `✓ ${r.studentName ?? 'Cliente'} reservado — INCLUIDO en ${(r as any).includedIn ?? 'su camp'}, NO cobrar. 🎁`
-      : `✓ ${r.studentName ?? 'Cliente'} reservado — cobrar en HOY cuando llegue.`);
+      ? `✓ ${r.studentName ?? 'Cliente'} reservado — INCLUIDO en ${(r as any).includedIn ?? 'su camp'}, NO cobrar. 🎁${tail}`
+      : `✓ ${r.studentName ?? 'Cliente'} reservado — cobrar en HOY cuando llegue.${tail}`);
     setTimeout(onDone, 1800);
   };
 
@@ -658,6 +668,11 @@ function ReserveModal({ token, event, onClose, onDone }: {
           <button type="button" onClick={onClose} className="text-[20px] leading-none text-gray-400 px-1">×</button>
         </div>
 
+        {isFull && (
+          <p className="text-[11px] font-bold rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
+            ⚠ Grupo lleno ({event.enrolled}/{event.capacity} — cupo sugerido). Esta reserva entra como SOBRECUPO.
+          </p>
+        )}
         <div className="flex gap-2">
           {([['existing', 'Cliente existente'], ['new', 'Cliente nuevo']] as const).map(([m, label]) => (
             <button key={m} type="button" onClick={() => setMode(m)}
