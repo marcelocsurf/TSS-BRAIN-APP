@@ -7,7 +7,7 @@ import { BRAND } from '@/lib/constants/brand';
 import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-portal';
 import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/lib/actions/coach-portal';
 import { sellerSearchStudents, sellerReserveSpot, sellerMySales, type SellerSale } from '@/lib/actions/seller';
-import { getServicePlan, type ServicePlanData } from '@/lib/actions/service-planner';
+import { getServicePlan, coachQuickTransport, type ServicePlanData } from '@/lib/actions/service-planner';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
@@ -1949,6 +1949,33 @@ function PlanTab({
   onOpenChange?: (open: boolean) => void;
 }) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
+  // 🚐 Transporte en dos toques (sin abrir el planner): panel por servicio.
+  const [trOpen, setTrOpen] = useState<string | null>(null);
+  const [trInfo, setTrInfo] = useState<any>(null);
+  const [trDep, setTrDep] = useState('07:00');
+  const [trRet, setTrRet] = useState('12:00');
+  const [trBusy, setTrBusy] = useState(false);
+  const [trSaved, setTrSaved] = useState<Record<string, string>>({});
+  const openTransport = async (campId: string) => {
+    if (trOpen === campId) { setTrOpen(null); return; }
+    setTrOpen(campId); setTrInfo(null);
+    try {
+      const r = await coachQuickTransport(token, campId);
+      setTrInfo(r);
+      if (r.ok) {
+        if (r.depart) setTrDep(String(r.depart).slice(0, 5));
+        if (r.ret) setTrRet(String(r.ret).slice(0, 5));
+      }
+    } catch { setTrInfo({ ok: false, error: 'Could not load.' }); }
+  };
+  const saveTransport = async (campId: string, needed: boolean) => {
+    setTrBusy(true);
+    const r = await coachQuickTransport(token, campId, { needed, depart: trDep, ret: trRet });
+    setTrBusy(false);
+    if (!r.ok) { setTrInfo({ ...trInfo, error: r.error }); return; }
+    setTrSaved((m) => ({ ...m, [campId]: needed ? `🚐 ${trDep}–${trRet} ✓` : 'no transport' }));
+    setTrOpen(null);
+  };
   // Tell the shell to switch to focused mode while a class is open.
   useEffect(() => {
     onOpenChange?.(!!selectedCampId);
@@ -2166,28 +2193,73 @@ function PlanTab({
                         const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
                         const multi = s.start_date !== s.end_date;
                         return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => openPlanner(s.id)}
-                            className="w-full text-left px-[13px] py-[13px] flex items-center gap-[13px] hover:bg-[#E5FAFF]/40 transition-colors"
-                            style={{ borderLeft: '3px solid #00D2FF', ...(i > 0 ? { borderTop: `1px solid ${HAIR}` } : {}) }}
-                          >
-                            <span className="shrink-0 w-[55px] text-[11px] leading-tight" style={{ ...F_MONO, color: '#0090B0', fontWeight: 600 }}>
+                          <div key={s.id} style={{ borderLeft: '3px solid #00D2FF', ...(i > 0 ? { borderTop: `1px solid ${HAIR}` } : {}) }}>
+                            <div className="flex items-stretch">
+                              <button
+                                type="button"
+                                onClick={() => openPlanner(s.id)}
+                                className="min-w-0 flex-1 text-left px-[13px] py-[13px] flex items-center gap-[13px] hover:bg-[#E5FAFF]/40 transition-colors"
+                              >
+                                <span className="shrink-0 w-[55px] text-[11px] leading-tight" style={{ ...F_MONO, color: '#0090B0', fontWeight: 600 }}>
                               {s.scheduled_time ? fmtTime(s.scheduled_time).replace(' ', ' ') : '—'}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#061C2B', fontWeight: 800 }}>
-                                {(s.camp_name ?? '').split(' · ')[0]}
-                              </span>
-                              <span className="block text-[8.5px] mt-[3px] text-gray-500" style={F_MONO}>
-                                {(tpl?.service_kind ?? s.status ?? '').replace(/_/g, ' ')}
-                                {' · '}{s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
-                                {multi ? ` · until ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-                              </span>
-                            </span>
-                            <span className="shrink-0 text-[13px]" style={{ color: '#00D2FF' }}>→</span>
-                          </button>
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#061C2B', fontWeight: 800 }}>
+                                    {(s.camp_name ?? '').split(' · ')[0]}
+                                  </span>
+                                  <span className="block text-[8.5px] mt-[3px] text-gray-500" style={F_MONO}>
+                                    {(tpl?.service_kind ?? s.status ?? '').replace(/_/g, ' ')}
+                                    {' · '}{s.participant_count ?? 0} student{s.participant_count === 1 ? '' : 's'}
+                                    {multi ? ` · until ${new Date(s.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                                    {trSaved[s.id] ? `  ·  ${trSaved[s.id]}` : ''}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 text-[13px]" style={{ color: '#00D2FF' }}>→</span>
+                              </button>
+                              {/* Transporte del próximo día en dos toques (sin abrir el planner) */}
+                              <button
+                                type="button"
+                                onClick={() => openTransport(s.id)}
+                                aria-label="Request transport"
+                                className="shrink-0 px-[13px] text-[15px] hover:bg-amber-50 transition-colors"
+                                style={{ borderLeft: `1px solid ${HAIR}` }}
+                              >
+                                🚐
+                              </button>
+                            </div>
+                            {trOpen === s.id && (
+                              <div className="px-[13px] py-[10px]" style={{ borderTop: `1px dashed ${HAIR}`, background: 'rgba(255,209,102,.08)' }}>
+                                {!trInfo ? (
+                                  <p className="text-[10px] text-gray-400" style={F_MONO}>Loading…</p>
+                                ) : !trInfo.ok ? (
+                                  <p className="text-[11px] text-red-600">{trInfo.error}</p>
+                                ) : (
+                                  <>
+                                    <p className="text-[8.5px] mb-[8px] text-gray-500" style={F_MONO}>
+                                      Transport · {new Date(trInfo.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                      {trInfo.needed ? ` · requested ${String(trInfo.depart ?? '').slice(0, 5)}–${String(trInfo.ret ?? '').slice(0, 5)}` : ' · not requested'}
+                                    </p>
+                                    <div className="flex items-center gap-[8px] flex-wrap">
+                                      <label className="text-[8.5px] text-gray-500" style={F_MONO}>Out</label>
+                                      <input type="time" value={trDep} onChange={(e) => setTrDep(e.target.value)} className="px-2 py-1.5 border border-gray-200 text-[12px] bg-white" />
+                                      <label className="text-[8.5px] text-gray-500" style={F_MONO}>Back</label>
+                                      <input type="time" value={trRet} onChange={(e) => setTrRet(e.target.value)} className="px-2 py-1.5 border border-gray-200 text-[12px] bg-white" />
+                                      <button type="button" disabled={trBusy} onClick={() => saveTransport(s.id, true)}
+                                        className="px-[13px] py-[8px] text-[9px] disabled:opacity-40" style={{ ...F_MONO, background: '#00D2FF', color: '#061C2B', fontWeight: 700 }}>
+                                        {trBusy ? '…' : 'Request 🚐'}
+                                      </button>
+                                      {trInfo.needed && (
+                                        <button type="button" disabled={trBusy} onClick={() => saveTransport(s.id, false)}
+                                          className="px-[8px] py-[8px] text-[9px] text-gray-500 disabled:opacity-40" style={F_MONO}>
+                                          Cancel request
+                                        </button>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>

@@ -2353,3 +2353,102 @@ export async function saveStudentInternalNote(
     .eq('id', studentId);
   if (error) throw new Error(error.message);
 }
+
+// ─── 🚐 Transporte en DOS TOQUES desde la lista del Plan ─────────────
+// Pedido de un coach vía Marcelo (2026-08-07): solicitar transporte sin
+// abrir el planner. Lee/escribe el transporte del PRÓXIMO día del servicio.
+// Sin input → solo devuelve el estado actual. Con input → guarda y avisa
+// a coordinación (tablero de transporte + notificación).
+export async function coachQuickTransport(
+  token: string,
+  campInstanceId: string,
+  input?: { needed: boolean; depart?: string | null; ret?: string | null },
+): Promise<{ ok: boolean; error?: string; date?: string; needed?: boolean | null; depart?: string | null; ret?: string | null }> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id, display_name, academy_id')
+    .eq('portal_token', token)
+    .maybeSingle();
+  if (!coach) return { ok: false, error: 'Invalid link.' };
+
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, coach_id, head_coach_id, academy_id, status')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  if (!camp || camp.status === 'cancelled') return { ok: false, error: 'Service not found.' };
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    return { ok: false, error: 'You are not assigned to this service.' };
+  }
+
+  // Próximo día del servicio (hoy incluido, hora de El Salvador).
+  const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
+  const { data: nextSes } = await admin
+    .from('camp_sessions')
+    .select('id, session_date')
+    .eq('camp_instance_id', campInstanceId)
+    .gte('session_date', today)
+    .order('session_date')
+    .limit(1)
+    .maybeSingle();
+  if (!nextSes) return { ok: false, error: 'No upcoming day on this service.' };
+
+  const { data: plan } = await admin
+    .from('service_plans')
+    .select('id, completion_state, transport_needed, transport_depart, transport_return')
+    .eq('camp_session_id', nextSes.id)
+    .maybeSingle();
+
+  // Solo lectura
+  if (!input) {
+    return {
+      ok: true, date: nextSes.session_date,
+      needed: plan?.transport_needed ?? null,
+      depart: plan?.transport_depart ?? null,
+      ret: plan?.transport_return ?? null,
+    };
+  }
+
+  if (plan?.completion_state === 'closed') return { ok: false, error: 'That day is already closed.' };
+  const patch = {
+    transport_needed: input.needed,
+    transport_depart: input.needed ? (input.depart ?? null) : null,
+    transport_return: input.needed ? (input.ret ?? null) : null,
+    transport_status: input.needed ? 'requested' : null,
+  };
+  if (plan) {
+    const { error } = await admin.from('service_plans').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', plan.id);
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { error } = await admin.from('service_plans').insert({
+      camp_instance_id: campInstanceId,
+      camp_session_id: nextSes.id,
+      ...patch,
+      completion_state: 'planned',
+    });
+    if (error) return { ok: false, error: error.message };
+  }
+
+  // Aviso a coordinación — el transporte se organiza con anticipación.
+  try {
+    const { createNotification } = await import('@/lib/actions/notifications');
+    const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', camp.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+    const base = (camp.camp_name ?? '').split(' · ')[0];
+    for (const c of coords ?? []) {
+      await createNotification({
+        recipientCoachId: c.id,
+        type: 'transport_request',
+        title: input.needed
+          ? `🚐 Transporte pedido: ${base} · ${nextSes.session_date}`
+          : `🚐 Transporte CANCELADO: ${base} · ${nextSes.session_date}`,
+        body: input.needed
+          ? `${coach.display_name ?? 'Coach'} pide transporte — sale ${input.depart ?? '—'} · vuelve ${input.ret ?? '—'}.`
+          : `${coach.display_name ?? 'Coach'} canceló el pedido de transporte.`,
+        link: null, metadata: { campInstanceId },
+      }).catch(() => {});
+    }
+  } catch { /* best-effort */ }
+
+  return { ok: true, date: nextSes.session_date, needed: input.needed, depart: input.depart ?? null, ret: input.ret ?? null };
+}
