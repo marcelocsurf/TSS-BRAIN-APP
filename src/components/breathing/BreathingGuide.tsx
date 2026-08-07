@@ -282,7 +282,7 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Patrones — chips rectilíneos v10 */}
-      <div className="flex gap-[8px] px-[21px] py-[13px] overflow-x-auto">
+      <div className="flex gap-[8px] px-[21px] py-[13px] overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
         {PATTERNS.map((p) => {
           const on = patternId === p.id;
           return (
@@ -311,11 +311,11 @@ export function BreathingGuide({ onClose }: { onClose: () => void }) {
               transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out`,
             }} />
           ))}
-          {/* Disco central */}
+          {/* Disco central — se atenúa cuando hay numeral encima */}
           <div className="absolute rounded-full" style={{
-            width: 55, height: 55, background: CYAN, opacity: 0.9,
+            width: 55, height: 55, background: CYAN, opacity: numeral !== null ? 0.15 : 0.9,
             transform: `scale(${reduce ? 0.9 : scale})`,
-            transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out`,
+            transition: `transform ${reduce ? 0 : transitionSec}s ease-in-out, opacity 0.4s`,
           }} />
           {/* Numeral gigante delineado (como los numerales de capítulo v10) */}
           {numeral !== null && (
