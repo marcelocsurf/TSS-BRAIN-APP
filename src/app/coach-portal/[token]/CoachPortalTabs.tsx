@@ -8,6 +8,7 @@ import type { CoachPortalData, CoachLessonDetail } from '@/lib/actions/coach-por
 import { getCoachLessonDetail, markCoachLessonRead, submitCoachQuiz } from '@/lib/actions/coach-portal';
 import { sellerSearchStudents, sellerReserveSpot, sellerMySales, type SellerSale } from '@/lib/actions/seller';
 import { getServicePlan, coachQuickTransport, type ServicePlanData } from '@/lib/actions/service-planner';
+import { SURF_SPOT_OPTIONS } from '@/lib/constants/brand';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
@@ -1956,11 +1957,13 @@ function PlanTab({
   const [trRet, setTrRet] = useState('12:00');
   const [trBusy, setTrBusy] = useState(false);
   const [trDay, setTrDay] = useState<string | null>(null);
+  const [trVenue, setTrVenue] = useState('');
   const [trSaved, setTrSaved] = useState<Record<string, string>>({});
   const pickTrDay = (d: any) => {
     setTrDay(d.session_id);
     if (d.depart) setTrDep(String(d.depart).slice(0, 5));
     if (d.ret) setTrRet(String(d.ret).slice(0, 5));
+    setTrVenue(d.venue ?? '');
   };
   const openTransport = async (campId: string) => {
     if (trOpen === campId) { setTrOpen(null); return; }
@@ -1977,7 +1980,7 @@ function PlanTab({
   const saveTransport = async (campId: string, needed: boolean) => {
     if (!trDay) return;
     setTrBusy(true);
-    const r = await coachQuickTransport(token, campId, { sessionId: trDay, needed, depart: trDep, ret: trRet });
+    const r = await coachQuickTransport(token, campId, { sessionId: trDay, needed, depart: trDep, ret: trRet, venue: trVenue || null });
     setTrBusy(false);
     if (!r.ok) { setTrInfo({ ...trInfo, error: r.error }); return; }
     setTrSaved((m) => ({ ...m, [campId]: needed ? `🚐 ${trDep}–${trRet} ✓` : 'no transport' }));
@@ -2259,8 +2262,16 @@ function PlanTab({
                                     )}
                                     <p className="text-[8.5px] mb-[8px] text-gray-500" style={F_MONO}>
                                       Transport · {d ? new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '—'}
-                                      {d?.needed ? ` · requested ${String(d.depart ?? '').slice(0, 5)}–${String(d.ret ?? '').slice(0, 5)}` : ' · not requested'}
+                                      {d?.needed ? ` · requested ${String(d.depart ?? '').slice(0, 5)}–${String(d.ret ?? '').slice(0, 5)}${d?.venue ? ` · 🏖 ${d.venue}` : ''}` : ' · not requested'}
                                     </p>
+                                    <div className="flex items-center gap-[8px] mb-[8px]">
+                                      <label className="text-[8.5px] text-gray-500 shrink-0" style={F_MONO}>Beach</label>
+                                      <select value={trVenue} onChange={(ev) => setTrVenue(ev.target.value)}
+                                        className="min-w-0 flex-1 px-2 py-1.5 border border-gray-200 text-[12px] bg-white">
+                                        <option value="">— pick the beach —</option>
+                                        {SURF_SPOT_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                                      </select>
+                                    </div>
                                     <div className="flex items-center gap-[8px] flex-wrap">
                                       <label className="text-[8.5px] text-gray-500" style={F_MONO}>Out</label>
                                       <input type="time" value={trDep} onChange={(e) => setTrDep(e.target.value)} className="px-2 py-1.5 border border-gray-200 text-[12px] bg-white" />

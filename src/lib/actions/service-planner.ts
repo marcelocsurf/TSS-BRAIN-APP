@@ -2362,10 +2362,10 @@ export async function saveStudentInternalNote(
 export async function coachQuickTransport(
   token: string,
   campInstanceId: string,
-  input?: { sessionId?: string; needed: boolean; depart?: string | null; ret?: string | null },
+  input?: { sessionId?: string; needed: boolean; depart?: string | null; ret?: string | null; venue?: string | null },
 ): Promise<{
   ok: boolean; error?: string; date?: string; needed?: boolean | null; depart?: string | null; ret?: string | null;
-  days?: { session_id: string; date: string; day_number: number; needed: boolean | null; depart: string | null; ret: string | null; closed: boolean }[];
+  days?: { session_id: string; date: string; day_number: number; needed: boolean | null; depart: string | null; ret: string | null; venue: string | null; closed: boolean }[];
 }> {
   const admin = createAdminClient();
   const { data: coach } = await admin
@@ -2399,7 +2399,7 @@ export async function coachQuickTransport(
 
   const { data: planRows } = await admin
     .from('service_plans')
-    .select('id, camp_session_id, completion_state, transport_needed, transport_depart, transport_return')
+    .select('id, camp_session_id, completion_state, transport_needed, transport_depart, transport_return, surf_venue')
     .in('camp_session_id', upSes.map((x: any) => x.id));
   const planBy = new Map(((planRows as any[]) ?? []).map((p: any) => [p.camp_session_id, p]));
 
@@ -2414,6 +2414,7 @@ export async function coachQuickTransport(
           needed: pl?.transport_needed ?? null,
           depart: pl?.transport_depart ?? null,
           ret: pl?.transport_return ?? null,
+          venue: pl?.surf_venue ?? null,
           closed: pl?.completion_state === 'closed',
         };
       }),
@@ -2425,12 +2426,15 @@ export async function coachQuickTransport(
   const nextSes = target as any;
   const plan = planBy.get(nextSes.id);
   if (plan?.completion_state === 'closed') return { ok: false, error: 'That day is already closed.' };
-  const patch = {
+  const patch: Record<string, unknown> = {
     transport_needed: input.needed,
     transport_depart: input.needed ? (input.depart ?? null) : null,
     transport_return: input.needed ? (input.ret ?? null) : null,
     transport_status: input.needed ? 'requested' : null,
   };
+  // La playa (pedido de Bauti): viaja junto al pedido de van y alimenta el
+  // tablero de transporte y la agenda del host (📍 venue).
+  if (input.venue !== undefined) patch.surf_venue = input.venue || null;
   if (plan) {
     const { error } = await admin.from('service_plans').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', plan.id);
     if (error) return { ok: false, error: error.message };
@@ -2457,7 +2461,7 @@ export async function coachQuickTransport(
           ? `🚐 Transporte pedido: ${base} · ${nextSes.session_date}`
           : `🚐 Transporte CANCELADO: ${base} · ${nextSes.session_date}`,
         body: input.needed
-          ? `${coach.display_name ?? 'Coach'} pide transporte — sale ${input.depart ?? '—'} · vuelve ${input.ret ?? '—'}.`
+          ? `${coach.display_name ?? 'Coach'} pide transporte — sale ${input.depart ?? '—'} · vuelve ${input.ret ?? '—'}${input.venue ? ` · 🏖 ${input.venue}` : ''}.`
           : `${coach.display_name ?? 'Coach'} canceló el pedido de transporte.`,
         link: null, metadata: { campInstanceId },
       }).catch(() => {});
