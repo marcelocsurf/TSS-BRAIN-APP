@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { getCurrentCoach } from './auth';
 
 // ═══════════════════════════════════════
@@ -227,7 +228,7 @@ export async function getRecentAuditEvents(limit: number = 5) {
 
 export async function getCoachDashboardData(coachId: string) {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const me = await getCurrentCoach();
   const academyId: string | null = me?.is_platform_admin ? null : me?.academy_id ?? null;
 

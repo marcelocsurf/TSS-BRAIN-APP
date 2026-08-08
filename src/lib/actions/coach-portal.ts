@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
 import { getAcceptedAssistantCampIds } from '@/lib/actions/service-staff';
 import { revalidatePath } from 'next/cache';
@@ -139,7 +140,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   // Gate: coach needs explicit access granted by platform admin
   if (!coach.course_access_granted) return null;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
 
   // Services where this coach is an accepted assistant (read-only access).
   const assistantCampIds = await getAcceptedAssistantCampIds(coach.id);

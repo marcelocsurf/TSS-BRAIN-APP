@@ -6,6 +6,7 @@
 // broken query never blanks the dashboard.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { getCurrentCoach } from '@/lib/actions/auth';
 
 export interface AcademyPulse {
@@ -39,7 +40,7 @@ export async function getPlatformOverview(): Promise<PlatformOverviewData | null
   if (!me || ((me as any).role !== 'admin' && !(me as any).is_platform_admin)) return null;
 
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
   const monthStart = today.slice(0, 8) + '01';
 

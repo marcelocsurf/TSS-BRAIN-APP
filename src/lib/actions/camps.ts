@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
@@ -297,7 +298,7 @@ export async function cancelCampInstance(campInstanceId: string) {
 // ═══════════════════════════════════════
 
 export async function listTodaysCamps() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   return listCampsInRange(today, today);
 }
 
@@ -794,7 +795,7 @@ export async function finalizeParticipant(
     .from('camp_participants')
     .update({
       finalized_at: new Date().toISOString(),
-      departed_on: departedOn || new Date().toISOString().slice(0, 10),
+      departed_on: departedOn || elSalvadorToday(),
     })
     .eq('id', participantId);
   if (error) return { ok: false, error: error.message };

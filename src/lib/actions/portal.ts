@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
 
@@ -268,7 +269,7 @@ export async function getStudentPortalData(token: string) {
     )
     .eq('student_id', student.id);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const upcomingCamps: any[] = [];
   const pastCamps: any[] = [];
   for (const p of (participations ?? []) as any[]) {

@@ -1,6 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { CoachRole } from '@/lib/constants/brand';
@@ -141,7 +142,7 @@ export async function getCurrentAcademyId(): Promise<string | null> {
 
 export async function getCoachAccessibleStudentIds(coachId: string): Promise<string[]> {
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
 
   // Pull all camp_instances assigned to this coach. Filter precisely in JS.
   const { data: instances } = await admin

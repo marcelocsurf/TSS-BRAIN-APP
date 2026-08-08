@@ -7,6 +7,7 @@
 // coordinator/admin.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 
 async function resolveDesk(token: string) {
   const admin = createAdminClient();
@@ -25,7 +26,7 @@ export async function getFrontDeskData(token: string) {
   if (!who?.academy_id) return null;
   const admin = createAdminClient();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const horizon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const { data } = await admin
     .from('camp_instances')
@@ -146,7 +147,7 @@ export async function getTransferTargets(token: string, participantId: string) {
   const cur = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
   if (!cur || cur.academy_id !== who.academy_id) return [];
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const { data } = await admin
     .from('camp_instances')
     .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
@@ -206,7 +207,7 @@ export async function deskTransferSeat(token: string, participantId: string, tar
   const toName = ((target as any).camp_name ?? tTpl?.template_name ?? '').split(' · ')[0];
   const paid = (seat as any).payment_status === 'paid';
   const targetPrice = tTpl?.list_price_cents ?? null;
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = elSalvadorToday();
 
   // Precio: sin pagar → adopta el del destino. Pagado → se conserva y queda
   // nota de la diferencia para que el coordinador ajuste (cobrar o dejar).

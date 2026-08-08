@@ -6,6 +6,7 @@
 // in the same flow. Payment is NEVER settled here — front desk does that.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { createNotification } from '@/lib/actions/notifications';
 
 // Aviso interno de una reserva del QR público: campanita para coordinadores,
@@ -60,7 +61,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
   const academy = await academyBySlug(slug);
   if (!academy) return null;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   let q = admin
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description, video_url), coaches:coach_id(display_name), camp_participants(id, enrollment_status)')
@@ -181,7 +182,7 @@ export async function publicEnroll(input: {
       .eq('academy_id', academy.id)
       .ilike('code', input.coupon.trim())
       .maybeSingle();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = elSalvadorToday();
     if (!cp || !cp.active) return { ok: false, error: 'That code is not valid.' };
     if (cp.expires_on && cp.expires_on < today) return { ok: false, error: 'That code has expired.' };
     if (cp.max_uses != null && cp.uses >= cp.max_uses) return { ok: false, error: 'That code has no uses left.' };
@@ -491,7 +492,7 @@ export async function getPublicMoveTargets(bookingId: string) {
   const b = await bookingById(bookingId);
   if (!b) return [];
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const { data } = await admin
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status)')
@@ -566,7 +567,7 @@ export async function publicMoveBooking(bookingId: string, targetCampId: string,
   if (cap > 0 && act.length >= cap) return { ok: false, error: 'That date is full — pick another.' };
   if (act.some((p: any) => p.student_id === b.seat.student_id)) return { ok: false, error: 'You are already booked on that date.' };
 
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = elSalvadorToday();
   const { error } = await admin.from('camp_participants')
     .update({ camp_instance_id: targetCampId, notes: [b.seat.notes, `Moved ${actor === 'desk' ? 'at front desk' : 'by student'} ${stamp}: ${b.camp.start_date} → ${(target as any).start_date}`].filter(Boolean).join(' | ') })
     .eq('id', bookingId);

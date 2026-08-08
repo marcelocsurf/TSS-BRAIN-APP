@@ -5,6 +5,7 @@
 // NO asigna coaches, NO ve costos/márgenes, NO evalúa ni promueve cintas.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { sendIntakeLinkEmail } from '@/lib/actions/email';
 
 async function resolveHost(token: string) {
@@ -105,7 +106,7 @@ export async function hostAttentionList(token: string): Promise<HostStudentRow[]
   const who = await resolveHost(token);
   if (!who?.academy_id) return [];
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const horizon = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
   const { data: seats } = await admin
     .from('camp_participants')
@@ -138,7 +139,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
     .maybeSingle();
   if (!s) return null;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = elSalvadorToday();
   const [{ data: next }, { data: sessions }, { data: incidents }, membership] = await Promise.all([
     admin.from('camp_participants')
       .select('payment_status, amount_cents, camp_instances:camp_instance_id!inner(camp_name, start_date, scheduled_time)')
