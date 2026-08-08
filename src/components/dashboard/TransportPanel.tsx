@@ -80,26 +80,52 @@ export function TransportPanel() {
   const exportRows = (rows ?? []).filter((r) => r.transport_status !== 'cancelled');
   const statusEs = (s: string | null) => (s === 'taken' ? 'Tomado' : s === 'cancelled' ? 'Cancelado' : 'Pendiente');
 
-  function downloadCsv() {
+  // Excel REAL (.xlsx) — pedido de Rick: el CSV con comas se pegaba todo en
+  // una columna en Excel en español. Ahora: columnas de verdad, horas con
+  // formato de hora, atraso numérico y anchos listos. SheetJS por import
+  // dinámico para que no pese en el bundle normal.
+  async function downloadCsv() {
+    const XLSX = await import('xlsx');
+    const timeVal = (t: string | null | undefined) => {
+      if (!t) return null;
+      const [h, m] = String(t).split(':').map((x) => parseInt(x, 10));
+      if (Number.isNaN(h)) return null;
+      return h / 24 + (m || 0) / 1440; // fracción de día = hora Excel
+    };
     const header = ['Fecha', 'Servicio', 'Coach', 'Playa', 'Hora clase', 'Salida planeada', 'Salida real', 'Atraso (min)', 'Regreso planeado', 'Regreso real', 'Alumnos', 'Estado'];
-    const cell = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lines = exportRows.map((r) => {
+    const aoa: any[][] = [header];
+    for (const r of exportRows) {
       const d = delayMin(r.transport_depart, r.transport_actual_depart);
-      return [
-        fmtDate(r.session_date), r.camp_name ?? '', r.coach_name ?? '', r.surf_venue ?? '',
-        fmtTime(r.class_start_time), fmtTime(r.transport_depart),
-        r.transport_actual_depart ? fmtTime(r.transport_actual_depart) : '', d ?? '',
-        fmtTime(r.transport_return), r.transport_actual_return ? fmtTime(r.transport_actual_return) : '', r.students, statusEs(r.transport_status),
-      ].map(cell).join(',');
-    });
-    const csv = ['﻿' + header.map(cell).join(','), ...lines].join('\r\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `transportes-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      aoa.push([
+        fmtDate(r.session_date),
+        (r.camp_name ?? '').split(' · ')[0],
+        r.coach_name ?? '',
+        r.surf_venue ?? '',
+        timeVal(r.class_start_time),
+        timeVal(r.transport_depart),
+        timeVal(r.transport_actual_depart),
+        d ?? null,
+        timeVal(r.transport_return),
+        timeVal(r.transport_actual_return),
+        r.students ?? null,
+        statusEs(r.transport_status),
+      ]);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    // Formato de HORA en las columnas E,F,G,I,J (índices 4,5,6,8,9)
+    for (let row = 1; row < aoa.length; row++) {
+      for (const col of [4, 5, 6, 8, 9]) {
+        const addr = XLSX.utils.encode_cell({ r: row, c: col });
+        if (ws[addr] && typeof ws[addr].v === 'number') ws[addr].z = 'h:mm AM/PM';
+      }
+    }
+    ws['!cols'] = [
+      { wch: 12 }, { wch: 34 }, { wch: 18 }, { wch: 10 }, { wch: 10 },
+      { wch: 14 }, { wch: 11 }, { wch: 11 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 10 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transportes');
+    XLSX.writeFile(wb, `transportes-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   function copyText() {
@@ -152,8 +178,8 @@ export function TransportPanel() {
               <button
                 onClick={downloadCsv}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
-                title="Descargar CSV"
-              ><Download size={12} /> Descargar</button>
+                title="Descargar Excel (.xlsx)"
+              ><Download size={12} /> Descargar Excel</button>
             </>
           )}
         </div>
