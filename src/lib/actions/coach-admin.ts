@@ -14,13 +14,30 @@ async function assertAdmin() {
   }
 }
 
+// SECURITY: an academy admin may only manage coaches of THEIR OWN academy.
+// The real platform admin bypasses. Throws if the target belongs elsewhere.
+async function assertCanManageCoach(coachId: string) {
+  await assertAdmin();
+  if (await isRealPlatformAdmin().catch(() => false)) return;
+  const me = await getCurrentCoach().catch(() => null);
+  const admin = createAdminClient();
+  const { data: target } = await admin
+    .from('coaches')
+    .select('academy_id')
+    .eq('id', coachId)
+    .maybeSingle();
+  if (!target || (target as any).academy_id !== (me as any)?.academy_id) {
+    throw new Error('You can only manage staff of your own academy.');
+  }
+}
+
 // Edit a coach/assistant's identity (name, email, role). Uses the admin client
 // so it bypasses RLS, and keeps the auth account email in sync when one exists.
 export async function updateCoachIdentity(
   coachId: string,
   input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string; portal_can_coordinate?: boolean },
 ): Promise<{ ok: boolean; error?: string }> {
-  await assertAdmin();
+  await assertCanManageCoach(coachId);
   const admin = createAdminClient();
 
   const first = (input.first_name || '').trim();
@@ -72,7 +89,7 @@ export async function setCoachActiveStatus(
   coachId: string,
   active: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
-  await assertAdmin();
+  await assertCanManageCoach(coachId);
   const admin = createAdminClient();
   const { error } = await admin
     .from('coaches')
@@ -90,7 +107,7 @@ export async function setCoachActiveStatus(
 export async function deleteCoach(
   coachId: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  await assertAdmin();
+  await assertCanManageCoach(coachId);
   const admin = createAdminClient();
 
   const { data: c } = await admin

@@ -8,6 +8,23 @@ import { revalidatePath } from 'next/cache';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
 
+// SECURITY: verify the caller (coordinator/admin, platform bypasses) owns the
+// academy of this camp before reading/mutating its staff. Returns null when OK.
+async function guardCampAcademy(campInstanceId: string): Promise<{ error: string } | null> {
+  const me = await getCurrentCoach();
+  if (!me) return { error: 'Not authenticated.' };
+  if (me.is_platform_admin) return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_instances')
+    .select('academy_id')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  const acId = (data as any)?.academy_id ?? null;
+  if (!acId || acId !== me.academy_id) return { error: 'Not authorized for this academy.' };
+  return null;
+}
+
 export type ServiceStaffRole = 'assistant' | 'photographer' | 'filmmaker' | 'other';
 
 export interface ServiceStaffRow {
@@ -24,6 +41,7 @@ export interface ServiceStaffRow {
 }
 
 export async function listServiceStaff(campInstanceId: string): Promise<ServiceStaffRow[]> {
+  if (await guardCampAcademy(campInstanceId)) return [];
   const admin = createAdminClient();
   const { data } = await admin
     .from('service_staff')
@@ -100,6 +118,8 @@ export async function assignServiceStaff(input: {
   const me = await getCurrentCoach();
   if (!me) return { ok: false, error: 'Not authenticated.' };
   if (!input.coachId && !input.staffMemberId) return { ok: false, error: 'Pick a person.' };
+  const g = await guardCampAcademy(input.campInstanceId);
+  if (g) return { ok: false, error: g.error };
 
   const admin = createAdminClient();
 
@@ -178,8 +198,10 @@ export async function assignServiceStaff(input: {
 export async function removeServiceStaff(id: string): Promise<void> {
   const admin = createAdminClient();
   const { data: row } = await admin.from('service_staff').select('camp_instance_id').eq('id', id).single();
+  if (!row) return;
+  if (await guardCampAcademy(row.camp_instance_id)) return; // not authorized — no-op
   await admin.from('service_staff').delete().eq('id', id);
-  if (row) revalidatePath(`/camps/${row.camp_instance_id}`);
+  revalidatePath(`/camps/${row.camp_instance_id}`);
 }
 
 // ── Token-based accept/reject (works for coach + non-coach staff) ──

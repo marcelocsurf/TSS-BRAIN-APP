@@ -9,6 +9,52 @@ import type { SessionStatus } from '@/lib/constants/brand';
 import { getCurrentCoach } from '@/lib/actions/auth';
 
 // ═══════════════════════════════════════
+// SECURITY: ownership guard for admin-client mutations
+// The token/dashboard actions below use createAdminClient() (bypasses RLS),
+// so we must verify by hand that the caller may touch the target. Platform
+// admin (is_platform_admin, NOT in act-as) bypasses; a coordinator/host in
+// act-as mode has academy_id set, so they scope to that academy correctly.
+// Returns null when allowed, or an { ok:false }-style error object when not.
+// ═══════════════════════════════════════
+async function guardParticipantAcademy(
+  participantId: string,
+): Promise<{ error: string } | null> {
+  const me = await getCurrentCoach();
+  if (!me) return { error: 'Not authenticated.' };
+  if (me.is_platform_admin) return null; // sees across all academies
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_participants')
+    .select('camp_instances:camp_instance_id(academy_id)')
+    .eq('id', participantId)
+    .maybeSingle();
+  const acId = (data as any)?.camp_instances?.academy_id ?? null;
+  if (!acId || acId !== me.academy_id) return { error: 'Not authorized for this academy.' };
+  return null;
+}
+
+// Only the platform admin may edit/deactivate GLOBAL templates (academy_id
+// NULL = the shared TSS doctrine catalog). A coordinator may only touch
+// templates that belong to their own academy.
+async function guardTemplateOwnership(
+  templateId: string,
+): Promise<{ error: string } | null> {
+  const me = await getCurrentCoach();
+  if (!me) return { error: 'Not authenticated.' };
+  if (me.is_platform_admin) return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_templates')
+    .select('academy_id')
+    .eq('id', templateId)
+    .maybeSingle();
+  const acId = (data as any)?.academy_id ?? null;
+  if (!acId) return { error: 'This is a global TSS template — only the platform admin can change it.' };
+  if (acId !== me.academy_id) return { error: 'Not authorized for this academy.' };
+  return null;
+}
+
+// ═══════════════════════════════════════
 // LIST TEMPLATES
 // ═══════════════════════════════════════
 
@@ -741,6 +787,8 @@ export async function finalizeParticipant(
   campId: string,
   departedOn?: string | null,
 ): Promise<{ ok: boolean; error?: string }> {
+  const guard = await guardParticipantAcademy(participantId);
+  if (guard) return { ok: false, error: guard.error };
   const admin = createAdminClient();
   const { error } = await admin
     .from('camp_participants')
@@ -759,6 +807,8 @@ export async function reopenParticipant(
   participantId: string,
   campId: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  const guard = await guardParticipantAcademy(participantId);
+  if (guard) return { ok: false, error: guard.error };
   const admin = createAdminClient();
   const { error } = await admin
     .from('camp_participants')
@@ -1141,6 +1191,8 @@ export async function updateEnrollmentPayment(input: {
   list_price_cents?: number | null;
   discount_reason?: string | null;
 }) {
+  const guard = await guardParticipantAcademy(input.participantId);
+  if (guard) return { success: false, error: guard.error };
   const admin = createAdminClient();
   const me = await getCurrentCoach();
 
@@ -1620,6 +1672,8 @@ export async function createCampTemplate(input: CreateTemplateInput) {
 }
 
 export async function updateCampTemplate(templateId: string, input: CreateTemplateInput) {
+  const ownership = await guardTemplateOwnership(templateId);
+  if (ownership) return { error: ownership.error };
   const supabase = await createClient();
 
   // Guard: editing a template DELETES + re-creates its days/blocks, which
@@ -1751,6 +1805,8 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
 }
 
 export async function deleteCampTemplate(templateId: string) {
+  const ownership = await guardTemplateOwnership(templateId);
+  if (ownership) return { success: false, error: ownership.error };
   const supabase = await createClient();
 
   const { error } = await supabase

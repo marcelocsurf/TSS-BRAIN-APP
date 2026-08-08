@@ -63,9 +63,18 @@ export async function grantCourseToStudent(
   // direct-purchase grant (TSS collected payment off-platform — waiver
   // is signed in a separate flow). Auto grants skip the gate by design.
   const requiresGate = source === 'manual';
-  const callerIsPlatformAdmin = requiresGate
-    ? !!(await getCurrentCoach())?.is_platform_admin
-    : false;
+  const caller = requiresGate ? await getCurrentCoach() : null;
+  const callerIsPlatformAdmin = !!caller?.is_platform_admin;
+
+  // SECURITY: a manual grant must come from a coordinator/admin of THIS
+  // student's academy (platform admin bypasses). Auto/access-code/purchase
+  // sources are gated separately below or are trusted internal callers.
+  if (requiresGate && !callerIsPlatformAdmin) {
+    const { isCoordinatorOrAbove } = await import('@/lib/actions/auth');
+    if (!caller || !(await isCoordinatorOrAbove(caller.role)) || caller.academy_id !== (student as any).academy_id) {
+      return { ok: false, error: 'Not authorized to grant this course.' };
+    }
+  }
 
   if (requiresGate && !options?.override) {
     if (!student.waiver_signed || !student.intake_completed_at) {

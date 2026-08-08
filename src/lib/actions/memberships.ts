@@ -3,6 +3,20 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createNotification } from '@/lib/actions/notifications';
 
+// SECURITY: verify the target student belongs to the caller's academy.
+// Platform admin bypasses. Returns the coach ("me") when allowed, or an
+// error string when not — callers already return { ok:false, error }.
+async function assertStudentInMyAcademy(studentId: string): Promise<{ me: any } | { error: string }> {
+  const { getCurrentCoach, isCoordinatorOrAbove } = await import('@/lib/actions/auth');
+  const me = await getCurrentCoach().catch(() => null);
+  if (!me || !(await isCoordinatorOrAbove(me.role))) return { error: 'Solo coordinador o admin.' };
+  if ((me as any).is_platform_admin) return { me };
+  const admin = createAdminClient();
+  const { data: st } = await admin.from('students').select('academy_id').eq('id', studentId).maybeSingle();
+  if (!st || (st as any).academy_id !== (me as any).academy_id) return { error: 'Ese alumno no es de tu academia.' };
+  return { me };
+}
+
 // ── Membresías (M156) ──────────────────────────────────────────
 // Un camp incluye 6 meses de acceso al portal. Al vencer, los datos quedan
 // intactos y el portal muestra la pantalla de renovación. El alumno SOLICITA;
@@ -118,9 +132,9 @@ export async function requestMembershipRenewal(portalToken: string, months: numb
 
 // Coordinador/admin confirma el pago de la solicitud → extiende de verdad.
 export async function confirmMembershipRenewal(studentId: string, paymentMethod?: string): Promise<{ ok: boolean; error?: string }> {
-  const { getCurrentCoach, isCoordinatorOrAbove } = await import('@/lib/actions/auth');
-  const me = await getCurrentCoach().catch(() => null);
-  if (!me || !(await isCoordinatorOrAbove(me.role))) return { ok: false, error: 'Solo coordinador o admin.' };
+  const scope = await assertStudentInMyAcademy(studentId);
+  if ('error' in scope) return { ok: false, error: scope.error };
+  const me = scope.me;
   const admin = createAdminClient();
   const { data: req } = await admin.from('memberships').select('id, months, amount_cents')
     .eq('student_id', studentId).eq('status', 'requested')
@@ -136,9 +150,9 @@ export async function confirmMembershipRenewal(studentId: string, paymentMethod?
 // Coordinador/admin OTORGA membresía a mano (alta inicial, regalo de
 // lanzamiento, cortesía). Esto es lo que "abre" el portal a un member.
 export async function grantMembership(studentId: string, months: number, gift = false): Promise<{ ok: boolean; error?: string; portal_url?: string }> {
-  const { getCurrentCoach, isCoordinatorOrAbove } = await import('@/lib/actions/auth');
-  const me = await getCurrentCoach().catch(() => null);
-  if (!me || !(await isCoordinatorOrAbove(me.role))) return { ok: false, error: 'Solo coordinador o admin.' };
+  const scope = await assertStudentInMyAcademy(studentId);
+  if ('error' in scope) return { ok: false, error: scope.error };
+  const me = scope.me;
   if (![1, 6, 12].includes(months)) return { ok: false, error: 'Plan inválido.' };
   await extendMembership(studentId, months, gift ? 'launch_gift' : 'renewal', {
     paymentMethod: gift ? 'gift' : 'manual', createdBy: (me as any).id ?? null,

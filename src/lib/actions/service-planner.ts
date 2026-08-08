@@ -2336,7 +2336,7 @@ export async function saveStudentInternalNote(
 
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   const camp = Array.isArray((session as any)?.camp_instances)
@@ -2346,6 +2346,16 @@ export async function saveStudentInternalNote(
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     throw new Error('You are not assigned to this service.');
   }
+
+  // SECURITY: only write the note if the student is actually a participant
+  // of THIS camp — otherwise a coach could edit any student in the database.
+  const { data: participant } = await admin
+    .from('camp_participants')
+    .select('id')
+    .eq('camp_instance_id', (session as any).camp_instance_id)
+    .eq('student_id', studentId)
+    .maybeSingle();
+  if (!participant) throw new Error('That student is not in this service.');
 
   const { error } = await admin
     .from('students')
