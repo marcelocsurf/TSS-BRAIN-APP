@@ -7,6 +7,16 @@ import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Resend v3 devuelve { data, error } y NO lanza en fallo — el código hacía
+// `await resend.emails.send()` y reportaba success aunque el envío fallara.
+// Este wrapper lanza el error para que el try/catch de cada sender lo capture
+// y devuelva { success:false } de verdad.
+async function sendEmail(payload: Parameters<typeof resend.emails.send>[0]) {
+  const { data, error } = await resend.emails.send(payload);
+  if (error) throw new Error((error as any)?.message || (typeof error === 'string' ? error : JSON.stringify(error)));
+  return data;
+}
+
 // Absolute production URL for the logo — email clients can't load relative
 // paths, so this must point at the live domain (white horizontal mark for the
 // dark header). alt text keeps the brand name for image-blocking clients.
@@ -50,7 +60,7 @@ export async function sendSessionEmail(data: SessionEmailData): Promise<{ succes
       : `${portalUrl}?tab=feedback`;
 
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.studentEmail,
       subject: `Your session report from ${data.coachName}`,
@@ -102,7 +112,7 @@ export async function sendCoachSurveyEmail(data: CoachSurveyEmailData): Promise<
     </p>${INSTALL_APP_HTML}`;
 
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.studentEmail,
       subject: `How was your experience with ${data.coachName}?`,
@@ -179,7 +189,7 @@ export async function sendIntakeLinkEmail(data: {
   academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: 'Complete your surf intake',
@@ -216,7 +226,7 @@ export async function sendPortalLinkEmail(data: {
     )
     .join('');
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: 'Your Surf Sequence portal link',
@@ -249,7 +259,7 @@ export async function sendAssignmentEmail(data: {
         <p style="margin:4px 0 0;font-size:13px;color:#6B7280;">${escapeHtmlBasic(data.dateRange)}</p>
       </div>
       <p style="margin:12px 0 0;font-size:13px;color:#374151;line-height:1.6;">Please open your portal to <strong>accept or decline</strong> this assignment so your coordinator knows.</p>`;
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `New service assigned — please confirm`,
@@ -282,7 +292,7 @@ export async function sendAssignmentResponseEmail(data: {
       </div>
       ${data.note ? `<p style="margin:12px 0 0;font-size:13px;color:#6B7280;line-height:1.6;"><strong>Note:</strong> ${escapeHtmlBasic(data.note)}</p>` : ''}
       ${!data.accepted ? `<p style="margin:12px 0 0;font-size:13px;color:#DC2626;line-height:1.6;">You may want to assign another coach.</p>` : ''}`;
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `${data.coachName} ${verb} — ${data.serviceName}`,
@@ -312,7 +322,7 @@ export async function sendTaskOverdueEmail(data: {
     const card = `<div style="background:#FBEBEB;border-left:3px solid #C43D3D;border-radius:0 8px 8px 0;padding:12px 14px;">
         <p style="margin:0;font-size:15px;color:#111827;font-weight:700;">${escapeHtmlBasic(data.taskTitle)}</p>
       </div>`;
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `Overdue task — ${data.taskTitle}`,
@@ -338,7 +348,7 @@ export async function sendServiceReminderEmail(data: {
         <p style="margin:0;font-size:15px;color:#111827;font-weight:700;">${escapeHtmlBasic(data.serviceName)}</p>
         <p style="margin:4px 0 0;font-size:13px;color:#6B7280;">${escapeHtmlBasic(data.whenLabel)}</p>
       </div>`;
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `Tomorrow: ${data.serviceName}`,
@@ -377,7 +387,7 @@ export async function sendCoachInviteEmail(
     return { success: false, error: 'Email service not configured (RESEND_API_KEY missing).' };
   }
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: data.isResend
@@ -500,7 +510,7 @@ export async function sendPasswordResetEmail(
   data: PasswordResetEmailData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `Reset your ${BRAND.name} password`,
@@ -676,7 +686,7 @@ export async function sendQuizLeadEmail(
   const beltName = BELT_DISPLAY[data.belt as BeltLevel]?.en || data.belt.replace(/_/g, ' ');
   const levelName = BELT_DISPLAY[data.belt as BeltLevel]?.levelName || '';
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: [...to],
       subject: `New surf-level quiz lead — ${escapeHtml(data.name)} (${beltName})`,
@@ -747,7 +757,7 @@ export async function sendBookingConfirmationEmail(data: {
   academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `You're booked: ${data.className} ${seeYouSpot(data.className).emoji}`,
@@ -776,7 +786,7 @@ export async function sendClosureReminderEmail(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const rows = data.pending.map((p) => `<li style="margin:0 0 4px;">${p.service} — <strong>${p.date}</strong></li>`).join('');
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `Tenés ${data.pending.length} cierre(s) pendiente(s) 🔒`,
@@ -849,7 +859,7 @@ export async function sendCoachWelcomeEmail(data: {
         <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;"><strong>Android:</strong> abrí tu portal en Chrome → menú ⋮ → <strong>"Instalar aplicación"</strong> (o "Agregar a pantalla principal").</p>
         <p style="margin:6px 0 0;font-size:12px;color:#6B7280;line-height:1.6;">Te queda el ícono de The Surf Sequence y entrás con un toque.</p>
       </div>`;
-    await resend.emails.send({
+    await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.toEmail,
       subject: `Bienvenido al equipo, ${data.firstName} 🌊 — tu acceso a The Surf Sequence`,

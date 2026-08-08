@@ -34,16 +34,23 @@ export async function sendLeadInvitation(studentId: string): Promise<SendResult>
   }
 
   try {
-    await resend.emails.send({
+    // Resend v3 no lanza en fallo de API: devuelve { error }. Sin este check
+    // se reportaba emailed:true aunque el correo nunca saliera.
+    const { error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.email,
       subject: 'Welcome — please complete your safety form',
       html: buildHtml(data.first_name, url),
     });
+    if (error) {
+      const msg = (error as any)?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+      console.error('sendLeadInvitation failed:', msg);
+      return { url, emailed: false, reason: msg };
+    }
     return { url, emailed: true };
   } catch (err: any) {
-    console.error('sendLeadInvitation failed:', err.message);
-    return { url, emailed: false, reason: err.message };
+    console.error('sendLeadInvitation failed:', err?.message || err);
+    return { url, emailed: false, reason: err?.message || String(err) };
   }
 }
 

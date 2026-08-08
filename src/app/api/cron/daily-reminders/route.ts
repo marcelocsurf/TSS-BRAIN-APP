@@ -163,21 +163,23 @@ async function handle(req: NextRequest) {
       const { count: later } = await admin.from('memberships').select('id', { count: 'exact', head: true })
         .eq('student_id', st.id).eq('status', 'active').gt('ends_at', (mem as any).ends_at);
       if ((later ?? 0) > 0) continue;
-      if (resend) {
-        const endDate = new Date((mem as any).ends_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-        await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
-          to: st.email,
-          subject: 'Your Surf Sequence membership ends soon 🌊',
-          html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#061C2B;">
-            <h2>Hey ${st.first_name || 'surfer'} — your membership ends ${endDate}</h2>
-            <p>Your belt journey, courses and logbook stay saved — but your portal access pauses unless you renew.</p>
-            <p><strong>$9.99/month · $49.99/6 months · $99.90/year</strong></p>
-            <p><a href="${appUrl}/portal/${st.portal_token}" style="display:inline-block;background:#00D2FF;color:#061C2B;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none;">Renew from your portal →</a></p>
-            <p style="color:#55666E;font-size:13px;">Or just pay at the academy — we&#39;ll extend it on the spot.</p>
-          </div>`,
-        }).catch(() => {});
-      }
+      if (!resend) continue; // sin Resend: no marcar enviado, reintentar mañana
+      const endDate = new Date((mem as any).ends_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+      const { error: sendErr } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+        to: st.email,
+        subject: 'Your Surf Sequence membership ends soon 🌊',
+        html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#061C2B;">
+          <h2>Hey ${st.first_name || 'surfer'} — your membership ends ${endDate}</h2>
+          <p>Your belt journey, courses and logbook stay saved — but your portal access pauses unless you renew.</p>
+          <p><strong>$9.99/month · $49.99/6 months · $99.90/year</strong></p>
+          <p><a href="${appUrl}/portal/${st.portal_token}" style="display:inline-block;background:#00D2FF;color:#061C2B;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none;">Renew from your portal →</a></p>
+          <p style="color:#55666E;font-size:13px;">Or just pay at the academy — we&#39;ll extend it on the spot.</p>
+        </div>`,
+      }).catch((e: any) => ({ error: e }));
+      // SOLO marcar 'enviado' si el correo salió — antes se estampaba aunque
+      // fallara y el alumno nunca recibía el aviso de vencimiento.
+      if (sendErr) { console.error('[daily-reminders] membership email failed', st.email, sendErr); continue; }
       await admin.from('memberships').update({ expiry_reminder_sent_at: new Date().toISOString() }).eq('id', (mem as any).id);
       membershipEmails++;
     }
