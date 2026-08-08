@@ -20,6 +20,7 @@ export interface PayrollDay {
   closed: boolean;
   rate_cents: number | null;   // null = falta tarifa en la matriz
   role: 'coach' | 'assistant' | 'filmer';
+  paid: boolean;               // esta sesión ya está incluida en un pago emitido
 }
 
 export interface PayrollPerson {
@@ -53,8 +54,12 @@ function rateFor(rates: any[], academyId: string, level: string | null, students
   const scoped = (size: number) => {
     const rows = pool.filter((r) => r.group_size === size);
     if (!rows.length) return null;
+    // Preferir la tarifa de ESTA academia; si no, la GLOBAL (academy_id null).
+    // NUNCA caer en la de otra academia (antes: rows[0]) → pago equivocado.
     const own = rows.find((r) => r.academy_id === academyId);
-    return (own ?? rows[0]).per_day_cents as number;
+    const global = rows.find((r) => r.academy_id == null);
+    const pick = own ?? global;
+    return pick ? (pick.per_day_cents as number) : null;
   };
   const exact = scoped(Math.max(students, 1));
   if (exact != null) return exact;
@@ -89,9 +94,9 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
       .lte('session_date', weekEnd),
     admin.from('coach_pay_rates').select('*'),
     (academyId
-      ? admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents')
+      ? admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents, session_ids')
           .eq('academy_id', academyId).eq('period_start', weekStartISO).eq('period_end', weekEnd)
-      : admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents')
+      : admin.from('coach_payments').select('coach_id, staff_member_id, amount_cents, session_ids')
           .eq('period_start', weekStartISO).eq('period_end', weekEnd)),
     admin.from('cost_rates').select('name, driver, amount_cents, academy_id, active')
       .in('driver', ['per_assistant_per_day', 'per_filmer_per_day']),
@@ -101,7 +106,9 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
   const staffRate = (driver: string, acId: string | null): number | null => {
     const rows = ((staffRates as any[]) ?? []).filter((r) => r.driver === driver && r.active !== false);
     if (!rows.length) return null;
-    return (rows.find((r) => r.academy_id === acId) ?? rows[0]).amount_cents;
+    // Propia → global → null. Nunca la de otra academia (antes: rows[0]).
+    const pick = rows.find((r) => r.academy_id === acId) ?? rows.find((r) => r.academy_id == null);
+    return pick ? pick.amount_cents : null;
   };
 
   // Staff aceptado por servicio (asistentes / filmers) — cobran por día
@@ -132,11 +139,22 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
     byPerson.set(key, fresh);
     return fresh;
   };
+  // Sesiones YA pagadas por persona (de pagos previos de este período) — para
+  // no volver a hacerlas pagables (raíz del doble pago al re-emitir).
+  const paidByPerson = new Map<string, Set<string>>();
+  for (const pay of (payments as any[]) ?? []) {
+    const k = pay.coach_id ? `coach:${pay.coach_id}` : `staff:${pay.staff_member_id}`;
+    const set = paidByPerson.get(k) ?? new Set<string>();
+    for (const sid of (pay.session_ids ?? [])) set.add(sid);
+    paidByPerson.set(k, set);
+  }
+
   const addDay = (p: PayrollPerson, day: PayrollDay, roleLabel: string) => {
+    day.paid = paidByPerson.get(p.person_key)?.has(day.session_id) ?? false;
     p.days.push(day);
     if (!p.roles.includes(roleLabel)) p.roles.push(roleLabel);
     if (day.rate_cents == null) p.missing_rate = true;
-    else if (day.closed) p.payable_cents += day.rate_cents;
+    else if (day.closed) { if (!day.paid) p.payable_cents += day.rate_cents; } // ya pagada → ni pagable ni retenida
     else p.held_cents += day.rate_cents;
     if (!day.closed) p.open_count++;
   };
@@ -150,7 +168,7 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
     const level = tpl?.level_name ?? null;
     const closed = s.session_status === 'completed';
     const service = (inst.camp_name ?? tpl?.template_name ?? '').split(' · ')[0];
-    const base = { session_id: s.id, camp_id: inst.id, date: s.session_date, service, level, kind: tpl?.service_kind ?? null, students, closed };
+    const base = { session_id: s.id, camp_id: inst.id, date: s.session_date, service, level, kind: tpl?.service_kind ?? null, students, closed, paid: false };
 
     // 1) Responsable del día: head coach ACEPTADO (flujo moderno) o coach_id
     const hcRow = Array.isArray(inst.hc) ? inst.hc[0] : inst.hc;
@@ -187,13 +205,17 @@ export async function getPayrollWeek(weekStartISO: string): Promise<{
   // con montos distintos — reportarlas para que Marcelo decida cuál vale.
   const dupMap = new Map<string, Set<number>>();
   for (const r of (rates as any[]) ?? []) {
-    const k = `${r.level_name}|${r.group_size}`;
+    // Solo tarifas relevantes a esta vista, y agrupadas POR ACADEMIA: dos
+    // academias con el mismo nivel/tamaño a distinto precio NO son duplicado
+    // (antes se marcaban falsamente Puro Surf vs Sandbox).
+    if (academyId && r.academy_id !== academyId && r.academy_id != null) continue;
+    const k = `${r.academy_id ?? 'global'}|${r.level_name}|${r.group_size}`;
     dupMap.set(k, (dupMap.get(k) ?? new Set()).add(r.per_day_cents));
   }
   const duplicates = [...dupMap.entries()]
     .filter(([, v]) => v.size > 1)
     .map(([k, v]) => {
-      const [level, size] = k.split('|');
+      const [, level, size] = k.split('|'); // k = academy|level|size
       return { level, size: Number(size), values: [...v].map((c) => `$${(c / 100).toFixed(0)}`) };
     });
 
@@ -231,6 +253,20 @@ export async function markWeekPaid(input: {
   if (input.amountCents <= 0) return { ok: false, error: 'Nada pagable en este período.' };
   const admin = createAdminClient();
   if (!input.coachId && !input.staffMemberId) return { ok: false, error: 'Persona inválida.' };
+
+  // Idempotencia: NUNCA volver a pagar una sesión ya incluida en un pago
+  // previo de este período (defensa contra doble clic / re-emisión).
+  {
+    let q = admin.from('coach_payments').select('session_ids')
+      .eq('period_start', input.weekStart).eq('period_end', input.weekEnd);
+    q = input.coachId ? q.eq('coach_id', input.coachId) : q.eq('staff_member_id', input.staffMemberId as string);
+    const { data: prior } = await q;
+    const alreadyPaid = new Set<string>();
+    for (const p of (prior as any[]) ?? []) for (const sid of (p.session_ids ?? [])) alreadyPaid.add(sid);
+    const fresh = (input.sessionIds ?? []).filter((sid) => !alreadyPaid.has(sid));
+    if (fresh.length === 0) return { ok: false, error: 'Estas sesiones ya fueron pagadas.' };
+    input = { ...input, sessionIds: fresh };
+  }
   // Platform admin no tiene academia propia: se toma la de la persona pagada.
   let payAcademy = (me as any).academy_id ?? null;
   if (!payAcademy) {

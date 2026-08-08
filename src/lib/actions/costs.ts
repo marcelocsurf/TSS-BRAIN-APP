@@ -116,11 +116,26 @@ export async function deleteCostRate(id: string): Promise<{ ok: boolean; error?:
 export async function saveCoachPayRate(level_name: string, group_size: number, per_day_cents: number): Promise<{ ok: boolean; error?: string }> {
   const me = await assertStaff();
   const admin = createAdminClient();
-  const { error } = await admin.from('coach_pay_rates').upsert(
-    { academy_id: me.academy_id ?? null, level_name, group_size, per_day_cents: Math.max(0, Math.round(per_day_cents)) },
-    { onConflict: 'academy_id,level_name,group_size' },
-  );
-  if (error) return { ok: false, error: error.message };
+  const cents = Math.max(0, Math.round(per_day_cents));
+  const acId = (me as any).academy_id ?? null;
+  // OJO: el UNIQUE (academy_id,level_name,group_size) trata NULL como DISTINCT,
+  // así que un upsert con academy_id NULL (platform admin) NUNCA hace conflict
+  // y duplica la tarifa. Para NULL hacemos find-or-update a mano; para academia
+  // concreta el upsert funciona bien.
+  if (acId == null) {
+    const { data: existing } = await admin.from('coach_pay_rates')
+      .select('id').is('academy_id', null).eq('level_name', level_name).eq('group_size', group_size).maybeSingle();
+    const { error } = existing
+      ? await admin.from('coach_pay_rates').update({ per_day_cents: cents }).eq('id', (existing as any).id)
+      : await admin.from('coach_pay_rates').insert({ academy_id: null, level_name, group_size, per_day_cents: cents });
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { error } = await admin.from('coach_pay_rates').upsert(
+      { academy_id: acId, level_name, group_size, per_day_cents: cents },
+      { onConflict: 'academy_id,level_name,group_size' },
+    );
+    if (error) return { ok: false, error: error.message };
+  }
   revalidatePath('/costs');
   return { ok: true };
 }

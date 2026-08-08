@@ -95,7 +95,7 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
   const [history, setHistory] = useState<any[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const openDates = p.days.filter((d) => !d.closed).map((d) => fmtDay(d.date));
-  const payableSessions = p.days.filter((d) => d.closed && d.rate_cents != null).map((d) => d.session_id);
+  const payableSessions = p.days.filter((d) => d.closed && d.rate_cents != null && !d.paid).map((d) => d.session_id);
   const alreadyPaid = p.paid_cents >= p.payable_cents && p.payable_cents > 0;
 
   return (
@@ -130,8 +130,8 @@ function PersonCard({ p, weekStart, weekEnd, pending, start, reload }: {
                 {d.rate_cents == null ? 'sin tarifa' : money(d.rate_cents)}
               </span>
               <span className="text-[9px] font-bold rounded-full px-2 py-0.5"
-                style={d.closed ? { background: 'rgba(6,214,160,.15)', color: '#0a7c5d' } : { background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>
-                {d.closed ? '✓ cerrada' : '⚠ sin cierre'}
+                style={d.paid ? { background: 'rgba(148,163,184,.25)', color: '#475569' } : d.closed ? { background: 'rgba(6,214,160,.15)', color: '#0a7c5d' } : { background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>
+                {d.paid ? '💵 pagada' : d.closed ? '✓ cerrada' : '⚠ sin cierre'}
               </span>
             </span>
           </div>
