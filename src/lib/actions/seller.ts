@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createNotification } from '@/lib/actions/notifications';
+import { elSalvadorToday } from '@/lib/utils/tz';
 
 // ── Seller 2C/2D (token-gated) ──────────────────────────────────
 // The seller RESERVES a spot (never marks it paid): the participant lands as
@@ -61,7 +62,18 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     .eq('id', campId)
     .maybeSingle();
   if (!camp || camp.academy_id !== coach.academy_id) return { ok: false, error: 'Service not found.' };
-  if (['cancelled', 'completed'].includes(camp.status)) return { ok: false, error: 'This service is not open for sales.' };
+  if (camp.status === 'cancelled') return { ok: false, error: 'This service is cancelled.' };
+  // Walk-in retroactivo (pedido del equipo, ice bath 2026-08-08): una clase
+  // YA CERRADA sigue inscribible el MISMO día para el equipo de mostrador
+  // (host/coordinador/admin), para registrar a quienes llegaron sin anotarse.
+  // El QR público (publicEnroll) mantiene el bloqueo. Nunca días anteriores.
+  let walkIn = false;
+  if (camp.status === 'completed') {
+    const teamRole = ['host', 'coordinator', 'admin'].includes((coach as any).role);
+    const isToday = camp.start_date === elSalvadorToday();
+    if (!teamRole || !isToday) return { ok: false, error: 'This service is not open for sales.' };
+    walkIn = true;
+  }
 
   // Live capacity check.
   const tpl: any = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
@@ -152,6 +164,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     sold_by: coach.id,
     reserved_at: new Date().toISOString(),
     notes: [
+      walkIn ? `WALK-IN (inscrito tras cerrar la clase) — ${coach.display_name || 'mostrador'}` : null,
       overbookNote,
       includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null,
       input.note?.trim() ? `Seller note: ${input.note.trim()}` : `Reserved by seller ${coach.display_name || ''}`.trim(),
