@@ -198,12 +198,16 @@ async function handle(req: NextRequest) {
     const weekAgo = new Date(svNow.getTime() - 6 * 86400000).toISOString().slice(0, 10);
     const { data: openSes } = await admin
       .from('camp_sessions')
-      .select('session_date, session_status, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
+      .select('id, session_date, session_status, closure_reminded_on, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
       .gte('session_date', weekAgo)
       .lte('session_date', svToday)
       .neq('session_status', 'completed');
-    const byCoach = new Map<string, { name: string; email: string; token: string; academyId: string | null; pending: { service: string; date: string }[] }>();
+    const byCoach = new Map<string, { name: string; email: string; token: string; academyId: string | null; pending: { service: string; date: string }[]; sessionIds: string[] }>();
     for (const ses of (openSes as any[]) ?? []) {
+      // Idempotencia: si ya se recordó HOY esta sesión, no reenviar en esta
+      // corrida (evita doble envío por reintento del cron o disparo manual).
+      // Al día siguiente vuelve a ser elegible si sigue abierta (nag diario).
+      if (ses.closure_reminded_on === svToday) continue;
       const inst = Array.isArray(ses.camp_instances) ? ses.camp_instances[0] : ses.camp_instances;
       if (!inst || inst.status === 'cancelled') continue;
       const useHead = inst.head_coach_id && inst.head_coach_status === 'accepted';
@@ -212,8 +216,9 @@ async function handle(req: NextRequest) {
         : (Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches);
       if (!coach?.id) continue;
       if (!coach?.email) continue;
-      const e = byCoach.get(coach.id) ?? { name: coach.display_name ?? 'Coach', email: coach.email, token: coach.portal_token, academyId: inst.academy_id as string | null, pending: [] as { service: string; date: string }[] };
+      const e = byCoach.get(coach.id) ?? { name: coach.display_name ?? 'Coach', email: coach.email, token: coach.portal_token, academyId: inst.academy_id as string | null, pending: [] as { service: string; date: string }[], sessionIds: [] as string[] };
       e.pending.push({ service: (inst.camp_name ?? '').split(' · ')[0], date: ses.session_date });
+      e.sessionIds.push(ses.id);
       byCoach.set(coach.id, e);
     }
     const { sendClosureReminderEmail } = await import('@/lib/actions/email');
@@ -225,7 +230,12 @@ async function handle(req: NextRequest) {
         portalUrl: `${base}/coach-portal/${c.token}`,
         academyId: c.academyId,
       });
-      if (r.success) closureEmails++;
+      // Solo estampar 'recordado hoy' si el correo salió — si falla, sigue
+      // elegible para la próxima corrida (mismo criterio que membresías).
+      if (r.success) {
+        closureEmails++;
+        await admin.from('camp_sessions').update({ closure_reminded_on: svToday }).in('id', c.sessionIds);
+      }
     }
   } catch (e) {
     console.error('closure reminders section failed', e);
