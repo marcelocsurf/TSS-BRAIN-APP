@@ -132,7 +132,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
   const admin = createAdminClient();
   const { data: s } = await admin
     .from('students')
-    .select(`${STUDENT_COLS}, ocean_level, medical_notes, emergency_contact_name, emergency_contact_phone, primary_goal, goal_short_term, goal_mid_term, goal_long_term, personal_goal, biggest_barrier, fears_phobias, injuries, allergies, surf_experience_years, surf_frequency, board_type, goofy_or_regular, favorite_wave_size, age, languages, height, weight, surf_self_level, date_of_birth, instagram`)
+    .select(`${STUDENT_COLS}, ocean_level, medical_notes, emergency_contact_name, emergency_contact_phone, primary_goal, goal_short_term, goal_mid_term, goal_long_term, personal_goal, biggest_barrier, fears_phobias, injuries, allergies, surf_experience_years, surf_frequency, board_type, goofy_or_regular, favorite_wave_size, age, languages, height, weight, surf_self_level, date_of_birth, instagram, shirt_size`)
     .eq('id', studentId)
     .eq('academy_id', who.academy_id)
     .maybeSingle();
@@ -176,6 +176,9 @@ export async function hostStudentDetail(token: string, studentId: string) {
     self_level: (s as any).surf_self_level ?? null,
     age: (s as any).age ?? null,
     dob: (s as any).date_of_birth ?? null,
+    shirt: (s as any).shirt_size ?? null,
+    height: (s as any).height ?? null,
+    weight: (s as any).weight ?? null,
     instagram: (s as any).instagram ?? null,
     languages: (s as any).languages ?? null,
     body: [(s as any).height, (s as any).weight].filter(Boolean).join(' · ') || null,

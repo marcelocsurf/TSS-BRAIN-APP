@@ -80,14 +80,18 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
       </button>
       {open && (
         <div className="px-3.5 pb-3.5 space-y-2.5 border-t border-gray-50 pt-2.5">
-          {!complete && (
-            <div className="flex gap-2">
-              <button type="button" onClick={async () => { setMsg('Enviando…'); const r = await hostSendIntakeEmail(token, row.id); setMsg(r.ok ? '📧 Email enviado ✓' : (r.error ?? 'No se pudo enviar')); }}
-                className="flex-1 rounded-full py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK }}>📧 Enviar por email</button>
-              <button type="button" onClick={() => copy(row.intake_url, 'intake')}
-                className="flex-1 rounded-full py-2 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>📋 Copiar link</button>
-            </div>
-          )}
+          {/* Link del intake SIEMPRE disponible (pedido de Cony): aunque la
+              ficha esté completa, sirve para pedir datos que faltan o corregir. */}
+          <div className="flex gap-2">
+            <button type="button" onClick={async () => { setMsg('Enviando…'); const r = await hostSendIntakeEmail(token, row.id); setMsg(r.ok ? '📧 Email enviado ✓' : (r.error ?? 'No se pudo enviar')); }}
+              className="flex-1 rounded-full py-2 text-[9px]" style={{ ...F_M, background: complete ? '#f3f4f6' : CYAN, color: complete ? '#6b7280' : INK }}>
+              📧 {complete ? 'Reenviar ficha' : 'Enviar por email'}
+            </button>
+            <button type="button" onClick={() => copy(row.intake_url, 'intake')}
+              className="flex-1 rounded-full py-2 text-[9px]" style={{ ...F_M, background: complete ? '#f3f4f6' : GREEN, color: complete ? '#6b7280' : INK }}>
+              📋 Copiar link de ficha
+            </button>
+          </div>
           <button type="button" onClick={() => copy(row.portal_url, 'portal')}
             className="w-full rounded-full py-2 text-[9px] border" style={{ ...F_M, color: INK, borderColor: '#e5e7eb' }}>🔗 Copiar link del portal del alumno</button>
           {msg && <p className="text-[11px] font-semibold" style={{ color: '#0090B0' }}>{msg}</p>}
@@ -127,15 +131,28 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                   ))}
                 </div>
               )}
+              {/* Contacto & datos — lo que el mostrador necesita a diario
+                  (pedido de Cony): correo, WhatsApp, cumpleaños, talla, medidas. */}
+              <div className="space-y-0.5 rounded-xl bg-gray-50 p-2.5">
+                <p className="text-[9px] text-gray-400" style={F_M}>Contacto & datos</p>
+                {row.email && <p className="text-[11px] text-gray-700">📧 {row.email}</p>}
+                {(row.phone || detail.instagram) && (
+                  <p className="text-[11px] text-gray-700">📱 {[row.phone, detail.instagram ? `@${String(detail.instagram).replace(/^@/, '')}` : null].filter(Boolean).join(' · ')}</p>
+                )}
+                {detail.dob && <p className="text-[11px] text-gray-700">🎂 {detail.dob}{detail.age ? ` · ${detail.age} años` : ''}</p>}
+                {(detail.shirt || detail.height || detail.weight) && (
+                  <p className="text-[11px] text-gray-700">
+                    {[detail.shirt ? `👕 Talla ${detail.shirt}` : null, detail.height ? `📏 ${detail.height}` : null, detail.weight ? `⚖️ ${detail.weight}` : null].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+                {detail.languages && <p className="text-[11px] text-gray-700">🗣 {detail.languages}</p>}
+                {!row.email && !row.phone && !detail.dob && !detail.shirt && (
+                  <p className="text-[11px] text-gray-400">Sin datos aún — mandale el link de ficha ↑</p>
+                )}
+              </div>
               {(detail.goals || detail.fears || detail.experience || detail.board) && (
                 <div className="space-y-0.5">
-                  <p className="text-[9px] text-gray-400" style={F_M}>Perfil completo</p>
-                  {(detail.age || detail.languages || detail.body) && (
-                    <p className="text-[11px] text-gray-600">👤 {[detail.age ? `${detail.age} años` : null, detail.dob ? `nac. ${detail.dob}` : null, detail.languages, detail.body].filter(Boolean).join(' · ')}</p>
-                  )}
-                  {(row.phone || detail.instagram) && (
-                    <p className="text-[11px] text-gray-600">📱 {[row.phone, detail.instagram ? `@${String(detail.instagram).replace(/^@/, '')}` : null].filter(Boolean).join(' · ')}</p>
-                  )}
+                  <p className="text-[9px] text-gray-400" style={F_M}>Perfil surf</p>
                   {(detail.experience || detail.frequency || detail.self_level) && (
                     <p className="text-[11px] text-gray-600">🏄 {[detail.experience, detail.frequency ? detail.frequency.split(' / ')[0] : null, detail.self_level].filter(Boolean).join(' · ')}</p>
                   )}
