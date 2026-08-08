@@ -2017,11 +2017,11 @@ export async function closeServicePlan(
     }
   }
 
-  // Mark session completed.
-  await admin
-    .from('camp_sessions')
-    .update({ session_status: 'completed' })
-    .eq('id', campSessionId);
+  // NOTA (fix auditoría #17): el candado de pago (session_status='completed')
+  // se marca AL FINAL, después de escribir resultados y cerrar el plan. Antes
+  // se marcaba acá arriba y, si el guardado fallaba a mitad, el pago quedaba
+  // liberado sin bitácora. Ahora, si algo falla, el día NO queda cerrado y el
+  // coach re-cierra limpio (los resultados se regeneran de service_plan_blocks).
   const campSession = { id: campSessionId };
 
   // ── Survey cadence (M150) ──
@@ -2309,6 +2309,15 @@ export async function closeServicePlan(
       closed_at: new Date().toISOString(),
     });
   }
+
+  // AHORA sí: candado de pago. Todo lo anterior (resultados + plan cerrado) ya
+  // quedó escrito, así que marcar la sesión 'completed' — que habilita el pago
+  // en nómina — es el ÚLTIMO paso. Si algo falló antes, esto no se ejecuta y el
+  // día sigue abierto (pago retenido) hasta un cierre limpio.
+  await admin
+    .from('camp_sessions')
+    .update({ session_status: 'completed' })
+    .eq('id', campSessionId);
 
   // camp_instance.status stays in_progress until the FinalCampEvaluation
   // step flips it to 'completed'. For 1-day services (lessons), Phase 6
