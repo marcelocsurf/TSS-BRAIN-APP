@@ -194,7 +194,8 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   const [alerts, setAlerts] = useState<HostDayAlerts | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
 
-  useEffect(() => { hostPortalFlags(token).then((f) => setCanCoordinate(f.canCoordinate)).catch(() => {}); }, [token]);
+  const [academySlug, setAcademySlug] = useState<string | null>(null);
+  useEffect(() => { hostPortalFlags(token).then((f) => { setCanCoordinate(f.canCoordinate); setAcademySlug(f.academySlug); }).catch(() => {}); }, [token]);
   useEffect(() => { hostDayAlerts(token).then(setAlerts).catch(() => {}); }, [token]);
   useEffect(() => {
     // Primera visita: la guía se abre sola; después queda en el botón 📖.
@@ -359,7 +360,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             {opEvents === null ? <p className="text-[12px] text-gray-400 text-center py-8">Cargando el día…</p>
               : opEvents.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">Nada programado este día.</p>
               : opEvents.map((e) => (
-                <OpEventCard key={e.camp_id} token={token} e={e} canCoordinate={canCoordinate}
+                <OpEventCard key={e.camp_id} token={token} e={e} canCoordinate={canCoordinate} academySlug={academySlug}
                   onReserve={() => setReserveFor(e)}
                   onChanged={() => { hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); hostDayAlerts(token).then(setAlerts).catch(() => {}); }} />
               ))}
@@ -464,9 +465,22 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
 
 // ── Tarjeta de un servicio en AGENDA + controles de MODO COBERTURA ──
 // (asignar coach cuando falta, reprogramar o cancelar clases de un día).
-function OpEventCard({ token, e, canCoordinate, onReserve, onChanged }: {
-  token: string; e: HostDayEvent; canCoordinate: boolean; onReserve: () => void; onChanged: () => void;
+function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChanged }: {
+  token: string; e: HostDayEvent; canCoordinate: boolean; academySlug?: string | null; onReserve: () => void; onChanged: () => void;
 }) {
+  // Link directo de reserva de ESTA clase (pedido de Cony): el cliente cae
+  // en el QR con la clase ya elegida. Huéspedes de camp entran en $0 solos.
+  const [linkMsg, setLinkMsg] = useState<string | null>(null);
+  const shareLink = academySlug
+    ? `${window.location.origin}/join/${academySlug}?class=${e.camp_id}`
+    : null;
+  const copyShare = () => {
+    if (!shareLink) return;
+    navigator.clipboard.writeText(shareLink)
+      .then(() => setLinkMsg('🔗 Link copiado — pegalo en WhatsApp'))
+      .catch(() => setLinkMsg(shareLink));
+    setTimeout(() => setLinkMsg(null), 3500);
+  };
   const spotsLeft = e.capacity > 0 ? e.capacity - e.enrolled : null;
   const unpaid = e.students.filter((s) => !s.paid).length;
   const noWaiver = e.students.filter((s) => !s.waiver).length;
@@ -535,6 +549,14 @@ function OpEventCard({ token, e, canCoordinate, onReserve, onChanged }: {
           + Reservar ({spotsLeft} libre{spotsLeft === 1 ? '' : 's'})
         </button>
       )}
+      {shareLink && (
+        <button type="button" onClick={copyShare}
+          className="mt-1.5 w-full rounded-full py-2 text-[9px] border" style={{ ...F_M, borderColor: '#e5e7eb', color: '#0090B0', background: '#fff' }}>
+          🔗 Copiar link de reserva (WhatsApp)
+        </button>
+      )}
+      {linkMsg && <p className="mt-1 text-[10px] font-semibold text-center" style={{ color: '#0090B0' }}>{linkMsg}</p>}
+
       {/* LLENO: el cupo es sugerido — el host puede meter +1 en sobrecupo */}
       {spotsLeft !== null && spotsLeft <= 0 && (
         <button type="button" onClick={onReserve}

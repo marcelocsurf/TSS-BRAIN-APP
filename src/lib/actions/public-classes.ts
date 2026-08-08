@@ -258,6 +258,27 @@ export async function publicEnroll(input: {
     firstName = created.first_name;
   }
 
+  // Huésped de SURF CAMP activo ese día: las CLASES (yoga, BJJ, self
+  // defense…) vienen incluidas en su camp — cupo $0 marcado pagado, aunque
+  // el cliente se inscriba solo desde el link/QR (pedido de Cony).
+  let includedIn: string | null = null;
+  if ((tpl as any)?.service_kind === 'class' && studentId) {
+    const { data: campSeats } = await admin
+      .from('camp_participants')
+      .select('camp_instances:camp_instance_id!inner(camp_name, start_date, end_date, status, camp_templates:template_id(service_kind))')
+      .eq('student_id', studentId)
+      .eq('enrollment_status', 'active');
+    for (const cs of (campSeats as any[]) ?? []) {
+      const inst = Array.isArray(cs.camp_instances) ? cs.camp_instances[0] : cs.camp_instances;
+      const kind = (Array.isArray(inst?.camp_templates) ? inst?.camp_templates[0] : inst?.camp_templates)?.service_kind;
+      if (kind === 'surf_camp' && inst.status !== 'cancelled'
+          && inst.start_date <= (camp as any).start_date && (camp as any).start_date <= inst.end_date) {
+        includedIn = (inst.camp_name ?? 'Surf Camp').split(' · ')[0];
+        break;
+      }
+    }
+  }
+
   // 4. The seat — priced by list price and coupon; ALWAYS settled at front desk.
   const list = tpl?.list_price_cents ?? null;
   let sale_type = 'full';
@@ -273,17 +294,19 @@ export async function publicEnroll(input: {
     }
   }
 
+  if (includedIn) { amount = 0; sale_type = 'full'; reason = null; }
   const { data: seatRow, error: enrollErr } = await admin.from('camp_participants').insert({
     camp_instance_id: (camp as any).id,
     student_id: studentId,
     enrollment_status: 'active',
-    payment_status: sale_type === 'courtesy' ? 'paid' : 'reserved',
+    payment_status: includedIn ? 'paid' : (sale_type === 'courtesy' ? 'paid' : 'reserved'),
     reserved_at: new Date().toISOString(),
     ...(sale_type === 'courtesy' ? { paid_at: new Date().toISOString(), payment_method: 'coupon' } : {}),
     ...(amount != null ? { amount_cents: amount } : {}),
     ...(list != null ? { list_price_cents: list } : {}),
     sale_type,
     ...(reason ? { discount_reason: reason } : {}),
+    ...(includedIn ? { notes: `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` } : {}),
   }).select('id').single();
   if (enrollErr) return { ok: false, error: 'Could not save your spot — ask at front desk.' };
   await notifyBooking(academy.id, firstName, (camp as any).camp_name, amount, studentId);

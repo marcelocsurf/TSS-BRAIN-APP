@@ -76,6 +76,17 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const [videoRatio, setVideoRatio] = useState<'landscape' | 'portrait'>('landscape');
   const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
   const [email, setEmail] = useState('');
+  // Link directo a UNA clase (?class=<campId>) — Cony manda el link por
+  // WhatsApp y el cliente cae con la clase ya elegida, listo para su email.
+  useEffect(() => {
+    try {
+      const cid = new URLSearchParams(window.location.search).get('class');
+      if (!cid) return;
+      const k = classes.find((c) => c.id === cid);
+      if (k) { setSel(k); setStep('email'); }
+    } catch { /* sin deep link */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [known, setKnown] = useState<{ first_name: string; waiver_signed: boolean } | null>(null);
   const [coupon, setCoupon] = useState('');
   const [err, setErr] = useState<string | null>(null);

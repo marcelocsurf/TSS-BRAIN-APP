@@ -35,10 +35,16 @@ async function hostCanCoordinate(who: { id: string; role: string }): Promise<boo
   return (data as any)?.portal_can_coordinate !== false;
 }
 
-export async function hostPortalFlags(token: string): Promise<{ canCoordinate: boolean }> {
+export async function hostPortalFlags(token: string): Promise<{ canCoordinate: boolean; academySlug: string | null }> {
   const who = await resolveHost(token);
-  if (!who) return { canCoordinate: false };
-  return { canCoordinate: await hostCanCoordinate(who as any) };
+  if (!who) return { canCoordinate: false, academySlug: null };
+  let academySlug: string | null = null;
+  if (who.academy_id) {
+    const admin = createAdminClient();
+    const { data: ac } = await admin.from('academies').select('slug').eq('id', who.academy_id).maybeSingle();
+    academySlug = (ac as any)?.slug ?? null;
+  }
+  return { canCoordinate: await hostCanCoordinate(who as any), academySlug };
 }
 
 // ── Fichas del cliente: el semáforo que el host persigue ──────────
