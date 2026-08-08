@@ -1133,20 +1133,35 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
     }
 
     let listPrice: number | null = null;
+    let includedIn: string | null = null;
     try {
-      const { data: inst } = await createAdminClient().from('camp_instances').select('template_id').eq('id', campInstanceId).maybeSingle();
+      const adminC = createAdminClient();
+      const { data: inst } = await adminC.from('camp_instances')
+        .select('template_id, start_date, camp_templates:template_id(service_kind)')
+        .eq('id', campInstanceId).maybeSingle();
       listPrice = await getTemplateListPriceCents((inst as any)?.template_id ?? null);
+      // Regla INCLUIDO (fuente única): un huésped de camp agregado a una CLASE
+      // que su camp cubre entra $0/pagado — antes el dashboard cobraba completo.
+      const kind = (Array.isArray((inst as any)?.camp_templates) ? (inst as any).camp_templates[0] : (inst as any)?.camp_templates)?.service_kind;
+      const { campGuestIncludedIn } = await import('@/lib/utils/camp-guest');
+      includedIn = await campGuestIncludedIn(adminC, studentId, kind, (inst as any)?.start_date);
     } catch { /* price optional */ }
+    const notes = [
+      includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null,
+      overbookNote,
+    ].filter(Boolean).join(' ') || null;
     const { error } = await supabase.from('camp_participants').insert({
       camp_instance_id: campInstanceId,
       student_id: studentId,
       enrollment_status: 'active',
-      payment_status: 'reserved',
+      payment_status: includedIn ? 'paid' : 'reserved',
       sold_by: me?.id ?? null,
       is_refresher: isRefresher,
       reserved_at: new Date().toISOString(),
-      ...(overbookNote ? { notes: overbookNote } : {}),
-      ...(listPrice != null ? { amount_cents: isRefresher ? Math.round(listPrice / 2) : listPrice, list_price_cents: listPrice, sale_type: isRefresher ? 'discount' : 'full', ...(isRefresher ? { discount_reason: 'Refresher (50%)' } : {}) } : {}),
+      ...(notes ? { notes } : {}),
+      ...(includedIn
+        ? { amount_cents: 0, ...(listPrice != null ? { list_price_cents: listPrice } : {}) }
+        : (listPrice != null ? { amount_cents: isRefresher ? Math.round(listPrice / 2) : listPrice, list_price_cents: listPrice, sale_type: isRefresher ? 'discount' : 'full', ...(isRefresher ? { discount_reason: 'Refresher (50%)' } : {}) } : {})),
     });
     if (error) throw new Error(error.message);
   }

@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createNotification } from '@/lib/actions/notifications';
 import { elSalvadorToday } from '@/lib/utils/tz';
+import { campGuestIncludedIn } from '@/lib/utils/camp-guest';
 
 // ── Seller 2C/2D (token-gated) ──────────────────────────────────
 // The seller RESERVES a spot (never marks it paid): the participant lands as
@@ -131,26 +132,9 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     return { ok: false, error: `${studentName || 'This client'} already has a spot in this service.` };
   }
 
-  // ¿Huésped de SURF CAMP activo ese día? Las CLASES (yoga, U.Natural,
-  // BJJ, ice bath…) vienen incluidas en su camp: cupo a $0, marcado
-  // pagado, nota de NO cobrar. Lessons privadas y trips SÍ se cobran.
-  let includedIn: string | null = null;
-  if ((tpl as any)?.service_kind === 'class' && studentId) {
-    const { data: campSeats } = await admin
-      .from('camp_participants')
-      .select('camp_instances:camp_instance_id!inner(camp_name, start_date, end_date, status, camp_templates:template_id(service_kind))')
-      .eq('student_id', studentId)
-      .eq('enrollment_status', 'active');
-    for (const s of (campSeats as any[]) ?? []) {
-      const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
-      const kind = (Array.isArray(inst?.camp_templates) ? inst?.camp_templates[0] : inst?.camp_templates)?.service_kind;
-      if (kind === 'surf_camp' && inst.status !== 'cancelled'
-          && inst.start_date <= (camp as any).start_date && (camp as any).start_date <= inst.end_date) {
-        includedIn = (inst.camp_name ?? 'Surf Camp').split(' · ')[0];
-        break;
-      }
-    }
-  }
+  // Regla INCLUIDO — fuente única (campGuestIncludedIn): un huésped de camp
+  // entra $0 a las CLASES que cubre su camp. Lessons/trips SÍ se cobran.
+  const includedIn = await campGuestIncludedIn(admin, studentId, (tpl as any)?.service_kind, (camp as any).start_date);
 
   const listPrice = (tpl as any)?.list_price_cents ?? null;
   const { error: insErr } = await admin.from('camp_participants').insert({

@@ -8,6 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { createNotification } from '@/lib/actions/notifications';
+import { campGuestIncludedIn } from '@/lib/utils/camp-guest';
 
 // Aviso interno de una reserva del QR público: campanita para coordinadores,
 // admins y hosts (servicio al cliente). No bloquea la reserva si falla.
@@ -259,26 +260,9 @@ export async function publicEnroll(input: {
     firstName = created.first_name;
   }
 
-  // Huésped de SURF CAMP activo ese día: las CLASES (yoga, BJJ, self
-  // defense…) vienen incluidas en su camp — cupo $0 marcado pagado, aunque
-  // el cliente se inscriba solo desde el link/QR (pedido de Cony).
-  let includedIn: string | null = null;
-  if ((tpl as any)?.service_kind === 'class' && studentId) {
-    const { data: campSeats } = await admin
-      .from('camp_participants')
-      .select('camp_instances:camp_instance_id!inner(camp_name, start_date, end_date, status, camp_templates:template_id(service_kind))')
-      .eq('student_id', studentId)
-      .eq('enrollment_status', 'active');
-    for (const cs of (campSeats as any[]) ?? []) {
-      const inst = Array.isArray(cs.camp_instances) ? cs.camp_instances[0] : cs.camp_instances;
-      const kind = (Array.isArray(inst?.camp_templates) ? inst?.camp_templates[0] : inst?.camp_templates)?.service_kind;
-      if (kind === 'surf_camp' && inst.status !== 'cancelled'
-          && inst.start_date <= (camp as any).start_date && (camp as any).start_date <= inst.end_date) {
-        includedIn = (inst.camp_name ?? 'Surf Camp').split(' · ')[0];
-        break;
-      }
-    }
-  }
+  // Regla INCLUIDO — fuente única (campGuestIncludedIn): un huésped de camp
+  // que se auto-inscribe por el QR a una CLASE cubierta entra $0/pagado.
+  const includedIn = await campGuestIncludedIn(admin, studentId, (tpl as any)?.service_kind, (camp as any).start_date);
 
   // 4. The seat — priced by list price and coupon; ALWAYS settled at front desk.
   const list = tpl?.list_price_cents ?? null;
