@@ -37,8 +37,8 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
 
   const campJoin =
     'camp_sessions:camp_session_id(id, session_date, day_number, ' +
-    'camp_instances:camp_instance_id(id, camp_name, academy_id, ' +
-    'head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status)))';
+    'camp_instances:camp_instance_id(id, camp_name, academy_id, head_coach_id, head_coach_status, ' +
+    'coach:coach_id(display_name), head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status)))';
   const fullSelect =
     'id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status, transport_actual_depart, transport_actual_return, ' +
     campJoin;
@@ -58,7 +58,13 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
     if (!sess?.session_date || sess.session_date < today || sess.session_date > horizon) continue;
     const inst: any = Array.isArray(sess.camp_instances) ? sess.camp_instances[0] : sess.camp_instances;
     if (me.academy_id && inst?.academy_id && inst.academy_id !== me.academy_id) continue;
-    const hc = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;
+    // Coach efectivo (invariante #1): head coach si aceptó la transferencia, si
+    // no el coach original. Antes solo se traía el head coach → sin transferencia
+    // el board mostraba el coach en blanco.
+    const useHead = inst?.head_coach_id && inst?.head_coach_status === 'accepted';
+    const hcRow = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;
+    const origRow = Array.isArray(inst?.coach) ? inst.coach[0] : inst?.coach;
+    const hc = useHead ? hcRow : origRow;
     rows.push({
       plan_id: (p as any).id,
       camp_instance_id: inst?.id ?? null,

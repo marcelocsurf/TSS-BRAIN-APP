@@ -60,7 +60,7 @@ async function handle(req: NextRequest) {
   // ── 2) Services starting tomorrow ───────────────────────────────
   const { data: services } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, head_coach_id, coach_id, status')
+    .select('id, camp_name, start_date, scheduled_time, head_coach_id, head_coach_status, coach_id, status')
     .eq('start_date', tomorrow)
     .is('reminder_emailed_at', null);
   const liveServices = (services ?? []).filter(
@@ -73,9 +73,14 @@ async function handle(req: NextRequest) {
     if (t.assignee_coach_id) coachIds.add(t.assignee_coach_id);
     if (t.created_by) coachIds.add(t.created_by);
   }
+  // Coach efectivo (invariante #1): el head coach corre el servicio SOLO si
+  // aceptó la transferencia; mientras esté pendiente/rechazada, el responsable
+  // sigue siendo el coach original. Antes se avisaba a ambos siempre.
+  const effectiveCoachId = (s: any): string | null =>
+    (s.head_coach_status === 'accepted' && s.head_coach_id) ? s.head_coach_id : (s.coach_id ?? null);
   for (const s of liveServices) {
-    if (s.head_coach_id) coachIds.add(s.head_coach_id);
-    if (s.coach_id) coachIds.add(s.coach_id);
+    const eff = effectiveCoachId(s);
+    if (eff) coachIds.add(eff);
   }
   const coachMap = new Map<string, { email: string | null; first: string }>();
   if (coachIds.size > 0) {
@@ -116,7 +121,8 @@ async function handle(req: NextRequest) {
       .eq('camp_instance_id', s.id)
       .eq('enrollment_status', 'active');
     const whenLabel = `Tomorrow${fmtTime(s.scheduled_time)} · ${count ?? 0} student${count === 1 ? '' : 's'}`;
-    const ids = [s.head_coach_id, s.coach_id].filter(Boolean) as string[];
+    const eff = effectiveCoachId(s);
+    const ids = (eff ? [eff] : []) as string[];
     const sentTo = new Set<string>();
     for (const id of ids) {
       const c = coachMap.get(id);

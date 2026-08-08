@@ -65,7 +65,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
   const today = elSalvadorToday();
   let q = admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description, video_url), coaches:coach_id(display_name), camp_participants(id, enrollment_status)')
+    .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, head_coach_id, head_coach_status, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description, video_url), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status)')
     .eq('academy_id', academy.id)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson'])
     .gte('start_date', today)
@@ -80,7 +80,12 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
 
   const classes = (data ?? []).map((c: any) => {
     const tpl = Array.isArray(c.camp_templates) ? c.camp_templates[0] : c.camp_templates;
-    const coach = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
+    // Coach efectivo (invariante #1): head coach si aceptó la transferencia,
+    // si no el coach original. El QR mostraba siempre el coach_id legacy.
+    const useHead = c.head_coach_id && c.head_coach_status === 'accepted';
+    const hc = Array.isArray(c.hc) ? c.hc[0] : c.hc;
+    const orig = Array.isArray(c.coaches) ? c.coaches[0] : c.coaches;
+    const coach = (useHead ? hc : orig) ?? orig;
     const enrolled = (c.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
     const capacity = c.capacity_override ?? tpl?.capacity_max ?? 0;
     return {
