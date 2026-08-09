@@ -193,7 +193,8 @@ export function FinalCampEvaluation({
     setSavingId(s.student_id);
     startTransition(async () => {
       try {
-        await closeCampFinal(token, campInstanceId, ratingsPayload, [result], promos, { finalize: false });
+        const res = await closeCampFinal(token, campInstanceId, ratingsPayload, [result], promos, { finalize: false });
+        if (!res?.ok) { alert(res?.error || 'No se pudo guardar este alumno.'); return; }
         setSavedSet((prev) => new Set(prev).add(s.student_id));
         onStudentSaved?.(s.student_id);
         // saltar al siguiente sin guardar
@@ -235,7 +236,8 @@ export function FinalCampEvaluation({
 
     startTransition(async () => {
       try {
-        await closeCampFinal(token, campInstanceId, payload, resultsPayload, promotionsPayload);
+        const res = await closeCampFinal(token, campInstanceId, payload, resultsPayload, promotionsPayload);
+        if (!res?.ok) { alert(res?.error || 'Failed to finalize camp.'); return; }
         onCompleted();
       } catch (e: any) {
         alert(e.message || 'Failed to finalize camp.');

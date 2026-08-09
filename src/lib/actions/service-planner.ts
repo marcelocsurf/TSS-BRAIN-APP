@@ -1528,9 +1528,11 @@ export async function closeCampFinal(
   results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
   opts?: { finalize?: boolean },
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string }> {
   // finalize=false → per-student partial save (M153): writes ratings/acta/
   // promotion but does NOT complete the camp nor unlock surveys yet.
+  // Invariante #2: estados esperables se DEVUELVEN, no se lanzan (Next enmascara
+  // los throw de server actions en producción).
   const finalize = opts?.finalize !== false;
   const admin = createAdminClient();
 
@@ -1538,17 +1540,17 @@ export async function closeCampFinal(
     .from('coaches')
     .select('id, role, display_name, max_belt_permission')
     .eq('portal_token', token)
-    .single();
-  if (!coach) throw new Error('Coach not found.');
+    .maybeSingle();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
 
   const { data: camp } = await admin
     .from('camp_instances')
     .select('id, coach_id, head_coach_id')
     .eq('id', campInstanceId)
-    .single();
-  if (!camp) throw new Error('Service not found.');
+    .maybeSingle();
+  if (!camp) return { ok: false, error: 'Service not found.' };
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
-    throw new Error('You are not assigned to this service.');
+    return { ok: false, error: 'You are not assigned to this service.' };
   }
 
   // M150 — the final evaluation (normal OR forced-early) is the moment the
@@ -1773,6 +1775,7 @@ export async function closeCampFinal(
   } catch {
     /* non-blocking — the camp is closed regardless of email delivery */
   }
+  return { ok: true };
 }
 
 // M45 — Save a coach's official STP rating for a student during session
@@ -1909,15 +1912,18 @@ export async function closeServicePlan(
   campSessionId: string,
   incidents?: IncidentReport[],
   opts?: { generalFeedback?: string | null },
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string }> {
+  // Invariante #2: los estados esperables se DEVUELVEN, no se lanzan — Next
+  // enmascara los throw de server actions en producción y el coach vería un
+  // error genérico al cerrar. (El cuerpo atómico del cierre no cambia.)
   const admin = createAdminClient();
 
   const { data: coach } = await admin
     .from('coaches')
     .select('id, display_name')
     .eq('portal_token', token)
-    .single();
-  if (!coach) throw new Error('Coach not found.');
+    .maybeSingle();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
 
   // Resolve day + parent camp. We pull scheduled_time + template service_kind
   // so we can estimate this session's duration_minutes for the bitácora /
@@ -1932,15 +1938,15 @@ export async function closeServicePlan(
         ')'
     )
     .eq('id', campSessionId)
-    .single();
-  if (!session) throw new Error('Session not found.');
+    .maybeSingle();
+  if (!session) return { ok: false, error: 'Session not found.' };
   const sessionAny = session as any;
   const camp = Array.isArray(sessionAny.camp_instances)
     ? sessionAny.camp_instances[0]
     : sessionAny.camp_instances;
-  if (!camp) throw new Error('Service not found.');
+  if (!camp) return { ok: false, error: 'Service not found.' };
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
-    throw new Error('You are not assigned to this service.');
+    return { ok: false, error: 'You are not assigned to this service.' };
   }
 
   // Estimate session duration in minutes.
@@ -2322,6 +2328,7 @@ export async function closeServicePlan(
   // camp_instance.status stays in_progress until the FinalCampEvaluation
   // step flips it to 'completed'. For 1-day services (lessons), Phase 6
   // will treat day-1 close as the final and trigger the eval inline.
+  return { ok: true };
 }
 
 // Coach-to-coach internal note on a student (students.coach_notes_general).

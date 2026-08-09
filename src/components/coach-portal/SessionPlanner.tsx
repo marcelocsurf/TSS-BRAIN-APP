@@ -337,7 +337,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     }
     startTransition(async () => {
       try {
-        await closeServicePlan(
+        const res = await closeServicePlan(
           token,
           data.selectedDay.camp_session_id,
           incidents
@@ -349,6 +349,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               incident_action: i.incident_action.trim() || null,
             })),
         );
+        if (!res?.ok) { alert(res?.error || 'Failed to finalize'); return; }
         setPlan((p) => ({
           ...p,
           completion_state: 'closed',
@@ -465,7 +466,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         : 'Cerrar la clase?\n\n• Tu nota general (opcional) le llega a todos\n• Se les pide evaluar la experiencia')) return;
       startTransition(async () => {
         try {
-          await closeServicePlan(token, data.selectedDay.camp_session_id, [], { generalFeedback: plan.notes_general ?? null });
+          const res = await closeServicePlan(token, data.selectedDay.camp_session_id, [], { generalFeedback: plan.notes_general ?? null });
+          if (!res?.ok) { alert(res?.error || 'No se pudo cerrar'); return; }
           setPlan((p) => ({ ...p, completion_state: 'closed' }));
         } catch (e: any) { alert(e.message || 'No se pudo cerrar'); }
       });
