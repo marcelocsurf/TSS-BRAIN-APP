@@ -680,9 +680,12 @@ export async function sendQuizLeadEmail(
       }
     } catch { /* fall through to the base recipients */ }
   }
-  // Legacy fallback so the pilot academy keeps receiving leads even if its
-  // coordinators aren't registered with emails yet.
-  if (to.size === 1) to.add('academy@purosurf.com');
+  // Legacy fallback so el academy PILOTO (Puro Surf) siga recibiendo sus leads
+  // aunque sus coordinadores aún no tengan email registrado. IMPORTANTE: solo
+  // aplica si el lead ES de Puro Surf — antes se agregaba a CUALQUIER lead sin
+  // staff (u otra academia / TSS Direct), filtrando prospectos ajenos a Puro Surf.
+  const PURO_SURF_ID = 'ad6dcc08-ad86-48c5-a0d0-b51fff8d9d99';
+  if (to.size === 1 && data.academyId === PURO_SURF_ID) to.add('academy@purosurf.com');
   const beltName = BELT_DISPLAY[data.belt as BeltLevel]?.en || data.belt.replace(/_/g, ' ');
   const levelName = BELT_DISPLAY[data.belt as BeltLevel]?.levelName || '';
   try {

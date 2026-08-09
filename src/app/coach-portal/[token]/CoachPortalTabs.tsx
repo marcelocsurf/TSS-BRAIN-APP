@@ -1475,7 +1475,7 @@ function embedUrlFor(provider: string, url: string): string {
 interface CoachQuizSectionProps {
   token: string;
   lessonId: string;
-  quizzes: { id: string; question: string; options: { text: string; correct: boolean }[]; display_order: number }[];
+  quizzes: { id: string; question: string; options: { text: string }[]; display_order: number }[];
   existingScore: number | null;
   existingAttempts: number;
   onPassed: () => void;

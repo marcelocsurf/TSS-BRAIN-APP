@@ -622,7 +622,9 @@ export interface CoachLessonDetail {
     quiz_score: number | null;
     quiz_attempts: number;
   } | null;
-  quizzes: { id: string; question: string; options: { text: string; correct: boolean }[]; display_order: number }[];
+  // Ojo: NUNCA exponer el flag `correct` al navegador — sería el answer key del
+  // quiz de certificación. La corrección la hace el server (submitCoachQuiz).
+  quizzes: { id: string; question: string; options: { text: string }[]; display_order: number }[];
   // The drill + mission for the linked STP (pulled from drills_missions)
   linkedDrill: LinkedTool | null;
   linkedMission: LinkedTool | null;
@@ -730,7 +732,13 @@ export async function getCoachLessonDetail(
     },
     videos: videos ?? [],
     progress: progress ?? null,
-    quizzes: (quizzes ?? []) as any[],
+    // Strip the answer key: solo mandamos el texto de cada opción al navegador.
+    quizzes: (quizzes ?? []).map((q: any) => ({
+      id: q.id,
+      question: q.question,
+      display_order: q.display_order,
+      options: ((q.options ?? []) as any[]).map((o) => ({ text: o.text })),
+    })),
     linkedDrill,
     linkedMission,
   };
