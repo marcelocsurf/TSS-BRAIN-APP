@@ -78,21 +78,3 @@ export async function markNotificationsRead(ids?: string[]): Promise<void> {
   await q;
   revalidatePath('/dashboard');
 }
-
-// Notifications for a coach identified by portal token (public coach portal).
-export async function getNotificationsByToken(token: string): Promise<AppNotification[]> {
-  const admin = createAdminClient();
-  const { data: coach } = await admin
-    .from('coaches')
-    .select('id')
-    .eq('portal_token', token)
-    .maybeSingle();
-  if (!coach) return [];
-  const { data } = await admin
-    .from('notifications')
-    .select('id, type, title, body, link, read_at, created_at')
-    .eq('recipient_coach_id', coach.id)
-    .order('created_at', { ascending: false })
-    .limit(30);
-  return (data ?? []) as AppNotification[];
-}
