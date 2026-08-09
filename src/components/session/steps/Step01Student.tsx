@@ -6,15 +6,6 @@ import { BELT_DISPLAY } from '@/lib/constants/belts';
 import type { CascadeFormState, StudentCascadeContext } from '@/types/session';
 import type { CoachForAssignment } from '@/lib/actions/cascade-sessions';
 
-const BELT_COLORS: Record<string, string> = {
-  white_belt: '#E8E8E8',
-  yellow_belt: '#F5C518',
-  blue_belt: '#1E6FBF',
-  purple_belt: '#7B4FBE',
-  brown_belt: '#7D4E27',
-  black_belt: '#111111',
-};
-
 const normalize = (s: string) =>
   s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -130,7 +121,7 @@ export function Step01Student({
         {filteredStudents.slice(0, 20).map((s) => {
           const belt = BELT_DISPLAY[s.belt_level as keyof typeof BELT_DISPLAY];
           const isSelected = selected === s.id;
-          const beltColor = BELT_COLORS[s.belt_level] || '#999';
+          const beltColor = belt?.color || '#999';
 
           return (
             <button

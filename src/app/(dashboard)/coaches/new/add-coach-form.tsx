@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BELT_HIERARCHY, BELT_DISPLAY, getBeltLabel } from '@/lib/constants/belts';
 
 const ROLES = [
   { value: 'admin', label: 'Admin', desc: 'Full access. Can manage everything.' },
@@ -13,14 +14,12 @@ const ROLES = [
   { value: 'host', label: 'Servicio al cliente', desc: 'Guest services: sells, charges at the desk, chases intake/waivers, sees incidents. No coach assignment.' },
 ];
 
-const BELT_PERMISSIONS = [
-  { value: 'white_belt', label: 'White Belt — Beginner', color: '#E8E8E8' },
-  { value: 'yellow_belt', label: 'Yellow Belt — Novice', color: '#F5C518' },
-  { value: 'blue_belt', label: 'Blue Belt — Foundation', color: '#1E6FBF' },
-  { value: 'purple_belt', label: 'Purple Belt — Emerging', color: '#7B4FBE' },
-  { value: 'brown_belt', label: 'Brown Belt — Pre-Elite', color: '#7D4E27' },
-  { value: 'black_belt', label: 'Black Belt — Elite', color: '#111111' },
-];
+// Derivado de la fuente única de cintas (belts.ts) — mismo label/color que antes.
+const BELT_PERMISSIONS = BELT_HIERARCHY.map((b) => ({
+  value: b,
+  label: getBeltLabel(b, 'en'),
+  color: BELT_DISPLAY[b].color,
+}));
 
 const CERT_LEVELS = [
   { value: 'L1', label: 'L1 — Assistant' },

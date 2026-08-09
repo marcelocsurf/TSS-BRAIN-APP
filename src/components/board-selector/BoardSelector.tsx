@@ -5,6 +5,7 @@
 // volume, type, dimensions and fin setup. No deps, no backend.
 
 import { useState } from 'react';
+import { BELT_HIERARCHY, BELT_DISPLAY } from '@/lib/constants/belts';
 
 const NAVY = '#0A1628';
 const CYAN = '#5AC3E7';
@@ -29,7 +30,10 @@ const BOARDS: Record<string, Board> = {
 
 const SKILL_FACTORS: Record<string, number> = { beginner: 0.65, novice: 0.55, intermediate: 0.45, advanced: 0.38, expert: 0.35, elite: 0.32 };
 const SKILL_BELTS: Record<string, string> = { beginner: 'White', novice: 'Yellow', intermediate: 'Blue', advanced: 'Purple', expert: 'Brown', elite: 'Black' };
-const BELT_HEX: Record<string, string> = { White: '#E8E8E8', Yellow: '#F5C518', Blue: '#1E6FBF', Purple: '#7B4FBE', Brown: '#7D4E27', Black: '#111111' };
+// Hex por nombre corto de cinta ('White'…), derivado de la fuente única (belts.ts).
+const BELT_HEX: Record<string, string> = Object.fromEntries(
+  BELT_HIERARCHY.map((b) => [BELT_DISPLAY[b].en.replace(' Belt', ''), BELT_DISPLAY[b].color]),
+);
 const WAVE_ADJ: Record<string, number> = { small: 3, medium: 0, overhead: -2, big: -3 };
 const FREQ_ADJ: Record<string, number> = { daily: -2, '3-5': -1, '1-2': 1, occasional: 3 };
 const AGE_ADJ: Record<string, number> = { under20: -1, '20-35': 0, '35-50': 2, '50+': 3 };

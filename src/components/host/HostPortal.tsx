@@ -17,6 +17,7 @@ import {
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
 import { sellerSearchStudents, sellerReserveSpot } from '@/lib/actions/seller';
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
 // ═══ PORTAL DEL HOST — "Servicio al cliente" (Brand Manual v10) ═══
 // HOY: check-in y cobro del mostrador + incidentes recientes.
@@ -31,12 +32,11 @@ type Tab = 'hoy' | 'operacion' | 'espacios' | 'tablas' | 'clientes';
 
 // Cinta legible + nivel entre paréntesis mientras el equipo aprende los
 // colores (pedido de Rick): "Purple Belt (Emerging)" en vez de "purple_belt".
-const BELT_PRETTY: Record<string, string> = {
-  white_belt: 'White Belt (Beginner)', yellow_belt: 'Yellow Belt (Novice)',
-  blue_belt: 'Blue Belt (Foundation)', purple_belt: 'Purple Belt (Emerging)',
-  brown_belt: 'Brown Belt (Pre-Elite)', black_belt: 'Black Belt (Elite)',
+// Derivado de la fuente única (belts.ts) para no divergir.
+const beltPretty = (b: string) => {
+  const d = BELT_DISPLAY[b as BeltLevel];
+  return d ? `${d.en} (${d.levelName})` : `Cinta ${b}`;
 };
-const beltPretty = (b: string) => BELT_PRETTY[b] ?? `Cinta ${b}`;
 
 function Check({ ok, label }: { ok: boolean; label: string }) {
   return (

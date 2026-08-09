@@ -4,21 +4,13 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { ResendInviteButton } from './ResendInviteButton';
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
   coordinator: 'Coordinator',
   coach: 'Coach',
   assistant: 'Assistant',
-};
-
-const BELT_COLORS: Record<string, string> = {
-  white_belt: '#E8E8E8',
-  yellow_belt: '#F5C518',
-  blue_belt: '#1E6FBF',
-  purple_belt: '#7B4FBE',
-  brown_belt: '#7D4E27',
-  black_belt: '#111111',
 };
 
 export default async function CoachesPage() {
@@ -115,7 +107,7 @@ export default async function CoachesPage() {
       {/* Coach Cards */}
       <div className="space-y-3">
         {activeCoaches.map(coach => {
-          const beltColor = BELT_COLORS[coach.max_belt_permission] || '#999';
+          const beltColor = BELT_DISPLAY[coach.max_belt_permission as BeltLevel]?.color || '#999';
           // Onboarding status — drives the status pill + Resend button.
           //   • activated: password_set_at not null  → "Active"
           //   • invited  : auth_user_id present, no password_set_at  → "Invited"

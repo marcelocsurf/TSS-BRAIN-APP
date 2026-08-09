@@ -10,6 +10,7 @@ import {
 } from '@/lib/actions/dashboard';
 import { getDraftSessions } from '@/lib/actions/cascade-sessions';
 import { incidentTypeLabel } from '@/lib/constants/brand';
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { IncidentsPanel } from '@/components/dashboard/IncidentsPanel';
 import { TasksPanel } from '@/components/dashboard/TasksPanel';
 import { PendingPromotionsPanel } from '@/components/dashboard/PendingPromotionsPanel';
@@ -872,13 +873,11 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
 }
 
 // ── Academy analytics panel (coordinator) ─────────────────
-const BELT_META: Record<string, { label: string; color: string }> = {
-  white_belt: { label: 'White Belt', color: '#D1D5DB' },
-  yellow_belt: { label: 'Yellow Belt', color: '#F5C518' },
-  blue_belt: { label: 'Blue Belt', color: '#3B82F6' },
-  purple_belt: { label: 'Purple Belt', color: '#8B5CF6' },
-  brown_belt: { label: 'Brown Belt', color: '#92400E' },
-  black_belt: { label: 'Black Belt', color: '#111827' },
+// Etiqueta + color de cinta desde la fuente única (belts.ts); antes tenía una
+// paleta propia divergida en 5 de 6 colores.
+const beltMeta = (belt: string) => {
+  const d = BELT_DISPLAY[belt as BeltLevel];
+  return d ? { label: d.en, color: d.color } : { label: belt, color: '#9CA3AF' };
 };
 
 function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
@@ -907,7 +906,7 @@ function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
           ) : (
             <div className="space-y-2">
               {data.beltDistribution.map((b: any) => {
-                const meta = BELT_META[b.belt_level] ?? { label: b.belt_level, color: '#9CA3AF' };
+                const meta = beltMeta(b.belt_level);
                 return (
                   <div key={b.belt_level}>
                     <div className="flex justify-between text-[11px] text-gray-600 mb-0.5">
