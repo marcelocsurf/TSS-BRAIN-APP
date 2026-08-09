@@ -16,9 +16,13 @@ type Seat = {
 };
 type Klass = { id: string; name: string; date: string; time: string | null; coach: string | null; capacity: number; seats: Seat[] };
 
-export function DeskBoard({ token, classes }: { token: string; classes: Klass[] }) {
+export function DeskBoard({ token, classes, onChanged }: { token: string; classes: Klass[]; onChanged?: () => void }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  // La página /front-desk es un server component → router.refresh() basta.
+  // Embebido en HostPortal el board se carga client-side, así que además
+  // avisamos por onChanged para que el HOY re-consulte tras cobrar/mover/cancelar.
+  const afterChange = () => { router.refresh(); onChanged?.(); };
   const [payFor, setPayFor] = useState<string | null>(null);
   const [room, setRoom] = useState('');
   const [q, setQ] = useState('');
@@ -45,7 +49,7 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
       const r = await deskTransferSeat(token, s.participant_id, target.id);
       if (!r.ok) { alert(r.error); return; }
       setTransferFor(null); setManageFor(null);
-      router.refresh();
+      afterChange();
     });
   };
 
@@ -61,7 +65,7 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
       const r = await publicCancelBooking(s.participant_id, 'desk');
       if (!r.ok) { alert(r.error); return; }
       setManageFor(null);
-      router.refresh();
+      afterChange();
     });
   };
 
@@ -76,7 +80,7 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
       const r = await publicMoveBooking(s.participant_id, targetId, 'desk');
       if (!r.ok) { alert(r.error); return; }
       setManageFor(null);
-      router.refresh();
+      afterChange();
     });
   };
 
@@ -85,7 +89,7 @@ export function DeskBoard({ token, classes }: { token: string; classes: Klass[] 
       const r = await frontDeskSettle(token, participantId, method);
       if (!r.ok) { alert(r.error); return; }
       setPayFor(null); setRoom('');
-      router.refresh();
+      afterChange();
     });
   };
 

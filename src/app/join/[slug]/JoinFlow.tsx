@@ -78,12 +78,16 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const [email, setEmail] = useState('');
   // Link directo a UNA clase (?class=<campId>) — Cony manda el link por
   // WhatsApp y el cliente cae con la clase ya elegida, listo para su email.
+  const [deadLink, setDeadLink] = useState(false);
   useEffect(() => {
     try {
       const cid = new URLSearchParams(window.location.search).get('class');
       if (!cid) return;
       const k = classes.find((c) => c.id === cid);
       if (k) { setSel(k); setStep('email'); }
+      // Antes fallaba en silencio: si la clase del link ya no está (llena/
+      // cancelada/pasada) el cliente caía en la lista sin ninguna explicación.
+      else setDeadLink(true);
     } catch { /* sin deep link */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -297,6 +301,12 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
     return (
       <div className="space-y-2.5">
         {VideoModal}
+        {deadLink && (
+          <div className="rounded-2xl px-4 py-3 text-[12px] font-medium"
+            style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
+            That class isn’t available anymore — pick another time below.
+          </div>
+        )}
         <p className="text-[10px] text-gray-400 px-1" style={F_LABEL}>What do you want to do?</p>
         {activities.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No classes scheduled right now — check with front desk.</p>}
 

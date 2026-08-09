@@ -315,7 +315,13 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
               </div>
             )}
             {board === null ? <p className="text-sm text-gray-400 text-center py-8">Cargando clases…</p>
-              : <DeskBoard token={token} classes={(board?.classes ?? []) as any} />}
+              : <DeskBoard token={token} classes={(board?.classes ?? []) as any}
+                  onChanged={() => {
+                    // El HOY se carga client-side, así que tras cobrar/mover/
+                    // cancelar re-consultamos el board y los "reservados hoy".
+                    getFrontDeskData(token).then(setBoard).catch(() => {});
+                    setRecent(null);
+                  }} />}
             {/* Protocolo oficial cuando algo sale mal — referencia de un toque */}
             <a href="/docs/sistema-resolver-problemas.pdf" target="_blank" rel="noopener noreferrer"
               className="block bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
@@ -560,6 +566,13 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
         </div>
       )}
 
+      {/* Cupo ∞ (capacity 0 = sin tope): sí se puede reservar, sin contador. */}
+      {spotsLeft === null && (
+        <button type="button" onClick={onReserve}
+          className="mt-2.5 w-full rounded-full py-2.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>
+          + Reservar
+        </button>
+      )}
       {spotsLeft !== null && spotsLeft > 0 && (
         <button type="button" onClick={onReserve}
           className="mt-2.5 w-full rounded-full py-2.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>
