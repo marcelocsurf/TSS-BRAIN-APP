@@ -34,7 +34,7 @@ export function IncidentReporter({
     if (!description.trim()) { setError('Write a short description.'); return; }
     startTransition(async () => {
       try {
-        await reportIncident({
+        const res = await reportIncident({
           token,
           incident_type: type,
           student_id: studentId || null,
@@ -44,6 +44,10 @@ export function IncidentReporter({
           description,
           action_taken: action.trim() || null,
         });
+        if (!res?.success) {
+          setError(res?.error || 'Could not save the incident.');
+          return;
+        }
         setDone(true);
         setType(''); setStudentId(''); setBoardId(''); setBoardAction('repair'); setDescription(''); setAction('');
         setTimeout(() => { setDone(false); setOpen(false); }, 1800);

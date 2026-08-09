@@ -18,16 +18,18 @@ export async function reportIncident(input: {
   board_action?: 'repair' | 'retire' | 'keep'; // what to do with that board
   description: string;
   action_taken?: string | null;
-}): Promise<void> {
+}): Promise<{ success: boolean; error?: string }> {
+  // Invariante #2: devolver estados esperables, nunca lanzar (Next enmascara
+  // los throw de server actions en producción → el coach vería un error genérico).
   const admin = createAdminClient();
   const { data: coach } = await admin
     .from('coaches')
     .select('id, academy_id')
     .eq('portal_token', input.token)
-    .single();
-  if (!coach) throw new Error('Coach not found.');
-  if (!input.incident_type) throw new Error('Incident type is required.');
-  if (!input.description?.trim()) throw new Error('A short description is required.');
+    .maybeSingle();
+  if (!coach) return { success: false, error: 'Coach not found.' };
+  if (!input.incident_type) return { success: false, error: 'Incident type is required.' };
+  if (!input.description?.trim()) return { success: false, error: 'A short description is required.' };
 
   const { error } = await admin.from('session_incidents').insert({
     academy_id: coach.academy_id ?? null,
@@ -38,7 +40,7 @@ export async function reportIncident(input: {
     description: input.description.trim(),
     action_taken: input.action_taken?.trim() || null,
   });
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, error: error.message };
 
   // A damaged board is taken out of circulation per the coach's choice:
   //   repair (default) → in_repair · retire → retired · keep → just logged.
@@ -54,6 +56,7 @@ export async function reportIncident(input: {
   }
 
   revalidatePath('/dashboard');
+  return { success: true };
 }
 
 // Coach Portal — public route accessed via /coach-portal/[token].

@@ -47,12 +47,16 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
     setError('');
     startTransition(async () => {
       try {
-        await respondToAssignment({
+        const res = await respondToAssignment({
           token,
           campInstanceId: assignment.id,
           response,
           note: response === 'rejected' ? note : null,
         });
+        if (!res?.success) {
+          setError(res?.error || 'Could not send your response.');
+          return;
+        }
         setDone(response);
         router.refresh();
       } catch (e: any) {

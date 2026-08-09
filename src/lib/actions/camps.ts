@@ -178,7 +178,9 @@ export async function respondToAssignment(input: {
   campInstanceId: string;
   response: 'accepted' | 'rejected';
   note?: string | null;
-}) {
+}): Promise<{ success: boolean; error?: string }> {
+  // Invariante #2: devolver estados esperables, nunca lanzar — Next enmascara
+  // los throw de server actions en producción y el coach vería un error genérico.
   const admin = createAdminClient();
 
   const { data: coach } = await admin
@@ -186,16 +188,16 @@ export async function respondToAssignment(input: {
     .select('id, display_name')
     .eq('portal_token', input.token)
     .maybeSingle();
-  if (!coach) throw new Error('Invalid coach link.');
+  if (!coach) return { success: false, error: 'Invalid coach link.' };
 
   const { data: camp } = await admin
     .from('camp_instances')
     .select('id, camp_name, head_coach_id, head_coach_assigned_by')
     .eq('id', input.campInstanceId)
-    .single();
-  if (!camp) throw new Error('Service not found.');
+    .maybeSingle();
+  if (!camp) return { success: false, error: 'Service not found.' };
   if (camp.head_coach_id !== coach.id) {
-    throw new Error('This service is not assigned to you.');
+    return { success: false, error: 'This service is not assigned to you.' };
   }
 
   const { error } = await admin
@@ -210,7 +212,7 @@ export async function respondToAssignment(input: {
       ...(input.response === 'rejected' ? { head_coach_id: null } : {}),
     })
     .eq('id', input.campInstanceId);
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, error: error.message };
 
   // Notify the coordinator who assigned it.
   if (camp.head_coach_assigned_by) {
