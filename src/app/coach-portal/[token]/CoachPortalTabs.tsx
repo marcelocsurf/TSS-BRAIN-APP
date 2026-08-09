@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BRAND } from '@/lib/constants/brand';
@@ -1959,23 +1959,35 @@ function PlanTab({
   const [trDay, setTrDay] = useState<string | null>(null);
   const [trVenue, setTrVenue] = useState('');
   const [trSaved, setTrSaved] = useState<Record<string, string>>({});
+  // Cuál tarjeta de transporte se está pidiendo AHORA — para descartar
+  // respuestas viejas que llegan después de abrir otra tarjeta.
+  const trReqRef = useRef<string | null>(null);
   const pickTrDay = (d: any) => {
     setTrDay(d.session_id);
-    if (d.depart) setTrDep(String(d.depart).slice(0, 5));
-    if (d.ret) setTrRet(String(d.ret).slice(0, 5));
+    // Setear SIEMPRE (con defaults si el día no tiene horario) para no arrastrar
+    // los valores de la tarjeta anterior.
+    setTrDep(d.depart ? String(d.depart).slice(0, 5) : '07:00');
+    setTrRet(d.ret ? String(d.ret).slice(0, 5) : '12:00');
     setTrVenue(d.venue ?? '');
   };
   const openTransport = async (campId: string) => {
-    if (trOpen === campId) { setTrOpen(null); return; }
+    if (trOpen === campId) { setTrOpen(null); trReqRef.current = null; return; }
+    // Reset inmediato: la tarjeta nueva no debe mostrar el estado de la anterior.
+    trReqRef.current = campId;
     setTrOpen(campId); setTrInfo(null); setTrDay(null);
+    setTrDep('07:00'); setTrRet('12:00'); setTrVenue('');
     try {
       const r = await coachQuickTransport(token, campId);
+      if (trReqRef.current !== campId) return; // llegó tarde: ya abrieron otra
       setTrInfo(r);
       if (r.ok && r.days?.length) {
         const first = r.days.find((d: any) => !d.closed) ?? r.days[0];
         pickTrDay(first);
       }
-    } catch { setTrInfo({ ok: false, error: 'Could not load.' }); }
+    } catch {
+      if (trReqRef.current !== campId) return;
+      setTrInfo({ ok: false, error: 'Could not load.' });
+    }
   };
   const saveTransport = async (campId: string, needed: boolean) => {
     if (!trDay) return;
@@ -1984,7 +1996,7 @@ function PlanTab({
     setTrBusy(false);
     if (!r.ok) { setTrInfo({ ...trInfo, error: r.error }); return; }
     setTrSaved((m) => ({ ...m, [campId]: needed ? `🚐 ${trDep}–${trRet} ✓` : 'no transport' }));
-    setTrOpen(null);
+    setTrOpen(null); trReqRef.current = null;
   };
   // Tell the shell to switch to focused mode while a class is open.
   useEffect(() => {
