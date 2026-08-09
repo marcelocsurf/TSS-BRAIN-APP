@@ -171,6 +171,24 @@ export function FinalCampEvaluation({
   const [promote, setPromote] = useState<Record<string, boolean>>({});
   const willPromote = (s: ServicePlanStudent) => canPromote(s) && (promote[s.student_id] ?? true);
 
+  // 🎯 FOCUS PARA SU PRÓXIMA ETAPA (obligatorio — pedido de Marcelo 2026-08-09):
+  // el cierre final debe dejar claro QUÉ debe seguir trabajando cada alumno.
+  // La app sugiere los STPs que quedaron débiles (<4★) como punto de partida.
+  const [nextFocus, setNextFocus] = useState<Record<string, string>>({});
+  const weakStps = (studentId: string): string[] =>
+    stpCatalog
+      .filter((stp) => {
+        const r = ratings[studentId]?.[stp.id] ?? 0;
+        return r > 0 && r < rule.stpThreshold;
+      })
+      .slice(0, 3)
+      .map((stp) => stp.title || stp.id);
+  const suggestFocus = (studentId: string) => {
+    const weak = weakStps(studentId);
+    if (weak.length === 0) return;
+    setNextFocus((prev) => ({ ...prev, [studentId]: `Keep working on: ${weak.join(', ')}` }));
+  };
+
   const buildStudentPayload = (s: ServicePlanStudent) => {
     const ratingsPayload: Array<{ student_id: string; step_id: string; rating: number }> = [];
     for (const stepId of Object.keys(ratings[s.student_id] ?? {})) {
@@ -183,12 +201,18 @@ export function FinalCampEvaluation({
       ocean_level: oceanLevel[s.student_id] || '',
       student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
+      next_focus: nextFocus[s.student_id]?.trim() ?? '',
     };
     const promos = willPromote(s) ? [{ student_id: s.student_id, belt_level: targetBelt as string }] : [];
     return { ratingsPayload, result, promos };
   };
 
   const saveOneStudent = (s: ServicePlanStudent) => {
+    // Focus para su próxima etapa: OBLIGATORIO por alumno.
+    if ((nextFocus[s.student_id]?.trim().length ?? 0) < 5) {
+      alert(`Write the "Next focus" for ${s.display_name.split(' ')[0]} — what should they keep working on after this camp? (Tip: tap "Use suggestion" to start from the weak STPs.)`);
+      return;
+    }
     const { ratingsPayload, result, promos } = buildStudentPayload(s);
     setSavingId(s.student_id);
     startTransition(async () => {
@@ -209,6 +233,15 @@ export function FinalCampEvaluation({
   };
 
   const submit = () => {
+    // Focus para su próxima etapa: OBLIGATORIO para cerrar el camp.
+    const missingFocus = students.filter((s) => (nextFocus[s.student_id]?.trim().length ?? 0) < 5);
+    if (missingFocus.length > 0) {
+      alert(
+        `Write the "Next focus" for: ${missingFocus.map((s) => s.display_name.split(' ')[0]).join(', ')}.\n\nWhat should each of them keep working on after this camp? It shows in their portal and guides their next coach.`
+      );
+      setConfirming(false);
+      return;
+    }
     const payload: Array<{ student_id: string; step_id: string; rating: number }> = [];
     for (const studentId of Object.keys(ratings)) {
       for (const stepId of Object.keys(ratings[studentId])) {
@@ -228,6 +261,7 @@ export function FinalCampEvaluation({
       ocean_level: oceanLevel[s.student_id] || '',
       student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
+      next_focus: nextFocus[s.student_id]?.trim() ?? '',
     }));
 
     const promotionsPayload = students
@@ -433,6 +467,33 @@ export function FinalCampEvaluation({
                           {OCEAN_LEVEL_INFO[oceanLevel[s.student_id] as keyof typeof OCEAN_LEVEL_INFO]?.cleared}
                         </p>
                       )}
+                    </div>
+
+                    {/* 🎯 Next focus — REQUIRED. Qué debe seguir trabajando
+                        después del camp. Alimenta el portal del alumno, la
+                        ficha del host y el plan del próximo coach. */}
+                    <div className="pt-3 mt-1 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-mono uppercase tracking-wider text-cyan-700">
+                          🎯 Next focus for {s.display_name.split(' ')[0]} · required
+                        </label>
+                        {weakStps(s.student_id).length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => suggestFocus(s.student_id)}
+                            className="text-[10px] font-semibold text-cyan-700 underline decoration-dotted"
+                          >
+                            Use suggestion ({weakStps(s.student_id).length} weak STPs)
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        value={nextFocus[s.student_id] ?? ''}
+                        onChange={(e) => setNextFocus((prev) => ({ ...prev, [s.student_id]: e.target.value }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-cyan-200 bg-cyan-50/40 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                        placeholder="What should they keep working on after this camp? e.g. Bottom turn timing + reading the wave down the line"
+                      />
                     </div>
 
                     {/* Written notes — one the student sees, one private */}

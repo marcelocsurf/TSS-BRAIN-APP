@@ -117,9 +117,18 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                 <div>
                   <p className="text-[9px] text-gray-400" style={F_M}>Bitácora reciente</p>
                   {detail.sessions.slice(0, 3).map((r: any, i: number) => (
-                    <p key={i} className="text-[11px] text-gray-600 leading-snug">
-                      {(r.created_at ?? '').slice(0, 10)} — {r.coach_feedback || r.whats_next || r.status || 'sesión registrada'}
-                    </p>
+                    <div key={i} className="mb-1">
+                      <p className="text-[11px] text-gray-600 leading-snug">
+                        {(r.created_at ?? '').slice(0, 10)} — {r.coach_feedback || r.status || 'sesión registrada'}
+                      </p>
+                      {/* El seguimiento es lo que el equipo necesita ver: qué
+                          debe trabajar el alumno la próxima (pedido 2026-08-09). */}
+                      {r.whats_next && (
+                        <p className="text-[11px] leading-snug pl-3" style={{ color: '#0090B0' }}>
+                          🎯 Próximo: {r.whats_next}
+                        </p>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

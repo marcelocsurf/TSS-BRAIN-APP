@@ -15,6 +15,9 @@ import { activatePendingCoursesForStudent } from './course-grants';
 export interface BasicIntakeInput {
   // Identity (the "ficha" — required to close a usable profile)
   date_of_birth?: string;
+  /** Teléfono/WhatsApp del PROPIO alumno (students.phone) — el equipo lo usa
+   *  para coordinar; distinto del emergency_contact_phone. */
+  phone?: string;
   nationality?: string;
   languages?: string;
   gender?: string;
@@ -124,6 +127,9 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
 
   const updates: Record<string, unknown> = {
     date_of_birth: input.date_of_birth?.trim() || null,
+    // Solo pisar el teléfono si el alumno escribió algo — no borrar el que
+    // el equipo ya haya cargado a mano.
+    ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
     nationality: input.nationality?.trim() || null,
     languages: input.languages?.trim() || null,
     gender: input.gender?.trim() || null,

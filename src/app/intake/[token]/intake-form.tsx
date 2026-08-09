@@ -110,6 +110,7 @@ export function IntakeForm({ token, student }: Props) {
   // ── Basic intake form state (the "ficha" — identity + safety) ──
   const [basicForm, setBasicForm] = useState<BasicIntakeInput>({
     date_of_birth: student.date_of_birth || '',
+    phone: (student as any).phone || '',
     nationality: student.nationality || '',
     languages: student.languages || '',
     gender: student.gender || '',
@@ -393,6 +394,17 @@ export function IntakeForm({ token, student }: Props) {
               type="date"
               value={basicForm.date_of_birth || ''}
               onChange={(v) => setBasic('date_of_birth', v)}
+              required
+            />
+            {/* Teléfono propio del alumno (WhatsApp) — antes el intake solo
+                pedía el del contacto de emergencia y el equipo no tenía cómo
+                escribirle al cliente (reporte de Cony 2026-08-09). */}
+            <Field
+              label="Phone / WhatsApp *"
+              type="tel"
+              value={basicForm.phone || ''}
+              onChange={(v) => setBasic('phone', v)}
+              placeholder="+503 7777 7777"
               required
             />
             <FormRow>

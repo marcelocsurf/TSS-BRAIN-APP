@@ -282,6 +282,7 @@ h1,h2{font-stretch:125%;font-weight:800;text-transform:uppercase;letter-spacing:
   <form class="cap-form" id="capForm" onsubmit="submitLead(event)">
     <input class="cap-in" id="capName" type="text" placeholder="Your name" autocomplete="name" required>
     <input class="cap-in" id="capEmail" type="email" placeholder="Your email" autocomplete="email" required>
+    <input class="cap-in" id="capPhone" type="tel" placeholder="WhatsApp (optional)" autocomplete="tel">
     <button class="mbtn mbtn-accent" id="capBtn" type="submit">Unlock My Result <span class="ico ico-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
     <p class="cap-err" id="capErr"></p>
     <p class="cap-fine">We'll send your result and surf tips. No spam — unsubscribe anytime.</p>
@@ -527,6 +528,7 @@ function submitLead(e){
   e.preventDefault();
   const name=document.getElementById('capName').value.trim();
   const email=document.getElementById('capEmail').value.trim();
+  const phone=(document.getElementById('capPhone')||{value:''}).value.trim();
   const err=document.getElementById('capErr');
   if(name.length<2){err.textContent='Please enter your name.';return}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent='Please enter a valid email.';return}
@@ -536,9 +538,9 @@ function submitLead(e){
 
   let payload;
   if(pendingResult&&pendingResult.type==='beginner'){
-    payload={nombre:name,email:email,surf_level:'Beginner',score:null,answers:{gate:'never_surfed'},academia:'puro-surf',source:'tss-surf-level-quiz'};
+    payload={nombre:name,email:email,phone:phone||null,surf_level:'Beginner',score:null,answers:{gate:'never_surfed'},academia:'puro-surf',source:'tss-surf-level-quiz'};
   } else {
-    payload={nombre:name,email:email,surf_level:pendingResult.lv.name,score:pendingResult.score,answers:{skills:pendingResult.skills,raw:ans.slice()},academia:'puro-surf',source:'tss-surf-level-quiz'};
+    payload={nombre:name,email:email,phone:phone||null,surf_level:pendingResult.lv.name,score:pendingResult.score,answers:{skills:pendingResult.skills,raw:ans.slice()},academia:'puro-surf',source:'tss-surf-level-quiz'};
   }
 
   saveLead(payload).then(()=>{

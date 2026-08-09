@@ -1236,12 +1236,14 @@ function SessionsTab({ data }: { data: PortalData }) {
                         </div>
                       </div>
                     )}
-                    {/* What's next */}
-                    {session.next_recommended_focus && (
+                    {/* What's next — the coach's required "what to work on next"
+                        from the daily close (whats_next). Antes leía una columna
+                        inexistente (next_recommended_focus) y nunca se mostraba. */}
+                    {session.whats_next && (
                       <div className="pt-1">
                         <p className="text-xs text-gray-400 mb-1">Next Focus</p>
                         <div className="text-sm text-blue-800 bg-blue-50 rounded-xl p-2.5">
-                          {session.next_recommended_focus}
+                          🎯 {session.whats_next}
                         </div>
                       </div>
                     )}
@@ -2198,12 +2200,12 @@ function PortalAlerts({
     });
   }
 
-  // New session report (feedback / homework)
+  // New session report (feedback / homework / next focus)
   const lr = latestResult as any;
-  // M135 — only ping when there's student-facing content. Daily coach_feedback
-  // + whats_next are internal now; the student sees the explicit
-  // student_visible_summary (final eval) and homework.
-  if (lr && (lr.student_visible_summary || lr.homework)) {
+  // Ping cuando hay contenido que el alumno VE: summary (final eval), homework,
+  // o el "Next Focus" del cierre diario (whats_next — student-facing desde
+  // 2026-08-09; el coach_feedback diario sigue interno).
+  if (lr && (lr.student_visible_summary || lr.homework || lr.whats_next)) {
     rows.push({
       key: 'session-report',
       Icon: ClipboardList,

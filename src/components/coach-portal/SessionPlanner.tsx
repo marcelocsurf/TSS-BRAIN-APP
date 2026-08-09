@@ -311,14 +311,37 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // Only here does the data sync to each student's profile + the survey
   // request go out. Deliberate + confirmed + irreversible.
   const finalize = () => {
-    // Light daily evaluation — nudge (don't block) if a student has no
-    // session-level objective set. Per-step STP grading now happens once in the
-    // end-of-camp Final Evaluation, so it's no longer required here.
+    // Cierre con seguimiento OBLIGATORIO (pedido de Marcelo 2026-08-09): en
+    // servicios de surf cada alumno debe salir con (a) ¿cumplió el objetivo?
+    // y (b) QUÉ TRABAJAR PRÓXIMO — ese es el hilo de progresión que ve el
+    // alumno, el próximo coach y el host. Per-step STP grading sigue en la
+    // Final Evaluation. (Las clases yoga/ice bath usan el cierre liviano y
+    // no pasan por acá.)
     const noObjective = students.filter((s) => !(s.blocks[0]?.day_objective_status));
     if (noObjective.length > 0) {
+      alert(
+        `Set "objective met" for: ${noObjective.map((s) => s.display_name).join(', ')}.\n\nIt takes one tap per student — it becomes their progress record.`
+      );
+      return;
+    }
+    const noNext = students.filter((s) => ((s.blocks[0]?.whats_next ?? '').trim().length < 5));
+    if (noNext.length > 0) {
+      alert(
+        `Write "What to work on next" for: ${noNext.map((s) => s.display_name).join(', ')}.\n\nOne specific line per student — the student sees it as their Next Focus and the next coach plans from it.`
+      );
+      return;
+    }
+    // Anti copy-paste: el mismo texto pegado a 3+ alumnos no es seguimiento.
+    const counts = new Map<string, number>();
+    for (const s of students) {
+      const t = (s.blocks[0]?.whats_next ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+      if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    const copied = Math.max(0, ...counts.values());
+    if (copied >= 3) {
       if (
         !confirm(
-          `${noObjective.length} student(s) don't have "objective met" set yet. Finalize anyway?`
+          `${copied} students have the SAME "what to work on next" text. Personalized focus is what makes the follow-up valuable. Finalize anyway?`
         )
       ) {
         return;
@@ -2833,9 +2856,7 @@ function StudentEvalCard({
             </p>
           </div>
 
-          {/* Internal coach notes (M135). NOT sent to the student — these live
-              in the bitácora for the coach + the next coach. Both optional:
-              free text, no chips. */}
+          {/* Internal coach note (M135) — bitácora only, coach + next coach. */}
           <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 space-y-2.5">
             <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 inline-flex items-center gap-1">
               <Lock size={10} /> Internal · not sent to the student
@@ -2848,14 +2869,25 @@ function StudentEvalCard({
               rows={2}
               disabled={isClosed}
             />
+          </div>
+
+          {/* SEGUIMIENTO (obligatorio) — esto SÍ lo ve el alumno como su
+              "Next Focus" y es el punto de partida del próximo coach. */}
+          <div className="rounded-lg bg-cyan-50/60 border border-cyan-200 p-2.5 space-y-1.5">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-700">
+              🎯 Next focus · required — the student sees this
+            </p>
             <TextArea
-              label="What to work on next (optional)"
+              label="What to work on next *"
               value={gen?.whats_next ?? ''}
               onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
               placeholder="e.g. Next session: angle take-offs, look down the line"
               rows={2}
               disabled={isClosed}
             />
+            <p className="text-[9px] text-cyan-700/70 italic">
+              One specific line for {student.display_name} — what should the next session focus on?
+            </p>
           </div>
         </div>
       )}

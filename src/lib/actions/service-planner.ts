@@ -254,6 +254,7 @@ export interface ServicePlanBlock {
   focus_level: number | null;   // 1-5, how present + engaged
   flow_channel: number | null;  // 1=bored, 3=optimal, 5=frustrated
   day_objective_status?: string | null; // session-level: achieved | partial | not_yet (block 0)
+  whats_next?: string | null; // session-level: qué trabajar próximo (block 0) — REQUERIDO al cierre de surf
 }
 
 export interface ServicePlanStudent {
@@ -1284,7 +1285,7 @@ export async function closeCampFinal(
   token: string,
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
-  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string }>,
+  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string; next_focus?: string }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
   opts?: { finalize?: boolean },
 ): Promise<{ ok: boolean; error?: string }> {
@@ -1387,10 +1388,43 @@ export async function closeCampFinal(
       finalized_at: finalizedAt,
       student_visible_note: r.student_visible_note || null,
       coach_private_note: r.coach_private_note || null,
+      // 🎯 Qué debe seguir trabajando (obligatorio en el UI desde 2026-08-09).
+      areas_to_improve: r.next_focus?.trim() || null,
     }));
     await admin
       .from('camp_final_evaluations')
       .upsert(rows, { onConflict: 'camp_instance_id,student_id' });
+
+    // 🎯 Continuidad del next focus: viaja a (a) students.next_recommended_focus
+    // — lo ve el próximo coach al planear — y (b) el último session_result del
+    // camp (whats_next) — lo ve el alumno como "Next Focus" en su portal.
+    // Best-effort: el acta (areas_to_improve) ya quedó escrita arriba.
+    try {
+      const withFocus = results.filter((r) => (r.next_focus ?? '').trim().length > 0);
+      if (withFocus.length) {
+        const { data: campSess2 } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
+        const sessIds2 = (campSess2 ?? []).map((x: any) => x.id);
+        const latestByStudent = new Map<string, string>();
+        if (sessIds2.length) {
+          const { data: ssr2 } = await admin
+            .from('student_session_results')
+            .select('id, student_id, created_at')
+            .in('camp_session_id', sessIds2)
+            .order('created_at', { ascending: false });
+          for (const row of ssr2 ?? []) {
+            if (!latestByStudent.has((row as any).student_id)) latestByStudent.set((row as any).student_id, (row as any).id);
+          }
+        }
+        for (const r of withFocus) {
+          const focus = (r.next_focus as string).trim();
+          await admin.from('students').update({ next_recommended_focus: focus }).eq('id', r.student_id);
+          const ssrId = latestByStudent.get(r.student_id);
+          if (ssrId) await admin.from('student_session_results').update({ whats_next: focus }).eq('id', ssrId);
+        }
+      }
+    } catch (e) {
+      console.error('[closeCampFinal] next-focus continuity write failed:', e);
+    }
 
     // In-water level assessment — write it the same way the bitácora's
     // Ocean Level evaluation does (history row + student update) so it shows
