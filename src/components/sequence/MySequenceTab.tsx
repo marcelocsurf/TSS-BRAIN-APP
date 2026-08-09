@@ -114,7 +114,15 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
             />
           </div>
           <p className="text-[11px] text-white/60 mt-2">
-            {data.ratedSteps} of {data.totalSteps} steps self-rated
+            {/* La validación OFICIAL del coach manda; el auto-rating complementa. */}
+            {data.coachRatedSteps > 0 ? (
+              <>
+                <span style={{ color: '#00D2FF' }}>★ {data.coachRatedSteps} of {data.totalSteps} validated by your coach</span>
+                {data.selfRatedSteps > 0 && <> · {data.selfRatedSteps} self-rated</>}
+              </>
+            ) : (
+              <>{data.ratedSteps} of {data.totalSteps} steps self-rated</>
+            )}
           </p>
         </div>
       </div>

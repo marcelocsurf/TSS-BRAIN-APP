@@ -54,6 +54,10 @@ export type SequenceData = {
   overallRating: number | null;
   totalSteps: number;
   ratedSteps: number;
+  /** Pasos con evaluación OFICIAL del coach (pesa más que el auto-rating). */
+  coachRatedSteps: number;
+  /** Pasos con solo auto-evaluación del alumno (sin oficial). */
+  selfRatedSteps: number;
   blocks: {
     block_number: number;
     block_name: string;
@@ -172,17 +176,26 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
       items: data.items.sort((a, b) => a.display_order - b.display_order),
     }));
 
-  // Calculate overall rating (avg of rated STPs)
-  const ratedItems = items.filter((i) => i.rating !== null);
+  // Overall execution — la evaluación OFICIAL del coach pesa más que la
+  // auto-evaluación: por paso, el rating efectivo es coach_rating si existe,
+  // si no el auto-rating. Antes solo se contaba el auto-rating y un alumno
+  // con toda la secuencia validada 5/5 por su coach veía "Not rated yet".
+  const effective = (i: SequenceItem): number | null =>
+    i.coach_rating ?? i.rating ?? null;
+  const ratedItems = items.filter((i) => effective(i) !== null);
   const overallRating = ratedItems.length > 0
-    ? ratedItems.reduce((sum, i) => sum + (i.rating || 0), 0) / ratedItems.length
+    ? ratedItems.reduce((sum, i) => sum + (effective(i) || 0), 0) / ratedItems.length
     : null;
+  const coachRatedSteps = items.filter((i) => i.coach_rating != null).length;
+  const selfRatedSteps = items.filter((i) => i.coach_rating == null && i.rating != null).length;
 
   return {
     belt,
     overallRating,
     totalSteps: items.length,
     ratedSteps: ratedItems.length,
+    coachRatedSteps,
+    selfRatedSteps,
     blocks,
   };
 }

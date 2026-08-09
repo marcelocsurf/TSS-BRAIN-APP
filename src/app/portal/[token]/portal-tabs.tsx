@@ -735,50 +735,51 @@ function HomeTab({
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />
 
-      {/* Latest Session — dark, matches the hero */}
+      {/* Latest Session — dark, matches the hero. OJO: fondo oscuro → textos
+          CLAROS (antes quedaron en tinta #061C2B y la tarjeta era ilegible). */}
       {latestResult && (
         <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
-          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(6,28,43,.08)' }}>
-            <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#0090B0' }}>Latest session</p>
-            <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#061C2B' }}>
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+            <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Latest session</p>
+            <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}>
               {latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}
             </h3>
           </div>
           <div className="px-4 py-3 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-xs" style={{ color: '#55666E' }}>Date</span>
-              <span className="text-sm" style={{ color: '#061C2B' }}>
+              <span className="text-xs" style={{ color: 'rgba(247,249,250,.55)' }}>Date</span>
+              <span className="text-sm" style={{ color: '#F7F9FA' }}>
                 {new Date(latestResult.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             {latestResult.coaches?.display_name && (
               <div className="flex justify-between items-center">
-                <span className="text-xs" style={{ color: '#55666E' }}>Coach</span>
-                <span className="text-sm font-medium" style={{ color: '#061C2B' }}>{latestResult.coaches.display_name}</span>
+                <span className="text-xs" style={{ color: 'rgba(247,249,250,.55)' }}>Coach</span>
+                <span className="text-sm font-medium" style={{ color: '#F7F9FA' }}>{latestResult.coaches.display_name}</span>
               </div>
             )}
             <div className="flex justify-between items-start gap-3">
-              <span className="text-xs" style={{ color: '#55666E' }}>Status</span>
+              <span className="text-xs" style={{ color: 'rgba(247,249,250,.55)' }}>Status</span>
               <div className="text-right" style={{ maxWidth: '64%' }}>
                 <StatusBadge status={latestResult.status} />
                 {statusMeaning(latestResult.status) && (
-                  <p className="text-[11px] mt-1" style={{ color: '#55666E' }}>{statusMeaning(latestResult.status)}</p>
+                  <p className="text-[11px] mt-1" style={{ color: 'rgba(247,249,250,.6)' }}>{statusMeaning(latestResult.status)}</p>
                 )}
               </div>
             </div>
 
             {data.surveyResultIds.includes(latestResult.id) ? (
               latestResult.student_visible_summary && (
-                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(6,28,43,.08)' }}>
-                  <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#0090B0' }}>Coach feedback</p>
-                  <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: '#374151' }}>
+                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+                  <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>Coach feedback</p>
+                  <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'rgba(247,249,250,.85)' }}>
                     {latestResult.student_visible_summary}
                   </p>
                 </div>
               )
             ) : (
               latestResult.survey_unlocked && (
-                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(6,28,43,.08)' }}>
+                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
                   <button
                     type="button"
                     onClick={() => onGoTo('feedback')}
@@ -788,7 +789,7 @@ function HomeTab({
                     <p className="text-[9px] font-mono uppercase tracking-wider mb-0.5" style={{ color: '#FFD166' }}>
                       Coach feedback waiting
                     </p>
-                    <p className="text-sm font-semibold" style={{ color: '#061C2B' }}>
+                    <p className="text-sm font-semibold" style={{ color: '#F7F9FA' }}>
                       Rate your coach to unlock the session feedback →
                     </p>
                   </button>
