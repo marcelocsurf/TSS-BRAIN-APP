@@ -281,7 +281,8 @@ export function FinalCampEvaluation({
 
   return (
     <div className="fixed inset-0 z-[120] bg-[var(--tss-navy)]/80 backdrop-blur-sm">
-      <div className="max-w-lg mx-auto h-[100dvh] bg-[var(--tss-gray-50,#F6F7F9)] flex flex-col">
+      {/* iPad (md:): lienzo ancho para calificar la secuencia con menos scroll. */}
+      <div className="max-w-lg md:max-w-4xl mx-auto h-[100dvh] bg-[var(--tss-gray-50,#F6F7F9)] flex flex-col">
         <div
           className="text-white px-4 py-5 shrink-0"
           style={{ background: BRAND.colors.navy }}
@@ -398,6 +399,9 @@ export function FinalCampEvaluation({
                     >
                       {savingId === s.student_id ? 'Guardando…' : savedSet.has(s.student_id) ? '✓ Guardado — guardar cambios de nuevo' : '💾 Guardar este alumno (no se pierde)'}
                     </button>
+                    {/* iPad (md:): la secuencia en 2 columnas — la mitad de
+                        scroll con 25-48 STPs. Teléfono: lista única, igual. */}
+                    <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5">
                     {stpCatalog.map((stp) => {
                       const current = ratings[s.student_id]?.[stp.id] ?? null;
                       const weak = current != null && current < rule.stpThreshold;
@@ -419,6 +423,7 @@ export function FinalCampEvaluation({
                         </div>
                       );
                     })}
+                    </div>
 
                     {/* Canon principles — part of the level graduation check */}
                     {rule.principles.length > 0 && (

@@ -148,7 +148,9 @@ export function CoachPortalTabs({
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
       style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses', 'plan'].includes(activeTab) && !isSupport ? '#F7F9FA' : '#000' }}
     >
-      <div className="max-w-lg mx-auto px-4 py-4">
+      {/* iPad (md:) — SOLO con el planner abierto se ensancha el lienzo; el
+          resto del portal y el teléfono quedan idénticos (columna max-w-lg). */}
+      <div className={`${plannerOpen ? 'max-w-lg md:max-w-4xl' : 'max-w-lg'} mx-auto px-4 py-4`}>
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: isSupport ? '#000' : 'transparent' }}>
             {!(coach as any).waiver_signed && <StaffWaiverCard token={coach.portal_token} />}

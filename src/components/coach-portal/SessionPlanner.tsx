@@ -1158,7 +1158,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 : 'Mark each student against the objective you set for them.'
             }
           >
-            <div className="space-y-3">
+            {/* iPad (md:): 2 columnas de alumnos — 4-6 evaluaciones de un
+                vistazo. Teléfono: columna única, idéntico a siempre. */}
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
               {students.map((s) => (
                 <StudentEvalCard
                   key={s.student_id}
@@ -1273,7 +1275,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         className="fixed bottom-0 left-0 right-0 px-4 pt-2 z-40 border-t border-gray-200"
         style={{ background: 'white', paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
       >
-        <div className="max-w-lg mx-auto flex gap-2">
+        <div className="max-w-lg md:max-w-4xl mx-auto flex gap-2">
           {/* PLANNING → close the plan (still editable after) */}
           {state === 'planned' && (
             <button
