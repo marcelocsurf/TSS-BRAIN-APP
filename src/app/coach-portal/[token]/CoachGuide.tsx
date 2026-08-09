@@ -54,8 +54,8 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
         </Sec>
 
         <Sec icon="📋" title="Plan — planear y CERRAR (lo más importante)">
-          <Li k="Read the Plan">El manual del día: venue, warm-up, drills por alumno. Leelo antes de la clase.</Li>
-          <Li k="Run the Session">El modo en vivo: pasás lista, evaluás a cada alumno (enfoque, flow, feedback, próximo paso) y al final tocás <strong>cerrar el día</strong>.</Li>
+          <Li k="Ver el plan">El manual del día: venue, warm-up, drills por alumno. Leelo antes de la clase.</Li>
+          <Li k="Dar la clase">El modo en vivo: pasás lista, evaluás a cada alumno (enfoque, flow, feedback, próximo paso) y al final tocás <strong>cerrar el día</strong>.</Li>
           <Li k="⚠ Needs closing">Si te quedó un día sin cerrar, aparece en amarillo arriba del Plan: tocá <strong>Close now</strong> y te lleva directo a cerrarlo, aunque la clase haya sido hace días.</Li>
           <p style={{ color: '#7a5c00' }}><strong>El cierre no es papeleo:</strong> alimenta la bitácora de tus alumnos y es <strong>requisito para que se libere tu pago</strong>. Si a las 5 PM no cerraste el día, te llega un recordatorio por correo. Cierre hecho = plata en camino.</p>
         </Sec>

@@ -90,9 +90,9 @@ function t12(t: string | null): string | null {
 }
 
 const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
-  { key: 'home', label: 'Home', Icon: Home },
-  { key: 'courses', label: 'Courses', Icon: BookOpen },
-  { key: 'tools', label: 'Tools', Icon: Wrench },
+  { key: 'home', label: 'Inicio', Icon: Home },
+  { key: 'courses', label: 'Cursos', Icon: BookOpen },
+  { key: 'tools', label: 'Herramientas', Icon: Wrench },
   { key: 'plan', label: 'Plan', Icon: ClipboardList },
   { key: 'spaces', label: 'Espacios', Icon: CalendarDays },
 ];
@@ -132,12 +132,12 @@ export function CoachPortalTabs({
   // Support (non-coaching) members get an operations-focused nav: Home
   // (schedule + tasks), Espacios (they prepare/clean the rooms), Courses,
   // plus a Sell tab when they're a seller. Coaching keeps the full set.
-  const SELL_TAB = { key: 'sell' as Tab, label: 'Sell', Icon: BarChart2 };
+  const SELL_TAB = { key: 'sell' as Tab, label: 'Vender', Icon: BarChart2 };
   const visibleTabs = isSupport
     ? [
         TABS.find((t) => t.key === 'home')!,
         TABS.find((t) => t.key === 'spaces')!,
-        { key: 'inventory' as Tab, label: 'Inventory', Icon: Wrench },
+        { key: 'inventory' as Tab, label: 'Inventario', Icon: Wrench },
         ...(canSell ? [SELL_TAB] : []),
         TABS.find((t) => t.key === 'courses')!,
       ]
@@ -1984,7 +1984,7 @@ function PlanTab({
                   }`}
                   style={{ fontFamily: 'DM Mono, monospace' }}
                 >
-                  {v === 'read' ? 'Read the Plan' : 'Run the Session'}
+                  {v === 'read' ? 'Ver el plan' : 'Dar la clase'}
                 </button>
               ))}
             </div>

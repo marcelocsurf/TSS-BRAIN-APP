@@ -438,7 +438,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
         {tab === 'tablas' && (
           <div className="space-y-4">
             {/* Calculadora de tabla ideal (volumen, tipo, medidas, quillas) */}
-            <BoardSelectorLauncher variant="card" title="Board Calculator" subtitle="Recomienda volumen, tipo, medidas y quillas según la persona." />
+            <BoardSelectorLauncher variant="card" title="Calculadora de tablas" subtitle="Recomienda volumen, tipo, medidas y quillas según la persona." />
             {/* Sistema de renta: inventario + rentas con waiver y firma */}
             {academyId
               ? (

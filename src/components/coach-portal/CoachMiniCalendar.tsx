@@ -136,7 +136,7 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
           {new Date(selected + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
         {selectedServices.length === 0 && selectedTasks.length === 0 ? (
-          <p className="text-[11px] text-white/40">Nothing scheduled this day.</p>
+          <p className="text-[11px] text-white/40">Nada agendado este día.</p>
         ) : (
           <>
             {selectedServices.map((s: any) => (

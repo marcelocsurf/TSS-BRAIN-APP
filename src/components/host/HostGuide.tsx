@@ -72,7 +72,7 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
         )}
 
         <Sec icon="🏄" title="TABLAS — calculadora y rentas">
-          <Li k="Board Calculator">Recomienda volumen, tipo, medidas y quillas según la persona — úsalo para orientar a un cliente que renta o compra.</Li>
+          <Li k="Calculadora de tablas">Recomienda volumen, tipo, medidas y quillas según la persona — úsalo para orientar a un cliente que renta o compra.</Li>
           <Li k="Rentas">Inventario completo: registrá la salida y devolución de cada tabla, con waiver y firma del cliente.</Li>
         </Sec>
 

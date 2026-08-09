@@ -22,7 +22,7 @@ export function StaffWaiverCard({ token }: { token: string }) {
 
   return (
     <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
-      <p className="text-[13px] font-bold text-amber-900">⚠ Staff waiver pendiente — firmalo para quedar cubierto</p>
+      <p className="text-[13px] font-bold text-amber-900">⚠ Waiver del staff pendiente — firmalo para quedar cubierto</p>
       {!open ? (
         <button onClick={() => setOpen(true)} className="mt-2 text-[12px] font-bold px-4 py-2 rounded-full bg-amber-500 text-white">
           Leer y firmar →

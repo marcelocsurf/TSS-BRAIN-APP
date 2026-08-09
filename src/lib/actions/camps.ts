@@ -1865,6 +1865,15 @@ export async function duplicateCampTemplate(templateId: string) {
     modality: original.modality,
     delivery_model: original.delivery_model,
     description: original.description || '',
+    // Copiar la clasificación del servicio: sin esto la copia quedaba
+    // mal-clasificada (service_kind NULL, sin cupo/precio) — causa raíz de las
+    // plantillas "Discover Surfing" duplicadas y rotas.
+    includes_course_key: original.includes_course_key ?? null,
+    service_kind: original.service_kind ?? null,
+    capacity_max: original.capacity_max ?? null,
+    session_duration_minutes: original.session_duration_minutes ?? null,
+    card_color: original.card_color ?? null,
+    accent_color: original.accent_color ?? null,
     days: detail.days.map((day: any) => {
       const dayBlocks = detail.blocks.filter((b: any) => b.template_day_id === day.id);
       return {
