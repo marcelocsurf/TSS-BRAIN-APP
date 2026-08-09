@@ -65,7 +65,9 @@ export interface Board {
 // platform admin o coordinador/admin de la academia, o (b) TOKEN de portal de
 // un host/coordinador/admin de la misma academia (el host renta en mostrador).
 // Devuelve el actor para created_by.
-async function assertCanManage(academyId: string, portalToken?: string | null): Promise<{ id: string | null }> {
+// Invariante #2: devolver el resultado del guard, nunca lanzar — Next enmascara
+// los throw de server actions en producción y el mostrador vería un error genérico.
+async function canManage(academyId: string, portalToken?: string | null): Promise<{ ok: boolean; id: string | null; error?: string }> {
   if (portalToken) {
     const admin = createAdminClient();
     const { data: c } = await admin
@@ -74,16 +76,16 @@ async function assertCanManage(academyId: string, portalToken?: string | null): 
       .eq('portal_token', portalToken)
       .maybeSingle();
     const ok = c && (c as any).active_status && ['host', 'coordinator', 'admin'].includes((c as any).role) && c.academy_id === academyId;
-    if (!ok) throw new Error('No autorizado para gestionar el inventario.');
-    return { id: c!.id };
+    if (!ok) return { ok: false, id: null, error: 'No autorizado para gestionar el inventario.' };
+    return { ok: true, id: c!.id };
   }
   const me = await getCurrentCoach();
   const isOwnLead =
     (me?.role === 'coordinator' || me?.role === 'admin') && me?.academy_id === academyId;
   if (!me?.is_platform_admin && !isOwnLead) {
-    throw new Error('Solo el admin o el coordinador de la academia puede gestionar el inventario.');
+    return { ok: false, id: null, error: 'Solo el admin o el coordinador de la academia puede gestionar el inventario.' };
   }
-  return { id: me?.id ?? null };
+  return { ok: true, id: me?.id ?? null };
 }
 
 export async function listBoards(academyId: string): Promise<Board[]> {
@@ -160,15 +162,16 @@ export async function createBoard(input: {
   condition?: BoardCondition;
   code?: string | null; // optional manual override; otherwise auto-suggested
   portal_token?: string | null;
-}): Promise<Board> {
-  await assertCanManage(input.academy_id, input.portal_token);
+}): Promise<{ success: boolean; error?: string }> {
+  const g = await canManage(input.academy_id, input.portal_token);
+  if (!g.ok) return { success: false, error: g.error };
   const admin = createAdminClient();
 
   const code =
     input.code?.trim() ||
     (await suggestCode(admin, input.academy_id, input.board_type, input.length_feet, input.length_inches));
 
-  const { data, error } = await admin
+  const { error } = await admin
     .from('boards')
     .insert({
       academy_id: input.academy_id,
@@ -183,39 +186,41 @@ export async function createBoard(input: {
       notes: input.notes?.trim() || null,
       status: 'available',
       condition: input.condition ?? 'good',
-    })
-    .select('*')
-    .single();
-  if (error) throw new Error(error.message);
+    });
+  if (error) return { success: false, error: error.message };
   revalidatePath(`/academies/${input.academy_id}`);
-  return data as Board;
+  return { success: true };
 }
 
 export async function updateBoard(
   id: string,
   patch: Partial<Pick<Board, 'code' | 'brand' | 'model' | 'board_type' | 'shape' | 'length_feet' | 'length_inches' | 'volume_liters' | 'status' | 'condition' | 'notes'>>,
   portalToken?: string | null,
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const admin = createAdminClient();
-  const { data: existing } = await admin.from('boards').select('academy_id').eq('id', id).single();
-  if (!existing) throw new Error('Board not found.');
-  await assertCanManage(existing.academy_id, portalToken);
+  const { data: existing } = await admin.from('boards').select('academy_id').eq('id', id).maybeSingle();
+  if (!existing) return { success: false, error: 'Board not found.' };
+  const g = await canManage(existing.academy_id, portalToken);
+  if (!g.ok) return { success: false, error: g.error };
 
   const { error } = await admin
     .from('boards')
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id);
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, error: error.message };
   revalidatePath(`/academies/${existing.academy_id}`);
+  return { success: true };
 }
 
-export async function deleteBoard(id: string, portalToken?: string | null): Promise<void> {
+export async function deleteBoard(id: string, portalToken?: string | null): Promise<{ success: boolean; error?: string }> {
   const admin = createAdminClient();
-  const { data: existing } = await admin.from('boards').select('academy_id').eq('id', id).single();
-  if (!existing) return;
-  await assertCanManage(existing.academy_id, portalToken);
+  const { data: existing } = await admin.from('boards').select('academy_id').eq('id', id).maybeSingle();
+  if (!existing) return { success: true };
+  const g = await canManage(existing.academy_id, portalToken);
+  if (!g.ok) return { success: false, error: g.error };
   await admin.from('boards').delete().eq('id', id);
   revalidatePath(`/academies/${existing.academy_id}`);
+  return { success: true };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -224,7 +229,8 @@ export async function deleteBoard(id: string, portalToken?: string | null): Prom
 
 // List rentals for an academy. Active ones first, then most-recent returned.
 export async function listRentals(academyId: string, portalToken?: string | null): Promise<Rental[]> {
-  await assertCanManage(academyId, portalToken);
+  const g = await canManage(academyId, portalToken);
+  if (!g.ok) return [];
   const admin = createAdminClient();
   const { data } = await admin
     .from('board_rentals')
@@ -256,8 +262,9 @@ export async function createRental(input: {
   signature_path?: string | null;  // PNG signature already uploaded to the private bucket
   waiver_text?: string | null;     // the waiver text the renter signed
   portal_token?: string | null;
-}): Promise<Rental> {
-  const actor = await assertCanManage(input.academy_id, input.portal_token);
+}): Promise<{ success: boolean; error?: string }> {
+  const actor = await canManage(input.academy_id, input.portal_token);
+  if (!actor.ok) return { success: false, error: actor.error };
   const admin = createAdminClient();
 
   // Board must belong to this academy and not already be rented out.
@@ -265,14 +272,14 @@ export async function createRental(input: {
     .from('boards')
     .select('id, academy_id, status')
     .eq('id', input.board_id)
-    .single();
-  if (!board || board.academy_id !== input.academy_id) throw new Error('Board not found in this academy.');
-  if (board.status === 'rented') throw new Error('That board is already rented out.');
-  if (board.status === 'in_use') throw new Error('That board is assigned to a class right now.');
-  if (board.status === 'in_repair') throw new Error('That board is in repair.');
-  if (board.status === 'retired') throw new Error('That board is retired.');
+    .maybeSingle();
+  if (!board || board.academy_id !== input.academy_id) return { success: false, error: 'Board not found in this academy.' };
+  if (board.status === 'rented') return { success: false, error: 'That board is already rented out.' };
+  if (board.status === 'in_use') return { success: false, error: 'That board is assigned to a class right now.' };
+  if (board.status === 'in_repair') return { success: false, error: 'That board is in repair.' };
+  if (board.status === 'retired') return { success: false, error: 'That board is retired.' };
 
-  const { data, error } = await admin
+  const { error } = await admin
     .from('board_rentals')
     .insert({
       academy_id: input.academy_id,
@@ -294,15 +301,13 @@ export async function createRental(input: {
       waiver_text: input.waiver_text || null,
       waiver_signed: !!input.signature_path,
       waiver_signed_at: input.signature_path ? new Date().toISOString() : null,
-    })
-    .select('*')
-    .single();
-  if (error) throw new Error(error.message);
+    });
+  if (error) return { success: false, error: error.message };
 
   // Flip the board to rented so it disappears from the available pool.
   await admin.from('boards').update({ status: 'rented', updated_at: new Date().toISOString() }).eq('id', input.board_id);
   revalidatePath('/dashboard');
-  return data as Rental;
+  return { success: true };
 }
 
 // Delete the renter's ID photo from the private bucket (best-effort).
@@ -317,15 +322,16 @@ export async function returnRental(
   rentalId: string,
   condition: { return_condition?: 'good' | 'repair' | 'totaled'; damage_type?: string | null; damage_notes?: string | null } = {},
   portalToken?: string | null,
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const admin = createAdminClient();
   const { data: rental } = await admin
     .from('board_rentals')
     .select('id, academy_id, board_id, status, id_doc_path')
     .eq('id', rentalId)
-    .single();
-  if (!rental) throw new Error('Rental not found.');
-  await assertCanManage(rental.academy_id, portalToken);
+    .maybeSingle();
+  if (!rental) return { success: false, error: 'Rental not found.' };
+  const g = await canManage(rental.academy_id, portalToken);
+  if (!g.ok) return { success: false, error: g.error };
 
   const cond = condition.return_condition ?? 'good';
   // good → back in service; repair → out for repair; totaled → retired.
@@ -352,17 +358,19 @@ export async function returnRental(
     .update({ status: boardStatus, updated_at: new Date().toISOString() })
     .eq('id', rental.board_id);
   revalidatePath('/dashboard');
+  return { success: true };
 }
 
-export async function cancelRental(rentalId: string, portalToken?: string | null): Promise<void> {
+export async function cancelRental(rentalId: string, portalToken?: string | null): Promise<{ success: boolean; error?: string }> {
   const admin = createAdminClient();
   const { data: rental } = await admin
     .from('board_rentals')
     .select('id, academy_id, board_id, status, id_doc_path')
     .eq('id', rentalId)
-    .single();
-  if (!rental) return;
-  await assertCanManage(rental.academy_id, portalToken);
+    .maybeSingle();
+  if (!rental) return { success: true };
+  const g = await canManage(rental.academy_id, portalToken);
+  if (!g.ok) return { success: false, error: g.error };
   await purgeRentalIdDoc(admin, rental.id_doc_path);
   await admin
     .from('board_rentals')
@@ -375,6 +383,7 @@ export async function cancelRental(rentalId: string, portalToken?: string | null
     .eq('id', rental.board_id)
     .eq('status', 'rented');
   revalidatePath('/dashboard');
+  return { success: true };
 }
 
 // Short-lived signed URL for viewing a renter's ID document (private bucket).
@@ -384,9 +393,10 @@ export async function getRentalIdUrl(rentalId: string, portalToken?: string | nu
     .from('board_rentals')
     .select('academy_id, id_doc_path')
     .eq('id', rentalId)
-    .single();
+    .maybeSingle();
   if (!rental?.id_doc_path) return null;
-  await assertCanManage(rental.academy_id, portalToken);
+  const g = await canManage(rental.academy_id, portalToken);
+  if (!g.ok) return null;
   const { data } = await admin.storage.from('rental-ids').createSignedUrl(rental.id_doc_path, 300);
   return data?.signedUrl ?? null;
 }
@@ -398,9 +408,10 @@ export async function getRentalSignatureUrl(rentalId: string, portalToken?: stri
     .from('board_rentals')
     .select('academy_id, signature_path')
     .eq('id', rentalId)
-    .single();
+    .maybeSingle();
   if (!rental?.signature_path) return null;
-  await assertCanManage(rental.academy_id, portalToken);
+  const g = await canManage(rental.academy_id, portalToken);
+  if (!g.ok) return null;
   const { data } = await admin.storage.from('rental-ids').createSignedUrl(rental.signature_path, 300);
   return data?.signedUrl ?? null;
 }

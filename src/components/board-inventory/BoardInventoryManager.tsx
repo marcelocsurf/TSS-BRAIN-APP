@@ -162,7 +162,7 @@ function InventoryTab({
     setError('');
     startTransition(async () => {
       try {
-        await createBoard({
+        const res = await createBoard({
           academy_id: academyId,
           portal_token: portalToken,
           brand: bBrand.trim() || null,
@@ -175,6 +175,7 @@ function InventoryTab({
           notes: null,
           condition: bCondition,
         });
+        if (!res?.success) { setError(res?.error || 'Could not create the board.'); return; }
         setBVolume(''); setBBrand(''); setBModel(''); setBCondition('good'); setAdding(false);
         await reload();
       } catch (e: any) { setError(e.message || 'Could not create the board.'); }
@@ -182,21 +183,30 @@ function InventoryTab({
   };
   const setStatus = (id: string, status: BoardStatus) => {
     startTransition(async () => {
-      try { await updateBoard(id, { status }, portalToken); await reload(); }
-      catch (e: any) { setError(e.message || 'Could not update.'); }
+      try {
+        const res = await updateBoard(id, { status }, portalToken);
+        if (!res?.success) { setError(res?.error || 'Could not update.'); return; }
+        await reload();
+      } catch (e: any) { setError(e.message || 'Could not update.'); }
     });
   };
   const setCondition = (id: string, condition: BoardCondition) => {
     startTransition(async () => {
-      try { await updateBoard(id, { condition }, portalToken); await reload(); }
-      catch (e: any) { setError(e.message || 'Could not update.'); }
+      try {
+        const res = await updateBoard(id, { condition }, portalToken);
+        if (!res?.success) { setError(res?.error || 'Could not update.'); return; }
+        await reload();
+      } catch (e: any) { setError(e.message || 'Could not update.'); }
     });
   };
   const remove = (id: string, code: string) => {
     if (!confirm(`Remove board ${code} from the inventory?`)) return;
     startTransition(async () => {
-      try { await deleteBoard(id, portalToken); await reload(); }
-      catch (e: any) { setError(e.message || 'Could not delete.'); }
+      try {
+        const res = await deleteBoard(id, portalToken);
+        if (!res?.success) { setError(res?.error || 'Could not delete.'); return; }
+        await reload();
+      } catch (e: any) { setError(e.message || 'Could not delete.'); }
     });
   };
 
@@ -357,7 +367,7 @@ function RentalsTab({
         const n = parseInt(days, 10) || 1;
         const start = new Date();
         const expected = new Date(start.getTime() + n * 86400000);
-        await createRental({
+        const res = await createRental({
           academy_id: academyId,
           portal_token: portalToken,
           board_id: boardId,
@@ -373,6 +383,7 @@ function RentalsTab({
           signature_path: sigPath,
           waiver_text: DEFAULT_WAIVER,
         });
+        if (!res?.success) { setError(res?.error || 'Could not create the rental.'); return; }
         resetForm();
         await reload();
       } catch (e: any) { setUploading(false); setError(e.message || 'Could not create the rental.'); }
@@ -381,15 +392,21 @@ function RentalsTab({
 
   const doReturn = (rental: Rental, condition: { return_condition: 'good' | 'repair' | 'totaled'; damage_type?: string; damage_notes?: string }) => {
     startTransition(async () => {
-      try { await returnRental(rental.id, condition, portalToken); setReturnTarget(null); await reload(); }
-      catch (e: any) { setError(e.message || 'Could not return.'); }
+      try {
+        const res = await returnRental(rental.id, condition, portalToken);
+        if (!res?.success) { setError(res?.error || 'Could not return.'); return; }
+        setReturnTarget(null); await reload();
+      } catch (e: any) { setError(e.message || 'Could not return.'); }
     });
   };
   const doCancel = (id: string) => {
     if (!confirm('Cancel this rental and free the board?')) return;
     startTransition(async () => {
-      try { await cancelRental(id, portalToken); await reload(); }
-      catch (e: any) { setError(e.message || 'Could not cancel.'); }
+      try {
+        const res = await cancelRental(id, portalToken);
+        if (!res?.success) { setError(res?.error || 'Could not cancel.'); return; }
+        await reload();
+      } catch (e: any) { setError(e.message || 'Could not cancel.'); }
     });
   };
   const viewId = async (id: string) => {

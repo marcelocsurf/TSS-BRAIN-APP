@@ -57,7 +57,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
     setError('');
     startTransition(async () => {
       try {
-        await createBoard({
+        const res = await createBoard({
           academy_id: academyId,
           brand: bBrand.trim() || null,
           model: bModel.trim() || null,
@@ -69,6 +69,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
           notes: null,
           condition: bCondition,
         });
+        if (!res?.success) { setError(res?.error || 'Could not create the board.'); return; }
         setBVolume(''); setBBrand(''); setBModel(''); setBCondition('good');
         setAdding(false);
         router.refresh();
@@ -80,23 +81,32 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
 
   const setStatus = (id: string, status: BoardStatus) => {
     startTransition(async () => {
-      try { await updateBoard(id, { status }); router.refresh(); }
-      catch (e: any) { setError(e.message || 'No se pudo actualizar.'); }
+      try {
+        const res = await updateBoard(id, { status });
+        if (!res?.success) { setError(res?.error || 'No se pudo actualizar.'); return; }
+        router.refresh();
+      } catch (e: any) { setError(e.message || 'No se pudo actualizar.'); }
     });
   };
 
   const setCondition = (id: string, condition: BoardCondition) => {
     startTransition(async () => {
-      try { await updateBoard(id, { condition }); router.refresh(); }
-      catch (e: any) { setError(e.message || 'No se pudo actualizar.'); }
+      try {
+        const res = await updateBoard(id, { condition });
+        if (!res?.success) { setError(res?.error || 'No se pudo actualizar.'); return; }
+        router.refresh();
+      } catch (e: any) { setError(e.message || 'No se pudo actualizar.'); }
     });
   };
 
   const remove = (id: string, code: string) => {
     if (!confirm(`Remove board ${code} from the inventory?`)) return;
     startTransition(async () => {
-      try { await deleteBoard(id); router.refresh(); }
-      catch (e: any) { setError(e.message || 'No se pudo eliminar.'); }
+      try {
+        const res = await deleteBoard(id);
+        if (!res?.success) { setError(res?.error || 'No se pudo eliminar.'); return; }
+        router.refresh();
+      } catch (e: any) { setError(e.message || 'No se pudo eliminar.'); }
     });
   };
 
