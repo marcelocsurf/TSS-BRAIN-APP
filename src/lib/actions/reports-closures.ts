@@ -19,6 +19,11 @@ export interface CoachClosureRow {
   overdue: number;   // pasadas sin cerrar
   upcoming: number;  // futuras sin cerrar
   compliancePct: number | null; // closed / (closed + overdue)
+  // 🎯 Calidad de feedback (Fase 4, 2026-08-09): lo que se mide, mejora.
+  results: number;            // resultados de alumno cerrados en el rango
+  withNextPct: number | null; // % con "qué trabajar próximo" lleno
+  avgNextLen: number | null;  // largo promedio del next focus
+  copyPaste: number;          // resultados con texto repetido (3+ idénticos)
 }
 
 export interface ClosuresReport {
@@ -89,6 +94,49 @@ export async function getClosuresByCoach(opts: {
     }
   }
 
+  // 🎯 Calidad de feedback (Fase 4): por coach que CERRÓ, medir cuántos
+  // resultados llevan "qué trabajar próximo", su largo, y el copy-paste
+  // (mismo texto normalizado 3+ veces). Se atribuye al coach que cerró
+  // (student_session_results.coach_id) porque es quien escribe.
+  const quality = new Map<string, { results: number; withNext: number; nextLen: number; texts: Map<string, number> }>();
+  {
+    const fromUtc = `${from}T00:00:00.000Z`;
+    const toUtc = new Date(Date.parse(`${to}T00:00:00.000Z`) + 2 * 86400000).toISOString();
+    let qr = admin
+      .from('student_session_results')
+      .select('coach_id, whats_next, students!inner(academy_id)')
+      .eq('completion_state', 'closed')
+      .not('coach_id', 'is', null)
+      .gte('created_at', fromUtc)
+      .lte('created_at', toUtc);
+    if (scope.scopeAcademyId) qr = qr.eq('students.academy_id', scope.scopeAcademyId);
+    const { data: results } = await qr;
+    for (const r of (results as any[]) ?? []) {
+      let e = quality.get(r.coach_id);
+      if (!e) { e = { results: 0, withNext: 0, nextLen: 0, texts: new Map() }; quality.set(r.coach_id, e); }
+      e.results += 1;
+      const txt = (r.whats_next ?? '').trim();
+      if (txt.length >= 5) {
+        e.withNext += 1;
+        e.nextLen += txt.length;
+        const norm = txt.toLowerCase().replace(/\s+/g, ' ');
+        e.texts.set(norm, (e.texts.get(norm) ?? 0) + 1);
+      }
+    }
+  }
+  const qualityOf = (id: string) => {
+    const e = quality.get(id);
+    if (!e || e.results === 0) return { results: 0, withNextPct: null as number | null, avgNextLen: null as number | null, copyPaste: 0 };
+    let copyPaste = 0;
+    for (const n of e.texts.values()) if (n >= 3) copyPaste += n;
+    return {
+      results: e.results,
+      withNextPct: Math.round((e.withNext / e.results) * 100),
+      avgNextLen: e.withNext ? Math.round(e.nextLen / e.withNext) : null,
+      copyPaste,
+    };
+  };
+
   const rows: CoachClosureRow[] = ids.map((id) => {
     const e = byCoach.get(id)!;
     const due = e.closed + e.overdue;
@@ -101,6 +149,7 @@ export async function getClosuresByCoach(opts: {
       overdue: e.overdue,
       upcoming: e.upcoming,
       compliancePct: due ? Math.round((e.closed / due) * 100) : null,
+      ...qualityOf(id),
     };
   }).sort((a, b) => b.overdue - a.overdue || (a.compliancePct ?? 101) - (b.compliancePct ?? 101));
 

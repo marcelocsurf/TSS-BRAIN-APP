@@ -62,6 +62,8 @@ export default async function ClosuresReportPage({
                     <Th align="right">Atrasadas</Th>
                     <Th align="right">Próximas</Th>
                     <Th align="right">Cumplimiento</Th>
+                    <Th align="right">🎯 Con foco</Th>
+                    <Th align="right">Copy-paste</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -74,10 +76,12 @@ export default async function ClosuresReportPage({
                       <Td align="right" mono>{r.overdue ? <span className="text-rose-600 font-semibold">{r.overdue}</span> : '—'}</Td>
                       <Td align="right" mono>{r.upcoming || '—'}</Td>
                       <Td align="right"><span className={`font-semibold ${complianceTone(r.compliancePct)}`}>{r.compliancePct != null ? `${r.compliancePct}%` : '—'}</span></Td>
+                      <Td align="right"><span className={`font-semibold ${complianceTone(r.withNextPct)}`}>{r.withNextPct != null ? `${r.withNextPct}%` : '—'}</span></Td>
+                      <Td align="right" mono>{r.copyPaste ? <span className="text-amber-600 font-semibold">{r.copyPaste}</span> : '—'}</Td>
                     </tr>
                   ))}
                   {data.rows.length === 0 && (
-                    <tr><td colSpan={data.isPlatformAdmin ? 7 : 6} className="text-center py-6 text-xs text-gray-400">Sin sesiones en este rango.</td></tr>
+                    <tr><td colSpan={data.isPlatformAdmin ? 9 : 8} className="text-center py-6 text-xs text-gray-400">Sin sesiones en este rango.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -87,6 +91,8 @@ export default async function ClosuresReportPage({
           <p className="text-[11px] text-gray-400">
             Cumplimiento = cerradas / (cerradas + atrasadas). Se atribuye al coach efectivo del servicio (head coach si aceptó la
             transferencia). Las sesiones futuras sin cerrar cuentan como "próximas", no afectan el cumplimiento.
+            <br />🎯 "Con foco" = % de cierres del coach con "qué trabajar próximo" escrito (el corazón del seguimiento).
+            "Copy-paste" = cierres con el mismo texto repetido en 3+ alumnos.
           </p>
         </>
       )}

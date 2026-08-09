@@ -19,6 +19,9 @@ export async function GET(req: NextRequest) {
     ['Atrasadas', 'overdue'],
     ['Proximas', 'upcoming'],
     ['Cumplimiento %', (r) => (r.compliancePct != null ? r.compliancePct : '')],
+    ['Con proximo foco %', (r) => (r.withNextPct != null ? r.withNextPct : '')],
+    ['Largo promedio foco', (r) => (r.avgNextLen != null ? r.avgNextLen : '')],
+    ['Copy-paste', 'copyPaste'],
   ];
   const body = buildCsv(data.rows, columns);
   const stamp = new Date().toISOString().slice(0, 10);

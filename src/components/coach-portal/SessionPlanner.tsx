@@ -2026,6 +2026,11 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
                           {' '}· {rs.type === 'coach' ? 'with coach' : 'self'}
                           {rs.status ? ` · ${rs.status}` : ''}
                         </span>
+                        {/* 🎯 Hilo de progresión: el "next focus" que dejó el
+                            coach de ESA sesión — plan the day from here. */}
+                        {rs.whats_next && (
+                          <span className="block text-cyan-700">🎯 {rs.whats_next}</span>
+                        )}
                       </span>
                     </div>
                   ))}

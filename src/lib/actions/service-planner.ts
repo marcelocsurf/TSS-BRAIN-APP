@@ -221,6 +221,10 @@ export interface RecentSessionEntry {
   type: 'coach' | 'self';
   label: string;
   status: string | null;
+  /** 🎯 Hilo de progresión (Fase 3, 2026-08-09): el "qué trabajar próximo" que
+   *  dejó el coach de ESA sesión — el próximo coach ve el hilo completo, no
+   *  solo el último valor. */
+  whats_next?: string | null;
 }
 
 // Summary of the student's STP self-ratings (and any official coach
@@ -410,7 +414,7 @@ export async function getServicePlan(
     const [coachSessRes, selfSessRes] = await Promise.all([
       admin
         .from('student_session_results')
-        .select('student_id, created_at, status, mission, coach_feedback, standalone_sessions(mission)')
+        .select('student_id, created_at, status, mission, coach_feedback, whats_next, standalone_sessions(mission)')
         .in('student_id', studentIds)
         .order('created_at', { ascending: false }),
       admin
@@ -434,6 +438,7 @@ export async function getServicePlan(
         type: 'coach',
         label: ss?.mission || r.mission || fbSnippet || 'Coach session',
         status: r.status,
+        whats_next: (r as any).whats_next ?? null,
       });
     }
     for (const r of selfSessRes.data ?? []) {
