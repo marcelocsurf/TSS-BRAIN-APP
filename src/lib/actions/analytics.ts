@@ -139,7 +139,9 @@ export async function getStudentAnalytics(): Promise<StudentAnalytics> {
       .from('student_session_results')
       .select('id', { count: 'exact', head: true }),
     admin.from('academies').select('id, name'),
-    admin.from('survey_responses').select('rating'),
+    // La columna se llama coach_rating (no existe `rating`): antes PostgREST
+    // devolvía error y la satisfacción salía siempre vacía/0.
+    admin.from('survey_responses').select('coach_rating'),
   ]);
 
   const studentList = students || [];
@@ -207,7 +209,7 @@ export async function getStudentAnalytics(): Promise<StudentAnalytics> {
     .sort((a, b) => b.sessions_count - a.sessions_count)
     .slice(0, 10);
 
-  const ratings = (surveys || []).map((r: any) => Number(r.rating)).filter((n) => !isNaN(n) && n > 0);
+  const ratings = (surveys || []).map((r: any) => Number(r.coach_rating)).filter((n) => !isNaN(n) && n > 0);
   const avgRating = ratings.length ? ratings.reduce((s, n) => s + n, 0) / ratings.length : null;
 
   const avgSessionsPerStudent = totalStudents ? sessions30d / totalStudents : 0;
