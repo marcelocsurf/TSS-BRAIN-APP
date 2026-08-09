@@ -13,7 +13,18 @@ import {
   type BeltMaterial,
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
+import { toElSalvadorDate } from '@/lib/utils/tz';
 import { CourseTab } from '@/components/course/CourseTab';
+
+// Fecha de la sesión para las tarjetas de encuesta: usar la fecha REAL de la
+// clase (camp_sessions.session_date) y no el created_at (hora UTC del cierre,
+// que se corre un día para clases de la tarde). Fallback: created_at en hora SV.
+function surveyDateLabel(sessionDate: string | null | undefined, createdAt: string | null | undefined): string {
+  const d = sessionDate || toElSalvadorDate(createdAt) || createdAt || '';
+  if (!d) return '';
+  const iso = d.length <= 10 ? `${d}T00:00:00Z` : d;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
 import { MySequenceTab } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
@@ -1784,11 +1795,10 @@ function FeedbackTab({
                       {result.standalone_sessions?.mission || 'Session'}
                     </p>
                     <p className="text-[10px] text-amber-700 mt-0.5">
-                      {new Date(result.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {surveyDateLabel(
+                        (Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions)?.session_date,
+                        result.created_at,
+                      )}
                       {result.coaches?.display_name &&
                         ` - Coach: ${result.coaches.display_name}`}
                     </p>
@@ -1810,12 +1820,16 @@ function FeedbackTab({
                   resultId={result.id}
                   studentId={student.id}
                   token={token}
-                  variant={(() => {
+                  serviceKind={(() => {
                     const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;
                     const inst = ci ? (Array.isArray(ci.camp_instances) ? ci.camp_instances[0] : ci.camp_instances) : null;
                     const tpl = inst ? (Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates) : null;
-                    const k = tpl?.service_kind;
-                    return k === 'trip' ? 'trip' : k === 'class' ? 'class' : 'coaching';
+                    return tpl?.service_kind ?? (result.standalone_sessions ? 'surf_lesson' : null);
+                  })()}
+                  serviceName={(() => {
+                    const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;
+                    const inst = ci ? (Array.isArray(ci.camp_instances) ? ci.camp_instances[0] : ci.camp_instances) : null;
+                    return inst?.camp_name ?? null;
                   })()}
                 />
               )}
@@ -1850,9 +1864,10 @@ function FeedbackTab({
                       {ssr?.standalone_sessions?.mission || 'Session'}
                     </p>
                     <p className="text-[10px] text-gray-500 mt-0.5">
-                      {new Date(ssr?.created_at || survey.created_at).toLocaleDateString('en-US', {
-                        month: 'short', day: 'numeric', year: 'numeric',
-                      })}
+                      {surveyDateLabel(
+                        (Array.isArray(ssr?.camp_sessions) ? ssr.camp_sessions[0] : ssr?.camp_sessions)?.session_date,
+                        ssr?.created_at || survey.created_at,
+                      )}
                       {coachName && ` · ${coachName}`}
                     </p>
                   </div>

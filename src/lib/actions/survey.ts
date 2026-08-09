@@ -23,7 +23,7 @@ interface SurveyInput {
   // M47 — student-reported Csíkszentmihályi flow channel (1=bored,
   // 3=optimal, 5=frustrated). Used to compare against the coach's
   // own per-block flow_channel evaluation.
-  flow_channel: number;
+  flow_channel: number | null; // null cuando el servicio no usa flow (no-surf)
   open_comment: string;
 }
 
@@ -66,7 +66,7 @@ export async function submitSurvey(input: SurveyInput) {
       q4_session_value: input.improvement_value,    // 4. Learned / progressed
       session_quality: input.improvement_value,     // 4. (mirror)
       academy_rating: input.recommend_rating,       // 5. Would take another class (repurposed)
-      flow_channel: input.flow_channel,             // 6. How the class felt
+      flow_channel: input.flow_channel || null,     // 6. How the class felt (solo surf)
       open_comment: input.open_comment || null,     // 7. Open comment
     });
 

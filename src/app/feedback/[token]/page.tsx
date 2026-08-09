@@ -18,10 +18,14 @@ export default async function FeedbackPage({ params }: Props) {
   const data = await getFeedbackByToken(token);
   if (!data) notFound();
 
-  const sessionDate = new Date(data.sessionDate).toLocaleDateString('en-US', {
+  // data.sessionDate ya viene como fecha real de la sesión (YYYY-MM-DD). La
+  // fijamos en UTC para que no se corra un día según la zona del servidor.
+  const sd = data.sessionDate?.length <= 10 ? `${data.sessionDate}T00:00:00Z` : data.sessionDate;
+  const sessionDate = new Date(sd).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   });
 
   return (
@@ -77,8 +81,8 @@ export default async function FeedbackPage({ params }: Props) {
                 )}
               </div>
 
-              {/* The form */}
-              <FeedbackForm token={token} />
+              {/* The form — preguntas según el servicio */}
+              <FeedbackForm token={token} serviceKind={data.serviceKind} serviceName={data.serviceName} />
             </>
           )}
 

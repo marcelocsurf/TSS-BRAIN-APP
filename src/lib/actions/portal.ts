@@ -647,7 +647,7 @@ export async function getPendingSurveys(studentId: string) {
   // Get all session results that have survey_unlocked=true
   const { data: results } = await admin
     .from('student_session_results')
-    .select('id, created_at, status, coach_feedback, standalone_sessions(*), coaches:coach_id(display_name), camp_sessions:camp_session_id(camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))')
+    .select('id, created_at, status, coach_feedback, standalone_sessions(*), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))')
     .eq('student_id', studentId)
     .eq('survey_unlocked', true)
     .order('created_at', { ascending: false });
@@ -673,7 +673,7 @@ export async function getSubmittedSurveys(studentId: string) {
 
   const { data: surveys } = await admin
     .from('survey_responses')
-    .select('*, student_session_results(created_at, status, coach_feedback, student_visible_summary, homework, whats_next, coaches:coach_id(display_name), standalone_sessions(mission))')
+    .select('*, student_session_results(created_at, status, coach_feedback, student_visible_summary, homework, whats_next, coaches:coach_id(display_name), standalone_sessions(mission), camp_sessions:camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind))))')
     .eq('student_id', studentId)
     .order('submitted_at', { ascending: false });
 

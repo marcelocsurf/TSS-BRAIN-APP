@@ -2,23 +2,20 @@
 
 import { useState, useTransition } from 'react';
 import { submitFeedbackByToken } from '@/lib/actions/feedback-token';
+import { surveyForService } from '@/lib/survey/questions';
 
-// 5-question survey form. Renders client-side so the user gets
-// immediate validation + a thank-you state after submit.
+// Survey form. Renders client-side so the user gets immediate validation +
+// a thank-you state after submit. Las preguntas se eligen SEGÚN EL SERVICIO
+// (Yoga no pregunta "safe in the water") desde la fuente única de preguntas.
 
 interface Props {
   token: string;
+  serviceKind?: string | null;
+  serviceName?: string | null;
 }
 
-const QUESTIONS: { key: 'coach_rating' | 'q1_clarity' | 'q3_homework_clarity' | 'q4_session_value' | 'academy_rating'; label: string; }[] = [
-  { key: 'coach_rating',         label: 'How would you rate your coach today?' },
-  { key: 'q1_clarity',           label: 'Were the instructions and explanations clear and easy to follow?' },
-  { key: 'q3_homework_clarity',  label: 'Did you feel safe and well looked after in the water?' },
-  { key: 'q4_session_value',     label: 'Did you learn something and feel you improved?' },
-  { key: 'academy_rating',       label: 'Would you take another class with this coach?' },
-];
-
-export function FeedbackForm({ token }: Props) {
+export function FeedbackForm({ token, serviceKind, serviceName }: Props) {
+  const QUESTIONS = surveyForService(serviceKind, serviceName).questions;
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comment, setComment] = useState('');
   const [submitting, startTransition] = useTransition();
@@ -70,10 +67,10 @@ export function FeedbackForm({ token }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4">
       {QUESTIONS.map((q) => (
         <StarRating
-          key={q.key}
+          key={q.col}
           label={q.label}
-          value={ratings[q.key] ?? 0}
-          onChange={(v) => setRatings((prev) => ({ ...prev, [q.key]: v }))}
+          value={ratings[q.col] ?? 0}
+          onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))}
         />
       ))}
 

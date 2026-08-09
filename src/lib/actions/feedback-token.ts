@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { toElSalvadorDate } from '@/lib/utils/tz';
 
 // Server actions for the standalone /feedback/[token] page used for
 // Lead students (no course access). Every read/write uses the admin
@@ -15,6 +16,9 @@ export interface FeedbackTokenView {
   studentFirstName: string;
   coachName: string;
   sessionDate: string;
+  /** Tipo de servicio + nombre para elegir el set de preguntas correcto. */
+  serviceKind: string | null;
+  serviceName: string | null;
   mission: string | null;
   status: string | null;
   coachFeedback: string | null;
@@ -37,10 +41,11 @@ export async function getFeedbackByToken(
   const { data: row } = await admin
     .from('student_session_results')
     .select(
-      `id, student_id, created_at, achieved, status, mission, coach_feedback,
+      `id, student_id, created_at, standalone_session_id, achieved, status, mission, coach_feedback,
        homework, whats_next,
        coach:coaches(display_name),
-       student:students(first_name)`,
+       student:students(first_name),
+       camp_session:camp_sessions!camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))`,
     )
     .eq('feedback_token', token)
     .maybeSingle();
@@ -53,6 +58,15 @@ export async function getFeedbackByToken(
   const student = Array.isArray((row as any).student)
     ? (row as any).student[0]
     : (row as any).student;
+  // Fecha REAL de la sesión + tipo de servicio (para la fecha correcta y las
+  // preguntas por servicio). Fallback: convertir created_at a fecha SV.
+  const campSession = Array.isArray((row as any).camp_session) ? (row as any).camp_session[0] : (row as any).camp_session;
+  const inst = campSession && (Array.isArray(campSession.camp_instances) ? campSession.camp_instances[0] : campSession.camp_instances);
+  const tpl = inst && (Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates);
+  const realDate = campSession?.session_date ?? toElSalvadorDate((row as any).created_at) ?? (row as any).created_at;
+  // Sesiones cascade (standalone) son de surf por naturaleza.
+  const serviceName = inst?.camp_name ?? ((row as any).standalone_session_id ? 'Surf' : null);
+  const serviceKind = tpl?.service_kind ?? null;
 
   // Has the student already submitted? One survey per session result.
   const { data: existing } = await admin
@@ -66,7 +80,9 @@ export async function getFeedbackByToken(
     studentId: row.student_id,
     studentFirstName: student?.first_name ?? 'there',
     coachName: coach?.display_name ?? 'Your coach',
-    sessionDate: row.created_at,
+    sessionDate: realDate,
+    serviceKind,
+    serviceName,
     mission: (row as any).mission ?? null,
     status: row.status ?? null,
     coachFeedback: row.coach_feedback ?? null,

@@ -136,9 +136,13 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
               <div className="space-y-0.5 rounded-xl bg-gray-50 p-2.5">
                 <p className="text-[9px] text-gray-400" style={F_M}>Contacto & datos</p>
                 {row.email && <p className="text-[11px] text-gray-700">📧 {row.email}</p>}
-                {(row.phone || detail.instagram) && (
-                  <p className="text-[11px] text-gray-700">📱 {[row.phone, detail.instagram ? `@${String(detail.instagram).replace(/^@/, '')}` : null].filter(Boolean).join(' · ')}</p>
+                {row.phone && (
+                  <p className="text-[11px] text-gray-700">
+                    💬 <a href={`https://wa.me/${String(row.phone).replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted" style={{ color: '#0090B0' }}>{row.phone}</a>
+                    <span className="text-gray-400"> · WhatsApp</span>
+                  </p>
                 )}
+                {detail.instagram && <p className="text-[11px] text-gray-700">📸 @{String(detail.instagram).replace(/^@/, '')}</p>}
                 {detail.dob && <p className="text-[11px] text-gray-700">🎂 {detail.dob}{detail.age ? ` · ${detail.age} años` : ''}</p>}
                 {(detail.shirt || detail.height || detail.weight) && (
                   <p className="text-[11px] text-gray-700">

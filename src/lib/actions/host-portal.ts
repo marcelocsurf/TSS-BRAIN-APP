@@ -6,6 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
+import { ageFromDob } from '@/lib/utils/age';
 import { sendIntakeLinkEmail } from '@/lib/actions/email';
 
 async function resolveHost(token: string) {
@@ -175,7 +176,8 @@ export async function hostStudentDetail(token: string, studentId: string) {
     stance: (s as any).goofy_or_regular ?? null,
     wave_size: (s as any).favorite_wave_size ?? null,
     self_level: (s as any).surf_self_level ?? null,
-    age: (s as any).age ?? null,
+    // Edad calculada del cumpleaños (la columna guardada queda vieja).
+    age: ageFromDob((s as any).date_of_birth) ?? (s as any).age ?? null,
     dob: (s as any).date_of_birth ?? null,
     shirt: (s as any).shirt_size ?? null,
     height: (s as any).height ?? null,
