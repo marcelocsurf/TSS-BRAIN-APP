@@ -52,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   // { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
+  { href: '/reports',       label: 'Reportes',     Icon: BarChart3,    roles: ['admin', 'coordinator'] },
   { href: '/costs',         label: 'Costs',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
   { href: '/payroll',       label: 'Pagos',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
   { href: '/desk',          label: 'Mostrador',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
