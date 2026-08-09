@@ -200,7 +200,7 @@ export async function publicEnroll(input: {
   let firstName: string;
   const { data: existing } = await admin
     .from('students')
-    .select('id, first_name, waiver_signed')
+    .select('id, first_name, waiver_signed, date_of_birth')
     .eq('academy_id', academy.id)
     .ilike('email', email)
     .limit(1)
@@ -211,10 +211,20 @@ export async function publicEnroll(input: {
     firstName = existing.first_name;
     if (!existing.waiver_signed) {
       if (!input.accept_waiver) return { ok: false, error: 'The waiver must be accepted to join.' };
+      // Un menor NO puede firmar su propia exención — igual que en el alta de
+      // perfil nuevo. Antes este path (perfil ya existente, waiver sin firmar)
+      // no lo chequeaba y el menor firmaba solo.
+      const exAge = await ageFromDob(existing.date_of_birth);
+      const exIsMinor = exAge != null && exAge < ADULT;
+      if (exIsMinor && !input.profile?.guardian_name?.trim()) {
+        return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
+      }
       await admin.from('students').update({
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
-        waiver_signed_by: input.signed_name?.trim() || existing.first_name,
+        waiver_signed_by: exIsMinor
+          ? `${input.profile!.guardian_name!.trim()} (parent/guardian)`
+          : (input.signed_name?.trim() || existing.first_name),
       }).eq('id', existing.id);
     }
     if (active.some((p: any) => p.student_id === existing.id)) {
