@@ -30,7 +30,7 @@ export async function getFrontDeskData(token: string) {
   const horizon = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const { data } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, head_coach_id, head_coach_status, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, students(id, first_name, last_name, waiver_signed, phone))')
+    .select('id, camp_name, start_date, scheduled_time, capacity_override, head_coach_id, head_coach_status, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, room_number, notes, reserved_at, sold_by, seller:sold_by(display_name), students(id, first_name, last_name, waiver_signed, phone, email))')
     .eq('academy_id', who.academy_id)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson', 'surf_camp'])
     // Visible mientras el servicio NO haya terminado: un camp de 6 días en
@@ -51,16 +51,25 @@ export async function getFrontDeskData(token: string) {
       .filter((p: any) => p.enrollment_status === 'active')
       .map((p: any) => {
         const st = Array.isArray(p.students) ? p.students[0] : p.students;
+        const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller;
         return {
           participant_id: p.id,
+          student_id: st?.id ?? null,
           name: `${st?.first_name ?? '?'} ${st?.last_name ?? ''}`.trim(),
           phone: st?.phone ?? null,
+          email: st?.email ?? null,
           waiver_signed: !!st?.waiver_signed,
           payment_status: p.payment_status,
           payment_method: p.payment_method,
           amount_cents: p.amount_cents,
           sale_type: p.sale_type,
           discount_reason: p.discount_reason,
+          // Trazabilidad del sign-up (pedido de Cony): habitación del huésped,
+          // por dónde entró la reserva y las notas del asiento.
+          room_number: p.room_number ?? null,
+          notes: p.notes ?? null,
+          reserved_at: p.reserved_at ?? null,
+          booked_via: p.sold_by ? (seller?.display_name ?? 'Mostrador') : 'QR (auto-servicio)',
         };
       });
     return {
@@ -221,6 +230,34 @@ export async function deskAdjustSeatPayment(
   const { error } = await admin
     .from('camp_participants')
     .update({ ...patch, notes: [(seat as any).notes, note].filter(Boolean).join(' | ') })
+    .eq('id', participantId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Habitación del huésped en una reserva (pedido de Cony 2026-08-10). Se guarda
+// en el asiento; el mostrador la usa para cobrar a la habitación y para saber
+// quién es huésped al rastrear un sign-up.
+export async function deskSetRoom(
+  token: string,
+  participantId: string,
+  room: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const who = await resolveDesk(token);
+  if (!who?.academy_id) return { ok: false, error: 'Not authorized.' };
+  const admin = createAdminClient();
+
+  const { data: seat } = await admin
+    .from('camp_participants')
+    .select('id, camp_instances:camp_instance_id!inner(academy_id)')
+    .eq('id', participantId)
+    .maybeSingle();
+  const inst = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
+  if (!inst || inst.academy_id !== who.academy_id) return { ok: false, error: 'Seat not found.' };
+
+  const { error } = await admin
+    .from('camp_participants')
+    .update({ room_number: room?.trim() || null })
     .eq('id', participantId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
