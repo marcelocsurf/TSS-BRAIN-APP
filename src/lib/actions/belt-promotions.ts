@@ -123,7 +123,12 @@ export async function resolvePromotion(
         .single();
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] > currentRank) {
-        await admin.from('students').update({ belt_level: newBelt }).eq('id', rec.student_id);
+        await admin.from('students').update({
+          belt_level: newBelt,
+          // Sello de promoción — el portal celebra el ascenso 30 días.
+          belt_promoted_at: new Date().toISOString(),
+          belt_promoted_from: stu?.belt_level ?? null,
+        }).eq('id', rec.student_id);
       }
     }
   }
@@ -231,7 +236,12 @@ export async function resolvePromotionByToken(
       const { data: stu } = await admin.from('students').select('belt_level').eq('id', rec.student_id).single();
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] > currentRank) {
-        await admin.from('students').update({ belt_level: newBelt }).eq('id', rec.student_id);
+        await admin.from('students').update({
+          belt_level: newBelt,
+          // Sello de promoción — el portal celebra el ascenso 30 días.
+          belt_promoted_at: new Date().toISOString(),
+          belt_promoted_from: stu?.belt_level ?? null,
+        }).eq('id', rec.student_id);
       }
     }
   }

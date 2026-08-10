@@ -1477,7 +1477,13 @@ export async function closeCampFinal(
       if (authorized) {
         await admin
           .from('students')
-          .update({ belt_level: newBelt })
+          .update({
+            belt_level: newBelt,
+            // Sello de promoción: el portal del alumno celebra el ascenso
+            // durante 30 días (banner "You're now a {belt}").
+            belt_promoted_at: new Date().toISOString(),
+            belt_promoted_from: stu?.belt_level ?? null,
+          })
           .eq('id', p.student_id);
       } else {
         // Not authorized → record a pending recommendation for a head

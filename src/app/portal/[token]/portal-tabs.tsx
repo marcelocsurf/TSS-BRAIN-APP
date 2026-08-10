@@ -13,6 +13,7 @@ import {
   type BeltMaterial,
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
+import { PROMOTION_COPY, LIGHT_BELTS } from '@/lib/constants/promotion-copy';
 import { toElSalvadorDate } from '@/lib/utils/tz';
 import { CourseTab } from '@/components/course/CourseTab';
 
@@ -564,6 +565,62 @@ function HomeTab({
 
   return (
     <div className="space-y-4">
+      {/* ── 🏆 Promoción de cinta — celebración 30 días, SIN candados. El copy
+          es por cinta (qué dominó / qué desbloquea) desde promotion-copy.ts. ── */}
+      {(() => {
+        const promotedAt = (student as any).belt_promoted_at as string | null;
+        if (!promotedAt) return null;
+        const days = (Date.now() - new Date(promotedAt).getTime()) / 86400000;
+        if (!(days >= 0 && days <= 30)) return null;
+        const d = BELT_DISPLAY[beltLevel];
+        const copy = PROMOTION_COPY[beltLevel];
+        if (!d || !copy?.next) return null;
+        const note = campWithNote?.coach_final_note ?? null;
+        const ctaInk = LIGHT_BELTS.includes(beltLevel);
+        return (
+          <div
+            className="relative overflow-hidden rounded-3xl p-5"
+            style={{ background: '#0A1628', border: `1px solid ${d.color}77`, boxShadow: `0 6px 30px ${d.color}22` }}
+          >
+            <div
+              className="absolute -top-14 -right-14 w-44 h-44 rounded-full pointer-events-none"
+              style={{ background: `radial-gradient(circle, ${d.color}44, transparent 70%)` }}
+            />
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] mb-2" style={{ color: d.color }}>
+              🏆 Belt promotion
+            </p>
+            <h2
+              className="text-[24px] font-extrabold uppercase leading-tight mb-2"
+              style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}
+            >
+              You’re now a <span style={{ color: d.color }}>{d.en}</span>!
+            </h2>
+            {copy.mastered && (
+              <p className="text-[13px] leading-relaxed mb-1.5" style={{ color: 'rgba(247,249,250,.8)' }}>
+                ✓ {copy.mastered}
+              </p>
+            )}
+            <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'rgba(247,249,250,.8)' }}>
+              → {copy.next}
+            </p>
+            {note && (
+              <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background: 'rgba(255,255,255,.05)', borderLeft: '3px solid #00D2FF' }}>
+                <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>From your coach</p>
+                <p className="text-[13px] italic leading-relaxed" style={{ color: 'rgba(247,249,250,.9)' }}>{note}</p>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => onGoTo('sequence')}
+              className="w-full rounded-full py-3 text-[13px] font-extrabold"
+              style={{ background: d.color, color: ctaInk ? '#061C2B' : '#FFFFFF' }}
+            >
+              See your new sequence →
+            </button>
+          </div>
+        );
+      })()}
+
       {/* ── Dark "cockpit" hero — TSS Ocean Navy, Garmin-style telemetry ── */}
       <div className="rounded-3xl overflow-hidden" style={{ background: '#061C2B' }}>
         {/* Notifications row (TSS wordmark now lives in the shared header on
