@@ -376,8 +376,9 @@ export function PortalTabs({
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="max-w-lg mx-auto px-4 py-4">
+      {/* Tab Content — en tablet/iPad (md:) el lienzo se ensancha para no
+          dejar la columna de teléfono flotando en medio de la pantalla. */}
+      <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-4">
         {activeTab === 'home' && <HomeTab data={data} belt={belt} onGoTo={setActiveTab} />}
         {activeTab === 'course' && data.courseData && (
           <div className="space-y-4">
@@ -485,7 +486,7 @@ export function PortalTabs({
       {/* Bottom Tab Bar — active tab gets a 2px cyan rule on top so the
           state reads instantly without filling the whole tab. */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
-        <div className="max-w-lg mx-auto flex">
+        <div className="max-w-lg md:max-w-3xl mx-auto flex">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             return (

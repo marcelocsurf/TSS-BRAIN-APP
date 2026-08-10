@@ -148,9 +148,9 @@ export function CoachPortalTabs({
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
       style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses', 'plan'].includes(activeTab) && !isSupport ? '#F7F9FA' : '#000' }}
     >
-      {/* iPad (md:) — SOLO con el planner abierto se ensancha el lienzo; el
-          resto del portal y el teléfono quedan idénticos (columna max-w-lg). */}
-      <div className={`${plannerOpen ? 'max-w-lg md:max-w-4xl' : 'max-w-lg'} mx-auto px-4 py-4`}>
+      {/* iPad (md:): el planner usa lienzo ancho (4xl) y el resto del portal
+          uno intermedio (3xl) — en teléfono todo queda igual (max-w-lg). */}
+      <div className={`${plannerOpen ? 'max-w-lg md:max-w-4xl' : 'max-w-lg md:max-w-3xl'} mx-auto px-4 py-4`}>
         {activeTab === 'home' && (
           <div className="rounded-2xl p-3 space-y-4" style={{ background: isSupport ? '#000' : 'transparent' }}>
             {!(coach as any).waiver_signed && <StaffWaiverCard token={coach.portal_token} />}
@@ -221,7 +221,7 @@ export function CoachPortalTabs({
       {/* Bottom nav — hidden while the planner is open (focused mode). */}
       {!plannerOpen && (
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10" style={{ background: '#061C2B' }}>
-        <div className="max-w-lg mx-auto flex">
+        <div className="max-w-lg md:max-w-3xl mx-auto flex">
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key;
             return (

@@ -135,7 +135,9 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
         </p>
       </div>
 
-      {/* Blocks */}
+      {/* Blocks — en tablet (md:) van en 2 columnas: la secuencia completa
+          (25-48 pasos) entra de un vistazo en vez de scroll infinito. */}
+      <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
       {data.blocks.map((block) => (
         <BlockSection
           key={block.block_number}
@@ -146,6 +148,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
           theme={theme}
         />
       ))}
+      </div>
     </div>
   );
 }
