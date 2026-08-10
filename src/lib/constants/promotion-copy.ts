@@ -1,7 +1,9 @@
-// Copy student-facing del banner de promoción — POR CINTA NUEVA, basado en el
-// canon de progresión TSS. `mastered` resume lo que dominó (la cinta que cierra)
-// y `next` lo que desbloquea (la cinta nueva). Inglés por marca (cliente).
-// Regla del canon: las Named Expressions nunca se traducen.
+// Copy student-facing del banner de promoción — POR CINTA NUEVA, en LENGUAJE
+// DE SECUENCIAS (canon: White = Sequences #1–#5 Mission Series · Yellow =
+// #6–#7 Paddling & Entry · Blue = #8–#13 Rail Changes & Named Maneuvers ·
+// Purple = 15 Named Expressions · Brown = Aerial System · Black = mastery).
+// `mastered` = la secuencia que dominó (cinta que cierra); `next` = la que
+// desbloquea. Inglés por marca. Las Named Expressions nunca se traducen.
 import type { BeltLevel } from './belts';
 
 export const PROMOTION_COPY: Record<BeltLevel, { mastered: string; next: string }> = {
@@ -9,33 +11,33 @@ export const PROMOTION_COPY: Record<BeltLevel, { mastered: string; next: string 
   white_belt: { mastered: '', next: '' },
   yellow_belt: {
     mastered:
-      'You own the fundamentals: controlling your board, reading where the wave is going, catching whitewater on your own and the turtle roll.',
+      'You mastered the White Belt sequence (Sequences #1–#5): controlling your board, reading where the wave is going, catching whitewater on your own and the turtle roll.',
     next:
-      'Yellow Belt is where you paddle out past where you can touch the bottom — and start catching green waves by yourself.',
+      'Yellow Belt opens Sequences #6–#7 — paddling out past where you can touch the bottom and catching green waves by yourself.',
   },
   blue_belt: {
     mastered:
-      'You catch green waves on your own: paddling out, timing, positioning and managing yourself beyond standing depth.',
+      'You mastered the Yellow Belt sequence (Sequences #6–#7): paddling out, timing, positioning and catching green waves on your own.',
     next:
-      'Blue Belt is where the maneuvers begin — bottom turns, cutbacks and riding the open face with intention.',
+      'Blue Belt opens Sequences #8–#13 — rail changes and your first named maneuvers: bottom turns and cutbacks with intention.',
   },
   purple_belt: {
     mastered:
-      'You ride with intention: bottom turns, cutbacks and reading the ocean unassisted in changing conditions.',
+      'You mastered the Blue Belt sequence (Sequences #8–#13): bottom turns, cutbacks and reading the ocean unassisted in changing conditions.',
     next:
-      'Purple Belt unlocks vertical surfing — snaps, floaters and linking maneuvers with your own style.',
+      'Purple Belt unlocks the 15 Named Expressions — snaps, floaters and vertical surfing with your own style.',
   },
   brown_belt: {
     mastered:
-      'You link vertical maneuvers with your own style and read complex conditions independently.',
+      'You mastered the Purple Belt expressions: vertical maneuvers, linked with your own style, in complex conditions.',
     next:
-      'Brown Belt is precision: full combinations, every break type — and your first aerials.',
+      'Brown Belt is precision — full combinations, every break type, and the Aerial System.',
   },
   black_belt: {
     mastered:
-      'You execute complex combinations with precision, in every condition the ocean throws at you.',
+      'You mastered every sequence in the system: full combinations with precision, in any condition the ocean throws at you.',
     next:
-      'Black Belt is mastery — complete control, complete expression. The sequence is yours now.',
+      'Black Belt is mastery — complete control, complete expression. The Surf Sequence is yours now.',
   },
 };
 
