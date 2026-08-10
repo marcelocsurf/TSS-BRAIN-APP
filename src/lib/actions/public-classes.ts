@@ -119,27 +119,58 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
   return { academy: { name: academy.name, logo_url: academy.logo_url, logo_light_url: logoLight }, classes };
 }
 
-// Minimal-disclosure lookup: given an email, say only whether a profile
-// exists, the first name, and whether the waiver is already signed.
-export async function lookupPublicStudent(slug: string, email: string) {
+// Minimal-disclosure lookup: given an email, return WHO is registered under it.
+// Las familias comparten un mismo correo (mamá inscribe a sus hijos), así que
+// devolvemos la lista y el QR pregunta "¿quién reserva?" en vez de asumir el
+// primero — antes una mamá entraba y la app la reconocía como su hija.
+// Solo se expone nombre + si el waiver está firmado + si es menor (nunca la
+// fecha de nacimiento ni datos de contacto).
+export interface PublicPerson {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+  waiver_signed: boolean;
+  is_minor: boolean;
+}
+
+export async function lookupPublicStudent(
+  slug: string,
+  email: string,
+): Promise<{ found: false } | { found: true; people: PublicPerson[] }> {
   const academy = await academyBySlug(slug);
-  if (!academy || !email.trim()) return { found: false as const };
+  if (!academy || !email.trim()) return { found: false };
   const admin = createAdminClient();
   const { data } = await admin
     .from('students')
-    .select('id, first_name, waiver_signed')
+    .select('id, first_name, last_name, waiver_signed, date_of_birth')
     .eq('academy_id', academy.id)
+    .eq('status', 'active')
     .ilike('email', norm(email))
-    .limit(1)
-    .maybeSingle();
-  if (!data) return { found: false as const };
-  return { found: true as const, first_name: data.first_name, waiver_signed: !!data.waiver_signed };
+    .order('date_of_birth', { ascending: true, nullsFirst: false }) // adultos primero
+    .limit(10);
+  if (!data || data.length === 0) return { found: false };
+  const people: PublicPerson[] = [];
+  for (const s of data) {
+    const age = await ageFromDob((s as any).date_of_birth);
+    people.push({
+      id: s.id,
+      first_name: s.first_name,
+      last_name: (s as any).last_name ?? null,
+      waiver_signed: !!s.waiver_signed,
+      is_minor: age != null && age < ADULT,
+    });
+  }
+  return { found: true, people };
 }
 
 export async function publicEnroll(input: {
   slug: string;
   campId: string;
   email: string;
+  /** Cuál de las personas del correo reserva (familias comparten email). */
+  studentId?: string | null;
+  /** Nombre del adulto que firma cuando quien reserva es menor de edad. */
+  guardian_name?: string | null;
   coupon?: string | null;
   // Present only for first-timers (creates the profile). accept_waiver must
   // be true in both paths when the waiver isn't signed yet.
@@ -198,11 +229,18 @@ export async function publicEnroll(input: {
   // 3. The student — existing by email, or created from the profile form.
   let studentId: string;
   let firstName: string;
-  const { data: existing } = await admin
+  // Quién reserva: si el QR mandó un studentId (familias con email compartido)
+  // usamos ESA persona — verificando que pertenezca al mismo correo y academia,
+  // para que un id suelto no permita reservar a nombre de otro.
+  let existingQ = admin
     .from('students')
     .select('id, first_name, waiver_signed, date_of_birth')
     .eq('academy_id', academy.id)
-    .ilike('email', email)
+    .eq('status', 'active')
+    .ilike('email', email);
+  if (input.studentId) existingQ = existingQ.eq('id', input.studentId);
+  const { data: existing } = await existingQ
+    .order('date_of_birth', { ascending: true, nullsFirst: false })
     .limit(1)
     .maybeSingle();
 
@@ -211,19 +249,20 @@ export async function publicEnroll(input: {
     firstName = existing.first_name;
     if (!existing.waiver_signed) {
       if (!input.accept_waiver) return { ok: false, error: 'The waiver must be accepted to join.' };
-      // Un menor NO puede firmar su propia exención — igual que en el alta de
-      // perfil nuevo. Antes este path (perfil ya existente, waiver sin firmar)
-      // no lo chequeaba y el menor firmaba solo.
+      // Un menor NO puede firmar su propia exención — la firma su adulto, cuyo
+      // nombre llega en guardian_name (el QR muestra ese campo cuando quien
+      // reserva es menor). Sin él no se puede continuar.
       const exAge = await ageFromDob(existing.date_of_birth);
       const exIsMinor = exAge != null && exAge < ADULT;
-      if (exIsMinor && !input.profile?.guardian_name?.trim()) {
+      const guardian = input.guardian_name?.trim() || input.profile?.guardian_name?.trim() || '';
+      if (exIsMinor && !guardian) {
         return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
       }
       await admin.from('students').update({
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
         waiver_signed_by: exIsMinor
-          ? `${input.profile!.guardian_name!.trim()} (parent/guardian)`
+          ? `${guardian} (parent/guardian)`
           : (input.signed_name?.trim() || existing.first_name),
       }).eq('id', existing.id);
     }

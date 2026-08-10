@@ -5,7 +5,7 @@
 // always settled at front desk; a courtesy coupon just skips the charge.
 
 import { useState, useEffect, useTransition } from 'react';
-import { lookupPublicStudent, publicEnroll, publicAddCompanion } from '@/lib/actions/public-classes';
+import { lookupPublicStudent, publicEnroll, publicAddCompanion, type PublicPerson } from '@/lib/actions/public-classes';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
 const F_DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.08 };
@@ -69,7 +69,7 @@ const WAIVER_TEXT = `I acknowledge that participation in physical activities (su
 export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) {
   const [pending, start] = useTransition();
   const [sel, setSel] = useState<Klass | null>(null);
-  const [step, setStep] = useState<'list' | 'email' | 'confirm' | 'profile' | 'done'>('list');
+  const [step, setStep] = useState<'list' | 'email' | 'who' | 'confirm' | 'profile' | 'done'>('list');
   // Menú por actividad + video embebido (nunca sacamos al cliente de la página)
   const [openActivity, setOpenActivity] = useState<string | null>(null);
   const [videoOf, setVideoOf] = useState<Activity | null>(null);
@@ -91,7 +91,12 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
     } catch { /* sin deep link */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [known, setKnown] = useState<{ first_name: string; waiver_signed: boolean } | null>(null);
+  // Un mismo correo puede tener varias personas (familias). `people` son todas
+  // las registradas con ese email; `known` es la elegida para esta reserva.
+  const [people, setPeople] = useState<PublicPerson[]>([]);
+  const [known, setKnown] = useState<PublicPerson | null>(null);
+  // Nombre del adulto que firma cuando quien reserva es menor de edad.
+  const [guardianName, setGuardianName] = useState('');
   const [coupon, setCoupon] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
@@ -139,6 +144,8 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         slug,
         campId: sel!.id,
         email,
+        studentId: profile ? null : (known?.id ?? null),
+        guardian_name: (profile ? form.guardian_name : guardianName).trim() || null,
         coupon: coupon.trim() || null,
         profile: profile ? form : null,
         accept_waiver: acceptWaiver || !!known?.waiver_signed,
@@ -424,8 +431,12 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           <button type="button" disabled={pending || !email.includes('@')}
             onClick={() => { setErr(null); start(async () => {
               const r = await lookupPublicStudent(slug, email);
-              if (r.found) { setKnown({ first_name: r.first_name, waiver_signed: r.waiver_signed }); setStep('confirm'); }
-              else { setKnown(null); setStep('profile'); }
+              if (!r.found) { setPeople([]); setKnown(null); setStep('profile'); return; }
+              setPeople(r.people);
+              // Familias: si el correo tiene más de una persona, preguntamos
+              // quién reserva en vez de asumir (antes la mamá entraba como su hija).
+              if (r.people.length > 1) { setKnown(null); setStep('who'); }
+              else { setKnown(r.people[0]); setStep('confirm'); }
             }); }}
             className="w-full rounded-full py-3 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
             {pending ? 'Checking…' : 'Continue'}
@@ -435,30 +446,85 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
     );
   }
 
+  // Varias personas con el mismo correo (familias) → ¿quién reserva?
+  if (step === 'who') {
+    return (
+      <div>
+        {Header}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+          <div>
+            <p className="font-bold text-[14px]" style={{ color: '#061C2B' }}>Who&apos;s taking this class?</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">This email has more than one person registered.</p>
+          </div>
+          <div className="space-y-2">
+            {people.map((p) => (
+              <button key={p.id} type="button"
+                onClick={() => { setKnown(p); setSignedName(''); setGuardianName(''); setErr(null); setStep('confirm'); }}
+                className="w-full text-left px-3.5 py-3 rounded-xl border border-gray-200 hover:border-[#00D2FF] transition-colors">
+                <span className="text-[14px] font-semibold" style={{ color: '#061C2B' }}>
+                  {p.first_name}{p.last_name ? ` ${p.last_name}` : ''}
+                </span>
+                <span className="block text-[11px] text-gray-400 mt-0.5">
+                  {p.is_minor ? 'Minor · a parent signs' : 'Adult'}
+                  {p.waiver_signed ? ' · waiver ✓' : ' · waiver pending'}
+                </span>
+              </button>
+            ))}
+            <button type="button" onClick={() => { setKnown(null); setErr(null); setStep('profile'); }}
+              className="w-full text-left px-3.5 py-3 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-500">
+              + Someone else (add a new person)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 'confirm' && known) {
+    // Un menor no firma su propia exención: firma su adulto responsable.
+    const needsGuardian = known.is_minor && !known.waiver_signed;
     return (
       <div>
         {Header}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
           <p className="text-[13px]" style={{ color: '#061C2B' }}>
             <b>✓ Found you, {known.first_name}!</b>{' '}
-            {known.waiver_signed ? 'Your waiver is already signed.' : 'One thing missing: your waiver.'}
+            {known.waiver_signed ? 'Your waiver is already signed.' : 'One thing missing: the waiver.'}
           </p>
+          {people.length > 1 && (
+            <button type="button" onClick={() => setStep('who')} className="text-[11px]" style={{ color: '#0090B0' }}>
+              ← Not you? Pick another person
+            </button>
+          )}
           {!known.waiver_signed && (
             <div className="rounded-xl border border-red-100 p-3" style={{ background: 'rgba(255,107,107,.05)' }}>
               <p className="text-[9px] mb-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>Liability waiver · required</p>
+              {needsGuardian && (
+                <p className="text-[11px] mb-1.5" style={{ color: '#061C2B' }}>
+                  <b>{known.first_name} is a minor</b> — a parent or legal guardian signs for them.
+                </p>
+              )}
               <div className="text-[10px] text-gray-500 max-h-20 overflow-y-auto leading-snug">{WAIVER_TEXT}</div>
               <label className="flex items-start gap-2 mt-2 text-[12px]" style={{ color: '#061C2B' }}>
                 <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} className="mt-0.5 h-4 w-4" />
-                I have read and accept the waiver
+                {needsGuardian
+                  ? `I am ${known.first_name}'s parent / legal guardian and I accept the waiver`
+                  : 'I have read and accept the waiver'}
               </label>
-              <input value={signedName} onChange={(e) => setSignedName(e.target.value)} placeholder="Type your full name to sign"
-                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+              {needsGuardian ? (
+                <input value={guardianName} onChange={(e) => setGuardianName(e.target.value)}
+                  placeholder="Parent / guardian full name to sign *"
+                  className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+              ) : (
+                <input value={signedName} onChange={(e) => setSignedName(e.target.value)} placeholder="Type your full name to sign"
+                  className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+              )}
             </div>
           )}
           {CouponField}
           {err && <p className="text-[11px] text-red-600">{err}</p>}
-          <button type="button" disabled={pending || (!known.waiver_signed && (!acceptWaiver || !signedName.trim()))}
+          <button type="button"
+            disabled={pending || (!known.waiver_signed && (!acceptWaiver || !(needsGuardian ? guardianName : signedName).trim()))}
             onClick={() => enroll(false)}
             className="w-full rounded-full py-3 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#06D6A0', color: '#061C2B' }}>
             {pending ? 'Saving…' : 'Confirm my spot'}
