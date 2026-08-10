@@ -8,6 +8,7 @@ import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelector
 import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { getFrontDeskData, getRecentBookings, deskSetRoom } from '@/lib/actions/front-desk';
 import { SeatContactPanel } from '@/components/shared/SeatContactPanel';
+import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
   hostRecentIncidents, hostSendIntakeEmail, hostDayOperation,
@@ -852,11 +853,34 @@ function ReserveModal({ token, event, onClose, onDone }: {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  // Aviso de posible duplicado (2026-08-10): la deduplicación del sistema es
+  // por CORREO, así que un nombre repetido con correo distinto —o mal
+  // tipeado— crea una persona nueva y le parte el historial. Antes de crear,
+  // le mostramos al mostrador quién ya existe con ese nombre.
+  const [nameDupes, setNameDupes] = useState<{ id: string; name: string; email: string | null }[]>([]);
+  const emailSuggestion = suggestCorrectedEmail(nu.email);
+
   useEffect(() => {
     if (mode !== 'existing' || q.trim().length < 2) { setFound(null); return; }
     const t = setTimeout(() => sellerSearchStudents(token, q).then(setFound).catch(() => setFound([])), 350);
     return () => clearTimeout(t);
   }, [q, mode, token]);
+
+  useEffect(() => {
+    const name = nu.firstName.trim();
+    if (mode !== 'new' || name.length < 2) { setNameDupes([]); return; }
+    const t = setTimeout(() => {
+      sellerSearchStudents(token, name)
+        .then((r) => {
+          const last = nu.lastName.trim().toLowerCase();
+          // Con apellido escrito, solo avisamos si TAMBIÉN coincide — así no
+          // molestamos con cada "Maria" del sistema.
+          setNameDupes(last ? r.filter((x) => x.name.toLowerCase().includes(last)) : r);
+        })
+        .catch(() => setNameDupes([]));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [nu.firstName, nu.lastName, mode, token]);
 
   const isFull = event.capacity > 0 && event.enrolled >= event.capacity;
 
@@ -914,11 +938,38 @@ function ReserveModal({ token, event, onClose, onDone }: {
               <input value={nu.firstName} onChange={(e) => setNu({ ...nu, firstName: e.target.value })} placeholder="Nombre *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
               <input value={nu.lastName} onChange={(e) => setNu({ ...nu, lastName: e.target.value })} placeholder="Apellido" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
             </div>
+            {/* ¿Ya existe alguien con ese nombre? Mejor reusarlo que crear
+                un segundo perfil que le parte el historial en dos. */}
+            {nameDupes.length > 0 && (
+              <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
+                <p className="text-[11px] font-bold" style={{ color: '#7a5c00' }}>
+                  ⚠ Ya hay {nameDupes.length === 1 ? 'un cliente' : `${nameDupes.length} clientes`} con ese nombre
+                </p>
+                <p className="text-[10px]" style={{ color: '#a08030' }}>
+                  Si es la misma persona, tocala acá — así no se le parte el historial. Si de verdad es otra, seguí abajo.
+                </p>
+                {nameDupes.map((d) => (
+                  <button key={d.id} type="button" disabled={busy} onClick={() => reserve({ studentId: d.id })}
+                    className="w-full text-left px-2.5 py-2 rounded-lg bg-white border border-gray-200 text-[12px] disabled:opacity-50" style={{ color: INK }}>
+                    <span className="font-bold">{d.name}</span>
+                    {d.email ? <span className="text-gray-400 text-[10.5px]"> · {d.email}</span> : <span className="text-gray-400 text-[10.5px]"> · sin correo</span>}
+                  </button>
+                ))}
+              </div>
+            )}
             <input value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} placeholder="Email" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+            {emailSuggestion && (
+              <button type="button" onClick={() => setNu({ ...nu, email: emailSuggestion })}
+                className="w-full text-left rounded-xl px-3 py-2"
+                style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
+                <span className="block text-[11.5px]" style={{ color: '#7a5c00' }}>¿Quisiste decir <strong>{emailSuggestion}</strong>?</span>
+                <span className="block text-[10px] mt-0.5" style={{ color: '#a08030' }}>Tocá para usarlo — un correo mal escrito crea un segundo perfil.</span>
+              </button>
+            )}
             <input value={nu.phone} onChange={(e) => setNu({ ...nu, phone: e.target.value })} placeholder="Teléfono / WhatsApp" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
             <button type="button" disabled={busy || !nu.firstName.trim()} onClick={() => reserve(nu)}
               className="w-full rounded-full py-3 text-[10px] disabled:opacity-40" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
-              {busy ? 'Reservando…' : 'Reservar cupo'}
+              {busy ? 'Reservando…' : nameDupes.length > 0 ? 'Es otra persona · crear nuevo' : 'Reservar cupo'}
             </button>
           </div>
         )}

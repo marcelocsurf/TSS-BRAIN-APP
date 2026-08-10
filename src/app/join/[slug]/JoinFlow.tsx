@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { lookupPublicStudent, publicEnroll, publicAddCompanion, type PublicPerson } from '@/lib/actions/public-classes';
+import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
 const F_DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.08 };
@@ -76,6 +77,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const [videoRatio, setVideoRatio] = useState<'landscape' | 'portrait'>('landscape');
   const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
   const [email, setEmail] = useState('');
+  const emailSuggestion = suggestCorrectedEmail(email);
   // Link directo a UNA clase (?class=<campId>) — Cony manda el link por
   // WhatsApp y el cliente cae con la clase ya elegida, listo para su email.
   const [deadLink, setDeadLink] = useState(false);
@@ -427,6 +429,21 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           </div>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com"
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+          {/* Un dominio mal tipeado crea un perfil nuevo y parte el historial
+              en dos (le pasó a dos alumnos reales). Se sugiere, nunca se
+              corrige solo — el correo es de quien lo escribe. */}
+          {emailSuggestion && (
+            <button type="button" onClick={() => setEmail(emailSuggestion)}
+              className="w-full text-left rounded-xl px-3 py-2"
+              style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
+              <span className="block text-[11.5px]" style={{ color: '#7a5c00' }}>
+                Did you mean <strong>{emailSuggestion}</strong>?
+              </span>
+              <span className="block text-[10px] mt-0.5" style={{ color: '#a08030' }}>
+                Tap to use it — a typo here creates a second profile and splits your progress.
+              </span>
+            </button>
+          )}
           {err && <p className="text-[11px] text-red-600">{err}</p>}
           <button type="button" disabled={pending || !email.includes('@')}
             onClick={() => { setErr(null); start(async () => {
