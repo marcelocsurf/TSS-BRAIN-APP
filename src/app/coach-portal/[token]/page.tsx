@@ -69,6 +69,17 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   const isImpersonatingThisCoach =
     impersonation?.kind === 'coach' && impersonation.portal_token === token;
 
+  // La ruta es la misma para todo el equipo, pero la etiqueta no puede serlo:
+  // un host leyendo "Coach Portal" arriba de su propio nombre no entiende
+  // en qué portal está. Cada rol ve el suyo.
+  const role = (data.coach as any).role as string | null;
+  const portalCategory = (data.coach as any).portal_category as string | null;
+  const portalLabel =
+    role === 'host' ? 'Portal del host'
+    : role === 'seller' ? 'Portal de ventas'
+    : portalCategory === 'support' ? 'Portal de operaciones'
+    : 'Coach Portal';
+
   return (
     <div className={`min-h-screen tss-portal-bg pb-20 ${archivo.variable} ${plexMono.variable}`}>
       {isImpersonatingThisCoach && impersonation && (
@@ -84,7 +95,7 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
             )}
             <div className="min-w-0">
               <p style={{ color: brand.accent }} className="tss-tagline text-xs truncate">{brand.tagline}</p>
-              <p style={{ color: brand.accent, fontFamily: 'DM Mono, monospace' }} className="text-[8px] tracking-[0.25em] uppercase opacity-70">Coach Portal</p>
+              <p style={{ color: brand.accent, fontFamily: 'DM Mono, monospace' }} className="text-[8px] tracking-[0.25em] uppercase opacity-70">{portalLabel}</p>
             </div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
