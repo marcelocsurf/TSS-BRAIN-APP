@@ -7,6 +7,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { lookupPublicStudent, publicEnroll, publicAddCompanion, type PublicPerson } from '@/lib/actions/public-classes';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
+import { dobError, dobMaxAttr } from '@/lib/utils/dob';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
 const F_DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.08 };
@@ -121,7 +122,10 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
     if (m < 0 || (m === 0 && n.getDate() < d.getDate())) a--;
     return a;
   };
-  const myAge = ageOf(form.date_of_birth);
+  const dobMsg = dobError(form.date_of_birth);
+  // Con una fecha imposible no clasificamos nada: el aviso manda hasta que
+  // la corrijan (si no, un año futuro daría edad negativa = "menor").
+  const myAge = dobMsg ? null : ageOf(form.date_of_birth);
   const isMinor = myAge != null && myAge < 18;
   const tooYoung = myAge != null && myAge < 7;
 
@@ -219,7 +223,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
               </div>
               <label className="flex flex-col justify-center px-3 py-1 border border-gray-200 rounded-xl">
                 <span className="text-[9px] text-gray-400" style={F_LABEL}>Date of birth *</span>
-                <input type="date" value={companion.date_of_birth} onChange={(e) => setCompanion({ ...companion, date_of_birth: e.target.value })}
+                <input type="date" max={dobMaxAttr()} value={companion.date_of_birth} onChange={(e) => setCompanion({ ...companion, date_of_birth: e.target.value })}
                   className="text-sm outline-none bg-transparent" />
               </label>
               <input value={companion.medical_notes} onChange={(e) => setCompanion({ ...companion, medical_notes: e.target.value })}
@@ -232,6 +236,8 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                 <button type="button" disabled={pending || !companion.first_name.trim() || !companion.date_of_birth}
                   onClick={() => start(async () => {
                     setErr(null);
+                    const dobMsg = dobError(companion.date_of_birth);
+                    if (dobMsg) { setErr(dobMsg); return; }
                     const r = await publicAddCompanion({
                       slug, campId: sel?.id ?? summary.camp_id, bookerEmail: email,
                       first_name: companion.first_name, last_name: companion.last_name,
@@ -567,9 +573,16 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           <input value={form.phone} onChange={set('phone')} placeholder="Your phone / WhatsApp" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
           <label className="flex flex-col justify-center px-3 py-1 border border-gray-200 rounded-xl">
             <span className="text-[9px] text-gray-400" style={F_LABEL}>Date of birth *</span>
-            <input type="date" value={form.date_of_birth} onChange={set('date_of_birth')} className="text-sm outline-none bg-transparent" />
+            <input type="date" max={dobMaxAttr()} value={form.date_of_birth} onChange={set('date_of_birth')} className="text-sm outline-none bg-transparent" />
           </label>
         </div>
+        {/* Año mal tipeado: sin este aviso el alumno queda con edad negativa
+            y el sistema lo trata como menor de edad. */}
+        {dobMsg && (
+          <p className="text-[12px] rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
+            {dobMsg}
+          </p>
+        )}
         {tooYoung && (
           <p className="text-[12px] rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
             For surfers under 7 we set everything up in person — please stop by front desk. 🤙
@@ -615,7 +628,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         {CouponField}
         {err && <p className="text-[11px] text-red-600">{err}</p>}
         <button type="button"
-          disabled={pending || tooYoung || !form.first_name.trim() || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
+          disabled={pending || tooYoung || !!dobMsg || !form.first_name.trim() || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
           onClick={() => enroll(true)}
           className="w-full rounded-full py-3.5 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
           {pending ? 'Saving…' : 'Sign & save my spot'}

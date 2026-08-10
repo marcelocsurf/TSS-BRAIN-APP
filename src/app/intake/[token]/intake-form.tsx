@@ -7,6 +7,7 @@ import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
 import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
 import { signWaiverOnly } from '@/lib/actions/intake';
+import { dobError, dobMaxAttr } from '@/lib/utils/dob';
 
 interface StudentData {
   student_type?: string | null;
@@ -169,6 +170,10 @@ export function IntakeForm({ token, student }: Props) {
       setError('Date of birth is required.');
       return;
     }
+    // Una fecha imposible (año mal tipeado) haría contar al alumno como menor
+    // y dispararía el flujo de tutor. Se corta acá.
+    const dobMsg = dobError(basicForm.date_of_birth);
+    if (dobMsg) { setError(dobMsg); return; }
     if (!basicForm.swim_level) {
       setError('Please select your swim level.');
       return;
@@ -392,9 +397,11 @@ export function IntakeForm({ token, student }: Props) {
             <Field
               label="Date of Birth *"
               type="date"
+              max={dobMaxAttr()}
               value={basicForm.date_of_birth || ''}
               onChange={(v) => setBasic('date_of_birth', v)}
               required
+              hint={dobError(basicForm.date_of_birth) ?? undefined}
             />
             {/* Teléfono propio del alumno (WhatsApp) — antes el intake solo
                 pedía el del contacto de emergencia y el equipo no tenía cómo
@@ -899,9 +906,9 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
 // FORM COMPONENTS (reused)
 // ═══════════════════════════════════════
 
-function Field({ label, value, onChange, type = 'text', placeholder, required, hint }: {
+function Field({ label, value, onChange, type = 'text', placeholder, required, hint, max }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; required?: boolean; hint?: string;
+  type?: string; placeholder?: string; required?: boolean; hint?: string; max?: string;
 }) {
   return (
     <div>
@@ -914,6 +921,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, required, h
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
+        max={max}
         className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)] focus:border-transparent"
       />
       {hint && <p className="text-[10px] text-gray-400 mt-1">{hint}</p>}

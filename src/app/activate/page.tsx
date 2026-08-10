@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import { validateAccessCode, redeemCodeAndCreateStudent } from '@/lib/actions/course';
+import { dobError } from '@/lib/utils/dob';
 import { CheckCircle2 } from 'lucide-react';
 
 type Step = 'enter-code' | 'fill-profile' | 'success';
@@ -87,6 +88,8 @@ export default function ActivatePage() {
       setError('First name and last name are required');
       return;
     }
+    const dobMsg = dobError(dob);
+    if (dobMsg) { setError(dobMsg); return; }
     setLoading(true);
     setError(null);
     const res = await redeemCodeAndCreateStudent(code, {

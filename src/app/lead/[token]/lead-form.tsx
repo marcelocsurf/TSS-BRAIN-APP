@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { submitLeadForm } from '@/lib/actions/leads';
+import { dobError, dobMaxAttr } from '@/lib/utils/dob';
 import { CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -53,6 +54,8 @@ export default function LeadForm({ token, initial }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const dobMsg = dobError(form.date_of_birth);
+    if (dobMsg) { setError(dobMsg); return; }
     setLoading(true);
 
     try {
@@ -102,6 +105,7 @@ export default function LeadForm({ token, initial }: Props) {
         <Field label="Date of birth" required>
           <input
             type="date"
+            max={dobMaxAttr()}
             value={form.date_of_birth}
             onChange={(e) => update('date_of_birth', e.target.value)}
             required
