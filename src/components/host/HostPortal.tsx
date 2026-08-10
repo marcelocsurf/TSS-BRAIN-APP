@@ -6,7 +6,8 @@ import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
 import { BoardInventoryManager } from '@/components/board-inventory/BoardInventoryManager';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
 import { CoachTasks } from '@/components/coach-portal/CoachTasks';
-import { getFrontDeskData, getRecentBookings } from '@/lib/actions/front-desk';
+import { getFrontDeskData, getRecentBookings, deskSetRoom } from '@/lib/actions/front-desk';
+import { SeatContactPanel } from '@/components/shared/SeatContactPanel';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
   hostRecentIncidents, hostSendIntakeEmail, hostDayOperation,
@@ -337,6 +338,12 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
       <div className="max-w-md lg:max-w-3xl mx-auto px-4 pt-4">
         {tab === 'hoy' && (
           <div className="space-y-4">
+            {/* Qué es esta pestaña. La confusión #1 del host es buscar en HOY
+                una clase que todavía no entra en la ventana de 7 días. */}
+            <p className="text-[10.5px] text-gray-400 leading-snug">
+              <strong style={{ color: '#0090B0' }}>Hoy = atender y cobrar.</strong> Solo lo que llega en los próximos 7 días.
+              ¿Buscás una clase más adelante? Está en <button type="button" onClick={() => setTab('operacion')} className="underline decoration-dotted" style={{ color: '#0090B0' }}>🗓 Agenda</button>.
+            </p>
             {/* Semáforo del día: los incendios de coordinación, a la vista */}
             {alerts && (
               (alerts.no_coach.length || alerts.pending_coach.length || alerts.unclosed.length || alerts.overcap.length) ? (
@@ -420,6 +427,9 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
 
         {tab === 'operacion' && (
           <div className="space-y-3">
+            <p className="text-[10.5px] text-gray-400 leading-snug">
+              <strong style={{ color: '#0090B0' }}>Agenda = ver y planear.</strong> Cualquier día del año. Tocá un alumno para ver sus datos; el cobro se hace en 📋 Hoy.
+            </p>
             {/* Calendario de todo el año: flechas por semana + salto a cualquier fecha */}
             <div className="flex items-center justify-between gap-2">
               <button type="button" onClick={() => shiftStrip(-7)} className="rounded-full w-9 h-9 bg-white border border-gray-200 text-gray-500 font-bold">‹</button>
@@ -591,6 +601,8 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
   const [trEdit, setTrEdit] = useState(false);
   const [trDep, setTrDep] = useState(e.transport?.depart?.slice(0, 5) ?? '');
   const [trRet, setTrRet] = useState(e.transport?.ret?.slice(0, 5) ?? '');
+  // Ficha de contacto del alumno abierta (participant_id).
+  const [openStudent, setOpenStudent] = useState<string | null>(null);
 
   const singleDayClass = e.total_days === 1 && ['class', 'surf_lesson', 'trip'].includes(e.kind ?? '');
   const coachPending = !!e.coach && e.coach_status === 'pending';
@@ -677,13 +689,43 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
       {e.students.length > 0 && (
         <div className="mt-2 pt-2 border-t border-gray-50">
           <p className="text-[8px] text-gray-400 mb-1" style={F_M}>
-            Alumnos{unpaid ? ` · ${unpaid} por cobrar` : ''}{noWaiver ? ` · ${noWaiver} sin waiver ⚠` : ''}
+            Alumnos{unpaid ? ` · ${unpaid} por cobrar` : ''}{noWaiver ? ` · ${noWaiver} sin waiver ⚠` : ''} · tocá un nombre para ver sus datos
           </p>
-          <p className="text-[11.5px] leading-relaxed" style={{ color: INK }}>
-            {e.students.map((s, i) => (
-              <span key={i}>{i > 0 ? ' · ' : ''}{s.name}{!s.paid ? ' 💰' : ''}{!s.waiver ? ' ⚠' : ''}</span>
-            ))}
-          </p>
+          {/* Cada alumno se abre en su ficha de contacto (mismo bloque que el
+              mostrador). Acá NO se cobra: para cobrar está la pestaña Hoy. */}
+          <div className="divide-y divide-gray-50">
+            {e.students.map((s) => {
+              const open = openStudent === s.participant_id;
+              return (
+                <div key={s.participant_id} className="py-1">
+                  <button type="button"
+                    onClick={() => setOpenStudent(open ? null : s.participant_id)}
+                    className="w-full flex items-center justify-between gap-2 text-left py-1">
+                    <span className="text-[12px] font-semibold truncate" style={{ color: INK }}>
+                      {s.name}
+                      {s.room_number ? <span className="text-gray-400 font-normal"> · 🏨 {s.room_number}</span> : ''}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-gray-400">
+                      {!s.paid ? '💰 ' : ''}{!s.waiver ? '⚠ ' : ''}{open ? '▴' : '▾'}
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="pb-1.5">
+                      <SeatContactPanel
+                        seat={s}
+                        canEditRoom={canCoordinate}
+                        onSaveRoom={(room) => deskSetRoom(token, s.participant_id, room).then((r) => { if (r.ok) onChanged?.(); return r; })}
+                      />
+                      <p className="mt-1 text-[9.5px] text-gray-400 leading-snug">
+                        {s.paid ? '✓ Pagado.' : '💰 Pendiente de cobro — se cobra en la pestaña Hoy.'}
+                        {!s.waiver ? ' Falta waiver.' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

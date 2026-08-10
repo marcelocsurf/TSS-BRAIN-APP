@@ -248,7 +248,23 @@ export interface HostDayEvent {
   coach_status: string | null;   // 'pending' = invitado, aún sin aceptar
   capacity: number;
   enrolled: number;
-  students: { name: string; paid: boolean; waiver: boolean }[];
+  // El asiento completo, igual que en el mostrador: la Agenda muestra el
+  // MISMO bloque de contacto/trazabilidad (SeatContactPanel) para que el host
+  // no tenga que cambiar de pestaña para saber quién es cada alumno.
+  // Cobrar/ajustar sigue viviendo SOLO en Hoy.
+  students: {
+    participant_id: string;
+    student_id: string | null;
+    name: string;
+    paid: boolean;
+    waiver: boolean;
+    phone: string | null;
+    email: string | null;
+    room_number: string | null;
+    notes: string | null;
+    reserved_at: string | null;
+    booked_via: string | null;
+  }[];
   spaces: string[];
   transport: { plan_id: string | null; depart: string | null; ret: string | null; status: string | null } | null;
   venue: string | null;
@@ -266,7 +282,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents),
       coaches:coach_id(display_name),
       hc:head_coach_id(display_name),
-      camp_participants(enrollment_status, payment_status, students(first_name, last_name, waiver_signed)),
+      camp_participants(id, enrollment_status, payment_status, room_number, notes, reserved_at, sold_by, seller:sold_by(display_name), students(id, first_name, last_name, waiver_signed, phone, email)),
       camp_sessions(id, day_number, session_date, session_status)`)
     .eq('academy_id', who.academy_id)
     .lte('start_date', dateISO)
@@ -324,7 +340,20 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       enrolled: act.length,
       students: act.map((p: any) => {
         const st = Array.isArray(p.students) ? p.students[0] : p.students;
-        return { name: [st?.first_name, st?.last_name].filter(Boolean).join(' '), paid: p.payment_status === 'paid', waiver: !!st?.waiver_signed };
+        const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller;
+        return {
+          participant_id: p.id,
+          student_id: st?.id ?? null,
+          name: [st?.first_name, st?.last_name].filter(Boolean).join(' '),
+          paid: p.payment_status === 'paid',
+          waiver: !!st?.waiver_signed,
+          phone: st?.phone ?? null,
+          email: st?.email ?? null,
+          room_number: p.room_number ?? null,
+          notes: p.notes ?? null,
+          reserved_at: p.reserved_at ?? null,
+          booked_via: p.sold_by ? (seller?.display_name ?? 'Mostrador') : 'QR (auto-servicio)',
+        };
       }),
       spaces: spacesByCamp.get(i.id) ?? [],
       transport: plan?.transport_needed

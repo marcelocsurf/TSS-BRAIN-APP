@@ -44,11 +44,24 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           Volvés a esta guía cuando quieras con el botón <strong>📖</strong> de arriba.
         </p>
 
+        {/* La confusión #1 del host (Cony, ago 2026): buscar en HOY una clase
+            que está más adelante. Se aclara de entrada, antes de todo lo demás. */}
+        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(0,210,255,.09)', border: '1px solid rgba(0,210,255,.35)' }}>
+          <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0090B0' }}>Lo primero que hay que tener claro</p>
+          <p className="text-[12.5px] leading-relaxed text-gray-700">
+            <strong style={{ color: INK }}>HOY = atender y cobrar</strong> — solo lo que llega en los próximos 7 días.<br />
+            <strong style={{ color: INK }}>AGENDA = ver y planear</strong> — cualquier día del año, pasado o futuro.
+          </p>
+          <p className="text-[11.5px] leading-relaxed text-gray-500 mt-1.5">
+            Si no encontrás una clase en HOY, no está perdida: es que todavía falta para ella. Buscala en AGENDA con <strong>📅 Ir a</strong>.
+          </p>
+        </div>
+
         <Sec icon="🚦" title="Semáforo del día (arriba de HOY)">
           <p>Lo primero que mirás al llegar. Te avisa si hay <strong>clases sin coach</strong>, invitaciones de coach <strong>sin aceptar</strong>, <strong>sesiones sin cierre</strong> de días anteriores o grupos en <strong>sobrecupo</strong>. Si está verde, el día está en orden.</p>
         </Sec>
 
-        <Sec icon="📋" title="HOY — check-in y cobros">
+        <Sec icon="📋" title="HOY — atender y cobrar (próximos 7 días)">
           <Li k="Tareas">Lo que coordinación te asignó para hoy. Marcalas hechas cuando terminás.</Li>
           <Li k="Reservas recientes (48 h)">Quién acaba de reservar por QR o con un vendedor, y si ya pagó.</Li>
           <Li k="Mostrador">Cada clase del día con sus alumnos. Al llegar un cliente: tocá su nombre → <strong>💵 Cobrar</strong> (efectivo, tarjeta, transferencia o a la habitación). Con el menú <strong>⋯</strong> también podés <strong>🔁 transferirlo a otro grupo</strong> (aunque esté lleno — queda como sobrecupo) o cancelar su reserva.</Li>
@@ -56,9 +69,10 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           <Li k="Incidentes">Lo reportado por los coaches en los últimos 14 días.</Li>
         </Sec>
 
-        <Sec icon="🗓" title="AGENDA — todo el calendario">
+        <Sec icon="🗓" title="AGENDA — ver y planear (cualquier día)">
           <Li k="Navegar">Flechas ‹ › para moverte por semanas, o <strong>📅 Ir a</strong> para saltar a cualquier fecha del año.</Li>
           <Li k="Cada tarjeta">Hora, coach, día X de Y del camp, alumnos (💰 = debe pagar, ⚠ = sin waiver), transporte 🚐 y espacios 🏛 reservados.</Li>
+          <Li k="Tocá un nombre">Se abre su ficha de contacto: WhatsApp, correo, habitación del huésped y <strong>cómo llegó la reserva</strong> (QR del cliente o el vendedor que la hizo, con fecha y hora). Los mismos datos que en el mostrador. El cobro no se hace acá — se hace en HOY el día de la clase.</Li>
           <Li k="+ Reservar">Cliente enfrente → tocá el botón verde de la clase, buscalo (o crealo con nombre y teléfono) y listo. El cobro se confirma en HOY cuando llegue.</Li>
           <Li k="+ Clase en otro horario">¿Piden Skate un martes 2 PM? Elegí la plantilla y la hora — la clase se crea al instante y ya podés reservarle.</Li>
         </Sec>

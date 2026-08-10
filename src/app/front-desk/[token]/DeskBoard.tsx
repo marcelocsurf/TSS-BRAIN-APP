@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { frontDeskSettle, getTransferTargets, deskTransferSeat, deskAdjustSeatPayment, deskSetRoom } from '@/lib/actions/front-desk';
 import { publicCancelBooking, publicMoveBooking, getPublicMoveTargets } from '@/lib/actions/public-classes';
+import { SeatContactPanel } from '@/components/shared/SeatContactPanel';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
 const money = (c: number | null) => c == null ? '—' : `$${(c / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
@@ -30,8 +31,6 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
   // Ajuste de cobro (host cubre al coordinador): paquete/cortesía/monto.
   const [adjAmount, setAdjAmount] = useState('');
   const [adjReason, setAdjReason] = useState('');
-  // Habitación del huésped por asiento (trazabilidad del sign-up).
-  const [roomDraft, setRoomDraft] = useState<Record<string, string>>({});
   const [q, setQ] = useState('');
   // Mover / cancelar en el mostrador — mismo motor y política de 24 h que el
   // link del cliente (publicCancel/MoveBooking con actor 'desk').
@@ -101,15 +100,6 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
   };
 
   // Guardar la habitación del huésped en la reserva.
-  const saveRoom = (s: Seat) => {
-    const val = (roomDraft[s.participant_id] ?? '').trim();
-    start(async () => {
-      const r = await deskSetRoom(token, s.participant_id, val || null);
-      if (!r.ok) { alert(r.error); return; }
-      afterChange();
-    });
-  };
-
   // Ajustar el cobro de un asiento: incluido en paquete del hotel, cortesía,
   // o monto especial con razón. Auditado en la nota del asiento.
   const adjust = (participantId: string, kind: 'package' | 'courtesy' | 'custom') => {
@@ -191,42 +181,13 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
 
                     {manageFor === s.participant_id && (
                       <div className="mt-2 space-y-1.5 rounded-xl p-2.5" style={{ background: '#F7F9FA' }}>
-                        {/* ── Quién es y por dónde entró la reserva (Cony 2026-08-10):
-                            el mostrador necesita rastrear el sign-up sin salir de acá. ── */}
-                        <div className="rounded-lg bg-white border border-gray-100 p-2.5 space-y-1.5">
-                          <p className="text-[8px] text-gray-400" style={F_LABEL}>Datos de contacto</p>
-                          {s.phone ? (
-                            <p className="text-[11px]">
-                              💬 <a href={`https://wa.me/${String(s.phone).replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
-                                className="underline decoration-dotted" style={{ color: '#0090B0' }}>{s.phone}</a>
-                              <span className="text-gray-400"> · WhatsApp</span>
-                            </p>
-                          ) : (
-                            <p className="text-[11px] text-gray-400">💬 Sin WhatsApp registrado</p>
-                          )}
-                          <p className="text-[11px] text-gray-600">📧 {s.email || <span className="text-gray-400">Sin correo</span>}</p>
-
-                          <div className="flex items-center gap-1.5 pt-1">
-                            <span className="text-[11px]">🏨</span>
-                            <input
-                              value={roomDraft[s.participant_id] ?? s.room_number ?? ''}
-                              onChange={(e) => setRoomDraft((p) => ({ ...p, [s.participant_id]: e.target.value }))}
-                              placeholder="Habitación (si es huésped)"
-                              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-[11px]" />
-                            <button type="button" disabled={pending} onClick={() => saveRoom(s)}
-                              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-50"
-                              style={{ background: '#061C2B', color: '#fff' }}>
-                              Guardar
-                            </button>
-                          </div>
-
-                          <p className="text-[8px] text-gray-400 pt-1" style={F_LABEL}>Cómo llegó la reserva</p>
-                          <p className="text-[11px] text-gray-600">
-                            {s.booked_via ?? '—'}
-                            {s.reserved_at ? ` · ${new Date(s.reserved_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/El_Salvador' })}` : ''}
-                          </p>
-                          {s.notes && <p className="text-[10px] text-gray-500 italic leading-snug">{s.notes}</p>}
-                        </div>
+                        {/* Quién es y por dónde entró la reserva (Cony 2026-08-10).
+                            Mismo bloque que la Agenda — fuente única. */}
+                        <SeatContactPanel
+                          seat={s}
+                          disabled={pending}
+                          onSaveRoom={(room) => deskSetRoom(token, s.participant_id, room).then((r) => { if (r.ok) afterChange(); return r; })}
+                        />
 
                         <p className="text-[8px] text-gray-400" style={F_LABEL}>Mover de fecha · {(c.name ?? '').split(' · ')[0]}</p>
                         <div className="flex flex-wrap gap-1.5">
