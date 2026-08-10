@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { frontDeskSettle, getTransferTargets, deskTransferSeat } from '@/lib/actions/front-desk';
+import { frontDeskSettle, getTransferTargets, deskTransferSeat, deskAdjustSeatPayment } from '@/lib/actions/front-desk';
 import { publicCancelBooking, publicMoveBooking, getPublicMoveTargets } from '@/lib/actions/public-classes';
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
@@ -25,6 +25,9 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
   const afterChange = () => { router.refresh(); onChanged?.(); };
   const [payFor, setPayFor] = useState<string | null>(null);
   const [room, setRoom] = useState('');
+  // Ajuste de cobro (host cubre al coordinador): paquete/cortesía/monto.
+  const [adjAmount, setAdjAmount] = useState('');
+  const [adjReason, setAdjReason] = useState('');
   const [q, setQ] = useState('');
   // Mover / cancelar en el mostrador — mismo motor y política de 24 h que el
   // link del cliente (publicCancel/MoveBooking con actor 'desk').
@@ -89,6 +92,19 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
       const r = await frontDeskSettle(token, participantId, method);
       if (!r.ok) { alert(r.error); return; }
       setPayFor(null); setRoom('');
+      afterChange();
+    });
+  };
+
+  // Ajustar el cobro de un asiento: incluido en paquete del hotel, cortesía,
+  // o monto especial con razón. Auditado en la nota del asiento.
+  const adjust = (participantId: string, kind: 'package' | 'courtesy' | 'custom') => {
+    start(async () => {
+      const cents = kind === 'custom' ? Math.round(parseFloat(adjAmount) * 100) : undefined;
+      if (kind === 'custom' && (!Number.isFinite(cents) || (cents as number) < 0)) { alert('Escribí un monto válido.'); return; }
+      const r = await deskAdjustSeatPayment(token, participantId, { kind, amount_cents: cents, reason: adjReason.trim() || undefined });
+      if (!r.ok) { alert(r.error); return; }
+      setPayFor(null); setAdjAmount(''); setAdjReason('');
       afterChange();
     });
   };
@@ -212,6 +228,37 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
                             🏨 To room
                           </button>
                         </span>
+
+                        {/* Ajustar cobro — el host cubre al coordinador (Cony
+                            2026-08-09): paquete del hotel / cortesía / monto
+                            especial. Queda auditado en la nota del asiento. */}
+                        <div className="w-full mt-1.5 pt-1.5 border-t border-gray-100">
+                          <p className="text-[8px] text-gray-400 mb-1" style={F_LABEL}>Ajustar cobro (queda en la nota)</p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button type="button" disabled={pending} onClick={() => adjust(s.participant_id, 'package')}
+                              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50"
+                              style={{ borderColor: '#06D6A0', color: '#0a7c5d', background: 'rgba(6,214,160,.08)' }}>
+                              🏨 Incluido en paquete ($0)
+                            </button>
+                            <button type="button" disabled={pending} onClick={() => adjust(s.participant_id, 'courtesy')}
+                              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50"
+                              style={{ borderColor: '#FFD166', color: '#8a6d1c', background: 'rgba(255,209,102,.12)' }}>
+                              🎁 Cortesía ($0)
+                            </button>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="text-[11px] text-gray-400">$</span>
+                              <input value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} placeholder="0.00" inputMode="decimal"
+                                className="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-[11px]" />
+                              <input value={adjReason} onChange={(e) => setAdjReason(e.target.value)} placeholder="Razón (ej. paquete, promo)"
+                                className="w-36 px-2 py-1.5 border border-gray-200 rounded-lg text-[11px]" />
+                              <button type="button" disabled={pending || !adjAmount.trim()} onClick={() => adjust(s.participant_id, 'custom')}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-40"
+                                style={{ background: '#061C2B', color: '#fff' }}>
+                                Guardar
+                              </button>
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -179,6 +179,53 @@ export async function getTransferTargets(token: string, participantId: string) {
   }).filter((c: any) => !c.already_in);
 }
 
+// Ajuste de cobro desde el mostrador (pedido de Cony 2026-08-09): el host
+// cubre al coordinador los fines de semana y necesita corregir el cobro de
+// una reserva — p.ej. clase INCLUIDA en un paquete del hotel, cortesía, o un
+// monto especial. Todo queda auditado en la nota del asiento. Fuera del
+// alcance del host: precios de plantillas y nómina (solo coordinador/admin).
+export async function deskAdjustSeatPayment(
+  token: string,
+  participantId: string,
+  input: { kind: 'package' | 'courtesy' | 'custom'; amount_cents?: number; reason?: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const who = await resolveDesk(token);
+  if (!who?.academy_id) return { ok: false, error: 'Not authorized.' };
+  const admin = createAdminClient();
+
+  const { data: seat } = await admin
+    .from('camp_participants')
+    .select('id, notes, camp_instances:camp_instance_id!inner(academy_id)')
+    .eq('id', participantId)
+    .maybeSingle();
+  const inst = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
+  if (!inst || inst.academy_id !== who.academy_id) return { ok: false, error: 'Seat not found.' };
+
+  const stamp = elSalvadorToday();
+  let patch: Record<string, unknown>;
+  let desc: string;
+  if (input.kind === 'package') {
+    desc = input.reason?.trim() || 'Incluido en paquete del hotel';
+    patch = { amount_cents: 0, sale_type: 'courtesy', discount_reason: desc, payment_status: 'paid', payment_method: 'package' };
+  } else if (input.kind === 'courtesy') {
+    desc = input.reason?.trim() || 'Cortesía';
+    patch = { amount_cents: 0, sale_type: 'courtesy', discount_reason: desc, payment_status: 'paid', payment_method: 'courtesy' };
+  } else {
+    const cents = Math.round(input.amount_cents ?? NaN);
+    if (!Number.isFinite(cents) || cents < 0) return { ok: false, error: 'Monto inválido.' };
+    desc = `${input.reason?.trim() || 'Monto ajustado'} → $${(cents / 100).toFixed(2)}`;
+    patch = { amount_cents: cents, sale_type: 'discount', discount_reason: input.reason?.trim() || 'Ajuste de mostrador' };
+  }
+
+  const note = `Cobro ajustado (${desc}) — ${who.display_name || 'mostrador'} ${stamp}`;
+  const { error } = await admin
+    .from('camp_participants')
+    .update({ ...patch, notes: [(seat as any).notes, note].filter(Boolean).join(' | ') })
+    .eq('id', participantId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function deskTransferSeat(token: string, participantId: string, targetCampId: string): Promise<{ ok: boolean; error?: string }> {
   const who = await resolveDesk(token);
   if (!who?.academy_id) return { ok: false, error: 'No autorizado.' };
