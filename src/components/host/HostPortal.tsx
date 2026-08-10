@@ -13,6 +13,7 @@ import {
   hostAdhocTemplates, hostCreateAdhocClass,
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
+  hostSetTransport, hostConfirmRenewal, hostGrantRenewal,
   type HostStudentRow, type HostDayEvent, type HostDayAlerts,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
@@ -47,11 +48,26 @@ function Check({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
-function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
+function StudentCard({ token, row, canCoordinate = false }: { token: string; row: HostStudentRow; canCoordinate?: boolean }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<any>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // Renovación de membresía en mostrador (host cubre coordinador).
+  const [renewMonths, setRenewMonths] = useState<number | null>(null);
+  const [renewBusy, setRenewBusy] = useState(false);
   const complete = row.waiver && row.intake && row.quiz;
+
+  const doRenew = async (mode: 'confirm' | 'grant', method: string) => {
+    setRenewBusy(true);
+    const r = mode === 'confirm'
+      ? await hostConfirmRenewal(token, row.id, method)
+      : await hostGrantRenewal(token, row.id, renewMonths ?? 6, method);
+    setRenewBusy(false);
+    if (!r.ok) { setMsg(r.error ?? 'No se pudo renovar.'); return; }
+    setMsg('✓ Membresía renovada — el portal del alumno ya está activo.');
+    setRenewMonths(null);
+    setDetail(null); // re-fetch para ver la membresía nueva
+  };
 
   useEffect(() => {
     if (open && !detail) hostStudentDetail(token, row.id).then(setDetail).catch(() => {});
@@ -102,6 +118,50 @@ function StudentCard({ token, row }: { token: string; row: HostStudentRow }) {
                   {detail.membership.active ? `Membresía activa · vence en ${detail.membership.days_left} días` : 'Membresía vencida o sin membresía'}
                   {detail.membership.pending_request ? ' · renovación pedida' : ''}
                 </p>
+              )}
+
+              {/* Renovación en mostrador (host cubre coordinador, 2026-08-09).
+                  Con solicitud pendiente → confirmarla; sin membresía activa →
+                  renovar directo 1/6/12 meses a precio de lista. */}
+              {canCoordinate && detail.membership?.pending_request && (
+                <div className="rounded-xl p-2.5" style={{ background: 'rgba(6,214,160,.08)', border: '1px solid rgba(6,214,160,.35)' }}>
+                  <p className="text-[8px] mb-1.5" style={{ ...F_M, color: '#0a7c5d' }}>Confirmar renovación pedida · método de pago</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['cash', 'card', 'transfer'] as const).map((m) => (
+                      <button key={m} type="button" disabled={renewBusy} onClick={() => doRenew('confirm', m)}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[#061C2B] text-white disabled:opacity-50 capitalize">
+                        {m === 'cash' ? '💵 Cash' : m === 'card' ? '💳 Card' : '🏦 Transfer'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {canCoordinate && detail.membership && !detail.membership.active && !detail.membership.pending_request && (
+                <div className="rounded-xl p-2.5" style={{ background: '#F7F9FA' }}>
+                  <p className="text-[8px] mb-1.5" style={{ ...F_M, color: '#8a6d1c' }}>Renovar membresía en mostrador</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([[1, '9.99'], [6, '49.99'], [12, '99.90']] as const).map(([m, p]) => (
+                      <button key={m} type="button" disabled={renewBusy} onClick={() => setRenewMonths(renewMonths === m ? null : m)}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50"
+                        style={renewMonths === m
+                          ? { background: '#061C2B', color: '#fff', borderColor: '#061C2B' }
+                          : { background: '#fff', color: '#061C2B', borderColor: '#e5e7eb' }}>
+                        {m}m · ${p}
+                      </button>
+                    ))}
+                  </div>
+                  {renewMonths != null && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {(['cash', 'card', 'transfer'] as const).map((m) => (
+                        <button key={m} type="button" disabled={renewBusy} onClick={() => doRenew('grant', m)}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-50 capitalize"
+                          style={{ background: '#00D2FF', color: '#061C2B' }}>
+                          {m === 'cash' ? '💵 Cash' : m === 'card' ? '💳 Card' : '🏦 Transfer'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
               {detail.upcoming?.length > 0 && (
                 <div>
@@ -476,13 +536,13 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             {results !== null ? (
               results.length === 0
                 ? <p className="text-[12px] text-gray-400 text-center py-4">Sin resultados para “{q}”.</p>
-                : results.map((r) => <StudentCard key={r.id} token={token} row={r} />)
+                : results.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} />)
             ) : (
               <>
                 <p className="text-[9px] text-gray-400 pt-1" style={F_M}>🔔 Necesitan atención · próximos 14 días</p>
                 {attention === null ? <p className="text-[12px] text-gray-400">Cargando…</p>
                   : attention.length === 0 ? <p className="text-[12px] py-3" style={{ color: '#0a7c5d' }}>Todos los inscritos tienen sus fichas completas. 🤙</p>
-                  : attention.map((r) => <StudentCard key={r.id} token={token} row={r} />)}
+                  : attention.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} />)}
               </>
             )}
           </div>
@@ -527,6 +587,10 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
   const [mvTime, setMvTime] = useState(e.time ? e.time.slice(0, 5) : '16:00');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // Transporte editable (host cubre coordinador): horarios + "salió".
+  const [trEdit, setTrEdit] = useState(false);
+  const [trDep, setTrDep] = useState(e.transport?.depart?.slice(0, 5) ?? '');
+  const [trRet, setTrRet] = useState(e.transport?.ret?.slice(0, 5) ?? '');
 
   const singleDayClass = e.total_days === 1 && ['class', 'surf_lesson', 'trip'].includes(e.kind ?? '');
   const coachPending = !!e.coach && e.coach_status === 'pending';
@@ -556,13 +620,57 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
       {(e.transport || e.spaces.length > 0) && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {e.transport && (
-            <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
-              🚐 Sale {e.transport.depart?.slice(0, 5) ?? '—'} · vuelve {e.transport.ret?.slice(0, 5) ?? '—'}{e.transport.status ? ` · ${e.transport.status}` : ''}
-            </span>
+            <button type="button"
+              onClick={() => canCoordinate && e.transport?.plan_id && setTrEdit((v) => !v)}
+              className="text-[10px] px-2 py-1 rounded-full"
+              style={{ background: e.transport.status === 'taken' ? 'rgba(6,214,160,.15)' : 'rgba(255,209,102,.18)', color: e.transport.status === 'taken' ? '#0a7c5d' : '#7a5c00' }}>
+              🚐 Sale {e.transport.depart?.slice(0, 5) ?? '—'} · vuelve {e.transport.ret?.slice(0, 5) ?? '—'}
+              {e.transport.status === 'taken' ? ' · salió ✓' : e.transport.status ? ` · ${e.transport.status}` : ''}
+              {canCoordinate && e.transport.plan_id ? ' ✎' : ''}
+            </button>
           )}
           {e.spaces.map((sp, i) => (
             <span key={i} className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'rgba(6,214,160,.12)', color: '#0a7c5d' }}>🏛 {sp}</span>
           ))}
+        </div>
+      )}
+
+      {/* Host cubre coordinador: ajustar horarios de la van / marcar que salió. */}
+      {trEdit && e.transport?.plan_id && (
+        <div className="mt-2 rounded-xl p-2.5 space-y-1.5" style={{ background: '#F7F9FA' }}>
+          <p className="text-[8px] text-gray-400" style={F_M}>Transporte · ajustar (queda al instante)</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <label className="text-[10px] text-gray-500">Sale</label>
+            <input type="time" value={trDep} onChange={(ev) => setTrDep(ev.target.value)}
+              className="px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] bg-white" />
+            <label className="text-[10px] text-gray-500">Vuelve</label>
+            <input type="time" value={trRet} onChange={(ev) => setTrRet(ev.target.value)}
+              className="px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] bg-white" />
+            <button type="button" disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const r = await hostSetTransport(token, e.transport!.plan_id!, { depart: trDep || null, ret: trRet || null });
+                setBusy(false);
+                if (!r.ok) { setMsg(r.error ?? 'No se pudo guardar.'); return; }
+                setMsg('✓ Horarios de transporte actualizados.'); setTrEdit(false); onChanged?.();
+              }}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-50"
+              style={{ background: '#061C2B', color: '#fff' }}>
+              Guardar
+            </button>
+            <button type="button" disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const r = await hostSetTransport(token, e.transport!.plan_id!, { status: 'taken' });
+                setBusy(false);
+                if (!r.ok) { setMsg(r.error ?? 'No se pudo confirmar.'); return; }
+                setMsg('✓ Van marcada como salida.'); setTrEdit(false); onChanged?.();
+              }}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50"
+              style={{ borderColor: '#06D6A0', color: '#0a7c5d', background: 'rgba(6,214,160,.08)' }}>
+              🚐 Salió ✓
+            </button>
+          </div>
         </div>
       )}
 

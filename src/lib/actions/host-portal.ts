@@ -250,7 +250,7 @@ export interface HostDayEvent {
   enrolled: number;
   students: { name: string; paid: boolean; waiver: boolean }[];
   spaces: string[];
-  transport: { depart: string | null; ret: string | null; status: string | null } | null;
+  transport: { plan_id: string | null; depart: string | null; ret: string | null; status: string | null } | null;
   venue: string | null;
   price_cents: number | null;
 }
@@ -287,7 +287,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       .neq('status', 'cancelled'),
     sessionIds.length
       ? admin.from('service_plans')
-          .select('camp_instance_id, camp_session_id, transport_needed, transport_depart, transport_return, transport_status, surf_venue, class_start_time')
+          .select('id, camp_instance_id, camp_session_id, transport_needed, transport_depart, transport_return, transport_status, surf_venue, class_start_time')
           .in('camp_session_id', sessionIds)
       : Promise.resolve({ data: [] as any[] }),
   ]);
@@ -328,7 +328,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       }),
       spaces: spacesByCamp.get(i.id) ?? [],
       transport: plan?.transport_needed
-        ? { depart: plan.transport_depart, ret: plan.transport_return, status: plan.transport_status }
+        ? { plan_id: plan.id ?? null, depart: plan.transport_depart, ret: plan.transport_return, status: plan.transport_status }
         : null,
       venue: plan?.surf_venue ?? null,
     };
@@ -647,4 +647,98 @@ export async function hostCancelClass(token: string, campId: string): Promise<{ 
     `${who.display_name ?? 'Host'} la canceló desde el mostrador (${camp.start_date}${camp.scheduled_time ? ' ' + String(camp.scheduled_time).slice(0, 5) : ''}).${names.length ? ` Avisar a: ${names.join(', ')}.` : ''}${paid ? ` ${paid} ya habían pagado — revisar en recepción.` : ''}`,
     effective);
   return { ok: true, students: names };
+}
+
+// ── Host cubre coordinador (Marcelo 2026-08-09): transporte + renovaciones ──
+
+// Confirmar/ajustar el transporte del día desde el mostrador. El host de fin
+// de semana ajusta horarios de la van y marca que salió ('taken', mismo
+// vocabulario que el tablero del coordinador) sin esperar al lunes.
+export async function hostSetTransport(
+  token: string,
+  planId: string,
+  input: { depart?: string | null; ret?: string | null; status?: 'taken' | 'cancelled' | null },
+): Promise<{ ok: boolean; error?: string }> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id || !(await hostCanCoordinate(who as any))) return { ok: false, error: 'No autorizado.' };
+  const admin = createAdminClient();
+
+  // El plan debe pertenecer a un servicio de ESTA academia.
+  const { data: plan } = await admin
+    .from('service_plans')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id!inner(academy_id)')
+    .eq('id', planId)
+    .maybeSingle();
+  const inst = plan ? (Array.isArray((plan as any).camp_instances) ? (plan as any).camp_instances[0] : (plan as any).camp_instances) : null;
+  if (!inst || inst.academy_id !== who.academy_id) return { ok: false, error: 'Transporte no encontrado.' };
+
+  const patch: Record<string, unknown> = {};
+  if (input.depart !== undefined) patch.transport_depart = input.depart || null;
+  if (input.ret !== undefined) patch.transport_return = input.ret || null;
+  if (input.status !== undefined) patch.transport_status = input.status;
+  if (Object.keys(patch).length === 0) return { ok: false, error: 'Nada que actualizar.' };
+
+  const { error } = await admin.from('service_plans').update(patch).eq('id', planId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Precios de membresía del mostrador — mismos planes del portal (RenewalGate).
+const DESK_MEMBERSHIP_PLANS: Record<number, number> = { 1: 999, 6: 4999, 12: 9990 };
+
+// Confirmar una renovación PEDIDA por el alumno desde su portal (fila
+// 'requested'). Mismo flujo que confirmMembershipRenewal del dashboard, pero
+// token-gated para el host que cubre el fin de semana.
+export async function hostConfirmRenewal(
+  token: string,
+  studentId: string,
+  method: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id || !(await hostCanCoordinate(who as any))) return { ok: false, error: 'No autorizado.' };
+  const admin = createAdminClient();
+
+  const { data: stu } = await admin.from('students').select('id, academy_id').eq('id', studentId).maybeSingle();
+  if (!stu || stu.academy_id !== who.academy_id) return { ok: false, error: 'Alumno no encontrado.' };
+
+  const { data: req } = await admin.from('memberships').select('id, months, amount_cents')
+    .eq('student_id', studentId).eq('status', 'requested')
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (!req) return { ok: false, error: 'No hay solicitud de renovación pendiente.' };
+
+  await admin.from('memberships').update({ status: 'cancelled', note: 'convertida al confirmar (mostrador)' }).eq('id', req.id);
+  const { extendMembership } = await import('@/lib/actions/memberships');
+  await extendMembership(studentId, req.months, 'renewal', {
+    amountCents: req.amount_cents ?? DESK_MEMBERSHIP_PLANS[req.months] ?? null,
+    paymentMethod: method || 'manual',
+    createdBy: who.id,
+    note: `Renovación confirmada en mostrador por ${who.display_name ?? 'host'}`,
+  });
+  return { ok: true };
+}
+
+// Renovación directa en mostrador (sin solicitud previa): el alumno llega un
+// sábado y quiere renovar. Planes 1/6/12 meses a precio de lista del portal.
+export async function hostGrantRenewal(
+  token: string,
+  studentId: string,
+  months: number,
+  method: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id || !(await hostCanCoordinate(who as any))) return { ok: false, error: 'No autorizado.' };
+  if (![1, 6, 12].includes(months)) return { ok: false, error: 'Plan inválido (1, 6 o 12 meses).' };
+  const admin = createAdminClient();
+
+  const { data: stu } = await admin.from('students').select('id, academy_id').eq('id', studentId).maybeSingle();
+  if (!stu || stu.academy_id !== who.academy_id) return { ok: false, error: 'Alumno no encontrado.' };
+
+  const { extendMembership } = await import('@/lib/actions/memberships');
+  await extendMembership(studentId, months, 'renewal', {
+    amountCents: DESK_MEMBERSHIP_PLANS[months],
+    paymentMethod: method || 'cash',
+    createdBy: who.id,
+    note: `Renovada en mostrador por ${who.display_name ?? 'host'}`,
+  });
+  return { ok: true };
 }

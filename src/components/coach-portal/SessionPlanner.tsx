@@ -59,6 +59,10 @@ import {
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
+import {
+  listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
+  type AcademySpace, type SpaceBooking,
+} from '@/lib/actions/spaces';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 
@@ -1007,6 +1011,17 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               </details>
             </div>
           </Section>
+
+          {/* Espacios de la academia — UNA línea plegada (pedido de Marcelo:
+              que resuelva sin cargar la vista). Solo se expande si el coach
+              la toca; reserva salones/piscina para ESTE día sin salir del
+              planner ni WhatsApp. Multi-reserva; editable en Espacios. */}
+          <PlannerSpaces
+            token={token}
+            date={data.selectedDay.session_date}
+            defaultStart={(plan.class_start_time ?? data.camp.scheduled_time ?? '09:00').slice(0, 5)}
+            title={(data.camp.camp_name ?? '').split(' · ')[0]}
+          />
 
           {/* 2. GROUP WARM-UP */}
           <Section icon={Flame} title="2. Group Warm-Up" subtitle="Pick from your tools or write your own">
@@ -3070,6 +3085,150 @@ function EvalRow({
         >
           {value}
         </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Espacios dentro del planner — UNA línea plegada ─────────────────
+// Pedido de Marcelo (2026-08-09): que resuelva la reserva de salones/piscina
+// sin cargar la vista. Cerrada = una línea; abierta = chips de espacios +
+// hora + reservar (multi-reserva). Usa el sistema de Espacios existente
+// (misma tabla + protección anti-choques); editable en la pestaña Espacios.
+function plusOneHour(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map((n) => parseInt(n, 10));
+  const hh = Math.min((Number.isNaN(h) ? 9 : h) + 1, 23);
+  return `${String(hh).padStart(2, '0')}:${String(Number.isNaN(m) ? 0 : m).padStart(2, '0')}`;
+}
+
+function PlannerSpaces({ token, date, defaultStart, title }: {
+  token: string; date: string; defaultStart: string; title: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [spaces, setSpaces] = useState<AcademySpace[] | null>(null);
+  const [bookings, setBookings] = useState<SpaceBooking[] | null>(null);
+  const [sel, setSel] = useState<string | null>(null);
+  const [from, setFrom] = useState(defaultStart || '09:00');
+  const [to, setTo] = useState(plusOneHour(defaultStart || '09:00'));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = () => {
+    listSpacesByToken(token).then(setSpaces).catch(() => setSpaces([]));
+    listBookingsForDayByToken(token, date).then(setBookings).catch(() => setBookings([]));
+  };
+  useEffect(() => {
+    if (open && spaces === null) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const fmtT = (iso: string) =>
+    new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/El_Salvador' });
+  const spaceName = (id: string) => spaces?.find((s) => s.id === id)?.name ?? 'Espacio';
+
+  const book = () => {
+    if (!sel) { setErr('Elegí un espacio primero.'); return; }
+    setBusy(true); setErr(null);
+    createBookingByToken(token, { spaceId: sel, date, startTime: from, endTime: to, title })
+      .then((r) => {
+        setBusy(false);
+        if (!r.ok) { setErr(r.error ?? 'No se pudo reservar.'); return; }
+        setSel(null);
+        load();
+      })
+      .catch(() => { setBusy(false); setErr('No se pudo reservar.'); });
+  };
+
+  const cancel = (id: string) => {
+    setBusy(true);
+    cancelBookingByToken(token, id).then((r) => {
+      setBusy(false);
+      if (!r.ok) { setErr(r.error ?? 'No se pudo cancelar.'); return; }
+      load();
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Línea plegada — cero carga visual hasta que el coach la toca. */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+      >
+        <span className="text-sm font-semibold text-[var(--tss-navy)]">
+          🏛 Espacios · Reservar para esta clase
+          {bookings && bookings.length > 0 ? ` (${bookings.length})` : ''}
+        </span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{open ? 'Cerrar' : 'Abrir'}</span>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
+          {spaces === null ? (
+            <p className="text-[12px] text-gray-400">Cargando espacios…</p>
+          ) : spaces.length === 0 ? (
+            <p className="text-[12px] text-gray-400">Tu academia aún no tiene espacios configurados.</p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-1.5">
+                {spaces.map((sp) => (
+                  <button
+                    key={sp.id}
+                    type="button"
+                    onClick={() => setSel(sel === sp.id ? null : sp.id)}
+                    className="px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all"
+                    style={sel === sp.id
+                      ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' }
+                      : { background: 'white', borderColor: '#E5E7EB', color: '#55666E' }}
+                  >
+                    {sp.name}
+                  </button>
+                ))}
+              </div>
+
+              {sel && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-[11px] text-gray-500">Desde</label>
+                  <input type="time" value={from} onChange={(e) => setFrom(e.target.value)}
+                    className="px-2 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white" />
+                  <label className="text-[11px] text-gray-500">Hasta</label>
+                  <input type="time" value={to} onChange={(e) => setTo(e.target.value)}
+                    className="px-2 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white" />
+                  <button type="button" disabled={busy} onClick={book}
+                    className="px-4 py-2 rounded-full text-[12px] font-bold text-white disabled:opacity-50"
+                    style={{ background: 'var(--tss-navy, #061C2B)' }}>
+                    {busy ? 'Reservando…' : `Reservar ${spaceName(sel)} ✓`}
+                  </button>
+                </div>
+              )}
+
+              {err && <p className="text-[11px] font-semibold text-rose-600">{err}</p>}
+
+              {bookings && bookings.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-gray-400">Reservado para este día</p>
+                  {bookings.map((b) => (
+                    <div key={b.id} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px]"
+                      style={{ background: 'rgba(6,214,160,.08)' }}>
+                      <span className="min-w-0 truncate text-gray-700">
+                        <strong>{spaceName(b.space_id)}</strong> · {fmtT(b.starts_at)}–{fmtT(b.ends_at)}
+                        {b.title ? ` · ${b.title}` : ''}{b.coach_name ? ` — ${b.coach_name}` : ''}
+                      </span>
+                      <button type="button" disabled={busy} onClick={() => cancel(b.id)}
+                        className="shrink-0 text-rose-500 font-bold text-[13px] disabled:opacity-40" aria-label="Cancelar reserva">
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-gray-400 italic">
+                Podés reservar varios espacios a distintas horas. Si uno choca con otra reserva, la app te avisa. Editable también en la pestaña Espacios.
+              </p>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
