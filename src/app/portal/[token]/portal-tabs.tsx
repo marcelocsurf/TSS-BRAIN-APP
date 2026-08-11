@@ -280,6 +280,20 @@ export function PortalTabs({
     initialDrillId || null
   );
   const [showCustomSession, setShowCustomSession] = useState(false);
+
+  // Los parámetros de deep-link (?tab=, ?lesson=, ?drill=, ?step=, ?survey=)
+  // ya quedaron capturados en estado arriba, así que se limpian de la barra de
+  // direcciones. Si no, la URL queda PEGADA: el alumno entra una vez a una
+  // lección o a Let's Play por un link y a partir de ahí cada recarga lo
+  // devuelve al mismo lugar, aunque haya navegado a Inicio con la barra de
+  // abajo (que solo cambia estado y nunca tocó la URL).
+  useEffect(() => {
+    try {
+      if (!window.location.search) return;
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch { /* la limpieza es cosmética, nunca debe romper el portal */ }
+  }, []);
+
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
 
