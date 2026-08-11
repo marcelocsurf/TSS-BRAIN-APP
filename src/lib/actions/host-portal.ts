@@ -148,7 +148,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
       .gte('camp_instances.start_date', today)
       .order('camp_instances(start_date)').limit(3),
     admin.from('student_session_results')
-      .select('created_at, status, coach_feedback, whats_next')
+      .select('id, created_at, status, coach_feedback, whats_next, feedback_token')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false }).limit(5),
     admin.from('session_incidents')
@@ -193,6 +193,23 @@ export async function hostStudentDetail(token: string, studentId: string) {
     sessions: sessions ?? [],
     incidents: incidents ?? [],
     membership,
+    // Encuesta pendiente: la sesión cerrada más reciente que tiene link y
+    // todavía nadie respondió. La encuesta solo salía por correo, así que si
+    // el correo era dudoso o no existía, no había forma de recuperarla
+    // (reporte de Cony 2026-08-11). Ahora el mostrador la manda por WhatsApp.
+    pendingSurvey: await (async () => {
+      const withToken = (sessions ?? []).filter((r: any) => r.feedback_token);
+      for (const r of withToken) {
+        const { count } = await admin
+          .from('survey_responses')
+          .select('id', { count: 'exact', head: true })
+          .eq('session_result_id', (r as any).id);
+        if (!count) {
+          return { token: (r as any).feedback_token as string, date: (r as any).created_at as string };
+        }
+      }
+      return null;
+    })(),
   };
 }
 

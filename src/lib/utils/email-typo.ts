@@ -9,10 +9,16 @@
 // Solo sugiere: nunca corrige solo. El dueño del correo es quien decide —
 // hay dominios legítimos que se parecen a los típicos.
 
+// Dominios reales conocidos. Ojo con los que PARECEN typos y no lo son:
+// `googlemail.com` es el dominio alterno oficial de Gmail (era el que Google
+// usaba por defecto en Reino Unido y Alemania) — Cony reportó uno como
+// "correo no válido" el 2026-08-11 y era perfectamente bueno.
 const DOMAINS = [
-  'gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com',
-  'live.com', 'me.com', 'aol.com', 'proton.me', 'protonmail.com',
-  'yahoo.es', 'hotmail.es', 'gmail.es',
+  'gmail.com', 'googlemail.com', 'hotmail.com', 'outlook.com', 'yahoo.com',
+  'icloud.com', 'live.com', 'me.com', 'mac.com', 'aol.com',
+  'proton.me', 'protonmail.com', 'pm.me', 'gmx.com', 'gmx.de', 'web.de',
+  'yahoo.es', 'yahoo.co.uk', 'hotmail.es', 'hotmail.co.uk', 'outlook.es',
+  'live.co.uk', 'btinternet.com', 'orange.fr', 'free.fr',
 ];
 
 /**

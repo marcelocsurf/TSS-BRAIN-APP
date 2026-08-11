@@ -112,6 +112,31 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
           </div>
           <button type="button" onClick={() => copy(row.portal_url, 'portal')}
             className="w-full rounded-full py-2 text-[9px] border" style={{ ...F_M, color: INK, borderColor: '#e5e7eb' }}>🔗 Copiar link del portal del alumno</button>
+
+          {/* Encuesta pendiente: antes SOLO salía por correo, así que con un
+              correo dudoso (o sin correo) se perdía y nadie podía recuperarla
+              — reporte de Cony 2026-08-11. Ahora se manda por WhatsApp. */}
+          {detail?.pendingSurvey && (
+            <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
+              <p className="text-[11px] font-bold" style={{ color: '#7a5c00' }}>
+                📝 Encuesta sin responder · clase del {new Date(detail.pendingSurvey.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'America/El_Salvador' })}
+              </p>
+              <div className="flex gap-2">
+                <button type="button"
+                  onClick={() => copy(`${window.location.origin}/feedback/${detail.pendingSurvey.token}`, 'encuesta')}
+                  className="flex-1 rounded-full py-2 text-[9px]" style={{ ...F_M, background: GOLD, color: INK, fontWeight: 700 }}>
+                  📋 Copiar link
+                </button>
+                {row.phone && (
+                  <a href={`https://wa.me/${String(row.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${(row.name ?? '').split(' ')[0]}! Thanks for training with us 🤙 Here's a 1-minute survey about your session: ${typeof window !== 'undefined' ? window.location.origin : ''}/feedback/${detail.pendingSurvey.token}`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex-1 rounded-full py-2 text-[9px] text-center" style={{ ...F_M, background: GREEN, color: INK, fontWeight: 700 }}>
+                    💬 WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
           {msg && <p className="text-[11px] font-semibold" style={{ color: '#0090B0' }}>{msg}</p>}
           {detail ? (
             <div className="space-y-2">
