@@ -193,60 +193,42 @@ function isBlockStart(line: string): boolean {
   );
 }
 
+// Reglas inline. El ORDEN importa solo cuando dos patrones empiezan en la
+// MISMA posición: `**x**` también hace match como cursiva, así que la negrita
+// tiene que ir primero.
+const INLINE_RULES: { re: RegExp; node: (content: string, key: number) => React.ReactNode }[] = [
+  { re: /\*\*(.+?)\*\*/, node: (c, k) => <strong key={k} className="font-bold text-[var(--tss-navy)]">{c}</strong> },
+  { re: /\*(.+?)\*/, node: (c, k) => <em key={k} className="italic">{c}</em> },
+  { re: /==(.+?)==/, node: (c, k) => <mark key={k} className="bg-[#FEF08A] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">{c}</mark> },
+  { re: /`([^`]+?)`/, node: (c, k) => <code key={k} className="bg-gray-100 text-[var(--tss-navy)] px-1 py-0.5 rounded text-[12px]">{c}</code> },
+];
+
 function renderInline(text: string): React.ReactNode {
-  // Process bold, italic, code, links inline
+  // Se busca el match que empieza ANTES en la línea, sea del tipo que sea, y
+  // se sigue procesando lo que queda. La versión anterior probaba negrita
+  // primero sobre TODA la línea: si en la misma línea había cursiva y después
+  // negrita, el tramo previo a la negrita se emitía crudo y el alumno veía los
+  // asteriscos. Afectaba a 45 de las 196 lecciones activas.
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
 
   while (remaining.length > 0) {
-    // Bold **text**
-    const boldMatch = remaining.match(/^(.*?)\*\*(.+?)\*\*(.*)/);
-    if (boldMatch) {
-      const [, before, content, after] = boldMatch;
-      if (before) parts.push(<span key={key++}>{before}</span>);
-      parts.push(<strong key={key++} className="font-bold text-[var(--tss-navy)]">{content}</strong>);
-      remaining = after;
-      continue;
+    let best: { index: number; length: number; content: string; make: (c: string, k: number) => React.ReactNode } | null = null;
+    for (const rule of INLINE_RULES) {
+      const m = remaining.match(rule.re);
+      if (!m || m.index === undefined) continue;
+      if (!best || m.index < best.index) {
+        best = { index: m.index, length: m[0].length, content: m[1], make: rule.node };
+      }
     }
-    // Italic *text*
-    const italicMatch = remaining.match(/^(.*?)\*(.+?)\*(.*)/);
-    if (italicMatch) {
-      const [, before, content, after] = italicMatch;
-      if (before) parts.push(<span key={key++}>{before}</span>);
-      parts.push(<em key={key++} className="italic">{content}</em>);
-      remaining = after;
-      continue;
+    if (!best) {
+      parts.push(<span key={key++}>{remaining}</span>);
+      break;
     }
-    // Highlight ==text==
-    const hlMatch = remaining.match(/^(.*?)==(.+?)==(.*)/);
-    if (hlMatch) {
-      const [, before, content, after] = hlMatch;
-      if (before) parts.push(<span key={key++}>{before}</span>);
-      parts.push(
-        <mark key={key++} className="bg-[#FEF08A] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">
-          {content}
-        </mark>
-      );
-      remaining = after;
-      continue;
-    }
-    // Code `text`
-    const codeMatch = remaining.match(/^(.*?)`([^`]+?)`(.*)/);
-    if (codeMatch) {
-      const [, before, content, after] = codeMatch;
-      if (before) parts.push(<span key={key++}>{before}</span>);
-      parts.push(
-        <code key={key++} className="bg-gray-100 text-[var(--tss-navy)] px-1 py-0.5 rounded text-[12px]">
-          {content}
-        </code>
-      );
-      remaining = after;
-      continue;
-    }
-    // Plain text
-    parts.push(<span key={key++}>{remaining}</span>);
-    break;
+    if (best.index > 0) parts.push(<span key={key++}>{remaining.slice(0, best.index)}</span>);
+    parts.push(best.make(best.content, key++));
+    remaining = remaining.slice(best.index + best.length);
   }
 
   return parts;
