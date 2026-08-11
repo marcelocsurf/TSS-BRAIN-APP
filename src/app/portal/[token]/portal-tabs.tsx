@@ -736,9 +736,11 @@ function HomeTab({
               <div key={s.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
                 <div className="flex items-center gap-2">
                   <span style={{ width: 4, height: 18, borderRadius: 3, background: s.accent, display: 'inline-block' }} />
-                  <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>{s.label}</span>
+                  <span className="font-bold whitespace-nowrap" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '17px', letterSpacing: '0.005em' }}>{s.label}</span>
                 </div>
-                <p className="font-bold mt-2" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#00D2FF', fontSize: '30px', lineHeight: 1 }}>{s.value}</p>
+                {/* Mismo problema que el anillo: en teléfono la tarjeta mide
+                    ~145px y "13h 18m" a 30px partía en dos líneas. */}
+                <p className="font-bold mt-2 whitespace-nowrap" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#00D2FF', fontSize: s.value.length <= 3 ? '30px' : s.value.length <= 5 ? '26px' : s.value.length <= 7 ? '21px' : '17px', lineHeight: 1 }}>{s.value}</p>
               </div>
             ))}
           </div>
