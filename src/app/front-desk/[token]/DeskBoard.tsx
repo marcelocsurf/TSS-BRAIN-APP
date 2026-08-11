@@ -28,8 +28,6 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
   const afterChange = () => { router.refresh(); onChanged?.(); };
   const [payFor, setPayFor] = useState<string | null>(null);
   const [room, setRoom] = useState('');
-  // Waiver pendiente tras cobrar: aviso persistente hasta que lo cierren.
-  const [waiverWarn, setWaiverWarn] = useState<string | null>(null);
   // Ajuste de cobro (host cubre al coordinador): paquete/cortesía/monto.
   const [adjAmount, setAdjAmount] = useState('');
   const [adjReason, setAdjReason] = useState('');
@@ -96,9 +94,8 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
     start(async () => {
       const r = await frontDeskSettle(token, participantId, method);
       if (!r.ok) { alert(r.error); return; }
-      // El cobro ya quedó registrado; el waiver pendiente se avisa aparte
-      // (antes esto TRABABA el cobro y la reserva quedaba en "pendiente").
-      if (r.warning) setWaiverWarn(r.warning);
+      // El waiver pendiente ya NO traba el cobro: queda avisado arriba, en un
+      // bloque derivado de los datos que no se va hasta que firmen.
       setPayFor(null); setRoom('');
       afterChange();
     });
@@ -119,24 +116,26 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
   };
 
   const query = q.trim().toLowerCase();
+  const paidNoWaiver = classes.flatMap((c) => c.seats.filter((s) => s.payment_status === 'paid' && !s.waiver_signed));
 
   return (
     <div className="space-y-4">
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 Search by name…"
         className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm bg-white shadow-sm" />
 
-      {/* Cobrado con waiver pendiente: el dinero ya quedó registrado, pero la
-          firma sigue faltando y eso es lo que frena la entrada al agua. */}
-      {waiverWarn && (
-        <div className="rounded-2xl p-3.5 space-y-2" style={{ background: 'rgba(255,209,102,.2)', border: '1px solid rgba(255,209,102,.6)' }}>
-          <p className="text-[12.5px] font-bold leading-snug" style={{ color: '#7a5c00' }}>⚠ {waiverWarn}</p>
-          <p className="text-[11px]" style={{ color: '#a08030' }}>
-            Mandale el link del waiver desde 👥 Clientes (botón 📧 o 📋 para WhatsApp), o que lo firme en el QR de la clase.
+      {/* Pagaron pero NO firmaron el waiver. Derivado de los datos, no un
+          aviso pasajero: el cobro ya no se traba por el waiver (reporte de
+          Cony 2026-08-10), así que la deuda de la firma tiene que quedar a la
+          vista hasta que se resuelva — es lo que frena la entrada al agua. */}
+      {paidNoWaiver.length > 0 && (
+        <div className="rounded-2xl p-3.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.2)', border: '1px solid rgba(255,209,102,.6)' }}>
+          <p className="text-[9px]" style={{ ...F_LABEL, color: '#7a5c00' }}>⚠ Pagaron · falta el waiver</p>
+          <p className="text-[12.5px] font-bold leading-snug" style={{ color: '#7a5c00' }}>
+            {paidNoWaiver.map((s) => s.name).join(' · ')}
           </p>
-          <button type="button" onClick={() => setWaiverWarn(null)}
-            className="rounded-full px-4 py-2 text-[10px]" style={{ ...F_LABEL, background: '#061C2B', color: '#fff', fontWeight: 700 }}>
-            Entendido
-          </button>
+          <p className="text-[11px]" style={{ color: '#a08030' }}>
+            El cobro ya quedó registrado. Que firmen antes de entrar al agua: mandales el link desde 👥 Clientes (📧 o 📋 para WhatsApp), o que lo firmen en el QR de la clase.
+          </p>
         </div>
       )}
 
