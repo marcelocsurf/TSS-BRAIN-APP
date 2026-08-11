@@ -389,7 +389,7 @@ export function IntakeForm({ token, student }: Props) {
     return (
       <div className="space-y-4">
         {/* Stage indicator */}
-        <StageIndicator current={0} />
+        <StageIndicator current={0} onlyStep={isDropin} />
 
         {/* ── Identity (the "ficha") ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -400,7 +400,7 @@ export function IntakeForm({ token, student }: Props) {
           </div>
           <div className="p-4 space-y-4">
             <Field
-              label="Date of Birth *"
+              label="Date of Birth"
               type="date"
               max={dobMaxAttr()}
               value={basicForm.date_of_birth || ''}
@@ -412,7 +412,7 @@ export function IntakeForm({ token, student }: Props) {
                 pedía el del contacto de emergencia y el equipo no tenía cómo
                 escribirle al cliente (reporte de Cony 2026-08-09). */}
             <Field
-              label="Phone / WhatsApp *"
+              label="Phone / WhatsApp"
               type="tel"
               value={basicForm.phone || ''}
               onChange={(v) => setBasic('phone', v)}
@@ -443,14 +443,14 @@ export function IntakeForm({ token, student }: Props) {
                 Sin esto llega a la playa y la elige a ojo. */}
             <FormRow>
               <Field
-                label="Height *"
+                label="Height"
                 value={basicForm.height || ''}
                 onChange={(v) => setBasic('height', v)}
                 placeholder={`5'10" or 178cm`}
                 required
               />
               <Field
-                label="Weight *"
+                label="Weight"
                 value={basicForm.weight || ''}
                 onChange={(v) => setBasic('weight', v)}
                 placeholder="165 lbs or 75 kg"
@@ -874,12 +874,17 @@ export function IntakeForm({ token, student }: Props) {
 // STAGE INDICATOR
 // ═══════════════════════════════════════
 
-function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
-  const steps: { label: string }[] = [
-    { label: 'Profile & Safety' },
-    { label: 'Your Level' },
-    { label: 'Goals' },
-  ];
+// `onlyStep` = drop-in: hace UN solo paso, así que mostrarle 3 le dice que
+// tiene por delante un proceso que nunca va a recorrer. Justo la sensación de
+// "esto es muy largo" que reportó Cony.
+function StageIndicator({ current, onlyStep = false }: { current: 0 | 1 | 2; onlyStep?: boolean }) {
+  const steps: { label: string }[] = onlyStep
+    ? [{ label: 'Profile & Safety' }]
+    : [
+        { label: 'Profile & Safety' },
+        { label: 'Your Level' },
+        { label: 'Goals' },
+      ];
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3">
       <div className="flex items-center gap-2">
