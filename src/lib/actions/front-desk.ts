@@ -87,7 +87,7 @@ export async function getFrontDeskData(token: string) {
   return { desk: { name: (who as any).display_name }, classes };
 }
 
-export async function frontDeskSettle(token: string, participantId: string, method: string): Promise<{ ok: boolean; error?: string }> {
+export async function frontDeskSettle(token: string, participantId: string, method: string): Promise<{ ok: boolean; error?: string; warning?: string }> {
   const who = await resolveDesk(token);
   if (!who?.academy_id) return { ok: false, error: 'Not authorized.' };
   const admin = createAdminClient();
@@ -95,21 +95,38 @@ export async function frontDeskSettle(token: string, participantId: string, meth
   // The seat must belong to a class of THIS academy.
   const { data: seat } = await admin
     .from('camp_participants')
-    .select('id, camp_instances:camp_instance_id!inner(academy_id, camp_templates:template_id(service_kind)), students(waiver_signed, first_name)')
+    .select('id, notes, amount_cents, list_price_cents, camp_instances:camp_instance_id!inner(academy_id, camp_templates:template_id(service_kind)), students(waiver_signed, first_name)')
     .eq('id', participantId)
     .maybeSingle();
   const inst = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
   if (!inst || inst.academy_id !== who.academy_id) return { ok: false, error: 'Seat not found.' };
+
+  // El waiver frena la ENTRADA AL AGUA, no el dinero (reporte de Cony
+  // 2026-08-10). Este candado venía del flujo del QR, donde el waiver siempre
+  // se firma al reservar; con un walk-in que agrega el mostrador nunca está
+  // firmado todavía, así que trababa el cobro: la persona ya estaba en la
+  // clase, el cargo a la habitación no se podía registrar y quedaba en
+  // "pendiente" sin salida. Ahora se cobra y el waiver queda como deuda
+  // VISIBLE (chip "Waiver ✗" + nota auditada + aviso al cobrar).
   const st = Array.isArray((seat as any).students) ? (seat as any).students[0] : (seat as any).students;
-  if (st && !st.waiver_signed) return { ok: false, error: `${st.first_name} has not signed the waiver yet — have them sign it first (QR or intake link).` };
+  const noWaiver = !!st && !st.waiver_signed;
+  const stamp = new Date().toISOString();
 
   const { error } = await admin
     .from('camp_participants')
-    .update({ payment_status: 'paid', paid_at: new Date().toISOString(), payment_method: method,
-      ...((seat as any).amount_cents == null && (seat as any).list_price_cents != null ? { amount_cents: (seat as any).list_price_cents } : {}) })
+    .update({
+      payment_status: 'paid', paid_at: stamp, payment_method: method,
+      ...((seat as any).amount_cents == null && (seat as any).list_price_cents != null ? { amount_cents: (seat as any).list_price_cents } : {}),
+      ...(noWaiver ? {
+        notes: [(seat as any).notes, `⚠ Cobrado SIN waiver firmado — ${who.display_name || 'mostrador'} ${stamp.slice(0, 16).replace('T', ' ')}. Pedir la firma antes de que entre al agua.`]
+          .filter(Boolean).join(' · '),
+      } : {}),
+    })
     .eq('id', participantId);
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return noWaiver
+    ? { ok: true, warning: `Cobrado ✓ — pero ${st.first_name} todavía no firmó el waiver. Mandale el link antes de que entre al agua.` }
+    : { ok: true };
 }
 
 // Reservas de las últimas 48 h — para que recepción/host/coordinador vean de

@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { createNotification } from '@/lib/actions/notifications';
 import { campGuestIncludedIn } from '@/lib/utils/camp-guest';
+import { findLikelySamePerson } from '@/lib/utils/student-match';
 
 // Aviso interno de una reserva del QR público: campanita para coordinadores,
 // admins y hosts (servicio al cliente). No bloquea la reserva si falla.
@@ -229,6 +230,7 @@ export async function publicEnroll(input: {
   // 3. The student — existing by email, or created from the profile form.
   let studentId: string;
   let firstName: string;
+  let dupWarning: string | null = null;
   // Quién reserva: si el QR mandó un studentId (familias con email compartido)
   // usamos ESA persona — verificando que pertenezca al mismo correo y academia,
   // para que un id suelto no permita reservar a nombre de otro.
@@ -312,6 +314,21 @@ export async function publicEnroll(input: {
     if (createErr || !created) return { ok: false, error: 'Could not create your profile — try again or ask at front desk.' };
     studentId = created.id;
     firstName = created.first_name;
+    // Acá NO reusamos automáticamente: dos personas distintas pueden llamarse
+    // igual, y el cliente ya firmó su waiver en ESTA ficha. Pero si huele a
+    // duplicado (caso Kelly Uszenski: entró con su otro correo), lo dejamos
+    // anotado para que el mostrador lo una — el cliente nunca se traba.
+    try {
+      const likely = await findLikelySamePerson(admin, academy.id, {
+        first_name: p.first_name, last_name: p.last_name, date_of_birth: p.date_of_birth,
+      }, studentId);
+      if (likely.length) {
+        dupWarning = `⚠ POSIBLE DUPLICADO — ya existe ${likely.map((l) => `${l.first_name} ${l.last_name ?? ''}`.trim() + (l.email ? ` <${l.email}>` : '')).join(', ')}. Entró por el QR con ${email}. Revisar y unir si es la misma persona.`;
+        await admin.from('students').update({
+          coach_notes_general: dupWarning,
+        }).eq('id', studentId);
+      }
+    } catch { /* el aviso nunca bloquea la reserva */ }
   }
 
   // Regla INCLUIDO — fuente única (campGuestIncludedIn): un huésped de camp
@@ -345,7 +362,9 @@ export async function publicEnroll(input: {
     ...(list != null ? { list_price_cents: list } : {}),
     sale_type,
     ...(reason ? { discount_reason: reason } : {}),
-    ...(includedIn ? { notes: `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` } : {}),
+    ...((includedIn || dupWarning) ? {
+      notes: [includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null, dupWarning].filter(Boolean).join(' · '),
+    } : {}),
   }).select('id').single();
   if (enrollErr) return { ok: false, error: 'Could not save your spot — ask at front desk.' };
   await notifyBooking(academy.id, firstName, (camp as any).camp_name, amount, studentId);
@@ -441,45 +460,83 @@ export async function publicAddCompanion(input: {
   }
   const responsibleAdult = bookerIsMinor ? guardianOfBooker : bookerName;
 
-  const { data: created, error: cErr } = await admin
-    .from('students')
-    .insert({
-      academy_id: academy.id,
-      first_name: name,
-      last_name: (input.last_name ?? '').trim(),
-      email: null,                                   // el contacto es el adulto
-      phone: booker.phone,
-      emergency_contact_name: booker.emergency_contact_name || bookerName,
-      emergency_contact_phone: booker.emergency_contact_phone || booker.phone,
-      medical_notes: input.medical_notes?.trim() || null,
-      date_of_birth: input.date_of_birth?.trim() || null,
-      status: 'active',
-      lifecycle_status: 'lead',
-      student_type: 'drop_in',
-      how_did_you_hear: 'class_qr',
-      waiver_signed: true,
-      waiver_signed_at: new Date().toISOString(),
-      waiver_signed_by: `${responsibleAdult} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
-      coach_notes_general: `Booked by ${responsibleAdult}${bookerIsMinor ? ` (via ${bookerName})` : ''} (${norm(input.bookerEmail)}) — family booking from the public QR.`,
-    })
-    .select('id, first_name')
-    .single();
-  if (cErr || !created) return { ok: false, error: 'Could not add them — ask at front desk.' };
+  // ¿Esta persona YA existe? (familia Uszenski, 2026-08-10: Kelly entró con
+  // otro correo suyo y al agregar a sus hijos el sistema creó personas nuevas
+  // — que además, al no estar en ningún camp, perdían el $0 de huésped.)
+  // Apellido + fecha de nacimiento atrapa incluso el apodo (Eddie/Edward).
+  const already = await findLikelySamePerson(admin, academy.id, {
+    first_name: name, last_name: input.last_name, date_of_birth: input.date_of_birth,
+  });
+  let personId: string | null = already[0]?.id ?? null;
+  let personName = already[0]?.first_name ?? name;
+
+  if (personId) {
+    const { data: dupSeat } = await admin
+      .from('camp_participants')
+      .select('id')
+      .eq('camp_instance_id', (camp as any).id)
+      .eq('student_id', personId)
+      .eq('enrollment_status', 'active')
+      .maybeSingle();
+    if (dupSeat) return { ok: false, error: `${personName} already has a spot in this class.` };
+  }
+
+  if (!personId) {
+    const { data: created, error: cErr } = await admin
+      .from('students')
+      .insert({
+        academy_id: academy.id,
+        first_name: name,
+        last_name: (input.last_name ?? '').trim(),
+        email: null,                                   // el contacto es el adulto
+        phone: booker.phone,
+        emergency_contact_name: booker.emergency_contact_name || bookerName,
+        emergency_contact_phone: booker.emergency_contact_phone || booker.phone,
+        medical_notes: input.medical_notes?.trim() || null,
+        date_of_birth: input.date_of_birth?.trim() || null,
+        status: 'active',
+        lifecycle_status: 'lead',
+        student_type: 'drop_in',
+        how_did_you_hear: 'class_qr',
+        waiver_signed: true,
+        waiver_signed_at: new Date().toISOString(),
+        waiver_signed_by: `${responsibleAdult} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
+        coach_notes_general: `Booked by ${responsibleAdult}${bookerIsMinor ? ` (via ${bookerName})` : ''} (${norm(input.bookerEmail)}) — family booking from the public QR.`,
+      })
+      .select('id, first_name')
+      .single();
+    if (cErr || !created) return { ok: false, error: 'Could not add them — ask at front desk.' };
+    personId = created.id as string;
+    personName = created.first_name as string;
+  }
+  const seatFor: string = personId;
+
+  // Regla INCLUIDO — la misma fuente única que usan el QR y el mostrador: un
+  // huésped de camp entra $0 a las CLASES que su camp cubre. Faltaba acá, así
+  // que a la familia de un campista se le cobraba tarifa completa.
+  const includedIn = await campGuestIncludedIn(admin, seatFor, (tpl as any)?.service_kind, (camp as any).start_date);
 
   const list = tpl?.list_price_cents ?? null;
+  const amount = includedIn ? 0 : list;
   const { error: eErr } = await admin.from('camp_participants').insert({
     camp_instance_id: (camp as any).id,
-    student_id: created.id,
+    student_id: seatFor,
     enrollment_status: 'active',
-    payment_status: 'reserved',
+    payment_status: includedIn ? 'paid' : 'reserved',
     reserved_at: new Date().toISOString(),
-    ...(list != null ? { amount_cents: list, list_price_cents: list } : {}),
+    ...(includedIn ? { paid_at: new Date().toISOString() } : {}),
+    ...(amount != null ? { amount_cents: amount } : {}),
+    ...(list != null ? { list_price_cents: list } : {}),
     sale_type: 'full',
-    notes: `Family booking · ${responsibleAdult}`,
+    notes: [
+      `Family booking · ${responsibleAdult}`,
+      already[0] ? 'Persona ya registrada — se reusó su ficha en vez de crear otra.' : null,
+      includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null,
+    ].filter(Boolean).join(' · '),
   });
   if (eErr) return { ok: false, error: 'Could not save their spot — ask at front desk.' };
-  await notifyBooking(academy.id, `${created.first_name} (familia de ${bookerName})`, (camp as any).camp_name, list, created.id);
-  return { ok: true, name: created.first_name, amount_cents: list };
+  await notifyBooking(academy.id, `${personName} (familia de ${bookerName})`, (camp as any).camp_name, amount, seatFor);
+  return { ok: true, name: personName, amount_cents: amount };
 }
 
 
