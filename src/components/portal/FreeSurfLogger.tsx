@@ -81,6 +81,15 @@ export function FreeSurfLogger({ token }: { token: string }) {
         </button>
       </div>
 
+      {/* Éste es el instante exacto en que el alumno clasifica su propia
+          sesión, así que la doctrina del cap. 2 pega acá más que en cualquier
+          lección leída tres semanas antes. */}
+      <p className="text-[11.5px] leading-relaxed rounded-xl px-3 py-2" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.2)', color: '#4a6072' }}>
+        <strong style={{ color: 'var(--tss-navy)' }}>Free surf is expression</strong> — using what you already have.
+        Training is intervention — building something that is not there yet.
+        Both count. The only mistake is confusing one for the other.
+      </p>
+
       <div>
         <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
           <Clock size={13} strokeWidth={1.75} />

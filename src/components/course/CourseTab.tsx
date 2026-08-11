@@ -111,6 +111,16 @@ export function CourseTab({ data }: { data: CourseData }) {
   const [intros, setIntros] = useState<Record<string, SectionIntro>>({});
   useEffect(() => { getSectionIntros().then(setIntros).catch(() => {}); }, []);
 
+  // Deep-link a una lección: ?tab=course&lesson=PC-PRE-10. Lo usa el enlace
+  // del Home bajo Training / Free Surf — sin esto el link abría el curso pero
+  // dejaba al alumno buscando la clase a mano.
+  useEffect(() => {
+    try {
+      const id = new URLSearchParams(window.location.search).get('lesson');
+      if (id) setOpenLessonId(id);
+    } catch { /* sin deep link */ }
+  }, []);
+
   // Access gate
   if (!data.hasAccess) {
     return (

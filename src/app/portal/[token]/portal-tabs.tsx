@@ -696,6 +696,24 @@ function HomeTab({
             ))}
           </div>
 
+          {/* La app SEPARABA estas dos horas desde siempre y nunca explicaba la
+              diferencia: el alumno veía dos números sin saber por qué importan.
+              Es la tesis del cap. 2 de One Wave — casi todos llaman
+              "entrenamiento" a todo y después se preguntan por qué mejoran
+              lento. El número que ve todos los días enseña más que la lección
+              que leyó una vez, así que acá va el enlace. */}
+          <a
+            href="?tab=course&lesson=PC-PRE-10"
+            className="block rounded-2xl px-4 py-3"
+            style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.22)' }}
+          >
+            <p className="text-[11.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
+              <strong style={{ color: '#eaf4fa' }}>Training is intervention. Free surf is expression.</strong>{' '}
+              Both count. The only mistake is confusing one for the other.
+            </p>
+            <p className="text-[10px] mt-1" style={{ color: '#00D2FF' }}>Read: Free Surfing or Training →</p>
+          </a>
+
           {/* Flow Channel — Canon v8.0 §C.7: the zone between boredom (too easy)
               and anxiety (too hard). Fed by the student's session ratings
               (survey_responses.flow_channel, 1-5; 3 = flow). */}
