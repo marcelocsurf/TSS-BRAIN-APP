@@ -37,6 +37,7 @@ import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzer
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import { LogoutButton } from '@/components/portal/LogoutButton';
+import { BELT_MIRROR, cueForSession } from '@/lib/constants/mental-cues';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
@@ -213,57 +214,6 @@ const BELT_WELCOME: Record<string, string> = {
   purple_belt: 'Emerging — Linking maneuvers, aerial awareness, flow state',
   brown_belt: 'Pre-Elite — Full repertoire, competition readiness, advanced tactics',
   black_belt: 'Elite — Mastery, innovation, coaching readiness',
-};
-
-// ─── Training Tips by Belt ───
-
-// M51 — One Wave mental cues. The old TRAINING_TIPS were technique
-// reminders; Marcelo asked for mind-side prompts in the style of his
-// "One Wave" book. Same belt-keyed rotation by day-of-year so the
-// student gets a different cue each day.
-const TRAINING_TIPS: Record<string, string[]> = {
-  white_belt: [
-    'One wave at a time. The next one does not exist yet.',
-    'Breathe before you paddle. The wave is already on its way.',
-    'Fear shrinks when you name it. Whisper what scares you, then move.',
-    'Curiosity beats performance. Ask the wave a question, do not demand.',
-    'Mistakes are data, not verdicts. Read them, then let them go.',
-    'Presence is your first technique. Land here before you land on the board.',
-  ],
-  yellow_belt: [
-    'You do not chase the wave — you meet it. Patience is power.',
-    'Trust the rep. Your body remembers what your mind forgets.',
-    'Speed is calm in motion. Tension steals it; flow returns it.',
-    'Pick one cue per wave. Mastery is depth, not breadth.',
-    'Read first, react second. The ocean already knows where the line is.',
-    'Reset between waves. Each one starts at zero.',
-  ],
-  blue_belt: [
-    'Style is the residue of trust. Stop forcing, start arriving.',
-    'Commit fully or do not commit. Half-effort is the most dangerous line.',
-    'The wave is the teacher. Your job is to listen.',
-    'When in doubt, breathe out. The board will follow your nervous system.',
-    'Quiet the inner commentator. Surfing happens before the thought.',
-    'You are not behind. You are exactly where the wave needed you.',
-  ],
-  purple_belt: [
-    'Risk is the price of the next door. Pay it on your terms.',
-    'A miss is a rehearsal. Make peace with falling and the ceiling lifts.',
-    'Confidence is built, not summoned. Stack honest reps.',
-    'Read the wave like a sentence. Where is its verb? Surf the verb.',
-  ],
-  brown_belt: [
-    'Pressure is a privilege. It means the moment matters to you.',
-    'Discipline is freedom. The drill you skip is the wave you lose.',
-    'Surf the surfer. Master your own state before the lineup.',
-    'Repetition without intention is decoration. Train with a why.',
-  ],
-  black_belt: [
-    'You are still the student. The day you stop learning is the day you start sliding back.',
-    'Teach the way you wish someone had taught you.',
-    'Mastery is the courage to do the simple thing one more time.',
-    'The ocean did not change. You did. Keep going.',
-  ],
 };
 
 // ─── Helpers: extract drills and missions from STUDENT_MATERIALS by belt ───
@@ -569,9 +519,10 @@ function HomeTab({
     : '12px';
 
   // Training tip of the day — rotate based on day of year
-  const tips = TRAINING_TIPS[beltLevel] || TRAINING_TIPS['white_belt'];
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  const tipOfDay = tips[dayOfYear % tips.length];
+  // El cue rota por SESIONES CERRADAS, no por día del calendario: trae un
+  // "Today", así que tiene que cambiar cuando el alumno entrena.
+  const beltMirror = BELT_MIRROR[beltLevel] ?? BELT_MIRROR.white_belt;
+  const sessionCue = cueForSession(beltLevel, totalSessions);
 
   return (
     <div className="space-y-4">
@@ -750,14 +701,34 @@ function HomeTab({
               (survey_responses.flow_channel, 1-5; 3 = flow). */}
           <FlowChannelCard flow={data.flowChannel} />
 
-          {/* Mental cue — inside the dark hero */}
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}>
-            <p className="text-[9px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#00D2FF' }}>
-              Mental cue · Belt {beltLevel.replace('_belt', '').toUpperCase()}
-            </p>
-            <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
-              “{tipOfDay}”
-            </p>
+          {/* Mental cue — doctrina de One Wave. Tres piezas: el ESPEJO del
+              nivel (valida dónde está, no motiva), la enseñanza, y una acción
+              concreta — una frase suelta contradiría la tesis del libro, que
+              el sistema nervioso se adapta a la repetición y no a entender. */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}>
+            <div>
+              <p className="text-[9px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#00D2FF' }}>
+                Where you are · {beltLevel.replace('_belt', '').toUpperCase()} Belt
+              </p>
+              <p className="text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
+                {beltMirror}
+              </p>
+            </div>
+
+            <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+              <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
+                {sessionCue.cue}
+              </p>
+            </div>
+
+            <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.25)' }}>
+              <p className="text-[8.5px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>Today</p>
+              <p className="text-[13px] font-semibold leading-snug" style={{ color: '#eaf4fa' }}>
+                {sessionCue.today}
+              </p>
+            </div>
+
+            <p className="text-[9.5px]" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
           </div>
 
           {/* Belt journey strip */}
