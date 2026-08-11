@@ -117,7 +117,7 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
             <Hourglass size={28} strokeWidth={1.75} className="text-amber-700 shrink-0 mt-0.5" />
             <div className="flex-1">
               <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">
-                {lesson.id} · Section {lesson.pc_section_id || '—'}
+                {lesson.pc_section_name || 'Coming soon'}
                 {lesson.is_test && ' · Gate Test'}
               </div>
               <h1 className="text-xl font-bold text-amber-900">{lesson.title}</h1>
@@ -174,7 +174,12 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
           ← Back to course
         </button>
         <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5">
-          <div className="text-xs text-white/60 mb-1">{lesson.id}</div>
+          {/* El código interno de la lección (VAL-001, PC-PRE-07…) no se le
+              muestra al alumno: no significa nada para él. Los coaches sí lo
+              ven, en su propio portal. */}
+          {lesson.pc_section_name && (
+            <div className="text-xs text-white/60 mb-1">{lesson.pc_section_name}</div>
+          )}
           <h1 className="text-xl font-bold">{lesson.title}</h1>
           {lesson.subtitle && (
             <p className="text-sm text-white/80 mt-1 italic">{lesson.subtitle}</p>
