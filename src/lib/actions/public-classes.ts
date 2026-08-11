@@ -300,7 +300,7 @@ export async function publicEnroll(input: {
         date_of_birth: p.date_of_birth?.trim() || null,
         status: 'active',
         lifecycle_status: 'lead',
-        student_type: 'drop_in',
+        student_type: 'dropin',   // OJO: sin guion bajo — el intake compara con 'dropin' y es lo que corta el flujo largo
         how_did_you_hear: 'class_qr',
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
@@ -496,7 +496,7 @@ export async function publicAddCompanion(input: {
         date_of_birth: input.date_of_birth?.trim() || null,
         status: 'active',
         lifecycle_status: 'lead',
-        student_type: 'drop_in',
+        student_type: 'dropin',   // OJO: sin guion bajo — el intake compara con 'dropin' y es lo que corta el flujo largo
         how_did_you_hear: 'class_qr',
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
