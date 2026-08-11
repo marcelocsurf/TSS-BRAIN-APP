@@ -196,10 +196,15 @@ function isBlockStart(line: string): boolean {
 // Reglas inline. El ORDEN importa solo cuando dos patrones empiezan en la
 // MISMA posición: `**x**` también hace match como cursiva, así que la negrita
 // tiene que ir primero.
+// El contenido de negrita/cursiva/resaltado se vuelve a procesar: se anida
+// seguido (`**Go when *your* window opens**`) y sin esto el tramo interno
+// salía crudo. La recursión termina siempre: cada vuelta consume delimitadores,
+// así que el texto es estrictamente más corto. `code` NO recursa a propósito —
+// dentro de un código el asterisco es un asterisco.
 const INLINE_RULES: { re: RegExp; node: (content: string, key: number) => React.ReactNode }[] = [
-  { re: /\*\*(.+?)\*\*/, node: (c, k) => <strong key={k} className="font-bold text-[var(--tss-navy)]">{c}</strong> },
-  { re: /\*(.+?)\*/, node: (c, k) => <em key={k} className="italic">{c}</em> },
-  { re: /==(.+?)==/, node: (c, k) => <mark key={k} className="bg-[#FEF08A] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">{c}</mark> },
+  { re: /\*\*(.+?)\*\*/, node: (c, k) => <strong key={k} className="font-bold text-[var(--tss-navy)]">{renderInline(c)}</strong> },
+  { re: /\*(.+?)\*/, node: (c, k) => <em key={k} className="italic">{renderInline(c)}</em> },
+  { re: /==(.+?)==/, node: (c, k) => <mark key={k} className="bg-[#FEF08A] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">{renderInline(c)}</mark> },
   { re: /`([^`]+?)`/, node: (c, k) => <code key={k} className="bg-gray-100 text-[var(--tss-navy)] px-1 py-0.5 rounded text-[12px]">{c}</code> },
 ];
 
