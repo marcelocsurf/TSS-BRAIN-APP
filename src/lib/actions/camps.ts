@@ -590,6 +590,7 @@ export async function createCampInstance(input: {
           // in-water sessions), so we grant on enrolment regardless.
           try {
             await grantCourseToStudent(s.id, courseKey, 'auto_on_camp_enrol');
+            await promoteDropinToMember(s.id);
           } catch (err) {
             console.error('[createCampInstance] auto-grant failed', s.id, courseKey, err);
           }
@@ -1182,12 +1183,28 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
       if (key && !isRefresher) {
         const { grantCourseToStudent } = await import('./course-grants');
         await grantCourseToStudent(studentId, key, 'auto_on_camp_enrol');
+        await promoteDropinToMember(studentId);
         const { extendMembership } = await import('@/lib/actions/memberships');
         await extendMembership(studentId, 6, 'camp_enrollment', { note: `Camp: ${(inst2 as any)?.camp_name ?? campInstanceId}` });
       }
     } catch (e) { console.error('[addStudentToCamp] grant/membership hook failed', e); }
   }
   return { success: true, isRefresher };
+}
+
+// Un drop-in que entra a un camp deja de ser drop-in: pasa a alumno de la
+// academia y por lo tanto SÍ le toca el quiz de nivel (decisión de Marcelo
+// 2026-08-11). El intake corto solo aplica a la clase suelta — al cambiarle el
+// tipo, la próxima vez que abra su link retoma en el quiz, y mientras tanto
+// aparece en "Necesitan atención" del host, que le puede reenviar el link.
+async function promoteDropinToMember(studentId: string) {
+  try {
+    await createAdminClient()
+      .from('students')
+      .update({ student_type: 'member' })
+      .eq('id', studentId)
+      .eq('student_type', 'dropin');
+  } catch (e) { console.error('[camps] promoteDropinToMember failed', studentId, e); }
 }
 
 // Official list price of a service (camp_templates.list_price_cents).
