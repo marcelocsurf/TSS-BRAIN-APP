@@ -558,6 +558,15 @@ function HomeTab({
     if (h === 0) return `${m}m`;
     return m === 0 ? `${h}h` : `${h}h ${m}m`;
   };
+  // Tamaño para la cifra del centro del anillo. Archivo Expanded es ancha
+  // (~0.62em por carácter), y el hueco libre dentro del aro son ~81px: a
+  // partir de "16h 44m" un tamaño fijo se sale. Se ajusta al largo real.
+  const ringFontSize = (label: string) =>
+    label.length <= 3 ? '24px'
+    : label.length <= 5 ? '20px'
+    : label.length <= 7 ? '16px'
+    : label.length <= 9 ? '13.5px'
+    : '12px';
 
   // Training tip of the day — rotate based on day of year
   const tips = TRAINING_TIPS[beltLevel] || TRAINING_TIPS['white_belt'];
@@ -679,11 +688,18 @@ function HomeTab({
                   transform="rotate(-90 60 60)"
                 />
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className="font-bold leading-none" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '22px' }}>
+              {/* El texto vive DENTRO del anillo: el hueco libre son ~81px de
+                  diámetro, así que un tamaño fijo se desbordaba apenas la cifra
+                  crecía ("16h 44m" a 22px no entraba). Se achica sola según el
+                  largo y nunca parte en dos líneas. */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-3">
+                <p className="font-bold leading-none whitespace-nowrap" style={{
+                  fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa',
+                  fontSize: ringFontSize(fmtHm(surf.totalMinutes)),
+                }}>
                   {fmtHm(surf.totalMinutes)}
                 </p>
-                <p className="text-[8px] font-mono uppercase tracking-wider mt-1" style={{ color: '#8aa0b2' }}>In the water</p>
+                <p className="text-[7.5px] font-mono uppercase tracking-[0.12em] mt-1 whitespace-nowrap" style={{ color: '#8aa0b2' }}>In the water</p>
               </div>
             </div>
             <div className="flex-1 min-w-0">
