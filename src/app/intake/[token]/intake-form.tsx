@@ -178,6 +178,11 @@ export function IntakeForm({ token, student }: Props) {
       setError('Please select your swim level.');
       return;
     }
+    // Talla y peso deciden la tabla que te dan — sin esto el coach la elige a ojo.
+    if (!basicForm.height?.trim() || !basicForm.weight?.trim()) {
+      setError('Height and weight are required — your coach picks your board with them.');
+      return;
+    }
     if (!basicForm.emergency_contact_name?.trim()) {
       setError('Emergency contact name is required.');
       return;
@@ -434,20 +439,27 @@ export function IntakeForm({ token, student }: Props) {
               onChange={(v) => setBasic('gender', v)}
               options={['', 'Male', 'Female', 'Other', 'Prefer not to say']}
             />
+            {/* Obligatorios: el coach elige la tabla con la talla y el peso.
+                Sin esto llega a la playa y la elige a ojo. */}
             <FormRow>
               <Field
-                label="Height"
+                label="Height *"
                 value={basicForm.height || ''}
                 onChange={(v) => setBasic('height', v)}
                 placeholder={`5'10" or 178cm`}
+                required
               />
               <Field
-                label="Weight"
+                label="Weight *"
                 value={basicForm.weight || ''}
                 onChange={(v) => setBasic('weight', v)}
                 placeholder="165 lbs or 75 kg"
+                required
               />
             </FormRow>
+            <p className="text-[11px] text-gray-500 -mt-1">
+              Your coach picks your board from your height and weight — it is the difference between a board that works for you and one that fights you.
+            </p>
           </div>
         </div>
 
