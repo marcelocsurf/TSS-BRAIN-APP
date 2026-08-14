@@ -40,20 +40,16 @@ export async function getMyCoachResources(portalToken: string): Promise<CoachRes
     .map((r: any) => r.coach_resources)
     .filter((r: any) => r && r.active);
 
-  // Bucket files are private — mint a short-lived signed URL per resource so
-  // only granted coaches can open them. Legacy public file_url is a fallback.
-  const out: CoachResource[] = [];
-  for (const r of rows) {
-    let url = r.file_url as string | null;
-    if (r.storage_path) {
-      const { data: signed } = await admin.storage
-        .from('coach-presentations')
-        .createSignedUrl(r.storage_path, 60 * 60);
-      if (signed?.signedUrl) url = signed.signedUrl;
-    }
-    if (url) out.push({ id: r.id, title: r.title, description: r.description, file_url: url, kind: r.kind });
-  }
-  return out;
+  // La URL que ve el cliente es SIEMPRE la del propio app. La signed URL del
+  // bucket ya no se emite acá: la mintea /api/materials en el servidor, después
+  // de revalidar el grant, y nunca llega al navegador. Ver el route handler.
+  return rows.map((r: any) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    file_url: `/api/materials/${portalToken}/${r.id}`,
+    kind: r.kind,
+  }));
 }
 
 // Admin: upload a new presentation (PDF) into the private bucket + register it.
@@ -151,18 +147,14 @@ export async function getMyStudentResources(portalToken: string): Promise<CoachR
       .map((r: any) => r.coach_resources)
       .filter((r: any) => r && r.active && r.audience !== 'coaches');
 
-    const out: CoachResource[] = [];
-    for (const r of rows) {
-      let url = r.file_url as string | null;
-      if (r.storage_path) {
-        const { data: signed } = await admin.storage
-          .from('coach-presentations')
-          .createSignedUrl(r.storage_path, 60 * 60);
-        if (signed?.signedUrl) url = signed.signedUrl;
-      }
-      if (url) out.push({ id: r.id, title: r.title, description: r.description, file_url: url, kind: r.kind });
-    }
-    return out;
+    // Igual que en el lado coach: la URL es del app, no del bucket.
+    return rows.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      file_url: `/api/materials/${portalToken}/${r.id}`,
+      kind: r.kind,
+    }));
   } catch {
     return [];
   }
