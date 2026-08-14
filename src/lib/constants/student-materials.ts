@@ -1022,45 +1022,64 @@ STANDARD: Student demonstrates a frontside and backside turn on green waves, sho
     beltLevel: 'yellow_belt',
     category: 'theory',
     title: 'Three Circles of Power',
-    subtitle: 'Body (PRCH), Board (Foot Positions 1-2-3), Wave (Pocket)',
+    subtitle: 'Body (P.R.C.H), Board (FP1-FP2-FP3), Wave (energy and reading)',
     content: `THREE CIRCLES OF POWER
 
-The Yellow Belt introduces the TSS framework for understanding where surfing power comes from.
+At the end of the day, surfing is drawing lines on the face of the wave while keeping your speed. That is the game. The Three Circles are what let you actually play it — they give you the power to decide where you want to go and at what moment.
 
-CIRCLE 1: BODY — PRCH
-Your body generates power through four connected elements:
-P = POSTURE: Upright but low. Chest open, shoulders back, knees bent. Never hunched.
-R = ROTATION: The kinetic chain (eyes → shoulders → hips → board). All power comes from rotation.
-C = COMPRESSION: Bending your knees loads energy. Straightening releases it. This is "pumping."
-H = HANDS: Your arms and hands guide direction and add balance. They reach toward your target.
+There are three: your BODY, your BOARD, and the WAVE. Where the three overlap, you get FLOW.
 
-Coaching cue: "Check your PRCH" — Posture, Rotation, Compression, Hands.
+Most surfers who feel stuck are not missing all three. They are missing one — and they do not know which. That is what this framework is for: when something is not working, it tells you WHERE TO LOOK.
 
-CIRCLE 2: BOARD — FOOT POSITIONS 1-2-3
-Your feet control the board through three positions:
-Position 1 — NEUTRAL: Both feet centered, standard power stance. Used for straight riding and cruising.
-Position 2 — FRONT-WEIGHTED: Weight shifted to front foot (60/40 or 70/30). Used for generating speed, dropping into the wave, and nose-forward momentum.
-Position 3 — BACK-WEIGHTED: Weight shifted to back foot (40/60 or 30/70). Used for turns, tail pivots, slowing down, and engaging the fins.
+WHEN THEY APPLY
+The Three Circles switch on AFTER the pop-up. Everything before that — paddling, prone, entry, passing waves — is diagnosed with the Block System, not with the circles. Do not try to use them lying down.
 
-Every maneuver in surfing is a combination of these three positions in sequence.
+CIRCLE 1: BODY — P.R.C.H
+How I control my body and use it in my favour. Four movements. Every technical action in surfing can be understood, taught and corrected through these four.
 
-CIRCLE 3: WAVE — THE POCKET
-The wave provides power through the pocket:
-- The pocket is where the wave is steepest and most powerful (near the breaking point).
-- Riding in the pocket gives you maximum speed and energy.
-- Riding too far ahead of the pocket: you lose power and stall.
-- Riding too far behind the pocket: the wave breaks on you.
-- Your job is to STAY in the pocket by adjusting speed (Foot Positions 1-2-3).
+P = POSTURE: Stability and neutrality. Back straight, head up, aligned with your feet and the centre of the board, weight on the front foot. This is the base you RETURN TO after everything — not a starting position.
 
-THE INTERSECTION:
-The best surfing happens when all three circles align:
-- Your BODY is in proper PRCH position.
-- Your FEET are in the right position for what you need (speed, turn, control).
-- You are in the POCKET of the wave.
+R = ROTATION: Kinetic activation to engage and change your rails. Eyes lead, body follows: eyes to head to shoulders and hips, and the power arrives at your feet. It ALWAYS starts with the eyes. Turning your shoulders without your eyes going first is not rotation — it is a twist, and the board feels the difference.
 
-When all three circles overlap, you are "in the zone" — maximum flow, maximum power.
+C = COMPRESSION — AND EXTENSION: These are not two movements. They are one movement with two halves. You compress to absorb and load; you extend to release and project. A compression that never extends is energy you stored and threw away.
 
-STANDARD: Student can explain all three circles, demonstrate PRCH on land, show Foot Positions 1-2-3, and identify the pocket on 5 consecutive waves.`,
+H = HOLD: Sustaining your position against the forces that are showing up, longer than feels natural. Hold through the apex, then release. Starting a turn is not doing a turn — the turn exists in the part where you held it.
+
+Coaching cue: "Check your PRCH" — Posture, Rotation, Compression, Hold.
+
+CIRCLE 2: BOARD — FOOT POSITIONS FP1-FP2-FP3
+Where your feet go. The feet are how you CONNECT — how the board stops being an object you manage and becomes an extension of your body that answers to Circle 1.
+
+THE REFERENCE IS THE FINS — not inches from the tail. Measured that way, the positions travel with you to any board you ever ride.
+
+FP1 — FULL TAIL: Rear foot behind the fins, at the very end of the tail. Maximum leverage and the tightest turns you have. Highest control demand. The board feels unstable and you are slowing down, because it pivots much more and holds you less. THAT INSTABILITY IS NOT AN ERROR — it is the same pivot that gives you the turn. FP1 is the most expensive position on the board: you pay in speed the whole time you are in it.
+
+FP2 — NEUTRAL: Rear foot over the fins. The balance point. You have speed AND you can still turn — both at once. This is HOME: where you ride when you are not asking for something specific, and where you return after every turn.
+
+FP3 — FORWARD: Rear foot shifted forward, toward the centre of the board. Acceleration, drive and projection. It feels fast — that is the signal.
+
+THE SWEET SPOT
+Every board has a place where it is widest and thickest — the centre of the board. Most volume and most planing surface in one spot. Press there and the board gives you its maximum speed. That is what your feet are hunting for: not a measurement, a sensation.
+
+ABOUT THE PUMP: you can pump from ANY of the three positions — the pumping movement generates speed wherever your feet are. What changes is how much. If you want MAXIMUM speed, you go to FP3.
+
+Doctrinal principle: the location of the rear foot changes the response of the board. No matter how good your body mechanics are, if your feet are in the wrong place the turn will not work. Circle 1 cannot rescue Circle 2.
+
+CIRCLE 3: WAVE — ENERGY, READING AND DYNAMICS
+Understanding the wave's energy and using it in your favour. This circle is where the two forces meet:
+
+The wave's energy (EXTERNAL force) x what your body generates with the movements (INTERNAL force) = the line you can draw.
+
+What you read on the wave:
+- ENERGY: the power and momentum living in the section.
+- DIRECTION: the line you choose and the angle you take.
+- SECTION: reading where the wave is going to let you express next.
+- POCKET: the sweet spot of the wave. The closer you ride to it, the more speed you get; and the closer your turns are to the breaking part, the more radical your surfing becomes.
+
+THE INTERSECTION — FLOW
+Flow is not a mood and it is not luck. It is what happens when body, board and wave line up ON THE SAME RIDE. That is why flow is the aspiration at every belt, not only at the top: a White Belt can find it on whitewater, a Black Belt looks for it in a barrel. The state is the same — only the terrain changes.
+
+STANDARD: Student can explain all three circles, demonstrate P.R.C.H on land, show FP1-FP2-FP3 using the fins as the reference, identify the pocket on 5 consecutive waves, and — after a wave that did not work — name WHICH CIRCLE failed.`,
     order: 44,
   },
 
@@ -1103,21 +1122,21 @@ STANDARD: Student demonstrates clear differentiation between all 4 speeds. Speed
     beltLevel: 'yellow_belt',
     category: 'drill',
     title: 'PRCH Body Check Drill',
-    subtitle: 'Posture-Rotation-Compression-Hands self-assessment',
+    subtitle: 'Posture-Rotation-Compression-Hold self-assessment',
     content: `PRCH BODY CHECK DRILL
 
-PURPOSE: Train the student to self-assess body position using the PRCH framework.
+PURPOSE: Train the student to self-assess body position using the P.R.C.H framework.
 
 SETUP: On land in power stance. Board or line on the ground.
 
 EXECUTION:
 1. Student stands in power stance.
 2. Coach calls each element — student must adjust and hold:
-   - "P — Posture!" → Student corrects: chest open, back straight, knees bent, head up.
-   - "R — Rotation!" → Student initiates a turn: eyes, shoulders, hips chain.
-   - "C — Compression!" → Student drops low (compresses), then extends up.
-   - "H — Hands!" → Student positions arms: front hand points toward direction, back hand at hip height.
-3. Coach calls "Full PRCH!" — student holds the complete correct position for 5 seconds.
+   - "P — Posture!" -> Back straight, head up, aligned with the feet and the centre of the board, weight on the front foot.
+   - "R — Rotation!" -> Student initiates a turn starting with the EYES: eyes, head, shoulders and hips, then the feet.
+   - "C — Compression!" -> Student compresses (absorb and load), then EXTENDS (release and project). Never compression alone.
+   - "H — Hold!" -> Student sustains the position against the force for 3 seconds without breaking posture, then releases.
+3. Coach calls "Full PRCH!" — student runs the complete chain and holds the finish for 3 seconds.
 4. 10 repetitions.
 
 SELF-CHECK VERSION:
@@ -1126,10 +1145,10 @@ Student does this ALONE before each wave in the water:
 - Takes less than 3 seconds once internalized.
 
 COMMON ERRORS:
-- Hunched posture (P fails) — "Chest open!"
-- Counter-rotation (R fails) — "Lead with your eyes!"
-- Standing too tall (C fails) — "Get LOW!"
-- Arms stiff at sides (H fails) — "Use your hands for direction!"
+- Hunched posture, or weight off the front foot (P fails) — "Back straight, weight forward!"
+- Rotating from the shoulders (R fails) — "Lead with your eyes!"
+- Compressing and never extending (C fails) — "You loaded it and threw it away. EXTEND!"
+- Letting go early (H fails) — "Starting a turn is not doing a turn. HOLD it."
 
 STANDARD: Student completes 10 full PRCH checks in 2 minutes on land. Applies PRCH self-check before 3 consecutive waves in the water.`,
     order: 51,
@@ -1138,41 +1157,50 @@ STANDARD: Student completes 10 full PRCH checks in 2 minutes on land. Applies PR
     id: 'yb-d03',
     beltLevel: 'yellow_belt',
     category: 'drill',
-    title: 'Foot Position 1-2-3 Drill',
-    subtitle: 'Weight shift practice on board',
-    content: `FOOT POSITION 1-2-3 DRILL
+    title: 'Foot Position FP1-FP2-FP3 Drill',
+    subtitle: 'Rear-foot repositioning, referenced to the fins',
+    content: `FOOT POSITION FP1-FP2-FP3 DRILL
 
-PURPOSE: Train controlled weight shifting between the three board control positions.
+PURPOSE: Train controlled rear-foot repositioning between the three board control positions.
 
 SETUP: Board on sand or in flat water. Student in power stance.
 
+THE REFERENCE IS THE FINS — not inches from the tail. Measuring in inches works on one board and fails on the next one you borrow.
+
 EXECUTION:
-1. Student starts in Position 1 (NEUTRAL — 50/50 weight, centered stance).
-   Coach says: "Position 1 — balanced, ready for anything."
+1. Student starts in FP2 (NEUTRAL — rear foot over the fins).
+   Coach says: "FP2 — this is home. Speed and manoeuvrability at the same time."
    Hold 3 seconds.
 
-2. Coach calls "Position 2!" — Student shifts weight to FRONT foot (60/40 or 70/30).
-   - Front knee bends more, back leg extends slightly.
-   - Body leans forward slightly, head moves over front foot.
-   - This is the "speed" position.
+2. Coach calls "FP1!" — student slides the rear foot BEHIND the fins, to the end of the tail.
+   - Maximum leverage, tightest turns, highest control demand.
+   - The board feels less stable and slower, because it pivots much more.
+   - That instability is correct. It is what the turn is made of.
    Hold 3 seconds.
 
-3. Coach calls "Position 3!" — Student shifts weight to BACK foot (30/70 or 40/60).
-   - Back knee bends deeply, front leg lightens.
-   - Tail of board engages, fins activate.
-   - This is the "turn/control" position.
+3. Coach calls "FP3!" — student slides the rear foot IN FRONT of the fins, toward the centre of the board.
+   - Acceleration, drive and projection. It feels fast.
+   - This is the closest position to the sweet spot — the widest and thickest part of the board, where pressing gives you maximum speed.
    Hold 3 seconds.
 
-4. Coach calls random sequences: "2! 1! 3! 2! 3! 1!" — student transitions fluidly.
+4. Coach calls random sequences: "FP2! FP1! FP3! FP2!" — student transitions WITHOUT LOOKING DOWN.
 5. 3 sets of 20 position changes.
+
+HOW TO MOVE THE FOOT: go light on it, slide, land centred on the stringer, press. Never a hop. The weight stays on the front foot throughout — if the front goes light, the board stalls.
 
 IN-WATER VARIATION:
 While riding a wave, coach signals foot positions:
-- Hold up 1 finger: Position 1 (cruise).
-- Hold up 2 fingers: Position 2 (speed up).
-- Hold up 3 fingers: Position 3 (slow down / prepare to turn).
+- 1 finger: FP1 (control / turn).
+- 2 fingers: FP2 (home).
+- 3 fingers: FP3 (speed).
 
-STANDARD: Student transitions between positions without losing balance, 20 transitions in 60 seconds on land.`,
+COMMON ERRORS:
+- Looking down to find the feet — the head drops, posture goes, and the wave goes unread.
+- Living in FP1 — feels powerful, kills every section.
+- Right position, zero pressure — standing there is not being there.
+- Sliding the rear foot and forgetting the front foot, so the board stalls.
+
+STANDARD: Student transitions between positions without looking down, 20 transitions in 60 seconds on land, and can call the position out loud correctly when checked against video.`,
     order: 52,
   },
   {
