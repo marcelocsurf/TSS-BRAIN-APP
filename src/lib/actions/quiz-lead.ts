@@ -83,14 +83,37 @@ export async function createLeadFromQuiz(input: {
   const incomingName = norm(`${input.first_name} ${input.last_name || ''}`);
   let existingId: string | null = null;
   if (email || phone) {
-    let q = admin
-      .from('students')
-      .select('id, email, phone, first_name, last_name')
-      .eq('status', 'active')
-      .limit(50);
-    if (academyId) q = q.eq('academy_id', academyId);
-    const { data } = await q;
-    for (const s of data ?? []) {
+    // El filtro por contacto va EN LA CONSULTA, no en JavaScript.
+    //
+    // Antes esto traía "los primeros 50 alumnos activos" en orden arbitrario y
+    // recién ahí buscaba el email en el bucle de abajo. Con 2.727 alumnos en la
+    // base, la persona que estaba haciendo el quiz casi nunca caía en esos 50:
+    // el match fallaba, se creaba un alumno nuevo, y su intento quedaba colgado
+    // de un registro distinto. Por eso Patricia Tracz aparecía dos veces con
+    // "1 attempt" cada una en vez de una vez con dos intentos.
+    //
+    // Dos consultas separadas en vez de un .or(): los emails con caracteres
+    // especiales rompen la sintaxis de filtros de PostgREST.
+    const candidates: {
+      id: string; email: string | null; phone: string | null;
+      first_name: string | null; last_name: string | null;
+    }[] = [];
+    const lookup = async (col: 'email' | 'phone', value: string) => {
+      let q = admin
+        .from('students')
+        .select('id, email, phone, first_name, last_name')
+        .eq('status', 'active')
+        .limit(50);
+      // ilike sin comodines = igualdad sin distinguir mayúsculas.
+      q = col === 'email' ? q.ilike('email', value) : q.eq('phone', value);
+      if (academyId) q = q.eq('academy_id', academyId);
+      const { data } = await q;
+      candidates.push(...((data ?? []) as typeof candidates));
+    };
+    if (email) await lookup('email', email);
+    if (phone) await lookup('phone', phone);
+
+    for (const s of candidates) {
       const contactMatch =
         (email && s.email && s.email.trim().toLowerCase() === email) ||
         (phone && s.phone && s.phone.trim() === phone);
