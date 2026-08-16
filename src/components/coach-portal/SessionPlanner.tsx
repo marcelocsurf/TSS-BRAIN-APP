@@ -1836,6 +1836,35 @@ function StudentAvatar({
   );
 }
 
+// Estatura y peso son texto libre, y la mayoría de los alumnos son de EE.UU.:
+// 1.643 de 2.615 escribieron la estatura en pies. Pegarle "cm" a `6'2''` daba
+// «6'2'' cm», y pegarle "kg" a `175` —que son libras— convertía a un surfista
+// de 79 kg en uno de 175. El coach elige la tabla con estos dos números, así
+// que no podemos afirmar una unidad que el dato no trae.
+//
+// Regla: si el valor ya se autodescribe, se muestra tal cual. Si es un número
+// pelado dentro del rango donde la unidad es inequívoca, se etiqueta. Y si es
+// un número pelado ambiguo, se dice la duda en vez de resolverla a la fuerza.
+const CARRIES_UNIT = /['"’”]|\bft\b|feet|\bin\b|\bcm\b|\bm\b|\bkg\b|\blbs?\b|pound/i;
+
+// Ojo con el tipo: la columna es texto en la base aunque acá esté declarada
+// como número, así que en runtime llega cualquiera de los dos.
+function measure(raw: string | number | null | undefined, unit: 'cm' | 'kg'): string | null {
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+  if (CARRIES_UNIT.test(s)) return s;
+  const n = Number(s.replace(',', '.'));
+  if (!Number.isFinite(n)) return s;
+  if (unit === 'cm') {
+    // Un adulto de 120–230 solo puede estar en cm. Fuera de ahí (p. ej. "6"),
+    // son pies y mostrarlo con "cm" sería peor que no decir nada.
+    return n >= 120 && n <= 230 ? `${s} cm` : s;
+  }
+  // Nadie que llega a un surf camp pesa más de 120 kg (=265 lb): arriba de eso
+  // son libras casi con certeza, pero "casi" no alcanza para un dato de tabla.
+  return n <= 120 ? `${s} kg` : `${s} lb?`;
+}
+
 function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStudent; onSaveNote?: (note: string) => void }) {
   const { profile, belt_level: beltLevel, recentSessions, stepRatings } = student;
   const [open, setOpen] = useState(false);
@@ -1851,8 +1880,10 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
   const quickFacts = [
     beltLevel && `🥋 ${beltLevel.replace(/_/g, ' ')}`,
     profile.age && `${profile.age} yrs`,
-    profile.weight && `${profile.weight} kg`,
-    profile.height && `${profile.height} cm`,
+    // El coach elige la tabla con estos dos números — no podemos etiquetarlos mal.
+    measure(profile.weight, 'kg'),
+    measure(profile.height, 'cm'),
+    profile.nationality && `🌍 ${profile.nationality}`,
     (profile.goofy_or_regular || profile.stance) &&
       `${profile.goofy_or_regular || profile.stance}`,
     profile.surf_experience_years != null &&
@@ -1866,6 +1897,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
     profile.ocean_level && `water comfort: ${String(profile.ocean_level).replace(/_/g, ' ')}`,
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
+    profile.level_quiz_score != null && `level quiz: ${profile.level_quiz_score}/70`,
   ].filter(Boolean) as string[];
 
   // Self-assessment summary — ★ the student gave themselves on STPs,
