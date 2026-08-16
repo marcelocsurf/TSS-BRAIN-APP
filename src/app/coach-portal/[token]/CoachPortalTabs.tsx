@@ -703,6 +703,7 @@ function HomeTab({
     emergency_protocol: string | null;
   } | null;
 }) {
+  const router = useRouter();
   const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
   const profileIncomplete = !coach.intake_completed_at;
   const ratingsCount = stats.ratingsCount ?? 0;
@@ -817,12 +818,23 @@ function HomeTab({
         </div>
       )}
 
-      {/* ── QUICK STATS — 4 tiles ── */}
+      {/* ── QUICK STATS — 4 tiles ──
+          La lista de alumnos con su ficha (/students) existía y funcionaba, pero
+          no había un solo link que llevara ahí: el único era el "volver" desde
+          adentro de la propia ficha, así que solo llegaba quien ya supiera la
+          URL. Este mosaico ya mostraba el número de alumnos y no hacía nada al
+          tocarlo — era la puerta, sin picaporte. */}
       <div className="grid grid-cols-4 gap-2.5">
         {[
           { label: 'Services run', value: stats.totalServicesAsHead.toString(), onClick: undefined },
           { label: 'Upcoming', value: stats.upcomingServicesCount.toString(), onClick: undefined },
-          { label: 'Students', value: String(stats.studentsWorkedWith ?? 0), onClick: undefined },
+          {
+            label: 'Students',
+            value: String(stats.studentsWorkedWith ?? 0),
+            onClick: coach?.portal_token
+              ? () => router.push(`/coach-portal/${coach.portal_token}/students`)
+              : undefined,
+          },
           { label: 'Rating', value: ratingsCount > 0 ? `${avg}★` : '—', onClick: () => onGoTo?.('rating') },
         ].map((t) => (
           <button
