@@ -13,6 +13,7 @@ import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
 
 export interface HPAthleteRow {
   assignment_id: string;
+  student_id: string;
   student_name: string;
   program_title: string;
   position: { week: number; day: number } | null; // null = completado
@@ -49,7 +50,7 @@ export async function getMyHPAthletes(
 
     const { data: asg, error: aErr } = await admin
       .from('program_assignments')
-      .select('id, program_id, students(first_name, last_name), programs!inner(title, active)')
+      .select('id, program_id, student_id, students(first_name, last_name), programs!inner(title, active)')
       .eq('coach_id', coach.id)
       .eq('status', 'active')
       .eq('programs.active', true)
@@ -111,6 +112,7 @@ export async function getMyHPAthletes(
       const lastCk = cks[0] ?? null;
       return {
         assignment_id: a.id,
+        student_id: a.student_id,
         student_name: `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—',
         program_title: a.programs?.title ?? '—',
         position: current ? { week: current.week_number, day: current.day_number } : null,
@@ -133,5 +135,166 @@ export async function getMyHPAthletes(
   } catch (e) {
     console.error('[program-coach] getMyHPAthletes failed', e);
     return { ok: false, error: 'No se pudo cargar el seguimiento.', data: null };
+  }
+}
+
+// ─── Paso 5: citas del coach + evaluaciones por pilar (especialista) ───
+
+export interface CoachAppointment {
+  id: string;
+  student_id: string;
+  student_name: string;
+  kind: string;
+  title: string | null;
+  appointment_date: string;
+  appointment_time: string | null;
+}
+
+export interface AthleteEvaluation {
+  id: string;
+  pillar: string;
+  score: number | null;
+  notes: string | null;
+  eval_date: string;
+}
+
+// Reutiliza el mismo gate que getMyHPAthletes (token + acceso + E1).
+async function resolveE1Coach(admin: ReturnType<typeof createAdminClient>, portalToken: string) {
+  const { data: coach, error } = await admin
+    .from('coaches')
+    .select('id, hp_escalon, course_access_granted')
+    .eq('portal_token', portalToken)
+    .maybeSingle();
+  if (error) throw error;
+  if (!coach || !coach.course_access_granted || (coach.hp_escalon ?? 0) < 1) return null;
+  return coach;
+}
+
+export async function getMyHPAppointments(
+  portalToken: string
+): Promise<{ ok: boolean; appointments: CoachAppointment[] }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE1Coach(admin, portalToken);
+    if (!coach) return { ok: true, appointments: [] };
+
+    const { data, error } = await admin
+      .from('program_appointments')
+      .select('id, kind, title, appointment_date, appointment_time, student_id, students(first_name, last_name)')
+      .eq('coach_id', coach.id)
+      .eq('status', 'scheduled')
+      .gte('appointment_date', elSalvadorToday())
+      .order('appointment_date')
+      .order('appointment_time', { ascending: true, nullsFirst: true })
+      .limit(10);
+    if (error) throw error;
+    return {
+      ok: true,
+      appointments: (data ?? []).map((a: any) => ({
+        id: a.id,
+        student_id: a.student_id,
+        student_name: `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—',
+        kind: a.kind,
+        title: a.title,
+        appointment_date: a.appointment_date,
+        appointment_time: a.appointment_time,
+      })),
+    };
+  } catch (e) {
+    console.error('[program-coach] getMyHPAppointments failed', e);
+    return { ok: false, appointments: [] };
+  }
+}
+
+// El atleta debe ser SUYO — el admin client bypassa RLS, así que esta
+// validación es la seguridad. "Suyo" por DOS vías: (a) asignación de programa
+// activa con coach_id = él (el coach de seguimiento), o (b) una CITA con ese
+// alumno (el camino del especialista: el fisio o el mental atienden por cita,
+// casi nunca son el coach del programa — sin esta vía, el flujo central del
+// Paso 5 "el especialista evalúa su pilar tras la cita" era inalcanzable).
+async function assertMyAthlete(
+  admin: ReturnType<typeof createAdminClient>,
+  coachId: string,
+  studentId: string
+): Promise<boolean> {
+  const { data: asg, error } = await admin
+    .from('program_assignments')
+    .select('id')
+    .eq('coach_id', coachId)
+    .eq('student_id', studentId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (asg) return true;
+
+  const { data: appt, error: apErr } = await admin
+    .from('program_appointments')
+    .select('id')
+    .eq('coach_id', coachId)
+    .eq('student_id', studentId)
+    .neq('status', 'cancelled')
+    .limit(1)
+    .maybeSingle();
+  if (apErr) throw apErr;
+  return !!appt;
+}
+
+export async function coachCreateEvaluation(
+  portalToken: string,
+  studentId: string,
+  input: { pillar: 'fisico' | 'tecnico' | 'tactico' | 'mental'; score: number; notes?: string | null }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!['fisico', 'tecnico', 'tactico', 'mental'].includes(input.pillar)) {
+      return { ok: false, error: 'Pilar inválido.' };
+    }
+    if (!(input.score >= 1 && input.score <= 10)) {
+      return { ok: false, error: 'El puntaje va de 1 a 10.' };
+    }
+    const admin = createAdminClient();
+    const coach = await resolveE1Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    if (!(await assertMyAthlete(admin, coach.id, studentId))) {
+      return { ok: false, error: 'Ese atleta no está a tu cargo.' };
+    }
+    const { error } = await admin.from('program_evaluations').insert({
+      student_id: studentId,
+      coach_id: coach.id,
+      pillar: input.pillar,
+      score: input.score,
+      notes: input.notes?.trim() || null,
+      eval_date: elSalvadorToday(),
+    });
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-coach] coachCreateEvaluation failed', e);
+    return { ok: false, error: 'No se pudo guardar la evaluación.' };
+  }
+}
+
+export async function getAthleteEvaluations(
+  portalToken: string,
+  studentId: string
+): Promise<{ ok: boolean; evaluations: AthleteEvaluation[] }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE1Coach(admin, portalToken);
+    if (!coach) return { ok: true, evaluations: [] };
+    if (!(await assertMyAthlete(admin, coach.id, studentId))) return { ok: true, evaluations: [] };
+
+    const { data, error } = await admin
+      .from('program_evaluations')
+      .select('id, pillar, score, notes, eval_date')
+      .eq('student_id', studentId)
+      .order('eval_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (error) throw error;
+    return { ok: true, evaluations: data ?? [] };
+  } catch (e) {
+    console.error('[program-coach] getAthleteEvaluations failed', e);
+    return { ok: false, evaluations: [] };
   }
 }

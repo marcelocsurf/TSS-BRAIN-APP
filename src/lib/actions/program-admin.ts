@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
-import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
+import { elSalvadorToday, elSalvadorDatePlus, toElSalvadorDate } from '@/lib/utils/tz';
 
 // ─── Administración de programas de entreno (Paso 3: el editor) ───
 //
@@ -761,14 +761,14 @@ export async function adminCancelAssignment(assignmentId: string): Promise<{ ok:
 export async function adminListHPCoaches(): Promise<{
   ok: boolean;
   error?: string;
-  coaches: { id: string; display_name: string; role: string; hp_escalon: number }[];
+  coaches: { id: string; display_name: string; role: string; hp_escalon: number; hp_specialty: string | null }[];
 }> {
   try {
     if (!(await assertAdmin())) return { ...DENY, coaches: [] };
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('coaches')
-      .select('id, display_name, role, hp_escalon')
+      .select('id, display_name, role, hp_escalon, hp_specialty')
       .order('display_name');
     if (error) throw error;
     return { ok: true, coaches: data ?? [] };
@@ -953,4 +953,144 @@ function diffDays(from: string, to: string): number {
   const a = Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10));
   const b = Date.UTC(+to.slice(0, 4), +to.slice(5, 7) - 1, +to.slice(8, 10));
   return Math.max(0, Math.round((b - a) / 86400000));
+}
+
+// ─── Paso 5: citas (atleta ↔ coach o especialista) + especialidad ───
+
+export async function adminSetCoachSpecialty(
+  coachId: string,
+  specialty: 'mental' | 'fisico' | null
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    const { error } = await admin.from('coaches').update({ hp_specialty: specialty }).eq('id', coachId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSetCoachSpecialty failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+export interface AdminAppointmentRow {
+  id: string;
+  student_name: string;
+  coach_name: string;
+  kind: string;
+  title: string | null;
+  appointment_date: string;
+  appointment_time: string | null;
+  status: string;
+  notes: string | null;
+}
+
+export async function adminCreateAppointment(input: {
+  studentId: string;
+  coachId: string;
+  kind: 'fisico' | 'mental' | 'tecnico' | 'otro';
+  date: string; // YYYY-MM-DD (El Salvador)
+  time?: string | null; // HH:MM
+  title?: string | null;
+  notes?: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { ok: false, error: 'La fecha no es válida.' };
+    if (input.time && !/^\d{2}:\d{2}$/.test(input.time)) return { ok: false, error: 'La hora no es válida.' };
+    if (input.date < elSalvadorToday()) return { ok: false, error: 'La cita no puede ser en el pasado.' };
+    const admin = createAdminClient();
+
+    // Quien atiende debe tener el Escalón 1 — la cita aparece en SU portal.
+    const { data: coach, error: cErr } = await admin
+      .from('coaches')
+      .select('id, hp_escalon')
+      .eq('id', input.coachId)
+      .maybeSingle();
+    if (cErr) throw cErr;
+    if (!coach || (coach.hp_escalon ?? 0) < 1) {
+      return { ok: false, error: 'Quien atiende necesita el Escalón 1 — otorgáselo en la pestaña Coaches.' };
+    }
+    const { data: student, error: sErr } = await admin
+      .from('students')
+      .select('id')
+      .eq('id', input.studentId)
+      .maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: false, error: 'Ese alumno no existe.' };
+
+    const { error } = await admin.from('program_appointments').insert({
+      student_id: input.studentId,
+      coach_id: input.coachId,
+      kind: input.kind,
+      title: input.title?.trim() || null,
+      appointment_date: input.date,
+      appointment_time: input.time || null,
+      notes: input.notes?.trim() || null,
+    });
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminCreateAppointment failed', e);
+    return { ok: false, error: 'No se pudo crear la cita.' };
+  }
+}
+
+export async function adminListAppointments(): Promise<{
+  ok: boolean;
+  error?: string;
+  appointments: AdminAppointmentRow[];
+}> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, appointments: [] };
+    const admin = createAdminClient();
+    // Piso de fecha: sin él, el orden ascendente + limit devolvía las 60 citas
+    // MÁS VIEJAS para siempre, y una cita nueva jamás aparecía en esta lista
+    // (aunque alumno y coach sí la vieran) una vez acumulado historial.
+    const { data, error } = await admin
+      .from('program_appointments')
+      .select('id, kind, title, appointment_date, appointment_time, status, notes, students(first_name, last_name), coaches(display_name)')
+      .in('status', ['scheduled', 'done'])
+      .gte('appointment_date', elSalvadorDatePlus(-14))
+      .order('appointment_date', { ascending: true })
+      .order('appointment_time', { ascending: true, nullsFirst: true })
+      .limit(60);
+    if (error) throw error;
+    return {
+      ok: true,
+      appointments: (data ?? []).map((a: any) => ({
+        id: a.id,
+        student_name: `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—',
+        coach_name: a.coaches?.display_name ?? '—',
+        kind: a.kind,
+        title: a.title,
+        appointment_date: a.appointment_date,
+        appointment_time: a.appointment_time,
+        status: a.status,
+        notes: a.notes,
+      })),
+    };
+  } catch (e) {
+    console.error('[program-admin] adminListAppointments failed', e);
+    return { ok: false, error: 'No se pudieron cargar las citas.', appointments: [] };
+  }
+}
+
+export async function adminSetAppointmentStatus(
+  appointmentId: string,
+  status: 'done' | 'cancelled' | 'scheduled'
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from('program_appointments')
+      .update({ status })
+      .eq('id', appointmentId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSetAppointmentStatus failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
 }

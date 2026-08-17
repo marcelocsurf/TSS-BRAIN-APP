@@ -32,6 +32,7 @@ import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
+import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
@@ -696,6 +697,9 @@ function HomeTab({
               sus propios datos y devuelve null si el alumno no tiene programa
               activo — para los demás, el Home es idéntico al de siempre. */}
           <ProgramCard token={data.token} />
+
+          {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
+          <AppointmentCard token={data.token} />
 
           {/* Training + Free Surf — bold, high-contrast title (Course-style) so
               the name doesn't get lost, with a cyan accent bar. */}

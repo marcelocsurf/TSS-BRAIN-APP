@@ -354,3 +354,55 @@ export async function saveProgramCheckin(
     return { ok: false, error: 'Could not save your check-in. Please try again.' };
   }
 }
+
+// ─── Citas del alumno (Paso 5): las próximas, para la tarjeta del Home ───
+
+export interface MyAppointment {
+  id: string;
+  kind: string;
+  title: string | null;
+  appointment_date: string;
+  appointment_time: string | null;
+  coach_name: string;
+}
+
+export async function getMyAppointments(
+  portalToken: string
+): Promise<{ ok: boolean; appointments: MyAppointment[] }> {
+  try {
+    const admin = createAdminClient();
+    const { data: student, error: sErr } = await admin
+      .from('students')
+      .select('id')
+      .eq('portal_token', portalToken)
+      .maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: true, appointments: [] };
+
+    const { data, error } = await admin
+      .from('program_appointments')
+      .select('id, kind, title, appointment_date, appointment_time, coaches(display_name)')
+      .eq('student_id', student.id)
+      .eq('status', 'scheduled')
+      .gte('appointment_date', elSalvadorToday())
+      .order('appointment_date')
+      .order('appointment_time', { ascending: true, nullsFirst: true })
+      .limit(3);
+    if (error) throw error;
+
+    return {
+      ok: true,
+      appointments: (data ?? []).map((a: any) => ({
+        id: a.id,
+        kind: a.kind,
+        title: a.title,
+        appointment_date: a.appointment_date,
+        appointment_time: a.appointment_time,
+        coach_name: a.coaches?.display_name ?? '',
+      })),
+    };
+  } catch (e) {
+    console.error('[programs] getMyAppointments failed', e);
+    return { ok: false, appointments: [] };
+  }
+}

@@ -20,9 +20,14 @@ import {
   adminListHPCoaches,
   adminSetCoachEscalon,
   adminSetAssignmentCoach,
+  adminSetCoachSpecialty,
+  adminCreateAppointment,
+  adminListAppointments,
+  adminSetAppointmentStatus,
   type AdminProgramRow,
   type AdminProgramDetail,
   type AdminAssignmentRow,
+  type AdminAppointmentRow,
 } from '@/lib/actions/program-admin';
 import {
   ClipboardList,
@@ -44,7 +49,7 @@ import {
 type Video = { id: string; title: string; pillar: string | null; video_url: string };
 
 export function ProgramasManager() {
-  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches'>('catalogo');
+  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas'>('catalogo');
   const [programs, setPrograms] = useState<AdminProgramRow[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -78,7 +83,7 @@ export function ProgramasManager() {
           </p>
         </div>
         <div className="flex gap-2">
-          {(['catalogo', 'asignaciones', 'coaches'] as const).map((v) => (
+          {(['catalogo', 'asignaciones', 'citas', 'coaches'] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -87,7 +92,7 @@ export function ProgramasManager() {
                 view === v ? 'bg-[var(--tss-navy)] text-white' : 'bg-white border border-gray-200 text-gray-600'
               }`}
             >
-              {v === 'catalogo' ? 'Catálogo' : v === 'asignaciones' ? 'Asignaciones' : 'Coaches'}
+              {v === 'catalogo' ? 'Catálogo' : v === 'asignaciones' ? 'Asignaciones' : v === 'citas' ? 'Citas' : 'Coaches'}
             </button>
           ))}
         </div>
@@ -109,6 +114,7 @@ export function ProgramasManager() {
       )}
       {view === 'asignaciones' && <Asignaciones programs={programs} />}
       {view === 'coaches' && <CoachesHP />}
+      {view === 'citas' && <Citas />}
     </div>
   );
 }
@@ -153,6 +159,21 @@ function CoachesHP() {
           >
             {c.hp_escalon >= 1 ? `ESCALÓN ${c.hp_escalon} · SEGUIMIENTO` : 'SIN ESCALÓN'}
           </span>
+          <select
+            value={(c as any).hp_specialty ?? ''}
+            onChange={async (e) => {
+              const v = (e.target.value || null) as 'mental' | 'fisico' | null;
+              const r = await adminSetCoachSpecialty(c.id, v);
+              if (!r.ok) setErr(r.error || null);
+              else load();
+            }}
+            className="rounded-md border border-gray-200 px-1.5 py-1 text-[11px] text-gray-500"
+            title="Especialidad (para citas y evaluaciones)"
+          >
+            <option value="">Coach</option>
+            <option value="fisico">Especialista físico</option>
+            <option value="mental">Especialista mental</option>
+          </select>
           <button
             type="button"
             disabled={busy === c.id}
@@ -853,6 +874,153 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
           </div>
         ))}
         {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">No hay asignaciones activas.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Citas · atleta ↔ coach o especialista ───
+
+const KIND_OPTS = [
+  { key: 'fisico', label: 'Físico' },
+  { key: 'mental', label: 'Mental' },
+  { key: 'tecnico', label: 'Técnico' },
+  { key: 'otro', label: 'Otro' },
+] as const;
+
+function Citas() {
+  const [rows, setRows] = useState<AdminAppointmentRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [coaches, setCoaches] = useState<{ id: string; display_name: string; hp_specialty: string | null }[]>([]);
+  // formulario
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string; email: string | null }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [coachId, setCoachId] = useState('');
+  const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'otro'>('fisico');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [title, setTitle] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => adminListAppointments().then((r) => { if (r.ok) setRows(r.appointments); else setErr(r.error || null); });
+  useEffect(() => {
+    load();
+    adminListHPCoaches().then((r) => {
+      if (r.ok) setCoaches(r.coaches.filter((c) => c.hp_escalon >= 1).map((c) => ({ id: c.id, display_name: c.display_name, hp_specialty: c.hp_specialty })));
+    });
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) {
+        adminSearchStudents(q).then((r) => {
+          if (r.ok) setResults(r.students);
+          else setErr(r.error || null);
+        });
+      } else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const create = async () => {
+    if (!picked || !coachId || !date) return;
+    setErr(null);
+    setBusy(true);
+    const r = await adminCreateAppointment({
+      studentId: picked.id,
+      coachId,
+      kind,
+      date,
+      time: time || null,
+      title: title.trim() || null,
+    });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setPicked(null); setQ(''); setDate(''); setTime(''); setTitle('');
+    load();
+  };
+
+  const KIND_LABEL: Record<string, string> = { fisico: 'Físico', mental: 'Mental', tecnico: 'Técnico', otro: 'Otro' };
+
+  return (
+    <div className="space-y-4">
+      {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
+
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva cita</p>
+        <div className="flex gap-2 flex-wrap items-start">
+          <div className="relative flex-1 min-w-[180px]">
+            <input
+              value={picked ? picked.name : q}
+              onChange={(e) => { setPicked(null); setQ(e.target.value); }}
+              placeholder="Alumno…"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+            {results.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+                {results.map((s) => (
+                  <button key={s.id} type="button" onClick={() => { setPicked({ id: s.id, name: s.name }); setResults([]); }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                    <span className="font-semibold text-[var(--tss-navy)]">{s.name}</span>
+                    <span className="text-[11px] text-gray-400 ml-2">{s.email ?? ''}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <select value={coachId} onChange={(e) => setCoachId(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm min-w-[170px]">
+            <option value="">Quién atiende…</option>
+            {coaches.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.display_name}{c.hp_specialty ? ` (${c.hp_specialty})` : ''}
+              </option>
+            ))}
+          </select>
+          <select value={kind} onChange={(e) => setKind(e.target.value as any)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm">
+            {KIND_OPTS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
+          </select>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Fecha" />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Hora" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional, lo ve el alumno — inglés)" className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-2.5 py-2 text-sm" />
+          <button type="button" disabled={busy || !picked || !coachId || !date} onClick={create}
+            className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40">
+            Crear cita →
+          </button>
+        </div>
+        <p className="text-[11px] text-gray-400">
+          La cita aparece al instante en el Home del alumno (en inglés) y en el portal de quien atiende.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {rows.map((a) => (
+          <div key={a.id} className="rounded-2xl bg-white border border-gray-200 p-3.5 flex items-center gap-3 flex-wrap"
+            style={{ opacity: a.status === 'done' ? 0.55 : 1 }}>
+            <div className="flex-1 min-w-[180px]">
+              <p className="text-sm font-semibold text-[var(--tss-navy)]">
+                {a.student_name} <span className="text-gray-300">→</span> {a.coach_name}
+              </p>
+              <p className="text-[11px] text-gray-500">
+                {a.title || KIND_LABEL[a.kind] || a.kind} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''}
+                {a.status === 'done' && ' · ✓ hecha'}
+              </p>
+            </div>
+            {a.status === 'scheduled' && (
+              <>
+                <button type="button" onClick={async () => { const r = await adminSetAppointmentStatus(a.id, 'done'); if (!r.ok) setErr(r.error || null); else load(); }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700">
+                  ✓ Hecha
+                </button>
+                <button type="button" onClick={async () => { const r = await adminSetAppointmentStatus(a.id, 'cancelled'); if (!r.ok) setErr(r.error || null); else load(); }}
+                  className="text-[11px] text-gray-400 hover:text-red-500">
+                  Cancelar
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin citas.</p>}
       </div>
     </div>
   );
