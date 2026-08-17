@@ -1026,7 +1026,7 @@ function Citas() {
                 {a.student_name} <span className="text-gray-300">→</span> {a.coach_name}
               </p>
               <p className="text-[11px] text-gray-500">
-                {a.title || KIND_LABEL[a.kind] || a.kind} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''}
+                {a.title || KIND_LABEL[a.kind] || a.kind} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''}{a.mode ? ` · ${a.mode}` : ''}
                 {a.status === 'done' && ' · ✓ hecha'}
               </p>
             </div>
@@ -1199,20 +1199,35 @@ function Temporadas() {
 
       <div className="space-y-2">
         {rows.map((sn) => (
-          <button key={sn.id} type="button" onClick={() => setOpenId(sn.id)}
-            className="w-full text-left rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap hover:border-gray-300"
+          <div key={sn.id}
+            className="rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap hover:border-gray-300"
             style={{ borderLeft: '4px solid #B8862B', opacity: sn.active ? 1 : 0.55 }}>
-            <div className="flex-1 min-w-[200px]">
+            <button type="button" onClick={() => setOpenId(sn.id)} className="flex-1 min-w-[200px] text-left">
               <p className="text-sm font-bold text-[var(--tss-navy)]">{sn.title}</p>
               <p className="text-[11px] text-gray-500 mt-0.5">
                 {sn.student_name} · {sn.start_date} → {sn.end_date}
                 {sn.head_coach_name ? ` · head coach: ${sn.head_coach_name}` : ' · sin head coach'}
               </p>
-            </div>
+            </button>
             <span className="text-[11px] text-gray-400">
               {sn.phases_count} fase{sn.phases_count === 1 ? '' : 's'} · {sn.events_count} evento{sn.events_count === 1 ? '' : 's'} · {sn.specialists_count} especialista{sn.specialists_count === 1 ? '' : 's'}
             </span>
-          </button>
+            {/* Rollover de macrociclo: sin este botón, "desactivala primero"
+                (adminCreateSeason) era una instrucción imposible de seguir. */}
+            <button type="button"
+              onClick={async () => {
+                setErr(null);
+                const r = await adminUpdateSeason(sn.id, { active: !sn.active });
+                if (!r.ok) { setErr(r.error || null); return; }
+                load();
+              }}
+              className="px-3 py-1.5 rounded-full text-[10px] font-bold border"
+              style={sn.active
+                ? { borderColor: '#E2E8F0', color: '#94A3B8' }
+                : { borderColor: '#B8862B', color: '#8E6614', background: '#FDF8EC' }}>
+              {sn.active ? 'Desactivar' : 'Activar'}
+            </button>
+          </div>
         ))}
         {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin temporadas todavía.</p>}
       </div>

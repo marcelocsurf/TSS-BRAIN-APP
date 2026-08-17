@@ -56,8 +56,11 @@ export function AppointmentCard({ token }: { token: string }) {
               <p className="text-[13px] font-semibold leading-tight truncate" style={{ color: '#f4f9fc' }}>
                 {a.title || KIND_LABEL[a.kind] || 'Session'}
               </p>
-              {a.coach_name && (
-                <p className="text-[11px]" style={{ color: '#8aa0b2' }}>with {a.coach_name}</p>
+              {(a.coach_name || a.mode) && (
+                <p className="text-[11px]" style={{ color: '#8aa0b2' }}>
+                  {a.coach_name ? `with ${a.coach_name}` : ''}
+                  {a.mode ? `${a.coach_name ? ' · ' : ''}${a.mode === 'online' ? 'Online' : 'In person'}` : ''}
+                </p>
               )}
             </div>
             <div className="text-right shrink-0">

@@ -46,6 +46,8 @@ export interface MyProgramData {
   position: { week: number; day: number } | null; // null = programa completado
   days_done: number;
   days_total: number;
+  today: string; // fecha SV — el visor la muestra; la del dispositivo puede mentir
+
   today_checkin: {
     water_glasses: number | null;
     sleep_hours: number | null;
@@ -192,6 +194,7 @@ export async function getMyProgram(
         position: cur ? { week: cur.week_number, day: cur.day_number } : null,
         days_done: dayViews.filter((d) => d.done).length,
         days_total: dayViews.length,
+        today: elSalvadorToday(),
         today_checkin: checkin ?? null,
       },
     };
@@ -366,6 +369,7 @@ export async function saveProgramCheckin(
 export interface MyAppointment {
   id: string;
   kind: string;
+  mode: string | null; // online | presencial
   title: string | null;
   appointment_date: string;
   appointment_time: string | null;
@@ -387,7 +391,7 @@ export async function getMyAppointments(
 
     const { data, error } = await admin
       .from('program_appointments')
-      .select('id, kind, title, appointment_date, appointment_time, coaches(display_name)')
+      .select('id, kind, mode, title, appointment_date, appointment_time, coaches(display_name)')
       .eq('student_id', student.id)
       .eq('status', 'scheduled')
       .gte('appointment_date', elSalvadorToday())
@@ -401,6 +405,7 @@ export async function getMyAppointments(
       appointments: (data ?? []).map((a: any) => ({
         id: a.id,
         kind: a.kind,
+        mode: a.mode ?? null,
         title: a.title,
         appointment_date: a.appointment_date,
         appointment_time: a.appointment_time,

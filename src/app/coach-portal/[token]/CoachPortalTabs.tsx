@@ -16,6 +16,7 @@ import { CoachGuide } from './CoachGuide';
 import { MethodLauncher } from '@/components/coach-portal/MethodLauncher';
 import { CoachPresentations } from '@/components/coach-portal/CoachPresentations';
 import { HPFollowCard } from '@/components/coach-portal/HPFollowCard';
+import { SeasonCoachCard } from '@/components/coach-portal/SeasonCoachCard';
 import { CoachMiniCalendar } from '@/components/coach-portal/CoachMiniCalendar';
 import { CoachTasks } from '@/components/coach-portal/CoachTasks';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
@@ -922,6 +923,7 @@ function HomeTab({
 
       {/* Alto Rendimiento · Escalón 1 — solo aparece si el coach tiene el
           escalón otorgado Y atletas con programa a su cargo. */}
+      <SeasonCoachCard token={coach.portal_token} />
       <HPFollowCard token={coach.portal_token} />
     </div>
   );

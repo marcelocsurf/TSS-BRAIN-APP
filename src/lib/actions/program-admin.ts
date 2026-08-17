@@ -982,6 +982,7 @@ export interface AdminAppointmentRow {
   student_name: string;
   coach_name: string;
   kind: string;
+  mode: string | null; // online | presencial
   title: string | null;
   appointment_date: string;
   appointment_time: string | null;
@@ -1053,7 +1054,7 @@ export async function adminListAppointments(): Promise<{
     // (aunque alumno y coach sí la vieran) una vez acumulado historial.
     const { data, error } = await admin
       .from('program_appointments')
-      .select('id, kind, title, appointment_date, appointment_time, status, notes, students(first_name, last_name), coaches(display_name)')
+      .select('id, kind, mode, title, appointment_date, appointment_time, status, notes, students(first_name, last_name), coaches(display_name)')
       .in('status', ['scheduled', 'done'])
       .gte('appointment_date', elSalvadorDatePlus(-14))
       .order('appointment_date', { ascending: true })
@@ -1067,6 +1068,7 @@ export async function adminListAppointments(): Promise<{
         student_name: `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—',
         coach_name: a.coaches?.display_name ?? '—',
         kind: a.kind,
+        mode: a.mode ?? null,
         title: a.title,
         appointment_date: a.appointment_date,
         appointment_time: a.appointment_time,
@@ -1249,6 +1251,18 @@ export async function adminUpdateSeason(
       const { data: hc, error: hcErr } = await admin.from('coaches').select('id, hp_escalon').eq('id', patch.head_coach_id).maybeSingle();
       if (hcErr) throw hcErr;
       if (!hc || (hc.hp_escalon ?? 0) < 1) return { ok: false, error: 'El head coach necesita el Escalón 1.' };
+    }
+    // Reactivar es un ROLLOVER: una sola temporada activa por atleta (la misma
+    // regla que adminCreateSeason), así que apagar las demás antes de encender esta.
+    if (patch.active === true) {
+      const { data: season, error: snErr } = await admin
+        .from('season_plans').select('id, student_id').eq('id', seasonId).maybeSingle();
+      if (snErr) throw snErr;
+      if (!season) return { ok: false, error: 'Esa temporada no existe.' };
+      const { error: offErr } = await admin
+        .from('season_plans').update({ active: false })
+        .eq('student_id', season.student_id).eq('active', true).neq('id', seasonId);
+      if (offErr) throw offErr;
     }
     const { error } = await admin.from('season_plans').update(patch).eq('id', seasonId);
     if (error) throw error;

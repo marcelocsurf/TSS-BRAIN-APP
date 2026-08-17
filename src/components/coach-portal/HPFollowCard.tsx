@@ -92,7 +92,7 @@ export function HPFollowCard({ token }: { token: string }) {
                     <span style={{ color: C.dim }}> · {c.title || c.kind}</span>
                   </p>
                   <p className="text-[11px] font-bold shrink-0" style={{ color: C.goldStrong }}>
-                    {c.appointment_date}{c.appointment_time ? ` · ${c.appointment_time}` : ''}
+                    {c.appointment_date}{c.appointment_time ? ` · ${c.appointment_time}` : ''}{c.mode ? ` · ${c.mode}` : ''}
                   </p>
                 </button>
                 {/* El especialista evalúa DESDE la cita: puede no tener al
