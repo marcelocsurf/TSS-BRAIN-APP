@@ -26,6 +26,7 @@ export interface HPAthleteRow {
     sleep_hours: number | null;
     energy: number | null;
     comment: string | null;
+    nutrition: string | null;
   } | null;
 }
 
@@ -75,7 +76,7 @@ export async function getMyHPAthletes(
     if (mErr) throw mErr;
     const { data: checkins, error: kErr } = await admin
       .from('program_checkins')
-      .select('assignment_id, checkin_date, water_glasses, sleep_hours, energy, comment')
+      .select('assignment_id, checkin_date, water_glasses, sleep_hours, energy, comment, nutrition')
       .in('assignment_id', ids)
       .order('checkin_date', { ascending: false });
     if (kErr) throw kErr;
@@ -126,6 +127,7 @@ export async function getMyHPAthletes(
               sleep_hours: lastCk.sleep_hours,
               energy: lastCk.energy,
               comment: lastCk.comment,
+              nutrition: lastCk.nutrition ?? null,
             }
           : null,
       };

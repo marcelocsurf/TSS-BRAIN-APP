@@ -189,6 +189,9 @@ function ProgramViewer({
           {data.subtitle && (
             <p className="text-[12px] mt-0.5" style={{ color: '#8aa0b2' }}>{data.subtitle}</p>
           )}
+          <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#7BA2B5' }}>
+            Today is {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </p>
           {data.week_labels?.[String(week)] && (
             <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#FFD166' }}>
               Microcycle {week} · {data.week_labels[String(week)]}
@@ -394,11 +397,12 @@ function CheckinCard({
   const [sleep, setSleep] = useState<string>(t?.sleep_hours != null ? String(t.sleep_hours) : '');
   const [energy, setEnergy] = useState<number>(t?.energy ?? 0);
   const [comment, setComment] = useState<string>(t?.comment ?? '');
+  const [nutrition, setNutrition] = useState<string>(t?.nutrition ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  if (!cfg.water && !cfg.sleep && !cfg.energy && !cfg.comment) return null;
+  if (!cfg.water && !cfg.sleep && !cfg.energy && !cfg.comment && !cfg.nutrition) return null;
 
   const save = async () => {
     setErr(null);
@@ -414,6 +418,7 @@ function CheckinCard({
       sleep_hours: cfg.sleep ? sleepNum : null,
       energy: cfg.energy && energy > 0 ? energy : null,
       comment: cfg.comment ? comment : null,
+      nutrition: cfg.nutrition ? nutrition : null,
     });
     setSaving(false);
     if (!r.ok) setErr(r.error || 'Could not save.');
@@ -498,6 +503,17 @@ function CheckinCard({
             ))}
           </div>
         </div>
+      )}
+
+      {cfg.nutrition && (
+        <input
+          value={nutrition}
+          onChange={(e) => setNutrition(e.target.value)}
+          placeholder="What did you eat today?"
+          aria-label="Nutrition notes"
+          className="w-full mt-3 rounded-lg px-3 py-2 text-[12px]"
+          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid #2A4D5F', color: '#eaf4fa' }}
+        />
       )}
 
       {cfg.comment && (

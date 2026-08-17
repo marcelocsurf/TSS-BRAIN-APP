@@ -87,6 +87,7 @@ export interface AdminProgramDetail {
   checkin_sleep: boolean;
   checkin_energy: boolean;
   checkin_comment: boolean;
+  checkin_nutrition?: boolean;
   week_labels: Record<string, string>;
   active_assignments: number;
   days: {
@@ -108,7 +109,7 @@ export async function adminGetProgram(
 
     const { data: p, error } = await admin
       .from('programs')
-      .select('id, title, subtitle, kind, weeks, active, for_sale, checkin_water, checkin_sleep, checkin_energy, checkin_comment, week_labels')
+      .select('id, title, subtitle, kind, weeks, active, for_sale, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels')
       .eq('id', programId)
       .maybeSingle();
     if (error) throw error;
@@ -196,6 +197,7 @@ export async function adminUpdateProgram(
     checkin_sleep?: boolean;
     checkin_energy?: boolean;
     checkin_comment?: boolean;
+    checkin_nutrition?: boolean;
     week_labels?: Record<string, string>;
   }
 ): Promise<{ ok: boolean; error?: string }> {
@@ -1358,5 +1360,153 @@ export async function adminSetSeasonSpecialist(
   } catch (e) {
     console.error('[program-admin] adminSetSeasonSpecialist failed', e);
     return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+// ─── El bloque PROGRAMA de la ficha del alumno (sección 13 de la maqueta) ───
+
+export interface StudentHPData {
+  assignment: {
+    program_title: string;
+    coach_name: string | null;
+    start_date: string;
+    position: { week: number; day: number } | null;
+    days_done: number;
+    days_total: number;
+    adherence_pct: number;
+    last_checkin: { date: string; water: number | null; sleep: number | null; energy: number | null; comment: string | null } | null;
+  } | null;
+  past_programs: { title: string; adherence_pct: number }[];
+  season: {
+    title: string;
+    objective: string | null;
+    phase_now: string | null;
+    days_to_peak: number | null;
+    peak_name: string | null;
+    head_coach: string | null;
+    specialists: string[];
+  } | null;
+  evaluations: { pillar: string; score: number | null; notes: string | null; eval_date: string; coach_name: string }[];
+}
+
+export async function adminGetStudentHP(
+  studentId: string
+): Promise<{ ok: boolean; data: StudentHPData | null }> {
+  try {
+    if (!(await assertAdmin())) return { ok: true, data: null }; // no-admin: el panel simplemente no aparece
+    const admin = createAdminClient();
+
+    const { data: asgs, error: aErr } = await admin
+      .from('program_assignments')
+      .select('id, status, start_date, program_id, programs(title), coaches(display_name)')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false });
+    if (aErr) throw aErr;
+
+    const active = (asgs ?? []).find((a: any) => a.status === 'active') ?? null;
+    let assignment: StudentHPData['assignment'] = null;
+    if (active) {
+      const { data: days, error: dErr } = await admin
+        .from('program_days').select('id, week_number, day_number')
+        .eq('program_id', active.program_id).order('week_number').order('day_number');
+      if (dErr) throw dErr;
+      const { data: marks, error: mErr } = await admin
+        .from('program_day_marks').select('day_id').eq('assignment_id', active.id);
+      if (mErr) throw mErr;
+      const done = new Set((marks ?? []).map((m: any) => m.day_id));
+      const current = (days ?? []).find((d: any) => !done.has(d.id)) ?? null;
+      const { data: ck, error: cErr } = await admin
+        .from('program_checkins')
+        .select('checkin_date, water_glasses, sleep_hours, energy, comment')
+        .eq('assignment_id', active.id)
+        .order('checkin_date', { ascending: false }).limit(1).maybeSingle();
+      if (cErr) throw cErr;
+      const total = (days ?? []).length;
+      assignment = {
+        program_title: (active as any).programs?.title ?? '—',
+        coach_name: (active as any).coaches?.display_name ?? null,
+        start_date: active.start_date,
+        position: current ? { week: current.week_number, day: current.day_number } : null,
+        days_done: done.size,
+        days_total: total,
+        adherence_pct: total > 0 ? Math.round((done.size / total) * 100) : 0,
+        last_checkin: ck
+          ? { date: ck.checkin_date, water: ck.water_glasses, sleep: ck.sleep_hours, energy: ck.energy, comment: ck.comment }
+          : null,
+      };
+    }
+
+    // Programas pasados (cancelados/completados) con su adherencia final.
+    const pastList = (asgs ?? []).filter((a: any) => a.status !== 'active').slice(0, 4);
+    const past_programs: StudentHPData['past_programs'] = [];
+    for (const pa of pastList) {
+      const [{ count: doneC, error: e1 }, { count: totalC, error: e2 }] = await Promise.all([
+        admin.from('program_day_marks').select('id', { count: 'exact', head: true }).eq('assignment_id', pa.id),
+        admin.from('program_days').select('id', { count: 'exact', head: true }).eq('program_id', pa.program_id),
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+      past_programs.push({
+        title: (pa as any).programs?.title ?? '—',
+        adherence_pct: (totalC ?? 0) > 0 ? Math.round(((doneC ?? 0) / (totalC ?? 1)) * 100) : 0,
+      });
+    }
+
+    // Temporada activa.
+    const { data: sn, error: sErr } = await admin
+      .from('season_plans')
+      .select('id, title, objective, coaches(display_name)')
+      .eq('student_id', studentId).eq('active', true)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (sErr) throw sErr;
+    let season: StudentHPData['season'] = null;
+    if (sn) {
+      const today = elSalvadorToday();
+      const [ph, ev, sp] = await Promise.all([
+        admin.from('season_phases').select('name, start_date, end_date').eq('season_id', sn.id),
+        admin.from('season_events').select('name, event_date, is_peak').eq('season_id', sn.id).order('event_date'),
+        admin.from('season_specialists').select('coaches(display_name)').eq('season_id', sn.id),
+      ]);
+      if (ph.error) throw ph.error;
+      if (ev.error) throw ev.error;
+      if (sp.error) throw sp.error;
+      const now = (ph.data ?? []).find((f: any) => f.start_date <= today && f.end_date >= today) ?? null;
+      const peak = (ev.data ?? []).find((e: any) => e.is_peak) ?? null;
+      season = {
+        title: sn.title,
+        objective: sn.objective,
+        phase_now: now?.name ?? null,
+        days_to_peak: peak && peak.event_date >= today ? diffDays(today, peak.event_date) : null,
+        peak_name: peak?.name ?? null,
+        head_coach: (sn as any).coaches?.display_name ?? null,
+        specialists: (sp.data ?? []).map((x: any) => x.coaches?.display_name).filter(Boolean),
+      };
+    }
+
+    const { data: evals, error: evErr } = await admin
+      .from('program_evaluations')
+      .select('pillar, score, notes, eval_date, coaches(display_name)')
+      .eq('student_id', studentId)
+      .order('eval_date', { ascending: false }).limit(5);
+    if (evErr) throw evErr;
+
+    if (!assignment && past_programs.length === 0 && !season && (evals ?? []).length === 0) {
+      return { ok: true, data: null };
+    }
+    return {
+      ok: true,
+      data: {
+        assignment,
+        past_programs,
+        season,
+        evaluations: (evals ?? []).map((e: any) => ({
+          pillar: e.pillar, score: e.score, notes: e.notes, eval_date: e.eval_date,
+          coach_name: e.coaches?.display_name ?? '—',
+        })),
+      },
+    };
+  } catch (e) {
+    console.error('[program-admin] adminGetStudentHP failed', e);
+    return { ok: false, data: null };
   }
 }

@@ -155,6 +155,7 @@ export function HPFollowCard({ token }: { token: string }) {
                         {a.last_checkin.water_glasses != null && <>💧 {a.last_checkin.water_glasses}/8 · </>}
                         {a.last_checkin.sleep_hours != null && <>😴 {a.last_checkin.sleep_hours} h · </>}
                         {a.last_checkin.energy != null && <>energía {ENERGY[a.last_checkin.energy - 1] ?? a.last_checkin.energy}</>}
+                        {a.last_checkin.nutrition && <> · 🍎 {a.last_checkin.nutrition}</>}
                       </p>
                       {a.last_checkin.comment && (
                         <p className="text-[11.5px] italic mt-1.5" style={{ color: C.navy }}>

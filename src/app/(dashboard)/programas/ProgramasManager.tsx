@@ -449,6 +449,7 @@ function MetaCard({
     sleep: detail.checkin_sleep,
     energy: detail.checkin_energy,
     comment: detail.checkin_comment,
+    nutrition: (detail as any).checkin_nutrition ?? false,
   });
   const [busy, setBusy] = useState(false);
 
@@ -465,6 +466,7 @@ function MetaCard({
       checkin_sleep: ck.sleep,
       checkin_energy: ck.energy,
       checkin_comment: ck.comment,
+      checkin_nutrition: ck.nutrition,
     });
     setBusy(false);
     if (!r.ok) setErr(r.error || null);
@@ -515,6 +517,7 @@ function MetaCard({
         <Toggle label="Sueño" value={ck.sleep} onChange={(v) => setCk({ ...ck, sleep: v })} />
         <Toggle label="Energía" value={ck.energy} onChange={(v) => setCk({ ...ck, energy: v })} />
         <Toggle label="Comentario" value={ck.comment} onChange={(v) => setCk({ ...ck, comment: v })} />
+        <Toggle label="Dieta" value={ck.nutrition} onChange={(v) => setCk({ ...ck, nutrition: v })} />
         <div className="flex-1" />
         <button
           type="button"

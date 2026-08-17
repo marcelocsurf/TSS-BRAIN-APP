@@ -40,7 +40,7 @@ export interface MyProgramData {
   subtitle: string | null;
   assigned_by: string | null;
   weeks: number;
-  checkin: { water: boolean; sleep: boolean; energy: boolean; comment: boolean };
+  checkin: { water: boolean; sleep: boolean; energy: boolean; comment: boolean; nutrition: boolean };
   week_labels: Record<string, string>;
   days: ProgramDayView[];
   position: { week: number; day: number } | null; // null = programa completado
@@ -51,6 +51,7 @@ export interface MyProgramData {
     sleep_hours: number | null;
     energy: number | null;
     comment: string | null;
+    nutrition: string | null;
   } | null;
 }
 
@@ -72,7 +73,7 @@ async function resolveActiveAssignment(portalToken: string) {
 
   const { data: assignment, error: asgErr } = await admin
     .from('program_assignments')
-    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, week_labels, active)')
+    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels, active)')
     .eq('student_id', student.id)
     .eq('status', 'active')
     .eq('programs.active', true)
@@ -130,7 +131,7 @@ export async function getMyProgram(
 
     const { data: checkin, error: ckErr } = await admin
       .from('program_checkins')
-      .select('water_glasses, sleep_hours, energy, comment')
+      .select('water_glasses, sleep_hours, energy, comment, nutrition')
       .eq('assignment_id', assignment.id)
       .eq('checkin_date', elSalvadorToday())
       .maybeSingle();
@@ -184,6 +185,7 @@ export async function getMyProgram(
           sleep: program.checkin_sleep,
           energy: program.checkin_energy,
           comment: program.checkin_comment,
+          nutrition: program.checkin_nutrition ?? false,
         },
         week_labels: program.week_labels ?? {},
         days: dayViews,
@@ -324,6 +326,7 @@ export async function saveProgramCheckin(
     sleep_hours?: number | null;
     energy?: number | null;
     comment?: string | null;
+    nutrition?: string | null;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -346,6 +349,7 @@ export async function saveProgramCheckin(
         sleep_hours: sleep ?? null,
         energy: energy ?? null,
         comment: (input.comment ?? '').trim() || null,
+        nutrition: (input.nutrition ?? '').trim() || null,
       },
       { onConflict: 'assignment_id,checkin_date' }
     );

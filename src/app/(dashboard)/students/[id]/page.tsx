@@ -23,6 +23,7 @@ import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { CoursesPanel } from '@/components/student/CoursesPanel';
 import { StudentPresentationGrants } from './StudentPresentationGrants';
+import { StudentHPPanel } from '@/components/student/StudentHPPanel';
 import { listStudentCourseGrants } from '@/lib/actions/course-grants';
 import { getCampNotesForStudent } from '@/lib/actions/camps';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
@@ -713,6 +714,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         isPlatformAdmin={!!coach?.is_platform_admin}
         isDirectPurchase={!(student as any).academy_id}
       />
+
+      {/* Alto Rendimiento — el bloque dorado de la ficha (sección 13 de la
+          maqueta): programa, temporada, evaluaciones. Solo aparece si el
+          alumno tiene algo de la línea HP y quien mira es admin de plataforma. */}
+      <StudentHPPanel studentId={id} />
 
       {/* Presentations — grant decks to this student (admin only; renders
           nothing if there are no presentations or the viewer isn't admin) */}
