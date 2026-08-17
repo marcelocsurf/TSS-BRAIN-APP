@@ -1,0 +1,356 @@
+'use server';
+
+import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
+
+// ─── Programas de entreno (línea Alto Rendimiento, nativa en BRAIN) ───
+//
+// El visor del portal del alumno. Paridad completa con la app HP: video por
+// ejercicio, marca cosa por cosa, día hecho, y check-in diario configurable
+// por programa (agua / sueño / energía / comentario).
+//
+// Seguridad: estas acciones usan createAdminClient (bypassa RLS), así que
+// CADA operación valida primero que el portal_token corresponda al alumno
+// dueño de la asignación. El token es la credencial, igual que en el resto
+// de los portales.
+
+export interface ProgramItemView {
+  id: string;
+  title: string;
+  detail: string | null;
+  video_url: string | null;
+  marked: boolean;
+}
+
+export interface ProgramDayView {
+  id: string;
+  week_number: number;
+  day_number: number;
+  title: string;
+  focus: string | null;
+  items: ProgramItemView[];
+  done: boolean;
+  current: boolean;
+  locked: boolean;
+}
+
+export interface MyProgramData {
+  assignment_id: string;
+  title: string;
+  subtitle: string | null;
+  assigned_by: string | null;
+  weeks: number;
+  checkin: { water: boolean; sleep: boolean; energy: boolean; comment: boolean };
+  days: ProgramDayView[];
+  position: { week: number; day: number } | null; // null = programa completado
+  days_done: number;
+  days_total: number;
+  today_checkin: {
+    water_glasses: number | null;
+    sleep_hours: number | null;
+    energy: number | null;
+    comment: string | null;
+  } | null;
+}
+
+// Resuelve el alumno del token y su asignación activa más reciente.
+// Devuelve null si el token no existe o no hay programa activo.
+async function resolveActiveAssignment(portalToken: string) {
+  const admin = createAdminClient();
+  // supabase-js nunca lanza: los errores vienen en el campo `error`. Ignorarlo
+  // confunde "falló la query" con "no tiene programa" — y eso borraba la
+  // tarjeta del Home ante un parpadeo de conexión. Acá se lanza y el try/catch
+  // del caller lo convierte en {ok:false} (invariante #2).
+  const { data: student, error: studentErr } = await admin
+    .from('students')
+    .select('id')
+    .eq('portal_token', portalToken)
+    .maybeSingle();
+  if (studentErr) throw studentErr;
+  if (!student) return null;
+
+  const { data: assignment, error: asgErr } = await admin
+    .from('program_assignments')
+    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, active)')
+    .eq('student_id', student.id)
+    .eq('status', 'active')
+    .eq('programs.active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (asgErr) throw asgErr;
+  if (!assignment) return null;
+
+  return { admin, studentId: student.id, assignment };
+}
+
+export async function getMyProgram(
+  portalToken: string
+): Promise<{ ok: boolean; data: MyProgramData | null; error?: string }> {
+  try {
+    const ctx = await resolveActiveAssignment(portalToken);
+    if (!ctx) return { ok: true, data: null };
+    const { admin, assignment } = ctx;
+    const program: any = assignment.programs;
+
+    const { data: days, error: daysErr } = await admin
+      .from('program_days')
+      .select('id, week_number, day_number, title, focus')
+      .eq('program_id', assignment.program_id)
+      .order('week_number')
+      .order('day_number');
+    if (daysErr) throw daysErr;
+    const dayIds = (days ?? []).map((d: any) => d.id);
+
+    let items: any[] = [];
+    if (dayIds.length) {
+      const { data, error } = await admin
+        .from('program_items')
+        .select('id, day_id, title, detail, video_url, display_order')
+        .in('day_id', dayIds)
+        .order('display_order');
+      if (error) throw error;
+      items = data ?? [];
+    }
+
+    const { data: itemMarks, error: imErr } = await admin
+      .from('program_item_marks')
+      .select('item_id')
+      .eq('assignment_id', assignment.id);
+    if (imErr) throw imErr;
+    const { data: dayMarks, error: dmErr } = await admin
+      .from('program_day_marks')
+      .select('day_id')
+      .eq('assignment_id', assignment.id);
+    if (dmErr) throw dmErr;
+
+    const markedItems = new Set((itemMarks ?? []).map((m: any) => m.item_id));
+    const doneDays = new Set((dayMarks ?? []).map((m: any) => m.day_id));
+
+    const { data: checkin, error: ckErr } = await admin
+      .from('program_checkins')
+      .select('water_glasses, sleep_hours, energy, comment')
+      .eq('assignment_id', assignment.id)
+      .eq('checkin_date', elSalvadorToday())
+      .maybeSingle();
+    if (ckErr) throw ckErr;
+
+    const itemsByDay = new Map<string, ProgramItemView[]>();
+    for (const it of items ?? []) {
+      const arr = itemsByDay.get(it.day_id) ?? [];
+      arr.push({
+        id: it.id,
+        title: it.title,
+        detail: it.detail,
+        video_url: it.video_url,
+        marked: markedItems.has(it.id),
+      });
+      itemsByDay.set(it.day_id, arr);
+    }
+
+    // El día actual es el PRIMER día sin marcar; todo lo posterior está locked.
+    // Desbloqueo secuencial, como en la app HP — sin depender del calendario.
+    let currentSeen = false;
+    const dayViews: ProgramDayView[] = (days ?? []).map((d: any) => {
+      const done = doneDays.has(d.id);
+      const current = !done && !currentSeen;
+      if (current) currentSeen = true;
+      return {
+        id: d.id,
+        week_number: d.week_number,
+        day_number: d.day_number,
+        title: d.title,
+        focus: d.focus,
+        items: itemsByDay.get(d.id) ?? [],
+        done,
+        current,
+        locked: !done && !current,
+      };
+    });
+
+    const cur = dayViews.find((d) => d.current) ?? null;
+
+    return {
+      ok: true,
+      data: {
+        assignment_id: assignment.id,
+        title: program.title,
+        subtitle: program.subtitle,
+        assigned_by: assignment.assigned_by,
+        weeks: program.weeks,
+        checkin: {
+          water: program.checkin_water,
+          sleep: program.checkin_sleep,
+          energy: program.checkin_energy,
+          comment: program.checkin_comment,
+        },
+        days: dayViews,
+        position: cur ? { week: cur.week_number, day: cur.day_number } : null,
+        days_done: dayViews.filter((d) => d.done).length,
+        days_total: dayViews.length,
+        today_checkin: checkin ?? null,
+      },
+    };
+  } catch (e) {
+    // El mensaje crudo de Postgres jamás llega al alumno: se loguea acá y el
+    // portal muestra copy fijo en inglés.
+    console.error('[programs] getMyProgram failed', e);
+    return { ok: false, data: null, error: 'Could not load your program. Please try again.' };
+  }
+}
+
+// Marca / desmarca un ítem. Solo se aceptan ítems del día actual o de días ya
+// hechos (corregir uno viejo está bien; adelantarse a un día locked, no).
+export async function markProgramItem(
+  portalToken: string,
+  itemId: string,
+  marked: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const ctx = await resolveActiveAssignment(portalToken);
+    if (!ctx) return { ok: false, error: 'No active program.' };
+    const { admin, assignment } = ctx;
+
+    // El ítem debe pertenecer al programa de ESTA asignación…
+    const { data: item, error: itemErr } = await admin
+      .from('program_items')
+      .select('id, day_id, program_days!inner(id, program_id, week_number, day_number)')
+      .eq('id', itemId)
+      .maybeSingle();
+    if (itemErr) throw itemErr;
+    const day: any = (item as any)?.program_days;
+    if (!item || day.program_id !== assignment.program_id) {
+      return { ok: false, error: 'Item not in your program.' };
+    }
+
+    // …y su día no puede estar locked (todo día anterior debe estar hecho).
+    const { data: prevDays, error: prevErr } = await admin
+      .from('program_days')
+      .select('id, week_number, day_number')
+      .eq('program_id', assignment.program_id)
+      .or(`week_number.lt.${day.week_number},and(week_number.eq.${day.week_number},day_number.lt.${day.day_number})`);
+    if (prevErr) throw prevErr;
+    const prevIds = (prevDays ?? []).map((d: any) => d.id);
+    if (prevIds.length > 0) {
+      const { count, error: cntErr } = await admin
+        .from('program_day_marks')
+        .select('id', { count: 'exact', head: true })
+        .eq('assignment_id', assignment.id)
+        .in('day_id', prevIds);
+      if (cntErr) throw cntErr;
+      if ((count ?? 0) < prevIds.length) {
+        const { count: selfDone, error: selfErr } = await admin
+          .from('program_day_marks')
+          .select('id', { count: 'exact', head: true })
+          .eq('assignment_id', assignment.id)
+          .eq('day_id', day.id);
+        if (selfErr) throw selfErr;
+        if (!selfDone) return { ok: false, error: 'This day is still locked.' };
+      }
+    }
+
+    if (marked) {
+      const { error } = await admin
+        .from('program_item_marks')
+        .upsert(
+          { assignment_id: assignment.id, item_id: itemId },
+          { onConflict: 'assignment_id,item_id', ignoreDuplicates: true }
+        );
+      if (error) throw error;
+    } else {
+      const { error } = await admin
+        .from('program_item_marks')
+        .delete()
+        .eq('assignment_id', assignment.id)
+        .eq('item_id', itemId);
+      if (error) throw error;
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[programs] markProgramItem failed', e);
+    return { ok: false, error: 'Could not save. Please try again.' };
+  }
+}
+
+// "Mark day as done" — solo el día ACTUAL (el primero sin marcar).
+export async function markProgramDayDone(
+  portalToken: string,
+  dayId: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const ctx = await resolveActiveAssignment(portalToken);
+    if (!ctx) return { ok: false, error: 'No active program.' };
+    const { admin, assignment } = ctx;
+
+    const { data: days, error: daysErr } = await admin
+      .from('program_days')
+      .select('id')
+      .eq('program_id', assignment.program_id)
+      .order('week_number')
+      .order('day_number');
+    if (daysErr) throw daysErr;
+    const { data: dayMarks, error: dmErr } = await admin
+      .from('program_day_marks')
+      .select('day_id')
+      .eq('assignment_id', assignment.id);
+    if (dmErr) throw dmErr;
+    const done = new Set((dayMarks ?? []).map((m: any) => m.day_id));
+    const current = (days ?? []).find((d: any) => !done.has(d.id));
+    if (!current || current.id !== dayId) {
+      return { ok: false, error: 'You can only complete your current day.' };
+    }
+
+    const { error } = await admin
+      .from('program_day_marks')
+      .upsert(
+        { assignment_id: assignment.id, day_id: dayId },
+        { onConflict: 'assignment_id,day_id', ignoreDuplicates: true }
+      );
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[programs] markProgramDayDone failed', e);
+    return { ok: false, error: 'Could not save. Please try again.' };
+  }
+}
+
+// Check-in diario: un registro por asignación por fecha de El Salvador.
+export async function saveProgramCheckin(
+  portalToken: string,
+  input: {
+    water_glasses?: number | null;
+    sleep_hours?: number | null;
+    energy?: number | null;
+    comment?: string | null;
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const ctx = await resolveActiveAssignment(portalToken);
+    if (!ctx) return { ok: false, error: 'No active program.' };
+    const { admin, assignment } = ctx;
+
+    const water = input.water_glasses;
+    const sleep = input.sleep_hours;
+    const energy = input.energy;
+    if (water != null && (water < 0 || water > 12)) return { ok: false, error: 'Water must be 0–12 glasses.' };
+    if (sleep != null && (sleep < 0 || sleep > 14)) return { ok: false, error: 'Sleep must be 0–14 hours.' };
+    if (energy != null && (energy < 1 || energy > 4)) return { ok: false, error: 'Energy must be 1–4.' };
+
+    const { error } = await admin.from('program_checkins').upsert(
+      {
+        assignment_id: assignment.id,
+        checkin_date: elSalvadorToday(),
+        water_glasses: water ?? null,
+        sleep_hours: sleep ?? null,
+        energy: energy ?? null,
+        comment: (input.comment ?? '').trim() || null,
+      },
+      { onConflict: 'assignment_id,checkin_date' }
+    );
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[programs] saveProgramCheckin failed', e);
+    return { ok: false, error: 'Could not save your check-in. Please try again.' };
+  }
+}
