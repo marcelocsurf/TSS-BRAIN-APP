@@ -45,7 +45,7 @@ export function StudentHPPanel({ studentId }: { studentId: string }) {
             {data.season.phase_now ? `Fase actual: ${data.season.phase_now}` : 'Temporada activa'}
             {data.season.objective ? ` · ${data.season.objective}` : ''}
           </p>
-          <p className="text-[10px] text-gray-400 mt-1">
+          <p className="text-[10px] text-gray-500 mt-1">
             {data.season.head_coach ? `Head coach: ${data.season.head_coach}` : 'Head coach: Marcelo'}
             {data.season.specialists.length > 0 && ` · Especialistas: ${data.season.specialists.join(', ')}`}
           </p>
@@ -91,7 +91,7 @@ export function StudentHPPanel({ studentId }: { studentId: string }) {
               <p key={i} className="text-[11.5px] text-gray-500">
                 <b className="capitalize text-[var(--tss-navy)]">{e.pillar}</b>
                 {e.score != null && <> · <b style={{ color: '#0090B8' }}>{e.score}/10</b></>} · {e.eval_date} · {e.coach_name}
-                {e.notes && <span className="text-gray-400"> — {e.notes}</span>}
+                {e.notes && <span className="text-gray-500"> — {e.notes}</span>}
               </p>
             ))}
           </div>
