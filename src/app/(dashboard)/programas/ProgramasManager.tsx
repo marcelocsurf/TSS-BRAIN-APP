@@ -24,6 +24,17 @@ import {
   adminCreateAppointment,
   adminListAppointments,
   adminSetAppointmentStatus,
+  adminListSeasons,
+  adminGetSeason,
+  adminCreateSeason,
+  adminUpdateSeason,
+  adminSaveSeasonPhase,
+  adminDeleteSeasonPhase,
+  adminSaveSeasonEvent,
+  adminDeleteSeasonEvent,
+  adminSetSeasonSpecialist,
+  type AdminSeasonRow,
+  type AdminSeasonDetail,
   type AdminProgramRow,
   type AdminProgramDetail,
   type AdminAssignmentRow,
@@ -49,7 +60,7 @@ import {
 type Video = { id: string; title: string; pillar: string | null; video_url: string };
 
 export function ProgramasManager() {
-  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas'>('catalogo');
+  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas' | 'temporadas'>('catalogo');
   const [programs, setPrograms] = useState<AdminProgramRow[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -83,7 +94,7 @@ export function ProgramasManager() {
           </p>
         </div>
         <div className="flex gap-2">
-          {(['catalogo', 'asignaciones', 'citas', 'coaches'] as const).map((v) => (
+          {(['catalogo', 'temporadas', 'asignaciones', 'citas', 'coaches'] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -92,7 +103,7 @@ export function ProgramasManager() {
                 view === v ? 'bg-[var(--tss-navy)] text-white' : 'bg-white border border-gray-200 text-gray-600'
               }`}
             >
-              {v === 'catalogo' ? 'Catálogo' : v === 'asignaciones' ? 'Asignaciones' : v === 'citas' ? 'Citas' : 'Coaches'}
+              {v === 'catalogo' ? 'Catálogo' : v === 'temporadas' ? 'Temporadas' : v === 'asignaciones' ? 'Asignaciones' : v === 'citas' ? 'Citas' : 'Coaches'}
             </button>
           ))}
         </div>
@@ -115,6 +126,7 @@ export function ProgramasManager() {
       {view === 'asignaciones' && <Asignaciones programs={programs} />}
       {view === 'coaches' && <CoachesHP />}
       {view === 'citas' && <Citas />}
+      {view === 'temporadas' && <Temporadas />}
     </div>
   );
 }
@@ -1088,6 +1100,360 @@ function MicroLabel({
           Guardar
         </button>
       )}
+    </div>
+  );
+}
+
+
+// ─── Temporadas · el Plan Anual (macrociclo, fases, eventos, especialistas) ───
+
+const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; label: string }> = {
+  general:     { bg: 'rgba(0,168,204,.10)', border: '#00A8CC', text: '#006C8C', label: 'Prep. General' },
+  especifica:  { bg: 'rgba(0,168,204,.28)', border: '#0090B8', text: '#006C8C', label: 'Prep. Específica' },
+  competitiva: { bg: 'rgba(184,134,43,.15)', border: '#B8862B', text: '#8E6614', label: 'Competitiva' },
+  transicion:  { bg: 'rgba(100,116,139,.10)', border: '#94A3B8', text: '#64748B', label: 'Transición' },
+};
+const EVENT_ICON: Record<string, string> = { camp: '🌊', nacional: '⭐', internacional: '🏆', otro: '📍' };
+
+function pctBetween(date: string, start: string, end: string): number {
+  const d = Date.parse(date), a = Date.parse(start), b = Date.parse(end);
+  if (!(b > a)) return 0;
+  return Math.max(0, Math.min(100, ((d - a) / (b - a)) * 100));
+}
+
+function Temporadas() {
+  const [rows, setRows] = useState<AdminSeasonRow[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  // crear
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string; email: string | null }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [title, setTitle] = useState('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => adminListSeasons().then((r) => { if (r.ok) setRows(r.seasons); else setErr(r.error || null); });
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) {
+        adminSearchStudents(q).then((r) => { if (r.ok) setResults(r.students); else setErr(r.error || null); });
+      } else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const create = async () => {
+    if (!picked || !title.trim() || !start || !end) return;
+    setErr(null);
+    setBusy(true);
+    const r = await adminCreateSeason({ studentId: picked.id, title, startDate: start, endDate: end });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setPicked(null); setQ(''); setTitle(''); setStart(''); setEnd('');
+    load();
+    if (r.id) setOpenId(r.id);
+  };
+
+  if (openId) return <SeasonEditor seasonId={openId} onBack={() => { setOpenId(null); load(); }} />;
+
+  return (
+    <div className="space-y-4">
+      {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
+
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva temporada (macrociclo)</p>
+        <div className="flex gap-2 flex-wrap items-start">
+          <div className="relative flex-1 min-w-[180px]">
+            <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }}
+              placeholder="Atleta…" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            {results.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+                {results.map((st) => (
+                  <button key={st.id} type="button" onClick={() => { setPicked({ id: st.id, name: st.name }); setResults([]); }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                    <span className="font-semibold text-[var(--tss-navy)]">{st.name}</span>
+                    <span className="text-[11px] text-gray-400 ml-2">{st.email ?? ''}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <input value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder="Nombre (inglés, lo ve el atleta) — Road to Centroamericanos"
+            className="flex-1 min-w-[220px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Inicio" />
+          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Fin" />
+          <button type="button" disabled={busy || !picked || !title.trim() || !start || !end} onClick={create}
+            className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40">
+            Crear →
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {rows.map((sn) => (
+          <button key={sn.id} type="button" onClick={() => setOpenId(sn.id)}
+            className="w-full text-left rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap hover:border-gray-300"
+            style={{ borderLeft: '4px solid #B8862B', opacity: sn.active ? 1 : 0.55 }}>
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-sm font-bold text-[var(--tss-navy)]">{sn.title}</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {sn.student_name} · {sn.start_date} → {sn.end_date}
+                {sn.head_coach_name ? ` · head coach: ${sn.head_coach_name}` : ' · sin head coach'}
+              </p>
+            </div>
+            <span className="text-[11px] text-gray-400">
+              {sn.phases_count} fase{sn.phases_count === 1 ? '' : 's'} · {sn.events_count} evento{sn.events_count === 1 ? '' : 's'} · {sn.specialists_count} especialista{sn.specialists_count === 1 ? '' : 's'}
+            </span>
+          </button>
+        ))}
+        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin temporadas todavía.</p>}
+      </div>
+    </div>
+  );
+}
+
+function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => void }) {
+  const [sn, setSn] = useState<AdminSeasonDetail | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [e1, setE1] = useState<{ id: string; display_name: string; hp_specialty: string | null }[]>([]);
+  const [objective, setObjective] = useState('');
+  const [headCoach, setHeadCoach] = useState('');
+  const [dirtyMeta, setDirtyMeta] = useState(false);
+
+  const load = () => adminGetSeason(seasonId).then((r) => {
+    if (r.ok && r.season) {
+      setSn(r.season);
+      setObjective(r.season.objective ?? '');
+      setHeadCoach(r.season.head_coach_id ?? '');
+    } else setErr(r.error || null);
+  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+    adminListHPCoaches().then((r) => {
+      if (r.ok) setE1(r.coaches.filter((c) => c.hp_escalon >= 1).map((c) => ({ id: c.id, display_name: c.display_name, hp_specialty: c.hp_specialty })));
+    });
+  }, [seasonId]);
+
+  if (!sn) return <p className="text-sm text-gray-400 py-8 text-center">{err ?? 'Cargando…'}</p>;
+
+  const saveMeta = async () => {
+    setErr(null);
+    const r = await adminUpdateSeason(seasonId, { objective: objective.trim() || null, head_coach_id: headCoach || null });
+    if (!r.ok) setErr(r.error || null);
+    else { setDirtyMeta(false); load(); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)]">
+        <ChevronLeft size={13} /> Volver a temporadas
+      </button>
+      {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
+
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="text-sm font-bold text-[var(--tss-navy)]">{sn.title}</p>
+            <p className="text-[11px] text-gray-500">{sn.student_name} · {sn.start_date} → {sn.end_date}</p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Objetivo del macro (inglés, lo ve el atleta)</label>
+            <input value={objective} onChange={(e) => { setObjective(e.target.value); setDirtyMeta(true); }}
+              placeholder="Gold at Centroamericanos · peak AUG 8"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" />
+          </div>
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Head coach (monitorea cargas y calibra)</label>
+            <select value={headCoach} onChange={(e) => { setHeadCoach(e.target.value); setDirtyMeta(true); }}
+              className="w-full rounded-lg border border-gray-300 px-2.5 py-2 text-sm mt-1">
+              <option value="">Sin head coach designado (vos)</option>
+              {e1.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+            </select>
+          </div>
+        </div>
+        {dirtyMeta && (
+          <button type="button" onClick={saveMeta} className="px-4 py-1.5 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white">
+            Guardar
+          </button>
+        )}
+      </div>
+
+      {/* Franja anual */}
+      <div className="rounded-2xl bg-white border border-gray-200 p-4">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Franja anual</p>
+        <div className="relative h-12 rounded-lg overflow-hidden" style={{ background: '#F1F5F9' }}>
+          {sn.phases.map((f) => {
+            const c = PHASE_COLORS[f.color_key] ?? PHASE_COLORS.general;
+            const left = pctBetween(f.start_date, sn.start_date, sn.end_date);
+            const right = pctBetween(f.end_date, sn.start_date, sn.end_date);
+            return (
+              <div key={f.id} title={`${f.name} · ${f.start_date} → ${f.end_date}`}
+                className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden"
+                style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%`, background: c.bg, borderLeft: `2px solid ${c.border}` }}>
+                <span className="text-[9px] font-mono font-bold uppercase truncate px-1" style={{ color: c.text }}>{f.name}</span>
+              </div>
+            );
+          })}
+          {sn.events.map((ev) => (
+            <div key={ev.id} title={`${ev.name} · ${ev.event_date}`}
+              className="absolute top-0 bottom-0" style={{ left: `${pctBetween(ev.event_date, sn.start_date, sn.end_date)}%` }}>
+              <div className="w-[2px] h-full" style={{ background: ev.is_peak ? '#B8862B' : '#94A3B8' }} />
+              <span className="absolute -top-0.5 -translate-x-1/2 text-[11px]">{EVENT_ICON[ev.kind] ?? '📍'}</span>
+            </div>
+          ))}
+        </div>
+        {sn.phases.length === 0 && <p className="text-[11px] text-gray-400 mt-2">Agregá fases abajo para ver la franja.</p>}
+      </div>
+
+      <SeasonPhases seasonId={seasonId} phases={sn.phases} onChanged={load} setErr={setErr} />
+      <SeasonEvents seasonId={seasonId} events={sn.events} onChanged={load} setErr={setErr} />
+
+      {/* Especialistas */}
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-2">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+          Especialistas con acceso al plan (agendan sesiones y dejan aportes)
+        </p>
+        {e1.map((c) => {
+          const on = sn.specialists.some((x) => x.coach_id === c.id);
+          return (
+            <div key={c.id} className="flex items-center gap-2">
+              <button type="button"
+                onClick={async () => {
+                  const r = await adminSetSeasonSpecialist(seasonId, c.id, !on);
+                  if (!r.ok) setErr(r.error || null);
+                  else load();
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold ${on ? 'bg-[var(--tss-navy)] text-white' : 'bg-gray-100 text-gray-500'}`}>
+                {on ? '✓ ' : ''}{c.display_name}
+              </button>
+              {c.hp_specialty && <span className="text-[10px] font-mono uppercase text-amber-700">{c.hp_specialty}</span>}
+            </div>
+          );
+        })}
+        {e1.length === 0 && <p className="text-[11px] text-gray-400">Ningún coach con Escalón 1 todavía — otorgalo en la pestaña Coaches.</p>}
+      </div>
+    </div>
+  );
+}
+
+const COLOR_OPTS = ['general', 'especifica', 'competitiva', 'transicion'] as const;
+const KIND_EVENT_OPTS = ['camp', 'nacional', 'internacional', 'otro'] as const;
+
+function SeasonPhases({ seasonId, phases, onChanged, setErr }: {
+  seasonId: string;
+  phases: AdminSeasonDetail['phases'];
+  onChanged: () => void;
+  setErr: (e: string | null) => void;
+}) {
+  const [name, setName] = useState('');
+  const [colorKey, setColorKey] = useState<string>('general');
+  const [ps, setPs] = useState('');
+  const [pe, setPe] = useState('');
+  const [obj, setObj] = useState('');
+
+  const add = async () => {
+    if (!name.trim() || !ps || !pe) return;
+    setErr(null);
+    const r = await adminSaveSeasonPhase(seasonId, { name, objective: obj, start_date: ps, end_date: pe, color_key: colorKey });
+    if (!r.ok) setErr(r.error || null);
+    else { setName(''); setObj(''); setPs(''); setPe(''); onChanged(); }
+  };
+
+  return (
+    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-2">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Fases del macro</p>
+      {phases.map((f) => {
+        const c = PHASE_COLORS[f.color_key] ?? PHASE_COLORS.general;
+        return (
+          <div key={f.id} className="flex items-center gap-2 flex-wrap rounded-xl border border-gray-100 p-2.5" style={{ borderLeft: `3px solid ${c.border}` }}>
+            <span className="text-xs font-bold" style={{ color: c.text }}>{f.name}</span>
+            <span className="text-[11px] text-gray-500">{f.start_date} → {f.end_date}</span>
+            {f.objective && <span className="text-[11px] text-gray-400">· {f.objective}</span>}
+            <div className="flex-1" />
+            <button type="button" onClick={async () => {
+              if (!window.confirm(`¿Eliminar la fase «${f.name}»?`)) return;
+              const r = await adminDeleteSeasonPhase(f.id);
+              if (!r.ok) setErr(r.error || null); else onChanged();
+            }} className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+          </div>
+        );
+      })}
+      <div className="flex gap-2 flex-wrap items-center pt-1">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (General Prep…)" className="flex-1 min-w-[140px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
+        <select value={colorKey} onChange={(e) => setColorKey(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs">
+          {COLOR_OPTS.map((k) => <option key={k} value={k}>{PHASE_COLORS[k].label}</option>)}
+        </select>
+        <input type="date" value={ps} onChange={(e) => setPs(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Inicio de fase" />
+        <input type="date" value={pe} onChange={(e) => setPe(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fin de fase" />
+        <input value={obj} onChange={(e) => setObj(e.target.value)} placeholder="Objetivo (opcional)" className="flex-1 min-w-[120px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
+        <button type="button" disabled={!name.trim() || !ps || !pe} onClick={add}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--tss-cyan)] text-[var(--tss-navy)] disabled:opacity-40">
+          + Fase
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SeasonEvents({ seasonId, events, onChanged, setErr }: {
+  seasonId: string;
+  events: AdminSeasonDetail['events'];
+  onChanged: () => void;
+  setErr: (e: string | null) => void;
+}) {
+  const [name, setName] = useState('');
+  const [kind, setKind] = useState<string>('nacional');
+  const [date, setDate] = useState('');
+  const [peak, setPeak] = useState(false);
+
+  const add = async () => {
+    if (!name.trim() || !date) return;
+    setErr(null);
+    const r = await adminSaveSeasonEvent(seasonId, { name, kind, event_date: date, is_peak: peak });
+    if (!r.ok) setErr(r.error || null);
+    else { setName(''); setDate(''); setPeak(false); onChanged(); }
+  };
+
+  return (
+    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-2">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Eventos y competencias</p>
+      {events.map((ev) => (
+        <div key={ev.id} className="flex items-center gap-2 flex-wrap rounded-xl border border-gray-100 p-2.5"
+          style={{ borderLeft: `3px solid ${ev.is_peak ? '#B8862B' : '#CBD5E1'}` }}>
+          <span className="text-sm">{EVENT_ICON[ev.kind] ?? '📍'}</span>
+          <span className="text-xs font-bold text-[var(--tss-navy)]">{ev.name}</span>
+          <span className="text-[11px] text-gray-500">{ev.event_date}</span>
+          {ev.is_peak && <span className="text-[10px] font-mono font-bold text-amber-700">EL PICO</span>}
+          <div className="flex-1" />
+          <button type="button" onClick={async () => {
+            if (!window.confirm(`¿Eliminar «${ev.name}»?`)) return;
+            const r = await adminDeleteSeasonEvent(ev.id);
+            if (!r.ok) setErr(r.error || null); else onChanged();
+          }} className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+        </div>
+      ))}
+      <div className="flex gap-2 flex-wrap items-center pt-1">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (inglés) — Centroamericanos" className="flex-1 min-w-[160px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
+        <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs">
+          {KIND_EVENT_OPTS.map((k) => <option key={k} value={k}>{EVENT_ICON[k]} {k}</option>)}
+        </select>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fecha del evento" />
+        <label className="text-[11px] text-gray-500 flex items-center gap-1">
+          <input type="checkbox" checked={peak} onChange={(e) => setPeak(e.target.checked)} /> el pico
+        </label>
+        <button type="button" disabled={!name.trim() || !date} onClick={add}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--tss-cyan)] text-[var(--tss-navy)] disabled:opacity-40">
+          + Evento
+        </button>
+      </div>
     </div>
   );
 }

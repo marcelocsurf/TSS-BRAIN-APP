@@ -1096,3 +1096,267 @@ export async function adminSetAppointmentStatus(
     return { ok: false, error: 'No se pudo guardar.' };
   }
 }
+
+// ─── Plan Anual: temporadas (macrociclo), fases, eventos y especialistas ───
+
+export interface AdminSeasonRow {
+  id: string;
+  title: string;
+  student_name: string;
+  head_coach_name: string | null;
+  start_date: string;
+  end_date: string;
+  active: boolean;
+  phases_count: number;
+  events_count: number;
+  specialists_count: number;
+}
+
+export async function adminListSeasons(): Promise<{ ok: boolean; error?: string; seasons: AdminSeasonRow[] }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, seasons: [] };
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('season_plans')
+      .select('id, title, start_date, end_date, active, students(first_name, last_name), coaches(display_name)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const ids = (data ?? []).map((s: any) => s.id);
+    let phases: any[] = [], events: any[] = [], specs: any[] = [];
+    if (ids.length) {
+      const [p, e, sp] = await Promise.all([
+        admin.from('season_phases').select('season_id').in('season_id', ids),
+        admin.from('season_events').select('season_id').in('season_id', ids),
+        admin.from('season_specialists').select('season_id').in('season_id', ids),
+      ]);
+      if (p.error) throw p.error;
+      if (e.error) throw e.error;
+      if (sp.error) throw sp.error;
+      phases = p.data ?? []; events = e.data ?? []; specs = sp.data ?? [];
+    }
+    const cnt = (rows: any[]) => {
+      const m = new Map<string, number>();
+      for (const r of rows) m.set(r.season_id, (m.get(r.season_id) ?? 0) + 1);
+      return m;
+    };
+    const cp = cnt(phases), ce = cnt(events), cs = cnt(specs);
+    return {
+      ok: true,
+      seasons: (data ?? []).map((s: any) => ({
+        id: s.id, title: s.title,
+        student_name: `${s.students?.first_name ?? ''} ${s.students?.last_name ?? ''}`.trim() || '—',
+        head_coach_name: s.coaches?.display_name ?? null,
+        start_date: s.start_date, end_date: s.end_date, active: s.active,
+        phases_count: cp.get(s.id) ?? 0, events_count: ce.get(s.id) ?? 0, specialists_count: cs.get(s.id) ?? 0,
+      })),
+    };
+  } catch (e) {
+    console.error('[program-admin] adminListSeasons failed', e);
+    return { ok: false, error: 'No se pudieron cargar las temporadas.', seasons: [] };
+  }
+}
+
+export interface AdminSeasonDetail {
+  id: string;
+  title: string;
+  objective: string | null;
+  student_id: string;
+  student_name: string;
+  head_coach_id: string | null;
+  start_date: string;
+  end_date: string;
+  active: boolean;
+  phases: { id: string; name: string; objective: string | null; start_date: string; end_date: string; color_key: string }[];
+  events: { id: string; name: string; kind: string; event_date: string; is_peak: boolean }[];
+  specialists: { coach_id: string; display_name: string; hp_specialty: string | null }[];
+}
+
+export async function adminGetSeason(seasonId: string): Promise<{ ok: boolean; error?: string; season: AdminSeasonDetail | null }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, season: null };
+    const admin = createAdminClient();
+    const { data: s, error } = await admin
+      .from('season_plans')
+      .select('id, title, objective, student_id, head_coach_id, start_date, end_date, active, students(first_name, last_name)')
+      .eq('id', seasonId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!s) return { ok: false, error: 'Temporada no encontrada.', season: null };
+    const [ph, ev, sp] = await Promise.all([
+      admin.from('season_phases').select('id, name, objective, start_date, end_date, color_key').eq('season_id', seasonId).order('start_date'),
+      admin.from('season_events').select('id, name, kind, event_date, is_peak').eq('season_id', seasonId).order('event_date'),
+      admin.from('season_specialists').select('coach_id, coaches(display_name, hp_specialty)').eq('season_id', seasonId),
+    ]);
+    if (ph.error) throw ph.error;
+    if (ev.error) throw ev.error;
+    if (sp.error) throw sp.error;
+    return {
+      ok: true,
+      season: {
+        id: s.id, title: s.title, objective: s.objective, student_id: s.student_id,
+        student_name: `${(s as any).students?.first_name ?? ''} ${(s as any).students?.last_name ?? ''}`.trim() || '—',
+        head_coach_id: s.head_coach_id, start_date: s.start_date, end_date: s.end_date, active: s.active,
+        phases: ph.data ?? [],
+        events: ev.data ?? [],
+        specialists: (sp.data ?? []).map((x: any) => ({
+          coach_id: x.coach_id, display_name: x.coaches?.display_name ?? '—', hp_specialty: x.coaches?.hp_specialty ?? null,
+        })),
+      },
+    };
+  } catch (e) {
+    console.error('[program-admin] adminGetSeason failed', e);
+    return { ok: false, error: 'No se pudo cargar la temporada.', season: null };
+  }
+}
+
+export async function adminCreateSeason(input: {
+  studentId: string; title: string; startDate: string; endDate: string;
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    if (!input.title.trim()) return { ok: false, error: 'La temporada necesita un nombre.' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(input.endDate) || input.endDate < input.startDate) {
+      return { ok: false, error: 'Revisá las fechas de inicio y fin.' };
+    }
+    const admin = createAdminClient();
+    const { data: existing, error: exErr } = await admin
+      .from('season_plans').select('id').eq('student_id', input.studentId).eq('active', true).limit(1).maybeSingle();
+    if (exErr) throw exErr;
+    if (existing) return { ok: false, error: 'Ese atleta ya tiene una temporada activa — desactivala primero.' };
+    const { data, error } = await admin
+      .from('season_plans')
+      .insert({ student_id: input.studentId, title: input.title.trim(), start_date: input.startDate, end_date: input.endDate })
+      .select('id').single();
+    if (error) throw error;
+    return { ok: true, id: data.id };
+  } catch (e) {
+    console.error('[program-admin] adminCreateSeason failed', e);
+    return { ok: false, error: 'No se pudo crear la temporada.' };
+  }
+}
+
+export async function adminUpdateSeason(
+  seasonId: string,
+  patch: { title?: string; objective?: string | null; start_date?: string; end_date?: string; head_coach_id?: string | null; active?: boolean }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    if (patch.title !== undefined && !patch.title.trim()) return { ok: false, error: 'La temporada necesita un nombre.' };
+    const admin = createAdminClient();
+    if (patch.head_coach_id) {
+      const { data: hc, error: hcErr } = await admin.from('coaches').select('id, hp_escalon').eq('id', patch.head_coach_id).maybeSingle();
+      if (hcErr) throw hcErr;
+      if (!hc || (hc.hp_escalon ?? 0) < 1) return { ok: false, error: 'El head coach necesita el Escalón 1.' };
+    }
+    const { error } = await admin.from('season_plans').update(patch).eq('id', seasonId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminUpdateSeason failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+export async function adminSaveSeasonPhase(
+  seasonId: string,
+  phase: { id?: string; name: string; objective?: string | null; start_date: string; end_date: string; color_key: string }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    if (!phase.name.trim()) return { ok: false, error: 'La fase necesita un nombre.' };
+    if (phase.end_date < phase.start_date) return { ok: false, error: 'La fase termina antes de empezar — revisá las fechas.' };
+    const admin = createAdminClient();
+    const row = {
+      name: phase.name.trim(), objective: phase.objective?.trim() || null,
+      start_date: phase.start_date, end_date: phase.end_date, color_key: phase.color_key,
+    };
+    if (phase.id) {
+      const { error } = await admin.from('season_phases').update(row).eq('id', phase.id).eq('season_id', seasonId);
+      if (error) throw error;
+    } else {
+      const { error } = await admin.from('season_phases').insert({ ...row, season_id: seasonId });
+      if (error) throw error;
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSaveSeasonPhase failed', e);
+    return { ok: false, error: 'No se pudo guardar la fase.' };
+  }
+}
+
+export async function adminDeleteSeasonPhase(phaseId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    const { error } = await admin.from('season_phases').delete().eq('id', phaseId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminDeleteSeasonPhase failed', e);
+    return { ok: false, error: 'No se pudo eliminar la fase.' };
+  }
+}
+
+export async function adminSaveSeasonEvent(
+  seasonId: string,
+  ev: { id?: string; name: string; kind: string; event_date: string; is_peak: boolean }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    if (!ev.name.trim()) return { ok: false, error: 'El evento necesita un nombre.' };
+    const admin = createAdminClient();
+    const row = { name: ev.name.trim(), kind: ev.kind, event_date: ev.event_date, is_peak: ev.is_peak };
+    if (ev.id) {
+      const { error } = await admin.from('season_events').update(row).eq('id', ev.id).eq('season_id', seasonId);
+      if (error) throw error;
+    } else {
+      const { error } = await admin.from('season_events').insert({ ...row, season_id: seasonId });
+      if (error) throw error;
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSaveSeasonEvent failed', e);
+    return { ok: false, error: 'No se pudo guardar el evento.' };
+  }
+}
+
+export async function adminDeleteSeasonEvent(eventId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    const { error } = await admin.from('season_events').delete().eq('id', eventId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminDeleteSeasonEvent failed', e);
+    return { ok: false, error: 'No se pudo eliminar el evento.' };
+  }
+}
+
+export async function adminSetSeasonSpecialist(
+  seasonId: string,
+  coachId: string,
+  present: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    if (present) {
+      const { data: c, error: cErr } = await admin.from('coaches').select('id, hp_escalon').eq('id', coachId).maybeSingle();
+      if (cErr) throw cErr;
+      if (!c || (c.hp_escalon ?? 0) < 1) return { ok: false, error: 'El especialista necesita el Escalón 1 — otorgáselo en Coaches.' };
+      const { error } = await admin.from('season_specialists').upsert(
+        { season_id: seasonId, coach_id: coachId },
+        { onConflict: 'season_id,coach_id', ignoreDuplicates: true }
+      );
+      if (error) throw error;
+    } else {
+      const { error } = await admin.from('season_specialists').delete().eq('season_id', seasonId).eq('coach_id', coachId);
+      if (error) throw error;
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSetSeasonSpecialist failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
