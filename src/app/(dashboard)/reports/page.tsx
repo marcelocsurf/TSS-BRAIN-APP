@@ -1,7 +1,7 @@
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { DollarSign, Gauge, TrendingUp, Users, Star, CheckSquare, RefreshCw } from 'lucide-react';
+import { DollarSign, Gauge, TrendingUp, Users, Star, CheckSquare, RefreshCw, ClipboardList } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -26,6 +26,20 @@ export default async function ReportsIndexPage() {
     redirect('/dashboard');
   }
 
+  // Adherencia de programas (Alto Rendimiento): cruza academias, así que solo
+  // aparece para el admin de plataforma — la página también lo gatea.
+  const visibleReports = me.is_platform_admin
+    ? [
+        ...REPORTS,
+        {
+          href: '/reports/programas',
+          title: 'Programas · Adherencia',
+          desc: 'Alumnos con programa de entreno: progreso, hábitos (sueño/agua) y alertas de inactividad.',
+          Icon: ClipboardList,
+        },
+      ]
+    : REPORTS;
+
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
       <header>
@@ -36,7 +50,7 @@ export default async function ReportsIndexPage() {
       </header>
 
       <div className="grid sm:grid-cols-2 gap-3">
-        {REPORTS.map((r) => (
+        {visibleReports.map((r) => (
           <Link
             key={r.href}
             href={r.href}

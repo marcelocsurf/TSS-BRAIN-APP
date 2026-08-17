@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
+import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
 
 // ─── Administración de programas de entreno (Paso 3: el editor) ───
 //
@@ -588,11 +589,25 @@ export async function adminSearchStudents(q: string): Promise<{
 // asignación más reciente, así que permitir dos solo generaría confusión.
 export async function adminAssignProgram(
   programId: string,
-  studentId: string
+  studentId: string,
+  coachId?: string | null
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!(await assertAdmin())) return DENY;
     const admin = createAdminClient();
+
+    // Coach de seguimiento opcional — si viene, debe tener el Escalón 1.
+    if (coachId) {
+      const { data: coach, error: chErr } = await admin
+        .from('coaches')
+        .select('id, hp_escalon')
+        .eq('id', coachId)
+        .maybeSingle();
+      if (chErr) throw chErr;
+      if (!coach || (coach.hp_escalon ?? 0) < 1) {
+        return { ok: false, error: 'Ese coach no tiene el Escalón 1 — otorgáselo primero en la pestaña Coaches.' };
+      }
+    }
 
     // Validación server-side (el dropdown del cliente puede estar viejo):
     // el programa debe existir, estar activo y tener contenido — asignar un
@@ -632,6 +647,7 @@ export async function adminAssignProgram(
       student_id: studentId,
       assigned_by: 'Marcelo Castellanos',
       status: 'active',
+      coach_id: coachId ?? null,
     });
     if (error) throw error;
     return { ok: true };
@@ -650,6 +666,8 @@ export interface AdminAssignmentRow {
   days_done: number;
   days_total: number;
   last_checkin: string | null;
+  coach_id: string | null;
+  coach_name: string | null;
 }
 
 export async function adminListAssignments(): Promise<{ ok: boolean; error?: string; assignments: AdminAssignmentRow[] }> {
@@ -659,7 +677,7 @@ export async function adminListAssignments(): Promise<{ ok: boolean; error?: str
 
     const { data: rows, error } = await admin
       .from('program_assignments')
-      .select('id, program_id, start_date, students(first_name, last_name), programs(title)')
+      .select('id, program_id, start_date, coach_id, students(first_name, last_name), programs(title), coaches(display_name)')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -712,6 +730,8 @@ export async function adminListAssignments(): Promise<{ ok: boolean; error?: str
         days_done: doneBy.get(r.id) ?? 0,
         days_total: totalBy.get(r.program_id) ?? 0,
         last_checkin: lastCk.get(r.id) ?? null,
+        coach_id: r.coach_id ?? null,
+        coach_name: r.coaches?.display_name ?? null,
       })),
     };
   } catch (e) {
@@ -734,4 +754,203 @@ export async function adminCancelAssignment(assignmentId: string): Promise<{ ok:
     console.error('[program-admin] adminCancelAssignment failed', e);
     return { ok: false, error: 'No se pudo cancelar.' };
   }
+}
+
+// ─── Paso 4: escalera del coach + coach de seguimiento por asignación ───
+
+export async function adminListHPCoaches(): Promise<{
+  ok: boolean;
+  error?: string;
+  coaches: { id: string; display_name: string; role: string; hp_escalon: number }[];
+}> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, coaches: [] };
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('coaches')
+      .select('id, display_name, role, hp_escalon')
+      .order('display_name');
+    if (error) throw error;
+    return { ok: true, coaches: data ?? [] };
+  } catch (e) {
+    console.error('[program-admin] adminListHPCoaches failed', e);
+    return { ok: false, error: 'No se pudieron cargar los coaches.', coaches: [] };
+  }
+}
+
+export async function adminSetCoachEscalon(
+  coachId: string,
+  escalon: number
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    // Por ahora solo E0 (nada) y E1 (seguimiento). E2/E3 llegan con el editor
+    // recortado por equipo — la columna ya los soporta, la UI todavía no.
+    if (![0, 1].includes(escalon)) return { ok: false, error: 'Por ahora solo Escalón 0 o 1.' };
+    const admin = createAdminClient();
+
+    // Bajar a 0 a un coach con seguimientos activos dejaría esas asignaciones
+    // huérfanas de vista: se avisa en vez de romper en silencio.
+    if (escalon === 0) {
+      const { count, error: cErr } = await admin
+        .from('program_assignments')
+        .select('id', { count: 'exact', head: true })
+        .eq('coach_id', coachId)
+        .eq('status', 'active');
+      if (cErr) throw cErr;
+      if ((count ?? 0) > 0) {
+        return {
+          ok: false,
+          error: `Este coach da seguimiento a ${count} alumno${count === 1 ? '' : 's'} — quitale esos seguimientos primero (en Asignaciones).`,
+        };
+      }
+    }
+
+    const { error } = await admin.from('coaches').update({ hp_escalon: escalon }).eq('id', coachId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSetCoachEscalon failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+export async function adminSetAssignmentCoach(
+  assignmentId: string,
+  coachId: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    if (coachId) {
+      const { data: coach, error: cErr } = await admin
+        .from('coaches')
+        .select('id, hp_escalon')
+        .eq('id', coachId)
+        .maybeSingle();
+      if (cErr) throw cErr;
+      if (!coach) return { ok: false, error: 'Ese coach no existe.' };
+      if ((coach.hp_escalon ?? 0) < 1) {
+        return { ok: false, error: 'Ese coach no tiene el Escalón 1 — otorgáselo primero en la pestaña Coaches.' };
+      }
+    }
+    const { error } = await admin
+      .from('program_assignments')
+      .update({ coach_id: coachId })
+      .eq('id', assignmentId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-admin] adminSetAssignmentCoach failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+export interface ProgramReportRow {
+  assignment_id: string;
+  student_name: string;
+  program_title: string;
+  coach_name: string | null;
+  start_date: string;
+  days_done: number;
+  days_total: number;
+  adherence_pct: number;
+  avg_sleep: number | null;
+  avg_water: number | null;
+  last_checkin: string | null;
+  last_activity: string | null; // fecha de la última marca o check-in
+  days_inactive: number | null;
+}
+
+// El reporte de adherencia — vive junto a los 7 reportes de /reports.
+export async function adminProgramReport(): Promise<{ ok: boolean; error?: string; rows: ProgramReportRow[] }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, rows: [] };
+    const admin = createAdminClient();
+
+    const { data: asg, error } = await admin
+      .from('program_assignments')
+      .select('id, program_id, start_date, students(first_name, last_name), programs(title), coaches(display_name)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const ids = (asg ?? []).map((a: any) => a.id);
+    const programIds = Array.from(new Set((asg ?? []).map((a: any) => a.program_id)));
+    if (ids.length === 0) return { ok: true, rows: [] };
+
+    const { data: dayMarks, error: dmErr } = await admin
+      .from('program_day_marks')
+      .select('assignment_id, done_at')
+      .in('assignment_id', ids);
+    if (dmErr) throw dmErr;
+    const { data: checkins, error: ckErr } = await admin
+      .from('program_checkins')
+      .select('assignment_id, checkin_date, water_glasses, sleep_hours')
+      .in('assignment_id', ids)
+      .order('checkin_date', { ascending: false });
+    if (ckErr) throw ckErr;
+    const { data: dayTotals, error: dtErr } = await admin
+      .from('program_days')
+      .select('program_id')
+      .in('program_id', programIds);
+    if (dtErr) throw dtErr;
+
+    const totalBy = new Map<string, number>();
+    for (const d of dayTotals ?? []) totalBy.set(d.program_id, (totalBy.get(d.program_id) ?? 0) + 1);
+    const doneBy = new Map<string, number>();
+    const lastMark = new Map<string, string>();
+    for (const m of dayMarks ?? []) {
+      doneBy.set(m.assignment_id, (doneBy.get(m.assignment_id) ?? 0) + 1);
+      // done_at es timestamptz UTC — se convierte a fecha de El Salvador antes
+      // de mezclarla con checkin_date (que ya es fecha SV) y de calcular la
+      // alerta de inactividad. Sin esto, la alerta se encendía un día tarde
+      // para todo atleta cuya última actividad fue vespertina.
+      const d = toElSalvadorDate(m.done_at) ?? String(m.done_at).slice(0, 10);
+      if (!lastMark.has(m.assignment_id) || d > lastMark.get(m.assignment_id)!) lastMark.set(m.assignment_id, d);
+    }
+    const ckBy = new Map<string, { date: string; water: number | null; sleep: number | null }[]>();
+    for (const c of checkins ?? []) {
+      const arr = ckBy.get(c.assignment_id) ?? [];
+      arr.push({ date: c.checkin_date, water: c.water_glasses, sleep: c.sleep_hours });
+      ckBy.set(c.assignment_id, arr);
+    }
+
+    const today = elSalvadorToday();
+    const rows: ProgramReportRow[] = (asg ?? []).map((a: any) => {
+      const total = totalBy.get(a.program_id) ?? 0;
+      const done = doneBy.get(a.id) ?? 0;
+      const cks = (ckBy.get(a.id) ?? []).slice(0, 7);
+      const sleeps = cks.map((c) => c.sleep).filter((v): v is number => v != null);
+      const waters = cks.map((c) => c.water).filter((v): v is number => v != null);
+      const lastCk = cks[0]?.date ?? null;
+      const lastAct = [lastMark.get(a.id), lastCk].filter(Boolean).sort().pop() ?? null;
+      const daysInactive = lastAct ? diffDays(lastAct, today) : diffDays(a.start_date, today);
+      return {
+        assignment_id: a.id,
+        student_name: `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—',
+        program_title: a.programs?.title ?? '—',
+        coach_name: a.coaches?.display_name ?? null,
+        start_date: a.start_date,
+        days_done: done,
+        days_total: total,
+        adherence_pct: total > 0 ? Math.round((done / total) * 100) : 0,
+        avg_sleep: sleeps.length ? Math.round((sleeps.reduce((s, v) => s + Number(v), 0) / sleeps.length) * 10) / 10 : null,
+        avg_water: waters.length ? Math.round((waters.reduce((s, v) => s + Number(v), 0) / waters.length) * 10) / 10 : null,
+        last_checkin: lastCk,
+        last_activity: lastAct,
+        days_inactive: daysInactive,
+      };
+    });
+    return { ok: true, rows };
+  } catch (e) {
+    console.error('[program-admin] adminProgramReport failed', e);
+    return { ok: false, error: 'No se pudo generar el reporte.', rows: [] };
+  }
+}
+
+// Días entre dos fechas YYYY-MM-DD (UTC puro — sin sorpresas de timezone).
+function diffDays(from: string, to: string): number {
+  const a = Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10));
+  const b = Date.UTC(+to.slice(0, 4), +to.slice(5, 7) - 1, +to.slice(8, 10));
+  return Math.max(0, Math.round((b - a) / 86400000));
 }

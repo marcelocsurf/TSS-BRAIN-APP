@@ -17,6 +17,9 @@ import {
   adminAssignProgram,
   adminListAssignments,
   adminCancelAssignment,
+  adminListHPCoaches,
+  adminSetCoachEscalon,
+  adminSetAssignmentCoach,
   type AdminProgramRow,
   type AdminProgramDetail,
   type AdminAssignmentRow,
@@ -41,7 +44,7 @@ import {
 type Video = { id: string; title: string; pillar: string | null; video_url: string };
 
 export function ProgramasManager() {
-  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones'>('catalogo');
+  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches'>('catalogo');
   const [programs, setPrograms] = useState<AdminProgramRow[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -75,7 +78,7 @@ export function ProgramasManager() {
           </p>
         </div>
         <div className="flex gap-2">
-          {(['catalogo', 'asignaciones'] as const).map((v) => (
+          {(['catalogo', 'asignaciones', 'coaches'] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -84,7 +87,7 @@ export function ProgramasManager() {
                 view === v ? 'bg-[var(--tss-navy)] text-white' : 'bg-white border border-gray-200 text-gray-600'
               }`}
             >
-              {v === 'catalogo' ? 'Catálogo' : 'Asignaciones'}
+              {v === 'catalogo' ? 'Catálogo' : v === 'asignaciones' ? 'Asignaciones' : 'Coaches'}
             </button>
           ))}
         </div>
@@ -105,6 +108,64 @@ export function ProgramasManager() {
         />
       )}
       {view === 'asignaciones' && <Asignaciones programs={programs} />}
+      {view === 'coaches' && <CoachesHP />}
+    </div>
+  );
+}
+
+// ─── Coaches · la escalera (E0 / E1) ───
+
+function CoachesHP() {
+  const [coaches, setCoaches] = useState<{ id: string; display_name: string; role: string; hp_escalon: number }[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = () => adminListHPCoaches().then((r) => { if (r.ok) setCoaches(r.coaches); else setErr(r.error || null); });
+  useEffect(() => { load(); }, []);
+
+  const setEscalon = async (id: string, escalon: number) => {
+    setErr(null);
+    setBusy(id);
+    const r = await adminSetCoachEscalon(id, escalon);
+    setBusy(null);
+    if (!r.ok) setErr(r.error || null);
+    else load();
+  };
+
+  return (
+    <div className="space-y-3">
+      {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
+      <p className="text-[11px] text-gray-400">
+        La escalera se otorga coach por coach, igual que los niveles L1–L5. <b>Escalón 1 · Seguimiento</b>: ve la
+        adherencia y los check-ins de los atletas que le asignes — no crea ni edita programas. Los escalones 2 (autor
+        de su equipo) y 3 (catálogo global, solo vos) llegan después.
+      </p>
+      {coaches.map((c) => (
+        <div key={c.id} className="rounded-2xl bg-white border border-gray-200 p-3.5 flex items-center gap-3 flex-wrap">
+          <div className="flex-1 min-w-[160px]">
+            <p className="text-sm font-semibold text-[var(--tss-navy)]">{c.display_name}</p>
+            <p className="text-[11px] text-gray-400">{c.role}</p>
+          </div>
+          <span
+            className={`text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full ${
+              c.hp_escalon >= 1 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-400'
+            }`}
+          >
+            {c.hp_escalon >= 1 ? `ESCALÓN ${c.hp_escalon} · SEGUIMIENTO` : 'SIN ESCALÓN'}
+          </span>
+          <button
+            type="button"
+            disabled={busy === c.id}
+            onClick={() => setEscalon(c.id, c.hp_escalon >= 1 ? 0 : 1)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold disabled:opacity-40 ${
+              c.hp_escalon >= 1 ? 'bg-gray-100 text-gray-600' : 'bg-[var(--tss-navy)] text-white'
+            }`}
+          >
+            {c.hp_escalon >= 1 ? 'Quitar Escalón 1' : 'Otorgar Escalón 1'}
+          </button>
+        </div>
+      ))}
+      {coaches.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin coaches.</p>}
     </div>
   );
 }
@@ -635,10 +696,17 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
   const [results, setResults] = useState<{ id: string; name: string; email: string | null; belt_level: string | null }[]>([]);
   const [pickedStudent, setPickedStudent] = useState<{ id: string; name: string } | null>(null);
   const [programId, setProgramId] = useState('');
+  const [coachId, setCoachId] = useState('');
+  const [e1Coaches, setE1Coaches] = useState<{ id: string; display_name: string }[]>([]);
   const [busy, setBusy] = useState(false);
 
   const load = () => adminListAssignments().then((r) => { if (r.ok) setRows(r.assignments); else setErr(r.error || null); });
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    adminListHPCoaches().then((r) => {
+      if (r.ok) setE1Coaches(r.coaches.filter((c) => c.hp_escalon >= 1).map((c) => ({ id: c.id, display_name: c.display_name })));
+    });
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -656,12 +724,13 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
     if (!pickedStudent || !programId) return;
     setErr(null);
     setBusy(true);
-    const r = await adminAssignProgram(programId, pickedStudent.id);
+    const r = await adminAssignProgram(programId, pickedStudent.id, coachId || null);
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
     setPickedStudent(null);
     setQ('');
     setProgramId('');
+    setCoachId('');
     load();
   };
 
@@ -708,6 +777,17 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
               <option key={p.id} value={p.id}>{p.title}</option>
             ))}
           </select>
+          <select
+            value={coachId}
+            onChange={(e) => setCoachId(e.target.value)}
+            className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm min-w-[160px]"
+            title="Coach de seguimiento (Escalón 1)"
+          >
+            <option value="">Sin coach de seguimiento</option>
+            {e1Coaches.map((c) => (
+              <option key={c.id} value={c.id}>{c.display_name}</option>
+            ))}
+          </select>
           <button
             type="button"
             disabled={busy || !pickedStudent || !programId}
@@ -729,6 +809,22 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
             <div className="flex-1 min-w-[180px]">
               <p className="text-sm font-semibold text-[var(--tss-navy)]">{a.student_name}</p>
               <p className="text-[11px] text-gray-500">{a.program_title} · desde {a.start_date}</p>
+              <select
+                value={a.coach_id ?? ''}
+                onChange={async (e) => {
+                  const v = e.target.value || null;
+                  const r = await adminSetAssignmentCoach(a.id, v);
+                  if (!r.ok) setErr(r.error || null);
+                  else load();
+                }}
+                className="mt-1 rounded-md border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 max-w-[200px]"
+                title="Coach de seguimiento"
+              >
+                <option value="">Sin coach de seguimiento</option>
+                {e1Coaches.map((c) => (
+                  <option key={c.id} value={c.id}>{c.display_name}</option>
+                ))}
+              </select>
             </div>
             <div className="text-right">
               <p className="text-sm font-bold text-[var(--tss-navy)]">{a.days_done}/{a.days_total} días</p>
