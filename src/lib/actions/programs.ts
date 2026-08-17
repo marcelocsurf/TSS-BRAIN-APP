@@ -41,6 +41,7 @@ export interface MyProgramData {
   assigned_by: string | null;
   weeks: number;
   checkin: { water: boolean; sleep: boolean; energy: boolean; comment: boolean };
+  week_labels: Record<string, string>;
   days: ProgramDayView[];
   position: { week: number; day: number } | null; // null = programa completado
   days_done: number;
@@ -71,7 +72,7 @@ async function resolveActiveAssignment(portalToken: string) {
 
   const { data: assignment, error: asgErr } = await admin
     .from('program_assignments')
-    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, active)')
+    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, week_labels, active)')
     .eq('student_id', student.id)
     .eq('status', 'active')
     .eq('programs.active', true)
@@ -184,6 +185,7 @@ export async function getMyProgram(
           energy: program.checkin_energy,
           comment: program.checkin_comment,
         },
+        week_labels: program.week_labels ?? {},
         days: dayViews,
         position: cur ? { week: cur.week_number, day: cur.day_number } : null,
         days_done: dayViews.filter((d) => d.done).length,

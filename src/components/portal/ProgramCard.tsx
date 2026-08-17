@@ -68,7 +68,7 @@ export function ProgramCard({ token }: { token: string }) {
             Training Program
           </span>
           <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
-            {data.position ? `Week ${data.position.week} · Day ${data.position.day}` : 'Completed ✓'}
+            {data.position ? `Micro ${data.position.week} · Day ${data.position.day}` : 'Completed ✓'}
           </span>
         </div>
         <p className="font-bold mt-1.5" style={{ ...ARCHIVO, color: '#f4f9fc', fontSize: 17 }}>
@@ -189,6 +189,11 @@ function ProgramViewer({
           {data.subtitle && (
             <p className="text-[12px] mt-0.5" style={{ color: '#8aa0b2' }}>{data.subtitle}</p>
           )}
+          {data.week_labels?.[String(week)] && (
+            <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#FFD166' }}>
+              Microcycle {week} · {data.week_labels[String(week)]}
+            </p>
+          )}
         </div>
 
         {/* Semanas */}
@@ -206,7 +211,7 @@ function ProgramViewer({
                 fontWeight: week === w ? 700 : 400,
               }}
             >
-              W{w}{weekDone(w) ? ' ✓' : ''}
+              M{w}{weekDone(w) ? ' ✓' : ''}
             </button>
           ))}
         </div>

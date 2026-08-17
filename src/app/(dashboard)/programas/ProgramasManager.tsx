@@ -79,7 +79,7 @@ export function ProgramasManager() {
             Programas · Alto Rendimiento
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            Semanas → días → ítems con video. El alumno lo vive en su portal; acá se escribe.
+            Mesociclo → microciclos → días → ítems con video. El alumno lo vive en su portal; acá se escribe.
           </p>
         </div>
         <div className="flex gap-2">
@@ -277,7 +277,7 @@ function Catalogo({
               {!p.active && <span className="ml-2 text-[10px] font-mono uppercase text-gray-400">inactivo</span>}
             </p>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {p.kind === 'template' ? 'Plantilla' : 'A medida'} · {p.weeks} semana{p.weeks === 1 ? '' : 's'} · {p.days_count} día{p.days_count === 1 ? '' : 's'}
+              {p.kind === 'template' ? 'Plantilla' : 'A medida'} · {p.weeks} microciclo{p.weeks === 1 ? '' : 's'} · {p.days_count} día{p.days_count === 1 ? '' : 's'}
               {p.for_sale && ' · en venta'}
             </p>
           </div>
@@ -387,6 +387,15 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
         ))}
       </div>
 
+      <MicroLabel
+        key={`ml-${week}-${detail.week_labels?.[String(week)] ?? ''}`}
+        programId={programId}
+        week={week}
+        labels={detail.week_labels ?? {}}
+        onSaved={() => { load(); flash(); }}
+        setErr={setErr}
+      />
+
       {weekDays.map((d) => (
         <DayEditor key={d.id} programId={programId} day={d} videos={videos} onChanged={() => { load(); flash(); }} setErr={setErr} />
       ))}
@@ -401,7 +410,7 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
         }}
         className="w-full rounded-2xl border-2 border-dashed border-gray-300 py-3 text-sm font-semibold text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] flex items-center justify-center gap-2"
       >
-        <Plus size={15} /> Agregar día a la semana {week}
+        <Plus size={15} /> Agregar día al microciclo {week}
       </button>
     </div>
   );
@@ -478,7 +487,7 @@ function MetaCard({
           <option value="custom">A medida</option>
         </select>
         <label className="text-xs text-gray-500 flex items-center gap-1.5">
-          Semanas
+          Microciclos
           <input
             type="number"
             min={1}
@@ -1022,6 +1031,63 @@ function Citas() {
         ))}
         {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin citas.</p>}
       </div>
+    </div>
+  );
+}
+
+
+// ─── Nombre del microciclo (Carga, Descarga, Tapering…) ───
+
+function MicroLabel({
+  programId,
+  week,
+  labels,
+  onSaved,
+  setErr,
+}: {
+  programId: string;
+  week: number;
+  labels: Record<string, string>;
+  onSaved: () => void;
+  setErr: (e: string | null) => void;
+}) {
+  const [value, setValue] = useState(labels[String(week)] ?? '');
+  const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setErr(null);
+    setBusy(true);
+    const next = { ...labels };
+    if (value.trim()) next[String(week)] = value.trim();
+    else delete next[String(week)];
+    const r = await adminUpdateProgram(programId, { week_labels: next });
+    setBusy(false);
+    if (!r.ok) setErr(r.error || null);
+    else { setDirty(false); onSaved(); }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0">
+        Nombre del microciclo {week}
+      </span>
+      <input
+        value={value}
+        onChange={(e) => { setValue(e.target.value); setDirty(true); }}
+        placeholder="Carga · Descarga · Tapering… (opcional, lo ve el alumno)"
+        className="flex-1 min-w-[160px] rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs"
+      />
+      {dirty && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={save}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--tss-cyan)] text-[var(--tss-navy)] disabled:opacity-40"
+        >
+          Guardar
+        </button>
+      )}
     </div>
   );
 }

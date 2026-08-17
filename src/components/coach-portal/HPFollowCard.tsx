@@ -114,7 +114,7 @@ export function HPFollowCard({ token }: { token: string }) {
                 <div className="flex items-center justify-between gap-2 mt-1">
                   <p className="text-[10.5px]" style={{ color: '#9aa7ad' }}>
                     {a.program_title} ·{' '}
-                    {a.position ? `S${a.position.week}·D${a.position.day}` : 'completado ✓'} · {a.days_done}/{a.days_total} días
+                    {a.position ? `M${a.position.week}·D${a.position.day}` : 'completado ✓'} · {a.days_done}/{a.days_total} días
                   </p>
                   {expanded ? (
                     <ChevronUp size={13} style={{ color: '#9aa7ad' }} />

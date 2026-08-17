@@ -87,6 +87,7 @@ export interface AdminProgramDetail {
   checkin_sleep: boolean;
   checkin_energy: boolean;
   checkin_comment: boolean;
+  week_labels: Record<string, string>;
   active_assignments: number;
   days: {
     id: string;
@@ -107,7 +108,7 @@ export async function adminGetProgram(
 
     const { data: p, error } = await admin
       .from('programs')
-      .select('id, title, subtitle, kind, weeks, active, for_sale, checkin_water, checkin_sleep, checkin_energy, checkin_comment')
+      .select('id, title, subtitle, kind, weeks, active, for_sale, checkin_water, checkin_sleep, checkin_energy, checkin_comment, week_labels')
       .eq('id', programId)
       .maybeSingle();
     if (error) throw error;
@@ -195,6 +196,7 @@ export async function adminUpdateProgram(
     checkin_sleep?: boolean;
     checkin_energy?: boolean;
     checkin_comment?: boolean;
+    week_labels?: Record<string, string>;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -203,7 +205,7 @@ export async function adminUpdateProgram(
       return { ok: false, error: 'El programa necesita un nombre.' };
     }
     if (patch.weeks !== undefined && (patch.weeks < 1 || patch.weeks > 24)) {
-      return { ok: false, error: 'Las semanas van de 1 a 24.' };
+      return { ok: false, error: 'Los microciclos van de 1 a 24.' };
     }
     const admin = createAdminClient();
     // Reducir las semanas por debajo de días ya cargados los dejaría huérfanos:
@@ -221,7 +223,7 @@ export async function adminUpdateProgram(
       if (maxDay && patch.weeks < maxDay.week_number) {
         return {
           ok: false,
-          error: `Hay días cargados hasta la semana ${maxDay.week_number} — borralos primero o dejá al menos ${maxDay.week_number} semanas.`,
+          error: `Hay días cargados hasta el microciclo ${maxDay.week_number} — borralos primero o dejá al menos ${maxDay.week_number} microciclos.`,
         };
       }
     }
@@ -365,7 +367,7 @@ export async function adminSaveDay(
     if (pErr) throw pErr;
     if (!prog) return { ok: false, error: 'Programa no encontrado.' };
     if (day.week_number > prog.weeks) {
-      return { ok: false, error: `El programa tiene ${prog.weeks} semana${prog.weeks === 1 ? '' : 's'} — no se puede cargar un día en la semana ${day.week_number}.` };
+      return { ok: false, error: `El programa tiene ${prog.weeks} microciclo${prog.weeks === 1 ? '' : 's'} — no se puede cargar un día en el microciclo ${day.week_number}.` };
     }
 
     if (day.id) {
@@ -375,7 +377,7 @@ export async function adminSaveDay(
         .eq('id', day.id)
         .eq('program_id', programId);
       if (error) {
-        if ((error as any).code === '23505') return { ok: false, error: `Ya existe el día ${day.day_number} en la semana ${day.week_number}.` };
+        if ((error as any).code === '23505') return { ok: false, error: `Ya existe el día ${day.day_number} en el microciclo ${day.week_number}.` };
         throw error;
       }
       return { ok: true, id: day.id };
@@ -386,7 +388,7 @@ export async function adminSaveDay(
       .select('id')
       .single();
     if (error) {
-      if ((error as any).code === '23505') return { ok: false, error: `Ya existe el día ${day.day_number} en la semana ${day.week_number}.` };
+      if ((error as any).code === '23505') return { ok: false, error: `Ya existe el día ${day.day_number} en el microciclo ${day.week_number}.` };
       throw error;
     }
 
