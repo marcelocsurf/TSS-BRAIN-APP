@@ -28,6 +28,7 @@ import {
   DollarSign,
   CalendarClock,
   MapPin,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -63,6 +64,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['coach'] },
   // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
+  // Programas de entreno (línea Alto Rendimiento) — solo admin hasta que la
+  // escalera del coach (Escalón 2) llegue en el Paso 4.
+  { href: '/programas',     label: 'Programas', Icon: ClipboardList, roles: ['admin'] },
   // Billing + Pricing moved to the dashboard Quick Actions (admin).
   { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3,   roles: ['admin'] },
   { href: '/content',   label: 'Content',   Icon: Film,        roles: ['admin'] },
