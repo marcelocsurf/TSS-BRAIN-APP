@@ -33,6 +33,7 @@ import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
 import { AppointmentCard } from '@/components/portal/AppointmentCard';
+import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
@@ -696,6 +697,9 @@ function HomeTab({
           {/* Programa de entreno (línea Alto Rendimiento). El componente busca
               sus propios datos y devuelve null si el alumno no tiene programa
               activo — para los demás, el Home es idéntico al de siempre. */}
+          {/* Plan Anual (temporada) — solo atletas con temporada activa. */}
+          <SeasonCard token={data.token} />
+
           <ProgramCard token={data.token} />
 
           {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}

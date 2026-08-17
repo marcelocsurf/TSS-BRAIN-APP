@@ -408,3 +408,82 @@ export async function getMyAppointments(
     return { ok: false, appointments: [] };
   }
 }
+
+// ─── Season Plan del atleta (Plan Anual) ───
+
+export interface MySeasonData {
+  title: string;
+  objective: string | null;
+  start_date: string;
+  end_date: string;
+  today: string;
+  days_to_peak: number | null;
+  peak_name: string | null;
+  phases: { id: string; name: string; objective: string | null; start_date: string; end_date: string; color_key: string; state: 'done' | 'current' | 'future' }[];
+  events: { id: string; name: string; kind: string; event_date: string; is_peak: boolean }[];
+  contributions: { id: string; kind: string; title: string; video_url: string | null; detail: string | null; target_date: string | null; coach_name: string; specialty: string | null }[];
+}
+
+export async function getMySeason(
+  portalToken: string
+): Promise<{ ok: boolean; data: MySeasonData | null }> {
+  try {
+    const admin = createAdminClient();
+    const { data: student, error: sErr } = await admin
+      .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: true, data: null };
+
+    const { data: season, error: snErr } = await admin
+      .from('season_plans')
+      .select('id, title, objective, start_date, end_date')
+      .eq('student_id', student.id)
+      .eq('active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (snErr) throw snErr;
+    if (!season) return { ok: true, data: null };
+
+    const [ph, ev, co] = await Promise.all([
+      admin.from('season_phases').select('id, name, objective, start_date, end_date, color_key').eq('season_id', season.id).order('start_date'),
+      admin.from('season_events').select('id, name, kind, event_date, is_peak').eq('season_id', season.id).order('event_date'),
+      admin.from('season_contributions').select('id, kind, title, video_url, detail, target_date, coaches(display_name, hp_specialty)').eq('season_id', season.id).order('created_at', { ascending: false }).limit(12),
+    ]);
+    if (ph.error) throw ph.error;
+    if (ev.error) throw ev.error;
+    if (co.error) throw co.error;
+
+    const today = elSalvadorToday();
+    const peak = (ev.data ?? []).find((e: any) => e.is_peak) ?? null;
+    const daysToPeak = peak && peak.event_date >= today
+      ? Math.round((Date.parse(peak.event_date) - Date.parse(today)) / 86400000)
+      : null;
+
+    return {
+      ok: true,
+      data: {
+        title: season.title,
+        objective: season.objective,
+        start_date: season.start_date,
+        end_date: season.end_date,
+        today,
+        days_to_peak: daysToPeak,
+        peak_name: peak?.name ?? null,
+        phases: (ph.data ?? []).map((f: any) => ({
+          ...f,
+          state: f.end_date < today ? 'done' : f.start_date > today ? 'future' : 'current',
+        })),
+        events: ev.data ?? [],
+        contributions: (co.data ?? []).map((c: any) => ({
+          id: c.id, kind: c.kind, title: c.title, video_url: c.video_url,
+          detail: c.detail, target_date: c.target_date,
+          coach_name: c.coaches?.display_name ?? '', specialty: c.coaches?.hp_specialty ?? null,
+        })),
+      },
+    };
+  } catch (e) {
+    console.error('[programs] getMySeason failed', e);
+    return { ok: false, data: null };
+  }
+}
