@@ -1122,7 +1122,10 @@ export async function adminListSeasons(): Promise<{ ok: boolean; error?: string;
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('season_plans')
-      .select('id, title, start_date, end_date, active, students(first_name, last_name), coaches(display_name)')
+      // coaches!fk explícito: season_plans llega a coaches por DOS rutas
+      // (head_coach_id y la m2m vía season_specialists) — sin desambiguar,
+      // PostgREST rechaza el embed y la lista entera devolvía error.
+      .select('id, title, start_date, end_date, active, students(first_name, last_name), coaches!season_plans_head_coach_id_fkey(display_name)')
       .order('created_at', { ascending: false });
     if (error) throw error;
     const ids = (data ?? []).map((s: any) => s.id);
@@ -1469,7 +1472,7 @@ export async function adminGetStudentHP(
     // Temporada activa.
     const { data: sn, error: sErr } = await admin
       .from('season_plans')
-      .select('id, title, objective, coaches(display_name)')
+      .select('id, title, objective, coaches!season_plans_head_coach_id_fkey(display_name)')
       .eq('student_id', studentId).eq('active', true)
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (sErr) throw sErr;
