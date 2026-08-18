@@ -76,6 +76,9 @@ export async function POST(req: NextRequest) {
       belt,
       score,
       skillmap,
+      // El HTML externo pide el nombre en UN campo — no se le puede exigir
+      // apellido sin romperlo (queda pendiente partirlo en dos allá también).
+      allow_missing_last_name: true,
     });
 
     if (!res.ok) {

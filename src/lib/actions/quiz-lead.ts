@@ -43,8 +43,17 @@ export async function createLeadFromQuiz(input: {
   belt: string;            // resolved from the quiz level
   score: number;
   skillmap: { name: string; pct: number }[];
+  /** SOLO para /api/quiz-lead (el quiz externo del sitio web manda "nombre"
+      en un campo único que no podemos partir con garantías). El quiz nativo
+      NUNCA lo pasa: ahí el apellido es obligatorio. */
+  allow_missing_last_name?: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
-  if (!input.first_name?.trim()) return { ok: false, error: 'Name is required.' };
+  if (!input.first_name?.trim()) return { ok: false, error: 'First name is required.' };
+  // Mandatorio del mostrador (2026-08-18): sin apellido no se puede ni buscar
+  // a la persona — misma regla que el QR de clases.
+  if (!input.last_name?.trim() && !input.allow_missing_last_name) {
+    return { ok: false, error: 'Last name is required.' };
+  }
   if (!input.email?.trim() && !input.phone?.trim()) {
     return { ok: false, error: 'Email or phone is required.' };
   }

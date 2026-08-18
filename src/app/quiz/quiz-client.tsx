@@ -43,8 +43,11 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
   const [start, setStart] = useState(0);
   const [cur, setCur] = useState(0);
 
-  // contact capture
-  const [name, setName] = useState('');
+  // contact capture — nombre y apellido SEPARADOS y ambos obligatorios: el
+  // campo único "Your name" partido por espacios dejaba last_name null cuando
+  // escribían solo el nombre (los perfiles sin apellido que veía el mostrador).
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [saved, setSaved] = useState(false);
@@ -74,13 +77,13 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
 
   const submitLead = async () => {
     setErr('');
-    if (!name.trim()) { setErr('Enter your name.'); return; }
+    if (!firstName.trim()) { setErr('Enter your first name.'); return; }
+    if (!lastName.trim()) { setErr('Enter your last name.'); return; }
     if (!email.trim() && !phone.trim()) { setErr('Enter email or phone.'); return; }
     setSaving(true);
-    const parts = name.trim().split(' ');
     const res = await createLeadFromQuiz({
-      first_name: parts[0],
-      last_name: parts.slice(1).join(' ') || null,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
       email: email.trim() || null,
       phone: phone.trim() || null,
       academy_slug: academySlug,
@@ -207,7 +210,10 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
                 <p style={{ fontSize: '.85rem', color: '#c4d9e8', opacity: 0.8, marginBottom: 10, textAlign: 'center' }}>
                   Leave your details and we&apos;ll build your path from <strong style={{ color: level.color }}>{level.name}</strong>.
                 </p>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={inp} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name *" style={{ ...inp, flex: 1 }} />
+                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name *" style={{ ...inp, flex: 1 }} />
+                </div>
                 <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inp} />
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp" style={inp} />
                 {err && <p style={{ color: '#ff6b6b', fontSize: '.8rem', margin: '6px 0' }}>{err}</p>}
