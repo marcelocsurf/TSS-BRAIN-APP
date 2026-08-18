@@ -170,6 +170,10 @@ export async function publicEnroll(input: {
   email: string;
   /** Cuál de las personas del correo reserva (familias comparten email). */
   studentId?: string | null;
+  /** "+ Someone else": crear SIEMPRE a la persona del profile aunque el email
+      ya tenga gente. Sin esto, el lookup por email tomaba al familiar más
+      viejo, lo inscribía a ÉL y descartaba el perfil recién llenado. */
+  force_new_person?: boolean;
   /** Nombre del adulto que firma cuando quien reserva es menor de edad. */
   guardian_name?: string | null;
   coupon?: string | null;
@@ -185,6 +189,8 @@ export async function publicEnroll(input: {
     date_of_birth?: string | null;
     guardian_name?: string | null;   // adulto que firma cuando es menor
     guardian_phone?: string | null;
+    shirt_size?: string | null;      // obligatorio (pedido del mostrador 2026-08-18)
+    languages?: string | null;       // obligatorio — idioma preferido del cliente
   } | null;
   accept_waiver: boolean;
   signed_name?: string | null;
@@ -234,17 +240,21 @@ export async function publicEnroll(input: {
   // Quién reserva: si el QR mandó un studentId (familias con email compartido)
   // usamos ESA persona — verificando que pertenezca al mismo correo y academia,
   // para que un id suelto no permita reservar a nombre de otro.
-  let existingQ = admin
-    .from('students')
-    .select('id, first_name, waiver_signed, date_of_birth')
-    .eq('academy_id', academy.id)
-    .eq('status', 'active')
-    .ilike('email', email);
-  if (input.studentId) existingQ = existingQ.eq('id', input.studentId);
-  const { data: existing } = await existingQ
-    .order('date_of_birth', { ascending: true, nullsFirst: false })
-    .limit(1)
-    .maybeSingle();
+  let existing: { id: string; first_name: string; waiver_signed: boolean | null; date_of_birth: string | null } | null = null;
+  if (!input.force_new_person) {
+    let existingQ = admin
+      .from('students')
+      .select('id, first_name, waiver_signed, date_of_birth')
+      .eq('academy_id', academy.id)
+      .eq('status', 'active')
+      .ilike('email', email);
+    if (input.studentId) existingQ = existingQ.eq('id', input.studentId);
+    const { data } = await existingQ
+      .order('date_of_birth', { ascending: true, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    existing = data as any;
+  }
 
   if (existing) {
     studentId = existing.id;
@@ -274,6 +284,11 @@ export async function publicEnroll(input: {
   } else {
     const p = input.profile;
     if (!p?.first_name?.trim()) return { ok: false, error: 'We could not find that email — complete your profile to join.' };
+    // Mandatorios del mostrador (2026-08-18): llegaban perfiles sin apellido y
+    // sin talla/idioma — el staff no podía ni buscar a la persona ni atenderla.
+    if (!p.last_name?.trim()) return { ok: false, error: 'Last name is required.' };
+    if (!p.shirt_size?.trim()) return { ok: false, error: 'Pick a t-shirt size.' };
+    if (!p.languages?.trim()) return { ok: false, error: 'Pick your preferred language.' };
     if (!input.accept_waiver) return { ok: false, error: 'The waiver must be accepted to join.' };
     // Menores: un menor NO puede firmar su propia exención — la firma el
     // padre/madre/tutor, y su nombre queda registrado como firmante.
@@ -291,9 +306,11 @@ export async function publicEnroll(input: {
       .insert({
         academy_id: academy.id,
         first_name: p.first_name.trim(),
-        last_name: (p.last_name ?? '').trim(),
+        last_name: p.last_name.trim(),
         email,
         phone: p.phone?.trim() || null,
+        shirt_size: p.shirt_size!.trim(),
+        languages: p.languages!.trim(),
         emergency_contact_name: p.emergency_contact_name?.trim() || null,
         emergency_contact_phone: p.emergency_contact_phone?.trim() || null,
         medical_notes: p.medical_notes?.trim() || null,
@@ -416,6 +433,8 @@ export async function publicAddCompanion(input: {
   last_name?: string | null;
   date_of_birth?: string | null;
   medical_notes?: string | null;
+  shirt_size?: string | null;   // obligatorio — cada persona tiene su talla
+  languages?: string | null;    // opcional: sin él se hereda el del booker
 }): Promise<{ ok: boolean; error?: string; name?: string; amount_cents?: number | null }> {
   const academy = await academyBySlug(input.slug);
   if (!academy) return { ok: false, error: 'Academy not found.' };
@@ -423,7 +442,7 @@ export async function publicAddCompanion(input: {
 
   const { data: booker } = await admin
     .from('students')
-    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by, date_of_birth')
+    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by, date_of_birth, languages')
     .eq('academy_id', academy.id)
     .ilike('email', norm(input.bookerEmail))
     .limit(1)
@@ -432,11 +451,13 @@ export async function publicAddCompanion(input: {
 
   const name = input.first_name?.trim();
   if (!name) return { ok: false, error: 'Add their first name.' };
+  if (!input.last_name?.trim()) return { ok: false, error: 'Add their last name.' };
+  if (!input.shirt_size?.trim()) return { ok: false, error: 'Pick their t-shirt size.' };
 
   // Clase + cupo disponible en vivo.
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, capacity_override, camp_templates:template_id(service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status)')
+    .select('id, camp_name, start_date, capacity_override, camp_templates:template_id(service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status)')
     .eq('id', input.campId).eq('academy_id', academy.id).maybeSingle();
   const tpl: any = camp ? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates) : null;
   if (!camp || !['class', 'trip', 'surf_lesson'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
@@ -479,6 +500,28 @@ export async function publicAddCompanion(input: {
       .eq('enrollment_status', 'active')
       .maybeSingle();
     if (dupSeat) return { ok: false, error: `${personName} already has a spot in this class.` };
+    // La ficha reusada puede predatar los mandatorios (talla/idioma NULL) y el
+    // QR acaba de obligar a elegirlos: rellenar SOLO lo vacío — lo que el
+    // mostrador ya corrigió a mano nunca se pisa. Best-effort: un fallo acá
+    // no puede tumbar la reserva.
+    try {
+      const { data: personRow, error: prErr } = await admin
+        .from('students').select('shirt_size, languages, last_name').eq('id', personId).maybeSingle();
+      if (prErr) throw prErr;
+      if (personRow) {
+        const fill: Record<string, string> = {};
+        if (!personRow.shirt_size && input.shirt_size?.trim()) fill.shirt_size = input.shirt_size.trim();
+        const lang = input.languages?.trim() || (booker as any).languages || '';
+        if (!personRow.languages && lang) fill.languages = lang;
+        if (!(personRow.last_name ?? '').trim() && input.last_name?.trim()) fill.last_name = input.last_name.trim();
+        if (Object.keys(fill).length > 0) {
+          const { error: upErr } = await admin.from('students').update(fill).eq('id', personId);
+          if (upErr) throw upErr;
+        }
+      }
+    } catch (e) {
+      console.error('[public-classes] companion backfill failed', e);
+    }
   }
 
   if (!personId) {
@@ -487,9 +530,13 @@ export async function publicAddCompanion(input: {
       .insert({
         academy_id: academy.id,
         first_name: name,
-        last_name: (input.last_name ?? '').trim(),
+        last_name: input.last_name.trim(),
         email: null,                                   // el contacto es el adulto
         phone: booker.phone,
+        shirt_size: input.shirt_size.trim(),
+        // Sin idioma propio se hereda el del booker (familias comparten idioma;
+        // el mostrador lo puede corregir en la ficha si no).
+        languages: input.languages?.trim() || (booker as any).languages || null,
         emergency_contact_name: booker.emergency_contact_name || bookerName,
         emergency_contact_phone: booker.emergency_contact_phone || booker.phone,
         medical_notes: input.medical_notes?.trim() || null,

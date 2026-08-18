@@ -66,6 +66,10 @@ function groupActivities(classes: Klass[]): Activity[] {
   return [...map.values()].sort((x, y) => (y.openCount - x.openCount) || x.label.localeCompare(y.label));
 }
 
+// Mandatorios del mostrador (2026-08-18): talla e idioma en cada perfil nuevo.
+const SHIRT_SIZES = ['Kids 6', 'Kids 8', 'Kids 10', 'Kids 12', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const LANGUAGES = ['English', 'Español', 'Português', 'Français', 'Deutsch', 'Italiano', 'Other'];
+
 const WAIVER_TEXT = `I acknowledge that participation in physical activities (surf, yoga, skate, ice bath, jiujitsu and related training) involves inherent risks, including injury. I declare I am physically able to participate, I have disclosed any relevant medical conditions, and I release the academy and The Surf Sequence from liability arising from ordinary negligence, to the maximum extent permitted by law. I consent to receive first aid / emergency care if needed.`;
 
 export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) {
@@ -98,15 +102,18 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   // las registradas con ese email; `known` es la elegida para esta reserva.
   const [people, setPeople] = useState<PublicPerson[]>([]);
   const [known, setKnown] = useState<PublicPerson | null>(null);
+  // "+ Someone else" en un email familiar: el profile crea a ESA persona nueva
+  // (sin el flag, el server encontraba al familiar viejo y lo inscribía a él).
+  const [newPerson, setNewPerson] = useState(false);
   // Nombre del adulto que firma cuando quien reserva es menor de edad.
   const [guardianName, setGuardianName] = useState('');
   const [coupon, setCoupon] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [signedName, setSignedName] = useState('');
-  const [form, setForm] = useState({ first_name: '', last_name: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '', medical_notes: '', date_of_birth: '', guardian_name: '', guardian_phone: '' });
+  const [form, setForm] = useState({ first_name: '', last_name: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '', medical_notes: '', date_of_birth: '', guardian_name: '', guardian_phone: '', shirt_size: '', languages: '' });
   // Familia: acompañantes agregados después de reservar
-  const [companion, setCompanion] = useState({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '' });
+  const [companion, setCompanion] = useState({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '', shirt_size: '' });
   const [added, setAdded] = useState<string[]>([]);
   const [showCompanion, setShowCompanion] = useState(false);
   const [summary, setSummary] = useState<any>(null);
@@ -151,6 +158,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         campId: sel!.id,
         email,
         studentId: profile ? null : (known?.id ?? null),
+        force_new_person: profile ? newPerson : false,
         guardian_name: (profile ? form.guardian_name : guardianName).trim() || null,
         coupon: coupon.trim() || null,
         profile: profile ? form : null,
@@ -219,8 +227,15 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                 <input value={companion.first_name} onChange={(e) => setCompanion({ ...companion, first_name: e.target.value })}
                   placeholder="First name *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
                 <input value={companion.last_name} onChange={(e) => setCompanion({ ...companion, last_name: e.target.value })}
-                  placeholder="Last name" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+                  placeholder="Last name *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
               </div>
+              <select value={companion.shirt_size} onChange={(e) => setCompanion({ ...companion, shirt_size: e.target.value })}
+                aria-label="Their t-shirt size"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+                style={{ color: companion.shirt_size ? '#061C2B' : '#9ca3af' }}>
+                <option value="" disabled>Their t-shirt size *</option>
+                {SHIRT_SIZES.map((sz) => <option key={sz} value={sz}>{sz}</option>)}
+              </select>
               <label className="flex flex-col justify-center px-3 py-1 border border-gray-200 rounded-xl">
                 <span className="text-[9px] text-gray-400" style={F_LABEL}>Date of birth *</span>
                 <input type="date" max={dobMaxAttr()} value={companion.date_of_birth} onChange={(e) => setCompanion({ ...companion, date_of_birth: e.target.value })}
@@ -233,7 +248,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
               </p>
               {err && <p className="text-[11px] text-red-600">{err}</p>}
               <div className="flex gap-2">
-                <button type="button" disabled={pending || !companion.first_name.trim() || !companion.date_of_birth}
+                <button type="button" disabled={pending || !companion.first_name.trim() || !companion.last_name.trim() || !companion.shirt_size || !companion.date_of_birth}
                   onClick={() => start(async () => {
                     setErr(null);
                     const dobMsg = dobError(companion.date_of_birth);
@@ -242,10 +257,14 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                       slug, campId: sel?.id ?? summary.camp_id, bookerEmail: email,
                       first_name: companion.first_name, last_name: companion.last_name,
                       date_of_birth: companion.date_of_birth, medical_notes: companion.medical_notes,
+                      shirt_size: companion.shirt_size,
+                      // Idioma del booker si acaba de crear su perfil; si ya
+                      // existía, el server hereda el guardado en su ficha.
+                      languages: form.languages || null,
                     });
                     if (!r.ok) { setErr(r.error ?? 'Could not add them.'); return; }
                     setAdded((a) => [...a, [companion.first_name, companion.last_name].filter(Boolean).join(' ')]);
-                    setCompanion({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '' });
+                    setCompanion({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '', shirt_size: '' });
                     setShowCompanion(false);
                   })}
                   className="flex-1 rounded-full py-2.5 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
@@ -452,7 +471,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
           )}
           {err && <p className="text-[11px] text-red-600">{err}</p>}
           <button type="button" disabled={pending || !email.includes('@')}
-            onClick={() => { setErr(null); start(async () => {
+            onClick={() => { setErr(null); setNewPerson(false); start(async () => {
               const r = await lookupPublicStudent(slug, email);
               if (!r.found) { setPeople([]); setKnown(null); setStep('profile'); return; }
               setPeople(r.people);
@@ -493,7 +512,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                 </span>
               </button>
             ))}
-            <button type="button" onClick={() => { setKnown(null); setErr(null); setStep('profile'); }}
+            <button type="button" onClick={() => { setKnown(null); setErr(null); setNewPerson(true); setStep('profile'); }}
               className="w-full text-left px-3.5 py-3 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-500">
               + Someone else (add a new person)
             </button>
@@ -567,7 +586,23 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         <p className="font-bold text-[14px]" style={{ color: '#061C2B' }}>Create your profile <span className="text-gray-400 font-normal text-[11px]">· 2 min, one time only</span></p>
         <div className="grid grid-cols-2 gap-2">
           <input value={form.first_name} onChange={set('first_name')} placeholder="First name *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
-          <input value={form.last_name} onChange={set('last_name')} placeholder="Last name" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+          <input value={form.last_name} onChange={set('last_name')} placeholder="Last name *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <select value={form.shirt_size} onChange={(e) => setForm((f) => ({ ...f, shirt_size: e.target.value }))}
+            aria-label="T-shirt size"
+            className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+            style={{ color: form.shirt_size ? '#061C2B' : '#9ca3af' }}>
+            <option value="" disabled>T-shirt size *</option>
+            {SHIRT_SIZES.map((sz) => <option key={sz} value={sz}>{sz}</option>)}
+          </select>
+          <select value={form.languages} onChange={(e) => setForm((f) => ({ ...f, languages: e.target.value }))}
+            aria-label="Preferred language"
+            className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+            style={{ color: form.languages ? '#061C2B' : '#9ca3af' }}>
+            <option value="" disabled>Preferred language *</option>
+            {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <input value={form.phone} onChange={set('phone')} placeholder="Your phone / WhatsApp" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
@@ -628,7 +663,7 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         {CouponField}
         {err && <p className="text-[11px] text-red-600">{err}</p>}
         <button type="button"
-          disabled={pending || tooYoung || !!dobMsg || !form.first_name.trim() || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
+          disabled={pending || tooYoung || !!dobMsg || !form.first_name.trim() || !form.last_name.trim() || !form.shirt_size || !form.languages || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
           onClick={() => enroll(true)}
           className="w-full rounded-full py-3.5 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
           {pending ? 'Saving…' : 'Sign & save my spot'}
