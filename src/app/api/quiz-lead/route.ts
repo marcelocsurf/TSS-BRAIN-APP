@@ -33,13 +33,25 @@ export async function POST(req: NextRequest) {
 
     // Accept both the external HTML shape (nombre/surf_level/academia) and the
     // native shape (first_name/belt/academy_slug).
-    const nombre: string = (body.nombre ?? body.first_name ?? '').toString().trim();
-    if (!nombre) {
+    // Shape nuevo (first_name + last_name explícitos, quiz co-brandeado con
+    // dos campos) o legacy ("nombre" en un campo único, copias externas del
+    // HTML que no podemos redeployar): el legacy se parte por espacios y
+    // mantiene permitido el apellido vacío para no romperlo.
+    const explicitLast: string = (body.last_name ?? '').toString().trim();
+    let first_name: string;
+    let last_name: string | null;
+    if (explicitLast) {
+      first_name = (body.first_name ?? '').toString().trim();
+      last_name = explicitLast;
+    } else {
+      const nombre: string = (body.nombre ?? body.first_name ?? '').toString().trim();
+      const parts = nombre.split(' ');
+      first_name = parts[0] ?? '';
+      last_name = parts.slice(1).join(' ') || null;
+    }
+    if (!first_name) {
       return NextResponse.json({ ok: false, error: 'Name is required.' }, { status: 400, headers: CORS });
     }
-    const parts = nombre.split(' ');
-    const first_name = parts[0];
-    const last_name = parts.slice(1).join(' ') || null;
 
     const email = (body.email ?? null) || null;
     const phone = (body.phone ?? null) || null;
@@ -76,9 +88,9 @@ export async function POST(req: NextRequest) {
       belt,
       score,
       skillmap,
-      // El HTML externo pide el nombre en UN campo — no se le puede exigir
-      // apellido sin romperlo (queda pendiente partirlo en dos allá también).
-      allow_missing_last_name: true,
+      // Solo el shape legacy ("nombre" en un campo) puede venir sin apellido —
+      // copias externas del HTML que no podemos redeployar desde acá.
+      allow_missing_last_name: !explicitLast,
     });
 
     if (!res.ok) {
