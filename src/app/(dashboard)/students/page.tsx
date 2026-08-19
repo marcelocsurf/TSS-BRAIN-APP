@@ -49,7 +49,9 @@ export default async function StudentRosterPage({ searchParams }: Props) {
   const { students, total } = await listStudents({
     belt_level: params.belt as BeltLevel | undefined,
     status: params.status || 'active',
-    lifecycle_status: lifecycle,
+    // "Con programa HP" es una vista TRANSVERSAL: los atletas migrados de la
+    // app HP entraron como lead y el default 'member' los ocultaba (17 de 18).
+    lifecycle_status: params.hp === 'true' ? undefined : lifecycle,
     search: params.q,
     page: currentPage,
     limit,
