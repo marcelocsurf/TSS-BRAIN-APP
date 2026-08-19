@@ -692,6 +692,7 @@ export interface CoachProgramDetail {
   checkin_comment: boolean;
   checkin_nutrition: boolean;
   week_labels: Record<string, string>;
+  week_meta: Record<string, { phase?: string | null; mesocycle?: string | null; type?: string | null; intensity?: string | null; objective?: string | null; pillars?: Record<string, { pct?: number | null; obj?: string | null }> }>;
   active_assignments: number;
   days: {
     id: string;
@@ -716,7 +717,7 @@ export async function coachGetProgram(
 
     const { data: p, error } = await admin
       .from('programs')
-      .select('id, title, subtitle, weeks, active, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels')
+      .select('id, title, subtitle, weeks, active, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels, week_meta')
       .eq('id', programId)
       .single();
     if (error) throw error;
@@ -740,6 +741,7 @@ export async function coachGetProgram(
         ...(p as any),
         checkin_nutrition: (p as any).checkin_nutrition ?? false,
         week_labels: (p as any).week_labels ?? {},
+        week_meta: (p as any).week_meta ?? {},
         active_assignments: count ?? 0,
         days: (days ?? []).map((d: any) => ({
           id: d.id,
@@ -765,6 +767,7 @@ export async function coachUpdateProgramMeta(
     checkin_water?: boolean; checkin_sleep?: boolean; checkin_energy?: boolean;
     checkin_comment?: boolean; checkin_nutrition?: boolean;
     week_labels?: Record<string, string>;
+    week_meta?: Record<string, { phase?: string | null; mesocycle?: string | null; type?: string | null; intensity?: string | null; objective?: string | null; pillars?: Record<string, { pct?: number | null; obj?: string | null }> }>;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -803,6 +806,43 @@ export async function coachUpdateProgramMeta(
     if (patch.checkin_comment !== undefined) row.checkin_comment = !!patch.checkin_comment;
     if (patch.checkin_nutrition !== undefined) row.checkin_nutrition = !!patch.checkin_nutrition;
     if (patch.week_labels !== undefined) row.week_labels = patch.week_labels;
+    if (patch.week_meta !== undefined) {
+      // Sanitizar el INTERIOR del jsonb — el whitelist de columnas no alcanza:
+      // un POST crafteado podía meter claves basura, objetos gigantes o tipos
+      // no-string que rompen el visor del atleta.
+      const TYPES = ['Load', 'Deload', 'Tapering', 'Competition', 'Recovery'];
+      const INTENSITIES = ['Low', 'Medium', 'High', 'Peak'];
+      const PHASES = ['general', 'especifica', 'competitiva', 'transicion'];
+      const PILLAR_KEYS = ['fisico', 'tecnico', 'tactico', 'mental', 'equipment', 'surf'];
+      const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+      const clean: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(patch.week_meta)) {
+        const wk = Number(k);
+        if (!Number.isInteger(wk) || wk < 1 || wk > 24 || !v || typeof v !== 'object') continue;
+        const wm: any = v;
+        const pillars: Record<string, unknown> = {};
+        if (wm.pillars && typeof wm.pillars === 'object') {
+          for (const pk of PILLAR_KEYS) {
+            const pv: any = (wm.pillars as any)[pk];
+            if (!pv || typeof pv !== 'object') continue;
+            const pct = Number(pv.pct);
+            pillars[pk] = {
+              pct: Number.isFinite(pct) ? Math.max(0, Math.min(100, Math.round(pct))) : null,
+              obj: str(pv.obj, 200),
+            };
+          }
+        }
+        clean[String(wk)] = {
+          phase: PHASES.includes(wm.phase) ? wm.phase : null,
+          mesocycle: str(wm.mesocycle, 80),
+          type: TYPES.includes(wm.type) ? wm.type : null,
+          intensity: INTENSITIES.includes(wm.intensity) ? wm.intensity : null,
+          objective: str(wm.objective, 300),
+          pillars,
+        };
+      }
+      row.week_meta = clean;
+    }
     if (Object.keys(row).length === 0) return { ok: true };
     const { error } = await admin.from('programs').update(row).eq('id', programId);
     if (error) throw error;

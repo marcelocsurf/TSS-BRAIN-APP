@@ -192,9 +192,17 @@ function ProgramViewer({
           <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#7BA2B5' }}>
             Today is {new Date(data.today + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </p>
-          {data.week_labels?.[String(week)] && (
+          {(data.week_labels?.[String(week)] || data.week_meta?.[String(week)]) && (
             <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#FFD166' }}>
-              Microcycle {week} · {data.week_labels[String(week)]}
+              Microcycle {week}
+              {data.week_labels?.[String(week)] ? ` · ${data.week_labels[String(week)]}` : ''}
+              {data.week_meta?.[String(week)]?.type ? ` · ${data.week_meta[String(week)].type}` : ''}
+              {data.week_meta?.[String(week)]?.intensity ? ` · ${data.week_meta[String(week)].intensity}` : ''}
+            </p>
+          )}
+          {data.week_meta?.[String(week)]?.objective && (
+            <p className="text-[11px] mt-0.5 italic" style={{ color: '#8aa0b2' }}>
+              {data.week_meta[String(week)].objective}
             </p>
           )}
         </div>

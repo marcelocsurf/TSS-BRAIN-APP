@@ -76,6 +76,15 @@ export async function adminListPrograms(): Promise<{ ok: boolean; error?: string
   }
 }
 
+export interface WeekMeta {
+  phase?: string | null;      // general | especifica | competitiva | transicion
+  mesocycle?: string | null;
+  type?: string | null;       // Load | Deload | Tapering | Competition | Recovery
+  intensity?: string | null;  // Low | Medium | High | Peak
+  objective?: string | null;
+  pillars?: Record<string, { pct?: number | null; obj?: string | null }>;
+}
+
 export interface AdminProgramDetail {
   id: string;
   title: string;
@@ -90,6 +99,7 @@ export interface AdminProgramDetail {
   checkin_comment: boolean;
   checkin_nutrition?: boolean;
   week_labels: Record<string, string>;
+  week_meta?: Record<string, WeekMeta>;
   active_assignments: number;
   days: {
     id: string;
@@ -110,7 +120,7 @@ export async function adminGetProgram(
 
     const { data: p, error } = await admin
       .from('programs')
-      .select('id, title, subtitle, kind, weeks, active, for_sale, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels')
+      .select('id, title, subtitle, kind, weeks, active, for_sale, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels, week_meta')
       .eq('id', programId)
       .maybeSingle();
     if (error) throw error;
@@ -200,6 +210,7 @@ export async function adminUpdateProgram(
     checkin_comment?: boolean;
     checkin_nutrition?: boolean;
     week_labels?: Record<string, string>;
+    week_meta?: Record<string, WeekMeta>;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -298,6 +309,9 @@ export async function adminDuplicateProgram(
         checkin_sleep: src.checkin_sleep,
         checkin_energy: src.checkin_energy,
         checkin_comment: src.checkin_comment,
+        checkin_nutrition: (src as any).checkin_nutrition ?? false,
+        week_labels: (src as any).week_labels ?? {},
+        week_meta: (src as any).week_meta ?? {},
       })
       .select('id')
       .single();

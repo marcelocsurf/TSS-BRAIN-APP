@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  adminListBlockTemplates, adminInsertBlockTemplate, type BlockTemplateRow,
+  adminListBlockTemplates, adminInsertBlockTemplate, type BlockTemplateRow, type WeekMeta,
 } from '@/lib/actions/program-admin';
 import { hpLibrary, type HPLibrary } from '@/lib/actions/hp-cockpit';
 import {
@@ -394,6 +394,17 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
 
       <MetaCard detail={detail} onSaved={() => { load(); flash(); }} setErr={setErr} savedTick={savedTick} />
 
+      <MatrizPeriodizacion
+        key={`mx-${programId}`}
+        programId={programId}
+        weeks={detail.weeks}
+        meta={detail.week_meta ?? {}}
+        labels={detail.week_labels ?? {}}
+        onSaved={() => { load(); flash(); }}
+        onJump={(w) => setWeek(w)}
+        setErr={setErr}
+      />
+
       {/* Semanas */}
       <div className="flex gap-1.5 flex-wrap">
         {Array.from({ length: detail.weeks }, (_, i) => i + 1).map((w) => (
@@ -435,6 +446,212 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
       >
         <Plus size={15} /> Agregar día al microciclo {week}
       </button>
+    </div>
+  );
+}
+
+// ─── MATRIZ de periodización (calca la matriz de la app HP) ───
+// Columnas = microciclos; filas = fase macro, mesociclo, tipo, intensidad,
+// objetivo y % + objetivo por pilar. Todo vive en programs.week_meta (jsonb).
+const MX_PHASES = [
+  { key: '', label: '—' },
+  { key: 'general', label: 'Prep. General' },
+  { key: 'especifica', label: 'Prep. Específica' },
+  { key: 'competitiva', label: 'Competitiva' },
+  { key: 'transicion', label: 'Transición' },
+];
+const MX_TYPES = ['', 'Load', 'Deload', 'Tapering', 'Competition', 'Recovery'];
+const MX_INTENSITIES = ['', 'Low', 'Medium', 'High', 'Peak'];
+const MX_PILLARS: { key: string; label: string; color: string }[] = [
+  { key: 'fisico', label: 'Físico', color: '#E07A2F' },
+  { key: 'tecnico', label: 'Técnico', color: '#0090B8' },
+  { key: 'tactico', label: 'Táctico', color: '#1F9D6B' },
+  { key: 'mental', label: 'Mental', color: '#8B5CF6' },
+  { key: 'equipment', label: 'Equipment', color: '#B8862B' },
+  { key: 'surf', label: 'Surf sessions', color: '#00A8CC' },
+];
+
+function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, setErr }: {
+  programId: string;
+  weeks: number;
+  meta: Record<string, WeekMeta>;
+  labels: Record<string, string>;
+  onSaved: () => void;
+  onJump: (w: number) => void;
+  setErr: (e: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mx, setMx] = useState<Record<string, WeekMeta>>(() => JSON.parse(JSON.stringify(meta ?? {})));
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Re-sincronizar desde el server SOLO si no hay ediciones sin guardar —
+  // cambiar los microciclos en MetaCard ya no destruye lo escrito acá.
+  useEffect(() => {
+    if (!dirty) setMx(JSON.parse(JSON.stringify(meta ?? {})));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meta]);
+
+  const upd = (w: number, patch: Partial<WeekMeta>) => {
+    setMx((m) => ({ ...m, [String(w)]: { ...(m[String(w)] ?? {}), ...patch } }));
+    setDirty(true);
+  };
+  const updPillar = (w: number, pillar: string, patch: { pct?: number | null; obj?: string | null }) => {
+    setMx((m) => {
+      const wm = m[String(w)] ?? {};
+      const pillars = { ...(wm.pillars ?? {}) };
+      pillars[pillar] = { ...(pillars[pillar] ?? {}), ...patch };
+      return { ...m, [String(w)]: { ...wm, pillars } };
+    });
+    setDirty(true);
+  };
+  const totalOf = (w: number) =>
+    MX_PILLARS.reduce((sum, p) => sum + (Number(mx[String(w)]?.pillars?.[p.key]?.pct) || 0), 0);
+
+  const save = async () => {
+    setErr(null); setSaving(true);
+    const r = await adminUpdateProgram(programId, { week_meta: mx });
+    setSaving(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setDirty(false);
+    onSaved();
+  };
+
+  const selCls = 'w-full rounded-md border border-gray-200 px-1.5 py-1 text-[11px] bg-white';
+  const inpCls = 'w-full rounded-md border border-gray-200 px-1.5 py-1 text-[11px] bg-white';
+  const cellW = { minWidth: 148 } as React.CSSProperties;
+
+  return (
+    <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ borderLeft: '4px solid #B8862B' }}>
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3">
+        <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#8E6614' }}>
+          📊 Matriz de periodización · {weeks} microciclo{weeks === 1 ? '' : 's'}
+        </p>
+        <span className="text-xs text-gray-400">{open ? '▴ cerrar' : '▾ abrir'}</span>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4">
+          <div className="overflow-x-auto rounded-xl border border-gray-100">
+            <table className="border-collapse" style={{ minWidth: weeks * 148 + 130 }}>
+              <thead>
+                <tr>
+                  <th className="sticky left-0 bg-white text-left text-[9px] font-mono uppercase tracking-wider text-gray-400 px-2 py-2" style={{ minWidth: 130 }}>Semana</th>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <th key={w} className="text-center px-2 py-2" style={cellW}>
+                      <span className="text-[11px] font-mono font-bold" style={{ color: '#8B5CF6' }}>M{String(w).padStart(2, '0')}</span>
+                      {labels[String(w)] && <span className="block text-[9px] text-gray-400">{labels[String(w)]}</span>}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-gray-100">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Fase macro</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <td key={w} className="px-1.5 py-1.5" style={cellW}>
+                      <select value={mx[String(w)]?.phase ?? ''} onChange={(e) => upd(w, { phase: e.target.value || null })}
+                        className={selCls} aria-label={`Fase del micro ${w}`}>
+                        {MX_PHASES.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                      </select>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-t border-gray-100">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Mesociclo</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <td key={w} className="px-1.5 py-1.5" style={cellW}>
+                      <input value={mx[String(w)]?.mesocycle ?? ''} onChange={(e) => upd(w, { mesocycle: e.target.value || null })}
+                        placeholder="Base 1…" className={inpCls} aria-label={`Mesociclo del micro ${w}`} />
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-t border-gray-100">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Tipo de micro</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <td key={w} className="px-1.5 py-1.5" style={cellW}>
+                      <select value={mx[String(w)]?.type ?? ''} onChange={(e) => upd(w, { type: e.target.value || null })}
+                        className={selCls} aria-label={`Tipo del micro ${w}`}>
+                        {MX_TYPES.map((t) => <option key={t} value={t}>{t || '—'}</option>)}
+                      </select>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-t border-gray-100">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Intensidad</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <td key={w} className="px-1.5 py-1.5" style={cellW}>
+                      <select value={mx[String(w)]?.intensity ?? ''} onChange={(e) => upd(w, { intensity: e.target.value || null })}
+                        className={selCls} aria-label={`Intensidad del micro ${w}`}>
+                        {MX_INTENSITIES.map((t) => <option key={t} value={t}>{t || '—'}</option>)}
+                      </select>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-t border-gray-100">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Objetivo (inglés)</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <td key={w} className="px-1.5 py-1.5" style={cellW}>
+                      <input value={mx[String(w)]?.objective ?? ''} onChange={(e) => upd(w, { objective: e.target.value || null })}
+                        placeholder="Build paddle base…" className={inpCls} aria-label={`Objetivo del micro ${w}`} />
+                    </td>
+                  ))}
+                </tr>
+                {MX_PILLARS.map((pl) => (
+                  <tr key={pl.key} className="border-t border-gray-100">
+                    <td className="sticky left-0 bg-white text-[9px] font-mono uppercase px-2 py-1.5" style={{ color: pl.color, borderLeft: `3px solid ${pl.color}` }}>{pl.label}</td>
+                    {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                      <td key={w} className="px-1.5 py-1.5" style={cellW}>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min={0} max={100}
+                            value={mx[String(w)]?.pillars?.[pl.key]?.pct ?? ''}
+                            onChange={(e) => updPillar(w, pl.key, { pct: e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value))) })}
+                            className="w-14 rounded-md border border-gray-200 px-1.5 py-1 text-[11px] bg-white" aria-label={`% ${pl.label} micro ${w}`} />
+                          <span className="text-[10px]" style={{ color: pl.color }}>%</span>
+                        </div>
+                        <input value={mx[String(w)]?.pillars?.[pl.key]?.obj ?? ''}
+                          onChange={(e) => updPillar(w, pl.key, { obj: e.target.value || null })}
+                          placeholder="Objetivo del pilar" className="mt-1 w-full rounded-md border border-gray-100 px-1.5 py-0.5 text-[10px] bg-gray-50" aria-label={`Objetivo ${pl.label} micro ${w}`} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-gray-200">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase font-bold text-gray-600 px-2 py-2">Total %</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => {
+                    const t = totalOf(w);
+                    return (
+                      <td key={w} className="text-center px-1.5 py-2" style={cellW}>
+                        <span className="text-[12px] font-bold" style={{ color: t === 100 ? '#1F9D6B' : t > 100 ? '#C0392B' : '#55707F' }}>{t}%</span>
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr className="border-t border-gray-100">
+                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-2">Detalle semanal</td>
+                  {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
+                    <td key={w} className="text-center px-1.5 py-2" style={cellW}>
+                      <button type="button"
+                        onClick={() => { onJump(w); setOpen(false); }}
+                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold w-full"
+                        style={{ background: '#E0F7FF', color: '#0369A1' }}>
+                        📅 Editar días →
+                      </button>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between mt-2.5">
+            <p className="text-[10px] text-gray-400">El atleta ve tipo, intensidad y objetivo de su micro en el visor. El % por pilar es tu brújula de planificación.</p>
+            <button type="button" disabled={!dirty || saving} onClick={save}
+              className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40 shrink-0">
+              {saving ? 'Guardando…' : dirty ? 'Guardar matriz' : 'Sin cambios'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

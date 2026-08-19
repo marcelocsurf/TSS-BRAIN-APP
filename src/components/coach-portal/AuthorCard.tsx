@@ -294,25 +294,55 @@ function MetaEditor({ token, p, onSaved, setErr }: {
 function MicroLabelInput({ token, p, micro, onSaved, setErr }: {
   token: string; p: CoachProgramDetail; micro: number; onSaved: () => void; setErr: (e: string | null) => void;
 }) {
+  const wm = p.week_meta?.[String(micro)] ?? {};
   const [label, setLabel] = useState(p.week_labels[String(micro)] ?? '');
-  useEffect(() => { setLabel(p.week_labels[String(micro)] ?? ''); }, [micro, p.week_labels]);
+  const [type, setType] = useState(wm.type ?? '');
+  const [intensity, setIntensity] = useState(wm.intensity ?? '');
+  const [objective, setObjective] = useState(wm.objective ?? '');
+  useEffect(() => {
+    const w = p.week_meta?.[String(micro)] ?? {};
+    setLabel(p.week_labels[String(micro)] ?? '');
+    setType(w.type ?? ''); setIntensity(w.intensity ?? ''); setObjective(w.objective ?? '');
+  }, [micro, p.week_labels, p.week_meta]);
   return (
-    <div className="mt-2 flex gap-2">
-      <input value={label} onChange={(e) => setLabel(e.target.value)}
-        placeholder={`Nombre del micro ${micro} (CARGA / DESCARGA…)`} aria-label={`Nombre del microciclo ${micro}`}
-        className={inp} style={inpStyle} />
-      <button type="button"
-        onClick={async () => {
-          setErr(null);
-          const labels = { ...p.week_labels };
-          if (label.trim()) labels[String(micro)] = label.trim(); else delete labels[String(micro)];
-          const r = await coachUpdateProgramMeta(token, p.id, { week_labels: labels });
-          if (!r.ok) { setErr(r.error || 'No se pudo guardar.'); return; }
-          onSaved();
-        }}
-        className="px-3 rounded-full text-[10px] font-bold shrink-0" style={{ background: C.rowBg, color: C.goldText, border: `1px solid ${C.rowBorder}` }}>
-        Guardar
-      </button>
+    <div className="mt-2 space-y-1.5">
+      <div className="flex gap-1.5">
+        <input value={label} onChange={(e) => setLabel(e.target.value)}
+          placeholder={`Nombre del micro ${micro} (CARGA…)`} aria-label={`Nombre del microciclo ${micro}`}
+          className={inp} style={inpStyle} />
+        <select value={type} onChange={(e) => setType(e.target.value)} aria-label={`Tipo del micro ${micro}`}
+          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ ...inpStyle, width: 110, color: type ? C.navy : '#9ca3af' }}>
+          <option value="">Tipo…</option>
+          {['Load', 'Deload', 'Tapering', 'Competition', 'Recovery'].map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select value={intensity} onChange={(e) => setIntensity(e.target.value)} aria-label={`Intensidad del micro ${micro}`}
+          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ ...inpStyle, width: 100, color: intensity ? C.navy : '#9ca3af' }}>
+          <option value="">Intens…</option>
+          {['Low', 'Medium', 'High', 'Peak'].map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+      <div className="flex gap-1.5">
+        <input value={objective} onChange={(e) => setObjective(e.target.value)}
+          placeholder="Objetivo del micro (inglés — lo ve el atleta)" aria-label={`Objetivo del microciclo ${micro}`}
+          className={inp} style={inpStyle} />
+        <button type="button"
+          onClick={async () => {
+            setErr(null);
+            const labels = { ...p.week_labels };
+            if (label.trim()) labels[String(micro)] = label.trim(); else delete labels[String(micro)];
+            const week_meta = { ...(p.week_meta ?? {}) };
+            week_meta[String(micro)] = {
+              ...(week_meta[String(micro)] ?? {}),
+              type: type || null, intensity: intensity || null, objective: objective.trim() || null,
+            };
+            const r = await coachUpdateProgramMeta(token, p.id, { week_labels: labels, week_meta });
+            if (!r.ok) { setErr(r.error || 'No se pudo guardar.'); return; }
+            onSaved();
+          }}
+          className="px-3 rounded-full text-[10px] font-bold shrink-0" style={{ background: C.rowBg, color: C.goldText, border: `1px solid ${C.rowBorder}` }}>
+          Guardar
+        </button>
+      </div>
     </div>
   );
 }

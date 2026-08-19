@@ -42,6 +42,7 @@ export interface MyProgramData {
   weeks: number;
   checkin: { water: boolean; sleep: boolean; energy: boolean; comment: boolean; nutrition: boolean };
   week_labels: Record<string, string>;
+  week_meta: Record<string, { type?: string | null; intensity?: string | null; objective?: string | null }>;
   days: ProgramDayView[];
   position: { week: number; day: number } | null; // null = programa completado
   days_done: number;
@@ -75,7 +76,7 @@ async function resolveActiveAssignment(portalToken: string) {
 
   const { data: assignment, error: asgErr } = await admin
     .from('program_assignments')
-    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels, active)')
+    .select('id, program_id, assigned_by, start_date, programs!inner(id, title, subtitle, weeks, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels, week_meta, active)')
     .eq('student_id', student.id)
     .eq('status', 'active')
     .eq('programs.active', true)
@@ -190,6 +191,19 @@ export async function getMyProgram(
           nutrition: program.checkin_nutrition ?? false,
         },
         week_labels: program.week_labels ?? {},
+        // PROYECCIÓN server-side: al atleta solo viajan tipo/intensidad/objetivo.
+        // El resto de la matriz (fase, mesociclo, % y objetivos por pilar) es
+        // planificación interna del staff y NO debe salir en el payload.
+        week_meta: Object.fromEntries(
+          Object.entries(((program as any).week_meta ?? {}) as Record<string, any>).map(([k, v]) => [
+            k,
+            {
+              type: typeof v?.type === 'string' ? v.type : null,
+              intensity: typeof v?.intensity === 'string' ? v.intensity : null,
+              objective: typeof v?.objective === 'string' ? v.objective : null,
+            },
+          ])
+        ),
         days: dayViews,
         position: cur ? { week: cur.week_number, day: cur.day_number } : null,
         days_done: dayViews.filter((d) => d.done).length,
