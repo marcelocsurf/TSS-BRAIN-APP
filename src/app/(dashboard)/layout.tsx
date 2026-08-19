@@ -29,6 +29,7 @@ import {
   CalendarClock,
   MapPin,
   ClipboardList,
+  Waves,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -66,6 +67,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
   // Programas de entreno (línea Alto Rendimiento) — solo admin hasta que la
   // escalera del coach (Escalón 2) llegue en el Paso 4.
+  // Modo HP: el cockpit del head coach (réplica de la app HP) — solo admin.
+  { href: '/hp',            label: 'Modo HP',   Icon: Waves,         roles: ['admin'] },
   { href: '/programas',     label: 'Programas', Icon: ClipboardList, roles: ['admin'] },
   // Billing + Pricing moved to the dashboard Quick Actions (admin).
   { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3,   roles: ['admin'] },

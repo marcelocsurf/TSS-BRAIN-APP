@@ -1110,3 +1110,74 @@ export async function coachAssignProgram(
     return { ok: false, error: 'No se pudo asignar el programa.' };
   }
 }
+
+// ─── Plantillas de bloque para el autor E2 (solo lectura + insertar en SU día) ───
+
+export async function coachListBlockTemplates(
+  portalToken: string
+): Promise<{ ok: boolean; templates: { id: string; title: string; belt: string | null; pillar: string | null; items_count: number }[] }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: true, templates: [] };
+    const { data, error } = await admin
+      .from('program_block_templates')
+      .select('id, title, belt, pillar, items')
+      .order('pillar').order('title').limit(300);
+    if (error) throw error;
+    return {
+      ok: true,
+      templates: (data ?? []).map((t: any) => ({
+        id: t.id, title: t.title, belt: t.belt, pillar: t.pillar,
+        items_count: Array.isArray(t.items) ? t.items.length : 0,
+      })),
+    };
+  } catch (e) {
+    console.error('[program-coach] coachListBlockTemplates failed', e);
+    return { ok: false, templates: [] };
+  }
+}
+
+export async function coachInsertBlockTemplate(
+  portalToken: string,
+  programId: string,
+  dayId: string,
+  templateId: string
+): Promise<{ ok: boolean; error?: string; inserted?: number }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+    const { data: day, error: dErr } = await admin
+      .from('program_days').select('id').eq('id', dayId).eq('program_id', programId).maybeSingle();
+    if (dErr) throw dErr;
+    if (!day) return { ok: false, error: 'Ese día no es de tu programa.' };
+    const { data: tpl, error: tErr } = await admin
+      .from('program_block_templates').select('items').eq('id', templateId).maybeSingle();
+    if (tErr) throw tErr;
+    if (!tpl) return { ok: false, error: 'Plantilla no encontrada.' };
+    const items = Array.isArray(tpl.items) ? tpl.items : [];
+    if (items.length === 0) return { ok: false, error: 'La plantilla está vacía.' };
+    const { data: existing, error: eErr } = await admin
+      .from('program_items').select('display_order').eq('day_id', dayId)
+      .order('display_order', { ascending: false }).limit(1);
+    if (eErr) throw eErr;
+    const base = (existing?.[0]?.display_order as number | undefined) ?? 0;
+    const { error } = await admin.from('program_items').insert(
+      items.map((it: any, i: number) => ({
+        day_id: dayId,
+        title: (it.title || 'Item').slice(0, 200),
+        detail: it.detail || null,
+        video_url: it.video_url || null,
+        display_order: base + i + 1,
+      }))
+    );
+    if (error) throw error;
+    return { ok: true, inserted: items.length };
+  } catch (e) {
+    console.error('[program-coach] coachInsertBlockTemplate failed', e);
+    return { ok: false, error: 'No se pudo insertar el bloque.' };
+  }
+}

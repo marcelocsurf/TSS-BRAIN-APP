@@ -1,0 +1,814 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import {
+  hpPanel, hpPlanToday, hpLibrary, hpTeam,
+  hpListMessages, hpSendMessage,
+  hpListSessions, hpCreateSession, hpSetAttendance, hpDeleteSession, hpSyncSessionRoster,
+  hpListEvaluations, hpCreateEvaluation,
+  type HPPanelData, type HPPlanRow, type HPLibrary, type HPTeamRow,
+  type HPMessageRow, type HPSessionRow, type HPEvalRow,
+} from '@/lib/actions/hp-cockpit';
+import { adminSearchStudents, adminListAppointments, adminCreateAppointment, adminListHPCoaches, adminSetAppointmentStatus, type AdminAppointmentRow } from '@/lib/actions/program-admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
+import { LayoutDashboard, ClipboardList, CalendarClock, Star, Mail, Users, Waves, BookOpen } from 'lucide-react';
+
+// ─── El cockpit del head coach — réplica de la app HP dentro de BRAIN ───
+//
+// TEMA OSCURO EN TODA LA PÁGINA (la app HP es dark navy): acá NO aplica la
+// paleta clara del dashboard — todo texto claro sobre #0B1B28, sin mezclar.
+// Staff-facing: español. Mobile-first: navegación de abajo como la app HP.
+
+const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const BG = '#0B1B28';
+const CARD = 'rgba(255,255,255,.045)';
+const BORDER = 'rgba(255,255,255,.09)';
+const CYAN = '#00D2FF';
+const GOLD = '#FFD166';
+const TXT = '#F0F7FA';
+const DIM = '#9DB4C3';
+const FAINT = '#6C8494';
+const GREEN = '#06D6A0';
+const RED = '#FF6B6B';
+
+const card: React.CSSProperties = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 14 };
+const inp: React.CSSProperties = { background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: TXT, borderRadius: 10, padding: '8px 10px', fontSize: 13, width: '100%' };
+
+type Tab = 'panel' | 'plan' | 'sesion' | 'citas' | 'eval' | 'msg' | 'equipo';
+
+const TABS: { key: Tab; label: string; icon: React.ComponentType<{ size?: number | string; color?: string }> }[] = [
+  { key: 'panel', label: 'Panel', icon: LayoutDashboard },
+  { key: 'plan', label: 'Plan', icon: ClipboardList },
+  { key: 'sesion', label: 'Sesión', icon: Waves },
+  { key: 'citas', label: 'Citas', icon: CalendarClock },
+  { key: 'eval', label: 'Eval', icon: Star },
+  { key: 'msg', label: 'Msg', icon: Mail },
+  { key: 'equipo', label: 'Equipo', icon: Users },
+];
+
+export function HPCockpit() {
+  const [tab, setTab] = useState<Tab>('panel');
+  return (
+    <div className="min-h-screen -m-4 md:-m-6" style={{ background: BG }}>
+      <div className="max-w-2xl mx-auto px-4 pt-4" style={{ paddingBottom: 96 }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[.2em]" style={{ ...MONO, color: CYAN }}>The Surf Sequence · Alto Rendimiento</p>
+            <h1 className="text-[22px] font-extrabold uppercase" style={{ color: TXT, fontStretch: '125%' }}>
+              {TABS.find((t) => t.key === tab)?.label === 'Msg' ? 'Mensajes' : TABS.find((t) => t.key === tab)?.label}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ border: `1px solid ${GOLD}`, color: GOLD, ...MONO }}>
+              HEAD COACH
+            </span>
+            {/* La nav del cockpit tapa la nav móvil del dashboard (a propósito):
+                esta es la salida de vuelta a BRAIN. */}
+            <Link href="/dashboard" className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM, ...MONO }}>
+              ← BRAIN
+            </Link>
+          </div>
+        </div>
+
+        {tab === 'panel' && <PanelTab />}
+        {tab === 'plan' && <PlanTab />}
+        {tab === 'sesion' && <SesionTab />}
+        {tab === 'citas' && <CitasTab />}
+        {tab === 'eval' && <EvalTab />}
+        {tab === 'msg' && <MsgTab />}
+        {tab === 'equipo' && <EquipoTab />}
+      </div>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50" style={{ background: 'rgba(6,20,32,.96)', borderTop: `1px solid ${BORDER}`, backdropFilter: 'blur(8px)' }}>
+        <div className="max-w-2xl mx-auto grid grid-cols-7">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const on = tab === t.key;
+            return (
+              <button key={t.key} type="button" onClick={() => setTab(t.key)} className="flex flex-col items-center gap-0.5 py-2.5">
+                <Icon size={18} color={on ? CYAN : FAINT} />
+                <span className="text-[9px]" style={{ ...MONO, color: on ? CYAN : FAINT }}>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+// ─── PANEL ───
+
+function PanelTab() {
+  const [data, setData] = useState<HPPanelData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    hpPanel().then((r) => { if (r.ok && r.data) setData(r.data); else setErr(r.error || null); }).catch(() => {});
+  }, []);
+  if (err) return <p className="text-[12px]" style={{ color: RED }}>{err}</p>;
+  if (!data) return <p className="text-[12px]" style={{ color: FAINT }}>Cargando…</p>;
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { n: data.athletes_total, l: 'Atletas' },
+          { n: data.marked_today, l: 'Marcaron hoy' },
+          { n: data.checkins_today, l: 'Check-ins hoy' },
+        ].map((x) => (
+          <div key={x.l} style={card} className="text-center">
+            <p className="text-[24px] font-extrabold" style={{ color: TXT }}>{x.n}</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ ...MONO, color: FAINT }}>{x.l}</p>
+          </div>
+        ))}
+      </div>
+
+      {data.alerts.length > 0 && (
+        <div style={{ ...card, borderLeft: `3px solid ${GOLD}` }}>
+          <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GOLD }}>⚠ Sin actividad</p>
+          <div className="mt-1.5 space-y-0.5">
+            {data.alerts.map((a) => (
+              <p key={a.student_id} className="text-[12px]" style={{ color: DIM }}>
+                <b style={{ color: TXT }}>{a.name}</b> · {a.days_inactive >= 99 ? 'sin actividad registrada' : `${a.days_inactive} días`}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={card}>
+        <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: CYAN }}>Ranking de la semana</p>
+        <div className="mt-1.5 space-y-1">
+          {data.ranking_top.map((r) => (
+            <div key={r.student_id} className="flex items-center justify-between">
+              <p className="text-[12.5px]" style={{ color: r.position <= 3 ? TXT : DIM, fontWeight: r.position <= 3 ? 700 : 400 }}>
+                {r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : r.position === 3 ? '🥉' : `${r.position}.`} {r.name}
+              </p>
+              <p className="text-[11px]" style={{ ...MONO, color: FAINT }}>{r.points}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {data.next_competitions.length > 0 && (
+        <div style={card}>
+          <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GOLD }}>🏆 Próximas competencias</p>
+          <div className="mt-1.5 space-y-0.5">
+            {data.next_competitions.map((c, i) => (
+              <p key={i} className="text-[12px]" style={{ color: DIM }}>
+                <b style={{ color: TXT }}>{c.student_name}</b> · {c.name} · {c.comp_date}
+                {c.status === 'live' && <b style={{ color: RED }}> · EN CURSO</b>}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.next_appointments.length > 0 && (
+        <div style={card}>
+          <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: CYAN }}>Próximas citas</p>
+          <div className="mt-1.5 space-y-0.5">
+            {data.next_appointments.map((a, i) => (
+              <p key={i} className="text-[12px]" style={{ color: DIM }}>
+                <b style={{ color: TXT }}>{a.student_name}</b> · {a.kind}{a.mode ? ` · ${a.mode}` : ''} · {a.date}{a.time ? ` ${a.time}` : ''} <span style={{ color: FAINT }}>({a.coach_name})</span>
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PLAN (hoy por atleta + Biblioteca) ───
+
+function PlanTab() {
+  const [sub, setSub] = useState<'hoy' | 'biblioteca'>('hoy');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1.5">
+        {(['hoy', 'biblioteca'] as const).map((k) => (
+          <button key={k} type="button" onClick={() => setSub(k)}
+            className="px-3.5 py-1.5 rounded-full text-[11px] font-bold capitalize"
+            style={sub === k ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            {k === 'hoy' ? 'Hoy' : 'Biblioteca'}
+          </button>
+        ))}
+        <Link href="/programas" className="ml-auto px-3.5 py-1.5 rounded-full text-[11px] font-bold"
+          style={{ border: `1px solid ${GOLD}`, color: GOLD }}>
+          Editor de programas →
+        </Link>
+      </div>
+      {sub === 'hoy' ? <PlanHoy /> : <Biblioteca />}
+    </div>
+  );
+}
+
+function PlanHoy() {
+  const [rows, setRows] = useState<HPPlanRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { hpPlanToday().then((r) => { if (r.ok) setRows(r.rows); setLoaded(true); }).catch(() => setLoaded(true)); }, []);
+  if (!loaded) return <p className="text-[12px]" style={{ color: FAINT }}>Cargando…</p>;
+  return (
+    <div className="space-y-2">
+      {rows.map((r) => (
+        <div key={r.student_id} style={card} className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold truncate" style={{ color: TXT }}>{r.name}</p>
+            <p className="text-[11px]" style={{ color: DIM }}>
+              {r.program_title} · <b style={{ color: GOLD }}>{r.position}</b>
+              {r.day_title ? ` · ${r.day_title}` : ''}{r.items_count > 0 ? ` · ${r.items_count} ítems` : ''}
+            </p>
+          </div>
+          <span className="text-[10px] font-bold shrink-0" style={{ color: r.done_today ? GREEN : FAINT }}>
+            {r.done_today ? '✓ hecho hoy' : 'pendiente'}
+          </span>
+        </div>
+      ))}
+      {rows.length === 0 && <p className="text-[12px] text-center py-4" style={{ color: FAINT }}>Sin atletas con programa activo.</p>}
+    </div>
+  );
+}
+
+function Biblioteca() {
+  const [lib, setLib] = useState<HPLibrary | null>(null);
+  const [cat, setCat] = useState<'secuencia' | 'drills' | 'misiones' | 'videos'>('secuencia');
+  const [q, setQ] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  useEffect(() => { hpLibrary().then((r) => { if (r.ok && r.data) setLib(r.data); }).catch(() => {}); }, []);
+  const needle = q.trim().toLowerCase();
+  const match = (...vals: (string | null | undefined)[]) =>
+    !needle || vals.some((v) => (v ?? '').toLowerCase().includes(needle));
+
+  const counts = lib ? { secuencia: lib.sequences.length, drills: lib.drills.length, misiones: lib.missions.length, videos: lib.videos.length } : null;
+
+  return (
+    <div className="space-y-2.5">
+      <div className="flex gap-1.5 flex-wrap">
+        {(['secuencia', 'drills', 'misiones', 'videos'] as const).map((k) => (
+          <button key={k} type="button" onClick={() => { setCat(k); setOpenId(null); }}
+            className="px-3 py-1.5 rounded-full text-[10.5px] font-bold capitalize"
+            style={cat === k ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            {k} {counts ? counts[k] : ''}
+          </button>
+        ))}
+      </div>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar paso, drill, cue o concepto…" aria-label="Buscar en la biblioteca" style={inp} />
+      {!lib && <p className="text-[12px]" style={{ color: FAINT }}>Cargando biblioteca…</p>}
+
+      {lib && cat === 'secuencia' && (
+        <div className="space-y-1.5">
+          {lib.sequences.filter((s) => match(s.sequence_part, s.expectation_standard, s.belt_level, s.pilar_reference)).slice(0, 80).map((s) => (
+            <button key={s.id} type="button" onClick={() => setOpenId(openId === s.id ? null : s.id)} className="w-full text-left" style={card}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[12.5px] font-semibold" style={{ color: TXT }}>{s.sequence_part || '—'}</p>
+                <span className="text-[9.5px] shrink-0" style={{ ...MONO, color: FAINT }}>
+                  {(s.belt_level || '').toUpperCase()} · SEQ {s.sequence_number ?? '—'}·{s.step_order ?? '—'}{s.pilar_reference ? ` · ${s.pilar_reference}` : ''}
+                </span>
+              </div>
+              {openId === s.id && s.expectation_standard && (
+                <p className="text-[11.5px] mt-1.5 leading-relaxed" style={{ color: DIM }}>{s.expectation_standard}</p>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {lib && cat === 'drills' && (
+        <div className="space-y-1.5">
+          {lib.drills.filter((d) => match(d.drill_name, d.goal, d.key_cue, d.related_error, d.related_pilar)).slice(0, 80).map((d) => (
+            <button key={d.id} type="button" onClick={() => setOpenId(openId === d.id ? null : d.id)} className="w-full text-left" style={card}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[12.5px] font-semibold" style={{ color: TXT }}>{d.drill_name}</p>
+                <span className="text-[9.5px] shrink-0 uppercase" style={{ ...MONO, color: FAINT }}>
+                  {d.related_pilar ?? ''}{d.environment ? ` · ${d.environment}` : ''}
+                </span>
+              </div>
+              {openId === d.id && (
+                <div className="mt-1.5 space-y-1 text-[11.5px]" style={{ color: DIM }}>
+                  {d.goal && <p>🎯 {d.goal}</p>}
+                  {d.key_cue && <p>🗣 <b style={{ color: CYAN }}>{d.key_cue}</b></p>}
+                  {d.related_error && <p>✗ Error: {d.related_error}</p>}
+                  {d.related_solution && <p>✓ Solución: {d.related_solution}</p>}
+                  {d.belt_level_range && <p style={{ color: FAINT }}>Cinturones: {d.belt_level_range}</p>}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {lib && cat === 'misiones' && (
+        <div className="space-y-1.5">
+          {lib.missions.filter((m) => match(m.title, m.success_criteria, m.belt, m.description_md)).slice(0, 80).map((m) => (
+            <button key={m.id} type="button" onClick={() => setOpenId(openId === m.id ? null : m.id)} className="w-full text-left" style={card}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[12.5px] font-semibold" style={{ color: TXT }}>{m.title}</p>
+                <span className="text-[9.5px] shrink-0 uppercase" style={{ ...MONO, color: FAINT }}>
+                  {m.type ?? ''}{m.belt ? ` · ${m.belt}` : ''}{m.time_estimate ? ` · ${m.time_estimate}` : ''}
+                </span>
+              </div>
+              {openId === m.id && (
+                <div className="mt-1.5 space-y-1 text-[11.5px]" style={{ color: DIM }}>
+                  {m.description_md && <p className="whitespace-pre-line">{m.description_md.slice(0, 600)}</p>}
+                  {m.success_criteria && <p>✓ <b style={{ color: GREEN }}>Éxito:</b> {m.success_criteria}</p>}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {lib && cat === 'videos' && (
+        <div className="space-y-1.5">
+          {lib.videos.filter((v) => match(v.title, v.pillar)).map((v) => (
+            <a key={v.id} href={v.video_url} target="_blank" rel="noreferrer" className="block" style={card}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[12.5px] font-semibold" style={{ color: TXT }}>▶ {v.title}</p>
+                <span className="text-[9.5px] uppercase shrink-0" style={{ ...MONO, color: FAINT }}>{v.pillar ?? ''}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SESIÓN (presenciales + pasar lista) ───
+
+function SesionTab() {
+  const [sessions, setSessions] = useState<HPSessionRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [date, setDate] = useState(elSalvadorToday());
+  const [busy, setBusy] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const load = () => hpListSessions().then((r) => { if (r.ok) setSessions(r.sessions); else setErr(r.error || null); }).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const create = async () => {
+    setErr(null); setBusy(true);
+    const r = await hpCreateSession({ date, title });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setTitle('');
+    load();
+    if (r.id) setOpenId(r.id);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div style={card} className="space-y-2">
+        <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: CYAN }}>Nueva sesión presencial</p>
+        <div className="flex gap-2">
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Fecha de la sesión" style={{ ...inp, width: 150, colorScheme: 'dark' }} />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Water training · El Zonte…" aria-label="Nombre de la sesión" style={inp} />
+        </div>
+        <button type="button" disabled={busy || !title.trim() || !date} onClick={create}
+          className="w-full rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ ...MONO, background: CYAN, color: '#06202F', opacity: busy || !title.trim() || !date ? 0.5 : 1 }}>
+          {busy ? 'Creando…' : 'Crear y pasar lista →'}
+        </button>
+        <p className="text-[10px]" style={{ color: FAINT }}>
+          La lista nace con TODOS los atletas presentes — solo destildás a los que faltaron. Asistir suma +10 en el ranking.
+        </p>
+        {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
+      </div>
+
+      {sessions.map((s) => (
+        <div key={s.id} style={card}>
+          <button type="button" onClick={() => setOpenId(openId === s.id ? null : s.id)} className="w-full text-left flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[13px] font-semibold" style={{ color: TXT }}>{s.title}</p>
+              <p className="text-[10.5px]" style={{ color: DIM }}>
+                {s.session_date} · {s.attendance.filter((a) => a.present).length}/{s.attendance.length} presentes
+              </p>
+            </div>
+            <span className="text-[10px]" style={{ color: FAINT }}>{openId === s.id ? '▴' : '▾ pasar lista'}</span>
+          </button>
+          {openId === s.id && (
+            <div className="mt-2.5 pt-2.5 space-y-1.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+              {s.attendance.map((a) => (
+                <AttendanceRow key={a.student_id} sessionId={s.id} row={a} onSaved={load} />
+              ))}
+              <div className="flex items-center gap-3 mt-1">
+                <button type="button" onClick={() => hpSyncSessionRoster(s.id).then(load)}
+                  className="text-[10px] font-bold" style={{ color: CYAN }}>
+                  ↻ Actualizar lista (atletas nuevos)
+                </button>
+                <button type="button"
+                  onClick={() => { if (confirm(`¿Eliminar la sesión "${s.title}"?`)) hpDeleteSession(s.id).then(load); }}
+                  className="text-[10px]" style={{ color: FAINT }}>
+                  Eliminar sesión
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      {sessions.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin sesiones todavía.</p>}
+    </div>
+  );
+}
+
+function AttendanceRow({ sessionId, row, onSaved }: {
+  sessionId: string;
+  row: { student_id: string; name: string; present: boolean; note: string | null };
+  onSaved: () => void;
+}) {
+  const [present, setPresent] = useState(row.present);
+  const [note, setNote] = useState(row.note ?? '');
+  const [editing, setEditing] = useState(false);
+
+  const toggle = async () => {
+    const next = !present;
+    setPresent(next); // optimista — un tap, cero espera
+    try {
+      const r = await hpSetAttendance(sessionId, row.student_id, { present: next });
+      if (!r.ok) { setPresent(!next); return; }
+      onSaved(); // el contador X/Y del header se actualiza
+    } catch {
+      // sin señal en la playa: revertir para no mentir
+      setPresent(!next);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={toggle}
+        className="flex-1 text-left flex items-center gap-2 rounded-xl px-3 py-2"
+        style={{ background: present ? 'rgba(6,214,160,.1)' : 'rgba(255,107,107,.08)', border: `1px solid ${present ? 'rgba(6,214,160,.35)' : 'rgba(255,107,107,.3)'}` }}>
+        <span className="text-[14px]">{present ? '✅' : '❌'}</span>
+        <span className="text-[12.5px] font-medium" style={{ color: TXT }}>{row.name}</span>
+        {note && !editing && <span className="text-[10.5px] truncate" style={{ color: DIM }}>· {note}</span>}
+      </button>
+      <button type="button" onClick={() => setEditing(!editing)} className="text-[10px] px-1.5 shrink-0" style={{ color: FAINT }} aria-label={`Nota para ${row.name}`}>📝</button>
+      {editing && (
+        <input
+          autoFocus
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onBlur={async () => {
+            setEditing(false);
+            try {
+              const r = await hpSetAttendance(sessionId, row.student_id, { note });
+              if (r.ok) onSaved();
+            } catch { /* la nota queda local; reintenta al volver la señal */ }
+          }}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+          placeholder="Nota…"
+          aria-label={`Nota de ${row.name}`}
+          style={{ ...inp, width: 160 }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── CITAS ───
+
+function CitasTab() {
+  const [rows, setRows] = useState<AdminAppointmentRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [coaches, setCoaches] = useState<{ id: string; display_name: string }[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [coachId, setCoachId] = useState('');
+  const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'otro'>('fisico');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => adminListAppointments().then((r) => { if (r.ok) setRows(r.appointments); else setErr(r.error || null); }).catch(() => {});
+  useEffect(() => {
+    load();
+    adminListHPCoaches().then((r: any) => { if (r.ok) setCoaches((r.coaches ?? []).filter((c: any) => (c.hp_escalon ?? 0) >= 1)); }).catch(() => {});
+  }, []);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) adminSearchStudents(q).then((r) => { if (r.ok) setResults(r.students.map((s: any) => ({ id: s.id, name: s.name }))); });
+      else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const create = async () => {
+    if (!picked || !coachId || !date) return;
+    setErr(null); setBusy(true);
+    const r = await adminCreateAppointment({ studentId: picked.id, coachId, kind, date, time: time || null });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setPicked(null); setQ(''); setDate(''); setTime(''); setCreating(false);
+    load();
+  };
+
+  return (
+    <div className="space-y-3">
+      {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
+      {!creating ? (
+        <button type="button" onClick={() => setCreating(true)}
+          className="w-full rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ ...MONO, background: CYAN, color: '#06202F' }}>
+          + Nueva cita
+        </button>
+      ) : (
+        <div style={card} className="space-y-2">
+          <div className="relative">
+            <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta…" aria-label="Atleta" style={inp} />
+            {results.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+                {results.map((st) => (
+                  <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
+                    {st.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <select value={coachId} onChange={(e) => setCoachId(e.target.value)} aria-label="Quién atiende" style={{ ...inp, color: coachId ? TXT : FAINT }}>
+            <option value="">¿Quién atiende? *</option>
+            {coaches.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+          </select>
+          <div className="flex gap-1.5 flex-wrap">
+            {(['fisico', 'mental', 'tecnico', 'otro'] as const).map((k) => (
+              <button key={k} type="button" onClick={() => setKind(k)} className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
+                style={kind === k ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+                {k}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Fecha" style={{ ...inp, colorScheme: 'dark' }} />
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Hora" style={{ ...inp, colorScheme: 'dark' }} />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" disabled={busy || !picked || !coachId || !date} onClick={create}
+              className="flex-1 rounded-full py-2 text-[11px] font-bold" style={{ background: CYAN, color: '#06202F', opacity: busy || !picked || !coachId || !date ? 0.5 : 1 }}>
+              {busy ? 'Creando…' : 'Crear cita'}
+            </button>
+            <button type="button" onClick={() => setCreating(false)} className="px-3 text-[11px]" style={{ color: FAINT }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        {rows.map((a) => (
+          <div key={a.id} style={card} className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[12.5px] font-semibold truncate" style={{ color: TXT }}>{a.student_name}</p>
+              <p className="text-[10.5px]" style={{ color: DIM }}>
+                {a.title || a.kind}{a.mode ? ` · ${a.mode}` : ''} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''} · {a.coach_name}
+              </p>
+            </div>
+            {a.status === 'scheduled' ? (
+              <button type="button" onClick={() => adminSetAppointmentStatus(a.id, 'done').then(load)}
+                className="text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0" style={{ border: `1px solid ${GREEN}`, color: GREEN }}>
+                Hecha ✓
+              </button>
+            ) : (
+              <span className="text-[10px] shrink-0" style={{ color: FAINT }}>{a.status === 'done' ? 'hecha ✓' : a.status}</span>
+            )}
+          </div>
+        ))}
+        {rows.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin citas próximas.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── EVAL ───
+
+function EvalTab() {
+  const [rows, setRows] = useState<HPEvalRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [pillar, setPillar] = useState<'fisico' | 'tecnico' | 'tactico' | 'mental'>('tecnico');
+  const [score, setScore] = useState(7);
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => hpListEvaluations().then((r) => { if (r.ok) setRows(r.evaluations); else setErr(r.error || null); }).catch(() => {});
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) adminSearchStudents(q).then((r) => { if (r.ok) setResults(r.students.map((s: any) => ({ id: s.id, name: s.name }))); });
+      else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const create = async () => {
+    if (!picked) return;
+    setErr(null); setBusy(true);
+    const r = await hpCreateEvaluation({ studentId: picked.id, pillar, score, notes: notes || null });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setPicked(null); setQ(''); setNotes(''); setCreating(false);
+    load();
+  };
+
+  return (
+    <div className="space-y-3">
+      {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
+      {!creating ? (
+        <button type="button" onClick={() => setCreating(true)}
+          className="w-full rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ ...MONO, background: CYAN, color: '#06202F' }}>
+          + Evaluar atleta
+        </button>
+      ) : (
+        <div style={card} className="space-y-2">
+          <div className="relative">
+            <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta…" aria-label="Atleta" style={inp} />
+            {results.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+                {results.map((st) => (
+                  <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
+                    {st.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {(['fisico', 'tecnico', 'tactico', 'mental'] as const).map((p) => (
+              <button key={p} type="button" onClick={() => setPillar(p)} className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
+                style={pillar === p ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+                {p}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px]" style={{ color: DIM }}>Puntaje</span>
+            <input type="range" min={1} max={10} value={score} onChange={(e) => setScore(Number(e.target.value))} className="flex-1" aria-label="Puntaje 1 a 10" />
+            <span className="text-[14px] font-bold w-12 text-right" style={{ color: CYAN }}>{score}/10</span>
+          </div>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Nota (opcional)…" aria-label="Nota" style={{ ...inp, resize: 'vertical' }} />
+          <div className="flex gap-2">
+            <button type="button" disabled={busy || !picked} onClick={create}
+              className="flex-1 rounded-full py-2 text-[11px] font-bold" style={{ background: CYAN, color: '#06202F', opacity: busy || !picked ? 0.5 : 1 }}>
+              {busy ? 'Guardando…' : 'Guardar evaluación'}
+            </button>
+            <button type="button" onClick={() => setCreating(false)} className="px-3 text-[11px]" style={{ color: FAINT }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        {rows.map((e) => (
+          <div key={e.id} style={card}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12.5px] font-semibold" style={{ color: TXT }}>{e.student_name}</p>
+              <p className="text-[11px]" style={{ ...MONO, color: FAINT }}>{e.eval_date}</p>
+            </div>
+            <p className="text-[11.5px] mt-0.5" style={{ color: DIM }}>
+              <b className="capitalize" style={{ color: GOLD }}>{e.pillar}</b>
+              {e.score != null && <> · <b style={{ color: CYAN }}>{e.score}/10</b></>} · {e.coach_name}
+              {e.notes && <span style={{ color: FAINT }}> — {e.notes}</span>}
+            </p>
+          </div>
+        ))}
+        {rows.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin evaluaciones todavía.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── MSG ───
+
+function MsgTab() {
+  const [messages, setMessages] = useState<HPMessageRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const [target, setTarget] = useState<'all' | 'one'>('all');
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => hpListMessages().then((r) => { if (r.ok) setMessages(r.messages); else setErr(r.error || null); }).catch(() => {});
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) adminSearchStudents(q).then((r) => { if (r.ok) setResults(r.students.map((s: any) => ({ id: s.id, name: s.name }))); });
+      else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const send = async () => {
+    setErr(null); setOk(null); setBusy(true);
+    const r = await hpSendMessage({ studentId: target === 'all' ? 'all' : (picked?.id ?? ''), subject: subject || null, body });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setOk(`Enviado a ${r.sent} atleta${r.sent === 1 ? '' : 's'} ✓ — les aparece en su portal.`);
+    setBody(''); setSubject('');
+    load();
+  };
+
+  return (
+    <div className="space-y-3">
+      <div style={card} className="space-y-2">
+        <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: CYAN }}>Nuevo mensaje</p>
+        <div className="flex gap-1.5">
+          <button type="button" onClick={() => setTarget('all')} className="px-3 py-1.5 rounded-full text-[10.5px] font-bold"
+            style={target === 'all' ? { background: GOLD, color: '#412402' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            📣 Todos los atletas
+          </button>
+          <button type="button" onClick={() => setTarget('one')} className="px-3 py-1.5 rounded-full text-[10.5px] font-bold"
+            style={target === 'one' ? { background: GOLD, color: '#412402' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            Uno solo
+          </button>
+        </div>
+        {target === 'one' && (
+          <div className="relative">
+            <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta…" aria-label="Atleta destinatario" style={inp} />
+            {results.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+                {results.map((st) => (
+                  <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
+                    {st.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Asunto (opcional)" aria-label="Asunto" style={inp} />
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder="Escribí tu mensaje (el atleta lo ve tal cual)…" aria-label="Mensaje" style={{ ...inp, resize: 'vertical' }} />
+        {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
+        {ok && <p className="text-[11px]" style={{ color: GREEN }}>{ok}</p>}
+        <button type="button" disabled={busy || !body.trim() || (target === 'one' && !picked)} onClick={send}
+          className="w-full rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ ...MONO, background: CYAN, color: '#06202F', opacity: busy || !body.trim() || (target === 'one' && !picked) ? 0.5 : 1 }}>
+          {busy ? 'Enviando…' : 'Enviar →'}
+        </button>
+      </div>
+
+      <div className="space-y-1.5">
+        {messages.map((m) => (
+          <div key={m.id} style={card}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-semibold" style={{ color: TXT }}>{m.student_name}</p>
+              <span className="text-[9.5px]" style={{ ...MONO, color: m.read_at ? GREEN : FAINT }}>
+                {m.read_at ? 'leído ✓' : 'sin leer'}
+              </span>
+            </div>
+            <p className="text-[11.5px] mt-0.5 truncate" style={{ color: DIM }}>{m.subject ? `${m.subject} — ` : ''}{m.body}</p>
+          </div>
+        ))}
+        {messages.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin mensajes enviados todavía.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── EQUIPO ───
+
+function EquipoTab() {
+  const [rows, setRows] = useState<HPTeamRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { hpTeam().then((r) => { if (r.ok) setRows(r.rows); setLoaded(true); }).catch(() => setLoaded(true)); }, []);
+  if (!loaded) return <p className="text-[12px]" style={{ color: FAINT }}>Cargando…</p>;
+  return (
+    <div className="space-y-2">
+      {rows.map((r) => (
+        <Link key={r.student_id} href={`/students/${r.student_id}`} className="block" style={card}>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] font-semibold truncate" style={{ color: TXT }}>
+              {r.ranking_position != null && r.ranking_position <= 3 ? ['🥇', '🥈', '🥉'][r.ranking_position - 1] + ' ' : ''}{r.name}
+            </p>
+            <span className="text-[10px] font-bold shrink-0" style={{ color: r.active_today ? GREEN : FAINT }}>
+              {r.active_today ? '✓ activo hoy' : 'sin actividad hoy'}
+            </span>
+          </div>
+          <p className="text-[11px] mt-0.5" style={{ color: DIM }}>
+            {r.program_title} · <b style={{ color: GOLD }}>{r.position}</b> · {r.adherence_pct}%
+            {r.ranking_position != null && <> · rank <b style={{ color: CYAN }}>#{r.ranking_position}</b> ({r.ranking_points} pts)</>}
+          </p>
+          {(r.next_competition || r.evals_count > 0 || r.last_checkin_date) && (
+            <p className="text-[10.5px] mt-0.5" style={{ color: FAINT }}>
+              {r.next_competition ? `🏆 ${r.next_competition} · ` : ''}
+              {r.evals_count > 0 ? `${r.evals_count} eval${r.evals_count === 1 ? '' : 's'} · ` : ''}
+              {r.last_checkin_date ? `último check-in ${r.last_checkin_date}` : 'sin check-ins recientes'}
+              {' · '}ficha completa →
+            </p>
+          )}
+        </Link>
+      ))}
+      {rows.length === 0 && <p className="text-[12px] text-center py-4" style={{ color: FAINT }}>Sin atletas con programa activo.</p>}
+    </div>
+  );
+}

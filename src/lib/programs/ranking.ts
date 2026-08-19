@@ -10,7 +10,8 @@ import { toElSalvadorDate } from '@/lib/utils/tz';
 //   agua:  ≥8→10 · ≥6→7  · ≥4→4  · >0→1
 //   dieta anotada ........................... 15
 //   energía (1-4) × 1.25 (máx 5)
-// Máximo teórico por día: 90. Semana = lunes a domingo (El Salvador).
+//   asistencia a sesión presencial .......... 10   (bonus de HP, máx 1/día)
+// Máximo teórico por día: 100. Semana = lunes a domingo (El Salvador).
 //
 // REGLAS DURAS (salieron de la revisión adversarial, no quitarlas):
 // - Se rankea por ALUMNO, nunca por asignación: un alumno con dos asignaciones
@@ -87,7 +88,7 @@ export async function computeWeekRanking(
   const allIds = Array.from(asgToStudent.keys());
   if (allIds.length === 0) return [];
 
-  const [marks, checkins] = await Promise.all([
+  const [marks, checkins, attendance] = await Promise.all([
     admin.from('program_day_marks')
       .select('assignment_id, done_at')
       .in('assignment_id', allIds)
@@ -98,9 +99,16 @@ export async function computeWeekRanking(
       .select('assignment_id, checkin_date, sleep_hours, water_glasses, energy, nutrition')
       .in('assignment_id', allIds)
       .gte('checkin_date', weekStart).lte('checkin_date', weekEnd),
+    admin.from('hp_session_attendance')
+      .select('student_id, present, hp_team_sessions!inner(session_date)')
+      .in('student_id', studentIds)
+      .eq('present', true)
+      .gte('hp_team_sessions.session_date', weekStart)
+      .lte('hp_team_sessions.session_date', weekEnd),
   ]);
   if (marks.error) throw marks.error;
   if (checkins.error) throw checkins.error;
+  if (attendance.error) throw attendance.error;
 
   const pts = new Map<string, number>();
   const markedDays = new Set<string>(); // `${student_id}|${svDate}` — un +30 por día
@@ -127,6 +135,17 @@ export async function computeWeekRanking(
     if ((c.nutrition ?? '').trim()) p += 15;
     p += Math.min(5, (c.energy ?? 0) * 1.25);
     pts.set(student, (pts.get(student) ?? 0) + p);
+  }
+
+  // Bonus de HP: asistió a la sesión presencial del equipo → +10 (máx 1/día).
+  const attDays = new Set<string>();
+  for (const a of attendance.data ?? []) {
+    const date = (a as any).hp_team_sessions?.session_date;
+    if (!date) continue;
+    const key = `${a.student_id}|${date}`;
+    if (attDays.has(key)) continue;
+    attDays.add(key);
+    pts.set(a.student_id, (pts.get(a.student_id) ?? 0) + 10);
   }
 
   return studentIds

@@ -1575,3 +1575,71 @@ export async function adminGetStudentHP(
     return { ok: false, data: null };
   }
 }
+
+// ─── Plantillas de bloque (las 199 de la app HP) — "insertar bloque" ───
+
+export interface BlockTemplateRow {
+  id: string;
+  title: string;
+  belt: string | null;
+  pillar: string | null;
+  items_count: number;
+}
+
+export async function adminListBlockTemplates(): Promise<{ ok: boolean; error?: string; templates: BlockTemplateRow[] }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, templates: [] };
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('program_block_templates')
+      .select('id, title, belt, pillar, items')
+      .order('pillar').order('title')
+      .limit(300);
+    if (error) throw error;
+    return {
+      ok: true,
+      templates: (data ?? []).map((t: any) => ({
+        id: t.id, title: t.title, belt: t.belt, pillar: t.pillar,
+        items_count: Array.isArray(t.items) ? t.items.length : 0,
+      })),
+    };
+  } catch (e) {
+    console.error('[program-admin] adminListBlockTemplates failed', e);
+    return { ok: false, error: 'No se pudieron cargar las plantillas.', templates: [] };
+  }
+}
+
+export async function adminInsertBlockTemplate(
+  dayId: string,
+  templateId: string
+): Promise<{ ok: boolean; error?: string; inserted?: number }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const admin = createAdminClient();
+    const { data: tpl, error: tErr } = await admin
+      .from('program_block_templates').select('items').eq('id', templateId).maybeSingle();
+    if (tErr) throw tErr;
+    if (!tpl) return { ok: false, error: 'Plantilla no encontrada.' };
+    const items = Array.isArray(tpl.items) ? tpl.items : [];
+    if (items.length === 0) return { ok: false, error: 'La plantilla está vacía.' };
+    const { data: existing, error: eErr } = await admin
+      .from('program_items').select('display_order').eq('day_id', dayId)
+      .order('display_order', { ascending: false }).limit(1);
+    if (eErr) throw eErr;
+    const base = (existing?.[0]?.display_order as number | undefined) ?? 0;
+    const { error } = await admin.from('program_items').insert(
+      items.map((it: any, i: number) => ({
+        day_id: dayId,
+        title: (it.title || 'Item').slice(0, 200),
+        detail: it.detail || null,
+        video_url: it.video_url || null,
+        display_order: base + i + 1,
+      }))
+    );
+    if (error) throw error;
+    return { ok: true, inserted: items.length };
+  } catch (e) {
+    console.error('[program-admin] adminInsertBlockTemplate failed', e);
+    return { ok: false, error: 'No se pudo insertar el bloque.' };
+  }
+}

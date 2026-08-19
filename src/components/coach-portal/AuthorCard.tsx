@@ -11,6 +11,8 @@ import {
   coachSaveItem,
   coachDeleteItem,
   coachListVideoLibrary,
+  coachListBlockTemplates,
+  coachInsertBlockTemplate,
   coachAssignProgram,
   getMyHPAthletes,
   type CoachProgramRow,
@@ -416,8 +418,9 @@ function DayEditor({ token, programId, day, videos, act }: {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <button type="button" onClick={() => setAddingItem(true)} className="text-[10px] font-bold" style={{ color: C.goldStrong }}>+ Ítem</button>
+              <CoachBlockPicker token={token} programId={programId} dayId={day.id} act={act} />
               <button type="button"
                 onClick={() => { if (confirm(`¿Eliminar el día ${day.day_number} con sus ítems?`)) act(() => coachDeleteDay(token, programId, day.id)); }}
                 className="text-[10px]" style={{ color: C.faint }}>Eliminar día</button>
@@ -465,6 +468,60 @@ function AssignPicker({ token, programId, onDone, setErr }: {
       ))}
       {athletes.length === 0 && <p className="text-[11px]" style={{ color: C.faint }}>No tenés atletas a tu cargo todavía.</p>}
       <button type="button" onClick={onDone} className="text-[10px]" style={{ color: C.faint }}>Cerrar</button>
+    </div>
+  );
+}
+
+// ─── Insertar bloque (plantillas HP) en el día del coach E2 ───
+function CoachBlockPicker({ token, programId, dayId, act }: {
+  token: string; programId: string; dayId: string;
+  act: (fn: () => Promise<{ ok: boolean; error?: string }>) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [templates, setTemplates] = useState<{ id: string; title: string; belt: string | null; pillar: string | null; items_count: number }[]>([]);
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open && templates.length === 0) {
+      coachListBlockTemplates(token).then((r) => { if (r.ok) setTemplates(r.templates); }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="text-[10px] font-bold" style={{ color: C.cyan }}>
+        + Insertar bloque
+      </button>
+    );
+  }
+  const needle = q.trim().toLowerCase();
+  const list = templates.filter((t) => !needle || t.title.toLowerCase().includes(needle) || (t.pillar ?? '').toLowerCase().includes(needle));
+  return (
+    <div className="w-full rounded-lg p-2 space-y-1.5" style={{ background: C.goldSoft, border: `1px solid ${C.cardBorder}` }}>
+      <div className="flex items-center gap-2">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar plantilla…" autoFocus
+          aria-label="Buscar plantilla" className={inp} style={inpStyle} />
+        <button type="button" onClick={() => setOpen(false)} className="text-[11px] px-1" style={{ color: C.faint }}>✕</button>
+      </div>
+      <div className="max-h-44 overflow-y-auto space-y-1">
+        {list.slice(0, 25).map((t) => (
+          <button key={t.id} type="button" disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const ok = await act(() => coachInsertBlockTemplate(token, programId, dayId, t.id));
+              setBusy(false);
+              if (ok) setOpen(false);
+            }}
+            className="w-full text-left rounded-lg px-2.5 py-1.5"
+            style={{ background: '#FFFFFF', border: `1px solid ${C.rowBorder}`, opacity: busy ? 0.5 : 1 }}>
+            <span className="text-[11.5px] font-medium" style={{ color: C.navy }}>{t.title}</span>
+            <span className="text-[9.5px] ml-1.5" style={{ color: C.faint }}>{t.pillar ?? ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
+          </button>
+        ))}
+        {list.length === 0 && <p className="text-[10.5px] text-center py-1.5" style={{ color: C.faint }}>{templates.length === 0 ? 'Cargando…' : 'Sin resultados.'}</p>}
+      </div>
     </div>
   );
 }

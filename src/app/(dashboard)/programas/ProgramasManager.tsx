@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import {
+  adminListBlockTemplates, adminInsertBlockTemplate, type BlockTemplateRow,
+} from '@/lib/actions/program-admin';
+import {
   adminListCompetitions, adminCreateCompetition, adminGetCompetition, adminUpdateCompetition,
   adminDeleteCompetition, adminAddHeat, adminDeleteHeat, adminAddWave, adminDeleteWave,
   adminUpdateHeatOutcome, adminGetWeeklyRanking,
@@ -624,10 +627,66 @@ function DayEditor({
           onCancel={() => setAdding(false)}
         />
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-[var(--tss-cyan)] flex items-center gap-1">
-          <Plus size={13} /> Agregar ítem
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-[var(--tss-cyan)] flex items-center gap-1">
+            <Plus size={13} /> Agregar ítem
+          </button>
+          <BlockTemplatePicker dayId={day.id} onInserted={onChanged} setErr={setErr} />
+        </div>
       )}
+    </div>
+  );
+}
+
+// ─── Insertar bloque: las 199 plantillas de la app HP, directo al día ───
+function BlockTemplatePicker({ dayId, onInserted, setErr }: {
+  dayId: string; onInserted: () => void; setErr: (e: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [templates, setTemplates] = useState<BlockTemplateRow[]>([]);
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open && templates.length === 0) {
+      adminListBlockTemplates().then((r) => { if (r.ok) setTemplates(r.templates); else setErr(r.error || null); });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold flex items-center gap-1" style={{ color: '#8E6614' }}>
+        <Plus size={13} /> Insertar bloque (plantillas HP)
+      </button>
+    );
+  }
+  const needle = q.trim().toLowerCase();
+  const list = templates.filter((t) => !needle || t.title.toLowerCase().includes(needle) || (t.pillar ?? '').toLowerCase().includes(needle));
+  return (
+    <div className="w-full rounded-xl p-2.5 space-y-1.5" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
+      <div className="flex items-center gap-2">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar plantilla — bottom turn, remada, mental…" autoFocus
+          className="flex-1 rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white" aria-label="Buscar plantilla" />
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-400 px-1">✕</button>
+      </div>
+      <div className="max-h-52 overflow-y-auto space-y-1">
+        {list.slice(0, 30).map((t) => (
+          <button key={t.id} type="button" disabled={busy}
+            onClick={async () => {
+              setErr(null); setBusy(true);
+              const r = await adminInsertBlockTemplate(dayId, t.id);
+              setBusy(false);
+              if (!r.ok) { setErr(r.error || null); return; }
+              setOpen(false); onInserted();
+            }}
+            className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+            <span className="text-[12px] font-medium text-[var(--tss-navy)]">{t.title}</span>
+            <span className="text-[10px] text-gray-400 ml-2">{t.pillar ?? ''}{t.belt && t.belt !== 'all' ? ` · ${t.belt}` : ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
+          </button>
+        ))}
+        {list.length === 0 && <p className="text-[11px] text-gray-400 text-center py-2">{templates.length === 0 ? 'Cargando…' : 'Sin resultados.'}</p>}
+      </div>
     </div>
   );
 }

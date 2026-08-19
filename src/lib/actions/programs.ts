@@ -496,3 +496,68 @@ export async function getMySeason(
     return { ok: false, data: null };
   }
 }
+
+// ─── Mensajes del coach (buzón simple del cockpit HP) ───
+
+export interface MyMessage {
+  id: string;
+  subject: string | null;
+  body: string;
+  coach_name: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+export async function getMyMessages(
+  portalToken: string
+): Promise<{ ok: boolean; messages: MyMessage[] }> {
+  try {
+    const admin = createAdminClient();
+    const { data: student, error: sErr } = await admin
+      .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: true, messages: [] };
+    const { data, error } = await admin
+      .from('hp_messages')
+      .select('id, subject, body, read_at, created_at, coaches(display_name)')
+      .eq('student_id', student.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) throw error;
+    return {
+      ok: true,
+      messages: (data ?? []).map((m: any) => ({
+        id: m.id,
+        subject: m.subject,
+        body: m.body,
+        coach_name: m.coaches?.display_name ?? null,
+        read: !!m.read_at,
+        created_at: m.created_at,
+      })),
+    };
+  } catch (e) {
+    console.error('[programs] getMyMessages failed', e);
+    return { ok: false, messages: [] };
+  }
+}
+
+export async function markMyMessagesRead(portalToken: string): Promise<{ ok: boolean }> {
+  try {
+    const admin = createAdminClient();
+    const { data: student, error: sErr } = await admin
+      .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: true };
+    // Solo SUS mensajes — el token es la seguridad (invariante #3).
+    const { error } = await admin
+      .from('hp_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('student_id', student.id)
+      .is('read_at', null);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[programs] markMyMessagesRead failed', e);
+    return { ok: false };
+  }
+}
