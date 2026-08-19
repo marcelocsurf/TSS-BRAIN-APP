@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   adminListBlockTemplates, adminInsertBlockTemplate, type BlockTemplateRow,
 } from '@/lib/actions/program-admin';
+import { hpLibrary, type HPLibrary } from '@/lib/actions/hp-cockpit';
 import {
   adminListCompetitions, adminCreateCompetition, adminGetCompetition, adminUpdateCompetition,
   adminDeleteCompetition, adminAddHeat, adminDeleteHeat, adminAddWave, adminDeleteWave,
@@ -617,7 +618,7 @@ function DayEditor({
         ))}
       </div>
 
-      {adding ? (
+      {adding && (
         <ItemRow
           dayId={day.id}
           item={{ id: '', title: '', detail: null, video_url: null, display_order: (day.items.at(-1)?.display_order ?? 0) + 1 }}
@@ -626,30 +627,40 @@ function DayEditor({
           setErr={setErr}
           onCancel={() => setAdding(false)}
         />
-      ) : (
-        <div className="flex items-center gap-3 flex-wrap">
+      )}
+      <div className="flex items-center gap-3 flex-wrap">
+        {!adding && (
           <button type="button" onClick={() => setAdding(true)} className="text-xs font-semibold text-[var(--tss-cyan)] flex items-center gap-1">
             <Plus size={13} /> Agregar ítem
           </button>
-          <BlockTemplatePicker dayId={day.id} onInserted={onChanged} setErr={setErr} />
-        </div>
-      )}
+        )}
+        <LibraryPicker dayId={day.id} nextOrder={(day.items.at(-1)?.display_order ?? 0) + 1} onInserted={onChanged} setErr={setErr} />
+      </div>
     </div>
   );
 }
 
-// ─── Insertar bloque: las 199 plantillas de la app HP, directo al día ───
-function BlockTemplatePicker({ dayId, onInserted, setErr }: {
-  dayId: string; onInserted: () => void; setErr: (e: string | null) => void;
+// ─── Biblioteca en el editor: plantillas HP + drills + misiones, directo al día ───
+// Lo mismo que ofrecía la app HP al armar un programa: elegís de la biblioteca
+// y cae como ítem(s) del día. Drills y misiones se convierten en UN ítem
+// (título + detalle compuesto); las plantillas insertan su bloque completo.
+function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
+  dayId: string; nextOrder: number; onInserted: () => void; setErr: (e: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [cat, setCat] = useState<'plantillas' | 'drills' | 'misiones'>('plantillas');
   const [templates, setTemplates] = useState<BlockTemplateRow[]>([]);
+  const [lib, setLib] = useState<HPLibrary | null>(null);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open && templates.length === 0) {
+    if (!open) return;
+    if (templates.length === 0) {
       adminListBlockTemplates().then((r) => { if (r.ok) setTemplates(r.templates); else setErr(r.error || null); });
+    }
+    if (!lib) {
+      hpLibrary().then((r) => { if (r.ok && r.data) setLib(r.data); else setErr(r.error || null); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -657,36 +668,100 @@ function BlockTemplatePicker({ dayId, onInserted, setErr }: {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold flex items-center gap-1" style={{ color: '#8E6614' }}>
-        <Plus size={13} /> Insertar bloque (plantillas HP)
+        <Plus size={13} /> Insertar de la Biblioteca (plantillas · drills · misiones)
       </button>
     );
   }
+
   const needle = q.trim().toLowerCase();
-  const list = templates.filter((t) => !needle || t.title.toLowerCase().includes(needle) || (t.pillar ?? '').toLowerCase().includes(needle));
+  const hit = (...vals: (string | null | undefined)[]) =>
+    !needle || vals.some((v) => (v ?? '').toLowerCase().includes(needle));
+
+  const insertItem = async (title: string, detail: string | null) => {
+    setErr(null); setBusy(true);
+    const r = await adminSaveItem(dayId, { title, detail, video_url: null, display_order: nextOrder });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setOpen(false); onInserted();
+  };
+
+  const counts = {
+    plantillas: templates.length,
+    drills: lib?.drills.length ?? 0,
+    misiones: lib?.missions.length ?? 0,
+  };
+
   return (
     <div className="w-full rounded-xl p-2.5 space-y-1.5" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
-      <div className="flex items-center gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar plantilla — bottom turn, remada, mental…" autoFocus
-          className="flex-1 rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white" aria-label="Buscar plantilla" />
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-400 px-1">✕</button>
-      </div>
-      <div className="max-h-52 overflow-y-auto space-y-1">
-        {list.slice(0, 30).map((t) => (
-          <button key={t.id} type="button" disabled={busy}
-            onClick={async () => {
-              setErr(null); setBusy(true);
-              const r = await adminInsertBlockTemplate(dayId, t.id);
-              setBusy(false);
-              if (!r.ok) { setErr(r.error || null); return; }
-              setOpen(false); onInserted();
-            }}
-            className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
-            <span className="text-[12px] font-medium text-[var(--tss-navy)]">{t.title}</span>
-            <span className="text-[10px] text-gray-400 ml-2">{t.pillar ?? ''}{t.belt && t.belt !== 'all' ? ` · ${t.belt}` : ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {(['plantillas', 'drills', 'misiones'] as const).map((k) => (
+          <button key={k} type="button" onClick={() => setCat(k)}
+            className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize"
+            style={cat === k ? { background: '#B8862B', color: '#fff' } : { background: '#fff', color: '#8E6614', border: '1px solid #F0C36D' }}>
+            {k} {counts[k] || ''}
           </button>
         ))}
-        {list.length === 0 && <p className="text-[11px] text-gray-400 text-center py-2">{templates.length === 0 ? 'Cargando…' : 'Sin resultados.'}</p>}
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" autoFocus
+          className="flex-1 min-w-[140px] rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white" aria-label="Buscar en la biblioteca" />
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-400 px-1">✕</button>
       </div>
+
+      <div className="max-h-56 overflow-y-auto space-y-1">
+        {cat === 'plantillas' && templates
+          .filter((t) => hit(t.title, t.pillar))
+          .slice(0, 30)
+          .map((t) => (
+            <button key={t.id} type="button" disabled={busy}
+              onClick={async () => {
+                setErr(null); setBusy(true);
+                const r = await adminInsertBlockTemplate(dayId, t.id);
+                setBusy(false);
+                if (!r.ok) { setErr(r.error || null); return; }
+                setOpen(false); onInserted();
+              }}
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              <span className="text-[12px] font-medium text-[var(--tss-navy)]">{t.title}</span>
+              <span className="text-[10px] text-gray-400 ml-2">{t.pillar ?? ''}{t.belt && t.belt !== 'all' ? ` · ${t.belt}` : ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
+            </button>
+          ))}
+
+        {cat === 'drills' && (lib?.drills ?? [])
+          .filter((d) => hit(d.drill_name, d.goal, d.key_cue, d.related_pilar))
+          .slice(0, 30)
+          .map((d) => (
+            <button key={d.id} type="button" disabled={busy}
+              onClick={() => insertItem(
+                d.drill_name,
+                [d.goal, d.key_cue ? `Cue: ${d.key_cue}` : null].filter(Boolean).join(String.fromCharCode(10)) || null
+              )}
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              <span className="text-[12px] font-medium text-[var(--tss-navy)]">{d.drill_name}</span>
+              <span className="text-[10px] text-gray-400 ml-2 uppercase">{d.related_pilar ?? ''}{d.environment ? ` · ${d.environment}` : ''}</span>
+              {d.goal && <span className="block text-[10px] text-gray-400 truncate">{d.goal}</span>}
+            </button>
+          ))}
+
+        {cat === 'misiones' && (lib?.missions ?? [])
+          .filter((m) => hit(m.title, m.success_criteria, m.belt))
+          .slice(0, 30)
+          .map((m) => (
+            <button key={m.id} type="button" disabled={busy}
+              onClick={() => insertItem(
+                m.title,
+                [m.description_md, m.success_criteria ? `Success: ${m.success_criteria}` : null, m.time_estimate ? `Time: ${m.time_estimate}` : null]
+                  .filter(Boolean).join(String.fromCharCode(10, 10)) || null
+              )}
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              <span className="text-[12px] font-medium text-[var(--tss-navy)]">{m.title}</span>
+              <span className="text-[10px] text-gray-400 ml-2 uppercase">{m.type ?? ''}{m.belt ? ` · ${m.belt}` : ''}{m.time_estimate ? ` · ${m.time_estimate}` : ''}</span>
+            </button>
+          ))}
+
+        {((cat === 'plantillas' && templates.length === 0) || (cat !== 'plantillas' && !lib)) && (
+          <p className="text-[11px] text-gray-400 text-center py-2">Cargando…</p>
+        )}
+      </div>
+      <p className="text-[10px] text-gray-400">Plantillas insertan su bloque completo · drills y misiones caen como UN ítem editable.</p>
     </div>
   );
 }
