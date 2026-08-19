@@ -688,3 +688,180 @@ export async function hpCreateEvaluation(input: {
     return { ok: false, error: 'No se pudo guardar la evaluación.' };
   }
 }
+
+// ─── REPORTE del atleta (el "Reporte PDF" de la app HP) ───
+//
+// Todo el seguimiento del atleta en una página imprimible: score por pilar
+// (promedio de evaluaciones), programa y adherencia, hábitos de la semana,
+// ranking, competencias y temporada. La página /hp/reporte/[id] lo dibuja
+// listo para Imprimir → Guardar como PDF.
+
+export interface HPAthleteReport {
+  generated_at: string;
+  student: { id: string; name: string; belt: string | null };
+  program: { title: string; position: string; days_done: number; days_total: number; adherence_pct: number; start_date: string | null } | null;
+  pillars: { pillar: string; avg: number; count: number }[];
+  global_score: number | null;
+  habits: { checkins_last7: number; avg_sleep: number | null; avg_water: number | null; avg_energy: number | null; nutrition_days: number };
+  ranking: { position: number; points: number; total: number } | null;
+  competitions: { total: number; next: string | null; last: string | null };
+  season: { title: string; phase_now: string | null; days_to_peak: number | null } | null;
+  attendance_30d: number;
+  last_comment: string | null;
+}
+
+export async function hpAthleteReport(
+  studentId: string
+): Promise<{ ok: boolean; error?: string; report: HPAthleteReport | null }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, report: null };
+    const admin = createAdminClient();
+    const today = elSalvadorToday();
+
+    const { data: student, error: sErr } = await admin
+      .from('students').select('id, first_name, last_name, belt_level').eq('id', studentId).maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: false, error: 'Atleta no encontrado.', report: null };
+
+    // Programa activo + posición + adherencia
+    const { data: asg, error: aErr } = await admin
+      .from('program_assignments')
+      .select('id, start_date, program_id, programs!inner(title, active)')
+      .eq('student_id', studentId).eq('status', 'active')
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (aErr) throw aErr;
+    let program: HPAthleteReport['program'] = null;
+    if (asg) {
+      const [days, marks] = await Promise.all([
+        admin.from('program_days').select('id, week_number, day_number').eq('program_id', asg.program_id).order('week_number').order('day_number'),
+        admin.from('program_day_marks').select('day_id').eq('assignment_id', asg.id),
+      ]);
+      if (days.error) throw days.error;
+      if (marks.error) throw marks.error;
+      const done = new Set((marks.data ?? []).map((m: any) => m.day_id));
+      const current = (days.data ?? []).find((d: any) => !done.has(d.id)) ?? null;
+      const total = (days.data ?? []).length;
+      program = {
+        title: (asg as any).programs?.title ?? '—',
+        position: current ? `M${current.week_number}·D${current.day_number}` : 'Completado ✓',
+        days_done: done.size,
+        days_total: total,
+        adherence_pct: total > 0 ? Math.round((done.size / total) * 100) : 0,
+        start_date: asg.start_date,
+      };
+    }
+
+    // Score por pilar (promedio de TODAS las evaluaciones, escala 1-10)
+    const { data: evals, error: eErr } = await admin
+      .from('program_evaluations').select('pillar, score').eq('student_id', studentId);
+    if (eErr) throw eErr;
+    const byPillar = new Map<string, number[]>();
+    for (const e of evals ?? []) {
+      if (e.score == null) continue;
+      const arr = byPillar.get(e.pillar) ?? [];
+      arr.push(Number(e.score));
+      byPillar.set(e.pillar, arr);
+    }
+    const pillars = ['fisico', 'tecnico', 'tactico', 'mental']
+      .filter((p) => byPillar.has(p))
+      .map((p) => {
+        const arr = byPillar.get(p)!;
+        return { pillar: p, avg: Math.round((arr.reduce((s, x) => s + x, 0) / arr.length) * 10) / 10, count: arr.length };
+      });
+    const global_score = pillars.length
+      ? Math.round((pillars.reduce((s, p) => s + p.avg, 0) / pillars.length) * 10) / 10
+      : null;
+
+    // Hábitos de los últimos 7 días (check-ins de cualquier asignación)
+    const { data: allAsg, error: allErr } = await admin
+      .from('program_assignments').select('id').eq('student_id', studentId);
+    if (allErr) throw allErr;
+    const asgIds = (allAsg ?? []).map((a: any) => a.id);
+    let habits: HPAthleteReport['habits'] = { checkins_last7: 0, avg_sleep: null, avg_water: null, avg_energy: null, nutrition_days: 0 };
+    let last_comment: string | null = null;
+    if (asgIds.length > 0) {
+      const { data: cks, error: ckErr } = await admin
+        .from('program_checkins')
+        .select('checkin_date, sleep_hours, water_glasses, energy, nutrition, comment')
+        .in('assignment_id', asgIds)
+        .gte('checkin_date', elSalvadorDatePlus(-6))
+        .order('checkin_date', { ascending: false });
+      if (ckErr) throw ckErr;
+      const rows = cks ?? [];
+      const avg = (vals: number[]) => (vals.length ? Math.round((vals.reduce((s, x) => s + x, 0) / vals.length) * 10) / 10 : null);
+      habits = {
+        checkins_last7: rows.length,
+        avg_sleep: avg(rows.map((r: any) => Number(r.sleep_hours)).filter((x: number) => Number.isFinite(x) && x > 0)),
+        avg_water: avg(rows.map((r: any) => r.water_glasses).filter((x: any) => x != null)),
+        avg_energy: avg(rows.map((r: any) => r.energy).filter((x: any) => x != null)),
+        nutrition_days: rows.filter((r: any) => (r.nutrition ?? '').trim()).length,
+      };
+      last_comment = rows.find((r: any) => (r.comment ?? '').trim())?.comment ?? null;
+    }
+
+    // Ranking, competencias, temporada, asistencia
+    const { monday, sunday } = svWeekBounds(today);
+    const [rankingRows, comps, nextComp, lastComp, season, att] = await Promise.all([
+      computeWeekRanking(admin, monday, sunday),
+      admin.from('athlete_competitions').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
+      admin.from('athlete_competitions').select('name, comp_date').eq('student_id', studentId)
+        .neq('status', 'finished').or(`status.eq.live,comp_date.gte.${today}`).order('comp_date').limit(1).maybeSingle(),
+      admin.from('athlete_competitions').select('name, final_place').eq('student_id', studentId)
+        .eq('status', 'finished').order('comp_date', { ascending: false }).limit(1).maybeSingle(),
+      admin.from('season_plans').select('id, title, season_phases(name, start_date, end_date), season_events(name, event_date, is_peak)')
+        .eq('student_id', studentId).eq('active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      admin.from('hp_session_attendance')
+        .select('id, hp_team_sessions!inner(session_date)', { count: 'exact', head: true })
+        .eq('student_id', studentId).eq('present', true)
+        .gte('hp_team_sessions.session_date', elSalvadorDatePlus(-30)),
+    ]);
+    if (comps.error) throw comps.error;
+    if (nextComp.error) throw nextComp.error;
+    if (lastComp.error) throw lastComp.error;
+    if (season.error) throw season.error;
+    if (att.error) throw att.error;
+
+    const mine = rankingRows.find((r) => r.student_id === studentId) ?? null;
+    let seasonOut: HPAthleteReport['season'] = null;
+    if (season.data) {
+      const phases: any[] = (season.data as any).season_phases ?? [];
+      const now = phases.find((f) => f.start_date <= today && f.end_date >= today) ?? null;
+      const peak = ((season.data as any).season_events ?? []).find((e: any) => e.is_peak) ?? null;
+      seasonOut = {
+        title: season.data.title,
+        phase_now: now?.name ?? null,
+        days_to_peak: peak && peak.event_date >= today
+          ? Math.round((Date.parse(peak.event_date) - Date.parse(today)) / 86400000)
+          : null,
+      };
+    }
+
+    return {
+      ok: true,
+      report: {
+        generated_at: today,
+        student: {
+          id: student.id,
+          name: `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim(),
+          belt: (student as any).belt_level ?? null,
+        },
+        program,
+        pillars,
+        global_score,
+        habits,
+        ranking: mine ? { position: mine.position, points: mine.points, total: rankingRows.length } : null,
+        competitions: {
+          total: comps.count ?? 0,
+          next: nextComp.data ? `${nextComp.data.name} · ${nextComp.data.comp_date}` : null,
+          last: lastComp.data ? `${lastComp.data.name}${lastComp.data.final_place ? ` — ${lastComp.data.final_place}` : ''}` : null,
+        },
+        season: seasonOut,
+        attendance_30d: att.count ?? 0,
+        last_comment,
+      },
+    };
+  } catch (e) {
+    console.error('[hp-cockpit] hpAthleteReport failed', e);
+    return { ok: false, error: 'No se pudo generar el reporte.', report: null };
+  }
+}

@@ -785,7 +785,14 @@ function EquipoTab() {
   return (
     <div className="space-y-2">
       {rows.map((r) => (
-        <Link key={r.student_id} href={`/students/${r.student_id}`} className="block" style={card}>
+        <div key={r.student_id} style={card}>
+          <div className="flex items-center justify-end gap-2 mb-1 -mt-1">
+            <Link href={`/hp/reporte/${r.student_id}`} className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ border: `1px solid ${CYAN}`, color: CYAN }}>
+              📄 Reporte
+            </Link>
+          </div>
+        <Link href={`/students/${r.student_id}`} className="block">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[13px] font-semibold truncate" style={{ color: TXT }}>
               {r.ranking_position != null && r.ranking_position <= 3 ? ['🥇', '🥈', '🥉'][r.ranking_position - 1] + ' ' : ''}{r.name}
@@ -807,6 +814,7 @@ function EquipoTab() {
             </p>
           )}
         </Link>
+        </div>
       ))}
       {rows.length === 0 && <p className="text-[12px] text-center py-4" style={{ color: FAINT }}>Sin atletas con programa activo.</p>}
     </div>

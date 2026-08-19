@@ -27,9 +27,14 @@ export function StudentHPPanel({ studentId }: { studentId: string }) {
       className="rounded-2xl bg-white p-4 space-y-3"
       style={{ border: '1px solid #F0C36D', borderLeft: '4px solid #B8862B' }}
     >
-      <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#8E6614' }}>
-        Alto Rendimiento · Programa
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#8E6614' }}>
+          Alto Rendimiento · Programa
+        </p>
+        <a href={`/hp/reporte/${studentId}`} className="text-[10px] font-bold" style={{ color: '#0090B8' }}>
+          📄 Reporte del atleta →
+        </a>
+      </div>
 
       {data.season && (
         <div className="rounded-xl p-3" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
