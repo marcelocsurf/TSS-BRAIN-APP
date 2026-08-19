@@ -10,7 +10,8 @@ import {
   type CoachAppointment,
   type AthleteEvaluation,
 } from '@/lib/actions/program-coach';
-import { CalendarClock, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarClock, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
+import { coachGetWeeklyRanking } from '@/lib/actions/competitions';
 
 // ─── Alto Rendimiento · Escalón 1 — la tarjeta de seguimiento del coach ───
 //
@@ -44,6 +45,14 @@ export function HPFollowCard({ token }: { token: string }) {
   const [citas, setCitas] = useState<CoachAppointment[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [openCita, setOpenCita] = useState<string | null>(null);
+  const [ranking, setRanking] = useState<{ student_id: string; name: string; points: number; position: number }[]>([]);
+  const [showAllRank, setShowAllRank] = useState(false);
+
+  useEffect(() => {
+    coachGetWeeklyRanking(token)
+      .then((r) => { if (r.ok) setRanking(r.rows); })
+      .catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     getMyHPAthletes(token)
@@ -101,6 +110,35 @@ export function HPFollowCard({ token }: { token: string }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {ranking.length > 0 && (
+        <div className="mt-3 rounded-xl p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
+          <button type="button" onClick={() => setShowAllRank(!showAllRank)} className="w-full flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: C.faint }}>
+              <Trophy size={11} /> Ranking semanal · grupo HP
+            </p>
+            {showAllRank ? <ChevronUp size={13} style={{ color: C.faint }} /> : <ChevronDown size={13} style={{ color: C.faint }} />}
+          </button>
+          <div className="mt-1.5 space-y-0.5">
+            {(showAllRank ? ranking : ranking.slice(0, 5)).map((r) => {
+              const isMine = (athletes ?? []).some((a) => a.student_id === r.student_id);
+              return (
+                <div key={r.student_id} className="flex items-center justify-between">
+                  <p className="text-[11.5px]" style={{ color: isMine ? C.goldStrong : C.dim, fontWeight: isMine || r.position <= 3 ? 700 : 400 }}>
+                    {r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : r.position === 3 ? '🥉' : `${r.position}.`} {r.name}{isMine ? ' · tuyo' : ''}
+                  </p>
+                  <p className="text-[11px]" style={{ ...MONO, color: C.faint }}>{r.points}</p>
+                </div>
+              );
+            })}
+          </div>
+          {!showAllRank && ranking.length > 5 && (
+            <button type="button" onClick={() => setShowAllRank(true)} className="text-[10px] font-bold mt-1.5" style={{ color: C.cyan }}>
+              Ver los {ranking.length} →
+            </button>
+          )}
         </div>
       )}
 

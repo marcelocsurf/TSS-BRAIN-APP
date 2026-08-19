@@ -574,3 +574,539 @@ export async function coachCreateAppointmentHP(
     return { ok: false, error: 'No se pudo agendar la cita.' };
   }
 }
+
+// ─── Escalón 2: el coach AUTOR — crea y edita programas para SU equipo ───
+//
+// El mismo editor del admin, recortado: el coach solo ve/toca programas donde
+// programs.author_coach_id = él, y solo puede asignarlos a atletas que YA
+// están a su cargo (asignación activa con coach_id = él). El catálogo global
+// (author_coach_id NULL) sigue siendo territorio exclusivo de Marcelo (E3).
+// Los guardarraíles calcan los del editor admin: microciclo dentro del rango,
+// backfill anti-rebobinado al insertar días, y bloqueo del último día con
+// alumnos activos.
+
+async function resolveE2Coach(admin: ReturnType<typeof createAdminClient>, portalToken: string) {
+  const { data: coach, error } = await admin
+    .from('coaches')
+    .select('id, hp_escalon, course_access_granted')
+    .eq('portal_token', portalToken)
+    .maybeSingle();
+  if (error) throw error;
+  if (!coach || !coach.course_access_granted || (coach.hp_escalon ?? 0) < 2) return null;
+  return coach;
+}
+
+// El programa debe ser DEL coach — admin client bypassa RLS, esta validación
+// es la seguridad de todo el editor E2.
+async function assertMyProgram(
+  admin: ReturnType<typeof createAdminClient>,
+  coachId: string,
+  programId: string
+): Promise<{ id: string; weeks: number } | null> {
+  const { data, error } = await admin
+    .from('programs')
+    .select('id, weeks, author_coach_id')
+    .eq('id', programId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || data.author_coach_id !== coachId) return null;
+  return { id: data.id, weeks: data.weeks };
+}
+
+export interface CoachProgramRow {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  weeks: number;
+  active: boolean;
+  days_count: number;
+  active_assignments: number;
+}
+
+export async function coachListMyPrograms(
+  portalToken: string
+): Promise<{ ok: boolean; error?: string; data: { escalon: number; programs: CoachProgramRow[] } | null }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: true, data: null };
+    const { data: programs, error } = await admin
+      .from('programs')
+      .select('id, title, subtitle, weeks, active, program_days(id), program_assignments(id, status)')
+      .eq('author_coach_id', coach.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return {
+      ok: true,
+      data: {
+        escalon: coach.hp_escalon,
+        programs: (programs ?? []).map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          subtitle: p.subtitle,
+          weeks: p.weeks,
+          active: p.active,
+          days_count: (p.program_days ?? []).length,
+          active_assignments: (p.program_assignments ?? []).filter((a: any) => a.status === 'active').length,
+        })),
+      },
+    };
+  } catch (e) {
+    console.error('[program-coach] coachListMyPrograms failed', e);
+    return { ok: false, error: 'No se pudieron cargar tus programas.', data: null };
+  }
+}
+
+export async function coachCreateProgram(
+  portalToken: string,
+  title: string
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Necesitás el Escalón 2 para crear programas.' };
+    const t = title.trim();
+    if (!t) return { ok: false, error: 'El programa necesita un nombre (inglés — lo ve el atleta).' };
+    const { data, error } = await admin
+      .from('programs')
+      .insert({ title: t, kind: 'custom', weeks: 4, author_coach_id: coach.id })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return { ok: true, id: data.id };
+  } catch (e) {
+    console.error('[program-coach] coachCreateProgram failed', e);
+    return { ok: false, error: 'No se pudo crear el programa.' };
+  }
+}
+
+export interface CoachProgramDetail {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  weeks: number;
+  active: boolean;
+  checkin_water: boolean;
+  checkin_sleep: boolean;
+  checkin_energy: boolean;
+  checkin_comment: boolean;
+  checkin_nutrition: boolean;
+  week_labels: Record<string, string>;
+  active_assignments: number;
+  days: {
+    id: string;
+    week_number: number;
+    day_number: number;
+    title: string;
+    focus: string | null;
+    items: { id: string; title: string; detail: string | null; video_url: string | null; display_order: number }[];
+  }[];
+}
+
+export async function coachGetProgram(
+  portalToken: string,
+  programId: string
+): Promise<{ ok: boolean; error?: string; program: CoachProgramDetail | null }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: true, program: null };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.', program: null };
+
+    const { data: p, error } = await admin
+      .from('programs')
+      .select('id, title, subtitle, weeks, active, checkin_water, checkin_sleep, checkin_energy, checkin_comment, checkin_nutrition, week_labels')
+      .eq('id', programId)
+      .single();
+    if (error) throw error;
+    const { data: days, error: dErr } = await admin
+      .from('program_days')
+      .select('id, week_number, day_number, title, focus, program_items(id, title, detail, video_url, display_order)')
+      .eq('program_id', programId)
+      .order('week_number')
+      .order('day_number');
+    if (dErr) throw dErr;
+    const { count, error: cErr } = await admin
+      .from('program_assignments')
+      .select('id', { count: 'exact', head: true })
+      .eq('program_id', programId)
+      .eq('status', 'active');
+    if (cErr) throw cErr;
+
+    return {
+      ok: true,
+      program: {
+        ...(p as any),
+        checkin_nutrition: (p as any).checkin_nutrition ?? false,
+        week_labels: (p as any).week_labels ?? {},
+        active_assignments: count ?? 0,
+        days: (days ?? []).map((d: any) => ({
+          id: d.id,
+          week_number: d.week_number,
+          day_number: d.day_number,
+          title: d.title,
+          focus: d.focus,
+          items: (d.program_items ?? []).sort((a: any, b: any) => a.display_order - b.display_order),
+        })),
+      },
+    };
+  } catch (e) {
+    console.error('[program-coach] coachGetProgram failed', e);
+    return { ok: false, error: 'No se pudo cargar el programa.', program: null };
+  }
+}
+
+export async function coachUpdateProgramMeta(
+  portalToken: string,
+  programId: string,
+  patch: {
+    title?: string; subtitle?: string | null; weeks?: number;
+    checkin_water?: boolean; checkin_sleep?: boolean; checkin_energy?: boolean;
+    checkin_comment?: boolean; checkin_nutrition?: boolean;
+    week_labels?: Record<string, string>;
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+    if (patch.title !== undefined && !patch.title.trim()) return { ok: false, error: 'El programa necesita un nombre.' };
+    if (patch.weeks !== undefined) {
+      if (patch.weeks < 1 || patch.weeks > 24) return { ok: false, error: 'Los microciclos van de 1 a 24.' };
+      // Reducir microciclos con días ya cargados los dejaría huérfanos:
+      // invisibles en el editor pero 100% vivos para el atleta.
+      const { data: maxDay, error: mErr } = await admin
+        .from('program_days')
+        .select('week_number')
+        .eq('program_id', programId)
+        .order('week_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (mErr) throw mErr;
+      if (maxDay && patch.weeks < maxDay.week_number) {
+        return { ok: false, error: `Hay días cargados hasta el microciclo ${maxDay.week_number} — borralos antes de reducir.` };
+      }
+    }
+    // WHITELIST campo por campo: `{ ...patch }` directo al UPDATE dejaría a un
+    // coach E2 inyectar columnas fuera del contrato (author_coach_id, active,
+    // for_sale, kind…) con un POST crafteado — los tipos TS no validan runtime.
+    const row: Record<string, unknown> = {};
+    if (patch.title !== undefined) row.title = patch.title.trim();
+    if (patch.subtitle !== undefined) row.subtitle = patch.subtitle?.trim() || null;
+    if (patch.weeks !== undefined) row.weeks = patch.weeks;
+    if (patch.checkin_water !== undefined) row.checkin_water = !!patch.checkin_water;
+    if (patch.checkin_sleep !== undefined) row.checkin_sleep = !!patch.checkin_sleep;
+    if (patch.checkin_energy !== undefined) row.checkin_energy = !!patch.checkin_energy;
+    if (patch.checkin_comment !== undefined) row.checkin_comment = !!patch.checkin_comment;
+    if (patch.checkin_nutrition !== undefined) row.checkin_nutrition = !!patch.checkin_nutrition;
+    if (patch.week_labels !== undefined) row.week_labels = patch.week_labels;
+    if (Object.keys(row).length === 0) return { ok: true };
+    const { error } = await admin.from('programs').update(row).eq('id', programId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-coach] coachUpdateProgramMeta failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+export async function coachSaveDay(
+  portalToken: string,
+  programId: string,
+  day: { id?: string; week_number: number; day_number: number; title: string; focus?: string | null }
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+    if (!day.title.trim()) return { ok: false, error: 'El día necesita un título.' };
+    if (day.week_number < 1 || day.day_number < 1) return { ok: false, error: 'Microciclo y día deben ser 1 o más.' };
+    if (day.week_number > mine.weeks) {
+      return { ok: false, error: `El programa tiene ${mine.weeks} microciclo${mine.weeks === 1 ? '' : 's'}.` };
+    }
+
+    if (day.id) {
+      const { error } = await admin
+        .from('program_days')
+        .update({ week_number: day.week_number, day_number: day.day_number, title: day.title.trim(), focus: day.focus?.trim() || null })
+        .eq('id', day.id)
+        .eq('program_id', programId);
+      if (error) {
+        if ((error as any).code === '23505') return { ok: false, error: `Ya existe el día ${day.day_number} en el microciclo ${day.week_number}.` };
+        throw error;
+      }
+      return { ok: true, id: day.id };
+    }
+    const { data, error } = await admin
+      .from('program_days')
+      .insert({ program_id: programId, week_number: day.week_number, day_number: day.day_number, title: day.title.trim(), focus: day.focus?.trim() || null })
+      .select('id')
+      .single();
+    if (error) {
+      if ((error as any).code === '23505') return { ok: false, error: `Ya existe el día ${day.day_number} en el microciclo ${day.week_number}.` };
+      throw error;
+    }
+
+    // BACKFILL anti-rebobinado — misma regla que el editor admin: insertar un
+    // día ANTES de la posición de un atleta activo lo mandaría de vuelta.
+    const { data: activeAsg, error: aErr } = await admin
+      .from('program_assignments')
+      .select('id, start_date')
+      .eq('program_id', programId)
+      .eq('status', 'active');
+    if (aErr) throw aErr;
+    const activeRows = (activeAsg ?? []) as { id: string; start_date: string | null }[];
+    if (activeRows.length > 0) {
+      const { data: allDays, error: adErr } = await admin
+        .from('program_days')
+        .select('id, week_number, day_number')
+        .eq('program_id', programId);
+      if (adErr) throw adErr;
+      const laterIds = (allDays ?? [])
+        .filter((d: any) =>
+          d.week_number > day.week_number ||
+          (d.week_number === day.week_number && d.day_number > day.day_number)
+        )
+        .map((d: any) => d.id);
+      if (laterIds.length > 0) {
+        const { data: passed, error: pmErr } = await admin
+          .from('program_day_marks')
+          .select('assignment_id')
+          .in('assignment_id', activeRows.map((a) => a.id))
+          .in('day_id', laterIds);
+        if (pmErr) throw pmErr;
+        const passedIds = Array.from(new Set((passed ?? []).map((m: any) => m.assignment_id)));
+        if (passedIds.length > 0) {
+          // done_at HISTÓRICO (inicio de la asignación): con el default now()
+          // cada backfill regalaba +30 en el ranking semanal de esta semana.
+          const startOf = new Map(activeRows.map((a) => [a.id, a.start_date]));
+          const { error: bfErr } = await admin.from('program_day_marks').upsert(
+            passedIds.map((assignmentId) => ({
+              assignment_id: assignmentId,
+              day_id: data.id,
+              done_at: `${startOf.get(assignmentId) || '2020-01-01'}T12:00:00Z`,
+            })),
+            { onConflict: 'assignment_id,day_id', ignoreDuplicates: true }
+          );
+          if (bfErr) throw bfErr;
+        }
+      }
+    }
+    return { ok: true, id: data.id };
+  } catch (e) {
+    console.error('[program-coach] coachSaveDay failed', e);
+    return { ok: false, error: 'No se pudo guardar el día.' };
+  }
+}
+
+export async function coachDeleteDay(
+  portalToken: string,
+  programId: string,
+  dayId: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+    const { data: day, error: dErr } = await admin
+      .from('program_days')
+      .select('id, program_id')
+      .eq('id', dayId)
+      .eq('program_id', programId)
+      .maybeSingle();
+    if (dErr) throw dErr;
+    if (!day) return { ok: true };
+    // Guardarraíl del editor admin: no dejar un "Completed ✓" falso.
+    const { count: daysLeft, error: cErr } = await admin
+      .from('program_days')
+      .select('id', { count: 'exact', head: true })
+      .eq('program_id', programId);
+    if (cErr) throw cErr;
+    if ((daysLeft ?? 0) <= 1) {
+      const { count: actives, error: aErr } = await admin
+        .from('program_assignments')
+        .select('id', { count: 'exact', head: true })
+        .eq('program_id', programId)
+        .eq('status', 'active');
+      if (aErr) throw aErr;
+      if ((actives ?? 0) > 0) {
+        return { ok: false, error: `Es el último día y hay ${actives} atleta${actives === 1 ? '' : 's'} activo${actives === 1 ? '' : 's'} en el programa.` };
+      }
+    }
+    const { error } = await admin.from('program_days').delete().eq('id', dayId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-coach] coachDeleteDay failed', e);
+    return { ok: false, error: 'No se pudo eliminar el día.' };
+  }
+}
+
+export async function coachSaveItem(
+  portalToken: string,
+  programId: string,
+  dayId: string,
+  item: { id?: string; title: string; detail?: string | null; video_url?: string | null; display_order: number }
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+    if (!item.title.trim()) return { ok: false, error: 'El ítem necesita un título.' };
+    // El día debe pertenecer al programa del coach (un dayId ajeno colaría
+    // contenido en el programa de otro).
+    const { data: day, error: dErr } = await admin
+      .from('program_days').select('id').eq('id', dayId).eq('program_id', programId).maybeSingle();
+    if (dErr) throw dErr;
+    if (!day) return { ok: false, error: 'Ese día no es de tu programa.' };
+    const row = {
+      title: item.title.trim(),
+      detail: item.detail?.trim() || null,
+      video_url: item.video_url?.trim() || null,
+      display_order: item.display_order,
+    };
+    if (item.id) {
+      const { error } = await admin.from('program_items').update(row).eq('id', item.id).eq('day_id', dayId);
+      if (error) throw error;
+      return { ok: true, id: item.id };
+    }
+    const { data, error } = await admin
+      .from('program_items')
+      .insert({ ...row, day_id: dayId })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return { ok: true, id: data.id };
+  } catch (e) {
+    console.error('[program-coach] coachSaveItem failed', e);
+    return { ok: false, error: 'No se pudo guardar el ítem.' };
+  }
+}
+
+export async function coachDeleteItem(
+  portalToken: string,
+  programId: string,
+  itemId: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+    // Solo ítems de días de SU programa.
+    const { data: item, error: iErr } = await admin
+      .from('program_items')
+      .select('id, program_days!inner(program_id)')
+      .eq('id', itemId)
+      .maybeSingle();
+    if (iErr) throw iErr;
+    const pd: any = item ? (Array.isArray((item as any).program_days) ? (item as any).program_days[0] : (item as any).program_days) : null;
+    if (!item || pd?.program_id !== programId) return { ok: true };
+    const { error } = await admin.from('program_items').delete().eq('id', itemId);
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-coach] coachDeleteItem failed', e);
+    return { ok: false, error: 'No se pudo eliminar el ítem.' };
+  }
+}
+
+export async function coachListVideoLibrary(
+  portalToken: string
+): Promise<{ ok: boolean; videos: { id: string; title: string; pillar: string | null; video_url: string }[] }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: true, videos: [] };
+    const { data, error } = await admin
+      .from('program_video_library')
+      .select('id, title, pillar, video_url')
+      .eq('archived', false)
+      .order('pillar')
+      .order('title');
+    if (error) throw error;
+    return { ok: true, videos: data ?? [] };
+  } catch (e) {
+    console.error('[program-coach] coachListVideoLibrary failed', e);
+    return { ok: false, videos: [] };
+  }
+}
+
+// Asignar SU programa a SU atleta: reemplaza la asignación activa del atleta
+// (una sola activa por alumno — misma regla que el admin) manteniéndolo a su
+// cargo. Solo atletas que YA sigue (E1): el primer programa siempre lo asigna
+// Marcelo; después el coach puede rotarles SUS programas.
+export async function coachAssignProgram(
+  portalToken: string,
+  programId: string,
+  studentId: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const coach = await resolveE2Coach(admin, portalToken);
+    if (!coach) return { ok: false, error: 'Sin acceso.' };
+    const mine = await assertMyProgram(admin, coach.id, programId);
+    if (!mine) return { ok: false, error: 'Ese programa no es tuyo.' };
+
+    const { data: prog, error: pErr } = await admin
+      .from('programs').select('id, active').eq('id', programId).single();
+    if (pErr) throw pErr;
+    if (!prog.active) return { ok: false, error: 'El programa está inactivo — activalo primero (pedíselo a Marcelo).' };
+    const { count: daysCount, error: dcErr } = await admin
+      .from('program_days').select('id', { count: 'exact', head: true }).eq('program_id', programId);
+    if (dcErr) throw dcErr;
+    if ((daysCount ?? 0) === 0) return { ok: false, error: 'El programa no tiene días cargados todavía.' };
+
+    // El atleta debe estar a SU cargo. OJO: puede haber MÁS de una asignación
+    // activa por datos sucios (pasó en producción) — se listan todas, se exige
+    // que la más reciente sea suya, y la rotación las cancela TODAS (sanea).
+    const { data: actives, error: curErr } = await admin
+      .from('program_assignments')
+      .select('id, coach_id, program_id, created_at')
+      .eq('student_id', studentId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    if (curErr) throw curErr;
+    if (!actives || actives.length === 0 || actives[0].coach_id !== coach.id) {
+      return { ok: false, error: 'Ese atleta no está a tu cargo.' };
+    }
+    if (actives.some((a: any) => a.program_id === programId)) {
+      return { ok: false, error: 'El atleta ya está en ese programa.' };
+    }
+
+    // Rotación: cancelar TODAS las vigentes y crear la nueva (mismo coach).
+    const prevIds = actives.map((a: any) => a.id);
+    const { error: offErr } = await admin
+      .from('program_assignments')
+      .update({ status: 'cancelled' })
+      .in('id', prevIds);
+    if (offErr) throw offErr;
+    const { error: insErr } = await admin.from('program_assignments').insert({
+      program_id: programId,
+      student_id: studentId,
+      coach_id: coach.id,
+      status: 'active',
+      start_date: elSalvadorToday(),
+    });
+    if (insErr) {
+      // Restaurar si la nueva no pudo crearse — el atleta nunca queda sin
+      // programa por una rotación fallida.
+      await admin.from('program_assignments').update({ status: 'active' }).in('id', prevIds);
+      throw insErr;
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[program-coach] coachAssignProgram failed', e);
+    return { ok: false, error: 'No se pudo asignar el programa.' };
+  }
+}

@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { elSalvadorToday, elSalvadorDatePlus, toElSalvadorDate } from '@/lib/utils/tz';
+import { computeWeekRanking, svWeekBounds } from '@/lib/programs/ranking';
 
 // ─── Administración de programas de entreno (Paso 3: el editor) ───
 //
@@ -401,7 +402,7 @@ export async function adminSaveDay(
     // quienes todavía no llegaron.
     const { data: activeAsg, error: aErr } = await admin
       .from('program_assignments')
-      .select('id')
+      .select('id, start_date')
       .eq('program_id', programId)
       .eq('status', 'active');
     if (aErr) throw aErr;
@@ -427,8 +428,15 @@ export async function adminSaveDay(
         if (pmErr) throw pmErr;
         const passedIds = Array.from(new Set((passed ?? []).map((m: any) => m.assignment_id)));
         if (passedIds.length > 0) {
+          // done_at HISTÓRICO (inicio de la asignación): con el default now()
+          // cada backfill regalaba +30 en el ranking semanal de esta semana.
+          const startOf = new Map((activeAsg ?? []).map((a: any) => [a.id, a.start_date]));
           const { error: bfErr } = await admin.from('program_day_marks').upsert(
-            passedIds.map((assignmentId) => ({ assignment_id: assignmentId, day_id: data.id })),
+            passedIds.map((assignmentId) => ({
+              assignment_id: assignmentId,
+              day_id: data.id,
+              done_at: `${startOf.get(assignmentId) || '2020-01-01'}T12:00:00Z`,
+            })),
             { onConflict: 'assignment_id,day_id', ignoreDuplicates: true }
           );
           if (bfErr) throw bfErr;
@@ -1383,6 +1391,12 @@ export async function adminSetSeasonSpecialist(
 // ─── El bloque PROGRAMA de la ficha del alumno (sección 13 de la maqueta) ───
 
 export interface StudentHPData {
+  competitions: {
+    next: { name: string; comp_date: string; location: string | null } | null;
+    last: { name: string; comp_date: string; final_place: string | null } | null;
+    total: number;
+  };
+  ranking_position: { position: number; points: number; total: number } | null;
   assignment: {
     program_title: string;
     coach_name: string | null;
@@ -1507,12 +1521,46 @@ export async function adminGetStudentHP(
       .order('eval_date', { ascending: false }).limit(5);
     if (evErr) throw evErr;
 
-    if (!assignment && past_programs.length === 0 && !season && (evals ?? []).length === 0) {
+    // Competencias del atleta (Ola 2) — la ficha reúne TODO su seguimiento.
+    const todaySV = elSalvadorToday();
+    const [nextComp, lastComp, compCount] = await Promise.all([
+      admin.from('athlete_competitions').select('name, comp_date, location')
+        .eq('student_id', studentId).neq('status', 'finished').gte('comp_date', todaySV)
+        .order('comp_date').limit(1).maybeSingle(),
+      admin.from('athlete_competitions').select('name, comp_date, final_place')
+        .eq('student_id', studentId).eq('status', 'finished')
+        .order('comp_date', { ascending: false }).limit(1).maybeSingle(),
+      admin.from('athlete_competitions').select('id', { count: 'exact', head: true })
+        .eq('student_id', studentId),
+    ]);
+    if (nextComp.error) throw nextComp.error;
+    if (lastComp.error) throw lastComp.error;
+    if (compCount.error) throw compCount.error;
+
+    // Posición en el ranking semanal vivo (solo si es atleta HP activo).
+    let ranking_position: StudentHPData['ranking_position'] = null;
+    try {
+      const { monday, sunday } = svWeekBounds(todaySV);
+      const rows = await computeWeekRanking(admin, monday, sunday);
+      const mine = rows.find((r) => r.student_id === studentId);
+      if (mine) ranking_position = { position: mine.position, points: mine.points, total: rows.length };
+    } catch (e) {
+      console.error('[program-admin] ranking position failed (no bloquea la ficha)', e);
+    }
+
+    if (!assignment && past_programs.length === 0 && !season && (evals ?? []).length === 0
+        && (compCount.count ?? 0) === 0 && !ranking_position) {
       return { ok: true, data: null };
     }
     return {
       ok: true,
       data: {
+        competitions: {
+          next: nextComp.data ?? null,
+          last: lastComp.data ?? null,
+          total: compCount.count ?? 0,
+        },
+        ranking_position,
         assignment,
         past_programs,
         season,

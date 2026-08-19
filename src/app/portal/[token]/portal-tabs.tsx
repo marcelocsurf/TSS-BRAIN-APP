@@ -32,6 +32,7 @@ import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
+import { CompetitionCard } from '@/components/portal/CompetitionCard';
 import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
@@ -701,6 +702,7 @@ function HomeTab({
           <SeasonCard token={data.token} />
 
           <ProgramCard token={data.token} />
+          <CompetitionCard token={data.token} />
 
           {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
           <AppointmentCard token={data.token} />

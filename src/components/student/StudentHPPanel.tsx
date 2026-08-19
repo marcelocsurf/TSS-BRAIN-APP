@@ -83,6 +83,32 @@ export function StudentHPPanel({ studentId }: { studentId: string }) {
         <p className="text-[12px] text-gray-400">Sin programa activo.</p>
       )}
 
+      {(data.competitions.total > 0 || data.ranking_position) && (
+        <div className="pt-2" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Competencias y ranking</p>
+          <div className="mt-1 space-y-0.5">
+            {data.ranking_position && (
+              <p className="text-[11.5px] text-gray-500">
+                Ranking semanal: <b style={{ color: '#B8862B' }}>#{data.ranking_position.position}</b> de {data.ranking_position.total} · {data.ranking_position.points} pts
+              </p>
+            )}
+            {data.competitions.next && (
+              <p className="text-[11.5px] text-gray-500">
+                Próxima: <b className="text-[var(--tss-navy)]">{data.competitions.next.name}</b> · {data.competitions.next.comp_date}
+                {data.competitions.next.location ? ` · ${data.competitions.next.location}` : ''}
+              </p>
+            )}
+            {data.competitions.last && (
+              <p className="text-[11.5px] text-gray-500">
+                Última: {data.competitions.last.name}
+                {data.competitions.last.final_place && <> — <b className="text-[var(--tss-navy)]">{data.competitions.last.final_place}</b></>}
+              </p>
+            )}
+            <p className="text-[10px] text-gray-400">{data.competitions.total} competencia{data.competitions.total === 1 ? '' : 's'} registrada{data.competitions.total === 1 ? '' : 's'}</p>
+          </div>
+        </div>
+      )}
+
       {data.evaluations.length > 0 && (
         <div className="pt-2" style={{ borderTop: '1px solid #F1F5F9' }}>
           <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Evaluaciones por pilar</p>

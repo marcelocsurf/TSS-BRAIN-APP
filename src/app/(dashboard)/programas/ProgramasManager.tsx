@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import {
+  adminListCompetitions, adminCreateCompetition, adminGetCompetition, adminUpdateCompetition,
+  adminDeleteCompetition, adminAddHeat, adminDeleteHeat, adminAddWave, adminDeleteWave,
+  adminUpdateHeatOutcome, adminGetWeeklyRanking,
+  type AdminCompetitionRow, type AdminCompetitionDetail,
+} from '@/lib/actions/competitions';
+import {
   adminListPrograms,
   adminGetProgram,
   adminCreateProgram,
@@ -60,7 +66,7 @@ import {
 type Video = { id: string; title: string; pillar: string | null; video_url: string };
 
 export function ProgramasManager() {
-  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas' | 'temporadas'>('catalogo');
+  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas' | 'temporadas' | 'competencias'>('catalogo');
   const [programs, setPrograms] = useState<AdminProgramRow[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -94,7 +100,7 @@ export function ProgramasManager() {
           </p>
         </div>
         <div className="flex gap-2">
-          {(['catalogo', 'temporadas', 'asignaciones', 'citas', 'coaches'] as const).map((v) => (
+          {(['catalogo', 'temporadas', 'competencias', 'asignaciones', 'citas', 'coaches'] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -103,7 +109,7 @@ export function ProgramasManager() {
                 view === v ? 'bg-[var(--tss-navy)] text-white' : 'bg-white border border-gray-200 text-gray-600'
               }`}
             >
-              {v === 'catalogo' ? 'Catálogo' : v === 'temporadas' ? 'Temporadas' : v === 'asignaciones' ? 'Asignaciones' : v === 'citas' ? 'Citas' : 'Coaches'}
+              {v === 'catalogo' ? 'Catálogo' : v === 'temporadas' ? 'Temporadas' : v === 'competencias' ? 'Competencias' : v === 'asignaciones' ? 'Asignaciones' : v === 'citas' ? 'Citas' : 'Coaches'}
             </button>
           ))}
         </div>
@@ -127,6 +133,7 @@ export function ProgramasManager() {
       {view === 'coaches' && <CoachesHP />}
       {view === 'citas' && <Citas />}
       {view === 'temporadas' && <Temporadas />}
+      {view === 'competencias' && <Competencias />}
     </div>
   );
 }
@@ -1471,6 +1478,362 @@ function SeasonEvents({ seasonId, events, onChanged, setErr }: {
           className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--tss-cyan)] text-[var(--tss-navy)] disabled:opacity-40">
           + Evento
         </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Ola 2: Competencias por atleta + ranking semanal (paridad app HP) ───
+
+function Competencias() {
+  const [rows, setRows] = useState<AdminCompetitionRow[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  // crear
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string; email: string | null }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [name, setName] = useState('');
+  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [category, setCategory] = useState('');
+  const [busy, setBusy] = useState(false);
+  // ranking
+  const [ranking, setRanking] = useState<Awaited<ReturnType<typeof adminGetWeeklyRanking>> | null>(null);
+
+  const load = () => {
+    adminListCompetitions().then((r) => { if (r.ok) setRows(r.competitions); else setErr(r.error || null); });
+    adminGetWeeklyRanking().then((r) => { if (r.ok) setRanking(r); });
+  };
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) {
+        adminSearchStudents(q).then((r) => { if (r.ok) setResults(r.students); else setErr(r.error || null); });
+      } else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const create = async () => {
+    if (!picked || !name.trim() || !date) return;
+    setErr(null); setBusy(true);
+    const r = await adminCreateCompetition({ studentId: picked.id, name, compDate: date, location: location || null, category: category || null });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    setPicked(null); setQ(''); setName(''); setDate(''); setLocation(''); setCategory('');
+    load();
+    if (r.id) setOpenId(r.id);
+  };
+
+  if (openId) return <CompetenciaEditor compId={openId} onBack={() => { setOpenId(null); load(); }} />;
+
+  const STATUS_LABEL: Record<string, { t: string; c: string; bg: string }> = {
+    scheduled: { t: 'Programada', c: '#8E6614', bg: '#FDF8EC' },
+    live: { t: 'EN CURSO', c: '#fff', bg: '#C0392B' },
+    finished: { t: 'Finalizada', c: '#55707F', bg: '#EEF2F6' },
+  };
+
+  return (
+    <div className="space-y-4">
+      {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
+
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva competencia (bitácora del atleta)</p>
+        <div className="flex gap-2 flex-wrap items-start">
+          <div className="relative flex-1 min-w-[160px]">
+            <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }}
+              placeholder="Atleta…" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            {results.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+                {results.map((st) => (
+                  <button key={st.id} type="button" onClick={() => { setPicked({ id: st.id, name: st.name }); setResults([]); }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                    <span className="font-semibold text-[var(--tss-navy)]">{st.name}</span>
+                    <span className="text-[11px] text-gray-400 ml-2">{st.email ?? ''}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del evento"
+            className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Fecha" />
+          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Lugar"
+            className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Categoría"
+            className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <button type="button" disabled={busy || !picked || !name.trim() || !date} onClick={create}
+            className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40">
+            Crear →
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {rows.map((c) => {
+          const st = STATUS_LABEL[c.status] ?? STATUS_LABEL.scheduled;
+          return (
+            <button key={c.id} type="button" onClick={() => setOpenId(c.id)}
+              className="w-full text-left rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap hover:border-gray-300"
+              style={{ borderLeft: '4px solid #B8862B' }}>
+              <div className="flex-1 min-w-[200px]">
+                <p className="text-sm font-bold text-[var(--tss-navy)]">{c.name}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {c.student_name} · {c.comp_date}
+                  {c.location ? ` · ${c.location}` : ''}{c.category ? ` · ${c.category}` : ''}
+                </p>
+              </div>
+              <span className="text-[11px] text-gray-400">{c.heats_count} heat{c.heats_count === 1 ? '' : 's'}</span>
+              {c.final_place && <span className="text-[11px] font-bold" style={{ color: '#B8862B' }}>{c.final_place}</span>}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ color: st.c, background: st.bg }}>{st.t}</span>
+            </button>
+          );
+        })}
+        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin competencias todavía.</p>}
+      </div>
+
+      {ranking?.current && (
+        <div className="rounded-2xl bg-white border border-gray-200 p-4" style={{ borderLeft: '4px solid #B8862B' }}>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+              Ranking semanal · {ranking.current.week_start} → {ranking.current.week_end} (en vivo)
+            </p>
+            <button type="button" onClick={() => adminGetWeeklyRanking().then((r) => { if (r.ok) setRanking(r); })}
+              className="text-[10px] font-bold" style={{ color: '#0090B8' }}>↻ Recalcular</button>
+          </div>
+          <div className="mt-2 grid md:grid-cols-2 gap-x-8 gap-y-0.5">
+            {ranking.current.rows.map((r) => (
+              <div key={r.student_id} className="flex items-center justify-between py-0.5" style={{ borderBottom: '1px solid #F8FAFC' }}>
+                <p className="text-[12px]" style={{ color: '#0C2231', fontWeight: r.position <= 3 ? 700 : 400 }}>
+                  {r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : r.position === 3 ? '🥉' : `${r.position}.`} {r.name}
+                </p>
+                <p className="text-[11px] font-mono text-gray-400">{r.points}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">
+            Puntos por día: día marcado 30 · check-in 10 · sueño ≤20 · dieta 15 · agua ≤10 · energía ≤5 (fórmula HP). El snapshot de cada semana se guarda solo al cerrar el lunes.
+          </p>
+          {ranking.last_snapshot && (
+            <p className="text-[10px] text-gray-400 mt-1">
+              Semana pasada ({ranking.last_snapshot.week_start}): {ranking.last_snapshot.rows.slice(0, 3).map((r) => `${r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : '🥉'} ${r.name} (${r.points})`).join(' · ')}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => void }) {
+  const [comp, setComp] = useState<AdminCompetitionDetail | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [newRound, setNewRound] = useState('');
+  const [newHeatNum, setNewHeatNum] = useState(1);
+  const [addingHeat, setAddingHeat] = useState(false);
+  const [waveInputs, setWaveInputs] = useState<Record<string, string>>({});
+  const [finalPlace, setFinalPlace] = useState('');
+  const [finalNotes, setFinalNotes] = useState('');
+
+  const load = () => adminGetCompetition(compId).then((r) => {
+    if (r.ok && r.competition) {
+      setComp(r.competition);
+      setFinalPlace(r.competition.final_place ?? '');
+      setFinalNotes(r.competition.final_notes ?? '');
+      setNewHeatNum(r.competition.heats.reduce((m, h) => Math.max(m, h.heat_number), 0) + 1);
+    } else setErr(r.error || null);
+  });
+  useEffect(() => { load(); }, [compId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!comp) return <p className="text-sm text-gray-400 py-6 text-center">{err ?? 'Cargando…'}</p>;
+
+  const act = async (fn: () => Promise<{ ok: boolean; error?: string }>) => {
+    setErr(null);
+    const r = await fn();
+    if (!r.ok) { setErr(r.error || null); return; }
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <button type="button" onClick={onBack} className="text-xs text-gray-500">← Volver a competencias</button>
+      {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
+
+      <div className="rounded-2xl bg-white border border-gray-200 p-4" style={{ borderLeft: '4px solid #B8862B' }}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="text-base font-bold text-[var(--tss-navy)]">{comp.name}</p>
+            <p className="text-[11.5px] text-gray-500 mt-0.5">
+              {comp.student_name} · {comp.comp_date}
+              {comp.location ? ` · ${comp.location}` : ''}{comp.category ? ` · ${comp.category}` : ''}
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {(['scheduled', 'live', 'finished'] as const).map((st) => (
+              <button key={st} type="button"
+                onClick={() => act(() => adminUpdateCompetition(comp.id, { status: st }))}
+                className="px-3 py-1.5 rounded-full text-[10px] font-bold border"
+                style={comp.status === st
+                  ? { background: '#0C2231', color: '#fff', borderColor: '#0C2231' }
+                  : { borderColor: '#E2E8F0', color: '#55707F' }}>
+                {st === 'scheduled' ? 'Programada' : st === 'live' ? 'En curso' : 'Finalizada'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {comp.status === 'finished' && (
+          <div className="mt-3 pt-3 flex gap-2 flex-wrap items-center" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <input value={finalPlace} onChange={(e) => setFinalPlace(e.target.value)} placeholder="Resultado final — 3er lugar / Semifinal…"
+              className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            <input value={finalNotes} onChange={(e) => setFinalNotes(e.target.value)} placeholder="Nota final (inglés — la ve el atleta)"
+              className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            <button type="button"
+              onClick={() => act(() => adminUpdateCompetition(comp.id, { final_place: finalPlace || null, final_notes: finalNotes || null }))}
+              className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white">Guardar resultado</button>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {comp.heats.map((h) => {
+          const prep: any = h.prep ?? {};
+          return (
+            <div key={h.id} className="rounded-2xl bg-white border border-gray-200 p-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-sm font-bold text-[var(--tss-navy)]">
+                  Heat {h.heat_number}{h.round_name ? ` · ${h.round_name}` : ''}
+                </p>
+                <div className="flex items-center gap-2">
+                  {h.status === 'done' && h.passed != null && (
+                    <span className="text-[11px] font-bold" style={{ color: h.passed ? '#1F9D6B' : '#C0392B' }}>
+                      {h.passed ? 'PASÓ ✓' : 'ELIMINADO'}
+                    </span>
+                  )}
+                  {h.waves.length === 0 && (
+                    <button type="button"
+                      onClick={() => { if (confirm(`¿Eliminar el Heat ${h.heat_number}? Si el atleta ya hizo su preparación, se pierde.`)) act(() => adminDeleteHeat(h.id)); }}
+                      className="text-[10px] text-gray-400 hover:text-red-500">Eliminar</button>
+                  )}
+                </div>
+              </div>
+
+              {(prep.checks?.length || prep.strategy || prep.mantra || prep.lineup) ? (
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Prep del atleta: {prep.checks?.length ?? 0}/6 checks
+                  {prep.lineup ? ` · lineup ${prep.lineup}` : ''}
+                  {prep.strategy ? ` · estrategia ${prep.strategy}` : ''}
+                  {prep.mantra ? ` · «${prep.mantra}»` : ''}
+                </p>
+              ) : (
+                <p className="text-[11px] text-gray-400 mt-1">El atleta todavía no hizo su preparación.</p>
+              )}
+
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                {h.waves.map((w) => (
+                  <button key={w.id} type="button" title="Borrar ola"
+                    onClick={() => { if (confirm(`¿Borrar la ola ${w.wave_number} (${w.score})?`)) act(() => adminDeleteWave(w.id)); }}
+                    className="px-2 py-1 rounded-lg text-[12px] font-mono font-bold border"
+                    style={{ borderColor: '#BAE6FD', background: '#F0F9FF', color: '#0369A1' }}>
+                    {w.score.toFixed(2)}
+                  </button>
+                ))}
+                <input value={waveInputs[h.id] ?? ''} inputMode="decimal"
+                  onChange={(e) => setWaveInputs({ ...waveInputs, [h.id]: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const v = parseFloat((waveInputs[h.id] ?? '').replace(',', '.'));
+                      if (!Number.isNaN(v)) { act(() => adminAddWave(h.id, v)); setWaveInputs({ ...waveInputs, [h.id]: '' }); }
+                    }
+                  }}
+                  placeholder="ola…" aria-label="Puntaje de la ola"
+                  className="w-16 rounded-lg border border-gray-300 px-2 py-1 text-[12px]" />
+                <button type="button"
+                  onClick={() => {
+                    const v = parseFloat((waveInputs[h.id] ?? '').replace(',', '.'));
+                    if (!Number.isNaN(v)) { act(() => adminAddWave(h.id, v)); setWaveInputs({ ...waveInputs, [h.id]: '' }); }
+                  }}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold border" style={{ borderColor: '#B8862B', color: '#8E6614' }}>
+                  + Ola
+                </button>
+                {h.waves.length > 0 && (
+                  <span className="text-[11.5px] ml-1 text-gray-500">
+                    Total (2 mejores): <b style={{ color: '#B8862B' }}>{h.heat_total.toFixed(2)}</b>
+                  </span>
+                )}
+              </div>
+
+              <HeatOutcome heat={h} onSave={(patch) => act(() => adminUpdateHeatOutcome(h.id, patch))} />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl bg-white border border-dashed border-gray-300 p-4 flex items-center gap-2 flex-wrap">
+        <p className="text-[11px] text-gray-500">Agregar heat:</p>
+        <input type="number" min={1} max={99} value={newHeatNum} onChange={(e) => setNewHeatNum(Number(e.target.value))}
+          className="w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-sm" aria-label="Número de heat" />
+        <input value={newRound} onChange={(e) => setNewRound(e.target.value)} placeholder="Ronda (Round 1 / Semifinal…)"
+          className="flex-1 min-w-[160px] rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+        <button type="button" disabled={addingHeat}
+          onClick={async () => { setAddingHeat(true); await act(() => adminAddHeat(comp.id, { heatNumber: newHeatNum, roundName: newRound || null })); setAddingHeat(false); }}
+          className="px-4 py-1.5 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-50">{addingHeat ? '…' : '+ Heat'}</button>
+      </div>
+    </div>
+  );
+}
+
+function HeatOutcome({ heat, onSave }: {
+  heat: { id: string; status: string; passed: boolean | null; what_worked: string | null; what_to_improve: string | null };
+  onSave: (patch: { passed?: boolean | null; what_worked?: string | null; what_to_improve?: string | null; status?: 'upcoming' | 'done' }) => void;
+}) {
+  const [openForm, setOpenForm] = useState(false);
+  const [passed, setPassed] = useState<boolean>(heat.passed ?? true);
+  const [worked, setWorked] = useState(heat.what_worked ?? '');
+  const [improve, setImprove] = useState(heat.what_to_improve ?? '');
+
+  if (heat.status === 'done' && !openForm) {
+    return (
+      <div className="mt-2 text-[11.5px] text-gray-500">
+        {heat.what_worked && <p>✓ Funcionó: {heat.what_worked}</p>}
+        {heat.what_to_improve && <p>→ Mejorar: {heat.what_to_improve}</p>}
+        <button type="button" onClick={() => setOpenForm(true)} className="text-[10px] font-bold mt-1" style={{ color: '#0090B8' }}>Editar resultado</button>
+      </div>
+    );
+  }
+  if (!openForm) {
+    return (
+      <button type="button" onClick={() => setOpenForm(true)} className="mt-2 text-[10px] font-bold" style={{ color: '#8E6614' }}>
+        + Cerrar heat (pasó / no pasó + aprendizajes)
+      </button>
+    );
+  }
+  return (
+    <div className="mt-2.5 pt-2.5 space-y-2" style={{ borderTop: '1px solid #F1F5F9' }}>
+      <div className="flex gap-1.5">
+        <button type="button" onClick={() => setPassed(true)}
+          className="px-3 py-1.5 rounded-full text-[10px] font-bold border"
+          style={passed ? { background: '#1F9D6B', color: '#fff', borderColor: '#1F9D6B' } : { borderColor: '#E2E8F0', color: '#55707F' }}>
+          Pasó ✓
+        </button>
+        <button type="button" onClick={() => setPassed(false)}
+          className="px-3 py-1.5 rounded-full text-[10px] font-bold border"
+          style={!passed ? { background: '#C0392B', color: '#fff', borderColor: '#C0392B' } : { borderColor: '#E2E8F0', color: '#55707F' }}>
+          No pasó
+        </button>
+      </div>
+      <input value={worked} onChange={(e) => setWorked(e.target.value)} placeholder="Qué funcionó (inglés — lo ve el atleta)"
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+      <input value={improve} onChange={(e) => setImprove(e.target.value)} placeholder="Qué mejorar (inglés — lo ve el atleta)"
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+      <div className="flex gap-2">
+        <button type="button"
+          onClick={() => { onSave({ passed, what_worked: worked || null, what_to_improve: improve || null, status: 'done' }); setOpenForm(false); }}
+          className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white">Guardar resultado</button>
+        <button type="button" onClick={() => setOpenForm(false)} className="px-3 text-xs text-gray-400">Cancelar</button>
       </div>
     </div>
   );
