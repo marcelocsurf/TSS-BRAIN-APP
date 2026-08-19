@@ -62,6 +62,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
     returning: params.returning,
     waiver: params.waiver,
     ocean_level: params.ocean_level,
+    hp: params.hp,
     sort: params.sort === 'newest' ? 'newest' : 'name',
   });
 
@@ -185,6 +186,16 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             color={BELT_DISPLAY[belt].color}
           />
         ))}
+        {/* Atletas HP: los ~23 con programa de entreno activo, entre 2.727 */}
+        <Link
+          href={params.hp === 'true' ? '/students' : (() => { const p = new URLSearchParams(); for (const [k, v] of Object.entries(params)) { if (v && k !== 'page' && k !== 'hp') p.set(k, v); } p.set('hp', 'true'); return `/students?${p.toString()}`; })()}
+          className="px-3 py-1.5 rounded-full text-xs font-semibold border"
+          style={params.hp === 'true'
+            ? { background: '#B8862B', color: '#fff', borderColor: '#B8862B' }
+            : { background: '#FDF8EC', color: '#8E6614', borderColor: '#F0C36D' }}
+        >
+          ● Con programa HP
+        </Link>
       </div>
 
       {/* Search with debounce */}
@@ -247,6 +258,9 @@ export default async function StudentRosterPage({ searchParams }: Props) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[var(--tss-gray-900)] truncate">
                   {s.first_name} {s.last_name}
+                  {(s as any).has_hp && (
+                    <span title="Atleta HP — programa de entreno activo" className="ml-1.5 inline-block align-middle" style={{ color: '#B8862B', fontSize: 10 }}>●</span>
+                  )}
                 </p>
                 <p className="text-xs text-[var(--tss-gray-500)]">
                   {BELT_DISPLAY[s.belt_level]?.en}{BELT_DISPLAY[s.belt_level]?.levelName ? ` (${BELT_DISPLAY[s.belt_level].levelName})` : ''} — Seq {s.current_sequence_number} / Step {s.current_step_order}

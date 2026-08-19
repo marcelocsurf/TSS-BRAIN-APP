@@ -347,6 +347,7 @@ export interface StudentFilters {
   waiver?: string;          // 'signed' | 'pending'
   ocean_level?: string;
   lifecycle_status?: string; // 'lead' | 'member' | 'inactive' | 'churned'
+  hp?: string;              // 'true' = solo atletas con programa HP activo
 }
 
 export async function listStudents(filters?: StudentFilters): Promise<{ students: StudentRow[]; total: number }> {
@@ -429,6 +430,18 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
     query = query.eq('ocean_level', filters.ocean_level);
   }
 
+  // Filtro HP: atletas con programa de entreno ACTIVO. Los ids se leen con el
+  // admin client (program_assignments tiene RLS sin políticas) pero el query
+  // principal conserva TODO el scoping por rol/academia de arriba.
+  if (filters?.hp === 'true') {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { data: hpAsg } = await createAdminClient()
+      .from('program_assignments').select('student_id').eq('status', 'active');
+    const hpIds = Array.from(new Set((hpAsg ?? []).map((a: any) => a.student_id)));
+    if (hpIds.length === 0) return { students: [], total: 0 };
+    query = query.in('id', hpIds);
+  }
+
   // Age range filtering — uses date_of_birth to calculate exact age
   if (filters?.age_range) {
     const today = new Date();
@@ -454,7 +467,23 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
 
   const { data, error, count } = await query;
   if (error) throw new Error(error.message);
-  return { students: data as StudentRow[], total: count || 0 };
+
+  // Punto dorado HP en la lista: marcar qué filas de ESTA página tienen
+  // programa activo (una sola query chica por página de 20).
+  let rows = (data ?? []) as StudentRow[];
+  if (rows.length > 0) {
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const { data: hpAsg } = await createAdminClient()
+        .from('program_assignments')
+        .select('student_id')
+        .eq('status', 'active')
+        .in('student_id', rows.map((r) => r.id));
+      const hpSet = new Set((hpAsg ?? []).map((a: any) => a.student_id));
+      rows = rows.map((r) => ({ ...r, has_hp: hpSet.has(r.id) })) as StudentRow[];
+    } catch { /* el punto dorado nunca bloquea la lista */ }
+  }
+  return { students: rows, total: count || 0 };
 }
 
 // ═══════════════════════════════════════
