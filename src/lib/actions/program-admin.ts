@@ -589,18 +589,34 @@ export async function adminSearchStudents(q: string): Promise<{
     // espacio. El % y el _ del ilike se escapan para que no sean comodines.
     const safe = term.replace(/[,()"']/g, ' ').replace(/[%_]/g, '\\$&').trim();
     if (safe.length < 2) return { ok: true, students: [] };
+    // RPC accent-insensitive + apodos ("Pérez" encuentra "Perez"; "Pink
+    // Panther" encuentra a Bryan) con los atletas HP primero. Si la RPC
+    // fallara, cae al ilike simple de siempre — la búsqueda nunca muere.
+    const { data: viaRpc, error: rpcErr } = await admin.rpc('hp_search_students', { term: safe });
+    if (!rpcErr && viaRpc) {
+      return {
+        ok: true,
+        students: (viaRpc as any[]).map((s: any) => ({
+          id: s.id,
+          name: `${s.first_name} ${s.last_name ?? ''}`.trim() + (s.nickname ? ` — "${s.nickname}"` : ''),
+          email: s.email,
+          belt_level: s.belt_level,
+        })),
+      };
+    }
+    console.error('[program-admin] hp_search_students rpc failed, fallback ilike', rpcErr);
     const { data, error } = await admin
       .from('students')
-      .select('id, first_name, last_name, email, belt_level')
+      .select('id, first_name, last_name, nickname, email, belt_level')
       .eq('status', 'active')
-      .or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%`)
+      .or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
       .limit(8);
     if (error) throw error;
     return {
       ok: true,
       students: (data ?? []).map((s: any) => ({
         id: s.id,
-        name: `${s.first_name} ${s.last_name ?? ''}`.trim(),
+        name: `${s.first_name} ${s.last_name ?? ''}`.trim() + (s.nickname ? ` — "${s.nickname}"` : ''),
         email: s.email,
         belt_level: s.belt_level,
       })),
