@@ -877,13 +877,14 @@ export interface HPDeepEvalRow {
   id: string;
   student_name: string;
   coach_name: string | null;
+  eval_kind: string; // competencia | general
   eval_date: string;
   event_name: string | null;
   round_reached: string | null;
   final_ranking: string | null;
   scores: Record<string, number>;
   diagnostico: Record<string, string>;
-  section_avgs: { tec: number | null; tac: number | null; men: number | null; fis: number | null };
+  section_avgs: { tec: number | null; tac: number | null; men: number | null; fis: number | null; com: number | null };
 }
 
 function sectionAvg(scores: Record<string, number>, prefix: string): number | null {
@@ -898,7 +899,7 @@ export async function hpListDeepEvaluations(): Promise<{ ok: boolean; error?: st
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('hp_deep_evaluations')
-      .select('id, eval_date, event_name, round_reached, final_ranking, scores, diagnostico, students(first_name, last_name), coaches(display_name)')
+      .select('id, eval_kind, eval_date, event_name, round_reached, final_ranking, scores, diagnostico, students(first_name, last_name), coaches(display_name)')
       .order('eval_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(30);
@@ -912,6 +913,7 @@ export async function hpListDeepEvaluations(): Promise<{ ok: boolean; error?: st
           id: e.id,
           student_name: `${e.students?.first_name ?? ''} ${e.students?.last_name ?? ''}`.trim() || '—',
           coach_name: e.coaches?.display_name ?? null,
+          eval_kind: e.eval_kind ?? 'competencia',
           eval_date: e.eval_date,
           event_name: e.event_name,
           round_reached: e.round_reached,
@@ -923,6 +925,7 @@ export async function hpListDeepEvaluations(): Promise<{ ok: boolean; error?: st
             tac: sectionAvg(scores, 'tac_'),
             men: sectionAvg(scores, 'men_'),
             fis: sectionAvg(scores, 'fis_'),
+            com: sectionAvg(scores, 'com_'),
           },
         };
       }),
@@ -937,6 +940,7 @@ const DEEP_DIAG_KEYS = ['what_worked', 'what_failed', 'critical_error', 'pattern
 
 export async function hpCreateDeepEvaluation(input: {
   studentId: string;
+  eval_kind?: 'competencia' | 'general';
   event_name: string;
   round_reached?: string | null;
   final_ranking?: string | null;
@@ -945,11 +949,11 @@ export async function hpCreateDeepEvaluation(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!(await assertAdmin())) return DENY;
-    if (!input.event_name?.trim()) return { ok: false, error: 'La evaluación necesita el nombre del evento.' };
+    if (!input.event_name?.trim()) return { ok: false, error: 'La evaluación necesita un nombre (evento o motivo).' };
     // Sanitizar por dentro: solo claves de sección conocidas, enteros 1-5.
     const scores: Record<string, number> = {};
     for (const [k, v] of Object.entries(input.scores ?? {})) {
-      if (!/^(tec|tac|men|fis)_[a-z_]{1,40}$/.test(k)) continue;
+      if (!/^(tec|tac|men|fis|com)_[a-z_]{1,40}$/.test(k)) continue;
       const n = Math.round(Number(v));
       if (n >= 1 && n <= 5) scores[k] = n;
     }
@@ -966,6 +970,7 @@ export async function hpCreateDeepEvaluation(input: {
     const { error } = await admin.from('hp_deep_evaluations').insert({
       student_id: input.studentId,
       coach_id: me?.id ?? null,
+      eval_kind: input.eval_kind === 'general' ? 'general' : 'competencia',
       eval_date: elSalvadorToday(),
       event_name: input.event_name.trim().slice(0, 160),
       round_reached: input.round_reached?.trim().slice(0, 80) || null,
@@ -978,5 +983,226 @@ export async function hpCreateDeepEvaluation(input: {
   } catch (e) {
     console.error('[hp-cockpit] hpCreateDeepEvaluation failed', e);
     return { ok: false, error: 'No se pudo guardar la evaluación profunda.' };
+  }
+}
+
+// ─── PERFIL HP DEL ATLETA (la vista de Equipo de la app HP, completa) ───
+//
+// Todo lo del atleta en una pantalla: índice por pilares (última evaluación
+// general), capacidad de score, datos físicos, ficha técnica % completa,
+// lesión, hábitos 14 días + últimas 7 noches, horas de agua de la bitácora,
+// citas, competencias y palmarés. Fuentes: students + hp_athlete_profiles +
+// program_checkins + hp_deep_evaluations + athlete_competitions + citas.
+
+export interface HPAthleteFull {
+  student: { id: string; name: string; nickname: string | null; belt: string | null; age: number | null; stance: string | null };
+  profile: {
+    score_capacity: number | null;
+    injury: string | null; injury_since: string | null;
+    height_cm: number | null; weight_kg: number | null; bmi: number | null;
+    years_surfing: number | null; years_competing: number | null; events_per_year: number | null;
+    discipline: string | null; favorite_maneuver: string | null;
+    dominant_hand: string | null; dominant_foot: string | null;
+    sponsors: string | null; club_academy: string | null; palmares: string | null;
+    why_train: string | null;
+    goals: { short: string | null; mid: string | null; long: string | null };
+    ficha_pct: number; ficha_missing: string[];
+  } | null;
+  last_eval: { date: string; kind: string; pillars: { key: string; avg: number }[]; global: number | null } | null;
+  habits14: { checkins: number; avg_sleep: number | null; avg_water: number | null; avg_energy: number | null; nutrition_days: number; last_nights: { date: string; sleep: number | null }[] };
+  water: { total_minutes: number; week_minutes: number };
+  counts: { sessions_attended: number; evals: number; checkins: number };
+  appointments: { upcoming: { kind: string; mode: string | null; title: string | null; date: string; time: string | null; coach: string }[]; past_count: number };
+  competitions: { id: string; name: string; comp_date: string; status: string; final_place: string | null }[];
+  ranking: { position: number; points: number; total: number } | null;
+}
+
+export async function hpAthleteFull(
+  studentId: string
+): Promise<{ ok: boolean; error?: string; data: HPAthleteFull | null }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, data: null };
+    const admin = createAdminClient();
+    const today = elSalvadorToday();
+
+    const [st, prof, allAsg] = await Promise.all([
+      admin.from('students').select('id, first_name, last_name, nickname, belt_level, date_of_birth, goofy_or_regular').eq('id', studentId).maybeSingle(),
+      admin.from('hp_athlete_profiles').select('*').eq('student_id', studentId).maybeSingle(),
+      admin.from('program_assignments').select('id').eq('student_id', studentId),
+    ]);
+    if (st.error) throw st.error;
+    if (!st.data) return { ok: false, error: 'Atleta no encontrado.', data: null };
+    if (prof.error) throw prof.error;
+    if (allAsg.error) throw allAsg.error;
+    const asgIds = (allAsg.data ?? []).map((a: any) => a.id);
+
+    const age = (() => {
+      const dob = (st.data as any).date_of_birth;
+      if (!dob) return null;
+      const d = new Date(dob + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return null;
+      const n = new Date();
+      let a = n.getFullYear() - d.getFullYear();
+      const m = n.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && n.getDate() < d.getDate())) a--;
+      return a;
+    })();
+
+    // Hábitos 14 días + últimas 7 noches
+    let habits14: HPAthleteFull['habits14'] = { checkins: 0, avg_sleep: null, avg_water: null, avg_energy: null, nutrition_days: 0, last_nights: [] };
+    let checkinsTotal = 0;
+    if (asgIds.length > 0) {
+      const [{ data: cks, error: ckErr }, { count: ckCount, error: ccErr }] = await Promise.all([
+        admin.from('program_checkins')
+          .select('checkin_date, sleep_hours, water_glasses, energy, nutrition')
+          .in('assignment_id', asgIds)
+          .gte('checkin_date', elSalvadorDatePlus(-13))
+          .order('checkin_date', { ascending: false }),
+        admin.from('program_checkins').select('id', { count: 'exact', head: true }).in('assignment_id', asgIds),
+      ]);
+      if (ckErr) throw ckErr;
+      if (ccErr) throw ccErr;
+      checkinsTotal = ckCount ?? 0;
+      const rows = cks ?? [];
+      const avg = (vals: number[]) => (vals.length ? Math.round((vals.reduce((s, x) => s + x, 0) / vals.length) * 10) / 10 : null);
+      habits14 = {
+        checkins: rows.length,
+        avg_sleep: avg(rows.map((r: any) => Number(r.sleep_hours)).filter((x: number) => Number.isFinite(x) && x > 0)),
+        avg_water: avg(rows.map((r: any) => r.water_glasses).filter((x: any) => x != null)),
+        avg_energy: avg(rows.map((r: any) => r.energy).filter((x: any) => x != null)),
+        nutrition_days: rows.filter((r: any) => (r.nutrition ?? '').trim()).length,
+        last_nights: rows.slice(0, 7).map((r: any) => ({ date: r.checkin_date.slice(5), sleep: r.sleep_hours != null ? Number(r.sleep_hours) : null })),
+      };
+    }
+
+    // Última evaluación profunda GENERAL (para el índice por pilares tipo HP)
+    const { data: lastEv, error: leErr } = await admin
+      .from('hp_deep_evaluations')
+      .select('eval_date, eval_kind, scores')
+      .eq('student_id', studentId).eq('eval_kind', 'general')
+      .order('eval_date', { ascending: false }).order('created_at', { ascending: false })
+      .limit(1).maybeSingle();
+    if (leErr) throw leErr;
+    let last_eval: HPAthleteFull['last_eval'] = null;
+    if (lastEv && lastEv.scores && typeof lastEv.scores === 'object') {
+      const sc = lastEv.scores as Record<string, number>;
+      const pillars = (['fis', 'tec', 'tac', 'men', 'com'] as const)
+        .map((k) => ({ key: k, avg: sectionAvg(sc, k + '_') }))
+        .filter((p) => p.avg != null) as { key: string; avg: number }[];
+      last_eval = pillars.length
+        ? {
+            date: lastEv.eval_date, kind: lastEv.eval_kind,
+            pillars,
+            global: Math.round((pillars.reduce((s, p) => s + p.avg, 0) / pillars.length) * 10) / 10,
+          }
+        : null;
+    }
+
+    // Horas de agua (bitácora BRAIN: self_training_sessions completadas)
+    const { data: sts, error: stsErr } = await admin
+      .from('self_training_sessions')
+      .select('duration_minutes, total_water_minutes, kind, completed, created_at')
+      .eq('student_id', studentId).eq('completed', true);
+    if (stsErr) throw stsErr;
+    const { monday } = svWeekBounds(today);
+    let total_minutes = 0, week_minutes = 0;
+    for (const s of sts ?? []) {
+      const dur = (s as any).duration_minutes || 0;
+      const water = (s as any).total_water_minutes || 0;
+      const mins = (s as any).kind === 'free_surf' ? (water || dur) : Math.max(dur, water);
+      total_minutes += mins;
+      const sv = toElSalvadorDate((s as any).created_at);
+      if (sv && sv >= monday) week_minutes += mins;
+    }
+
+    // Citas, asistencia, evaluaciones, competencias, ranking
+    const [appts, pastAppts, att, evalsCount, comps, rankingRows] = await Promise.all([
+      admin.from('program_appointments')
+        .select('kind, mode, title, appointment_date, appointment_time, coaches(display_name)')
+        .eq('student_id', studentId).eq('status', 'scheduled').gte('appointment_date', today)
+        .order('appointment_date').limit(5),
+      admin.from('program_appointments').select('id', { count: 'exact', head: true })
+        .eq('student_id', studentId).lt('appointment_date', today),
+      admin.from('hp_session_attendance').select('id', { count: 'exact', head: true })
+        .eq('student_id', studentId).eq('present', true),
+      admin.from('hp_deep_evaluations').select('id', { count: 'exact', head: true }).eq('student_id', studentId),
+      admin.from('athlete_competitions')
+        .select('id, name, comp_date, status, final_place')
+        .eq('student_id', studentId).order('comp_date', { ascending: false }).limit(6),
+      computeWeekRanking(admin, svWeekBounds(today).monday, svWeekBounds(today).sunday),
+    ]);
+    if (appts.error) throw appts.error;
+    if (pastAppts.error) throw pastAppts.error;
+    if (att.error) throw att.error;
+    if (evalsCount.error) throw evalsCount.error;
+    if (comps.error) throw comps.error;
+
+    const p: any = prof.data ?? null;
+    let profileOut: HPAthleteFull['profile'] = null;
+    if (p) {
+      const h = p.height_cm != null ? Number(p.height_cm) : null;
+      const w = p.weight_kg != null ? Number(p.weight_kg) : null;
+      const bmi = h && w && h > 0 ? Math.round((w / Math.pow(h / 100, 2)) * 10) / 10 : null;
+      // % de ficha técnica: los campos que la app HP consideraba la ficha.
+      const fichaFields: { key: string; label: string; val: unknown }[] = [
+        { key: 'height', label: 'altura', val: p.height_cm },
+        { key: 'weight', label: 'peso', val: p.weight_kg },
+        { key: 'blood', label: 'tipo de sangre', val: p.blood_type },
+        { key: 'dui', label: 'DUI', val: p.dui },
+        { key: 'passport', label: 'pasaporte', val: p.passport_number },
+        { key: 'passport_exp', label: 'vencimiento pasaporte', val: p.passport_expiry_date },
+        { key: 'emergency', label: 'contacto emergencia (parentesco)', val: p.emergency_relationship },
+        { key: 'insurance', label: 'seguro', val: p.insurance_provider },
+        { key: 'doctor', label: 'médico', val: p.doctor_name },
+        { key: 'goals', label: 'metas', val: p.goal_short_term || p.goal_mid_term || p.goal_long_term },
+      ];
+      const filled = fichaFields.filter((f) => f.val != null && String(f.val).trim() !== '');
+      profileOut = {
+        score_capacity: p.score_capacity,
+        injury: p.injury, injury_since: p.injury_since,
+        height_cm: h, weight_kg: w, bmi,
+        years_surfing: p.years_surfing, years_competing: p.years_competing, events_per_year: p.events_per_year,
+        discipline: p.discipline, favorite_maneuver: p.favorite_maneuver,
+        dominant_hand: p.dominant_hand, dominant_foot: p.dominant_foot,
+        sponsors: p.sponsors, club_academy: p.club_academy, palmares: p.palmares_historico,
+        why_train: p.why_train,
+        goals: { short: p.goal_short_term, mid: p.goal_mid_term, long: p.goal_long_term },
+        ficha_pct: Math.round((filled.length / fichaFields.length) * 100),
+        ficha_missing: fichaFields.filter((f) => !(f.val != null && String(f.val).trim() !== '')).map((f) => f.label),
+      };
+    }
+
+    const mine = rankingRows.find((r) => r.student_id === studentId) ?? null;
+    return {
+      ok: true,
+      data: {
+        student: {
+          id: st.data.id,
+          name: `${st.data.first_name ?? ''} ${st.data.last_name ?? ''}`.trim(),
+          nickname: (st.data as any).nickname ?? null,
+          belt: (st.data as any).belt_level ?? null,
+          age,
+          stance: (st.data as any).goofy_or_regular ?? null,
+        },
+        profile: profileOut,
+        last_eval,
+        habits14,
+        water: { total_minutes, week_minutes },
+        counts: { sessions_attended: att.count ?? 0, evals: evalsCount.count ?? 0, checkins: checkinsTotal },
+        appointments: {
+          upcoming: (appts.data ?? []).map((a: any) => ({
+            kind: a.kind, mode: a.mode ?? null, title: a.title,
+            date: a.appointment_date, time: a.appointment_time,
+            coach: a.coaches?.display_name ?? '—',
+          })),
+          past_count: pastAppts.count ?? 0,
+        },
+        competitions: (comps.data ?? []) as any,
+        ranking: mine ? { position: mine.position, points: mine.points, total: rankingRows.length } : null,
+      },
+    };
+  } catch (e) {
+    console.error('[hp-cockpit] hpAthleteFull failed', e);
+    return { ok: false, error: 'No se pudo cargar el perfil del atleta.', data: null };
   }
 }

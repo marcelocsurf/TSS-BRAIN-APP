@@ -8,6 +8,7 @@ import {
   hpListSessions, hpCreateSession, hpSetAttendance, hpDeleteSession, hpSyncSessionRoster,
   hpListEvaluations, hpCreateEvaluation,
   hpListDeepEvaluations, hpCreateDeepEvaluation, type HPDeepEvalRow,
+  hpAthleteFull, type HPAthleteFull,
   type HPPanelData, type HPPlanRow, type HPLibrary, type HPTeamRow,
   type HPMessageRow, type HPSessionRow, type HPEvalRow,
 } from '@/lib/actions/hp-cockpit';
@@ -585,7 +586,7 @@ function CitasTab() {
 // ─── EVAL (rápidas por pilar + PROFUNDAS post-competencia) ───
 
 // Catálogo de ítems de la evaluación profunda — calcado de la app HP.
-const DEEP_SECTIONS: { key: 'tec' | 'tac' | 'men' | 'fis'; label: string; color: string; items: { key: string; label: string }[] }[] = [
+const DEEP_SECTIONS: { key: 'tec' | 'tac' | 'men' | 'fis' | 'com'; label: string; color: string; items: { key: string; label: string }[] }[] = [
   { key: 'tec', label: 'Técnico', color: '#00D2FF', items: [
     { key: 'tec_uso_cara_velocidad', label: 'Uso de cara y velocidad' },
     { key: 'tec_fundamentos', label: 'Fundamentos' },
@@ -595,6 +596,7 @@ const DEEP_SECTIONS: { key: 'tec' | 'tac' | 'men' | 'fis'; label: string; color:
     { key: 'tec_conexion_flow', label: 'Conexión y flow' },
     { key: 'tec_repertorio', label: 'Repertorio' },
     { key: 'tec_momentos_criticos', label: 'Momentos críticos' },
+    { key: 'tec_general', label: 'Global técnico' },
   ]},
   { key: 'tac', label: 'Táctico', color: '#06D6A0', items: [
     { key: 'tac_analisis_zona', label: 'Análisis de zona' },
@@ -604,6 +606,7 @@ const DEEP_SECTIONS: { key: 'tec' | 'tac' | 'men' | 'fis'; label: string; color:
     { key: 'tac_adaptacion_rival', label: 'Adaptación al rival' },
     { key: 'tac_seleccion_olas', label: 'Selección de olas' },
     { key: 'tac_parte_critica', label: 'Parte crítica del heat' },
+    { key: 'tac_general', label: 'Global táctico' },
   ]},
   { key: 'men', label: 'Mental', color: '#FFD166', items: [
     { key: 'men_enfoque', label: 'Enfoque' },
@@ -613,11 +616,16 @@ const DEEP_SECTIONS: { key: 'tec' | 'tac' | 'men' | 'fis'; label: string; color:
     { key: 'men_manejo_presion', label: 'Manejo de presión' },
     { key: 'men_lenguaje_corporal', label: 'Lenguaje corporal' },
     { key: 'men_diversion_conexion', label: 'Diversión y conexión' },
+    { key: 'men_general', label: 'Global mental' },
   ]},
   { key: 'fis', label: 'Físico', color: '#FF8C42', items: [
     { key: 'fis_remada', label: 'Remada' },
     { key: 'fis_resistencia_olas', label: 'Resistencia entre olas' },
     { key: 'fis_respiracion', label: 'Respiración' },
+    { key: 'fis_general', label: 'Global físico' },
+  ]},
+  { key: 'com', label: 'Competitivo', color: '#FF6B6B', items: [
+    { key: 'com_general', label: 'Global competitivo' },
   ]},
 ];
 
@@ -849,10 +857,12 @@ function DeepEvals() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const [kindFilter, setKindFilter] = useState<'todas' | 'general' | 'competencia'>('todas');
   const load = () => hpListDeepEvaluations().then((r) => { if (r.ok) setRows(r.evaluations); else setErr(r.error || null); }).catch(() => {});
   useEffect(() => { load(); }, []);
+  const visible = rows.filter((r) => kindFilter === 'todas' || r.eval_kind === kindFilter);
 
-  const SECTION_CHIP: Record<string, string> = { tec: 'TEC', tac: 'TAC', men: 'MEN', fis: 'FIS' };
+  const SECTION_CHIP: Record<string, string> = { tec: 'TEC', tac: 'TAC', men: 'MEN', fis: 'FIS', com: 'COM' };
 
   return (
     <div className="space-y-3">
@@ -867,8 +877,18 @@ function DeepEvals() {
         <DeepEvalForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />
       )}
 
+      <div className="flex gap-1.5">
+        {(['todas', 'general', 'competencia'] as const).map((k) => (
+          <button key={k} type="button" onClick={() => setKindFilter(k)}
+            className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize"
+            style={kindFilter === k ? { background: GOLD, color: '#412402' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            {k === 'todas' ? `Todas ${rows.length}` : k === 'general' ? `Generales ${rows.filter((r) => r.eval_kind === 'general').length}` : `Competencia ${rows.filter((r) => r.eval_kind === 'competencia').length}`}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-1.5">
-        {rows.map((e) => {
+        {visible.map((e) => {
           const open = openId === e.id;
           return (
             <div key={e.id} style={card}>
@@ -878,6 +898,9 @@ function DeepEvals() {
                   <p className="text-[10px] shrink-0" style={{ ...MONO, color: FAINT }}>{e.eval_date}</p>
                 </div>
                 <p className="text-[11px] mt-0.5" style={{ color: DIM }}>
+                  <span className="font-bold uppercase text-[9px] mr-1 px-1.5 py-0.5 rounded" style={{ ...MONO, background: e.eval_kind === 'general' ? 'rgba(0,210,255,.12)' : 'rgba(255,209,102,.12)', color: e.eval_kind === 'general' ? CYAN : GOLD }}>
+                    {e.eval_kind === 'general' ? 'General' : 'Competencia'}
+                  </span>
                   {e.event_name ?? 'Competencia'}
                   {e.round_reached ? ` · ${e.round_reached}` : ''}
                   {e.final_ranking ? ` · puesto ${e.final_ranking}` : ''}
@@ -935,7 +958,7 @@ function DeepEvals() {
             </div>
           );
         })}
-        {rows.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin evaluaciones profundas todavía.</p>}
+        {visible.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin evaluaciones de este tipo todavía.</p>}
       </div>
     </div>
   );
@@ -945,6 +968,7 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
   const [q, setQ] = useState('');
   const [results, setResults] = useState<{ id: string; name: string }[]>([]);
   const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [kind, setKind] = useState<'general' | 'competencia'>('general');
   const [eventName, setEventName] = useState('');
   const [round, setRound] = useState('');
   const [ranking, setRanking] = useState('');
@@ -966,8 +990,9 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
     if (!picked) return;
     setErr(null); setBusy(true);
     const r = await hpCreateDeepEvaluation({
-      studentId: picked.id, event_name: eventName,
-      round_reached: round || null, final_ranking: ranking || null,
+      studentId: picked.id, eval_kind: kind, event_name: eventName,
+      round_reached: kind === 'competencia' ? (round || null) : null,
+      final_ranking: kind === 'competencia' ? (ranking || null) : null,
       scores, diagnostico: diag,
     });
     setBusy(false);
@@ -982,7 +1007,16 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
 
   return (
     <div style={card} className="space-y-2.5">
-      <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Evaluación profunda · post-competencia</p>
+      <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Evaluación profunda</p>
+      <div className="flex gap-1.5">
+        {(['general', 'competencia'] as const).map((k) => (
+          <button key={k} type="button" onClick={() => setKind(k)}
+            className="px-3 py-1.5 rounded-full text-[10.5px] font-bold capitalize"
+            style={kind === k ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            {k === 'general' ? '📋 General (programada)' : '🏆 Post-competencia'}
+          </button>
+        ))}
+      </div>
       <div className="relative">
         <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta… *" aria-label="Atleta" style={inp} />
         {results.length > 0 && (
@@ -996,11 +1030,15 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
           </div>
         )}
       </div>
-      <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Evento — Panamericanos 2026 *" aria-label="Evento" style={inp} />
-      <div className="flex gap-2">
-        <input value={round} onChange={(e) => setRound(e.target.value)} placeholder="Ronda alcanzada" aria-label="Ronda alcanzada" style={inp} />
-        <input value={ranking} onChange={(e) => setRanking(e.target.value)} placeholder="Puesto final" aria-label="Puesto final" style={inp} />
-      </div>
+      <input value={eventName} onChange={(e) => setEventName(e.target.value)}
+        placeholder={kind === 'general' ? 'Motivo — Evaluación física · agosto *' : 'Evento — Panamericanos 2026 *'}
+        aria-label={kind === 'general' ? 'Motivo' : 'Evento'} style={inp} />
+      {kind === 'competencia' && (
+        <div className="flex gap-2">
+          <input value={round} onChange={(e) => setRound(e.target.value)} placeholder="Ronda alcanzada" aria-label="Ronda alcanzada" style={inp} />
+          <input value={ranking} onChange={(e) => setRanking(e.target.value)} placeholder="Puesto final" aria-label="Puesto final" style={inp} />
+        </div>
+      )}
 
       {DEEP_SECTIONS.map((sec) => {
         const open = openSec === sec.key;
@@ -1064,8 +1102,10 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
 function EquipoTab() {
   const [rows, setRows] = useState<HPTeamRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [openProfile, setOpenProfile] = useState<string | null>(null);
   useEffect(() => { hpTeam().then((r) => { if (r.ok) setRows(r.rows); setLoaded(true); }).catch(() => setLoaded(true)); }, []);
   if (!loaded) return <p className="text-[12px]" style={{ color: FAINT }}>Cargando…</p>;
+  if (openProfile) return <AthleteProfile studentId={openProfile} onBack={() => setOpenProfile(null)} />;
   return (
     <div className="space-y-2">
       {rows.map((r) => (
@@ -1076,7 +1116,7 @@ function EquipoTab() {
               📄 Reporte
             </Link>
           </div>
-        <Link href={`/students/${r.student_id}`} className="block">
+        <button type="button" onClick={() => setOpenProfile(r.student_id)} className="block w-full text-left">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[13px] font-semibold truncate" style={{ color: TXT }}>
               {r.ranking_position != null && r.ranking_position <= 3 ? ['🥇', '🥈', '🥉'][r.ranking_position - 1] + ' ' : ''}{r.name}
@@ -1094,13 +1134,253 @@ function EquipoTab() {
               {r.next_competition ? `🏆 ${r.next_competition} · ` : ''}
               {r.evals_count > 0 ? `${r.evals_count} eval${r.evals_count === 1 ? '' : 's'} · ` : ''}
               {r.last_checkin_date ? `último check-in ${r.last_checkin_date}` : 'sin check-ins recientes'}
-              {' · '}ficha completa →
+              {' · '}perfil completo →
             </p>
           )}
-        </Link>
+        </button>
         </div>
       ))}
       {rows.length === 0 && <p className="text-[12px] text-center py-4" style={{ color: FAINT }}>Sin atletas con programa activo.</p>}
+    </div>
+  );
+}
+
+// ─── PERFIL DEL ATLETA (la vista Equipo de la app HP, completa) ───
+
+const PILLAR_META: Record<string, { label: string; color: string }> = {
+  fis: { label: 'Físico', color: '#06D6A0' },
+  tec: { label: 'Técnico', color: '#00D2FF' },
+  tac: { label: 'Táctico', color: '#8B5CF6' },
+  men: { label: 'Mental', color: '#FF8C42' },
+  com: { label: 'Competitivo', color: '#FF6B6B' },
+};
+
+function AthleteProfile({ studentId, onBack }: { studentId: string; onBack: () => void }) {
+  const [d, setD] = useState<HPAthleteFull | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    hpAthleteFull(studentId).then((r) => { if (r.ok && r.data) setD(r.data); else setErr(r.error || null); }).catch(() => {});
+  }, [studentId]);
+  if (err) return <p className="text-[12px]" style={{ color: RED }}>{err}</p>;
+  if (!d) return <p className="text-[12px]" style={{ color: FAINT }}>Cargando perfil…</p>;
+  const mins = (m: number) => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+  return (
+    <div className="space-y-3">
+      <button type="button" onClick={onBack} className="text-[11px]" style={{ ...MONO, color: FAINT }}>← Equipo</button>
+
+      <div style={card}>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[18px] font-extrabold uppercase leading-tight" style={{ color: TXT, fontStretch: '125%' }}>
+              {d.student.name}
+            </p>
+            {d.student.nickname && <p className="text-[12px] font-bold" style={{ color: GOLD }}>&ldquo;{d.student.nickname}&rdquo;</p>}
+            <p className="text-[11px] mt-0.5" style={{ color: DIM }}>
+              {d.student.belt ? `Cinta: ${d.student.belt.replace(/_/g, ' ')}` : ''}
+              {d.student.age != null ? ` · ${d.student.age} años` : ''}
+              {d.student.stance ? ` · ${d.student.stance}` : ''}
+              {d.ranking ? ` · rank #${d.ranking.position}/${d.ranking.total}` : ''}
+            </p>
+          </div>
+          {d.last_eval?.global != null && (
+            <div className="text-center shrink-0 rounded-2xl px-3 py-2" style={{ border: `2px solid ${CYAN}` }}>
+              <p className="text-[22px] font-extrabold leading-none" style={{ color: CYAN }}>{d.last_eval.global.toFixed(1)}</p>
+              <p className="text-[8px] uppercase tracking-wider mt-0.5" style={{ ...MONO, color: FAINT }}>Índice /5</p>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2 mt-2.5 flex-wrap">
+          <Link href={`/hp/reporte/${d.student.id}`} className="text-[10px] font-bold px-3 py-1.5 rounded-full" style={{ background: CYAN, color: '#06202F' }}>📄 Reporte PDF</Link>
+          <Link href={`/students/${d.student.id}`} className="text-[10px] font-bold px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM }}>Ficha BRAIN →</Link>
+          <Link href="/programas" className="text-[10px] font-bold px-3 py-1.5 rounded-full" style={{ border: `1px solid ${BORDER}`, color: DIM }}>Editar plan →</Link>
+        </div>
+      </div>
+
+      {d.last_eval && (
+        <div style={card}>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Perfil de rendimiento</p>
+            <p className="text-[9.5px]" style={{ ...MONO, color: FAINT }}>{d.last_eval.date}</p>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {d.last_eval.pillars.map((p) => {
+              const meta = PILLAR_META[p.key] ?? { label: p.key, color: CYAN };
+              return (
+                <div key={p.key}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12px] font-semibold" style={{ color: TXT }}>{meta.label}</p>
+                    <p className="text-[12px] font-bold" style={{ ...MONO, color: meta.color }}>{p.avg.toFixed(1)}/5</p>
+                  </div>
+                  <div className="h-[6px] rounded-full overflow-hidden mt-0.5" style={{ background: 'rgba(255,255,255,.08)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${(p.avg / 5) * 100}%`, background: meta.color }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {d.profile && (
+        <>
+          {d.profile.score_capacity != null && (
+            <div style={card}>
+              <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Capacidad de score</p>
+              <p className="text-[9.5px] mt-0.5" style={{ color: FAINT }}>Techo técnico para generar puntuación</p>
+              <div className="flex items-center gap-2.5 mt-1.5">
+                <p className="text-[24px] font-extrabold" style={{ color: GREEN }}>{d.profile.score_capacity}</p>
+                <div className="flex-1 h-[8px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.08)' }}>
+                  <div className="h-full rounded-full" style={{ width: `${d.profile.score_capacity * 10}%`, background: GREEN }} />
+                </div>
+              </div>
+              <p className="text-[10px] mt-1" style={{ color: DIM }}>
+                {d.profile.score_capacity >= 8 ? 'Alto — puede generar scores premium' : d.profile.score_capacity >= 5 ? 'Medio — scores sólidos con el set correcto' : 'En construcción'}
+              </p>
+            </div>
+          )}
+
+          <div style={card}>
+            <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Datos físicos</p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {[
+                { n: d.student.age != null ? String(d.student.age) : '—', l: 'Edad' },
+                { n: d.profile.height_cm != null ? `${d.profile.height_cm}cm` : '—', l: 'Altura' },
+                { n: d.profile.weight_kg != null ? `${d.profile.weight_kg}kg` : '—', l: 'Peso' },
+                { n: d.profile.bmi != null ? String(d.profile.bmi) : '—', l: 'IMC' },
+              ].map((x) => (
+                <div key={x.l} className="rounded-xl py-2.5 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
+                  <p className="text-[17px] font-extrabold" style={{ color: TXT }}>{x.n}</p>
+                  <p className="text-[8.5px] uppercase tracking-wider" style={{ ...MONO, color: FAINT }}>{x.l}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] mt-2" style={{ color: DIM }}>
+              {d.student.stance ? `Posición: ${d.student.stance}` : ''}
+              {d.profile.dominant_foot ? ` · Pie: ${d.profile.dominant_foot}` : ''}
+              {d.profile.favorite_maneuver ? ` · Maniobra favorita: ${d.profile.favorite_maneuver}` : ''}
+              {d.profile.years_surfing != null ? ` · ${d.profile.years_surfing} años surfeando` : ''}
+              {d.profile.years_competing != null ? ` · ${d.profile.years_competing} compitiendo` : ''}
+            </p>
+          </div>
+
+          <div style={{ ...card, borderLeft: d.profile.injury ? `3px solid ${RED}` : undefined }}>
+            {d.profile.injury ? (
+              <p className="text-[12px]" style={{ color: DIM }}>
+                🩹 <b style={{ color: RED }}>Lesión:</b> {d.profile.injury}
+                {d.profile.injury_since ? ` (desde ${d.profile.injury_since})` : ''}
+              </p>
+            ) : (
+              <p className="text-[11.5px]" style={{ color: FAINT }}>Sin lesiones registradas.</p>
+            )}
+          </div>
+
+          <div style={{ ...card, borderLeft: `3px solid ${d.profile.ficha_pct >= 100 ? GREEN : GOLD}` }}>
+            <p className="text-[11.5px] font-bold" style={{ color: TXT }}>Ficha técnica · {d.profile.ficha_pct}% completa</p>
+            {d.profile.ficha_missing.length > 0 && (
+              <p className="text-[10.5px] mt-0.5" style={{ color: DIM }}>Faltan: {d.profile.ficha_missing.join(' · ')}</p>
+            )}
+            <div className="h-[6px] rounded-full overflow-hidden mt-1.5" style={{ background: 'rgba(255,255,255,.08)' }}>
+              <div className="h-full rounded-full" style={{ width: `${d.profile.ficha_pct}%`, background: d.profile.ficha_pct >= 100 ? GREEN : GOLD }} />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div style={card} className="text-center">
+          <p className="text-[17px] font-extrabold" style={{ color: CYAN }}>{mins(d.water.total_minutes)}</p>
+          <p className="text-[8.5px] uppercase tracking-wider" style={{ ...MONO, color: FAINT }}>Horas en el agua · total</p>
+        </div>
+        <div style={card} className="text-center">
+          <p className="text-[17px] font-extrabold" style={{ color: TXT }}>{mins(d.water.week_minutes)}</p>
+          <p className="text-[8.5px] uppercase tracking-wider" style={{ ...MONO, color: FAINT }}>Esta semana</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { n: d.counts.sessions_attended, l: 'Sesiones' },
+          { n: d.counts.evals, l: 'Evaluaciones' },
+          { n: d.counts.checkins, l: 'Check-ins' },
+        ].map((x) => (
+          <div key={x.l} style={card} className="text-center">
+            <p className="text-[19px] font-extrabold" style={{ color: CYAN }}>{x.n}</p>
+            <p className="text-[8.5px] uppercase tracking-wider" style={{ ...MONO, color: FAINT }}>{x.l}</p>
+          </div>
+        ))}
+      </div>
+
+      <div style={card}>
+        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Promedios check-in · 14 días</p>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {[
+            { n: d.habits14.avg_sleep != null ? `${d.habits14.avg_sleep}h` : '—', l: '😴 Sueño' },
+            { n: d.habits14.avg_water != null ? `${d.habits14.avg_water}/8` : '—', l: '💧 Agua' },
+            { n: d.habits14.avg_energy != null ? `${d.habits14.avg_energy}/4` : '—', l: '⚡ Energía' },
+          ].map((x) => (
+            <div key={x.l} className="rounded-xl py-2 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
+              <p className="text-[15px] font-extrabold" style={{ color: GREEN }}>{x.n}</p>
+              <p className="text-[8.5px]" style={{ ...MONO, color: FAINT }}>{x.l}</p>
+            </div>
+          ))}
+        </div>
+        {d.habits14.last_nights.length > 0 && (
+          <>
+            <p className="text-[9px] uppercase tracking-wider mt-2.5" style={{ ...MONO, color: FAINT }}>Últimas noches</p>
+            <div className="flex gap-1.5 mt-1 flex-wrap">
+              {d.habits14.last_nights.map((n) => (
+                <div key={n.date} className="rounded-lg px-2 py-1 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
+                  <p className="text-[11.5px] font-bold" style={{ color: n.sleep != null && n.sleep >= 7 ? GREEN : GOLD }}>{n.sleep != null ? `${n.sleep}h` : '—'}</p>
+                  <p className="text-[8px]" style={{ ...MONO, color: FAINT }}>{n.date}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={card}>
+        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Citas</p>
+        {d.appointments.upcoming.length === 0 && <p className="text-[11px] mt-1" style={{ color: FAINT }}>Sin citas próximas{d.appointments.past_count ? ` · ${d.appointments.past_count} pasadas` : ''}.</p>}
+        <div className="mt-1 space-y-0.5">
+          {d.appointments.upcoming.map((a, i) => (
+            <p key={i} className="text-[11.5px]" style={{ color: DIM }}>
+              <b style={{ color: TXT }}>{a.title || a.kind}</b>{a.mode ? ` · ${a.mode}` : ''} · {a.date}{a.time ? ` ${a.time}` : ''} <span style={{ color: FAINT }}>({a.coach})</span>
+            </p>
+          ))}
+        </div>
+        {d.appointments.upcoming.length > 0 && d.appointments.past_count > 0 && (
+          <p className="text-[9.5px] mt-1" style={{ color: FAINT }}>{d.appointments.past_count} citas pasadas</p>
+        )}
+      </div>
+
+      {d.competitions.length > 0 && (
+        <div style={{ ...card, borderLeft: `3px solid ${GOLD}` }}>
+          <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>🏆 Competencias del atleta</p>
+          <div className="mt-1 space-y-0.5">
+            {d.competitions.map((c) => (
+              <p key={c.id} className="text-[11.5px]" style={{ color: DIM }}>
+                <b style={{ color: TXT }}>{c.name}</b> · {c.comp_date}
+                {c.final_place ? <b style={{ color: GOLD }}> · {c.final_place}</b> : c.status === 'live' ? <b style={{ color: RED }}> · EN CURSO</b> : ` · ${c.status === 'finished' ? 'terminada' : 'programada'}`}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {d.profile && (d.profile.palmares || d.profile.sponsors || d.profile.goals.short || d.profile.goals.long || d.profile.why_train) && (
+        <div style={card}>
+          <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Carrera y metas</p>
+          <div className="mt-1 space-y-1 text-[11.5px]" style={{ color: DIM }}>
+            {d.profile.palmares && <p>🏅 <b style={{ color: TXT }}>Palmarés:</b> {d.profile.palmares}</p>}
+            {d.profile.sponsors && <p>🤝 <b style={{ color: TXT }}>Sponsors:</b> {d.profile.sponsors}</p>}
+            {d.profile.goals.short && <p>🎯 <b style={{ color: TXT }}>Corto plazo:</b> {d.profile.goals.short}</p>}
+            {d.profile.goals.mid && <p>🎯 <b style={{ color: TXT }}>Mediano:</b> {d.profile.goals.mid}</p>}
+            {d.profile.goals.long && <p>🎯 <b style={{ color: TXT }}>Largo:</b> {d.profile.goals.long}</p>}
+            {d.profile.why_train && <p>🔥 <b style={{ color: TXT }}>Por qué entrena:</b> {d.profile.why_train}</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
