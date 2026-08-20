@@ -7,6 +7,7 @@ import {
   hpListMessages, hpSendMessage,
   hpListSessions, hpCreateSession, hpSetAttendance, hpDeleteSession, hpSyncSessionRoster,
   hpListEvaluations, hpCreateEvaluation,
+  hpListDeepEvaluations, hpCreateDeepEvaluation, type HPDeepEvalRow,
   type HPPanelData, type HPPlanRow, type HPLibrary, type HPTeamRow,
   type HPMessageRow, type HPSessionRow, type HPEvalRow,
 } from '@/lib/actions/hp-cockpit';
@@ -581,9 +582,76 @@ function CitasTab() {
   );
 }
 
-// ─── EVAL ───
+// ─── EVAL (rápidas por pilar + PROFUNDAS post-competencia) ───
+
+// Catálogo de ítems de la evaluación profunda — calcado de la app HP.
+const DEEP_SECTIONS: { key: 'tec' | 'tac' | 'men' | 'fis'; label: string; color: string; items: { key: string; label: string }[] }[] = [
+  { key: 'tec', label: 'Técnico', color: '#00D2FF', items: [
+    { key: 'tec_uso_cara_velocidad', label: 'Uso de cara y velocidad' },
+    { key: 'tec_fundamentos', label: 'Fundamentos' },
+    { key: 'tec_bottom_turn', label: 'Bottom turn' },
+    { key: 'tec_maniobras_principales', label: 'Maniobras principales' },
+    { key: 'tec_maniobras_progresivas', label: 'Maniobras progresivas' },
+    { key: 'tec_conexion_flow', label: 'Conexión y flow' },
+    { key: 'tec_repertorio', label: 'Repertorio' },
+    { key: 'tec_momentos_criticos', label: 'Momentos críticos' },
+  ]},
+  { key: 'tac', label: 'Táctico', color: '#06D6A0', items: [
+    { key: 'tac_analisis_zona', label: 'Análisis de zona' },
+    { key: 'tac_eleccion_tabla', label: 'Elección de tabla' },
+    { key: 'tac_manejo_prioridad', label: 'Manejo de prioridad' },
+    { key: 'tac_lineup_pos', label: 'Posicionamiento en lineup' },
+    { key: 'tac_adaptacion_rival', label: 'Adaptación al rival' },
+    { key: 'tac_seleccion_olas', label: 'Selección de olas' },
+    { key: 'tac_parte_critica', label: 'Parte crítica del heat' },
+  ]},
+  { key: 'men', label: 'Mental', color: '#FFD166', items: [
+    { key: 'men_enfoque', label: 'Enfoque' },
+    { key: 'men_the_zone', label: 'The Zone' },
+    { key: 'men_mentalidad_ganador', label: 'Mentalidad de ganador' },
+    { key: 'men_recuperacion', label: 'Recuperación tras error' },
+    { key: 'men_manejo_presion', label: 'Manejo de presión' },
+    { key: 'men_lenguaje_corporal', label: 'Lenguaje corporal' },
+    { key: 'men_diversion_conexion', label: 'Diversión y conexión' },
+  ]},
+  { key: 'fis', label: 'Físico', color: '#FF8C42', items: [
+    { key: 'fis_remada', label: 'Remada' },
+    { key: 'fis_resistencia_olas', label: 'Resistencia entre olas' },
+    { key: 'fis_respiracion', label: 'Respiración' },
+  ]},
+];
+
+const DEEP_DIAG_FIELDS: { key: string; label: string }[] = [
+  { key: 'what_worked', label: 'Qué funcionó' },
+  { key: 'what_failed', label: 'Qué falló' },
+  { key: 'critical_error', label: 'Error crítico' },
+  { key: 'pattern', label: 'Patrón detectado' },
+  { key: 'main_strength', label: 'Fortaleza principal' },
+  { key: 'key_limitation', label: 'Limitación clave' },
+  { key: 'top_priority', label: 'Prioridad #1' },
+  { key: 'concrete_action', label: 'Acción concreta' },
+  { key: 'notes', label: 'Notas' },
+];
 
 function EvalTab() {
+  const [mode, setMode] = useState<'rapidas' | 'profundas'>('rapidas');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1.5">
+        {(['rapidas', 'profundas'] as const).map((m) => (
+          <button key={m} type="button" onClick={() => setMode(m)}
+            className="px-3.5 py-1.5 rounded-full text-[11px] font-bold"
+            style={mode === m ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+            {m === 'rapidas' ? 'Rápidas · por pilar' : 'Profundas · competencia'}
+          </button>
+        ))}
+      </div>
+      {mode === 'rapidas' ? <QuickEvals /> : <DeepEvals />}
+    </div>
+  );
+}
+
+function QuickEvals() {
   const [rows, setRows] = useState<HPEvalRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -770,6 +838,222 @@ function MsgTab() {
           </div>
         ))}
         {messages.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin mensajes enviados todavía.</p>}
+      </div>
+    </div>
+  );
+}
+
+function DeepEvals() {
+  const [rows, setRows] = useState<HPDeepEvalRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const load = () => hpListDeepEvaluations().then((r) => { if (r.ok) setRows(r.evaluations); else setErr(r.error || null); }).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const SECTION_CHIP: Record<string, string> = { tec: 'TEC', tac: 'TAC', men: 'MEN', fis: 'FIS' };
+
+  return (
+    <div className="space-y-3">
+      {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
+      {!creating ? (
+        <button type="button" onClick={() => setCreating(true)}
+          className="w-full rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ ...MONO, background: GOLD, color: '#412402' }}>
+          + Evaluación profunda de competencia
+        </button>
+      ) : (
+        <DeepEvalForm onDone={() => { setCreating(false); load(); }} onCancel={() => setCreating(false)} />
+      )}
+
+      <div className="space-y-1.5">
+        {rows.map((e) => {
+          const open = openId === e.id;
+          return (
+            <div key={e.id} style={card}>
+              <button type="button" onClick={() => setOpenId(open ? null : e.id)} className="w-full text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[12.5px] font-semibold truncate" style={{ color: TXT }}>{e.student_name}</p>
+                  <p className="text-[10px] shrink-0" style={{ ...MONO, color: FAINT }}>{e.eval_date}</p>
+                </div>
+                <p className="text-[11px] mt-0.5" style={{ color: DIM }}>
+                  {e.event_name ?? 'Competencia'}
+                  {e.round_reached ? ` · ${e.round_reached}` : ''}
+                  {e.final_ranking ? ` · puesto ${e.final_ranking}` : ''}
+                </p>
+                <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                  {DEEP_SECTIONS.map((sec) => {
+                    const avg = e.section_avgs[sec.key];
+                    if (avg == null) return null;
+                    return (
+                      <span key={sec.key} className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ ...MONO, border: `1px solid ${sec.color}`, color: sec.color }}>
+                        {SECTION_CHIP[sec.key]} {avg.toFixed(1)}/5
+                      </span>
+                    );
+                  })}
+                </div>
+              </button>
+
+              {open && (
+                <div className="mt-2.5 pt-2.5 space-y-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+                  {DEEP_SECTIONS.map((sec) => {
+                    const items = sec.items.filter((it) => e.scores[it.key] != null);
+                    if (!items.length) return null;
+                    return (
+                      <div key={sec.key}>
+                        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: sec.color }}>{sec.label}</p>
+                        <div className="mt-1 space-y-1">
+                          {items.map((it) => (
+                            <div key={it.key} className="flex items-center gap-2">
+                              <p className="text-[11px] w-44 shrink-0 truncate" style={{ color: DIM }}>{it.label}</p>
+                              <div className="flex-1 h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.08)' }}>
+                                <div className="h-full rounded-full" style={{ width: `${(e.scores[it.key] / 5) * 100}%`, background: sec.color }} />
+                              </div>
+                              <p className="text-[10.5px] w-7 text-right" style={{ ...MONO, color: TXT }}>{e.scores[it.key]}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {DEEP_DIAG_FIELDS.some((f) => e.diagnostico[f.key]) && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Diagnóstico</p>
+                      <div className="mt-1 space-y-1">
+                        {DEEP_DIAG_FIELDS.filter((f) => e.diagnostico[f.key]).map((f) => (
+                          <p key={f.key} className="text-[11.5px]" style={{ color: DIM }}>
+                            <b style={{ color: TXT }}>{f.label}:</b> {e.diagnostico[f.key]}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {rows.length === 0 && <p className="text-[12px] text-center py-3" style={{ color: FAINT }}>Sin evaluaciones profundas todavía.</p>}
+      </div>
+    </div>
+  );
+}
+
+function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [eventName, setEventName] = useState('');
+  const [round, setRound] = useState('');
+  const [ranking, setRanking] = useState('');
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [diag, setDiag] = useState<Record<string, string>>({});
+  const [openSec, setOpenSec] = useState<string>('tec');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (q.trim().length >= 2 && !picked) adminSearchStudents(q).then((r) => { if (r.ok) setResults(r.students.map((s: any) => ({ id: s.id, name: s.name }))); });
+      else setResults([]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, picked]);
+
+  const save = async () => {
+    if (!picked) return;
+    setErr(null); setBusy(true);
+    const r = await hpCreateDeepEvaluation({
+      studentId: picked.id, event_name: eventName,
+      round_reached: round || null, final_ranking: ranking || null,
+      scores, diagnostico: diag,
+    });
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || null); return; }
+    onDone();
+  };
+
+  const secAvg = (prefix: string) => {
+    const vals = Object.entries(scores).filter(([k]) => k.startsWith(prefix)).map(([, v]) => v);
+    return vals.length ? (vals.reduce((s, x) => s + x, 0) / vals.length).toFixed(1) : null;
+  };
+
+  return (
+    <div style={card} className="space-y-2.5">
+      <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Evaluación profunda · post-competencia</p>
+      <div className="relative">
+        <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta… *" aria-label="Atleta" style={inp} />
+        {results.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+            {results.map((st) => (
+              <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
+                className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
+                {st.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Evento — Panamericanos 2026 *" aria-label="Evento" style={inp} />
+      <div className="flex gap-2">
+        <input value={round} onChange={(e) => setRound(e.target.value)} placeholder="Ronda alcanzada" aria-label="Ronda alcanzada" style={inp} />
+        <input value={ranking} onChange={(e) => setRanking(e.target.value)} placeholder="Puesto final" aria-label="Puesto final" style={inp} />
+      </div>
+
+      {DEEP_SECTIONS.map((sec) => {
+        const open = openSec === sec.key;
+        const avg = secAvg(sec.key + '_');
+        return (
+          <div key={sec.key} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+            <button type="button" onClick={() => setOpenSec(open ? '' : sec.key)}
+              className="w-full flex items-center justify-between px-3 py-2" style={{ background: 'rgba(255,255,255,.03)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ ...MONO, color: sec.color }}>{sec.label}</p>
+              <p className="text-[10.5px]" style={{ ...MONO, color: avg ? sec.color : FAINT }}>{avg ? `${avg}/5` : open ? '▴' : '▾'}</p>
+            </button>
+            {open && (
+              <div className="px-3 py-2 space-y-2">
+                {sec.items.map((it) => (
+                  <div key={it.key} className="flex items-center gap-2">
+                    <p className="text-[11px] w-40 shrink-0" style={{ color: DIM }}>{it.label}</p>
+                    <input type="range" min={1} max={5} step={1}
+                      value={scores[it.key] ?? 3}
+                      onChange={(e) => setScores((sc) => ({ ...sc, [it.key]: Number(e.target.value) }))}
+                      className="flex-1" aria-label={`${it.label} 1 a 5`} />
+                    <button type="button"
+                      onClick={() => setScores((sc) => { const c = { ...sc }; if (c[it.key] != null) delete c[it.key]; else c[it.key] = 3; return c; })}
+                      className="text-[11px] w-9 text-right shrink-0"
+                      style={{ ...MONO, color: scores[it.key] != null ? sec.color : FAINT }}
+                      title={scores[it.key] != null ? 'Quitar puntaje' : 'Puntuar'}>
+                      {scores[it.key] != null ? `${scores[it.key]}/5` : '—'}
+                    </button>
+                  </div>
+                ))}
+                <p className="text-[9.5px]" style={{ color: FAINT }}>Tocá el número para incluir/quitar un ítem — solo se guardan los puntuados.</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div className="rounded-xl px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
+        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Diagnóstico</p>
+        {DEEP_DIAG_FIELDS.map((f) => (
+          <input key={f.key} value={diag[f.key] ?? ''}
+            onChange={(e) => setDiag((d) => ({ ...d, [f.key]: e.target.value }))}
+            placeholder={f.label + '…'} aria-label={f.label} style={inp} />
+        ))}
+      </div>
+
+      {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
+      <div className="flex gap-2">
+        <button type="button" disabled={busy || !picked || !eventName.trim()} onClick={save}
+          className="flex-1 rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
+          style={{ ...MONO, background: GOLD, color: '#412402', opacity: busy || !picked || !eventName.trim() ? 0.5 : 1 }}>
+          {busy ? 'Guardando…' : 'Guardar evaluación profunda'}
+        </button>
+        <button type="button" onClick={onCancel} className="px-3 text-[11px]" style={{ color: FAINT }}>Cancelar</button>
       </div>
     </div>
   );

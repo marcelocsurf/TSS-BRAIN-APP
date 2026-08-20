@@ -865,3 +865,118 @@ export async function hpAthleteReport(
     return { ok: false, error: 'No se pudo generar el reporte.', report: null };
   }
 }
+
+// ─── EVALUACIÓN PROFUNDA post-competencia (la de ~90 campos de la app HP) ───
+//
+// scores = ítems 1-5 por sección (tec_/tac_/men_/fis_); diagnostico = los 9
+// campos de texto del cierre. El catálogo de ítems vive en el cliente
+// (HP_DEEP_ITEMS en HPCockpit); acá se sanitiza por prefijo y rango — un
+// payload crafteado no puede meter claves basura ni valores fuera de 1-5.
+
+export interface HPDeepEvalRow {
+  id: string;
+  student_name: string;
+  coach_name: string | null;
+  eval_date: string;
+  event_name: string | null;
+  round_reached: string | null;
+  final_ranking: string | null;
+  scores: Record<string, number>;
+  diagnostico: Record<string, string>;
+  section_avgs: { tec: number | null; tac: number | null; men: number | null; fis: number | null };
+}
+
+function sectionAvg(scores: Record<string, number>, prefix: string): number | null {
+  const vals = Object.entries(scores).filter(([k, v]) => k.startsWith(prefix) && Number.isFinite(v)).map(([, v]) => Number(v));
+  if (!vals.length) return null;
+  return Math.round((vals.reduce((s, x) => s + x, 0) / vals.length) * 10) / 10;
+}
+
+export async function hpListDeepEvaluations(): Promise<{ ok: boolean; error?: string; evaluations: HPDeepEvalRow[] }> {
+  try {
+    if (!(await assertAdmin())) return { ...DENY, evaluations: [] };
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('hp_deep_evaluations')
+      .select('id, eval_date, event_name, round_reached, final_ranking, scores, diagnostico, students(first_name, last_name), coaches(display_name)')
+      .order('eval_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    return {
+      ok: true,
+      evaluations: (data ?? []).map((e: any) => {
+        const scores = (e.scores && typeof e.scores === 'object' && !Array.isArray(e.scores)) ? e.scores : {};
+        const diag = (e.diagnostico && typeof e.diagnostico === 'object' && !Array.isArray(e.diagnostico)) ? e.diagnostico : {};
+        return {
+          id: e.id,
+          student_name: `${e.students?.first_name ?? ''} ${e.students?.last_name ?? ''}`.trim() || '—',
+          coach_name: e.coaches?.display_name ?? null,
+          eval_date: e.eval_date,
+          event_name: e.event_name,
+          round_reached: e.round_reached,
+          final_ranking: e.final_ranking,
+          scores,
+          diagnostico: diag,
+          section_avgs: {
+            tec: sectionAvg(scores, 'tec_'),
+            tac: sectionAvg(scores, 'tac_'),
+            men: sectionAvg(scores, 'men_'),
+            fis: sectionAvg(scores, 'fis_'),
+          },
+        };
+      }),
+    };
+  } catch (e) {
+    console.error('[hp-cockpit] hpListDeepEvaluations failed', e);
+    return { ok: false, error: 'No se pudieron cargar las evaluaciones profundas.', evaluations: [] };
+  }
+}
+
+const DEEP_DIAG_KEYS = ['what_worked', 'what_failed', 'critical_error', 'pattern', 'main_strength', 'key_limitation', 'top_priority', 'concrete_action', 'notes'];
+
+export async function hpCreateDeepEvaluation(input: {
+  studentId: string;
+  event_name: string;
+  round_reached?: string | null;
+  final_ranking?: string | null;
+  scores: Record<string, number>;
+  diagnostico: Record<string, string>;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    if (!input.event_name?.trim()) return { ok: false, error: 'La evaluación necesita el nombre del evento.' };
+    // Sanitizar por dentro: solo claves de sección conocidas, enteros 1-5.
+    const scores: Record<string, number> = {};
+    for (const [k, v] of Object.entries(input.scores ?? {})) {
+      if (!/^(tec|tac|men|fis)_[a-z_]{1,40}$/.test(k)) continue;
+      const n = Math.round(Number(v));
+      if (n >= 1 && n <= 5) scores[k] = n;
+    }
+    const diagnostico: Record<string, string> = {};
+    for (const k of DEEP_DIAG_KEYS) {
+      const v = (input.diagnostico ?? {})[k];
+      if (typeof v === 'string' && v.trim()) diagnostico[k] = v.trim().slice(0, 800);
+    }
+    if (Object.keys(scores).length === 0 && Object.keys(diagnostico).length === 0) {
+      return { ok: false, error: 'La evaluación está vacía — puntuá al menos una sección o escribí el diagnóstico.' };
+    }
+    const admin = createAdminClient();
+    const me = await getCurrentCoach();
+    const { error } = await admin.from('hp_deep_evaluations').insert({
+      student_id: input.studentId,
+      coach_id: me?.id ?? null,
+      eval_date: elSalvadorToday(),
+      event_name: input.event_name.trim().slice(0, 160),
+      round_reached: input.round_reached?.trim().slice(0, 80) || null,
+      final_ranking: input.final_ranking?.trim().slice(0, 80) || null,
+      scores,
+      diagnostico,
+    });
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[hp-cockpit] hpCreateDeepEvaluation failed', e);
+    return { ok: false, error: 'No se pudo guardar la evaluación profunda.' };
+  }
+}
