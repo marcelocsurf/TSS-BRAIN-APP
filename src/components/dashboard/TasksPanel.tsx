@@ -38,6 +38,11 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
   const [recurrence, setRecurrence] = useState('');
+  const [recDays, setRecDays] = useState<number[]>([]);
+  const DOW = [
+    { iso: 1, l: 'Mon' }, { iso: 2, l: 'Tue' }, { iso: 3, l: 'Wed' }, { iso: 4, l: 'Thu' },
+    { iso: 5, l: 'Fri' }, { iso: 6, l: 'Sat' }, { iso: 7, l: 'Sun' },
+  ];
   const [checklistText, setChecklistText] = useState('');
   const [attachTool, setAttachTool] = useState('');
   const [err, setErr] = useState<string | null>(null);
@@ -66,6 +71,7 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
       const res = await createTask({
         academy_id: academyId, title, assignee_coach_id: assignee || null, due_date: due || null,
         recurrence: recurrence || null,
+        recurrence_days: recurrence === 'daily' ? recDays : null,
         checklist: checklistText.split('\n').map((s) => s.trim()).filter(Boolean),
         link_url: attachTool || null,
       });
@@ -143,9 +149,25 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                 <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 text-gray-700" />
                 <select value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
                   <option value="">One-time</option>
+                  <option value="daily">🔁 Daily (pick days)</option>
                   <option value="weekly">🔁 Weekly (standing)</option>
                   <option value="monthly">🔁 Monthly (standing)</option>
                 </select>
+                {recurrence === 'daily' && (
+                  <div className="flex gap-1 flex-wrap items-center">
+                    {DOW.map((d) => (
+                      <button key={d.iso} type="button"
+                        onClick={() => setRecDays((ds) => ds.includes(d.iso) ? ds.filter((x) => x !== d.iso) : [...ds, d.iso].sort())}
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold border"
+                        style={recDays.includes(d.iso)
+                          ? { background: 'var(--tss-navy)', color: '#fff', borderColor: 'var(--tss-navy)' }
+                          : { background: '#fff', color: '#6B7A82', borderColor: '#E2E8F0' }}>
+                        {d.l}
+                      </button>
+                    ))}
+                    <span className="text-[10px] text-gray-400 ml-1">{recDays.length === 0 ? 'No days = every day' : `${recDays.length} day${recDays.length === 1 ? '' : 's'}/week`}</span>
+                  </div>
+                )}
                 <select value={attachTool} onChange={(e) => setAttachTool(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
                   <option value="">No tool attached</option>
                   <option value="inventory">📦 Opens the academy inventory</option>
@@ -190,7 +212,11 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 truncate">
                           {t.title}
-                          {t.recurrence && (
+                          {t.recurrence === 'daily' && (t as any).recurrence_days?.length ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 font-semibold">
+                              <Repeat size={9} /> {((t as any).recurrence_days as number[]).map((n) => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][n - 1]).join(' ')}
+                            </span>
+                          ) : t.recurrence && (
                             <span className="ml-1.5 inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-1.5 py-0.5 align-middle">
                               <Repeat size={9} /> {t.recurrence}
                             </span>
