@@ -91,20 +91,20 @@ export async function getExperienceReport(opts: {
   const admin = createAdminClient();
   const fromMs = Date.parse(`${from}T00:00:00.000Z`);
   const toMs = Date.parse(`${to}T00:00:00.000Z`);
-  const fromUtc = new Date(fromMs).toISOString();
   const toUtc = new Date(toMs + 2 * 86400000).toISOString(); // +2d cubre el shift SV
-  // Rango anterior del mismo largo, para la tendencia por dimensión.
+  // Rango anterior del mismo largo para la tendencia. from/to YA son días SV:
+  // la resta se hace en días planos, sin volver a correr -6h (eso movía el
+  // borde un día).
   const spanMs = Math.max(86400000, toMs - fromMs + 86400000);
-  const prevFrom = toElSalvadorDate(new Date(fromMs - spanMs)) ?? from;
-  const prevFromUtc = new Date(fromMs - spanMs).toISOString();
+  const prevFrom = new Date(fromMs - spanMs).toISOString().slice(0, 10);
+  const prevFromUtc = new Date(fromMs - spanMs - 6 * 3600000).toISOString();
 
   let q = admin
     .from('camp_experience_surveys')
-    .select('id, submitted_at, created_at, facilities_rating, equipment_rating, transport_rating, communication_rating, value_rating, nps, open_comment, students:student_id(first_name, last_name), camp_instances:camp_instance_id(camp_name, start_date)')
-    .gte('created_at', prevFromUtc)
-    .lte('created_at', toUtc)
+    .select('id, camp_instance_id, submitted_at, created_at, facilities_rating, equipment_rating, transport_rating, communication_rating, value_rating, nps, open_comment, students:student_id(first_name, last_name), camp_instances:camp_instance_id(camp_name, start_date)')
+    .or(`and(created_at.gte.${prevFromUtc},created_at.lte.${toUtc}),and(submitted_at.gte.${prevFromUtc},submitted_at.lte.${toUtc})`)
     .order('created_at', { ascending: false })
-    .limit(2000);
+    .limit(4000);
   if (scope.scopeAcademyId) q = q.eq('academy_id', scope.scopeAcademyId);
   const { data, error } = await q;
   if (error) return { ...base, error: error.message };
@@ -149,11 +149,12 @@ export async function getExperienceReport(opts: {
   // Por camp (solo respondidas en rango)
   const byCamp = new Map<string, any[]>();
   for (const r of answered) {
-    const key = r._inst?.camp_name ?? '—';
+    const key = r.camp_instance_id ?? '—';
     if (!byCamp.has(key)) byCamp.set(key, []);
     byCamp.get(key)!.push(r);
   }
-  const camps = Array.from(byCamp.entries()).map(([campName, rows]) => {
+  const camps = Array.from(byCamp.entries()).map(([, rows]) => {
+    const campName = rows[0]?._inst?.camp_name ?? '—';
     const d = dimAverages(rows);
     const w = DIM_COLS.map((c) => d[c]).filter((x) => x.avg != null) as { avg: number; n: number }[];
     return {

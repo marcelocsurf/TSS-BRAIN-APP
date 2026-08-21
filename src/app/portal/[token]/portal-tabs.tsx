@@ -1,6 +1,7 @@
 'use client';
 
 import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import { resolveAcademyBranding } from '@/lib/branding';
@@ -1875,6 +1876,7 @@ function FeedbackTab({
   })();
   const [expandedSurveyId, setExpandedSurveyId] = useState<string | null>(initialExpand);
   const [expOpen, setExpOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="space-y-5">
@@ -1896,13 +1898,16 @@ function FeedbackTab({
                 onClick={() => setExpOpen(!expOpen)}
                 className="text-xs font-medium text-cyan-700 underline"
               >
-                {expOpen ? 'Hide' : 'Share it'}
+                {expOpen ? 'Hide' : 'Give Feedback'}
               </button>
             </div>
           </div>
           {expOpen && (
             <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <ExperienceSurveyForm token={data.pendingExperience.token} />
+              <ExperienceSurveyForm
+                token={data.pendingExperience.token}
+                onDone={() => setTimeout(() => router.refresh(), 2500)}
+              />
             </div>
           )}
         </div>

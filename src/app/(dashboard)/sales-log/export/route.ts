@@ -14,7 +14,10 @@ const SOURCE_LABEL: Record<string, string> = {
 
 function csvCell(v: string | number | null): string {
   const s = v == null ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // Anti fórmula-injection: igual que src/lib/utils/csv.ts (CWE-1236).
+  const risky = /^[=+\-@\t\r]/.test(s);
+  const safe = risky ? `'${s}` : s;
+  return risky || /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 export async function GET() {

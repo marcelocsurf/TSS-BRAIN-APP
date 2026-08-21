@@ -1318,7 +1318,7 @@ export async function closeCampFinal(
 
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, coach_id, head_coach_id')
+    .select('id, coach_id, head_coach_id, academy_id')
     .eq('id', campInstanceId)
     .maybeSingle();
   if (!camp) return { ok: false, error: 'Service not found.' };
@@ -1352,11 +1352,6 @@ export async function closeCampFinal(
   // WhatsApp. Idempotente (UNIQUE camp+alumno). Best-effort: nunca traba
   // el cierre del camp.
   if (finalize) try {
-    const { data: campFull } = await admin
-      .from('camp_instances')
-      .select('academy_id')
-      .eq('id', campInstanceId)
-      .maybeSingle();
     const { data: expParts } = await admin
       .from('camp_participants')
       .select('student_id, enrollment_status')
@@ -1369,7 +1364,7 @@ export async function closeCampFinal(
         expActive.map((p: any) => ({
           camp_instance_id: campInstanceId,
           student_id: p.student_id,
-          academy_id: campFull?.academy_id ?? null,
+          academy_id: (camp as any).academy_id ?? null,
         })),
         { onConflict: 'camp_instance_id,student_id', ignoreDuplicates: true },
       );

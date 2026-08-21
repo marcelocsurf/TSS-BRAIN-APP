@@ -11,7 +11,13 @@ export function csvCell(v: unknown): string {
         : typeof v === 'object'
           ? JSON.stringify(v)
           : String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // Anti fórmula-injection (CWE-1236): texto que viene de alumnos/clientes
+  // (comentarios, nombres) no puede llegar a Excel empezando con = + - @ tab
+  // — Excel lo EJECUTA aunque la celda esté entre comillas. Se neutraliza con
+  // un apóstrofe (Excel lo trata como texto) y se fuerza el quoting.
+  const risky = /^[=+\-@\t\r]/.test(s);
+  const safe = risky ? `'${s}` : s;
+  return risky || /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 export type CsvColumn<T> = [header: string, value: keyof T | ((row: T) => unknown)];

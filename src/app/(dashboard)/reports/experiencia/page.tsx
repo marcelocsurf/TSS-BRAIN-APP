@@ -63,10 +63,11 @@ export default async function ExperienceReportPage({
                       {a.studentName}{a.campName ? ` · ${a.campName}` : ''} · {a.date}
                     </p>
                     <p className="text-[11px] text-rose-700 mt-0.5">
-                      {DIM_COLS.filter((c) => typeof a.scores[c] === 'number' && (a.scores[c] as number) <= 3)
-                        .map((c) => `${data.labels[c]} ${a.scores[c]}★`)
-                        .join(' · ')}
-                      {a.nps != null && a.nps <= 6 ? `${' · '}NPS ${a.nps}` : ''}
+                      {[
+                        ...DIM_COLS.filter((c) => typeof a.scores[c] === 'number' && (a.scores[c] as number) <= 3)
+                          .map((c) => `${data.labels[c]} ${a.scores[c]}★`),
+                        ...(a.nps != null && a.nps <= 6 ? [`NPS ${a.nps}`] : []),
+                      ].join(' · ')}
                     </p>
                     {a.comment && <p className="text-[11px] text-gray-600 mt-1 italic">“{a.comment}”</p>}
                   </div>
