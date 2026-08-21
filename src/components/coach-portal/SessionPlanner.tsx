@@ -57,6 +57,8 @@ import {
   CalendarClock,
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
+import { WeekPlanBoard } from '@/components/coach-portal/WeekPlanBoard';
+import { useRouter } from 'next/navigation';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
@@ -420,6 +422,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   );
   const isLastDay = data.selectedDay.day_number === lastDayNumber;
   const [showFinalEval, setShowFinalEval] = useState(false);
+  // 📅 Vista semana (planner tipo Excel) — solo camps multi-día.
+  const [showWeek, setShowWeek] = useState(false);
+  const router = useRouter();
   // Short camp: cerrar UN alumno hoy (evaluación oficial + encuestas del día).
   const [earlyPickerOpen, setEarlyPickerOpen] = useState(false);
   const [earlyStudentId, setEarlyStudentId] = useState<string | null>(null);
@@ -592,6 +597,26 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </div>
           <span className="shrink-0 text-[11px] font-bold text-amber-900 bg-amber-200 rounded-full px-3 py-1.5">Continuar →</span>
         </button>
+      )}
+
+      {/* 📅 VISTA SEMANA — planear todo el camp de un vistazo (tipo Excel):
+          clase, lugar, transporte, espacios y tablas por día. */}
+      {data.daySummaries.length > 1 && (data.camp as any).status !== 'completed' && (
+        showWeek ? (
+          <WeekPlanBoard token={token} campInstanceId={data.camp.id} onClose={() => { setShowWeek(false); router.refresh(); }} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowWeek(true)}
+            className="w-full text-left rounded-2xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-2 hover:border-[var(--tss-cyan,#5AC3E7)]"
+          >
+            <div>
+              <p className="text-[12px] font-semibold text-gray-700">📅 Vista semana · planear todo el camp</p>
+              <p className="text-[10.5px] text-gray-500 mt-0.5">Clase, lugar, transporte, espacios y tablas — día por día, de un vistazo.</p>
+            </div>
+            <span className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold shrink-0">Abrir →</span>
+          </button>
+        )
       )}
 
       {/* SHORT CAMP — un alumno termina hoy aunque el grupo siga: cerrarlo,

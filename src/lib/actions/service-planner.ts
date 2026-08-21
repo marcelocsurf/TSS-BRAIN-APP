@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { elSalvadorToday } from '@/lib/utils/tz';
+import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
 
@@ -2577,4 +2577,292 @@ async function hydrateTemplatePlan(
         };
       }),
   }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// VISTA SEMANA — planner tipo Excel (2026-08-21)
+// Una sola lectura con TODA la semana (logística + espacios + tablas por
+// alumno) y escrituras por celda. La edición fina de bloques/drills sigue
+// viviendo en la vista del día; esto es para PLANEAR de un vistazo.
+// ═══════════════════════════════════════════════════════════════════
+
+export interface WeekDayOverview {
+  camp_session_id: string;
+  day_number: number;
+  session_date: string;
+  state: 'planned' | 'in_progress' | 'closed';
+  class_start_time: string | null;
+  surf_venue: string | null;
+  transport_needed: boolean | null;
+  transport_depart: string | null;
+  transport_return: string | null;
+  spaces: Array<{ id: string; name: string; start: string; end: string; mine: boolean }>;
+  /** Tabla asignada por alumno (bloque order_index 0 del día). */
+  boards: Array<{ student_id: string; board_id: string | null; board_type: string | null; board_code: string | null }>;
+}
+
+export interface WeekOverview {
+  ok: boolean;
+  error?: string;
+  campName?: string;
+  days: WeekDayOverview[];
+  students: Array<{ student_id: string; display_name: string }>;
+  availableBoards: Array<{ id: string; code: string; board_type: string | null; length_feet: number | null; length_inches: number | null; status: string }>;
+  academySpaces: Array<{ id: string; name: string }>;
+}
+
+async function weekGate(token: string, campInstanceId: string) {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).maybeSingle();
+  if (!coach) return { admin, error: 'Coach not found.' as string, coach: null as any, camp: null as any };
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, academy_id, coach_id, head_coach_id')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  if (!camp) return { admin, error: 'Service not found.', coach, camp: null as any };
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    return { admin, error: 'You are not assigned to this service.', coach, camp: null as any };
+  }
+  return { admin, error: null as string | null, coach, camp };
+}
+
+export async function getWeekOverviewByToken(token: string, campInstanceId: string): Promise<WeekOverview> {
+  const empty: WeekOverview = { ok: false, days: [], students: [], availableBoards: [], academySpaces: [] };
+  try {
+    const { admin, error, coach, camp } = await weekGate(token, campInstanceId);
+    if (error || !camp) return { ...empty, error: error ?? 'No autorizado.' };
+
+    const [{ data: sess }, { data: parts }, { data: boardsInv }, { data: spacesList }, { data: bookings }] = await Promise.all([
+      admin.from('camp_sessions').select('id, day_number, session_date').eq('camp_instance_id', campInstanceId).order('day_number'),
+      admin.from('camp_participants')
+        .select('student_id, enrollment_status, finalized_at, students:student_id(first_name, last_name)')
+        .eq('camp_instance_id', campInstanceId),
+      admin.from('boards')
+        .select('id, code, board_type, length_feet, length_inches, status')
+        .eq('academy_id', (camp as any).academy_id)
+        .neq('status', 'retired')
+        .order('code'),
+      admin.from('academy_spaces').select('id, name').eq('academy_id', (camp as any).academy_id).eq('active', true).order('sort_order'),
+      admin.from('space_bookings')
+        .select('id, space_id, coach_id, title, starts_at, ends_at, academy_spaces:space_id(name)')
+        .eq('camp_instance_id', campInstanceId)
+        .eq('status', 'booked'),
+    ]);
+
+    const sessions = sess ?? [];
+    const sessIds = sessions.map((x: any) => x.id);
+    const [{ data: plans }, { data: blocks }] = await Promise.all([
+      sessIds.length
+        ? admin.from('service_plans')
+            .select('camp_session_id, completion_state, class_start_time, surf_venue, transport_needed, transport_depart, transport_return')
+            .in('camp_session_id', sessIds)
+        : Promise.resolve({ data: [] as any[] }),
+      sessIds.length
+        ? admin.from('service_plan_blocks')
+            .select('camp_session_id, student_id, board_id, board_type, order_index')
+            .in('camp_session_id', sessIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const planByS = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p]));
+    const boardCode = new Map((boardsInv ?? []).map((b: any) => [b.id, b.code]));
+
+    // Tabla por alumno/día: preferimos el bloque con tabla puesta.
+    const boardsByDay = new Map<string, Map<string, { board_id: string | null; board_type: string | null }>>();
+    for (const b of blocks ?? []) {
+      if (!boardsByDay.has(b.camp_session_id)) boardsByDay.set(b.camp_session_id, new Map());
+      const m = boardsByDay.get(b.camp_session_id)!;
+      const cur = m.get(b.student_id);
+      if (!cur || (!cur.board_id && !cur.board_type)) {
+        m.set(b.student_id, { board_id: b.board_id ?? null, board_type: b.board_type ?? null });
+      }
+    }
+
+    const activeParts = (parts ?? []).filter((p: any) => p.enrollment_status === 'active' && !p.finalized_at);
+    const students = activeParts.map((p: any) => {
+      const st = Array.isArray(p.students) ? p.students[0] : p.students;
+      return { student_id: p.student_id, display_name: [st?.first_name, st?.last_name].filter(Boolean).join(' ') || '—' };
+    });
+
+    const days: WeekDayOverview[] = sessions.map((x: any) => {
+      const p = planByS.get(x.id);
+      const dayBookings = (bookings ?? []).filter((bk: any) => {
+        const svDay = toElSalvadorDate(bk.starts_at);
+        return svDay === x.session_date;
+      }).map((bk: any) => {
+        // timestamptz llega en UTC — mostrar en hora SV (-6h, sin DST).
+        const sv = (ts: string) => new Date(Date.parse(ts) - 6 * 3600000).toISOString().slice(11, 16);
+        return {
+          id: bk.id,
+          name: (Array.isArray(bk.academy_spaces) ? bk.academy_spaces[0] : bk.academy_spaces)?.name ?? 'Espacio',
+          start: sv(bk.starts_at),
+          end: sv(bk.ends_at),
+          mine: bk.coach_id === (coach as any).id,
+        };
+      });
+      const dayBoards = boardsByDay.get(x.id) ?? new Map();
+      return {
+        camp_session_id: x.id,
+        day_number: x.day_number,
+        session_date: x.session_date,
+        state: (p?.completion_state ?? 'planned') as WeekDayOverview['state'],
+        class_start_time: p?.class_start_time ?? null,
+        surf_venue: p?.surf_venue ?? null,
+        transport_needed: p?.transport_needed ?? null,
+        transport_depart: p?.transport_depart ?? null,
+        transport_return: p?.transport_return ?? null,
+        spaces: dayBookings,
+        boards: students.map((s) => {
+          const b = dayBoards.get(s.student_id);
+          return {
+            student_id: s.student_id,
+            board_id: b?.board_id ?? null,
+            board_type: b?.board_type ?? null,
+            board_code: b?.board_id ? (boardCode.get(b.board_id) ?? null) : null,
+          };
+        }),
+      };
+    });
+
+    return {
+      ok: true,
+      campName: (camp as any).camp_name,
+      days,
+      students,
+      availableBoards: (boardsInv ?? []) as any,
+      academySpaces: (spacesList ?? []) as any,
+    };
+  } catch (e) {
+    console.error('[week-overview] failed', e);
+    return { ...empty, error: 'No se pudo cargar la semana.' };
+  }
+}
+
+// Logística de UN día (hora de clase, lugar, transporte) — o toda la semana.
+export async function saveDayLogisticsByToken(
+  token: string,
+  campSessionId: string,
+  patch: Partial<{
+    class_start_time: string | null;
+    surf_venue: string | null;
+    transport_needed: boolean | null;
+    transport_depart: string | null;
+    transport_return: string | null;
+  }>,
+  applyToWeek = false,
+): Promise<{ ok: boolean; days?: number; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const { data: session } = await admin
+      .from('camp_sessions')
+      .select('id, camp_instance_id')
+      .eq('id', campSessionId)
+      .maybeSingle();
+    if (!session) return { ok: false, error: 'Session not found.' };
+    const { error, camp } = await weekGate(token, (session as any).camp_instance_id);
+    if (error || !camp) return { ok: false, error: error ?? 'No autorizado.' };
+
+    const { data: allSess } = await admin
+      .from('camp_sessions').select('id').eq('camp_instance_id', (session as any).camp_instance_id);
+    const targetIds = applyToWeek ? (allSess ?? []).map((x: any) => x.id) : [campSessionId];
+    const { data: plans } = await admin
+      .from('service_plans').select('id, camp_session_id, completion_state').in('camp_session_id', targetIds);
+    const planByS = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p]));
+
+    let applied = 0;
+    for (const sid of targetIds) {
+      const existing = planByS.get(sid);
+      if (existing?.completion_state === 'closed') continue; // día cerrado: no tocar
+      if (existing) {
+        await admin.from('service_plans').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+      } else {
+        await admin.from('service_plans').insert({
+          camp_instance_id: (session as any).camp_instance_id,
+          camp_session_id: sid,
+          ...patch,
+        });
+      }
+      applied++;
+    }
+    return { ok: true, days: applied };
+  } catch (e) {
+    console.error('[week-logistics] failed', e);
+    return { ok: false, error: 'No se pudo guardar.' };
+  }
+}
+
+// Tabla de UN alumno para UN día (la semana entera ya existe:
+// applyStudentBoardToWeek). Mismo guard anti doble-booking por fecha.
+export async function setStudentDayBoardByToken(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+  board: { board_id: string | null; board_type: string | null; board_size_feet: number | null; board_size_inches: number | null },
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const { data: session } = await admin
+      .from('camp_sessions')
+      .select('id, camp_instance_id, session_date')
+      .eq('id', campSessionId)
+      .maybeSingle();
+    if (!session) return { ok: false, error: 'Session not found.' };
+    const { error, camp } = await weekGate(token, (session as any).camp_instance_id);
+    if (error || !camp) return { ok: false, error: error ?? 'No autorizado.' };
+
+    const { data: participant } = await admin
+      .from('camp_participants').select('id')
+      .eq('camp_instance_id', (session as any).camp_instance_id).eq('student_id', studentId).maybeSingle();
+    if (!participant) return { ok: false, error: 'El alumno no está inscrito en este servicio.' };
+
+    const { data: plan } = await admin
+      .from('service_plans').select('completion_state').eq('camp_session_id', campSessionId).maybeSingle();
+    if (plan?.completion_state === 'closed') return { ok: false, error: 'Ese día ya está cerrado.' };
+
+    // Anti doble-booking del inventario para esa fecha (mismo patrón que
+    // applyStudentBoardToWeek).
+    if (board.board_id && (session as any).session_date && (camp as any).academy_id) {
+      const { data: sameDay } = await admin
+        .from('camp_sessions')
+        .select('id, camp_instances:camp_instance_id!inner(academy_id)')
+        .eq('session_date', (session as any).session_date)
+        .eq('camp_instances.academy_id', (camp as any).academy_id)
+        .neq('id', campSessionId);
+      const otherIds = (sameDay ?? []).map((x: any) => x.id);
+      if (otherIds.length > 0) {
+        const { data: clash } = await admin
+          .from('service_plan_blocks').select('id')
+          .eq('board_id', board.board_id).in('camp_session_id', otherIds).limit(1);
+        if (clash && clash.length > 0) {
+          return { ok: false, error: 'Esa tabla ya está asignada en otro servicio ese día.' };
+        }
+      }
+      await admin.from('boards').update({ status: 'in_use' }).eq('id', board.board_id);
+    }
+
+    const patch = {
+      board_id: board.board_id ?? null,
+      board_type: board.board_type ?? null,
+      board_size_feet: board.board_size_feet ?? null,
+      board_size_inches: board.board_size_inches ?? null,
+    };
+    const { data: existing } = await admin
+      .from('service_plan_blocks').select('id')
+      .eq('camp_session_id', campSessionId).eq('student_id', studentId).eq('order_index', 0).maybeSingle();
+    if (existing) {
+      await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    } else {
+      await admin.from('service_plan_blocks').insert({
+        camp_instance_id: (session as any).camp_instance_id,
+        camp_session_id: campSessionId,
+        student_id: studentId,
+        order_index: 0,
+        ...patch,
+      });
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[week-board] failed', e);
+    return { ok: false, error: 'No se pudo asignar la tabla.' };
+  }
 }

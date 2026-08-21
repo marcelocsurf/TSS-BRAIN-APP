@@ -2169,3 +2169,77 @@ export async function completeCamp(campId: string) {
   revalidatePath('/camps');
   return { success: true };
 }
+
+// ─── Quick view del servicio al aceptar (coach portal, 2026-08-21) ───
+// Apenas el coach acepta, ve QUÉ aceptó: fechas, horario y quiénes van —
+// con lo esencial de cada ficha (cinta, edad, médico/lesiones, meta).
+export async function serviceQuickViewByToken(
+  token: string,
+  campInstanceId: string,
+): Promise<{
+  ok: boolean;
+  error?: string;
+  camp?: { name: string; start: string; end: string; time: string | null; days: number };
+  roster?: Array<{
+    student_id: string;
+    name: string;
+    belt: string | null;
+    age: number | null;
+    medical: string | null;
+    injuries: string | null;
+    goal: string | null;
+  }>;
+}> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).maybeSingle();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, camp_name, start_date, end_date, scheduled_time, coach_id, head_coach_id')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  if (!camp) return { ok: false, error: 'Service not found.' };
+  if ((camp as any).coach_id !== coach.id && (camp as any).head_coach_id !== coach.id) {
+    return { ok: false, error: 'This service is not assigned to you.' };
+  }
+
+  const [{ count: dayCount }, { data: parts }] = await Promise.all([
+    admin.from('camp_sessions').select('id', { count: 'exact', head: true }).eq('camp_instance_id', campInstanceId),
+    admin.from('camp_participants')
+      .select('student_id, enrollment_status, students:student_id(first_name, last_name, belt_level, date_of_birth, medical_notes, injuries, primary_goal)')
+      .eq('camp_instance_id', campInstanceId)
+      .eq('enrollment_status', 'active'),
+  ]);
+
+  const roster = (parts ?? []).map((p: any) => {
+    const st = Array.isArray(p.students) ? p.students[0] : p.students;
+    let age: number | null = null;
+    if (st?.date_of_birth) {
+      const ms = Date.now() - Date.parse(st.date_of_birth);
+      const yrs = Math.floor(ms / (365.25 * 86400000));
+      if (yrs > 0 && yrs < 110) age = yrs;
+    }
+    return {
+      student_id: p.student_id,
+      name: [st?.first_name, st?.last_name].filter(Boolean).join(' ') || '—',
+      belt: st?.belt_level ?? null,
+      age,
+      medical: st?.medical_notes?.trim() || null,
+      injuries: st?.injuries?.trim() || null,
+      goal: st?.primary_goal?.trim() || null,
+    };
+  });
+
+  return {
+    ok: true,
+    camp: {
+      name: (camp as any).camp_name,
+      start: (camp as any).start_date,
+      end: (camp as any).end_date,
+      time: (camp as any).scheduled_time ?? null,
+      days: dayCount ?? 0,
+    },
+    roster,
+  };
+}
