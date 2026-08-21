@@ -856,6 +856,24 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
     .sort((a, b) => a!.date.localeCompare(b!.date) || String(a!.depart ?? '99').localeCompare(String(b!.depart ?? '99'))) as TransportBoardRow[];
 }
 
+// Avisos de transporte para el Front Desk: las notas que dejan los coaches
+// al pedir/modificar/cancelar transporte (type transport_change/request).
+export async function hostTransportNotices(
+  token: string,
+): Promise<Array<{ id: string; title: string; body: string | null; created_at: string }>> {
+  const who = await resolveHost(token);
+  if (!who) return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('notifications')
+    .select('id, title, body, created_at')
+    .eq('recipient_coach_id', (who as any).id)
+    .in('type', ['transport_change', 'transport_request'])
+    .order('created_at', { ascending: false })
+    .limit(8);
+  return (data ?? []) as any;
+}
+
 // Precios de membresía del mostrador — mismos planes del portal (RenewalGate).
 const DESK_MEMBERSHIP_PLANS: Record<number, number> = { 1: 999, 6: 4999, 12: 9990 };
 

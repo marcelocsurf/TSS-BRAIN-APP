@@ -16,7 +16,7 @@ import {
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
   hostSetTransport, hostConfirmRenewal, hostGrantRenewal,
-  hostTransportBoard,
+  hostTransportBoard, hostTransportNotices,
   type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
@@ -1039,11 +1039,15 @@ function ReserveModal({ token, event, onClose, onDone }: {
 // marca "salió" y puede ajustar horarios (mismo hostSetTransport de Agenda).
 function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate: boolean }) {
   const [rows, setRows] = useState<TransportBoardRow[] | null | 'error'>(null);
+  const [notices, setNotices] = useState<Array<{ id: string; title: string; body: string | null; created_at: string }>>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [dep, setDep] = useState(''); const [ret, setRet] = useState('');
 
-  const load = () => hostTransportBoard(token).then((r) => setRows(r ?? 'error')).catch(() => setRows('error'));
+  const load = () => {
+    hostTransportBoard(token).then((r) => setRows(r ?? 'error')).catch(() => setRows('error'));
+    hostTransportNotices(token).then(setNotices).catch(() => {});
+  };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [token]);
 
@@ -1081,6 +1085,22 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
         <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>🚐 Transporte · próximos 14 días</h2>
         <p className="text-[11px] text-white/50 mt-1">Lo que los coaches solicitaron al planear sus clases y camps. Marcá "salió" cuando el transporte se vaya.</p>
       </div>
+
+      {/* 🔔 Notas de los coaches: pedidos, cambios de horario, cancelaciones */}
+      {notices.length > 0 && (
+        <div className="rounded-2xl bg-white p-3 space-y-1.5">
+          <p className="text-[10px] font-bold" style={{ ...F_M, color: '#8a99a6' }}>🔔 Cambios recientes</p>
+          {notices.slice(0, 5).map((n) => (
+            <div key={n.id} className="text-[11px] leading-snug border-l-2 pl-2" style={{ borderColor: GOLD }}>
+              <p className="font-semibold" style={{ color: INK }}>{n.title}</p>
+              <p className="text-gray-500">
+                {n.body}{' '}
+                <span className="text-gray-400">· {new Date(n.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/El_Salvador' })}</span>
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
       {rows === 'error' && (

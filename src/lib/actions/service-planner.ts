@@ -834,6 +834,26 @@ export async function saveServicePlanHeader(
       completion_state: 'planned',
     });
   }
+
+  // Nota al equipo (coordinación + Front Desk) si se tocó el transporte
+  // desde la vista del día. Best-effort — nunca traba el guardado.
+  if ('transport_needed' in patch || 'transport_depart' in patch || 'transport_return' in patch) {
+    try {
+      const { data: instRow } = await admin
+        .from('camp_instances').select('camp_name, academy_id')
+        .eq('id', session.camp_instance_id).maybeSingle();
+      const { data: coachRow } = await admin.from('coaches').select('display_name').eq('portal_token', token).maybeSingle();
+      const { data: sessRow } = await admin.from('camp_sessions').select('session_date').eq('id', campSessionId).maybeSingle();
+      await notifyTransportTeam(admin, (instRow as any)?.academy_id ?? null, {
+        campName: (instRow as any)?.camp_name ?? '—',
+        dateLabel: (sessRow as any)?.session_date ?? '',
+        actor: (coachRow as any)?.display_name ?? 'Coach',
+        needed: patch.transport_needed !== false,
+        depart: (patch.transport_depart as string) ?? null,
+        ret: (patch.transport_return as string) ?? null,
+      });
+    } catch { /* best-effort */ }
+  }
 }
 
 // ─── Apply a header field to the WHOLE week (M134) ─────────────────
@@ -2442,7 +2462,7 @@ export async function coachQuickTransport(
   // Aviso a coordinación — el transporte se organiza con anticipación.
   try {
     const { createNotification } = await import('@/lib/actions/notifications');
-    const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', camp.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+    const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', camp.academy_id).in('role', ['coordinator', 'admin', 'host']).eq('active_status', true);
     const base = (camp.camp_name ?? '').split(' · ')[0];
     for (const c of coords ?? []) {
       await createNotification({
@@ -2755,6 +2775,38 @@ export async function getWeekOverviewByToken(token: string, campInstanceId: stri
   }
 }
 
+// Aviso al equipo (coordinación + FRONT DESK) cuando un coach toca el
+// transporte — pedido de Marcelo 2026-08-21: "que les envíe una nota si un
+// coach modifica el horario de transporte o cualquier cosa". Best-effort.
+async function notifyTransportTeam(
+  admin: ReturnType<typeof createAdminClient>,
+  academyId: string | null,
+  info: { campName: string; dateLabel: string; actor: string; needed: boolean; depart: string | null; ret: string | null },
+): Promise<void> {
+  if (!academyId) return;
+  try {
+    const { createNotification } = await import('@/lib/actions/notifications');
+    const { data: team } = await admin
+      .from('coaches').select('id')
+      .eq('academy_id', academyId)
+      .in('role', ['coordinator', 'admin', 'host'])
+      .eq('active_status', true);
+    const base = (info.campName ?? '').split(' · ')[0];
+    for (const c of team ?? []) {
+      await createNotification({
+        recipientCoachId: c.id,
+        type: 'transport_change',
+        title: info.needed
+          ? `🚐 Transporte: ${base} · ${info.dateLabel} → ${info.depart ?? '¿?'}–${info.ret ?? '¿?'}`
+          : `🚐 Transporte CANCELADO: ${base} · ${info.dateLabel}`,
+        body: `${info.actor} ${info.needed ? 'actualizó el transporte' : 'canceló el transporte'} — revisá el tablero 🚐 del Front Desk.`,
+        link: null,
+        metadata: null,
+      }).catch(() => {});
+    }
+  } catch { /* best-effort */ }
+}
+
 // Logística de UN día (hora de clase, lugar, transporte) — o toda la semana.
 export async function saveDayLogisticsByToken(
   token: string,
@@ -2800,6 +2852,20 @@ export async function saveDayLogisticsByToken(
         });
       }
       applied++;
+    }
+
+    // Nota al equipo si se tocó el transporte (Front Desk incluido).
+    if ('transport_needed' in patch || 'transport_depart' in patch || 'transport_return' in patch) {
+      const { data: coachRow } = await admin.from('coaches').select('display_name').eq('portal_token', token).maybeSingle();
+      const { data: sessRow } = await admin.from('camp_sessions').select('session_date').eq('id', campSessionId).maybeSingle();
+      await notifyTransportTeam(admin, (camp as any).academy_id ?? null, {
+        campName: (camp as any).camp_name ?? '—',
+        dateLabel: applyToWeek ? 'toda la semana' : ((sessRow as any)?.session_date ?? ''),
+        actor: (coachRow as any)?.display_name ?? 'Coach',
+        needed: patch.transport_needed !== false,
+        depart: (patch.transport_depart as string) ?? null,
+        ret: (patch.transport_return as string) ?? null,
+      });
     }
     return { ok: true, days: applied };
   } catch (e) {
