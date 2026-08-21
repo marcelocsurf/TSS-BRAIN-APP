@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ClipboardList, Plus, Check, Trash2, RotateCcw, ChevronDown, ChevronRight, Pencil, Repeat, ListChecks, History, BarChart3, ChevronLeft } from 'lucide-react';
-import { createTask, updateTask, setTaskDone, deleteTask, listTaskHistory, monthlyTaskReport, type AcademyTask, type TaskReport, type MonthlyTaskSummary } from '@/lib/actions/tasks';
+import { createTask, updateTask, setTaskDone, deleteTask, listTaskHistory, monthlyTaskReport, dailyTaskBoard, type AcademyTask, type TaskReport, type MonthlyTaskSummary, type DailyBoardTask, type DailyBoardCompletion } from '@/lib/actions/tasks';
 
 // Standard recurring academy chores — one tap pre-fills the title.
 const PRESETS = [
@@ -268,6 +268,8 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
             </ul>
           )}
 
+          <DailyBoard academyId={academyId} />
+
           <MonthlyReport academyId={academyId} />
 
           {/* Done tasks */}
@@ -291,6 +293,104 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
               ))}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Tablero LIVE del día: qué toca hoy, quién, y el hilo de reportes con
+// comentarios — se refresca solo cada 30 s mientras está abierto. ───
+function DailyBoard({ academyId }: { academyId: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(() => new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10));
+  const [tasks, setTasks] = useState<DailyBoardTask[]>([]);
+  const [comps, setComps] = useState<DailyBoardCompletion[]>([]);
+  const [updatedAt, setUpdatedAt] = useState<string>('');
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    const load = async () => {
+      try {
+        const r = await dailyTaskBoard(academyId, date);
+        if (alive && r.ok) {
+          setTasks(r.tasks); setComps(r.completions);
+          setUpdatedAt(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+        }
+      } catch { /* el próximo tick reintenta */ }
+    };
+    load();
+    const iv = setInterval(load, 30_000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [open, date, academyId]);
+
+  const shiftDay = (delta: number) => {
+    const d = new Date(date + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    setDate(d.toISOString().slice(0, 10));
+  };
+  const pend = tasks.filter((t) => !t.done_today && t.status !== 'done');
+  const DOWL = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--tss-navy)] hover:underline"
+      >
+        <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+        Today · live board {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+      </button>
+      {open && (
+        <div className="mt-2 rounded-xl border border-gray-100 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={() => shiftDay(-1)} className="p-1 text-gray-400 hover:text-[var(--tss-navy)]" aria-label="Previous day"><ChevronLeft size={14} /></button>
+            <div className="text-center">
+              <p className="text-xs font-semibold text-[var(--tss-navy)]">
+                {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </p>
+              {updatedAt && <p className="text-[9px] text-gray-400">auto-refresh 30s · updated {updatedAt}</p>}
+            </div>
+            <button onClick={() => shiftDay(1)} className="p-1 text-gray-400 hover:text-[var(--tss-navy)]" aria-label="Next day"><ChevronRight size={14} /></button>
+          </div>
+
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Due this day · {pend.length} pending</p>
+          <div className="space-y-1 mb-3">
+            {tasks.map((t) => (
+              <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5"
+                style={{ background: t.done_today ? '#ECFDF5' : t.overdue ? '#FEF2F2' : '#F8FAFC' }}>
+                <p className="text-[12px] truncate" style={{ textDecoration: t.done_today ? 'line-through' : 'none', color: '#0C2231' }}>
+                  {t.done_today ? '✅ ' : t.overdue ? '⚠ ' : '⬜ '}{t.title}
+                  {t.recurrence === 'daily' && t.recurrence_days?.length ? (
+                    <span className="text-[9px] text-cyan-700 ml-1">({t.recurrence_days.map((n) => DOWL[n - 1]).join(' ')})</span>
+                  ) : null}
+                </p>
+                <p className="text-[10.5px] shrink-0 text-gray-500">
+                  {t.assignee_name ?? 'Unassigned'}{t.overdue && !t.done_today ? ` · overdue ${t.due_date}` : ''}
+                </p>
+              </div>
+            ))}
+            {tasks.length === 0 && <p className="text-[11px] text-gray-400">Nothing due this day.</p>}
+          </div>
+
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Reported · {comps.length}</p>
+          <div className="space-y-1">
+            {comps.map((c, i) => (
+              <div key={i} className="rounded-lg px-2.5 py-1.5" style={{ background: c.outcome === 'done' ? '#ECFDF5' : '#FFF7ED' }}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[12px] font-medium truncate" style={{ color: '#0C2231' }}>
+                    {c.outcome === 'done' ? '✅' : '❌'} {c.task_title}
+                  </p>
+                  <p className="text-[10px] shrink-0 text-gray-400">
+                    {new Date(c.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {c.completed_by_name ?? '—'}
+                  </p>
+                </div>
+                {c.comment && <p className="text-[11px] italic text-gray-500 mt-0.5">&ldquo;{c.comment}&rdquo;</p>}
+              </div>
+            ))}
+            {comps.length === 0 && <p className="text-[11px] text-gray-400">No reports yet this day.</p>}
+          </div>
         </div>
       )}
     </div>

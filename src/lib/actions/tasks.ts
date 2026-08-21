@@ -486,3 +486,109 @@ export async function completeMyTask(token: string, id: string): Promise<{ ok: b
   }
   return { ok: true };
 }
+
+// ─── Tablero LIVE del día (pedido de Marcelo 2026-08-20) ───
+//
+// El coordinador ve, día por día: qué tareas tocan HOY (por due_date y por
+// días de la semana de las diarias), quién las tiene, y el hilo VIVO de lo
+// realizado — hora, quién, hecha/no-hecha y el comentario del reporte. El
+// panel lo refresca solo cada 30 s.
+
+export interface DailyBoardTask {
+  id: string;
+  title: string;
+  assignee_name: string | null;
+  due_date: string | null;
+  recurrence: string | null;
+  recurrence_days: number[] | null;
+  status: string;
+  overdue: boolean;
+  done_today: boolean;
+}
+
+export interface DailyBoardCompletion {
+  task_title: string;
+  outcome: string;
+  comment: string | null;
+  completed_by_name: string | null;
+  at: string; // ISO timestamp
+}
+
+export async function dailyTaskBoard(
+  academyId: string | null,
+  date: string // YYYY-MM-DD (El Salvador)
+): Promise<{ ok: boolean; error?: string; tasks: DailyBoardTask[]; completions: DailyBoardCompletion[] }> {
+  try {
+    await assertManager();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: 'Invalid date.', tasks: [], completions: [] };
+    const admin = createAdminClient();
+
+    let tq = admin
+      .from('academy_tasks')
+      .select('id, title, due_date, status, recurrence, recurrence_days, coaches:assignee_coach_id(display_name)')
+      .order('due_date', { ascending: true, nullsFirst: false });
+    if (academyId) tq = tq.eq('academy_id', academyId);
+    const { data: rows, error: tErr } = await tq;
+    if (tErr) throw tErr;
+
+    // Completions del día (hora SV: el timestamp UTC se acota con margen y se
+    // afina por fecha SV en JS — misma regla que el resto de la app).
+    const dayStart = new Date(date + 'T00:00:00Z');
+    const from = new Date(dayStart); from.setUTCDate(from.getUTCDate() - 1);
+    const to = new Date(dayStart); to.setUTCDate(to.getUTCDate() + 2);
+    let cq = admin
+      .from('task_completions')
+      .select('outcome, comment, created_at, academy_tasks:task_id(title), coaches:completed_by(display_name)')
+      .gte('created_at', from.toISOString())
+      .lt('created_at', to.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(120);
+    if (academyId) cq = cq.eq('academy_id', academyId);
+    const { data: comps, error: cErr } = await cq;
+    if (cErr) throw cErr;
+
+    const { toElSalvadorDate } = await import('@/lib/utils/tz');
+    const completions: DailyBoardCompletion[] = (comps ?? [])
+      .filter((c: any) => toElSalvadorDate(c.created_at) === date)
+      .map((c: any) => ({
+        task_title: c.academy_tasks?.title ?? '—',
+        outcome: c.outcome,
+        comment: c.comment,
+        completed_by_name: c.coaches?.display_name ?? null,
+        at: c.created_at,
+      }));
+    const doneTitles = new Set(completions.map((c) => c.task_title));
+
+    const isoDow = (() => {
+      const d = new Date(date + 'T00:00:00Z');
+      return ((d.getUTCDay() + 6) % 7) + 1;
+    })();
+
+    const tasks: DailyBoardTask[] = (rows ?? [])
+      .filter((t: any) => {
+        if (t.status === 'done') return doneTitles.has(t.title); // one-off ya cerrada: solo si se cerró hoy
+        if (t.recurrence === 'daily') {
+          const days: number[] = t.recurrence_days?.length ? t.recurrence_days : [1, 2, 3, 4, 5, 6, 7];
+          return days.includes(isoDow) || (t.due_date != null && t.due_date <= date);
+        }
+        // one-off / weekly / monthly: aparece si vence ese día o ya está vencida
+        return t.due_date != null && t.due_date <= date;
+      })
+      .map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        assignee_name: t.coaches?.display_name ?? null,
+        due_date: t.due_date,
+        recurrence: t.recurrence ?? null,
+        recurrence_days: t.recurrence_days ?? null,
+        status: t.status,
+        overdue: t.status === 'open' && t.due_date != null && t.due_date < date,
+        done_today: doneTitles.has(t.title),
+      }));
+
+    return { ok: true, tasks, completions };
+  } catch (e: any) {
+    console.error('[tasks] dailyTaskBoard failed', e);
+    return { ok: false, error: 'Could not load the daily board.', tasks: [], completions: [] };
+  }
+}
