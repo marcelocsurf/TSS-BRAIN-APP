@@ -2,7 +2,9 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from '@/lib/actions/auth';
+import { checkCoachAccessToStudent } from '@/lib/actions/students';
 import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
+import { weekKey } from '@/lib/utils/tz';
 
 // ─── Resumen de actividad del alumno para la BITÁCORA de la ficha ───
 //
@@ -33,6 +35,9 @@ export async function getStudentActivitySummary(
   try {
     const me = await getCurrentCoach().catch(() => null);
     if (!me) return { ok: false, error: 'No autorizado.', data: null };
+    // Admin client bypasea RLS: el mismo gate academia/ventana que la página.
+    const access = await checkCoachAccessToStudent(studentId).catch(() => null);
+    if (access !== 'allowed') return { ok: false, error: 'No autorizado.', data: null };
     const admin = createAdminClient();
 
     // Las MISMAS tres fuentes que computa el portal del alumno.
@@ -64,16 +69,12 @@ export async function getStudentActivitySummary(
 
     const hours = computeSurfSplit(coachSessions, selfSessions);
 
-    // Racha de la semana (lunes SV → hoy): sesiones propias completadas.
-    const now = new Date(Date.now() - 6 * 3600_000);
-    const dow = now.getUTCDay() || 7;
-    const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - (dow - 1));
-    const mondayIso = monday.toISOString().slice(0, 10);
-    const week_practices = selfSessions.filter((s: any) => {
-      if (!s.completed) return false;
-      const d = (s.created_at ?? '').slice(0, 10);
-      return d >= mondayIso;
-    }).length;
+    // Prácticas propias completadas esta semana (lunes SV, no la del portal
+    // que es días consecutivos — por eso el copy dice "por su cuenta").
+    const thisWeek = weekKey(new Date());
+    const week_practices = selfSessions.filter(
+      (s: any) => s.completed && weekKey(s.created_at) === thisWeek
+    ).length;
 
     // Línea de tiempo unificada (últimos 12 eventos).
     const items: ActivityTimelineItem[] = [
@@ -92,7 +93,9 @@ export async function getStudentActivitySummary(
         detail: s.kind === 'free_surf'
           ? `${s.total_water_minutes || s.duration_minutes || 0} min de agua`
           : [
-              s.mission_completion ? `misión: ${s.mission_completion}` : null,
+              s.mission_completion
+                ? `misión ${({ yes: 'lograda', partial: 'a medias', no: 'no lograda' } as Record<string, string>)[s.mission_completion] ?? s.mission_completion}`
+                : null,
               s.execution_rating ? `${s.execution_rating}★` : null,
             ].filter(Boolean).join(' · ') || null,
         minutes: s.kind === 'free_surf' ? (s.total_water_minutes || s.duration_minutes || 0) : (s.duration_minutes || 0),
@@ -109,7 +112,7 @@ export async function getStudentActivitySummary(
         hours,
         counts: {
           coach_sessions: coachSessions.length,
-          self_missions: selfSessions.filter((s: any) => s.kind !== 'free_surf' && s.completed).length,
+          self_missions: selfSessions.filter((s: any) => s.kind !== 'free_surf').length,
           free_surfs: selfSessions.filter((s: any) => s.kind === 'free_surf').length,
         },
         week_practices,
