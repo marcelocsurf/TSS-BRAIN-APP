@@ -38,16 +38,16 @@ export async function getStudentActivitySummary(
     // Las MISMAS tres fuentes que computa el portal del alumno.
     const [results, cascade, self] = await Promise.all([
       admin.from('student_session_results')
-        .select('id, cascade_session_id, duration_minutes, total_duration, created_at, standalone_sessions(mission, duration_minutes), coaches:coach_id(display_name)')
+        .select('*, standalone_sessions(*), coaches:coach_id(display_name)')
         .eq('student_id', studentId)
         .order('created_at', { ascending: false }),
       admin.from('cascade_sessions')
-        .select('id, total_duration, created_at, session_date, mission, coaches:coach_id(display_name)')
+        .select('*, coaches:coach_id(display_name)')
         .eq('student_id', studentId)
         .eq('completion_state', 'closed')
         .order('session_date', { ascending: false }),
       admin.from('self_training_sessions')
-        .select('id, drill_name, duration_minutes, total_water_minutes, kind, completed, mission_completion, execution_rating, created_at, completed_at')
+        .select('*')
         .eq('student_id', studentId)
         .order('created_at', { ascending: false }),
     ]);
@@ -71,7 +71,7 @@ export async function getStudentActivitySummary(
     const mondayIso = monday.toISOString().slice(0, 10);
     const week_practices = selfSessions.filter((s: any) => {
       if (!s.completed) return false;
-      const d = ((s.completed_at || s.created_at) ?? '').slice(0, 10);
+      const d = (s.created_at ?? '').slice(0, 10);
       return d >= mondayIso;
     }).length;
 
@@ -87,7 +87,7 @@ export async function getStudentActivitySummary(
       })),
       ...selfSessions.map((s: any) => ({
         kind: (s.kind === 'free_surf' ? 'free_surf' : 'mission') as 'free_surf' | 'mission',
-        date: s.completed_at || s.created_at,
+        date: s.created_at,
         title: s.kind === 'free_surf' ? 'Free surf' : (s.drill_name || 'Misión'),
         detail: s.kind === 'free_surf'
           ? `${s.total_water_minutes || s.duration_minutes || 0} min de agua`
