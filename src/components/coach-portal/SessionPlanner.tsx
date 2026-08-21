@@ -29,8 +29,7 @@ import {
   applyStudentBoardToWeek,
   type ServicePlanData,
   type ServicePlanStudent,
-  type ServicePlanBlock,
-} from '@/lib/actions/service-planner';
+  type ServicePlanBlock, finalizeStudentEarlyByToken } from '@/lib/actions/service-planner';
 import { StarRating } from '@/components/sequence/StarRating';
 import {
   Waves,
@@ -421,6 +420,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   );
   const isLastDay = data.selectedDay.day_number === lastDayNumber;
   const [showFinalEval, setShowFinalEval] = useState(false);
+  // Short camp: cerrar UN alumno hoy (evaluación oficial + encuestas del día).
+  const [earlyPickerOpen, setEarlyPickerOpen] = useState(false);
+  const [earlyStudentId, setEarlyStudentId] = useState<string | null>(null);
+  const [earlyBusy, setEarlyBusy] = useState(false);
 
   // M153 — final evaluation is re-entrant: students already saved + the
   // pending banner that brings the coach back until everyone is evaluated.
@@ -589,6 +592,75 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </div>
           <span className="shrink-0 text-[11px] font-bold text-amber-900 bg-amber-200 rounded-full px-3 py-1.5">Continuar →</span>
         </button>
+      )}
+
+      {/* SHORT CAMP — un alumno termina hoy aunque el grupo siga: cerrarlo,
+          hacerle la evaluación oficial y que sus encuestas salgan HOY. */}
+      {!allDaysClosed && (data.camp as any).status !== 'completed' &&
+        data.camp.service_kind !== 'class' && data.camp.service_kind !== 'trip' && data.camp.service_kind !== 'surf_lesson' &&
+        students.some((st) => !finalSaved.has(st.student_id)) && (
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+          <button type="button" onClick={() => setEarlyPickerOpen(!earlyPickerOpen)}
+            className="w-full text-left flex items-center justify-between gap-2">
+            <p className="text-[12px] font-semibold text-gray-700">🏁 ¿Un alumno termina HOY su short camp?</p>
+            <span className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold shrink-0">{earlyPickerOpen ? 'Ocultar' : 'Cerrarlo →'}</span>
+          </button>
+          {earlyPickerOpen && (
+            <div className="mt-2.5 space-y-2">
+              <p className="text-[10.5px] text-gray-500 leading-snug">
+                Elegí al alumno: hacés su <b>evaluación oficial</b> ahora y sus encuestas le salen hoy — el resto del grupo sigue normal.
+                Tip: cerrá el día de hoy primero, así su última sesión queda en su bitácora.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {students.filter((st) => !finalSaved.has(st.student_id)).map((st) => (
+                  <button key={st.student_id} type="button" onClick={() => setEarlyStudentId(st.student_id)}
+                    className="rounded-full border border-gray-200 px-3 py-1.5 text-[11px] font-semibold text-gray-700 hover:border-[var(--tss-cyan,#5AC3E7)]">
+                    {st.display_name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Evaluación oficial del alumno de short camp (solo él). */}
+      {earlyStudentId && (
+        <FinalCampEvaluation
+          token={token}
+          campInstanceId={data.camp.id}
+          earlyMode
+          savedIds={Array.from(finalSaved)}
+          onStudentSaved={(id: string) => {
+            if (earlyBusy) return;
+            setEarlyBusy(true);
+            finalizeStudentEarlyByToken(token, data.camp.id, id)
+              .then((r) => {
+                if (!r?.ok) { alert(r?.error || 'No se pudo cerrar al alumno.'); return; }
+                setFinalSaved((prev) => new Set(prev).add(id));
+                const nm = students.find((st) => st.student_id === id)?.display_name?.split(' ')[0] ?? 'Alumno';
+                flash(`🏁 ${nm}: evaluación oficial guardada · encuestas enviadas hoy`);
+                setEarlyStudentId(null);
+                setEarlyPickerOpen(false);
+              })
+              .finally(() => setEarlyBusy(false));
+          }}
+          campName={data.camp.camp_name}
+          students={students.filter((st) => st.student_id === earlyStudentId)}
+          stpCatalog={data.graduationCatalog}
+          initialRatings={data.coachRatingByStudentStep}
+          targetBelt={data.camp.target_belt}
+          canAccreditTarget={
+            !data.camp.coach_max_belt ||
+            !data.camp.target_belt ||
+            canCoachBelt(
+              data.camp.coach_max_belt as BeltLevel,
+              data.camp.target_belt as BeltLevel,
+            )
+          }
+          onCancel={() => setEarlyStudentId(null)}
+          onCompleted={() => setEarlyStudentId(null)}
+        />
       )}
 
       {/* M47 — Drill / mission detail popover. */}

@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
 
@@ -1612,6 +1613,95 @@ export async function closeCampFinal(
   } catch {
     /* non-blocking — the camp is closed regardless of email delivery */
   }
+  return { ok: true };
+}
+
+// ─── SHORT CAMP: cerrar UN alumno el día que termina (2026-08-21) ───
+// El coach guarda primero la evaluación oficial del alumno (closeCampFinal
+// con finalize:false desde FinalCampEvaluation) y luego esta acción hace el
+// "fin de camp" SOLO para él: Finished + fecha de salida, desbloquea su
+// encuesta, siembra la de experiencia y le manda el correo ESE día — sin
+// esperar a que el grupo termine. Todo idempotente: cuando el camp completo
+// cierre, los email_sent / upserts evitan duplicados.
+export async function finalizeStudentEarlyByToken(
+  token: string,
+  campInstanceId: string,
+  studentId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id, display_name')
+    .eq('portal_token', token)
+    .maybeSingle();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('id, coach_id, head_coach_id, academy_id, camp_name')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  if (!camp) return { ok: false, error: 'Service not found.' };
+  if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
+    return { ok: false, error: 'You are not assigned to this service.' };
+  }
+
+  // 1. Finished + fecha de salida (los días restantes ya no lo incluyen).
+  const { error: partErr } = await admin
+    .from('camp_participants')
+    .update({ finalized_at: new Date().toISOString(), departed_on: elSalvadorToday() })
+    .eq('camp_instance_id', campInstanceId)
+    .eq('student_id', studentId)
+    .is('finalized_at', null);
+  if (partErr) return { ok: false, error: partErr.message };
+
+  // 2. Su encuesta de HOY: desbloquear la última sesión + correo + experiencia.
+  try {
+    const { data: campSess } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
+    const sessIds = (campSess ?? []).map((x: any) => x.id);
+    const { data: res } = sessIds.length
+      ? await admin
+          .from('student_session_results')
+          .select('id, feedback_token, email_sent')
+          .in('camp_session_id', sessIds)
+          .eq('student_id', studentId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null as any };
+    if (res?.id) {
+      await admin.from('student_session_results').update({ survey_unlocked: true }).eq('id', res.id);
+    }
+
+    await admin.from('camp_experience_surveys').upsert(
+      [{ camp_instance_id: campInstanceId, student_id: studentId, academy_id: (camp as any).academy_id ?? null }],
+      { onConflict: 'camp_instance_id,student_id', ignoreDuplicates: true },
+    );
+
+    const { data: stu } = await admin
+      .from('students')
+      .select('first_name, email, portal_token, course_access_white, course_access_yellow')
+      .eq('id', studentId)
+      .maybeSingle();
+    if (stu?.email && res?.id && !res.email_sent) {
+      const { sendCoachSurveyEmail } = await import('@/lib/actions/email');
+      await sendCoachSurveyEmail({
+        studentName: (stu as any).first_name,
+        studentEmail: (stu as any).email,
+        portalToken: (stu as any).portal_token,
+        coachName: (coach as any).display_name || 'Coach',
+        serviceName: (camp as any).camp_name || 'your surf camp',
+        sessionResultId: res.id,
+        feedbackToken: res.feedback_token ?? undefined,
+        studentHasCourseAccess: !!(stu as any).course_access_white || !!(stu as any).course_access_yellow,
+      });
+      await admin.from('student_session_results').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', res.id);
+    }
+  } catch {
+    /* best-effort: el alumno YA quedó Finished; encuesta/correo no traban */
+  }
+
   return { ok: true };
 }
 

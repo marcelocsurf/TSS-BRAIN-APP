@@ -55,7 +55,10 @@ export function FinalCampEvaluation({
   onCompleted,
   savedIds,
   onStudentSaved,
-}: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void }) {
+  earlyMode = false,
+}: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
+  /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
+  earlyMode?: boolean }) {
   // M153 — per-student persistence: each save writes immediately, so closing
   // the app never loses finished students again.
   const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds ?? []));
@@ -545,15 +548,17 @@ export function FinalCampEvaluation({
             >
               Later
             </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              disabled={pending || totalRated === 0}
-              className="flex-1 py-2.5 text-sm font-semibold rounded-xl text-white disabled:opacity-50"
-              style={{ background: 'var(--tss-cyan, #5AC3E7)' }}
-            >
-              {pending ? 'Saving…' : 'Finalize camp'}
-            </button>
+            {!earlyMode && (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                disabled={pending || totalRated === 0}
+                className="flex-1 py-2.5 text-sm font-semibold rounded-xl text-white disabled:opacity-50"
+                style={{ background: 'var(--tss-cyan, #5AC3E7)' }}
+              >
+                {pending ? 'Saving…' : 'Finalize camp'}
+              </button>
+            )}
           </div>
         )}
       </div>
