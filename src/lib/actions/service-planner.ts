@@ -2866,3 +2866,68 @@ export async function setStudentDayBoardByToken(
     return { ok: false, error: 'No se pudo asignar la tabla.' };
   }
 }
+
+// ─── Misiones de la semana para la EVALUACIÓN FINAL (2026-08-21) ───
+// El coach evaluaba a ciegas: la evaluación final solo recibía los bloques
+// del día seleccionado, así que no veía qué trabajó cada alumno el resto del
+// camp (ni lo agregado en otros días). Esto devuelve el recorrido completo.
+export async function getCampWeekMissionsByToken(
+  token: string,
+  campInstanceId: string,
+): Promise<{ ok: boolean; error?: string; byStudent?: Record<string, Array<{ day: number; items: string[] }>> }> {
+  try {
+    const { admin, error, camp } = await weekGate(token, campInstanceId);
+    if (error || !camp) return { ok: false, error: error ?? 'No autorizado.' };
+
+    const { data: sess } = await admin
+      .from('camp_sessions').select('id, day_number').eq('camp_instance_id', campInstanceId).order('day_number');
+    const sessIds = (sess ?? []).map((x: any) => x.id);
+    if (!sessIds.length) return { ok: true, byStudent: {} };
+    const dayByS = new Map((sess ?? []).map((x: any) => [x.id, x.day_number]));
+
+    const { data: blocks } = await admin
+      .from('service_plan_blocks')
+      .select('camp_session_id, student_id, order_index, step_id, step_ids, water_drill_id, land_drill_id, water_drill_custom, land_drill_custom, objective_text')
+      .in('camp_session_id', sessIds)
+      .order('order_index');
+
+    const stepIds = new Set<string>();
+    const drillIds = new Set<string>();
+    for (const b of blocks ?? []) {
+      if (b.step_id) stepIds.add(b.step_id);
+      for (const sid of (b.step_ids ?? [])) if (sid) stepIds.add(sid);
+      if (b.water_drill_id) drillIds.add(b.water_drill_id);
+      if (b.land_drill_id) drillIds.add(b.land_drill_id);
+    }
+    const [{ data: stepRows }, { data: drillRows }] = await Promise.all([
+      stepIds.size ? admin.from('lessons').select('id, title').in('id', Array.from(stepIds)) : Promise.resolve({ data: [] as any[] }),
+      drillIds.size ? admin.from('drills_missions').select('id, title').in('id', Array.from(drillIds)) : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const stepTitle = new Map((stepRows ?? []).map((r: any) => [r.id, r.title]));
+    const drillTitle = new Map((drillRows ?? []).map((r: any) => [r.id, r.title]));
+
+    const byStudent: Record<string, Array<{ day: number; items: string[] }>> = {};
+    for (const b of blocks ?? []) {
+      const day = dayByS.get(b.camp_session_id);
+      if (day == null) continue;
+      const stps = [b.step_id, ...(b.step_ids ?? [])]
+        .filter(Boolean)
+        .map((id: string) => stepTitle.get(id))
+        .filter(Boolean);
+      const drill = drillTitle.get(b.water_drill_id) ?? b.water_drill_custom ?? drillTitle.get(b.land_drill_id) ?? b.land_drill_custom ?? null;
+      const label = [Array.from(new Set(stps)).join(' + ') || null, drill]
+        .filter(Boolean).join(' · ')
+        || (b.objective_text ? String(b.objective_text).slice(0, 80) : null);
+      if (!label) continue;
+      if (!byStudent[b.student_id]) byStudent[b.student_id] = [];
+      let entry = byStudent[b.student_id].find((e) => e.day === day);
+      if (!entry) { entry = { day, items: [] }; byStudent[b.student_id].push(entry); }
+      if (!entry.items.includes(label)) entry.items.push(label);
+    }
+    for (const k of Object.keys(byStudent)) byStudent[k].sort((a, b) => a.day - b.day);
+    return { ok: true, byStudent };
+  } catch (e) {
+    console.error('[week-missions] failed', e);
+    return { ok: false, error: 'No se pudo cargar el recorrido del camp.' };
+  }
+}

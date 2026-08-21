@@ -7,10 +7,10 @@
 // camp_instance flips to 'completed'. These cyan stars become the
 // student's official The Surf Sequence evaluation for that step in their portal.
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import { StarRating } from '@/components/sequence/StarRating';
-import { closeCampFinal } from '@/lib/actions/service-planner';
+import { closeCampFinal, getCampWeekMissionsByToken } from '@/lib/actions/service-planner';
 import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-planner';
 import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduation';
@@ -59,6 +59,16 @@ export function FinalCampEvaluation({
 }: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
   /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
   earlyMode?: boolean }) {
+  // Recorrido del camp por alumno (qué misión/STP/drill trabajó cada día) —
+  // sin esto el coach evaluaba a ciegas: solo veía el día seleccionado.
+  const [weekMissions, setWeekMissions] = useState<Record<string, Array<{ day: number; items: string[] }>> | null>(null);
+  useEffect(() => {
+    getCampWeekMissionsByToken(token, campInstanceId)
+      .then((r) => { if (r.ok) setWeekMissions(r.byStudent ?? {}); })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campInstanceId]);
+
   // M153 — per-student persistence: each save writes immediately, so closing
   // the app never loses finished students again.
   const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set(savedIds ?? []));
@@ -398,6 +408,21 @@ export function FinalCampEvaluation({
 
                 {isOpen && (
                   <div className="p-3 border-t border-gray-100 space-y-2.5">
+                    {/* Lo que trabajó en el camp — contexto para evaluar. */}
+                    {weekMissions && (weekMissions[s.student_id]?.length ?? 0) > 0 && (
+                      <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1">
+                          📋 What they worked on this camp
+                        </p>
+                        <div className="space-y-0.5">
+                          {weekMissions[s.student_id].map((d) => (
+                            <p key={d.day} className="text-[11px] text-gray-700 leading-snug">
+                              <b className="text-gray-500">D{d.day}</b> · {d.items.join(' · ')}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => saveOneStudent(s)}
