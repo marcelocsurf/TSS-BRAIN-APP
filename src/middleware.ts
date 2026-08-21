@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/manual') ||          // in-app operations manual (static, per-role)
     pathname.startsWith('/venue-check') ||    // standalone simple venue tool
     pathname.startsWith('/feedback') ||       // token-gated standalone survey
+    pathname.startsWith('/experience') ||     // token-gated camp experience survey
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
     pathname === '/api/quiz-lead' ||          // public quiz lead intake (external site)
