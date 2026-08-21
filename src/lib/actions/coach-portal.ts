@@ -551,9 +551,24 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       coachingHours,
     },
     upcomingServices: upcomingEnriched,
-    pendingAssignments: upcomingEnriched.filter(
-      (s: any) => s.head_coach_id === coach.id && s.head_coach_status === 'pending',
-    ),
+    // Invitaciones pendientes con QUERY PROPIA — antes salían del filtro de
+    // "upcoming" (planned/active + end_date >= hoy) y una invitación de un
+    // servicio del mismo día (o ya completado) DESAPARECÍA sin que el coach
+    // pudiera aceptarla (caso Stanley 2026-08-21: 3 pendientes invisibles).
+    // Ventana: hasta 14 días hacia atrás, para poder aceptar tarde y que el
+    // historial/nómina queden bien.
+    pendingAssignments: await (async () => {
+      const since = new Date(Date.parse(`${today}T00:00:00Z`) - 14 * 86400000).toISOString().slice(0, 10);
+      const { data: inv } = await admin
+        .from('camp_instances')
+        .select('id, camp_name, start_date, end_date, scheduled_time, head_coach_id, head_coach_status')
+        .eq('head_coach_id', coach.id)
+        .eq('head_coach_status', 'pending')
+        .neq('status', 'cancelled')
+        .gte('end_date', since)
+        .order('start_date');
+      return inv ?? [];
+    })(),
     pastServices: pastEnriched,
     academyServices,
     academySchedule,

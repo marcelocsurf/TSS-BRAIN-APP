@@ -42,6 +42,9 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
     assignment.start_date === assignment.end_date
       ? assignment.start_date
       : `${assignment.start_date} → ${assignment.end_date}`;
+  // SV hoy — si el servicio ya pasó, igual se puede aceptar (historial).
+  const svToday = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+  const alreadyPast = assignment.end_date < svToday;
 
   const respond = (response: 'accepted' | 'rejected') => {
     setError('');
@@ -95,6 +98,11 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             {dateRange}
             {assignment.scheduled_time ? ` · ${assignment.scheduled_time}` : ''}
           </p>
+          {alreadyPast && (
+            <p className="text-[11px] text-amber-700 mt-1">
+              This service already ran — accept it if you coached it, so your record and payroll stay right.
+            </p>
+          )}
         </div>
       </div>
 
