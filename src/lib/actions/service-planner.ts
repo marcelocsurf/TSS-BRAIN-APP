@@ -1550,6 +1550,13 @@ export async function closeCampFinal(
     }
   }
 
+  // CRÍTICO (revisión 2026-08-21): estos dos efectos terminales SOLO con
+  // finalize=true. El guardado parcial por alumno (M153 / short camp) llegaba
+  // hasta acá y marcaba el camp ENTERO como completed + mandaba el correo de
+  // encuesta a TODOS a mitad de camp (latente desde M153 — solo se disparaba
+  // el último día, por eso nunca se vio).
+  if (!finalize) return { ok: true };
+
   await admin
     .from('camp_instances')
     .update({ status: 'completed' })
@@ -1627,7 +1634,7 @@ export async function finalizeStudentEarlyByToken(
   token: string,
   campInstanceId: string,
   studentId: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; surveyEmailSent?: boolean }> {
   const admin = createAdminClient();
 
   const { data: coach } = await admin
@@ -1647,16 +1654,29 @@ export async function finalizeStudentEarlyByToken(
     return { ok: false, error: 'You are not assigned to this service.' };
   }
 
+  // 0. El alumno debe ser participante ACTIVO de ESTE camp — sin esto, un
+  // studentId arbitrario sembraba encuestas de experiencia para alumnos
+  // ajenos (hallazgo de la revisión).
+  const { data: part } = await admin
+    .from('camp_participants')
+    .select('id, enrollment_status, finalized_at')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('student_id', studentId)
+    .maybeSingle();
+  if (!part || (part as any).enrollment_status !== 'active') {
+    return { ok: false, error: 'El alumno no es participante activo de este servicio.' };
+  }
+
   // 1. Finished + fecha de salida (los días restantes ya no lo incluyen).
   const { error: partErr } = await admin
     .from('camp_participants')
     .update({ finalized_at: new Date().toISOString(), departed_on: elSalvadorToday() })
-    .eq('camp_instance_id', campInstanceId)
-    .eq('student_id', studentId)
+    .eq('id', (part as any).id)
     .is('finalized_at', null);
   if (partErr) return { ok: false, error: partErr.message };
 
   // 2. Su encuesta de HOY: desbloquear la última sesión + correo + experiencia.
+  let surveyEmailSent = false;
   try {
     const { data: campSess } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
     const sessIds = (campSess ?? []).map((x: any) => x.id);
@@ -1697,12 +1717,13 @@ export async function finalizeStudentEarlyByToken(
         studentHasCourseAccess: !!(stu as any).course_access_white || !!(stu as any).course_access_yellow,
       });
       await admin.from('student_session_results').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', res.id);
+      surveyEmailSent = true;
     }
   } catch {
     /* best-effort: el alumno YA quedó Finished; encuesta/correo no traban */
   }
 
-  return { ok: true };
+  return { ok: true, surveyEmailSent };
 }
 
 // M45 — Save a coach's official STP rating for a student during session
@@ -1999,11 +2020,18 @@ export async function closeServicePlan(
       .upsert(usageRows, { onConflict: 'board_id,camp_session_id', ignoreDuplicates: true });
   }
 
-  // 2. Idempotency — clear prior results for this camp_session
-  await admin
+  // 2. Idempotency — clear prior results for this camp_session.
+  // OJO: NO borrar las SSR de alumnos ya Finished (short camp) — el re-cierre
+  // no las reinserta (departed filtra sus blocks) y el link de su encuesta
+  // ya emailada quedaría muerto.
+  let clearQ = admin
     .from('student_session_results')
     .delete()
     .eq('camp_session_id', campSession!.id);
+  if (departed.size > 0) {
+    clearQ = clearQ.not('student_id', 'in', `(${Array.from(departed).map((x) => `"${x}"`).join(',')})`);
+  }
+  await clearQ;
 
   // Resolve drill/mission titles for the mission text
   const drillIds = Array.from(

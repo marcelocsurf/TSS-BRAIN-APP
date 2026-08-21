@@ -595,10 +595,18 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       )}
 
       {/* SHORT CAMP — un alumno termina hoy aunque el grupo siga: cerrarlo,
-          hacerle la evaluación oficial y que sus encuestas salgan HOY. */}
-      {!allDaysClosed && (data.camp as any).status !== 'completed' &&
+          hacerle la evaluación oficial y que sus encuestas salgan HOY.
+          Solo camps multi-día, a mitad de camp (el último día ya tiene su
+          flujo oficial), y EXIGE el día de hoy cerrado — si no, su sesión
+          de hoy se perdería en silencio (hallazgo de la revisión). */}
+      {!allDaysClosed && !isLastDay && data.daySummaries.length > 1 &&
+        (data.camp as any).status !== 'completed' &&
         data.camp.service_kind !== 'class' && data.camp.service_kind !== 'trip' && data.camp.service_kind !== 'surf_lesson' &&
-        students.some((st) => !finalSaved.has(st.student_id)) && (
+        students.some((st) => !finalSaved.has(st.student_id)) && (() => {
+          const svToday = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+          const todaySummary = data.daySummaries.find((d) => d.session_date === svToday);
+          const todayClosed = !todaySummary || todaySummary.completion_state === 'closed';
+          return (
         <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
           <button type="button" onClick={() => setEarlyPickerOpen(!earlyPickerOpen)}
             className="w-full text-left flex items-center justify-between gap-2">
@@ -607,14 +615,20 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </button>
           {earlyPickerOpen && (
             <div className="mt-2.5 space-y-2">
-              <p className="text-[10.5px] text-gray-500 leading-snug">
-                Elegí al alumno: hacés su <b>evaluación oficial</b> ahora y sus encuestas le salen hoy — el resto del grupo sigue normal.
-                Tip: cerrá el día de hoy primero, así su última sesión queda en su bitácora.
-              </p>
+              {todayClosed ? (
+                <p className="text-[10.5px] text-gray-500 leading-snug">
+                  Elegí al alumno: hacés su <b>evaluación oficial</b> ahora y sus encuestas le salen hoy — el resto del grupo sigue normal.
+                </p>
+              ) : (
+                <p className="text-[10.5px] text-amber-700 leading-snug">
+                  ⚠️ Cerrá el día de HOY primero (evaluación diaria del grupo). Si lo cerrás antes, la sesión de hoy de este alumno no quedaría en su bitácora.
+                </p>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 {students.filter((st) => !finalSaved.has(st.student_id)).map((st) => (
-                  <button key={st.student_id} type="button" onClick={() => setEarlyStudentId(st.student_id)}
-                    className="rounded-full border border-gray-200 px-3 py-1.5 text-[11px] font-semibold text-gray-700 hover:border-[var(--tss-cyan,#5AC3E7)]">
+                  <button key={st.student_id} type="button" disabled={!todayClosed}
+                    onClick={() => setEarlyStudentId(st.student_id)}
+                    className="rounded-full border border-gray-200 px-3 py-1.5 text-[11px] font-semibold text-gray-700 hover:border-[var(--tss-cyan,#5AC3E7)] disabled:opacity-40">
                     {st.display_name}
                   </button>
                 ))}
@@ -622,7 +636,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             </div>
           )}
         </div>
-      )}
+          );
+        })()}
 
       {/* Evaluación oficial del alumno de short camp (solo él). */}
       {earlyStudentId && (
@@ -639,10 +654,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 if (!r?.ok) { alert(r?.error || 'No se pudo cerrar al alumno.'); return; }
                 setFinalSaved((prev) => new Set(prev).add(id));
                 const nm = students.find((st) => st.student_id === id)?.display_name?.split(' ')[0] ?? 'Alumno';
-                flash(`🏁 ${nm}: evaluación oficial guardada · encuestas enviadas hoy`);
+                flash(r.surveyEmailSent
+                  ? `🏁 ${nm}: evaluación oficial guardada · encuesta enviada hoy`
+                  : `🏁 ${nm}: cerrado y evaluado — sin correo del alumno, compartile la encuesta desde el Front Desk`);
                 setEarlyStudentId(null);
                 setEarlyPickerOpen(false);
               })
+              .catch((e: any) => alert(e?.message || 'No se pudo cerrar al alumno. Revisá y reintentá.'))
               .finally(() => setEarlyBusy(false));
           }}
           campName={data.camp.camp_name}

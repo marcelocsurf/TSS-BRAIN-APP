@@ -211,6 +211,11 @@ export function FinalCampEvaluation({
   };
 
   const saveOneStudent = (s: ServicePlanStudent) => {
+    // Short camp: guardar acá CIERRA al alumno (Finished + encuestas hoy) —
+    // irreversible desde el portal; confirmación explícita.
+    if (earlyMode && !confirm(`${s.display_name.split(' ')[0]} queda FINISHED: sale de los próximos días del camp y sus encuestas le llegan hoy. ¿Confirmás el cierre?`)) {
+      return;
+    }
     // Focus para su próxima etapa: OBLIGATORIO por alumno.
     if ((nextFocus[s.student_id]?.trim().length ?? 0) < 5) {
       alert(`Write the "Next focus" for ${s.display_name.split(' ')[0]} — what should they keep working on after this camp? (Tip: tap "Use suggestion" to start from the weak STPs.)`);
@@ -400,7 +405,13 @@ export function FinalCampEvaluation({
                       className="w-full py-2.5 text-[12px] font-bold rounded-xl text-white disabled:opacity-50"
                       style={{ background: savedSet.has(s.student_id) ? '#047857' : 'var(--tss-navy)' }}
                     >
-                      {savingId === s.student_id ? 'Guardando…' : savedSet.has(s.student_id) ? '✓ Guardado — guardar cambios de nuevo' : '💾 Guardar este alumno (no se pierde)'}
+                      {savingId === s.student_id
+                        ? 'Guardando…'
+                        : savedSet.has(s.student_id)
+                          ? '✓ Guardado — guardar cambios de nuevo'
+                          : earlyMode
+                            ? `🏁 Cerrar a ${s.display_name.split(' ')[0]} HOY (evaluación + encuestas)`
+                            : '💾 Guardar este alumno (no se pierde)'}
                     </button>
                     {/* iPad (md:): la secuencia en 2 columnas — la mitad de
                         scroll con 25-48 STPs. Teléfono: lista única, igual. */}
