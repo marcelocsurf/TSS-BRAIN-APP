@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getFeedbackByToken } from '@/lib/actions/feedback-token';
+import { getPendingExperienceForFeedbackToken } from '@/lib/actions/experience-survey';
 import { BRAND } from '@/lib/constants/brand';
 import { FeedbackForm } from './FeedbackForm';
+import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 
 // Standalone feedback page for Lead students who don't have a course.
 // Token-gated, no portal nav, no other tabs. Once submitted, shows a
@@ -17,6 +19,11 @@ export default async function FeedbackPage({ params }: Props) {
   const { token } = await params;
   const data = await getFeedbackByToken(token);
   if (!data) notFound();
+
+  // Opción A encadenada: si el alumno tiene una encuesta de EXPERIENCIA del
+  // camp pendiente, es el paso 2 del mismo link (y si la de entreno ya está
+  // respondida, se muestra directo — reabrir el link cae en lo que falta).
+  const experience = await getPendingExperienceForFeedbackToken(token).catch(() => null);
 
   // data.sessionDate ya viene como fecha real de la sesión (YYYY-MM-DD). La
   // fijamos en UTC para que no se corra un día según la zona del servidor.
@@ -46,7 +53,22 @@ export default async function FeedbackPage({ params }: Props) {
         {/* Body */}
         <div className="bg-white rounded-b-2xl border border-gray-100 border-t-0 px-5 py-6 space-y-5">
           {data.alreadySubmitted ? (
-            <AlreadySubmitted firstName={data.studentFirstName} coachName={data.coachName} />
+            experience ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Hi <strong>{data.studentFirstName}</strong>, your session feedback is in — thank you!
+                  </p>
+                  <p className="text-sm text-gray-700 mt-2">
+                    One more minute: how was the <strong>overall experience</strong>
+                    {experience.campName ? <> of {experience.campName}</> : null}?
+                  </p>
+                </div>
+                <ExperienceSurveyForm token={experience.token} />
+              </div>
+            ) : (
+              <AlreadySubmitted firstName={data.studentFirstName} coachName={data.coachName} />
+            )
           ) : (
             <>
               <div>
@@ -81,8 +103,8 @@ export default async function FeedbackPage({ params }: Props) {
                 )}
               </div>
 
-              {/* The form — preguntas según el servicio */}
-              <FeedbackForm token={token} serviceKind={data.serviceKind} serviceName={data.serviceName} />
+              {/* The form — preguntas según el servicio (+ paso 2 de experiencia si hay) */}
+              <FeedbackForm token={token} serviceKind={data.serviceKind} serviceName={data.serviceName} experience={experience} />
             </>
           )}
 

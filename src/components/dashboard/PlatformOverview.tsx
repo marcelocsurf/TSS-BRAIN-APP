@@ -27,12 +27,17 @@ export function PlatformOverview({ data }: { data: PlatformOverviewData }) {
         <TrendingUp size={11} strokeWidth={1.75} />
         Platform pulse
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
         <PulseStat label="Active students" value={totals.studentsActive} href="/students" />
         <PulseStat label="Services today" value={totals.servicesToday} href="/camps" />
         <PulseStat label="Unread incidents" value={totals.unreadIncidents} href="/incidents" alert={totals.unreadIncidents > 0} />
         <PulseStat label="Promotions to confirm" value={totals.pendingPromotions} href="/dashboard" alert={totals.pendingPromotions > 0} />
         <PulseStat label="Sales this month" value={money} href="/sales-log" />
+        <PulseStat
+          label="Experience 30d"
+          value={totals.experience30d.score != null ? `${totals.experience30d.score.toFixed(1)} ★` : '—'}
+          href="/reports/experiencia"
+        />
       </div>
 
       {/* ── One card per academy ── */}

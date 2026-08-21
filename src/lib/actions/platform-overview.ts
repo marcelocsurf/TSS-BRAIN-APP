@@ -31,6 +31,8 @@ export interface PlatformOverviewData {
     unreadIncidents: number;
     pendingPromotions: number;
     salesThisMonth: { count: number; cents: number };
+    /** Experiencia del camp (últimos 30 días): score 1-5 + NPS. */
+    experience30d: { score: number | null; nps: number | null; n: number };
   };
   academies: AcademyPulse[];
 }
@@ -146,6 +148,7 @@ export async function getPlatformOverview(): Promise<PlatformOverviewData | null
     unreadIncidents: pulses.reduce((n, p) => n + p.unreadIncidents, 0),
     pendingPromotions: pulses.reduce((n, p) => n + p.pendingPromotions, 0),
     salesThisMonth: { count: 0, cents: 0 },
+    experience30d: { score: null as number | null, nps: null as number | null, n: 0 },
   };
   try {
     const { data: grants } = await admin
@@ -156,6 +159,34 @@ export async function getPlatformOverview(): Promise<PlatformOverviewData | null
     const billable = (grants ?? []).filter((g: any) => g.billable !== false);
     totals.salesThisMonth.count = billable.length;
     totals.salesThisMonth.cents = billable.reduce((n: number, g: any) => n + (g.price_cents || 0), 0);
+  } catch { /* soft */ }
+
+  // Score de experiencia del camp (30 días) — el "cómo nos está yendo" visible
+  // desde el Home; el detalle vive en /reports/experiencia.
+  try {
+    const since30 = new Date(Date.now() - 30 * 86400000).toISOString();
+    const { data: exp } = await admin
+      .from('camp_experience_surveys')
+      .select('facilities_rating, equipment_rating, transport_rating, communication_rating, value_rating, nps')
+      .not('submitted_at', 'is', null)
+      .gte('submitted_at', since30)
+      .limit(1000);
+    const rows = exp ?? [];
+    const dimVals: number[] = [];
+    for (const r of rows as any[]) {
+      for (const c of ['facilities_rating', 'equipment_rating', 'transport_rating', 'communication_rating', 'value_rating']) {
+        const v = r[c];
+        if (typeof v === 'number' && v >= 1 && v <= 5) dimVals.push(v);
+      }
+    }
+    const npsVals = (rows as any[]).map((r) => r.nps).filter((v) => typeof v === 'number' && v >= 0 && v <= 10);
+    totals.experience30d = {
+      score: dimVals.length ? Math.round((dimVals.reduce((a, b) => a + b, 0) / dimVals.length) * 10) / 10 : null,
+      nps: npsVals.length
+        ? Math.round(((npsVals.filter((v) => v >= 9).length - npsVals.filter((v) => v <= 6).length) / npsVals.length) * 100)
+        : null,
+      n: rows.length,
+    };
   } catch { /* soft */ }
 
   return { totals, academies: pulses };

@@ -79,7 +79,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const coachUnlocked = !!(student as any).coach_profile_unlocked_at;
 
   // Fetch parallel data — materials use admin access control via student_level_access
-  const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach] = await Promise.all([
+  const { getPendingExperienceForStudent } = await import('@/lib/actions/experience-survey');
+  const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach, pendingExperience] = await Promise.all([
     getStudentMaterials(student.id, beltLevel),
     getStudentDrillsForSelfTraining(beltLevel),
     getDrillsMissionsForBelt(beltLevel),
@@ -87,6 +88,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     getSubmittedSurveys(student.id),
     getCourseCatalog(student.id),
     coachUnlocked ? getMyCoachData(student.id) : Promise.resolve(null),
+    getPendingExperienceForStudent(student.id).catch(() => null),
   ]);
 
   // Course owners (TSS founders) bypass the access gate so they can review
@@ -146,6 +148,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           drillsMissions,
           pendingSurveys,
           submittedSurveys,
+          pendingExperience,
           materials,
           token,
           courseData,

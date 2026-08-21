@@ -210,6 +210,21 @@ export async function hostStudentDetail(token: string, studentId: string) {
       }
       return null;
     })(),
+    // Experiencia del camp sin responder (instalaciones/equipo/transporte/
+    // value) — mismo patrón de recuperación por WhatsApp que pendingSurvey.
+    pendingExperience: await (async () => {
+      const { data: exp } = await admin
+        .from('camp_experience_surveys')
+        .select('token, created_at, camp_instances:camp_instance_id(camp_name)')
+        .eq('student_id', studentId)
+        .is('submitted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!exp) return null;
+      const inst = Array.isArray((exp as any).camp_instances) ? (exp as any).camp_instances[0] : (exp as any).camp_instances;
+      return { token: (exp as any).token as string, campName: (inst?.camp_name as string) ?? null };
+    })(),
   };
 }
 

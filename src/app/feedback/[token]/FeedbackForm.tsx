@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { submitFeedbackByToken } from '@/lib/actions/feedback-token';
 import { surveyForService } from '@/lib/survey/questions';
+import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 
 // Survey form. Renders client-side so the user gets immediate validation +
 // a thank-you state after submit. Las preguntas se eligen SEGÚN EL SERVICIO
@@ -12,9 +13,11 @@ interface Props {
   token: string;
   serviceKind?: string | null;
   serviceName?: string | null;
+  /** Paso 2 (Opción A): encuesta de experiencia del camp pendiente. */
+  experience?: { token: string; campName: string | null } | null;
 }
 
-export function FeedbackForm({ token, serviceKind, serviceName }: Props) {
+export function FeedbackForm({ token, serviceKind, serviceName, experience }: Props) {
   const QUESTIONS = surveyForService(serviceKind, serviceName).questions;
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comment, setComment] = useState('');
@@ -47,6 +50,29 @@ export function FeedbackForm({ token, serviceKind, serviceName }: Props) {
   };
 
   if (done) {
+    // Paso 2 encadenado (Opción A): con experiencia pendiente, en vez del
+    // gracias final viene la encuesta de EXPERIENCIA del camp — un solo link.
+    if (experience) {
+      return (
+        <div className="space-y-4 pt-2">
+          <div className="rounded-xl bg-emerald-50 px-3 py-2 flex items-center gap-2">
+            <span className="text-emerald-600 text-base">{'✓'}</span>
+            <p className="text-xs text-emerald-800">Session feedback sent — thank you!</p>
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold"
+               style={{ fontFamily: 'DM Mono, monospace' }}>
+              Step 2 of 2
+            </p>
+            <p className="text-sm text-gray-700 mt-1">
+              One more minute: how was the <strong>overall experience</strong>
+              {experience.campName ? <> of {experience.campName}</> : null}?
+            </p>
+          </div>
+          <ExperienceSurveyForm token={experience.token} />
+        </div>
+      );
+    }
     return (
       <div className="text-center py-6">
         <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">

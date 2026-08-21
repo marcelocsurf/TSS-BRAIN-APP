@@ -1,5 +1,6 @@
 'use client';
 
+import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import { resolveAcademyBranding } from '@/lib/branding';
@@ -131,6 +132,7 @@ interface PortalData {
   drills: any[];
   drillsMissions?: any[];
   pendingSurveys: any[];
+  pendingExperience?: { token: string; campName: string | null } | null;
   submittedSurveys: any[];
   materials: { unlocked: BeltMaterial[]; locked: BeltMaterial[] };
   token: string;
@@ -480,7 +482,7 @@ export function PortalTabs({
                   color={isActive ? 'var(--tss-cyan)' : undefined}
                 />
                 <span className="uppercase">{tab.label}</span>
-                {tab.key === 'feedback' && data.pendingSurveys.length > 0 && (
+                {tab.key === 'feedback' && (data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
                   <span className="absolute top-1 right-1/4 w-2 h-2 bg-red-500 rounded-full" />
                 )}
               </button>
@@ -959,8 +961,8 @@ function HomeTab({
           <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#061C2B' }}>
             <MessageCircle size={15} strokeWidth={1.75} style={{ color: '#0090B0' }} />
             My Feedback
-            {data.pendingSurveys.length > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/10 text-[#FF6B6B] font-bold">{data.pendingSurveys.length}</span>
+            {(data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/10 text-[#FF6B6B] font-bold">{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
             )}
           </span>
           <ChevronDown size={16} className="text-gray-300" />
@@ -1872,9 +1874,40 @@ function FeedbackTab({
     return null;
   })();
   const [expandedSurveyId, setExpandedSurveyId] = useState<string | null>(initialExpand);
+  const [expOpen, setExpOpen] = useState(false);
 
   return (
     <div className="space-y-5">
+      {/* Camp experience survey (Opción A) — one per camp, about the overall
+          experience: facilities, equipment, transport, communication, value. */}
+      {data.pendingExperience && (
+        <div className="space-y-2">
+          <div className="bg-cyan-50 rounded-2xl p-4 shadow-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-cyan-900">
+                  Your camp experience{data.pendingExperience.campName ? ` · ${data.pendingExperience.campName}` : ''}
+                </p>
+                <p className="text-[10px] text-cyan-700 mt-0.5">
+                  1 minute — facilities, equipment, transport & value
+                </p>
+              </div>
+              <button
+                onClick={() => setExpOpen(!expOpen)}
+                className="text-xs font-medium text-cyan-700 underline"
+              >
+                {expOpen ? 'Hide' : 'Share it'}
+              </button>
+            </div>
+          </div>
+          {expOpen && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <ExperienceSurveyForm token={data.pendingExperience.token} />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Pending Surveys */}
       {pendingSurveys.length > 0 && (
         <div className="space-y-3">

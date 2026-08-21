@@ -137,6 +137,28 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
               </div>
             </div>
           )}
+          {/* Experiencia del camp sin responder — mismo patrón de rescate. */}
+          {detail?.pendingExperience && (
+            <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: 'rgba(0,210,255,.10)', border: '1px solid rgba(0,168,204,.4)' }}>
+              <p className="text-[11px] font-bold" style={{ color: '#00607a' }}>
+                🏄 Experiencia del camp sin responder{detail.pendingExperience.campName ? ` · ${detail.pendingExperience.campName}` : ''}
+              </p>
+              <div className="flex gap-2">
+                <button type="button"
+                  onClick={() => copy(`${window.location.origin}/experience/${detail.pendingExperience.token}`, 'experiencia')}
+                  className="flex-1 rounded-full py-2 text-[9px]" style={{ ...F_M, background: GOLD, color: INK, fontWeight: 700 }}>
+                  📋 Copiar link
+                </button>
+                {row.phone && (
+                  <a href={`https://wa.me/${String(row.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${(row.name ?? '').split(' ')[0]}! How was your camp with us? 🤙 1-minute survey about the overall experience: ${typeof window !== 'undefined' ? window.location.origin : ''}/experience/${detail.pendingExperience.token}`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex-1 rounded-full py-2 text-[9px] text-center" style={{ ...F_M, background: GREEN, color: INK, fontWeight: 700 }}>
+                    💬 WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
           {msg && <p className="text-[11px] font-semibold" style={{ color: '#0090B0' }}>{msg}</p>}
           {detail ? (
             <div className="space-y-2">

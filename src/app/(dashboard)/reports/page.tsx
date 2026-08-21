@@ -1,7 +1,7 @@
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { DollarSign, Gauge, TrendingUp, Users, Star, CheckSquare, RefreshCw, ClipboardList } from 'lucide-react';
+import { DollarSign, Gauge, TrendingUp, Users, Star, CheckSquare, RefreshCw, ClipboardList, Smile } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,6 +14,7 @@ const REPORTS: { href: string; title: string; desc: string; Icon: typeof DollarS
   { href: '/reports/revenue', title: 'Ingresos por venta de asientos', desc: 'Cobrado vs pendiente por semana/mes y por tipo de servicio. Export CSV.', Icon: DollarSign, money: true },
   { href: '/reports/occupancy', title: 'Ocupación vs capacidad', desc: 'Utilización por servicio, plantilla o semana — para planear cupos.', Icon: Gauge },
   { href: '/reports/ratings', title: 'Ratings por coach', desc: 'Satisfacción promedio, distribución de estrellas y comentarios.', Icon: Star },
+  { href: '/reports/experiencia', title: 'Experiencia del camp', desc: 'Instalaciones, equipo, transporte, comunicación, value for money y NPS — con alertas.', Icon: Smile },
   { href: '/reports/closures', title: 'Cierres por coach', desc: 'Cumplimiento de cierre de sesiones (candado de pago) con historial.', Icon: CheckSquare },
   { href: '/reports/memberships', title: 'Renovaciones de membresía', desc: 'Renovaciones, pendientes por confirmar y por vencer (30 días).', Icon: RefreshCw },
   { href: '/reports/funnel', title: 'Embudo QR → pagado', desc: 'Conversión de reserva a pago por canal (QR vs mostrador).', Icon: TrendingUp, money: true },

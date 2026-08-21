@@ -1346,6 +1346,36 @@ export async function closeCampFinal(
     }
   } catch { /* survey unlock is best-effort */ }
 
+  // Encuesta de EXPERIENCIA del camp (Opción A, 2026-08-21): al cerrar se
+  // crea la fila pendiente por alumno activo (token propio). Se encadena
+  // como paso 2 del survey de entreno y el host puede perseguirla por
+  // WhatsApp. Idempotente (UNIQUE camp+alumno). Best-effort: nunca traba
+  // el cierre del camp.
+  if (finalize) try {
+    const { data: campFull } = await admin
+      .from('camp_instances')
+      .select('academy_id')
+      .eq('id', campInstanceId)
+      .maybeSingle();
+    const { data: expParts } = await admin
+      .from('camp_participants')
+      .select('student_id, enrollment_status')
+      .eq('camp_instance_id', campInstanceId);
+    const expActive = (expParts ?? []).filter(
+      (p: any) => p.enrollment_status !== 'removed' && p.enrollment_status !== 'cancelled' && p.student_id,
+    );
+    if (expActive.length) {
+      await admin.from('camp_experience_surveys').upsert(
+        expActive.map((p: any) => ({
+          camp_instance_id: campInstanceId,
+          student_id: p.student_id,
+          academy_id: campFull?.academy_id ?? null,
+        })),
+        { onConflict: 'camp_instance_id,student_id', ignoreDuplicates: true },
+      );
+    }
+  } catch { /* experience seeding is best-effort */ }
+
   // Accreditation authority (policy 2026-07-11): EVERY coach — including the
   // camp's head coach — can only promote UP TO their own certification
   // (max_belt_permission). Only admins bypass. An under-certified coach's
