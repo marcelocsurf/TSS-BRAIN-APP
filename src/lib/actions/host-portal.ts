@@ -718,7 +718,7 @@ export async function hostCancelClass(token: string, campId: string): Promise<{ 
 export async function hostSetTransport(
   token: string,
   planId: string,
-  input: { depart?: string | null; ret?: string | null; status?: 'taken' | 'cancelled' | null },
+  input: { depart?: string | null; ret?: string | null; status?: 'taken' | 'cancelled' | 'requested' | null },
 ): Promise<{ ok: boolean; error?: string }> {
   const who = await resolveHost(token);
   if (!who?.academy_id || !(await hostCanCoordinate(who as any))) return { ok: false, error: 'No autorizado.' };
@@ -762,20 +762,23 @@ export interface TransportBoardRow {
   status: string | null;     // null=pendiente · taken=salió · cancelled
 }
 
-export async function hostTransportBoard(token: string): Promise<TransportBoardRow[]> {
+// Devuelve null si la carga FALLÓ (para que la UI no muestre "sin
+// transportes" cuando en realidad hubo un error de red/DB).
+export async function hostTransportBoard(token: string): Promise<TransportBoardRow[] | null> {
   const who = await resolveHost(token);
   if (!who?.academy_id) return [];
   const admin = createAdminClient();
   const today = elSalvadorToday();
-  const end = new Date(Date.parse(`${today}T00:00:00Z`) + 14 * 86400000).toISOString().slice(0, 10);
+  const end = new Date(Date.parse(`${today}T00:00:00Z`) + 13 * 86400000).toISOString().slice(0, 10);
 
-  const { data: sess } = await admin
+  const { data: sess, error: sessErr } = await admin
     .from('camp_sessions')
-    .select('id, session_date, camp_instance_id, camp_instances:camp_instance_id!inner(camp_name, academy_id, status, coach_id, head_coach_id)')
+    .select('id, session_date, camp_instance_id, camp_instances:camp_instance_id!inner(camp_name, academy_id, status, coach_id, head_coach_id, head_coach_status)')
     .gte('session_date', today)
     .lte('session_date', end)
     .eq('camp_instances.academy_id', who.academy_id)
     .order('session_date');
+  if (sessErr) return null;
   const sessions = (sess ?? []).filter((s: any) => {
     const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
     return inst && inst.status !== 'cancelled';
@@ -783,11 +786,12 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
   if (sessions.length === 0) return [];
 
   const sessIds = sessions.map((s: any) => s.id);
-  const { data: plans } = await admin
+  const { data: plans, error: plansErr } = await admin
     .from('service_plans')
     .select('id, camp_session_id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status')
     .in('camp_session_id', sessIds)
     .eq('transport_needed', true);
+  if (plansErr) return null;
   if (!plans || plans.length === 0) return [];
   const sessById = new Map(sessions.map((s: any) => [s.id, s]));
 
@@ -800,7 +804,7 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
     : { data: [] as any[] };
   const countByInst = new Map<string, number>();
   for (const p of parts ?? []) {
-    if (p.enrollment_status === 'removed' || p.enrollment_status === 'cancelled') continue;
+    if (p.enrollment_status !== 'active') continue; // mismo criterio que transport.ts
     countByInst.set(p.camp_instance_id, (countByInst.get(p.camp_instance_id) ?? 0) + 1);
   }
   const coachIds = Array.from(new Set(sessions.flatMap((s: any) => {
@@ -817,11 +821,14 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
       const s = sessById.get(p.camp_session_id);
       if (!s) return null;
       const inst = Array.isArray((s as any).camp_instances) ? (s as any).camp_instances[0] : (s as any).camp_instances;
+      // Coach efectivo (invariante #1): head coach solo si ACEPTÓ la
+      // transferencia — igual que transport.ts y el resto del archivo.
+      const useHead = inst?.head_coach_id && inst?.head_coach_status === 'accepted';
       return {
         plan_id: p.id,
         date: (s as any).session_date,
         camp_name: inst?.camp_name ?? '—',
-        coach_name: coachName.get(inst?.head_coach_id) ?? coachName.get(inst?.coach_id) ?? null,
+        coach_name: coachName.get(useHead ? inst.head_coach_id : inst?.coach_id) ?? null,
         students: countByInst.get((s as any).camp_instance_id) ?? 0,
         venue: p.surf_venue ?? null,
         class_start: p.class_start_time ?? null,

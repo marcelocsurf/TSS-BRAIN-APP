@@ -85,13 +85,19 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           </Sec>
         )}
 
-        <Sec icon="🏄" title="TABLAS — calculadora y rentas">
-          <Li k="Calculadora de tablas">Recomienda volumen, tipo, medidas y quillas según la persona — úsalo para orientar a un cliente que renta o compra.</Li>
-          <Li k="Rentas">Inventario completo: registrá la salida y devolución de cada tabla, con waiver y firma del cliente.</Li>
+        <Sec icon="🚐" title="TRANSPORTE — la van de los próximos 14 días">
+          <Li k="Qué muestra">Todo lo que los coaches solicitaron al planear sus clases y camps: salida → regreso, lugar, cuántos alumnos van y qué coach lo pide, agrupado por día.</Li>
+          <Li k="✓ Salió">Marcalo cuando la van se vaya — todos ven que ese viaje ya está en camino. "Deshacer" lo regresa a pendiente.</Li>
+          <Li k="🕐 Horario">Ajustá la hora de salida o regreso si cambia el plan del día.</Li>
         </Sec>
 
         <Sec icon="🏛" title="ESPACIOS — salas y lugares">
-          <p>Quién usa qué espacio y cuándo (yoga deck, BJJ, gym, ice bath, skate). Podés reservar un espacio para una actividad y evitar choques de horario.</p>
+          <p>Quién usa qué espacio y cuándo (yoga deck, BJJ, gym, ice bath, skate). Podés reservar un espacio a nombre de un cliente, una clase o un coach y evitar choques de horario.</p>
+        </Sec>
+
+        <Sec icon="🏄" title="TABLAS — calculadora y rentas">
+          <Li k="Calculadora de tablas">Recomienda volumen, tipo, medidas y quillas según la persona — úsalo para orientar a un cliente que renta o compra.</Li>
+          <Li k="Rentas">Inventario completo: registrá la salida y devolución de cada tabla, con waiver y firma del cliente.</Li>
         </Sec>
 
         <Sec icon="👥" title="CLIENTES — fichas y seguimiento">

@@ -373,10 +373,10 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             📖 Guía
           </button>
         </div>
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
           {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
-              className="flex-1 rounded-full py-2.5 text-[9px]"
+              className="flex-1 shrink-0 whitespace-nowrap rounded-full py-2.5 px-3 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
               {label}
             </button>
@@ -1038,12 +1038,12 @@ function ReserveModal({ token, event, onClose, onDone }: {
 // quién lo pide, cuántos alumnos, salida → regreso, lugar. El Front Desk
 // marca "salió" y puede ajustar horarios (mismo hostSetTransport de Agenda).
 function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate: boolean }) {
-  const [rows, setRows] = useState<TransportBoardRow[] | null>(null);
+  const [rows, setRows] = useState<TransportBoardRow[] | null | 'error'>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [dep, setDep] = useState(''); const [ret, setRet] = useState('');
 
-  const load = () => hostTransportBoard(token).then(setRows).catch(() => setRows([]));
+  const load = () => hostTransportBoard(token).then((r) => setRows(r ?? 'error')).catch(() => setRows('error'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [token]);
 
@@ -1053,12 +1053,12 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
     return d === hoy ? `HOY · ${label}` : label;
   };
   const groups: [string, TransportBoardRow[]][] = [];
-  for (const r of rows ?? []) {
+  for (const r of (Array.isArray(rows) ? rows : [])) {
     const g = groups.find((x) => x[0] === r.date);
     if (g) g[1].push(r); else groups.push([r.date, [r]]);
   }
 
-  const setStatus = async (r: TransportBoardRow, status: 'taken' | null) => {
+  const setStatus = async (r: TransportBoardRow, status: 'taken' | 'requested') => {
     setBusyId(r.plan_id);
     const res = await hostSetTransport(token, r.plan_id, { status });
     setBusyId(null);
@@ -1083,7 +1083,16 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
       </div>
 
       {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
-      {rows !== null && groups.length === 0 && (
+      {rows === 'error' && (
+        <div className="rounded-2xl bg-white p-6 text-center">
+          <p className="text-sm text-gray-600">No se pudo cargar el tablero de transporte.</p>
+          <button type="button" onClick={() => { setRows(null); load(); }}
+            className="mt-2 rounded-full px-4 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {Array.isArray(rows) && groups.length === 0 && (
         <div className="rounded-2xl bg-white p-6 text-center">
           <p className="text-sm text-gray-500">Sin transportes solicitados en los próximos 14 días.</p>
           <p className="text-[11px] text-gray-400 mt-1">El coach lo pide al planear su día; apenas lo haga, aparece acá.</p>
@@ -1125,7 +1134,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
                       ✓ Salió
                     </button>
                   ) : (
-                    <button type="button" disabled={busyId === r.plan_id} onClick={() => setStatus(r, null)}
+                    <button type="button" disabled={busyId === r.plan_id} onClick={() => setStatus(r, 'requested')}
                       className="rounded-full px-3 py-1.5 text-[9px] border" style={{ ...F_M, color: '#667', borderColor: '#e5e7eb' }}>
                       Deshacer
                     </button>
