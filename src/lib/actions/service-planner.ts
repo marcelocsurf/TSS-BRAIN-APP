@@ -971,11 +971,21 @@ export async function applyStudentBoardToWeek(
     }
 
     const patch = { ...boardPatch, board_id: dayBoardId };
-    const { data: existing } = await admin
-      .from('service_plan_blocks').select('id')
-      .eq('camp_session_id', sess.id).eq('student_id', studentId).eq('order_index', 0).maybeSingle();
-    if (existing) {
-      await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    // Bloque REAL del alumno ese día (las plantillas arrancan en order_index
+    // 1 — el 0 fijo creaba un bloque fantasma y dejaba la tabla vieja del
+    // bloque 1 bloqueando inventario). Los demás bloques quedan sin tabla.
+    const { data: myBlocks } = await admin
+      .from('service_plan_blocks').select('id, order_index')
+      .eq('camp_session_id', sess.id).eq('student_id', studentId)
+      .order('order_index');
+    if (myBlocks && myBlocks.length > 0) {
+      await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', (myBlocks[0] as any).id);
+      const restIds = myBlocks.slice(1).map((b: any) => b.id);
+      if (restIds.length) {
+        await admin.from('service_plan_blocks')
+          .update({ board_id: null, board_type: null, board_size_feet: null, board_size_inches: null, updated_at: new Date().toISOString() })
+          .in('id', restIds);
+      }
     } else {
       await admin.from('service_plan_blocks').insert({
         camp_instance_id: session.camp_instance_id,
@@ -2641,13 +2651,17 @@ export async function getWeekOverviewByToken(token: string, campInstanceId: stri
       admin.from('boards')
         .select('id, code, board_type, length_feet, length_inches, status')
         .eq('academy_id', (camp as any).academy_id)
-        .neq('status', 'retired')
+        .not('status', 'in', '("retired","rented","in_repair")')
         .order('code'),
       admin.from('academy_spaces').select('id, name').eq('academy_id', (camp as any).academy_id).eq('active', true).order('sort_order'),
+      // OJO: las reservas del coach van SIN camp_instance_id (status booked)
+      // y las auto-reservas del servicio van CON instance pero status
+      // 'confirmed' — filtrar por instance+booked no matcheaba NADA (crítico
+      // de la revisión). Se trae por academia y se filtra en JS.
       admin.from('space_bookings')
-        .select('id, space_id, coach_id, title, starts_at, ends_at, academy_spaces:space_id(name)')
-        .eq('camp_instance_id', campInstanceId)
-        .eq('status', 'booked'),
+        .select('id, space_id, coach_id, camp_instance_id, title, starts_at, ends_at, academy_spaces:space_id(name)')
+        .eq('academy_id', (camp as any).academy_id)
+        .neq('status', 'cancelled'),
     ]);
 
     const sessions = sess ?? [];
@@ -2662,6 +2676,7 @@ export async function getWeekOverviewByToken(token: string, campInstanceId: stri
         ? admin.from('service_plan_blocks')
             .select('camp_session_id, student_id, board_id, board_type, order_index')
             .in('camp_session_id', sessIds)
+            .order('order_index')
         : Promise.resolve({ data: [] as any[] }),
     ]);
     const planByS = new Map((plans ?? []).map((p: any) => [p.camp_session_id, p]));
@@ -2688,7 +2703,9 @@ export async function getWeekOverviewByToken(token: string, campInstanceId: stri
       const p = planByS.get(x.id);
       const dayBookings = (bookings ?? []).filter((bk: any) => {
         const svDay = toElSalvadorDate(bk.starts_at);
-        return svDay === x.session_date;
+        if (svDay !== x.session_date) return false;
+        // Del camp (auto-reserva) o del propio coach — no TODA la academia.
+        return bk.camp_instance_id === campInstanceId || bk.coach_id === (coach as any).id;
       }).map((bk: any) => {
         // timestamptz llega en UTC — mostrar en hora SV (-6h, sin DST).
         const sv = (ts: string) => new Date(Date.parse(ts) - 6 * 3600000).toISOString().slice(11, 16);
@@ -2840,17 +2857,35 @@ export async function setStudentDayBoardByToken(
       await admin.from('boards').update({ status: 'in_use' }).eq('id', board.board_id);
     }
 
+    if (board.board_id) {
+      const { data: b } = await admin.from('boards').select('status').eq('id', board.board_id).maybeSingle();
+      if (b && ['rented', 'in_repair', 'retired'].includes((b as any).status)) {
+        return { ok: false, error: 'Esa tabla no está disponible (rentada o en reparación).' };
+      }
+    }
+
     const patch = {
       board_id: board.board_id ?? null,
       board_type: board.board_type ?? null,
       board_size_feet: board.board_size_feet ?? null,
       board_size_inches: board.board_size_inches ?? null,
     };
-    const { data: existing } = await admin
-      .from('service_plan_blocks').select('id')
-      .eq('camp_session_id', campSessionId).eq('student_id', studentId).eq('order_index', 0).maybeSingle();
-    if (existing) {
-      await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    // Escribir en el bloque REAL del alumno (las plantillas arrancan en
+    // order_index 1; escribir siempre en 0 creaba un bloque fantasma y la
+    // tabla vieja del bloque 1 quedaba bloqueando el inventario). Los demás
+    // bloques quedan sin tabla para no dejar asignaciones viejas.
+    const { data: myBlocks } = await admin
+      .from('service_plan_blocks').select('id, order_index')
+      .eq('camp_session_id', campSessionId).eq('student_id', studentId)
+      .order('order_index');
+    if (myBlocks && myBlocks.length > 0) {
+      await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', (myBlocks[0] as any).id);
+      const restIds = myBlocks.slice(1).map((b: any) => b.id);
+      if (restIds.length) {
+        await admin.from('service_plan_blocks')
+          .update({ board_id: null, board_type: null, board_size_feet: null, board_size_inches: null, updated_at: new Date().toISOString() })
+          .in('id', restIds);
+      }
     } else {
       await admin.from('service_plan_blocks').insert({
         camp_instance_id: (session as any).camp_instance_id,

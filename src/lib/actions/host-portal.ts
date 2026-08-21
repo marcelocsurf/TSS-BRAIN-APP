@@ -755,6 +755,8 @@ export interface TransportBoardRow {
   camp_name: string;
   coach_name: string | null; // quién lo solicita
   students: number;          // alumnos activos del servicio
+  staff: number;             // coach + asistentes/camarógrafo aceptados
+  passengers: number;        // total que va en la van (alumnos + staff)
   venue: string | null;      // lugar (playa/punto)
   class_start: string | null;
   depart: string | null;
@@ -799,13 +801,21 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
   const instIds = Array.from(new Set(
     plans.map((p: any) => sessById.get(p.camp_session_id)).filter(Boolean).map((s: any) => s.camp_instance_id),
   ));
-  const { data: parts } = instIds.length
-    ? await admin.from('camp_participants').select('camp_instance_id, enrollment_status').in('camp_instance_id', instIds)
-    : { data: [] as any[] };
+  const [{ data: parts }, { data: staffRows }] = instIds.length
+    ? await Promise.all([
+        admin.from('camp_participants').select('camp_instance_id, enrollment_status').in('camp_instance_id', instIds),
+        admin.from('service_staff').select('camp_instance_id, status').in('camp_instance_id', instIds).eq('status', 'accepted'),
+      ])
+    : [{ data: [] as any[] }, { data: [] as any[] }];
   const countByInst = new Map<string, number>();
   for (const p of parts ?? []) {
     if (p.enrollment_status !== 'active') continue; // mismo criterio que transport.ts
     countByInst.set(p.camp_instance_id, (countByInst.get(p.camp_instance_id) ?? 0) + 1);
+  }
+  // Staff aceptado (asistentes, camarógrafo…) por servicio — van en la van.
+  const staffByInst = new Map<string, number>();
+  for (const st of staffRows ?? []) {
+    staffByInst.set(st.camp_instance_id, (staffByInst.get(st.camp_instance_id) ?? 0) + 1);
   }
   const coachIds = Array.from(new Set(sessions.flatMap((s: any) => {
     const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
@@ -824,12 +834,17 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
       // Coach efectivo (invariante #1): head coach solo si ACEPTÓ la
       // transferencia — igual que transport.ts y el resto del archivo.
       const useHead = inst?.head_coach_id && inst?.head_coach_status === 'accepted';
+      const nStudents = countByInst.get((s as any).camp_instance_id) ?? 0;
+      // Pasajeros = alumnos + coach efectivo (1) + staff aceptado.
+      const nStaff = 1 + (staffByInst.get((s as any).camp_instance_id) ?? 0);
       return {
         plan_id: p.id,
         date: (s as any).session_date,
         camp_name: inst?.camp_name ?? '—',
         coach_name: coachName.get(useHead ? inst.head_coach_id : inst?.coach_id) ?? null,
-        students: countByInst.get((s as any).camp_instance_id) ?? 0,
+        students: nStudents,
+        staff: nStaff,
+        passengers: nStudents + nStaff,
         venue: p.surf_venue ?? null,
         class_start: p.class_start_time ?? null,
         depart: p.transport_depart ?? null,

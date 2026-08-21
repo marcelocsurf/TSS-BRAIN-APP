@@ -1121,7 +1121,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
                 </span>
               </div>
               <p className="text-[11px] text-gray-600">
-                👥 {r.students} {r.students === 1 ? 'alumno' : 'alumnos'}
+                👥 <b>{r.passengers} pasajeros</b> ({r.students} {r.students === 1 ? 'alumno' : 'alumnos'} + {r.staff} staff)
                 {r.venue ? <> · 📍 {r.venue}</> : null}
                 {r.class_start ? <> · clase {r.class_start}</> : null}
                 {r.coach_name ? <> · lo pide <b>{r.coach_name}</b></> : null}
