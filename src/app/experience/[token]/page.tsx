@@ -7,6 +7,10 @@ import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 // sin nav — segura para compartir por WhatsApp/correo. Espejo de /feedback.
 
 export const dynamic = 'force-dynamic';
+// Sin esto, el Data Cache de Next puede congelar los GET a Supabase de esta
+// página pública: la primera carga (sin respuesta aún) quedaba cacheada y
+// "ya respondiste" nunca aparecía al reabrir el link.
+export const fetchCache = 'force-no-store';
 
 interface Props {
   params: Promise<{ token: string }>;
