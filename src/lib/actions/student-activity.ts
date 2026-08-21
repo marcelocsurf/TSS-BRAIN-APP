@@ -1,0 +1,123 @@
+'use server';
+
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentCoach } from '@/lib/actions/auth';
+import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
+
+// ─── Resumen de actividad del alumno para la BITÁCORA de la ficha ───
+//
+// Lo que el alumno registra en su portal, visible para el staff sin excavar:
+// horas de agua (MISMA fórmula del portal — surf-hours.ts), y la línea de
+// tiempo unificada: sesiones con coach + misiones solas + free surf, una sola
+// historia ordenada por fecha. Staff logueado (cualquier rol de la ficha).
+
+export interface ActivityTimelineItem {
+  kind: 'coach' | 'mission' | 'free_surf';
+  date: string;               // ISO
+  title: string;
+  detail: string | null;      // coach / evaluación / minutos de agua
+  minutes: number;
+  completed: boolean;
+}
+
+export interface StudentActivitySummary {
+  hours: { totalMinutes: number; trainingMinutes: number; freeSurfMinutes: number };
+  counts: { coach_sessions: number; self_missions: number; free_surfs: number };
+  week_practices: number;     // sesiones propias completadas esta semana (racha)
+  timeline: ActivityTimelineItem[];
+}
+
+export async function getStudentActivitySummary(
+  studentId: string
+): Promise<{ ok: boolean; error?: string; data: StudentActivitySummary | null }> {
+  try {
+    const me = await getCurrentCoach().catch(() => null);
+    if (!me) return { ok: false, error: 'No autorizado.', data: null };
+    const admin = createAdminClient();
+
+    // Las MISMAS tres fuentes que computa el portal del alumno.
+    const [results, cascade, self] = await Promise.all([
+      admin.from('student_session_results')
+        .select('id, cascade_session_id, duration_minutes, total_duration, created_at, standalone_sessions(mission, duration_minutes), coaches:coach_id(display_name)')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false }),
+      admin.from('cascade_sessions')
+        .select('id, total_duration, created_at, session_date, mission, coaches:coach_id(display_name)')
+        .eq('student_id', studentId)
+        .eq('completion_state', 'closed')
+        .order('session_date', { ascending: false }),
+      admin.from('self_training_sessions')
+        .select('id, drill_name, duration_minutes, total_water_minutes, kind, completed, mission_completion, execution_rating, created_at, completed_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false }),
+    ]);
+    if (results.error) throw results.error;
+    if (cascade.error) throw cascade.error;
+    if (self.error) throw self.error;
+
+    const matched = new Set((results.data ?? []).filter((r: any) => r.cascade_session_id).map((r: any) => r.cascade_session_id));
+    const unmatchedCascade = (cascade.data ?? [])
+      .filter((c: any) => !matched.has(c.id))
+      .map((c: any) => ({ ...c, created_at: c.created_at || c.session_date }));
+    const coachSessions = [...(results.data ?? []), ...unmatchedCascade];
+    const selfSessions = self.data ?? [];
+
+    const hours = computeSurfSplit(coachSessions, selfSessions);
+
+    // Racha de la semana (lunes SV → hoy): sesiones propias completadas.
+    const now = new Date(Date.now() - 6 * 3600_000);
+    const dow = now.getUTCDay() || 7;
+    const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - (dow - 1));
+    const mondayIso = monday.toISOString().slice(0, 10);
+    const week_practices = selfSessions.filter((s: any) => {
+      if (!s.completed) return false;
+      const d = ((s.completed_at || s.created_at) ?? '').slice(0, 10);
+      return d >= mondayIso;
+    }).length;
+
+    // Línea de tiempo unificada (últimos 12 eventos).
+    const items: ActivityTimelineItem[] = [
+      ...coachSessions.map((s: any) => ({
+        kind: 'coach' as const,
+        date: s.created_at,
+        title: s.standalone_sessions?.mission || s.mission || 'Coach session',
+        detail: s.coaches?.display_name ? `con ${s.coaches.display_name}` : null,
+        minutes: coachSessionMinutes(s),
+        completed: true,
+      })),
+      ...selfSessions.map((s: any) => ({
+        kind: (s.kind === 'free_surf' ? 'free_surf' : 'mission') as 'free_surf' | 'mission',
+        date: s.completed_at || s.created_at,
+        title: s.kind === 'free_surf' ? 'Free surf' : (s.drill_name || 'Misión'),
+        detail: s.kind === 'free_surf'
+          ? `${s.total_water_minutes || s.duration_minutes || 0} min de agua`
+          : [
+              s.mission_completion ? `misión: ${s.mission_completion}` : null,
+              s.execution_rating ? `${s.execution_rating}★` : null,
+            ].filter(Boolean).join(' · ') || null,
+        minutes: s.kind === 'free_surf' ? (s.total_water_minutes || s.duration_minutes || 0) : (s.duration_minutes || 0),
+        completed: !!s.completed,
+      })),
+    ]
+      .filter((i) => i.date)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 12);
+
+    return {
+      ok: true,
+      data: {
+        hours,
+        counts: {
+          coach_sessions: coachSessions.length,
+          self_missions: selfSessions.filter((s: any) => s.kind !== 'free_surf' && s.completed).length,
+          free_surfs: selfSessions.filter((s: any) => s.kind === 'free_surf').length,
+        },
+        week_practices,
+        timeline: items,
+      },
+    };
+  } catch (e) {
+    console.error('[student-activity] summary failed', e);
+    return { ok: false, error: 'No se pudo cargar la actividad.', data: null };
+  }
+}

@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
@@ -116,39 +117,14 @@ export async function getStudentPortalData(token: string) {
   const selfTrainingCount = selfSessions.filter((s: any) => s.completed).length;
 
   // Training hours: sum durations from both sources
-  const coachHours = coachSessions.reduce((sum: number, s: any) => {
-    const dur = s.standalone_sessions?.duration_minutes
-      || s.duration_minutes
-      || (s.total_duration ? parseInt(s.total_duration, 10) || 0 : 0);
-    return sum + dur;
-  }, 0);
+  const coachHours = coachSessions.reduce((sum: number, s: any) => sum + coachSessionMinutes(s), 0);
   const selfHours = selfSessions
     .filter((s: any) => s.completed)
     .reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0);
   const totalTrainingMinutes = coachHours + selfHours;
 
-  // ── Surf hours: split bitácora into Training vs Free Surfing ──
-  // Training = structured mission/drill durations + coach-led planned durations.
-  // Free Surfing = free-surf logs + overflow (water time beyond the mission).
-  let surfTrainingMinutes = 0;
-  let freeSurfMinutes = 0;
-  for (const s of selfSessions) {
-    const dur = s.duration_minutes || 0;
-    const water = s.total_water_minutes || 0;
-    if (s.kind === 'free_surf') {
-      freeSurfMinutes += water || dur;
-    } else {
-      surfTrainingMinutes += dur;
-      if (water > dur) freeSurfMinutes += water - dur;
-    }
-  }
-  // Coach-led sessions: planned durations already summed in coachHours above.
-  surfTrainingMinutes += coachHours;
-  const surfHours = {
-    trainingMinutes: surfTrainingMinutes,
-    freeSurfMinutes,
-    totalMinutes: surfTrainingMinutes + freeSurfMinutes,
-  };
+  // ── Surf hours: fórmula ÚNICA compartida con la ficha (surf-hours.ts) ──
+  const surfHours = computeSurfSplit(coachSessions, selfSessions);
 
   // Drills practiced (unique names from self-training)
   const drillsPracticed = [

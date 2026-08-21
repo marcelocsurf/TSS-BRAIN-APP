@@ -24,6 +24,7 @@ import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { CoursesPanel } from '@/components/student/CoursesPanel';
 import { StudentPresentationGrants } from './StudentPresentationGrants';
 import { StudentHPPanel } from '@/components/student/StudentHPPanel';
+import { StudentActivitySummary } from '@/components/student/StudentActivitySummary';
 import { listStudentCourseGrants } from '@/lib/actions/course-grants';
 import { getCampNotesForStudent } from '@/lib/actions/camps';
 import { PortalActivityPanel } from '@/components/student/PortalActivityPanel';
@@ -460,6 +461,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       {/* ── Tabbed body (M138): Bitácora / Progresión / Perfil ── */}
       <ProfileTabs
         bitacora={<>
+      {/* Resumen SIEMPRE visible: lo que el alumno registra en su portal —
+          nivel claro, horas (misma fórmula que su portal) y timeline unificada. */}
+      <StudentActivitySummary
+        studentId={student.id}
+        beltLabel={belt?.levelName ?? student.belt_level.replace(/_/g, ' ')}
+        seqStep={`SEQ ${student.current_sequence_number} · STP ${student.current_step_order}`}
+      />
       {/* --- 2. LAST SESSION (always visible, highlighted) ---
           Use the most recent real session entry (richest: coach feedback,
           mission, what's next). Fall back to the student snapshot only if
