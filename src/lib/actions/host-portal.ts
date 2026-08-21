@@ -744,6 +744,96 @@ export async function hostSetTransport(
   return { ok: true };
 }
 
+// ─── Tablero de TRANSPORTE del Front Desk ───
+// Todas las solicitudes de transporte de los próximos 14 días (clases y
+// camps): quién lo pide (coach), cuántos alumnos van, hora de salida y
+// regreso, lugar. El coach lo solicita al planear su día (service_plans);
+// el Front Desk lo ve todo junto acá y marca "salió".
+export interface TransportBoardRow {
+  plan_id: string;
+  date: string;              // YYYY-MM-DD (día SV de la sesión)
+  camp_name: string;
+  coach_name: string | null; // quién lo solicita
+  students: number;          // alumnos activos del servicio
+  venue: string | null;      // lugar (playa/punto)
+  class_start: string | null;
+  depart: string | null;
+  ret: string | null;
+  status: string | null;     // null=pendiente · taken=salió · cancelled
+}
+
+export async function hostTransportBoard(token: string): Promise<TransportBoardRow[]> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+  const today = elSalvadorToday();
+  const end = new Date(Date.parse(`${today}T00:00:00Z`) + 14 * 86400000).toISOString().slice(0, 10);
+
+  const { data: sess } = await admin
+    .from('camp_sessions')
+    .select('id, session_date, camp_instance_id, camp_instances:camp_instance_id!inner(camp_name, academy_id, status, coach_id, head_coach_id)')
+    .gte('session_date', today)
+    .lte('session_date', end)
+    .eq('camp_instances.academy_id', who.academy_id)
+    .order('session_date');
+  const sessions = (sess ?? []).filter((s: any) => {
+    const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
+    return inst && inst.status !== 'cancelled';
+  });
+  if (sessions.length === 0) return [];
+
+  const sessIds = sessions.map((s: any) => s.id);
+  const { data: plans } = await admin
+    .from('service_plans')
+    .select('id, camp_session_id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status')
+    .in('camp_session_id', sessIds)
+    .eq('transport_needed', true);
+  if (!plans || plans.length === 0) return [];
+  const sessById = new Map(sessions.map((s: any) => [s.id, s]));
+
+  // Alumnos activos por servicio + nombre del coach que lo pide.
+  const instIds = Array.from(new Set(
+    plans.map((p: any) => sessById.get(p.camp_session_id)).filter(Boolean).map((s: any) => s.camp_instance_id),
+  ));
+  const { data: parts } = instIds.length
+    ? await admin.from('camp_participants').select('camp_instance_id, enrollment_status').in('camp_instance_id', instIds)
+    : { data: [] as any[] };
+  const countByInst = new Map<string, number>();
+  for (const p of parts ?? []) {
+    if (p.enrollment_status === 'removed' || p.enrollment_status === 'cancelled') continue;
+    countByInst.set(p.camp_instance_id, (countByInst.get(p.camp_instance_id) ?? 0) + 1);
+  }
+  const coachIds = Array.from(new Set(sessions.flatMap((s: any) => {
+    const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
+    return [inst?.coach_id, inst?.head_coach_id].filter(Boolean);
+  })));
+  const { data: coachRows } = coachIds.length
+    ? await admin.from('coaches').select('id, display_name').in('id', coachIds)
+    : { data: [] as any[] };
+  const coachName = new Map((coachRows ?? []).map((c: any) => [c.id, c.display_name]));
+
+  return plans
+    .map((p: any) => {
+      const s = sessById.get(p.camp_session_id);
+      if (!s) return null;
+      const inst = Array.isArray((s as any).camp_instances) ? (s as any).camp_instances[0] : (s as any).camp_instances;
+      return {
+        plan_id: p.id,
+        date: (s as any).session_date,
+        camp_name: inst?.camp_name ?? '—',
+        coach_name: coachName.get(inst?.head_coach_id) ?? coachName.get(inst?.coach_id) ?? null,
+        students: countByInst.get((s as any).camp_instance_id) ?? 0,
+        venue: p.surf_venue ?? null,
+        class_start: p.class_start_time ?? null,
+        depart: p.transport_depart ?? null,
+        ret: p.transport_return ?? null,
+        status: p.transport_status ?? null,
+      } as TransportBoardRow;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a!.date.localeCompare(b!.date) || String(a!.depart ?? '99').localeCompare(String(b!.depart ?? '99'))) as TransportBoardRow[];
+}
+
 // Precios de membresía del mostrador — mismos planes del portal (RenewalGate).
 const DESK_MEMBERSHIP_PLANS: Record<number, number> = { 1: 999, 6: 4999, 12: 9990 };
 

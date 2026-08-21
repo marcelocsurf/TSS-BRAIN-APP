@@ -240,7 +240,7 @@ function BookingModal({ space, date, hour, api, onClose, onDone }: {
           <label className="text-xs text-gray-500">a</label>
           <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" />
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (ej. Surf Skate 1 · alumno)" className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 mb-2" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A nombre de… (cliente, clase o coach)" className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 mb-2" />
         {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
         <div className="flex gap-2">
           <button onClick={submit} disabled={saving} className="flex-1 text-sm font-semibold px-3 py-2.5 rounded-xl bg-[var(--tss-navy)] text-white disabled:opacity-50">

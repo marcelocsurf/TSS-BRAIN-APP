@@ -16,7 +16,8 @@ import {
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
   hostSetTransport, hostConfirmRenewal, hostGrantRenewal,
-  type HostStudentRow, type HostDayEvent, type HostDayAlerts,
+  hostTransportBoard,
+  type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
 import { sellerSearchStudents, sellerReserveSpot } from '@/lib/actions/seller';
@@ -31,7 +32,7 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GR
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
 
-type Tab = 'hoy' | 'operacion' | 'espacios' | 'tablas' | 'clientes';
+type Tab = 'hoy' | 'operacion' | 'transporte' | 'espacios' | 'tablas' | 'clientes';
 
 // Cinta legible + nivel entre paréntesis mientras el equipo aprende los
 // colores (pedido de Rick): "Purple Belt (Emerging)" en vez de "purple_belt".
@@ -373,7 +374,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           </button>
         </div>
         <div className="flex gap-2 mt-3">
-          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['espacios', '🏛 Espacios'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
+          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               className="flex-1 rounded-full py-2.5 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
@@ -579,6 +580,10 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
               )
               : <p className="text-[12px] text-gray-400 text-center py-6">Sin academia asignada.</p>}
           </div>
+        )}
+
+        {tab === 'transporte' && (
+          <TransporteTab token={token} canCoordinate={canCoordinate} />
         )}
 
         {tab === 'espacios' && (
@@ -1023,6 +1028,129 @@ function ReserveModal({ token, event, onClose, onDone }: {
         {msg && <p className="text-[12px] font-semibold text-center" style={{ color: msg.startsWith('✓') ? '#0a7c5d' : '#c04545' }}>{msg}</p>}
         <p className="text-[10px] text-gray-400 text-center">El pago se confirma en recepción — queda como reservado.</p>
       </div>
+    </div>
+  );
+}
+
+
+// ═══ 🚐 TRANSPORTE — tablero del Front Desk ═══
+// Todas las solicitudes de transporte de los próximos 14 días, juntas:
+// quién lo pide, cuántos alumnos, salida → regreso, lugar. El Front Desk
+// marca "salió" y puede ajustar horarios (mismo hostSetTransport de Agenda).
+function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate: boolean }) {
+  const [rows, setRows] = useState<TransportBoardRow[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [dep, setDep] = useState(''); const [ret, setRet] = useState('');
+
+  const load = () => hostTransportBoard(token).then(setRows).catch(() => setRows([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [token]);
+
+  const hoy = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+  const dayLabel = (d: string) => {
+    const label = new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    return d === hoy ? `HOY · ${label}` : label;
+  };
+  const groups: [string, TransportBoardRow[]][] = [];
+  for (const r of rows ?? []) {
+    const g = groups.find((x) => x[0] === r.date);
+    if (g) g[1].push(r); else groups.push([r.date, [r]]);
+  }
+
+  const setStatus = async (r: TransportBoardRow, status: 'taken' | null) => {
+    setBusyId(r.plan_id);
+    const res = await hostSetTransport(token, r.plan_id, { status });
+    setBusyId(null);
+    if (!res.ok) { alert(res.error || 'No se pudo actualizar.'); return; }
+    load();
+  };
+  const saveTimes = async (r: TransportBoardRow) => {
+    setBusyId(r.plan_id);
+    const res = await hostSetTransport(token, r.plan_id, { depart: dep || null, ret: ret || null });
+    setBusyId(null);
+    if (!res.ok) { alert(res.error || 'No se pudo guardar.'); return; }
+    setEditId(null);
+    load();
+  };
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Front Desk</p>
+        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>🚐 Transporte · próximos 14 días</h2>
+        <p className="text-[11px] text-white/50 mt-1">Lo que los coaches solicitaron al planear sus clases y camps. Marcá "salió" cuando el transporte se vaya.</p>
+      </div>
+
+      {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
+      {rows !== null && groups.length === 0 && (
+        <div className="rounded-2xl bg-white p-6 text-center">
+          <p className="text-sm text-gray-500">Sin transportes solicitados en los próximos 14 días.</p>
+          <p className="text-[11px] text-gray-400 mt-1">El coach lo pide al planear su día; apenas lo haga, aparece acá.</p>
+        </div>
+      )}
+
+      {groups.map(([date, list]) => (
+        <div key={date} className="space-y-2">
+          <p className="text-[10px] font-bold px-1" style={{ ...F_M, color: date === hoy ? '#0090B0' : '#8a99a6' }}>{dayLabel(date)}</p>
+          {list.map((r) => (
+            <div key={r.plan_id} className="rounded-2xl bg-white p-3.5 space-y-2" style={{ borderLeft: `4px solid ${r.status === 'taken' ? GREEN : r.status === 'cancelled' ? '#c04545' : GOLD}` }}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[15px] font-extrabold leading-tight" style={{ color: INK }}>
+                    {r.depart || '—'} → {r.ret || '—'}
+                  </p>
+                  <p className="text-[12px] font-semibold mt-0.5 truncate" style={{ color: '#0090B0' }}>{r.camp_name}</p>
+                </div>
+                <span className="text-[9px] px-2 py-1 rounded-full font-bold shrink-0"
+                  style={r.status === 'taken'
+                    ? { background: 'rgba(6,214,160,.18)', color: '#0a7c5d' }
+                    : r.status === 'cancelled'
+                      ? { background: 'rgba(255,107,107,.15)', color: '#c04545' }
+                      : { background: 'rgba(255,209,102,.25)', color: '#7a5c00' }}>
+                  {r.status === 'taken' ? '✓ Salió' : r.status === 'cancelled' ? 'Cancelado' : 'Pendiente'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-600">
+                👥 {r.students} {r.students === 1 ? 'alumno' : 'alumnos'}
+                {r.venue ? <> · 📍 {r.venue}</> : null}
+                {r.class_start ? <> · clase {r.class_start}</> : null}
+                {r.coach_name ? <> · lo pide <b>{r.coach_name}</b></> : null}
+              </p>
+              {canCoordinate && (
+                <div className="flex items-center gap-2 pt-0.5">
+                  {r.status !== 'taken' ? (
+                    <button type="button" disabled={busyId === r.plan_id} onClick={() => setStatus(r, 'taken')}
+                      className="rounded-full px-3 py-1.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK, fontWeight: 700 }}>
+                      ✓ Salió
+                    </button>
+                  ) : (
+                    <button type="button" disabled={busyId === r.plan_id} onClick={() => setStatus(r, null)}
+                      className="rounded-full px-3 py-1.5 text-[9px] border" style={{ ...F_M, color: '#667', borderColor: '#e5e7eb' }}>
+                      Deshacer
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { setEditId(editId === r.plan_id ? null : r.plan_id); setDep(r.depart || ''); setRet(r.ret || ''); }}
+                    className="rounded-full px-3 py-1.5 text-[9px] border" style={{ ...F_M, color: INK, borderColor: '#e5e7eb' }}>
+                    🕐 Horario
+                  </button>
+                </div>
+              )}
+              {editId === r.plan_id && (
+                <div className="flex items-center gap-2">
+                  <input type="time" value={dep} onChange={(e) => setDep(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" aria-label="Hora de salida" />
+                  <span className="text-gray-400 text-xs">→</span>
+                  <input type="time" value={ret} onChange={(e) => setRet(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" aria-label="Hora de regreso" />
+                  <button type="button" disabled={busyId === r.plan_id} onClick={() => saveTimes(r)}
+                    className="rounded-full px-3 py-1.5 text-[9px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
+                    Guardar
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

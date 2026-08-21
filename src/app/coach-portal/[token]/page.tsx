@@ -74,10 +74,11 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   // en qué portal está. Cada rol ve el suyo.
   const role = (data.coach as any).role as string | null;
   const portalCategory = (data.coach as any).portal_category as string | null;
+  // Implementación oficial 2026-08-21: host y support SON el Front Desk.
   const portalLabel =
-    role === 'host' ? 'Portal del host'
+    role === 'host' ? 'Front Desk'
     : role === 'seller' ? 'Portal de ventas'
-    : portalCategory === 'support' ? 'Portal de operaciones'
+    : portalCategory === 'support' ? 'Front Desk · Operaciones'
     : 'Coach Portal';
 
   return (
