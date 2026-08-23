@@ -15,5 +15,6 @@ ALTER TABLE season_events ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE season_events DROP CONSTRAINT IF EXISTS season_events_kind_check;
 ALTER TABLE season_events ADD CONSTRAINT season_events_kind_check
   CHECK (kind IN ('camp','nacional','internacional','viaje','medico','otro'));
+ALTER TABLE season_events DROP CONSTRAINT IF EXISTS season_events_range_check;
 ALTER TABLE season_events ADD CONSTRAINT season_events_range_check
   CHECK (end_date IS NULL OR end_date >= event_date);

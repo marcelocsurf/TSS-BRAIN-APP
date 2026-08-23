@@ -529,7 +529,10 @@ export async function getMySeason(
       admin.from('season_events').select('id, name, kind, event_date, end_date, notes, is_peak').eq('season_id', season.id).order('event_date'),
       admin.from('season_contributions').select('id, kind, title, video_url, detail, target_date, coaches(display_name, hp_specialty)').eq('season_id', season.id).order('created_at', { ascending: false }).limit(12),
       admin.from('athlete_competitions').select('id, name, comp_date, location, status').eq('student_id', student.id).gte('comp_date', season.start_date).lte('comp_date', season.end_date).order('comp_date'),
-      admin.from('program_appointments').select('kind, title, appointment_date').eq('student_id', student.id).neq('status', 'cancelled').gte('appointment_date', season.start_date).lte('appointment_date', season.end_date).order('appointment_date').limit(40),
+      // Solo citas de HOY en adelante: con limit(40) ascendente sobre toda la
+      // temporada, a mitad de año las 40 más viejas tapaban las PRÓXIMAS
+      // (revisión) — y las pasadas son ruido en la vista del año.
+      admin.from('program_appointments').select('kind, title, appointment_date').eq('student_id', student.id).neq('status', 'cancelled').gte('appointment_date', elSalvadorToday()).lte('appointment_date', season.end_date).order('appointment_date').limit(40),
     ]);
     if (ph.error) throw ph.error;
     if (ev.error) throw ev.error;

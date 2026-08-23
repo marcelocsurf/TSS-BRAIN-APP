@@ -21,6 +21,7 @@ export interface SeasonTimelineWeek {
   events: Array<{ icon: string; label: string; date: string }>;
   /** Fase macro de la temporada que cubre esta semana (por solapamiento de fechas). */
   phase: string | null;
+  phase_id: string | null;
   phase_color_key: string | null;
 }
 
@@ -73,7 +74,7 @@ export async function buildSeasonTimeline(
   if (!assignment) return null;
   const program: any = (assignment as any).programs;
 
-  const [{ data: days, error: dErr }, { data: marks, error: mErr }, { data: season }, { data: comps }, { data: appts }, { data: evals }] = await Promise.all([
+  const [{ data: days, error: dErr }, { data: marks, error: mErr }, { data: season, error: snErr }, { data: comps, error: cErr }, { data: appts, error: aErr }, { data: evals, error: eErr }] = await Promise.all([
     admin.from('program_days').select('id, week_number, day_number').eq('program_id', (assignment as any).program_id),
     admin.from('program_day_marks').select('day_id').eq('assignment_id', (assignment as any).id),
     admin.from('season_plans').select('id, title, objective, start_date, end_date').eq('student_id', studentId).eq('active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -83,6 +84,13 @@ export async function buildSeasonTimeline(
   ]);
   if (dErr) throw dErr;
   if (mErr) throw mErr;
+  // season es load-bearing desde el plan anual: si su query falla en
+  // silencio, el timeline sale "sin fases" indistinguible de una temporada
+  // sin configurar (revisión) — mejor error visible.
+  if (snErr) throw snErr;
+  if (cErr) throw cErr;
+  if (aErr) throw aErr;
+  if (eErr) throw eErr;
 
   // Plan anual: fases macro + eventos de la temporada (viajes, camps, picos).
   // Segundo lote porque necesitan el id de la temporada resuelto arriba.
@@ -110,12 +118,19 @@ export async function buildSeasonTimeline(
   const cur = orderedDays.find((d: any) => !doneIds.has(d.id)) ?? null;
 
   type Ev = { icon: string; label: string; date: string };
+  // La misma competencia suele existir como evento del plan anual (el pico)
+  // Y en athlete_competitions (heats/resultados) — dedup por nombre+fecha
+  // para no mostrarla doble en la semana (revisión).
+  const seKey = (n: string, d: string) => `${String(n).trim().toLowerCase()}|${d}`;
+  const seasonEvKeys = new Set(seasonEvents.map((e: any) => seKey(e.name, String(e.event_date ?? '').slice(0, 10))));
   const allEvents: Ev[] = [
-    ...((comps ?? []).map((c: any) => ({
-      icon: '🏆',
-      label: c.name + (c.location ? ` · ${c.location}` : ''),
-      date: String(c.comp_date ?? '').slice(0, 10),
-    }))),
+    ...((comps ?? [])
+      .filter((c: any) => !seasonEvKeys.has(seKey(c.name, String(c.comp_date ?? '').slice(0, 10))))
+      .map((c: any) => ({
+        icon: '🏆',
+        label: c.name + (c.location ? ` · ${c.location}` : ''),
+        date: String(c.comp_date ?? '').slice(0, 10),
+      }))),
     ...((appts ?? []).map((a: any) => ({
       icon: APPT_KIND_ICON[a.kind] ?? '📅',
       label: (a.title || APPT_KIND_EN[a.kind] || 'Appointment') + (a.appointment_time ? ` · ${a.appointment_time}` : ''),
@@ -164,16 +179,20 @@ export async function buildSeasonTimeline(
       current: cur ? cur.week_number === w : false,
       events: allEvents.filter((e) => e.date >= wStart && e.date <= wEnd),
       phase: ph?.name ?? null,
+      phase_id: ph?.id ?? null,
       phase_color_key: ph?.color_key ?? null,
     };
   });
 
+  const programStart = weeks.length ? weeks[0].start : today;
   const programEnd = weeks.length ? weeks[weeks.length - 1].end : today;
   const horizon = (season as any)?.end_date ?? iso(Date.parse(`${today}T00:00:00Z`) + 183 * 86400000);
+  // Fuera de la ventana del programa por CUALQUIER lado: un evento del plan
+  // anual anterior al inicio del programa desaparecía por completo (revisión).
   const ahead = allEvents
-    .filter((e) => e.date > programEnd && e.date <= horizon)
+    .filter((e) => (e.date > programEnd && e.date <= horizon) || e.date < programStart)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 10);
+    .slice(0, 12);
 
   return {
     season: season

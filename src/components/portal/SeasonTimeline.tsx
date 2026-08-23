@@ -76,9 +76,10 @@ export function SeasonTimeline({ token, onJumpWeek }: {
         <div className="space-y-1.5">
           {data.weeks.map((w, wi) => {
             const done = w.days_total > 0 && w.days_done >= w.days_total;
-            // Header de FASE macro cuando cambia respecto de la semana anterior.
-            const prevPhase = wi > 0 ? data.weeks[wi - 1].phase : null;
-            const phaseHeader = w.phase && w.phase !== prevPhase
+            // Header de FASE macro cuando cambia respecto de la semana
+            // anterior — por ID, no por nombre (dos fases pueden llamarse igual).
+            const prevPhase = wi > 0 ? data.weeks[wi - 1].phase_id : null;
+            const phaseHeader = w.phase && w.phase_id !== prevPhase
               ? (PHASE_STYLE[w.phase_color_key ?? ''] ?? PHASE_STYLE.general)
               : null;
             return (
@@ -163,7 +164,7 @@ export function SeasonTimeline({ token, onJumpWeek }: {
       {data.ahead.length > 0 && (
         <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px dashed rgba(255,255,255,.14)' }}>
           <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ ...MONO, color: '#7BA2B5' }}>
-            Ahead this season
+            Also this season
           </p>
           <div className="space-y-1">
             {data.ahead.map((e, i) => (

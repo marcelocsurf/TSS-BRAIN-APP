@@ -1361,6 +1361,9 @@ export async function adminSaveSeasonEvent(
   try {
     if (!(await assertAdmin())) return DENY;
     if (!ev.name.trim()) return { ok: false, error: 'El evento necesita un nombre.' };
+    const ISO = /^\d{4}-\d{2}-\d{2}$/;
+    if (!ISO.test(ev.event_date)) return { ok: false, error: 'Fecha inválida.' };
+    if (ev.end_date && !ISO.test(ev.end_date)) return { ok: false, error: 'Fecha de fin inválida.' };
     // end_date opcional = eventos con RANGO (viajes, camps de varios días).
     if (ev.end_date && ev.end_date < ev.event_date) return { ok: false, error: 'El evento termina antes de empezar — revisá las fechas.' };
     const admin = createAdminClient();

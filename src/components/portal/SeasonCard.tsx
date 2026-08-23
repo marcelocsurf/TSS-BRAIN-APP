@@ -15,13 +15,13 @@ import { getMySeason, type MySeasonData } from '@/lib/actions/programs';
 const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
 const ARCHIVO: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' as any };
 
-const PHASE_STYLE: Record<string, { border: string; text: string; en: string }> = {
-  general: { border: '#00A8CC', text: '#7BE4FF', en: 'General prep' },
-  especifica: { border: '#00D2FF', text: '#7BE4FF', en: 'Specific prep' },
-  precompetitiva: { border: '#FFA94D', text: '#FFC58A', en: 'Pre-competition' },
-  competitiva: { border: '#FFD166', text: '#FFD166', en: 'Competition' },
-  transicion: { border: '#64748B', text: '#9aa7ad', en: 'Transition' },
-  recuperacion: { border: '#39D98A', text: '#7deeb4', en: 'Recovery' },
+const PHASE_STYLE: Record<string, { border: string; text: string }> = {
+  general: { border: '#00A8CC', text: '#7BE4FF' },
+  especifica: { border: '#00D2FF', text: '#7BE4FF' },
+  precompetitiva: { border: '#FFA94D', text: '#FFC58A' },
+  competitiva: { border: '#FFD166', text: '#FFD166' },
+  transicion: { border: '#64748B', text: '#9aa7ad' },
+  recuperacion: { border: '#39D98A', text: '#7deeb4' },
 };
 const EVENT_ICON: Record<string, string> = { camp: '🌊', nacional: '⭐', internacional: '🏆', viaje: '✈️', medico: '🩺', otro: '📍' };
 const APPT_ICON: Record<string, string> = { evaluacion: '📋', fisico: '💪', mental: '🧠', tecnico: '🎯', nutricion: '🥗', otro: '📅' };
@@ -38,14 +38,16 @@ function pctOf(date: string, startMs: number, spanMs: number): number {
 // A nivel de módulo (regla del proyecto: componentes definidos dentro del
 // render cambian de identidad y remontan el DOM).
 function YearStrip({ data, mini }: { data: MySeasonData; mini?: boolean }) {
-  const startMs = Date.parse(`${data.start_date}T00:00:00Z`);
-  const endMs = Date.parse(`${data.end_date}T23:59:59Z`);
+  // Todo anclado a T12:00:00Z (igual que pctOf): mezclar T00 y T12 corría
+  // bandas y marcadores medio día respecto de los bordes (revisión).
+  const startMs = Date.parse(`${data.start_date}T12:00:00Z`);
+  const endMs = Date.parse(`${data.end_date}T12:00:00Z`);
   const span = Math.max(1, endMs - startMs);
 
   // Ticks de mes: primer día de cada mes dentro del rango.
   const months: { pct: number; label: string }[] = [];
   const d0 = new Date(startMs);
-  const cursor = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), 1));
+  const cursor = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), 1, 12));
   for (let i = 0; i < 26; i++) {
     cursor.setUTCMonth(cursor.getUTCMonth() + (i === 0 ? 0 : 1));
     const ms = cursor.getTime();
@@ -61,22 +63,41 @@ function YearStrip({ data, mini }: { data: MySeasonData; mini?: boolean }) {
   const todayPct = pctOf(data.today, startMs, span);
   const H = mini ? 8 : 30;
 
+  // Un solo carril de marcadores (eventos + competencias, sin duplicar la
+  // competencia que también existe como evento del plan) con anti-colisión:
+  // fechas a <3% de distancia se alternan en dos alturas.
+  const evKey = (n: string, d: string) => `${n.trim().toLowerCase()}|${d}`;
+  const evKeys = new Set(data.events.map((e) => evKey(e.name, e.event_date)));
+  const markers = [
+    ...data.events.map((ev) => ({
+      key: `e${ev.id}`, pct: pctOf(ev.event_date, startMs, span),
+      icon: ev.is_peak ? '▲' : EVENT_ICON[ev.kind] ?? '📍', peak: ev.is_peak,
+    })),
+    ...data.competitions
+      .filter((c) => !evKeys.has(evKey(c.name, c.comp_date)))
+      .map((c) => ({ key: `c${c.id}`, pct: pctOf(c.comp_date, startMs, span), icon: '🏆', peak: false })),
+  ].sort((a, b) => a.pct - b.pct);
+
   return (
     <div>
       {/* Marcadores arriba de la banda (solo versión completa) */}
       {!mini && (
-        <div className="relative" style={{ height: 16 }}>
-          {data.events.map((ev) => (
-            <span key={ev.id} className="absolute -translate-x-1/2 leading-none"
-              style={{ left: `${pctOf(ev.event_date, startMs, span)}%`, top: 0, fontSize: ev.is_peak ? 13 : 10 }}>
-              {ev.is_peak ? '▲' : EVENT_ICON[ev.kind] ?? '📍'}
-            </span>
-          ))}
-          {data.competitions.map((c) => (
-            <span key={c.id} className="absolute -translate-x-1/2 leading-none" style={{ left: `${pctOf(c.comp_date, startMs, span)}%`, top: 2, fontSize: 10 }}>
-              🏆
-            </span>
-          ))}
+        <div className="relative" style={{ height: 24 }}>
+          {markers.map((m, i) => {
+            const crowded = i > 0 && m.pct - markers[i - 1].pct < 3;
+            return (
+              <span key={m.key} className="absolute -translate-x-1/2 leading-none"
+                style={{
+                  left: `${m.pct}%`, top: crowded && i % 2 === 1 ? 12 : 1,
+                  fontSize: m.peak ? 13 : 10,
+                  // ▲ es un glifo de TEXTO (no emoji): sin color explícito
+                  // hereda el del documento y desaparece sobre ink.
+                  color: m.peak ? '#FFD166' : undefined,
+                }}>
+                {m.icon}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -86,14 +107,20 @@ function YearStrip({ data, mini }: { data: MySeasonData; mini?: boolean }) {
           const st = PHASE_STYLE[f.color_key] ?? PHASE_STYLE.general;
           const l = pctOf(f.start_date, startMs, span);
           const r = pctOf(f.end_date, startMs, span);
+          const w = Math.max(r - l, 1.5);
           return (
-            <div key={f.id} className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden"
+            <div key={f.id} title={f.name} className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden"
               style={{
-                left: `${l}%`, width: `${Math.max(r - l, 1.5)}%`,
-                background: `${st.border}${f.state === 'done' ? '22' : '3d'}`,
+                left: `${l}%`, width: `${w}%`,
+                // En la mini franja las fases hechas a 13% alpha se veían como
+                // huecos — ahí todas van al mismo alpha (revisión).
+                background: `${st.border}${mini ? '55' : f.state === 'done' ? '22' : '3d'}`,
                 borderLeft: `2px solid ${st.border}`,
               }}>
-              {!mini && (
+              {/* Con <12% de ancho el nombre quedaba en 1-3 letras ilegibles
+                  en teléfono — mejor banda limpia; el nombre vive en su
+                  tarjeta de abajo (y en el title). */}
+              {!mini && w >= 12 && (
                 <span className="text-[8px] uppercase font-bold truncate px-1" style={{ ...MONO, color: st.text }}>{f.name}</span>
               )}
             </div>
@@ -121,7 +148,8 @@ function YearStrip({ data, mini }: { data: MySeasonData; mini?: boolean }) {
           {months.map((m, i) => (
             // El mes pegado al marcador YOU se omite para que no se encimen.
             Math.abs(m.pct - todayPct) > 3 && (
-              <span key={i} className="absolute text-[7.5px] uppercase" style={{ ...MONO, left: `${m.pct}%`, color: '#5f7a8c' }}>
+              <span key={i} className={`absolute text-[7.5px] uppercase${m.pct > 2 ? ' -translate-x-1/2' : ''}`}
+                style={{ ...MONO, left: `${m.pct}%`, color: '#7BA2B5' }}>
                 {m.label}
               </span>
             )
@@ -147,12 +175,24 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // Overlay abierto = el Home de atrás no debe scrollear (scroll chaining iOS).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   if (!data) return null;
 
   const current = data.phases.find((f) => f.state === 'current') ?? null;
 
   // "The road": todo el año en una sola línea de tiempo — eventos del plan,
   // competencias y citas, ordenado por fecha. Lo pasado queda atenuado.
+  // La misma competencia suele existir como evento del plan (el pico) Y en
+  // athlete_competitions (heats/resultados): se deduplica por nombre+fecha.
+  const roadKey = (n: string, d: string) => `${n.trim().toLowerCase()}|${d}`;
+  const eventKeys = new Set(data.events.map((e) => roadKey(e.name, e.event_date)));
   type RoadItem = { key: string; icon: string; label: string; date: string; end?: string | null; gold?: boolean };
   const road: RoadItem[] = [
     ...data.events.map((ev) => ({
@@ -161,11 +201,13 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
       label: ev.name + (ev.is_peak ? ' — THE PEAK' : '') + (ev.notes ? ` · ${ev.notes}` : ''),
       date: ev.event_date, end: ev.end_date, gold: ev.is_peak,
     })),
-    ...data.competitions.map((c) => ({
-      key: `c${c.id}`, icon: '🏆',
-      label: c.name + (c.location ? ` · ${c.location}` : ''),
-      date: c.comp_date, gold: true,
-    })),
+    ...data.competitions
+      .filter((c) => !eventKeys.has(roadKey(c.name, c.comp_date)))
+      .map((c) => ({
+        key: `c${c.id}`, icon: '🏆',
+        label: c.name + (c.location ? ` · ${c.location}` : ''),
+        date: c.comp_date, gold: true,
+      })),
     ...data.appointments.map((a, i) => ({
       key: `a${i}`, icon: APPT_ICON[a.kind] ?? '📅',
       label: a.title || (a.kind === 'evaluacion' ? 'Evaluation' : 'Appointment'),
@@ -208,13 +250,13 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
           <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
             <div className="flex items-center justify-between">
               <button type="button" onClick={() => setOpen(false)}
-                className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider" style={{ ...MONO, color: '#7BA2B5' }}>
+                className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider py-2.5 pr-3 -my-2" style={{ ...MONO, color: '#7BA2B5' }}>
                 <ChevronLeft size={13} /> Home
               </button>
               <span className="text-[9.5px] uppercase tracking-wider" style={{ ...MONO, color: '#6f8698' }}>
                 My year
               </span>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ color: '#7BA2B5' }}>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-2.5 -m-2" style={{ color: '#7BA2B5' }}>
                 <X size={16} />
               </button>
             </div>
@@ -229,15 +271,15 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
               )}
             </div>
 
-            {/* LA FRANJA DEL AÑO */}
-            {data.phases.length > 0 && (
+            {/* LA FRANJA DEL AÑO — también sin fases (marcadores + YOU solos) */}
+            {(data.phases.length > 0 || road.length > 0) && (
               <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
                 <p className="text-[9px] uppercase tracking-wider mb-1" style={{ ...MONO, color: '#7BA2B5' }}>
                   {fmtD(data.start_date)} → {fmtD(data.end_date)}
                 </p>
                 <YearStrip data={data} />
-                <p className="text-[8.5px] mt-1" style={{ ...MONO, color: '#4a6272' }}>
-                  ▲ peak · 🏆 competition · ✈️ trip · — travel/camp span
+                <p className="text-[9px] mt-1" style={{ ...MONO, color: '#7BA2B5' }}>
+                  <span style={{ color: '#FFD166' }}>▲</span> peak · 🏆 competition · ✈️ trip · <span style={{ color: '#00D2FF' }}>—</span> travel/camp span
                 </p>
               </div>
             )}
@@ -267,9 +309,16 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
                   {inside.length > 0 && (
                     <div className="mt-1.5 space-y-0.5">
                       {inside.slice(0, 6).map((it) => (
-                        <p key={it.key} className="text-[10.5px] truncate" style={{ color: it.gold ? '#FFD166' : '#9fd7e8' }}>
-                          {it.icon} {it.label} · {fmtD(it.date)}{it.end ? ` → ${fmtD(it.end)}` : ''}
-                        </p>
+                        // La fecha en su propio span shrink-0: dentro del <p>
+                        // truncado, el ellipsis se la comía primero (revisión).
+                        <div key={it.key} className="flex items-baseline justify-between gap-2">
+                          <p className="text-[10.5px] min-w-0 truncate" style={{ color: it.gold ? '#FFD166' : '#9fd7e8' }}>
+                            {it.icon} {it.label}
+                          </p>
+                          <span className="text-[9.5px] shrink-0" style={{ ...MONO, color: '#7BA2B5' }}>
+                            {fmtD(it.date)}{it.end ? ` → ${fmtD(it.end)}` : ''}
+                          </span>
+                        </div>
                       ))}
                       {inside.length > 6 && <p className="text-[10px]" style={{ color: '#5f7a8c' }}>+{inside.length - 6} more</p>}
                     </div>
@@ -309,7 +358,7 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
                   {data.contributions.map((c) => (
                     <div key={c.id}>
                       <div className="flex items-center gap-2">
-                        {c.video_url ? <Play size={12} style={{ color: '#00D2FF' }} /> : <span style={{ fontSize: 11 }}>{c.kind === 'tarea' ? '☑' : '✎'}</span>}
+                        {c.video_url ? <Play size={12} style={{ color: '#00D2FF' }} /> : <span style={{ fontSize: 11, color: '#9fd7e8' }}>{c.kind === 'tarea' ? '☑' : '✎'}</span>}
                         <p className="text-[12.5px] font-semibold" style={{ color: '#eaf4fa' }}>{c.title}</p>
                       </div>
                       <p className="text-[10.5px] ml-5" style={{ color: '#8aa0b2' }}>

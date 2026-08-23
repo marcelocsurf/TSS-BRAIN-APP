@@ -29,10 +29,10 @@ export default async function PrintPlanPage({ params }: Props) {
       critical.push({ date: f.start, label: `🚩 Fase: ${f.name}${f.objective ? ` — ${f.objective}` : ''}` });
     }
     for (const w of tl.weeks) {
-      // MX_INTENSITIES guarda valores en inglés (Low/Medium/High/Peak) —
-      // el heurístico original buscaba 'alta' y nunca matcheaba.
+      // Solo 'Peak' es semana pico ('High' es carga alta RUTINARIA — con
+      // 'high' la ruta crítica se inundaba de semanas normales; revisión).
       const inten = (w.intensity ?? '').toLowerCase();
-      const peak = inten.includes('high') || inten.includes('peak') || inten.includes('alta') || (w.type ?? '').toLowerCase().includes('compet');
+      const peak = inten.includes('peak') || inten.includes('pico') || (w.type ?? '').toLowerCase().includes('compet');
       if (peak) critical.push({ date: w.start, label: `⛰ Semana pico — M${w.week}${w.type ? ` · ${w.type}` : ''}${w.intensity ? ` · ${w.intensity}` : ''}` });
       for (const e of w.events) critical.push({ date: e.date, label: `${e.icon} ${e.label}` });
     }
