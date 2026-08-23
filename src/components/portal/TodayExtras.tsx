@@ -17,15 +17,15 @@ function toEmbedUrl(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
-export function TodayExtras({ token }: { token: string }) {
-  const [data, setData] = useState<MyTodayExtras | null>(null);
+export function TodayExtras({ token, initial }: { token: string; initial?: MyTodayExtras | null }) {
+  const [data, setData] = useState<MyTodayExtras | null>(initial ?? null);
   const [busy, setBusy] = useState<string | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
 
   const load = useCallback(() => {
     getMyTodayExtras(token).then((r) => { if (r.ok) setData(r.data); }).catch(() => {});
   }, [token]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (initial === undefined) load(); }, [load]);
 
   if (!data) return null;
 

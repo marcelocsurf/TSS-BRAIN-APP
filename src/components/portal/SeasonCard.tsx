@@ -20,14 +20,19 @@ const PHASE_STYLE: Record<string, { border: string; text: string }> = {
 const EVENT_ICON: Record<string, string> = { camp: '🌊', nacional: '⭐', internacional: '🏆', otro: '📍' };
 const SPECIALTY_EN: Record<string, string> = { mental: 'Mental coach', fisico: 'Physical coach', nutricion: 'Nutritionist' };
 
-export function SeasonCard({ token }: { token: string }) {
-  const [data, setData] = useState<MySeasonData | null>(null);
+export function SeasonCard({ token, initial }: { token: string; initial?: MySeasonData | null }) {
+  // `initial` viene del bundle server-side del Home: sin él, cada tarjeta
+  // disparaba su server action al montar y Next las ejecuta EN FILA por
+  // cliente — el Home tardaba 40-60s en completarse (reporte 2026-08-23).
+  const [data, setData] = useState<MySeasonData | null>(initial ?? null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (initial !== undefined) return; // ya vino del server
     getMySeason(token)
       .then((r) => { if (r.ok) setData(r.data); })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (!data) return null;

@@ -137,6 +137,11 @@ interface PortalData {
   drillsMissions?: any[];
   pendingSurveys: any[];
   pendingExperience?: { token: string; campName: string | null } | null;
+  /** Lecturas del Home resueltas server-side (perf 2026-08-23). */
+  homeBundle?: {
+    program: any; season: any; competitions: any; appointments: any[];
+    scores: any; messages: any[]; teamWall: any; todayExtras: any; presentations: any[];
+  };
   submittedSurveys: any[];
   materials: { unlocked: BeltMaterial[]; locked: BeltMaterial[] };
   token: string;
@@ -706,21 +711,21 @@ function HomeTab({
               sus propios datos y devuelve null si el alumno no tiene programa
               activo — para los demás, el Home es idéntico al de siempre. */}
           {/* Plan Anual (temporada) — solo atletas con temporada activa. */}
-          <SeasonCard token={data.token} />
+          <SeasonCard token={data.token} initial={data.homeBundle?.season} />
 
-          <ProgramCard token={data.token} />
+          <ProgramCard token={data.token} initial={data.homeBundle?.program} />
           {/* Score por pilar (última evaluación profunda) — solo atletas HP. */}
-          <AthleteScoreCard token={data.token} />
-          <CompetitionCard token={data.token} />
-          <CoachMessagesCard token={data.token} />
+          <AthleteScoreCard token={data.token} initial={data.homeBundle?.scores} />
+          <CompetitionCard token={data.token} initial={data.homeBundle?.competitions} />
+          <CoachMessagesCard token={data.token} initial={data.homeBundle?.messages} />
           {/* Lo que el staff deja para HOY (dieta + sesiones) — visible aunque
               no tenga programa activo (hallazgo: quedaban invisibles). */}
-          <TodayExtras token={data.token} />
+          <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
           {/* Muro del EQUIPO (staff + atleta) — solo con temporada activa. */}
-          <TeamWallCard token={data.token} />
+          <TeamWallCard token={data.token} initial={data.homeBundle?.teamWall} />
 
           {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
-          <AppointmentCard token={data.token} />
+          <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
 
           {/* Training + Free Surf — bold, high-contrast title (Course-style) so
               the name doesn't get lost, with a cyan accent bar. */}
@@ -840,7 +845,7 @@ function HomeTab({
       )}
 
       {/* Presentations granted to this student (renders nothing if none) */}
-      <StudentPresentations token={data.token} />
+      <StudentPresentations token={data.token} initial={data.homeBundle?.presentations} />
 
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />

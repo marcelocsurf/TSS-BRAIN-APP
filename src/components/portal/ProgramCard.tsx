@@ -33,8 +33,8 @@ function toEmbed(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
-export function ProgramCard({ token }: { token: string }) {
-  const [data, setData] = useState<MyProgramData | null>(null);
+export function ProgramCard({ token, initial }: { token: string; initial?: MyProgramData | null }) {
+  const [data, setData] = useState<MyProgramData | null>(initial ?? null);
   const [open, setOpen] = useState(false);
 
   const refresh = () => {
@@ -48,7 +48,7 @@ export function ProgramCard({ token }: { token: string }) {
       .catch(() => {});
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(refresh, [token]);
+  useEffect(() => { if (initial === undefined) refresh(); }, [token]);
 
   if (!data) return null;
 

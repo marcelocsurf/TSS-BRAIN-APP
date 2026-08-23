@@ -17,6 +17,9 @@ import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 import { RenewalGate } from './RenewalGate';
 import { getMembershipInfo } from '@/lib/actions/memberships';
+import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMyMessages, getMyTeamWall, getMyTodayExtras } from '@/lib/actions/programs';
+import { getMyCompetitions } from '@/lib/actions/competitions';
+import { getMyStudentResources } from '@/lib/actions/coach-resources';
 
 // Always fetch fresh data — no caching of student portal
 
@@ -80,7 +83,13 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
 
   // Fetch parallel data — materials use admin access control via student_level_access
   const { getPendingExperienceForStudent } = await import('@/lib/actions/experience-survey');
-  const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach, pendingExperience] = await Promise.all([
+  // PERF (reporte 2026-08-23: el programa tardaba 40-60s en aparecer): las
+  // tarjetas del Home eran autocontenidas y disparaban su server action al
+  // montar — Next ejecuta las actions de un cliente EN FILA, así que la cola
+  // sumaba todas las latencias. Ahora TODO se lee acá, en paralelo, y las
+  // tarjetas reciben `initial` — el Home sale completo de una.
+  const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach, pendingExperience,
+    hbProgram, hbSeason, hbCompetitions, hbAppointments, hbScores, hbMessages, hbTeamWall, hbTodayExtras, hbPresentations] = await Promise.all([
     getStudentMaterials(student.id, beltLevel),
     getStudentDrillsForSelfTraining(beltLevel),
     getDrillsMissionsForBelt(beltLevel),
@@ -89,7 +98,30 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     getCourseCatalog(student.id),
     coachUnlocked ? getMyCoachData(student.id) : Promise.resolve(null),
     getPendingExperienceForStudent(student.id).catch(() => null),
+    getMyProgram(token).catch(() => null),
+    getMySeason(token).catch(() => null),
+    getMyCompetitions(token).catch(() => null),
+    getMyAppointments(token).catch(() => null),
+    getMyAthleteScores(token).catch(() => null),
+    getMyMessages(token).catch(() => null),
+    getMyTeamWall(token).catch(() => null),
+    getMyTodayExtras(token).catch(() => null),
+    getMyStudentResources(token).catch(() => [] as any[]),
   ]);
+
+  // Bundle del Home: valores ya desenvueltos, con la MISMA semántica que cada
+  // tarjeta usaba al hacer su propio fetch (ok:false → conservar null/[]).
+  const homeBundle = {
+    program: hbProgram?.ok ? hbProgram.data : null,
+    season: hbSeason?.ok ? hbSeason.data : null,
+    competitions: hbCompetitions?.ok && hbCompetitions.data ? hbCompetitions.data : null,
+    appointments: hbAppointments?.ok ? hbAppointments.appointments : [],
+    scores: hbScores?.ok ? hbScores.data : null,
+    messages: hbMessages?.ok ? hbMessages.messages : [],
+    teamWall: hbTeamWall?.ok ? hbTeamWall.data : null,
+    todayExtras: hbTodayExtras?.ok ? hbTodayExtras.data : null,
+    presentations: hbPresentations ?? [],
+  };
 
   // Course owners (TSS founders) bypass the access gate so they can review
   // content without needing a paid course code. Keep in sync with
@@ -149,6 +181,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           pendingSurveys,
           submittedSurveys,
           pendingExperience,
+          homeBundle,
           materials,
           token,
           courseData,

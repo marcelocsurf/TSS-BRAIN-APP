@@ -7,12 +7,14 @@ import { Presentation, X } from 'lucide-react';
 // Shows the presentations an admin has granted to this student. Each opens as a
 // full-screen in-app PDF viewer. Mirrors the coach CoachPresentations, styled
 // for the light student portal. Renders nothing when there are none.
-export function StudentPresentations({ token }: { token: string }) {
-  const [items, setItems] = useState<CoachResource[]>([]);
+export function StudentPresentations({ token, initial }: { token: string; initial?: CoachResource[] }) {
+  const [items, setItems] = useState<CoachResource[]>(initial ?? []);
   const [open, setOpen] = useState<CoachResource | null>(null);
 
   useEffect(() => {
+    if (initial !== undefined) return; // vino del bundle server-side
     getMyStudentResources(token).then(setItems).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (items.length === 0) return null;

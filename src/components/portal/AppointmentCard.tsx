@@ -32,13 +32,15 @@ function prettyTime(t: string | null): string | null {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-export function AppointmentCard({ token }: { token: string }) {
-  const [items, setItems] = useState<MyAppointment[]>([]);
+export function AppointmentCard({ token, initial }: { token: string; initial?: MyAppointment[] }) {
+  const [items, setItems] = useState<MyAppointment[]>(initial ?? []);
 
   useEffect(() => {
+    if (initial !== undefined) return; // vino del bundle server-side
     getMyAppointments(token)
       .then((r) => { if (r.ok) setItems(r.appointments); })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (items.length === 0) return null;

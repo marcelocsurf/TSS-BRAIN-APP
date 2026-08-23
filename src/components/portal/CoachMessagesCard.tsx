@@ -15,14 +15,16 @@ function prettyDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function CoachMessagesCard({ token }: { token: string }) {
-  const [messages, setMessages] = useState<MyMessage[]>([]);
+export function CoachMessagesCard({ token, initial }: { token: string; initial?: MyMessage[] }) {
+  const [messages, setMessages] = useState<MyMessage[]>(initial ?? []);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (initial !== undefined) return; // vino del bundle server-side
     getMyMessages(token)
       .then((r) => { if (r.ok) setMessages(r.messages); })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (messages.length === 0) return null;

@@ -18,13 +18,15 @@ const PILLARS: Array<{ key: keyof MyAthleteScores['pillars']; label: string; col
   { key: 'men', label: 'Mental', color: '#FFA94D' },
 ];
 
-export function AthleteScoreCard({ token }: { token: string }) {
-  const [data, setData] = useState<MyAthleteScores | null>(null);
+export function AthleteScoreCard({ token, initial }: { token: string; initial?: MyAthleteScores | null }) {
+  const [data, setData] = useState<MyAthleteScores | null>(initial ?? null);
 
   useEffect(() => {
+    if (initial !== undefined) return; // vino del bundle server-side
     getMyAthleteScores(token)
       .then((r) => { if (r.ok) setData(r.data); })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (!data) return null;

@@ -44,8 +44,8 @@ function prettyDate(d: string): string {
   return new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-export function CompetitionCard({ token }: { token: string }) {
-  const [data, setData] = useState<MyCompetitionData | null>(null);
+export function CompetitionCard({ token, initial }: { token: string; initial?: MyCompetitionData | null }) {
+  const [data, setData] = useState<MyCompetitionData | null>(initial ?? null);
   const [open, setOpen] = useState(false);
 
   const load = () => {
@@ -54,7 +54,7 @@ export function CompetitionCard({ token }: { token: string }) {
       .catch(() => {});
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, [token]);
+  useEffect(() => { if (initial === undefined) load(); }, [token]);
 
   if (!data) return null;
   const up = data.upcoming;

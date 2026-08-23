@@ -13,8 +13,8 @@ const INK = '#061C2B', CYAN = '#00D2FF', GOLD = '#FFD166';
 
 const fmtDT = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/El_Salvador' });
 
-export function TeamWallCard({ token }: { token: string }) {
-  const [data, setData] = useState<MyTeamData | null>(null);
+export function TeamWallCard({ token, initial }: { token: string; initial?: MyTeamData | null }) {
+  const [data, setData] = useState<MyTeamData | null>(initial ?? null);
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,7 +23,7 @@ export function TeamWallCard({ token }: { token: string }) {
   const load = useCallback(() => {
     getMyTeamWall(token).then((r) => { if (r.ok) setData(r.data); }).catch(() => {});
   }, [token]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (initial === undefined) load(); }, [load]);
 
   if (!data) return null;
 
