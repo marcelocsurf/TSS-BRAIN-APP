@@ -682,8 +682,18 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
         </span>
       </div>
 
-      {(e.transport || e.spaces.length > 0) && (
+      {(e.time || e.transport || e.spaces.length > 0) && (
         <div className="flex flex-wrap gap-1.5 mt-2">
+          {/* Hora de ENCUENTRO explícita (pedido de Rick/Kat 2026-08-23):
+              el número del header nadie lo leía como "a qué hora cito al
+              cliente" — servicio al cliente necesita la etiqueta. Es la hora
+              de clase que el coach fija en su Vista Semana. */}
+          {e.time && (
+            <span className="text-[10px] px-2 py-1 rounded-full font-bold"
+              style={{ background: 'rgba(0,210,255,.12)', color: '#006C8C' }}>
+              🕐 Encuentro {e.time.slice(0, 5)}{e.venue ? ` · ${e.venue}` : ''}
+            </span>
+          )}
           {e.transport && (
             <button type="button"
               onClick={() => canCoordinate && e.transport?.plan_id && setTrEdit((v) => !v)}
@@ -1143,7 +1153,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
               <p className="text-[11px] text-gray-600">
                 👥 <b>{r.passengers} pasajeros</b> ({r.students} {r.students === 1 ? 'alumno' : 'alumnos'} + {r.staff} staff)
                 {r.venue ? <> · 📍 {r.venue}</> : null}
-                {r.class_start ? <> · clase {r.class_start}</> : null}
+                {r.class_start ? <> · <b>🕐 encuentro {String(r.class_start).slice(0, 5)}</b></> : null}
                 {r.coach_name ? <> · lo pide <b>{r.coach_name}</b></> : null}
               </p>
               {canCoordinate && (

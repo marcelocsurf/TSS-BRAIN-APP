@@ -72,6 +72,7 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
         <Sec icon="🗓" title="AGENDA — ver y planear (cualquier día)">
           <Li k="Navegar">Flechas ‹ › para moverte por semanas, o <strong>📅 Ir a</strong> para saltar a cualquier fecha del año.</Li>
           <Li k="Cada tarjeta">Hora, coach, día X de Y del camp, alumnos (💰 = debe pagar, ⚠ = sin waiver), transporte 🚐 y espacios 🏛 reservados.</Li>
+          <Li k="🕐 Encuentro">La hora (y lugar) a la que citás al cliente — la fija el coach al planear su semana. No es lo mismo que el 🚐: la van sale después del encuentro. Si una tarjeta no la muestra, el coach aún no la puso.</Li>
           <Li k="Tocá un nombre">Se abre su ficha de contacto: WhatsApp, correo, habitación del huésped y <strong>cómo llegó la reserva</strong> (QR del cliente o el vendedor que la hizo, con fecha y hora). Los mismos datos que en el mostrador. El cobro no se hace acá — se hace en HOY el día de la clase.</Li>
           <Li k="+ Reservar">Cliente enfrente → tocá el botón verde de la clase, buscalo (o crealo con nombre y teléfono) y listo. El cobro se confirma en HOY cuando llegue.</Li>
           <Li k="+ Clase en otro horario">¿Piden Skate un martes 2 PM? Elegí la plantilla y la hora — la clase se crea al instante y ya podés reservarle.</Li>
