@@ -17,6 +17,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
   const [academyId, setAcademyId] = useState(coach.academy_id || '');
   const [canCoordinate, setCanCoordinate] = useState(coach.portal_can_coordinate === true);
   const [canBoards, setCanBoards] = useState(coach.portal_can_manage_boards === true);
+  const [specialistRole, setSpecialistRole] = useState<string>(coach.specialist_role || '');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
       academy_id: academyId || undefined,
       portal_can_coordinate: canCoordinate,
       portal_can_manage_boards: canBoards,
+      specialist_role: specialistRole || null,
     });
     setSaving(false);
     if (!res.ok) {
@@ -99,6 +101,15 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             </span>
           </label>
         )}
+        <label className="text-xs text-gray-500 block">HP specialist role (team portal /equipo)
+          <select value={specialistRole} onChange={(e) => setSpecialistRole(e.target.value)}
+            className="mt-1 w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+            <option value="">— None —</option>
+            <option value="psicologo">Psicólogo</option>
+            <option value="fisico">Preparador físico</option>
+            <option value="nutricionista">Nutricionista</option>
+          </select>
+        </label>
         {!['host', 'coordinator', 'admin'].includes(role) && (
           <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
             <input type="checkbox" checked={canBoards} onChange={(e) => setCanBoards(e.target.checked)} className="mt-0.5" />

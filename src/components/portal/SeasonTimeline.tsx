@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getMySeasonTimeline, type MySeasonTimeline } from '@/lib/actions/programs';
+import { getMySeasonTimeline } from '@/lib/actions/programs';
+import type { MySeasonTimeline } from '@/lib/programs/season-timeline';
 
 // ─── Vista TEMPORADA del programa (tercer nivel de zoom, 2026-08-23) ───
 // Timeline tipo Excel: una fila por microciclo con fechas reales, la matriz
