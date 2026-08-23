@@ -56,6 +56,9 @@ export interface MyProgramData {
     energy: number | null;
     comment: string | null;
     nutrition: string | null;
+    surf_hours: number | null;
+    focus: number | null;
+    goal_achieved: string | null;
   } | null;
 }
 
@@ -135,7 +138,7 @@ export async function getMyProgram(
 
     const { data: checkin, error: ckErr } = await admin
       .from('program_checkins')
-      .select('water_glasses, sleep_hours, energy, comment, nutrition')
+      .select('water_glasses, sleep_hours, energy, comment, nutrition, surf_hours, focus, goal_achieved')
       .eq('assignment_id', assignment.id)
       .eq('checkin_date', elSalvadorToday())
       .maybeSingle();
@@ -345,33 +348,74 @@ export async function saveProgramCheckin(
     energy?: number | null;
     comment?: string | null;
     nutrition?: string | null;
+    surf_hours?: number | null;   // horas surfeadas HOY (paridad app HP)
+    focus?: number | null;        // 1-4
+    goal_achieved?: string | null; // si | parcial | no
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const ctx = await resolveActiveAssignment(portalToken);
     if (!ctx) return { ok: false, error: 'No active program.' };
-    const { admin, assignment } = ctx;
+    const { admin, assignment, studentId } = ctx;
 
     const water = input.water_glasses;
     const sleep = input.sleep_hours;
     const energy = input.energy;
+    const surf = input.surf_hours;
     if (water != null && (water < 0 || water > 12)) return { ok: false, error: 'Water must be 0–12 glasses.' };
     if (sleep != null && (sleep < 0 || sleep > 14)) return { ok: false, error: 'Sleep must be 0–14 hours.' };
     if (energy != null && (energy < 1 || energy > 4)) return { ok: false, error: 'Energy must be 1–4.' };
+    if (surf != null && (surf < 0 || surf > 14)) return { ok: false, error: 'Surf hours must be 0–14.' };
+    if (input.focus != null && (input.focus < 1 || input.focus > 4)) return { ok: false, error: 'Focus must be 1–4.' };
+    if (input.goal_achieved != null && !['si', 'parcial', 'no'].includes(input.goal_achieved)) return { ok: false, error: 'Invalid goal answer.' };
 
+    const today = elSalvadorToday();
     const { error } = await admin.from('program_checkins').upsert(
       {
         assignment_id: assignment.id,
-        checkin_date: elSalvadorToday(),
+        checkin_date: today,
         water_glasses: water ?? null,
         sleep_hours: sleep ?? null,
         energy: energy ?? null,
         comment: (input.comment ?? '').trim() || null,
         nutrition: (input.nutrition ?? '').trim() || null,
+        surf_hours: surf ?? null,
+        focus: input.focus ?? null,
+        goal_achieved: input.goal_achieved ?? null,
       },
       { onConflict: 'assignment_id,checkin_date' }
     );
     if (error) throw error;
+
+    // Las horas surfeadas alimentan la MISMA tubería de horas del portal y la
+    // ficha (self_training_sessions → computeSurfSplit). Idempotente por día:
+    // el tag en notes identifica la fila del check-in y se actualiza si el
+    // atleta corrige. Best-effort — el check-in ya quedó guardado.
+    if (surf != null) {
+      try {
+        const tag = `checkin:${assignment.id}:${today}`;
+        const minutes = Math.round(Number(surf) * 60);
+        const { data: existing } = await admin
+          .from('self_training_sessions').select('id')
+          .eq('student_id', studentId).eq('notes', tag).maybeSingle();
+        if (existing) {
+          await admin.from('self_training_sessions')
+            .update({ duration_minutes: minutes, total_water_minutes: minutes })
+            .eq('id', (existing as any).id);
+        } else if (minutes > 0) {
+          await admin.from('self_training_sessions').insert({
+            student_id: studentId,
+            drill_name: 'Surf · daily check-in',
+            duration_minutes: minutes,
+            total_water_minutes: minutes,
+            completed: true,
+            notes: tag,
+          });
+        }
+      } catch (e2) {
+        console.error('[programs] checkin surf-hours bridge failed', e2);
+      }
+    }
     return { ok: true };
   } catch (e) {
     console.error('[programs] saveProgramCheckin failed', e);

@@ -470,6 +470,9 @@ function CheckinCard({
   const [energy, setEnergy] = useState<number>(t?.energy ?? 0);
   const [comment, setComment] = useState<string>(t?.comment ?? '');
   const [nutrition, setNutrition] = useState<string>(t?.nutrition ?? '');
+  const [surfH, setSurfH] = useState<number>(t?.surf_hours != null ? Number(t.surf_hours) : 0);
+  const [goal, setGoal] = useState<string>(t?.goal_achieved ?? '');
+  const [focus, setFocus] = useState<number>(t?.focus ?? 0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -491,6 +494,9 @@ function CheckinCard({
       energy: cfg.energy && energy > 0 ? energy : null,
       comment: cfg.comment ? comment : null,
       nutrition: cfg.nutrition ? nutrition : null,
+      surf_hours: surfH > 0 || t?.surf_hours != null ? surfH : null,
+      goal_achieved: goal || null,
+      focus: focus > 0 ? focus : null,
     });
     setSaving(false);
     if (!r.ok) setErr(r.error || 'Could not save.');
@@ -548,6 +554,56 @@ function CheckinCard({
           </div>
         </div>
       )}
+
+      {/* 🏄 Horas surfeadas HOY — alimenta sus horas en el agua (paridad HP) */}
+      <div className="flex items-center justify-between mt-3">
+        <span className="text-[12px]" style={{ color: '#b8cad8' }}>Surf today</span>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setSurfH(Math.max(0, Math.round((surfH - 0.5) * 10) / 10))} aria-label="Less surf"
+            className="rounded-lg w-8 h-8 text-[15px] font-bold" style={{ background: 'rgba(255,255,255,.07)', color: '#7BA2B5', border: '1px solid #2A4D5F' }}>−</button>
+          <span className="text-[13px] font-bold w-12 text-center" style={{ ...MONO, color: surfH > 0 ? '#39D98A' : '#5f7a8c' }}>
+            {surfH > 0 ? `${surfH}h` : '0h'}
+          </span>
+          <button type="button" onClick={() => setSurfH(Math.min(14, Math.round((surfH + 0.5) * 10) / 10))} aria-label="More surf"
+            className="rounded-lg w-8 h-8 text-[15px] font-bold" style={{ background: 'rgba(57,217,138,.12)', color: '#39D98A', border: '1px solid rgba(57,217,138,.4)' }}>+</button>
+        </div>
+      </div>
+
+      {/* 🎯 ¿Se cumplió el objetivo del día? (puntos del ranking: Yes > Halfway) */}
+      <div className="flex items-center justify-between mt-3 gap-2">
+        <span className="text-[12px] shrink-0" style={{ color: '#b8cad8' }}>Today&apos;s goal</span>
+        <div className="flex gap-1.5">
+          {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Halfway', '#FFD166'], ['no', 'Not yet', '#FF6B6B']] as const).map(([v, label, color]) => (
+            <button key={v} type="button" onClick={() => setGoal(goal === v ? '' : v)}
+              className="rounded-full px-3 py-1.5 text-[10.5px] font-bold"
+              style={{
+                background: goal === v ? color : 'rgba(255,255,255,.06)',
+                color: goal === v ? '#061C2B' : '#7BA2B5',
+                border: goal === v ? '1px solid transparent' : '1px solid #2A4D5F',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 🧠 Enfoque 1-4 (misma rampa de color que Energy) */}
+      <div className="flex items-center justify-between mt-3">
+        <span className="text-[12px]" style={{ color: '#b8cad8' }}>Focus</span>
+        <div className="flex gap-1.5">
+          {[1, 2, 3, 4].map((n) => (
+            <button key={n} type="button" onClick={() => setFocus(focus === n ? 0 : n)}
+              className="rounded-lg w-9 h-9 text-[13px] font-bold"
+              style={{
+                background: focus === n ? ['#FF6B6B', '#FFD166', '#00D2FF', '#39D98A'][n - 1] : 'rgba(255,255,255,.06)',
+                color: focus === n ? '#061C2B' : ['#FF6B6B', '#FFD166', '#00D2FF', '#39D98A'][n - 1],
+                border: `1px solid ${focus === n ? 'transparent' : '#2A4D5F'}`,
+              }}>
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {cfg.sleep && (
         <div className="flex items-center justify-between mt-3">

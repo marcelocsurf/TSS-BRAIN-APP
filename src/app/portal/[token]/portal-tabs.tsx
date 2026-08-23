@@ -36,6 +36,7 @@ import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
 import { AthleteScoreCard } from '@/components/portal/AthleteScoreCard';
 import { TeamWallCard } from '@/components/portal/TeamWallCard';
+import { AthleteProfileCard } from '@/components/portal/AthleteProfileCard';
 import { TodayExtras } from '@/components/portal/TodayExtras';
 import { CompetitionCard } from '@/components/portal/CompetitionCard';
 import { CoachMessagesCard } from '@/components/portal/CoachMessagesCard';
@@ -711,6 +712,8 @@ function HomeTab({
               sus propios datos y devuelve null si el alumno no tiene programa
               activo — para los demás, el Home es idéntico al de siempre. */}
           {/* Plan Anual (temporada) — solo atletas con temporada activa. */}
+          {/* Ficha del atleta: wizard primera vez + "qué te falta" (solo HP). */}
+          <AthleteProfileCard token={data.token} />
           <SeasonCard token={data.token} initial={data.homeBundle?.season} />
 
           <ProgramCard token={data.token} initial={data.homeBundle?.program} />

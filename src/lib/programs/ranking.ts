@@ -96,7 +96,7 @@ export async function computeWeekRanking(
       .gte('done_at', shiftDate(weekStart, -1) + 'T00:00:00Z')
       .lte('done_at', shiftDate(weekEnd, 2) + 'T00:00:00Z'),
     admin.from('program_checkins')
-      .select('assignment_id, checkin_date, sleep_hours, water_glasses, energy, nutrition')
+      .select('assignment_id, checkin_date, sleep_hours, water_glasses, energy, nutrition, goal_achieved, focus')
       .in('assignment_id', allIds)
       .gte('checkin_date', weekStart).lte('checkin_date', weekEnd),
     admin.from('hp_session_attendance')
@@ -134,6 +134,10 @@ export async function computeWeekRanking(
     p += waterPts(c.water_glasses);
     if ((c.nutrition ?? '').trim()) p += 15;
     p += Math.min(5, (c.energy ?? 0) * 1.25);
+    // Objetivo del día (paridad app HP: Sí > Parcial) + enfoque.
+    if (c.goal_achieved === 'si') p += 8;
+    else if (c.goal_achieved === 'parcial') p += 4;
+    p += Math.min(4, (c.focus ?? 0));
     pts.set(student, (pts.get(student) ?? 0) + p);
   }
 
