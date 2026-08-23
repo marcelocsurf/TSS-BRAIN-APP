@@ -37,6 +37,7 @@ import { ProgramCard } from '@/components/portal/ProgramCard';
 import { AthleteScoreCard } from '@/components/portal/AthleteScoreCard';
 import { TeamWallCard } from '@/components/portal/TeamWallCard';
 import { AthleteProfileCard } from '@/components/portal/AthleteProfileCard';
+import { AthleteGuide } from '@/components/portal/AthleteGuide';
 import { TodayExtras } from '@/components/portal/TodayExtras';
 import { CompetitionCard } from '@/components/portal/CompetitionCard';
 import { CoachMessagesCard } from '@/components/portal/CoachMessagesCard';
@@ -286,6 +287,13 @@ export function PortalTabs({
   initialStepId?: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // 📖 Manual de uso del portal: se abre solo la primera vez que la persona
+  // entra y queda siempre a un toque en el botón del encabezado.
+  const [guideOpen, setGuideOpen] = useState(false);
+  useEffect(() => {
+    try { if (!localStorage.getItem('tss_athlete_guide_v1')) setGuideOpen(true); } catch { /* sin localStorage, sin auto-open */ }
+  }, []);
+  const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_athlete_guide_v1', '1'); } catch {} };
   const TABS = useMemo(
     () => ALL_TABS.filter((t) => !t.lockedUntilCoachUnlock || data.coachProfileUnlocked),
     [data.coachProfileUnlocked]
@@ -330,9 +338,15 @@ export function PortalTabs({
           left, The Surf Sequence lineage logo on the right (shown on every
           screen), logout tucked in the corner. */}
       <div style={{ background: brand.primary }} className="px-4 py-3 relative">
-        <div className="absolute top-1.5 right-1.5">
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+          <button type="button" onClick={() => setGuideOpen(true)} aria-label="How your portal works"
+            className="rounded-full w-7 h-7 flex items-center justify-center text-[13px]"
+            style={{ background: 'rgba(255,255,255,.12)' }}>
+            📖
+          </button>
           <LogoutButton portalToken={data.token} />
         </div>
+        {guideOpen && <AthleteGuide onClose={closeGuide} />}
         <div className="flex items-center justify-between gap-3 pr-6">
           <div className="flex items-center gap-2.5 min-w-0">
             {brand.logoUrl && (

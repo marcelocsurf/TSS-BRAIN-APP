@@ -60,6 +60,20 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
           <p style={{ color: '#7a5c00' }}><strong>El cierre no es papeleo:</strong> alimenta la bitácora de tus alumnos y es <strong>requisito para que se libere tu pago</strong>. Si a las 5 PM no cerraste el día, te llega un recordatorio por correo. Cierre hecho = plata en camino.</p>
         </Sec>
 
+        <Sec icon="📅" title="Vista Semana — planear un camp o servicio">
+          <Li k="Al aceptar">Te sale la <strong>vista rápida</strong>: fechas, alumnos inscritos y sus fichas. De ahí, botón <strong>📅 Vista semana</strong>.</Li>
+          <Li k="La cuadrícula">Toda la semana tipo Excel: por día definís <strong>clase</strong> (hora y encuentro), <strong>lugar</strong>, <strong>transporte</strong> (salida/regreso), <strong>espacios</strong> y <strong>tablas por alumno</strong>. Tocá una celda, llenala y guardá — cada celda se guarda sola.</Li>
+          <Li k="Transporte">Lo que pongas le llega directo a Front Desk con el total de pasajeros. Si después cambiás un horario, <strong>se les avisa solo</strong> — no hace falta escribirles.</Li>
+          <Li k="Sin conexión">Si una celda no guarda (se fue el internet), te avisa y podés reintentar — no se pierde lo demás.</Li>
+        </Sec>
+
+        <Sec icon="🏁" title="Cerrar un camp — y los short camps">
+          <Li k="Cada día">Cerrás el día como siempre: asistencia, evaluación por alumno y <strong>next focus</strong>.</Li>
+          <Li k="Evaluación final">Al terminar el camp evaluás a cada alumno — te sale <strong>lo que trabajó durante el camp</strong> (sus misiones) para calificar sobre eso. Todo lo que agregaste al plan durante la semana aparece ahí.</Li>
+          <Li k="Alumno que se va antes">¿Vino 4 días de un camp de 6? El día que se va: <strong>Finalize student</strong> en su tarjeta → hacés su evaluación oficial y sus encuestas le llegan ese mismo día. El resto del camp sigue normal.</Li>
+          <Li k="Camp vacío">Si ya finalizaste a todos por separado, te queda el botón <strong>🏁 Finalize camp</strong> para cerrar el camp completo.</Li>
+        </Sec>
+
         <Sec icon="🛠" title="Tools — recursos">
           <p>Guías de enseñanza por cinta, calculadora de tablas y materiales según tu nivel de certificación.</p>
         </Sec>

@@ -6,6 +6,7 @@ import {
   specialistCreateAppointment,
   type SpecialistHome, type SpecialistAthlete,
 } from '@/lib/actions/specialist';
+import { SpecialistGuide } from '@/components/specialist/SpecialistGuide';
 
 
 // ═══ PORTAL DEL EQUIPO HP — Brand v10 (ink #061C2B · cyan #00D2FF · gold #FFD166) ═══
@@ -38,6 +39,13 @@ const fmtDT = (iso: string) => new Date(iso).toLocaleString('es-ES', { day: 'num
 export function SpecialistPortal({ token }: { token: string }) {
   const [home, setHome] = useState<SpecialistHome | null | 'denied'>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // 📖 Manual de uso: se abre solo la primera vez y queda en el botón del header.
+  const [guideOpen, setGuideOpen] = useState(false);
+  useEffect(() => {
+    if (!home || home === 'denied') return;
+    try { if (!localStorage.getItem('tss_equipo_guide_v1')) setGuideOpen(true); } catch { /* sin localStorage, sin auto-open */ }
+  }, [home]);
+  const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_equipo_guide_v1', '1'); } catch {} };
 
   useEffect(() => {
     getSpecialistHome(token)
@@ -72,7 +80,13 @@ export function SpecialistPortal({ token }: { token: string }) {
             {home.me.roleLabel}
           </span>
         </div>
+        <button type="button" onClick={() => setGuideOpen(true)} aria-label="Guía de uso"
+          className="shrink-0 rounded-full w-9 h-9 flex items-center justify-center text-[15px]"
+          style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)' }}>
+          📖
+        </button>
       </div>
+      {guideOpen && <SpecialistGuide roleKey={home.me.roleKey} onClose={closeGuide} />}
 
       {/* Mis atletas */}
       <p className="text-[10px] uppercase tracking-wider mt-5 mb-2" style={{ ...MONO, color: '#7BA2B5' }}>
