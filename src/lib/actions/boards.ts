@@ -72,10 +72,13 @@ async function canManage(academyId: string, portalToken?: string | null): Promis
     const admin = createAdminClient();
     const { data: c } = await admin
       .from('coaches')
-      .select('id, role, academy_id, active_status')
+      .select('id, role, academy_id, active_status, portal_can_manage_boards')
       .eq('portal_token', portalToken)
       .maybeSingle();
-    const ok = c && (c as any).active_status && ['host', 'coordinator', 'admin'].includes((c as any).role) && c.academy_id === academyId;
+    // Coordinación puede otorgar el permiso a un coach/asistente (switch
+    // portal_can_manage_boards, 2026-08-22) — mismo patrón que cobertura.
+    const ok = c && (c as any).active_status && c.academy_id === academyId &&
+      (['host', 'coordinator', 'admin'].includes((c as any).role) || (c as any).portal_can_manage_boards === true);
     if (!ok) return { ok: false, id: null, error: 'No autorizado para gestionar el inventario.' };
     return { ok: true, id: c!.id };
   }

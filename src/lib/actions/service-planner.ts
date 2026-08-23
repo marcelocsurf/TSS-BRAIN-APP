@@ -378,10 +378,10 @@ export async function getServicePlan(
   // medical info and last-session history before planning.
   // NOTE: students has no display_name column (that's on coaches) — we
   // compose it from first_name + last_name.
-  const { data: participants } = await admin
+  const { data: participantsRaw } = await admin
     .from('camp_participants')
     .select(
-      'student_id, students:student_id(' +
+      'student_id, finalized_at, departed_on, students:student_id(' +
         'id, first_name, last_name, belt_level, photo_url, age, date_of_birth, weight, height, ocean_level, ' +
         'nationality, level_quiz_score, ' +
         'ocean_quiz_score, stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
@@ -397,6 +397,16 @@ export async function getServicePlan(
     )
     .eq('camp_instance_id', campInstanceId)
     .eq('enrollment_status', 'active');
+
+  // Alumnos ya Finished (short camp / salida anticipada): fuera del roster de
+  // los días POSTERIORES a su salida — caso Stanley 2026-08-22: cerró a dos
+  // el jueves y el planner se los seguía pidiendo evaluar cada día. Los días
+  // hasta su salida (incluida) quedan intactos para el historial.
+  const participants = (participantsRaw ?? []).filter((p: any) => {
+    if (!p.finalized_at) return true;
+    const cutoff = p.departed_on || String(p.finalized_at).slice(0, 10);
+    return selectedDay.session_date <= cutoff;
+  });
 
   const studentIds = (participants ?? []).map((p: any) => p.student_id);
 

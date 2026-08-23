@@ -32,6 +32,7 @@ import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
+import { BoardInventoryManager } from '@/components/board-inventory/BoardInventoryManager';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import {
@@ -1750,6 +1751,21 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
       <p className="text-[10px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>Field tools</p>
       <VideoAnalyzerLauncher variant="card" />
       <BoardSelectorLauncher variant="card" />
+
+      {/* Inventario de tablas — SOLO con permiso otorgado por coordinación
+          (portal_can_manage_boards): agregar/editar/rentar tablas del mismo
+          inventario que usan el mostrador y los camps. */}
+      {coach.portal_can_manage_boards === true && coach.academy_id && (
+        <details className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+          <summary className="cursor-pointer list-none px-4 py-3.5 flex items-center justify-between">
+            <span className="text-[13px] font-bold text-[var(--tss-navy)]">🏄 Board inventory</span>
+            <span className="text-[10px] text-gray-400">add · edit · rent</span>
+          </summary>
+          <div className="px-3 pb-3 border-t border-gray-100">
+            <BoardInventoryManager academyId={coach.academy_id} portalToken={coach.portal_token} />
+          </div>
+        </details>
+      )}
       <VenueScoutLauncher variant="light" />
       <BreathingLauncher variant="light" />
 

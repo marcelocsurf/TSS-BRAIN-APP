@@ -16,6 +16,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
   const [role, setRole] = useState(coach.role || 'assistant');
   const [academyId, setAcademyId] = useState(coach.academy_id || '');
   const [canCoordinate, setCanCoordinate] = useState(coach.portal_can_coordinate === true);
+  const [canBoards, setCanBoards] = useState(coach.portal_can_manage_boards === true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
       role,
       academy_id: academyId || undefined,
       portal_can_coordinate: canCoordinate,
+      portal_can_manage_boards: canBoards,
     });
     setSaving(false);
     if (!res.ok) {
@@ -94,6 +96,15 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             <span>
               <span className="font-semibold text-[var(--tss-navy)]">Coverage mode (coordination)</span><br />
               On coordinator-off days this host can assign coaches and reschedule/cancel one-day classes from their portal. Money and configuration stay dashboard-only.
+            </span>
+          </label>
+        )}
+        {role !== 'host' && (
+          <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
+            <input type="checkbox" checked={canBoards} onChange={(e) => setCanBoards(e.target.checked)} className="mt-0.5" />
+            <span>
+              <span className="font-semibold text-[var(--tss-navy)]">Board inventory access</span><br />
+              This coach can add, edit and rent boards from the 🏄 Inventory tool in their portal (the same inventory used for rentals and camps).
             </span>
           </label>
         )}
