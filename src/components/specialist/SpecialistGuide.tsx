@@ -49,8 +49,8 @@ export function SpecialistGuide({ roleKey, onClose }: { roleKey: string; onClose
           <p>Cada tarjeta es un atleta de una temporada donde estás asignado. Muestra su <strong style={{ color: '#eaf4fa' }}>posición en la temporada</strong> (semana actual / total) y su próximo evento. Tocá la tarjeta para abrir todo su detalle.</p>
         </Sec>
 
-        <Sec icon="🗓" title="Plan de temporada">
-          <p>La línea de tiempo completa del atleta: microciclos, competencias 🏆 y evaluaciones 📋, con la semana actual marcada. Ahí ves <strong style={{ color: '#eaf4fa' }}>en qué fase está</strong> (base, específico, tapering, competencia) para ajustar tu trabajo a la carga.</p>
+        <Sec icon="🗓" title="Plan anual y de temporada">
+          <p>La línea de tiempo completa del atleta: microciclos agrupados por <strong style={{ color: '#eaf4fa' }}>fase del año</strong> (general, específica, precompetitiva, competitiva, transición), competencias 🏆, evaluaciones 📋, viajes ✈️ y el pico ▲, con la semana actual marcada. Ahí ves en qué fase está para ajustar tu trabajo a la carga — el atleta ve este mismo año en su tarjeta &quot;My year&quot;.</p>
         </Sec>
 
         <div className="rounded-2xl p-3.5" style={{ background: 'rgba(155,123,255,.09)', border: '1px solid rgba(155,123,255,.4)' }}>

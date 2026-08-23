@@ -1527,6 +1527,21 @@ function Temporadas() {
     <div className="space-y-4">
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
+      {/* 📖 Manual del PLAN ANUAL — cómo armar el año de un atleta */}
+      <details className="rounded-2xl bg-white border border-gray-200 overflow-hidden">
+        <summary className="cursor-pointer px-4 py-3 text-[12px] font-semibold text-[var(--tss-navy)] hover:bg-gray-50">
+          📖 Cómo armar el AÑO de un atleta (plan anual)
+        </summary>
+        <div className="px-4 pb-4 space-y-2 text-[12px] leading-relaxed text-gray-600 border-t border-gray-100 pt-3">
+          <p><b className="text-[var(--tss-navy)]">1 · Creá la temporada</b> — atleta + título + fechas del año completo (ej. 5 ene → 20 dic). Una sola activa por atleta.</p>
+          <p><b className="text-[var(--tss-navy)]">2 · Pintá las fases</b> — General → Específica → Precompetitiva → Competitiva → Transición (+ Recuperación si hay lesión/reposo). A cada fase escribile su <b>objetivo</b> en inglés: el atleta lo lee tal cual en su portal (&quot;Build the training habit…&quot;). La franja anual de arriba se va pintando sola.</p>
+          <p><b className="text-[var(--tss-navy)]">3 · Agregá los eventos</b> — competencias, camps y <b>viajes con fecha de fin</b> (quedan como rango ✈️). Marcá <b>&quot;el pico&quot;</b> en LA competencia objetivo: eso activa el contador &quot;N days to peak&quot; del atleta.</p>
+          <p className="rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1.5 text-amber-800">⚠ La competencia pico va acá como evento <b>y también</b> en la pestaña Competencias si vas a cargarle heats — usá el <b>mismo nombre y fecha</b> en ambas para que las vistas la muestren una sola vez.</p>
+          <p><b className="text-[var(--tss-navy)]">4 · Los programas de 24 microciclos van DENTRO de las fases</b> — asignalos uno tras otro a lo largo del año; el tope de 24 es a propósito (el detalle día a día lejano es ficción).</p>
+          <p><b className="text-[var(--tss-navy)]">Qué ve cada quien</b> — Atleta: tarjeta 🗓 <b>My year</b> en su Home (franja de 12 meses, fases, ▲ pico, viajes, YOU en el hoy + &quot;The road&quot;). Especialistas: el mismo año en /equipo y en el <b>plan imprimible</b> (franja + ruta crítica). Coach: contador de días al pico.</p>
+        </div>
+      </details>
+
       <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva temporada (macrociclo)</p>
         <div className="flex gap-2 flex-wrap items-start">
