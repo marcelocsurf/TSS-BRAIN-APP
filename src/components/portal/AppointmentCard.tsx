@@ -14,6 +14,8 @@ const KIND_LABEL: Record<string, string> = {
   fisico: 'Physical session',
   mental: 'Mental session',
   tecnico: 'Technique session',
+  nutricion: 'Nutrition session',
+  evaluacion: 'Evaluation',
   otro: 'Session',
 };
 

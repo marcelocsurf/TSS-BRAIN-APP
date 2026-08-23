@@ -480,7 +480,7 @@ function CitasTab() {
   const [results, setResults] = useState<{ id: string; name: string }[]>([]);
   const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
   const [coachId, setCoachId] = useState('');
-  const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'otro'>('fisico');
+  const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro'>('fisico');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [busy, setBusy] = useState(false);
@@ -537,7 +537,7 @@ function CitasTab() {
             {coaches.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)}
           </select>
           <div className="flex gap-1.5 flex-wrap">
-            {(['fisico', 'mental', 'tecnico', 'otro'] as const).map((k) => (
+            {(['fisico', 'mental', 'tecnico', 'nutricion', 'evaluacion', 'otro'] as const).map((k) => (
               <button key={k} type="button" onClick={() => setKind(k)} className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
                 style={kind === k ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
                 {k}

@@ -38,7 +38,7 @@ const C = {
 };
 
 const KIND_LABEL: Record<string, string> = {
-  fisico: 'Físico', mental: 'Mental', tecnico: 'Técnico', nutricion: 'Nutrición', otro: 'Otro',
+  fisico: 'Físico', mental: 'Mental', tecnico: 'Técnico', nutricion: 'Nutrición', evaluacion: 'Evaluación', otro: 'Otro',
 };
 const SPECIALTY_LABEL: Record<string, string> = {
   mental: 'Psicólogo', fisico: 'Prep. físico', nutricion: 'Nutricionista',
@@ -226,7 +226,7 @@ function AppointmentForm({ token, seasonId, studentName, onSaved }: {
   token: string; seasonId: string; studentName: string; onSaved: () => void;
 }) {
   const [openForm, setOpenForm] = useState(false);
-  const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'otro'>('fisico');
+  const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro'>('fisico');
   const [mode, setMode] = useState<'online' | 'presencial'>('online');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -254,7 +254,7 @@ function AppointmentForm({ token, seasonId, studentName, onSaved }: {
   return (
     <div className="rounded-lg p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #CBD5E1` }}>
       <div className="flex gap-1.5 flex-wrap">
-        {(['fisico', 'mental', 'tecnico', 'nutricion', 'otro'] as const).map((k) => (
+        {(['fisico', 'mental', 'tecnico', 'nutricion', 'evaluacion', 'otro'] as const).map((k) => (
           <button key={k} type="button" onClick={() => setKind(k)}
             className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
             style={{ background: kind === k ? C.cyan : '#EEF2F6', color: kind === k ? '#FFFFFF' : C.dim }}>

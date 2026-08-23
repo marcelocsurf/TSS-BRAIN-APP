@@ -1031,7 +1031,7 @@ export interface AdminAppointmentRow {
 export async function adminCreateAppointment(input: {
   studentId: string;
   coachId: string;
-  kind: 'fisico' | 'mental' | 'tecnico' | 'otro';
+  kind: 'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro';
   date: string; // YYYY-MM-DD (El Salvador)
   time?: string | null; // HH:MM
   title?: string | null;

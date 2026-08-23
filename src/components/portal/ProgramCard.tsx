@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronLeft, Lock, Play, X } from 'lucide-react';
+import { SeasonTimeline } from '@/components/portal/SeasonTimeline';
 import {
   getMyProgram,
   markProgramItem,
@@ -123,7 +124,7 @@ function ProgramViewer({
   // la semana completa queda a un tap ("View full program"). Sin día actual
   // (programa completado) se abre directo la vista de semanas.
   const currentDay = data.days.find((d) => d.current) ?? null;
-  const [view, setView] = useState<'today' | 'week'>(currentDay ? 'today' : 'week');
+  const [view, setView] = useState<'today' | 'week' | 'season'>(currentDay ? 'today' : 'week');
 
   const currentWeek = data.position?.week ?? data.weeks;
   // El header de microciclo sigue a la VISTA: en today, el micro del día
@@ -201,7 +202,7 @@ function ProgramViewer({
           <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#7BA2B5' }}>
             Today is {new Date(data.today + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </p>
-          {(data.week_labels?.[String(headerWeek)] || data.week_meta?.[String(headerWeek)]) && (
+          {view !== 'season' && (data.week_labels?.[String(headerWeek)] || data.week_meta?.[String(headerWeek)]) && (
             <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#FFD166' }}>
               Microcycle {headerWeek}
               {data.week_labels?.[String(headerWeek)] ? ` · ${data.week_labels[String(headerWeek)]}` : ''}
@@ -209,28 +210,43 @@ function ProgramViewer({
               {data.week_meta?.[String(headerWeek)]?.intensity ? ` · ${data.week_meta[String(headerWeek)].intensity}` : ''}
             </p>
           )}
-          {data.week_meta?.[String(headerWeek)]?.objective && (
+          {view !== 'season' && data.week_meta?.[String(headerWeek)]?.objective && (
             <p className="text-[11px] mt-0.5 italic" style={{ color: '#8aa0b2' }}>
               {data.week_meta[String(headerWeek)].objective}
             </p>
           )}
         </div>
 
-        {view === 'today' && currentDay ? (
+        {/* Tres niveles de zoom: día · micro · temporada (dale 2026-08-23). */}
+        <div className="flex gap-1.5">
+          {([['today', 'Today'], ['week', 'Week'], ['season', 'Season']] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              disabled={id === 'today' && !currentDay}
+              onClick={() => setView(id)}
+              className="flex-1 rounded-full py-2 text-[10px] uppercase tracking-wider font-bold disabled:opacity-30"
+              style={{
+                ...MONO,
+                background: view === id ? '#FFD166' : 'rgba(255,255,255,.06)',
+                color: view === id ? '#061C2B' : '#7BA2B5',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {view === 'season' ? (
+          <SeasonTimeline
+            token={token}
+            onJumpWeek={(w) => { setWeek(w); setView('week'); }}
+          />
+        ) : view === 'today' && currentDay ? (
           <>
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
-                Micro {currentDay.week_number} · Day {currentDay.day_number} — your session today
-              </p>
-              <button
-                type="button"
-                onClick={() => setView('week')}
-                className="text-[10px] uppercase tracking-wider font-bold"
-                style={{ ...MONO, color: '#00D2FF' }}
-              >
-                Full program →
-              </button>
-            </div>
+            <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
+              Micro {currentDay.week_number} · Day {currentDay.day_number} — your session today
+            </p>
 
             {err && (
               <p className="text-[11px] rounded-lg px-3 py-2" style={{ background: 'rgba(255,120,100,.12)', color: '#ffb4a6' }}>
@@ -251,17 +267,6 @@ function ProgramViewer({
           </>
         ) : (
         <>
-        {currentDay && (
-          <button
-            type="button"
-            onClick={() => setView('today')}
-            className="w-full rounded-lg py-2 text-[10px] uppercase tracking-wider font-bold"
-            style={{ ...MONO, background: 'rgba(255,209,102,.12)', color: '#FFD166', border: '1px solid rgba(255,209,102,.35)' }}
-          >
-            ← Back to today (Micro {currentDay.week_number} · Day {currentDay.day_number})
-          </button>
-        )}
-
         {/* Semanas */}
         <div className="flex gap-1.5">
           {weekNumbers.map((w) => (

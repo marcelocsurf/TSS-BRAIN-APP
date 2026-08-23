@@ -538,7 +538,7 @@ export async function coachCreateAppointmentHP(
   portalToken: string,
   input: {
     seasonId: string;
-    kind: 'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'otro';
+    kind: 'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro';
     mode: 'online' | 'presencial';
     date: string; // YYYY-MM-DD (El Salvador)
     time?: string | null; // HH:MM
@@ -546,7 +546,7 @@ export async function coachCreateAppointmentHP(
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    if (!['fisico', 'mental', 'tecnico', 'nutricion', 'otro'].includes(input.kind)) return { ok: false, error: 'Tipo inválido.' };
+    if (!['fisico', 'mental', 'tecnico', 'nutricion', 'evaluacion', 'otro'].includes(input.kind)) return { ok: false, error: 'Tipo inválido.' };
     if (!['online', 'presencial'].includes(input.mode)) return { ok: false, error: 'Modo inválido.' };
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { ok: false, error: 'La fecha no es válida.' };
     if (input.time && !/^\d{2}:\d{2}$/.test(input.time)) return { ok: false, error: 'La hora no es válida.' };

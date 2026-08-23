@@ -649,3 +649,128 @@ export async function getMyAthleteScores(
     return { ok: false, data: null, error: 'Could not load your scores.' };
   }
 }
+
+// ─── Timeline de TEMPORADA en el portal del atleta (dale Marcelo 2026-08-23) ───
+// La tercera vista del programa: una fila por microciclo con fechas reales,
+// tipo/intensidad/objetivo (la matriz de periodización) y los eventos del
+// atleta superpuestos (🏆 competencias · 📅 citas · 📋 evaluaciones), más la
+// banda del Plan Anual y "lo que viene" después del programa.
+export interface SeasonTimelineWeek {
+  week: number;
+  label: string | null;
+  type: string | null;
+  intensity: string | null;
+  objective: string | null;
+  start: string; // YYYY-MM-DD (SV)
+  end: string;
+  days_total: number;
+  days_done: number;
+  current: boolean;
+  events: Array<{ icon: string; label: string; date: string }>;
+}
+
+export interface MySeasonTimeline {
+  season: { title: string; objective: string | null; start: string; end: string } | null;
+  program_title: string;
+  weeks: SeasonTimelineWeek[];
+  /** Eventos DESPUÉS del programa (dentro de la temporada o próximos 6 meses). */
+  ahead: Array<{ icon: string; label: string; date: string }>;
+}
+
+export async function getMySeasonTimeline(
+  portalToken: string
+): Promise<{ ok: boolean; data: MySeasonTimeline | null; error?: string }> {
+  try {
+    const ctx = await resolveActiveAssignment(portalToken);
+    if (!ctx) return { ok: true, data: null };
+    const { admin, studentId, assignment } = ctx;
+    const program: any = (assignment as any).programs;
+
+    const [{ data: days, error: dErr }, { data: marks, error: mErr }, { data: season }, { data: comps }, { data: appts }, { data: evals }] = await Promise.all([
+      admin.from('program_days').select('id, week_number, day_number').eq('program_id', (assignment as any).program_id),
+      admin.from('program_day_marks').select('day_id').eq('assignment_id', (assignment as any).id),
+      admin.from('season_plans').select('title, objective, start_date, end_date').eq('student_id', studentId).eq('active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      admin.from('athlete_competitions').select('name, comp_date, location, status').eq('student_id', studentId).order('comp_date'),
+      admin.from('program_appointments').select('kind, title, appointment_date, appointment_time, status').eq('student_id', studentId).neq('status', 'cancelled').order('appointment_date'),
+      admin.from('hp_deep_evaluations').select('eval_kind, created_at').eq('student_id', studentId).order('created_at'),
+    ]);
+    if (dErr) throw dErr;
+    if (mErr) throw mErr;
+
+    const doneIds = new Set((marks ?? []).map((m: any) => m.day_id));
+    const weekNums = Array.from(new Set((days ?? []).map((d: any) => d.week_number))).sort((a, b) => a - b);
+
+    // Fechas reales de cada micro: start_date de la asignación + (N-1)*7.
+    const startMs = Date.parse(`${(assignment as any).start_date}T00:00:00Z`);
+    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+    const today = elSalvadorToday();
+
+    // Posición actual: primer día NO hecho (misma noción que getMyProgram).
+    const orderedDays = (days ?? []).slice().sort((a: any, b: any) => a.week_number - b.week_number || a.day_number - b.day_number);
+    const cur = orderedDays.find((d: any) => !doneIds.has(d.id)) ?? null;
+
+    const KIND_ICON: Record<string, string> = { evaluacion: '📋', fisico: '💪', mental: '🧠', tecnico: '🎯', nutricion: '🥗', otro: '📅' };
+    const KIND_EN: Record<string, string> = { evaluacion: 'Evaluation', fisico: 'Physio', mental: 'Mental', tecnico: 'Technique', nutricion: 'Nutrition', otro: 'Appointment' };
+
+    type Ev = { icon: string; label: string; date: string };
+    const allEvents: Ev[] = [
+      ...((comps ?? []).map((c: any) => ({
+        icon: '🏆',
+        label: c.name + (c.location ? ` · ${c.location}` : ''),
+        date: String(c.comp_date ?? '').slice(0, 10),
+      }))),
+      ...((appts ?? []).map((a: any) => ({
+        icon: KIND_ICON[a.kind] ?? '📅',
+        label: (a.title || KIND_EN[a.kind] || 'Appointment') + (a.appointment_time ? ` · ${a.appointment_time}` : ''),
+        date: String(a.appointment_date ?? '').slice(0, 10),
+      }))),
+      ...((evals ?? []).map((e: any) => ({
+        icon: '✅',
+        label: e.eval_kind === 'competencia' ? 'Evaluation done (post-comp)' : 'Evaluation done',
+        date: String(e.created_at ?? '').slice(0, 10),
+      }))),
+    ].filter((e) => e.date);
+
+    const weeks: SeasonTimelineWeek[] = weekNums.map((w) => {
+      const wStart = iso(startMs + (w - 1) * 7 * 86400000);
+      const wEnd = iso(startMs + ((w - 1) * 7 + 6) * 86400000);
+      const wDays = (days ?? []).filter((d: any) => d.week_number === w);
+      return {
+        week: w,
+        label: program?.week_labels?.[String(w)] ?? null,
+        type: program?.week_meta?.[String(w)]?.type ?? null,
+        intensity: program?.week_meta?.[String(w)]?.intensity ?? null,
+        objective: program?.week_meta?.[String(w)]?.objective ?? null,
+        start: wStart,
+        end: wEnd,
+        days_total: wDays.length,
+        days_done: wDays.filter((d: any) => doneIds.has(d.id)).length,
+        current: cur ? cur.week_number === w : false,
+        events: allEvents.filter((e) => e.date >= wStart && e.date <= wEnd),
+      };
+    });
+
+    // Lo que viene DESPUÉS del programa: hasta el fin de temporada (o 6 meses).
+    const programEnd = weeks.length ? weeks[weeks.length - 1].end : today;
+    const horizon = (season as any)?.end_date ?? iso(Date.parse(`${today}T00:00:00Z`) + 183 * 86400000);
+    const ahead = allEvents
+      .filter((e) => e.date > programEnd && e.date <= horizon)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 10);
+
+    return {
+      ok: true,
+      data: {
+        season: season
+          ? { title: (season as any).title, objective: (season as any).objective ?? null, start: (season as any).start_date, end: (season as any).end_date }
+          : null,
+        program_title: program?.title ?? 'Training program',
+        weeks,
+        ahead,
+      },
+    };
+  } catch (e) {
+    console.error('[programs] getMySeasonTimeline failed', e);
+    return { ok: false, data: null, error: 'Could not load the season view.' };
+  }
+}
