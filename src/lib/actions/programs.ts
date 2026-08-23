@@ -602,14 +602,13 @@ export async function getMyAthleteScores(
     if (sErr) throw sErr;
     if (!student) return { ok: true, data: null };
 
-    const [{ data: evalRow, error: eErr }, { data: profile }] = await Promise.all([
+    const [{ data: evalRows, error: eErr }, { data: profile }] = await Promise.all([
       admin
         .from('hp_deep_evaluations')
         .select('scores, eval_kind, created_at')
         .eq('student_id', student.id)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .limit(6),
       admin
         .from('hp_athlete_profiles')
         .select('score_capacity')
@@ -617,15 +616,22 @@ export async function getMyAthleteScores(
         .maybeSingle(),
     ]);
     if (eErr) throw eErr;
-    if (!evalRow && !profile?.score_capacity) return { ok: true, data: null };
+    if ((!evalRows || evalRows.length === 0) && !profile?.score_capacity) return { ok: true, data: null };
 
-    const scores = (evalRow?.scores ?? {}) as Record<string, number>;
-    const avg = (prefix: string): number | null => {
-      const vals = Object.entries(scores)
+    const avgOf = (scores: Record<string, number>, prefix: string): number | null => {
+      const vals = Object.entries(scores ?? {})
         .filter(([k, v]) => k.startsWith(prefix) && Number.isFinite(Number(v)))
         .map(([, v]) => Number(v));
       return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
     };
+    // La más reciente CON scores: hay evaluaciones formales (acta) con scores
+    // vacío que comparten timestamp con la real — un limit(1) ciego mostraba
+    // todo en "—".
+    const evalRow = (evalRows ?? []).find((r: any) =>
+      ['fis_', 'tec_', 'tac_', 'men_'].some((p) => avgOf(r.scores as any, p) != null)
+    ) ?? (evalRows ?? [])[0] ?? null;
+    const scores = (evalRow?.scores ?? {}) as Record<string, number>;
+    const avg = (prefix: string) => avgOf(scores, prefix);
     const pillars = { fis: avg('fis_'), tec: avg('tec_'), tac: avg('tac_'), men: avg('men_') };
     const withVal = Object.values(pillars).filter((v): v is number => v != null);
     return {
