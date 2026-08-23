@@ -49,14 +49,14 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
           <Li k="Tu progreso">Nivel de certificación, horas coacheadas y rating de tus alumnos.</Li>
         </Sec>
 
-        <Sec icon="📚" title="Courses — tu certificación">
+        <Sec icon="📚" title="Cursos — tu certificación">
           <p>Tus cursos según tu nivel: <strong>Safety Canon</strong> (requisito L1, con examen final) y <strong>Foundations</strong> (el método). Al avanzar de nivel se te abren más cursos, drills y misiones. El progreso se guarda solo.</p>
         </Sec>
 
         <Sec icon="📋" title="Plan — planear y CERRAR (lo más importante)">
           <Li k="Ver el plan">El manual del día: venue, warm-up, drills por alumno. Leelo antes de la clase.</Li>
           <Li k="Dar la clase">El modo en vivo: pasás lista, evaluás a cada alumno (enfoque, flow, feedback, próximo paso) y al final tocás <strong>cerrar el día</strong>.</Li>
-          <Li k="⚠ Needs closing">Si te quedó un día sin cerrar, aparece en amarillo arriba del Plan: tocá <strong>Close now</strong> y te lleva directo a cerrarlo, aunque la clase haya sido hace días.</Li>
+          <Li k="⚠ Needs closing">Si te quedó un día sin cerrar, aparece en amarillo en el Plan (<strong>&quot;Needs closing · pay on hold&quot;</strong>): tocá ese día y te lleva directo a cerrarlo, aunque la clase haya sido hace días.</Li>
           <p style={{ color: '#7a5c00' }}><strong>El cierre no es papeleo:</strong> alimenta la bitácora de tus alumnos y es <strong>requisito para que se libere tu pago</strong>. Si a las 5 PM no cerraste el día, te llega un recordatorio por correo. Cierre hecho = plata en camino.</p>
         </Sec>
 
@@ -70,11 +70,11 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
         <Sec icon="🏁" title="Cerrar un camp — y los short camps">
           <Li k="Cada día">Cerrás el día como siempre: asistencia, evaluación por alumno y <strong>next focus</strong>.</Li>
           <Li k="Evaluación final">Al terminar el camp evaluás a cada alumno — te sale <strong>lo que trabajó durante el camp</strong> (sus misiones) para calificar sobre eso. Todo lo que agregaste al plan durante la semana aparece ahí.</Li>
-          <Li k="Alumno que se va antes">¿Vino 4 días de un camp de 6? El día que se va: <strong>Finalize student</strong> en su tarjeta → hacés su evaluación oficial y sus encuestas le llegan ese mismo día. El resto del camp sigue normal.</Li>
+          <Li k="Alumno que se va antes">¿Vino 4 días de un camp de 6? El día que se va, en el Plan del camp te sale <strong>🏁 &quot;¿Un alumno termina HOY su short camp?&quot; → Cerrarlo</strong>: cerrá primero el día de hoy, elegí al alumno, hacés su evaluación oficial y sus encuestas le llegan ese mismo día. El resto del camp sigue normal.</Li>
           <Li k="Camp vacío">Si ya finalizaste a todos por separado, te queda el botón <strong>🏁 Finalize camp</strong> para cerrar el camp completo.</Li>
         </Sec>
 
-        <Sec icon="🛠" title="Tools — recursos">
+        <Sec icon="🛠" title="Herramientas — recursos">
           <p>Guías de enseñanza por cinta, calculadora de tablas y materiales según tu nivel de certificación.</p>
         </Sec>
 

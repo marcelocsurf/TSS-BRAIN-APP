@@ -133,7 +133,11 @@ function ProgramViewer({
     () => Array.from(new Set(data.days.map((d) => d.week_number))).sort((a, b) => a - b),
     [data.days]
   );
-  const [week, setWeek] = useState(currentWeek);
+  // Programa completado: position es null y data.weeks puede no existir entre
+  // las semanas con días reales — se aterriza en la última semana válida.
+  const [week, setWeek] = useState(() =>
+    weekNumbers.includes(currentWeek) ? currentWeek : (weekNumbers[weekNumbers.length - 1] ?? currentWeek)
+  );
   // Si el día actual cruza de semana (marcó el último día de la W1 sin cerrar
   // el visor), la lista sigue a la posición nueva en vez de quedarse en la
   // semana vieja mostrando todo atenuado.
@@ -477,7 +481,8 @@ function CheckinCard({
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  if (!cfg.water && !cfg.sleep && !cfg.energy && !cfg.comment && !cfg.nutrition) return null;
+  // Surf de hoy, objetivo y enfoque son SIEMPRE parte del check-in: la
+  // tarjeta ya no desaparece aunque los 5 flags legacy estén apagados.
 
   const save = async () => {
     setErr(null);

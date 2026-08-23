@@ -23,6 +23,25 @@ const STEPS: Array<{ key: StepKey; icon: string; title: string; sub: string }> =
   { key: 'goals', icon: '🎯', title: 'Your goals', sub: 'Where are you going?' },
 ];
 
+const WIZ_INPUT: React.CSSProperties = { background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.16)', color: '#eaf4fa' };
+const WIZ_LABEL: React.CSSProperties = { ...MONO, color: '#7BA2B5' };
+
+// A nivel de módulo a propósito: si Field viviera dentro del render del
+// wizard, cada tecla recrearía el TIPO del elemento y React desmontaría el
+// <input>, soltando el teclado del teléfono en cada carácter.
+function Field({ k, label, type = 'text', placeholder, f, set }: {
+  k: string; label: string; type?: string; placeholder?: string;
+  f: Record<string, string>; set: (k: string, v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-[9.5px] uppercase tracking-wider mb-1" style={WIZ_LABEL}>{label}</label>
+      <input type={type} value={f[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={placeholder}
+        className="w-full rounded-xl px-3 py-2.5 text-[14px]" style={WIZ_INPUT} />
+    </div>
+  );
+}
+
 export function AthleteProfileCard({ token }: { token: string }) {
   const [data, setData] = useState<MyProfileData | null>(null);
   const [open, setOpen] = useState(false);
@@ -158,15 +177,19 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
     }
   };
 
-  const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.16)', color: '#eaf4fa' };
-  const labelStyle: React.CSSProperties = { ...MONO, color: '#7BA2B5' };
-  const Field = ({ k, label, type = 'text', placeholder }: { k: string; label: string; type?: string; placeholder?: string }) => (
-    <div>
-      <label className="block text-[9.5px] uppercase tracking-wider mb-1" style={labelStyle}>{label}</label>
-      <input type={type} value={f[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={placeholder}
-        className="w-full rounded-xl px-3 py-2.5 text-[14px]" style={inputStyle} />
-    </div>
-  );
+  const inputStyle = WIZ_INPUT;
+  const labelStyle = WIZ_LABEL;
+
+  // Back, dots y cerrar también guardan lo editado — si no, lo tecleado en el
+  // paso abandonado se perdía en silencio (hallazgo de la revisión).
+  const goTo = async (i: number) => {
+    if (busy) return;
+    if (await saveStep()) setStep(i);
+  };
+  const saveAndClose = async () => {
+    if (!busy) await saveStep(); // best-effort: la X nunca debe quedar trabada
+    onClose();
+  };
 
   const s = STEPS[step];
 
@@ -175,18 +198,18 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Header + progreso */}
         <div className="flex items-center justify-between">
-          <button type="button" onClick={() => (step > 0 ? setStep(step - 1) : onClose())}
-            className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider" style={{ ...MONO, color: '#7BA2B5' }}>
+          <button type="button" disabled={busy} onClick={() => (step > 0 ? goTo(step - 1) : saveAndClose())}
+            className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider disabled:opacity-50" style={{ ...MONO, color: '#7BA2B5' }}>
             <ChevronLeft size={13} /> {step > 0 ? 'Back' : 'Home'}
           </button>
           <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GOLD }}>Profile {pct}%</span>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ color: '#7BA2B5' }}><X size={16} /></button>
+          <button type="button" onClick={saveAndClose} aria-label="Close" style={{ color: '#7BA2B5' }}><X size={16} /></button>
         </div>
 
         {/* Pasos (dots) */}
         <div className="flex gap-1.5">
           {STEPS.map((st, i) => (
-            <button key={st.key} type="button" onClick={() => setStep(i)} className="flex-1 rounded-full" style={{ height: 5, background: i <= step ? CYAN : 'rgba(255,255,255,.12)' }} aria-label={st.title} />
+            <button key={st.key} type="button" disabled={busy} onClick={() => goTo(i)} className="flex-1 rounded-full" style={{ height: 5, background: i <= step ? CYAN : 'rgba(255,255,255,.12)' }} aria-label={st.title} />
           ))}
         </div>
 
@@ -220,8 +243,8 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
         {s.key === 'body' && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Field k="height_cm" label="Height (cm)" type="number" placeholder="170" />
-              <Field k="weight_kg" label="Weight (kg)" type="number" placeholder="65" />
+              <Field f={f} set={set} k="height_cm" label="Height (cm)" type="number" placeholder="170" />
+              <Field f={f} set={set} k="weight_kg" label="Weight (kg)" type="number" placeholder="65" />
             </div>
             <div>
               <label className="block text-[9.5px] uppercase tracking-wider mb-1" style={labelStyle}>Blood type</label>
@@ -241,14 +264,14 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
         {/* ── Paso 3: documentos ── */}
         {s.key === 'docs' && (
           <div className="space-y-3">
-            <Field k="dui" label="ID / DUI" placeholder="00000000-0" />
+            <Field f={f} set={set} k="dui" label="ID / DUI" placeholder="00000000-0" />
             <div className="grid grid-cols-2 gap-3">
-              <Field k="passport_number" label="Passport #" />
-              <Field k="passport_expiry_date" label="Passport expiry" type="date" />
+              <Field f={f} set={set} k="passport_number" label="Passport #" />
+              <Field f={f} set={set} k="passport_expiry_date" label="Passport expiry" type="date" />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field k="insurance_provider" label="Insurance provider" placeholder="e.g. MAPFRE" />
-              <Field k="insurance_number" label="Policy #" />
+              <Field f={f} set={set} k="insurance_provider" label="Insurance provider" placeholder="e.g. MAPFRE" />
+              <Field f={f} set={set} k="insurance_number" label="Policy #" />
             </div>
             <p className="text-[10.5px]" style={{ color: '#5f7a8c' }}>🔒 Only your coaching team sees this — it&apos;s needed for trips and competitions.</p>
           </div>
@@ -258,30 +281,30 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
         {s.key === 'health' && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Field k="doctor_name" label="Doctor" />
-              <Field k="doctor_phone" label="Doctor phone" type="tel" />
+              <Field f={f} set={set} k="doctor_name" label="Doctor" />
+              <Field f={f} set={set} k="doctor_phone" label="Doctor phone" type="tel" />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field k="emergency_relationship" label="Emergency contact (who?)" placeholder="Mom / Dad / …" />
-              <Field k="emergency_phone_alt" label="Their phone" type="tel" />
+              <Field f={f} set={set} k="emergency_relationship" label="Emergency contact (who?)" placeholder="Mom / Dad / …" />
+              <Field f={f} set={set} k="emergency_phone_alt" label="Their phone" type="tel" />
             </div>
-            <Field k="medications" label="Medications (if any)" />
-            <Field k="injury" label="Current injury (if any)" />
+            <Field f={f} set={set} k="medications" label="Medications (if any)" />
+            <Field f={f} set={set} k="injury" label="Current injury (if any)" />
           </div>
         )}
 
         {/* ── Paso 5: metas ── */}
         {s.key === 'goals' && (
           <div className="space-y-3">
-            <Field k="goal_short_term" label="🎯 Short term · 1 month" placeholder="What do you want to win next?" />
-            <Field k="goal_mid_term" label="🚀 Mid term · 6 months" />
-            <Field k="goal_long_term" label="🌊 Long term · years" placeholder="Dream big." />
+            <Field f={f} set={set} k="goal_short_term" label="🎯 Short term · 1 month" placeholder="What do you want to win next?" />
+            <Field f={f} set={set} k="goal_mid_term" label="🚀 Mid term · 6 months" />
+            <Field f={f} set={set} k="goal_long_term" label="🌊 Long term · years" placeholder="Dream big." />
             <div>
               <label className="block text-[9.5px] uppercase tracking-wider mb-1" style={labelStyle}>🏆 Titles & results so far</label>
               <textarea value={f.palmares_historico ?? ''} onChange={(e) => set('palmares_historico', e.target.value)} rows={3}
                 className="w-full rounded-xl px-3 py-2.5 text-[13px]" style={inputStyle} />
             </div>
-            <Field k="sponsors" label="Sponsors" />
+            <Field f={f} set={set} k="sponsors" label="Sponsors" />
           </div>
         )}
 

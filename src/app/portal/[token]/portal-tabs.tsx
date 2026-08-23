@@ -291,7 +291,11 @@ export function PortalTabs({
   // entra y queda siempre a un toque en el botón del encabezado.
   const [guideOpen, setGuideOpen] = useState(false);
   useEffect(() => {
+    // Nunca por encima de un deep-link (encuesta, lección, drill): el alumno
+    // vino a algo puntual — la guía queda en el botón 📖.
+    if (initialTab || initialSurveyId || initialDrillId || initialStepId) return;
     try { if (!localStorage.getItem('tss_athlete_guide_v1')) setGuideOpen(true); } catch { /* sin localStorage, sin auto-open */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_athlete_guide_v1', '1'); } catch {} };
   const TABS = useMemo(
@@ -459,7 +463,7 @@ export function PortalTabs({
               <div>
                 <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
                   <Wind size={14} strokeWidth={1.75} />
-                  Respiración
+                  Breathing
                 </p>
                 <BreathingLauncher variant="light" />
               </div>

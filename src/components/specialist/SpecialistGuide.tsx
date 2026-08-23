@@ -64,7 +64,7 @@ export function SpecialistGuide({ roleKey, onClose }: { roleKey: string; onClose
 
         <Sec icon="🛠" title="Tus herramientas (dentro de cada atleta)">
           {canDiet && (
-            <Li k="🥗 Dieta">Dejás el plan del <strong style={{ color: '#eaf4fa' }}>microciclo</strong> (se mantiene toda la fase) y notas de <strong style={{ color: '#eaf4fa' }}>hoy</strong>. El atleta lo ve directo en su día, junto a su check-in.</Li>
+            <Li k="🥗 Dieta">Dejás el plan del <strong style={{ color: '#eaf4fa' }}>microciclo</strong> (se mantiene toda la fase) y notas de <strong style={{ color: '#eaf4fa' }}>hoy</strong>. El atleta lo ve directo en su día, junto a su check-in.{roleKey === 'head' ? ' (Como head, solo en las temporadas donde sos head coach.)' : ''}</Li>
           )}
           <Li k="📌 Tareas y sesiones online">Asignale trabajo con título, instrucciones, video (YouTube) y fecha límite. Le aparece en su Home y lo marca <strong style={{ color: '#eaf4fa' }}>Done ✓</strong> — vos ves cuándo lo hizo.</Li>
           <Li k="📅 Citas">Agendá sesiones presenciales o virtuales (físico, mental, técnico, nutrición, evaluación). Le llegan al calendario de su portal.</Li>

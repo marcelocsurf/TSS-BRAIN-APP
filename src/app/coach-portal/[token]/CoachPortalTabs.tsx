@@ -116,12 +116,16 @@ export function CoachPortalTabs({
   const [plannerOpen, setPlannerOpen] = useState(false);
   // Guía rápida integrada: se abre sola la primera vez, después queda en su botón.
   const [guideOpen, setGuideOpen] = useState(false);
-  useEffect(() => {
-    try { if (!localStorage.getItem('tss_coach_guide_v1')) setGuideOpen(true); } catch {}
-  }, []);
-  const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_coach_guide_v1', '1'); } catch {} };
   const { coach, stats } = data;
   const isSupport = (coach as any).portal_category === 'support';
+  useEffect(() => {
+    // El staff de apoyo (filmer, asistente) tiene otro portal reducido: la
+    // guía del coach describe tabs que ellos no ven — no se les auto-abre.
+    if (isSupport) return;
+    try { if (!localStorage.getItem('tss_coach_guide_v1')) setGuideOpen(true); } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_coach_guide_v1', '1'); } catch {} };
   const isSeller = (coach as any).role === 'seller';
   const canSell = !!(coach as any).portal_can_sell || isSeller;
 

@@ -50,20 +50,20 @@ export function AthleteGuide({ onClose }: { onClose: () => void }) {
           <Li k="Training / Free Surf">How your water time splits between guided training and free surfing.</Li>
         </Sec>
 
-        <Sec icon="📚" title="Course &amp; My Sequence">
-          <Li k="Course">Your level&apos;s lessons: technique, ocean knowledge and mindset. Short reads — do one whenever you have 5 minutes.</Li>
-          <Li k="My Sequence">The exact skills you&apos;re working on, straight from your coach&apos;s evaluations. Tap a drill to practice it.</Li>
+        <Sec icon="📚" title="Course">
+          <p>Your level&apos;s lessons: technique, ocean knowledge and mindset. Short reads — do one whenever you have 5 minutes.</p>
         </Sec>
 
-        <Sec icon="🏄" title="Let's Play — log your sessions">
-          <p>Surfed on your own? Trained at home? Log it here — it counts toward your hours and your coach sees it. The more honest the log, the better your coaching gets.</p>
+        <Sec icon="🏄" title="Let's Play — train &amp; log your sessions">
+          <Li k="My Sequence">The exact skills you&apos;re working on, straight from your coach&apos;s evaluations. Tap a drill to practice it.</Li>
+          <Li k="Log it">Surfed on your own? Trained at home? Log it here — it counts toward your hours and your coach sees it. The more honest the log, the better your coaching gets.</Li>
         </Sec>
 
         <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.08)', border: '1px solid rgba(255,209,102,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: GOLD }}>For athletes on a training program</p>
           <div className="space-y-1.5 text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
             <Li k="Your program">Three views: <strong style={{ color: '#eaf4fa' }}>TODAY</strong> (what to do right now), <strong style={{ color: '#eaf4fa' }}>WEEK</strong> (your full week) and <strong style={{ color: '#eaf4fa' }}>SEASON</strong> (the whole road to your competitions).</Li>
-            <Li k="Daily check-in">Takes 30 seconds: energy, sleep, soreness, nutrition, <strong style={{ color: '#eaf4fa' }}>hours surfed</strong>, whether you hit today&apos;s goal, and your focus. It feeds your <strong style={{ color: '#eaf4fa' }}>weekly ranking</strong> — consistency wins.</Li>
+            <Li k="Daily check-in">Takes 30 seconds: water, sleep, energy, what you ate, <strong style={{ color: '#eaf4fa' }}>hours surfed</strong>, whether you hit today&apos;s goal, and your focus. It feeds your <strong style={{ color: '#eaf4fa' }}>weekly ranking</strong> — consistency wins.</Li>
             <Li k="💬 My Team">One thread shared with your whole team — coach, psychologist, physical trainer, nutritionist. Everyone reads it. Use it.</Li>
             <Li k="🥗 & 📌 From your team">Your nutrition plan and any tasks or video sessions your team leaves for you show up right on your Home. Mark them <strong style={{ color: '#eaf4fa' }}>Done ✓</strong>.</Li>
             <Li k="🪪 Your athlete profile">Fill it once, keep it at 100% — passport, insurance, emergency contact. It&apos;s what travels with you to every competition.</Li>

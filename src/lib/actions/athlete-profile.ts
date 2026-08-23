@@ -56,11 +56,15 @@ async function resolveEligibleStudent(portalToken: string) {
 
   // Elegible = línea Alto Rendimiento: temporada activa, programa activo o
   // ficha HP ya existente. Los ~2.700 alumnos regulares no ven la tarjeta.
-  const [{ data: season }, { data: asg }, { data: profile, error: pErr }] = await Promise.all([
+  const [{ data: season, error: sErr }, { data: asg, error: aErr }, { data: profile, error: pErr }] = await Promise.all([
     admin.from('season_plans').select('id').eq('student_id', student.id).eq('active', true).limit(1).maybeSingle(),
     admin.from('program_assignments').select('id').eq('student_id', student.id).eq('status', 'active').limit(1).maybeSingle(),
     admin.from('hp_athlete_profiles').select('*').eq('student_id', student.id).maybeSingle(),
   ]);
+  // Un fallo transitorio acá NO puede degradar a "no elegible": la tarjeta
+  // desaparecería y los guardados fallarían en silencio para un atleta real.
+  if (sErr) throw sErr;
+  if (aErr) throw aErr;
   if (pErr) throw pErr;
   if (!season && !asg && !profile) return null;
   return { admin, student, profile };
@@ -132,7 +136,8 @@ export async function saveMyAthleteProfile(
       .upsert({ student_id: student.id, ...clean, updated_at: new Date().toISOString() }, { onConflict: 'student_id' });
     if (error) throw error;
 
-    const { data: fresh } = await admin.from('hp_athlete_profiles').select('*').eq('student_id', student.id).maybeSingle();
+    const { data: fresh, error: fErr } = await admin.from('hp_athlete_profiles').select('*').eq('student_id', student.id).maybeSingle();
+    if (fErr) throw fErr; // sin re-lectura confiable, mejor error que pct=0 fantasma
     const check = checklist(fresh);
     const done = check.filter((c) => c.ok).length;
     return { ok: true, pct: Math.round((done / check.length) * 100), missing: check.filter((c) => !c.ok).map((c) => c.label) };
@@ -155,15 +160,27 @@ export async function uploadMyAvatar(
 
     const file = formData.get('file') as File | null;
     if (!file || typeof file === 'string') return { ok: false, error: 'Pick a photo first.' };
-    if (!file.type.startsWith('image/')) return { ok: false, error: 'Only images are allowed.' };
     if (file.size > 5 * 1024 * 1024) return { ok: false, error: 'Max 5MB — try a smaller photo.' };
 
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    // Allowlist estricta: file.type viene del cliente y un SVG con <script>
+    // servido como image/svg+xml desde el bucket público es XSS almacenado.
+    // El contentType se deriva ACÁ, nunca del request.
+    const MIME_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+      'image/heic': 'heic', 'image/heif': 'heif',
+    };
+    const ext = MIME_EXT[file.type];
+    if (!ext) return { ok: false, error: 'Use a JPG, PNG or phone photo.' };
     const path = `students/${(student as any).id}.${ext}`;
     const buf = Buffer.from(await file.arrayBuffer());
 
     const { error: upErr } = await admin.storage.from('avatars').upload(path, buf, { upsert: true, contentType: file.type });
     if (upErr) throw upErr;
+    // Fotos previas con otra extensión quedarían públicas para siempre:
+    // se limpian best-effort (nada de esto puede tumbar el upload que ya salió).
+    const others = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'svg'].filter((e) => e !== ext)
+      .map((e) => `students/${(student as any).id}.${e}`);
+    try { await admin.storage.from('avatars').remove(others); } catch { /* best-effort */ }
     const { data: pub } = admin.storage.from('avatars').getPublicUrl(path);
     const url = `${pub.publicUrl}?t=${Date.now()}`;
 

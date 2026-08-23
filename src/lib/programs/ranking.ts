@@ -122,13 +122,12 @@ export async function computeWeekRanking(
     markedDays.add(key);
     pts.set(student, (pts.get(student) ?? 0) + 30);
   }
-  const checkinDays = new Set<string>(); // dedup por si dos asignaciones comparten fecha
+  // Dos asignaciones con check-in la misma fecha: gana el MEJOR documentado
+  // (máximo de puntos) — determinístico, sin depender del orden del query.
+  const checkinBest = new Map<string, number>(); // `${student}|${fecha}` → p
   for (const c of checkins.data ?? []) {
     const student = asgToStudent.get(c.assignment_id);
     if (!student) continue;
-    const key = `${student}|${c.checkin_date}`;
-    if (checkinDays.has(key)) continue;
-    checkinDays.add(key);
     let p = 10; // check-in hecho
     p += sleepPts(c.sleep_hours != null ? Number(c.sleep_hours) : null);
     p += waterPts(c.water_glasses);
@@ -138,6 +137,11 @@ export async function computeWeekRanking(
     if (c.goal_achieved === 'si') p += 8;
     else if (c.goal_achieved === 'parcial') p += 4;
     p += Math.min(4, (c.focus ?? 0));
+    const key = `${student}|${c.checkin_date}`;
+    if (p > (checkinBest.get(key) ?? 0)) checkinBest.set(key, p);
+  }
+  for (const [key, p] of checkinBest) {
+    const student = key.slice(0, key.indexOf('|'));
     pts.set(student, (pts.get(student) ?? 0) + p);
   }
 

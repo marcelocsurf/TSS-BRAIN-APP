@@ -377,8 +377,8 @@ export async function saveProgramCheckin(
         water_glasses: water ?? null,
         sleep_hours: sleep ?? null,
         energy: energy ?? null,
-        comment: (input.comment ?? '').trim() || null,
-        nutrition: (input.nutrition ?? '').trim() || null,
+        comment: (input.comment ?? '').trim().slice(0, 1000) || null,
+        nutrition: (input.nutrition ?? '').trim().slice(0, 1000) || null,
         surf_hours: surf ?? null,
         focus: input.focus ?? null,
         goal_achieved: input.goal_achieved ?? null,
@@ -391,30 +391,38 @@ export async function saveProgramCheckin(
     // ficha (self_training_sessions → computeSurfSplit). Idempotente por día:
     // el tag en notes identifica la fila del check-in y se actualiza si el
     // atleta corrige. Best-effort — el check-in ya quedó guardado.
-    if (surf != null) {
-      try {
-        const tag = `checkin:${assignment.id}:${today}`;
-        const minutes = Math.round(Number(surf) * 60);
-        const { data: existing } = await admin
-          .from('self_training_sessions').select('id')
-          .eq('student_id', studentId).eq('notes', tag).maybeSingle();
-        if (existing) {
-          await admin.from('self_training_sessions')
-            .update({ duration_minutes: minutes, total_water_minutes: minutes })
-            .eq('id', (existing as any).id);
-        } else if (minutes > 0) {
-          await admin.from('self_training_sessions').insert({
-            student_id: studentId,
-            drill_name: 'Surf · daily check-in',
-            duration_minutes: minutes,
-            total_water_minutes: minutes,
-            completed: true,
-            notes: tag,
-          });
-        }
-      } catch (e2) {
-        console.error('[programs] checkin surf-hours bridge failed', e2);
+    // undefined = el cliente no mandó el campo (no tocar); null/0 = lo limpió.
+    if (input.surf_hours !== undefined) try {
+      const minutes = surf == null ? 0 : Math.round(Number(surf) * 60);
+      // Se busca por checkin:%:{fecha} (no por asignación): si el atleta rotó
+      // de programa el mismo día, o un doble guardado dejó dos filas, acá se
+      // consolidan en una sola — y surf en null/0 la elimina (des-sincronizar
+      // horas era peor que la fila extra).
+      const tagToday = `checkin:%:${today}`;
+      const { data: rows } = await admin
+        .from('self_training_sessions').select('id')
+        .eq('student_id', studentId).like('notes', tagToday)
+        .order('created_at', { ascending: true });
+      const ids = (rows ?? []).map((r: any) => r.id);
+      if (minutes <= 0) {
+        if (ids.length) await admin.from('self_training_sessions').delete().in('id', ids);
+      } else if (ids.length) {
+        await admin.from('self_training_sessions')
+          .update({ duration_minutes: minutes, total_water_minutes: minutes, notes: `checkin:${assignment.id}:${today}` })
+          .eq('id', ids[0]);
+        if (ids.length > 1) await admin.from('self_training_sessions').delete().in('id', ids.slice(1));
+      } else {
+        await admin.from('self_training_sessions').insert({
+          student_id: studentId,
+          drill_name: 'Surf · daily check-in',
+          duration_minutes: minutes,
+          total_water_minutes: minutes,
+          completed: true,
+          notes: `checkin:${assignment.id}:${today}`,
+        });
       }
+    } catch (e2) {
+      console.error('[programs] checkin surf-hours bridge failed', e2);
     }
     return { ok: true };
   } catch (e) {
@@ -811,31 +819,40 @@ export async function getMyTodayExtras(portalToken: string): Promise<{ ok: boole
       // Sin programa activo: igual mostrar tareas abiertas del staff.
       const base = await resolveStudentByToken(portalToken);
       if (!base) return { ok: true, data: null };
-      const { data: tasks } = await base.admin
+      const { data: tasks, error: tErr } = await base.admin
         .from('athlete_staff_tasks').select('id, kind, title, body, video_url, due_date')
         .eq('student_id', base.student.id).eq('done', false).order('created_at', { ascending: false }).limit(6);
+      if (tErr) throw tErr;
       if (!(tasks ?? []).length) return { ok: true, data: null };
       return { ok: true, data: { diet_micro: null, diet_today: null, tasks: (tasks ?? []) as any } };
     }
     const { admin, studentId, assignment } = ctx;
 
     // Micro actual: primer día sin marcar.
-    const [{ data: days }, { data: marks }] = await Promise.all([
+    const [{ data: days, error: dErr }, { data: marks, error: mErr }] = await Promise.all([
       admin.from('program_days').select('id, week_number, day_number').eq('program_id', (assignment as any).program_id),
       admin.from('program_day_marks').select('day_id').eq('assignment_id', (assignment as any).id),
     ]);
+    // Errores tragados acá = dieta del micro EQUIVOCADO o tarjeta vacía en
+    // silencio (invariante #2 del proyecto).
+    if (dErr) throw dErr;
+    if (mErr) throw mErr;
     const done = new Set((marks ?? []).map((m: any) => m.day_id));
     const cur = (days ?? []).slice().sort((a: any, b: any) => a.week_number - b.week_number || a.day_number - b.day_number).find((d: any) => !done.has(d.id));
     const curWeek = cur?.week_number ?? null;
     const today = elSalvadorToday();
 
-    const [{ data: dietMicro }, { data: dietDay }, { data: tasks }] = await Promise.all([
+    const [dmRes, ddRes, tkRes] = await Promise.all([
       curWeek != null
         ? admin.from('athlete_diet_notes').select('body').eq('student_id', studentId).eq('scope', 'micro').eq('week_number', curWeek).order('created_at', { ascending: false }).limit(1).maybeSingle()
-        : Promise.resolve({ data: null as any }),
+        : Promise.resolve({ data: null as any, error: null as any }),
       admin.from('athlete_diet_notes').select('body').eq('student_id', studentId).eq('scope', 'day').eq('note_date', today).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       admin.from('athlete_staff_tasks').select('id, kind, title, body, video_url, due_date').eq('student_id', studentId).eq('done', false).order('created_at', { ascending: false }).limit(6),
     ]);
+    if (dmRes.error) throw dmRes.error;
+    if (ddRes.error) throw ddRes.error;
+    if (tkRes.error) throw tkRes.error;
+    const dietMicro = dmRes.data, dietDay = ddRes.data, tasks = tkRes.data;
 
     const data: MyTodayExtras = {
       diet_micro: (dietMicro as any)?.body ?? null,

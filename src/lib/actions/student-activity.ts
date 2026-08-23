@@ -68,7 +68,11 @@ export async function getStudentActivitySummary(
     const selfSessions = self.data ?? [];
     // Históricos HP: cuentan en HORAS, no en timeline/contadores (16/20
     // atletas veían la Bitácora 12/12 "Entreno HP" — revisión 2026-08-23).
-    const selfVisible = selfSessions.filter((s: any) => !String(s.notes ?? '').startsWith('hp:checkin:'));
+    const selfVisible = selfSessions.filter((s: any) => {
+      const n = String(s.notes ?? '');
+      // checkin: = puente de horas del check-in diario (misma regla que hp:).
+      return !n.startsWith('hp:checkin:') && !n.startsWith('checkin:');
+    });
 
     const hours = computeSurfSplit(coachSessions, selfSessions);
 

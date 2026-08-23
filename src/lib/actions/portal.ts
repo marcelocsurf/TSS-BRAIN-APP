@@ -116,7 +116,12 @@ export async function getStudentPortalData(token: string) {
   // Entrenos históricos migrados del app HP viejo: SÍ suman horas (fórmula
   // única), pero NO inundan las listas visibles (76 tarjetas "Entreno HP"
   // enterraban las sesiones reales — hallazgo de la revisión).
-  const selfVisible = selfSessions.filter((s: any) => !String(s.notes ?? '').startsWith('hp:checkin:'));
+  const selfVisible = selfSessions.filter((s: any) => {
+    const n = String(s.notes ?? '');
+    // hp:checkin: = histórico migrado · checkin: = puente de horas del
+    // check-in diario. Ambos suman horas pero no son "sesiones" visibles.
+    return !n.startsWith('hp:checkin:') && !n.startsWith('checkin:');
+  });
   const totalSessions = coachSessions.length + selfSessions.length;
   const selfTrainingCount = selfSessions.filter((s: any) => s.completed).length;
 
