@@ -2864,13 +2864,15 @@ export async function saveDayLogisticsByToken(
       const existing = planByS.get(sid);
       if (existing?.completion_state === 'closed') continue; // día cerrado: no tocar
       if (existing) {
-        await admin.from('service_plans').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+        const { error } = await admin.from('service_plans').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+        if (error) return { ok: false, error: `No se pudo guardar (${error.message}).` };
       } else {
-        await admin.from('service_plans').insert({
+        const { error } = await admin.from('service_plans').insert({
           camp_instance_id: (session as any).camp_instance_id,
           camp_session_id: sid,
           ...patch,
         });
+        if (error) return { ok: false, error: `No se pudo guardar (${error.message}).` };
       }
       applied++;
     }

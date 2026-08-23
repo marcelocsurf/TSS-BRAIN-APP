@@ -181,12 +181,19 @@ function CellEditor({ kind, day, data, token, busy, setBusy, onSaved, onCloseEdi
       kind === 'clase' ? { class_start_time: clase || null }
       : kind === 'lugar' ? { surf_venue: lugar.trim() || null }
       : { transport_needed: tNeeded, transport_depart: tNeeded ? tDep || null : null, transport_return: tNeeded ? tRet || null : null };
+    // Reporte de Bauti 2026-08-23: un corte de red dejaba busy=true para
+    // siempre y TODOS los Guardar quedaban muertos — finally obligatorio.
     setBusy(true);
-    const r = await saveDayLogisticsByToken(token, day.camp_session_id, patch, applyWeek);
-    setBusy(false);
-    if (!r.ok) { alert(r.error || 'No se pudo guardar.'); return; }
-    onSaved(applyWeek ? `✓ Aplicado a ${r.days} días` : '✓ Guardado');
-    if (!applyWeek) onCloseEditor();
+    try {
+      const r = await saveDayLogisticsByToken(token, day.camp_session_id, patch, applyWeek);
+      if (!r.ok) { alert(r.error || 'No se pudo guardar. Revisá tu señal y reintentá.'); return; }
+      onSaved(applyWeek ? `✓ Aplicado a ${r.days} días` : '✓ Guardado');
+      if (!applyWeek) onCloseEditor();
+    } catch {
+      alert('Sin conexión — no se guardó. Reintentá.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const header = `${dayLabel(day)} · ${ROWS.find((r) => r.kind === kind)?.label}`;
@@ -240,10 +247,15 @@ function CellEditor({ kind, day, data, token, busy, setBusy, onSaved, onCloseEdi
                       onClick={async () => {
                         if (!confirm('¿Cancelar esta reserva?')) return;
                         setBusy(true);
-                        const r = await cancelBookingByToken(token, s.id);
-                        setBusy(false);
-                        if (!r.ok) { alert(r.error || 'No se pudo cancelar.'); return; }
-                        onSaved('✓ Reserva cancelada');
+                        try {
+                          const r = await cancelBookingByToken(token, s.id);
+                          if (!r.ok) { alert(r.error || 'No se pudo cancelar.'); return; }
+                          onSaved('✓ Reserva cancelada');
+                        } catch {
+                          alert('Sin conexión — reintentá.');
+                        } finally {
+                          setBusy(false);
+                        }
                       }}
                       className="text-[10px] text-rose-500 hover:text-rose-700">✕</button>
                   )}
@@ -262,14 +274,19 @@ function CellEditor({ kind, day, data, token, busy, setBusy, onSaved, onCloseEdi
             <button type="button" disabled={busy || !spaceId || !spStart || !spEnd}
               onClick={async () => {
                 setBusy(true);
-                const r = await createBookingByToken(token, {
-                  spaceId, date: day.session_date, startTime: spStart, endTime: spEnd,
-                  title: data.campName ?? undefined,
-                });
-                setBusy(false);
-                if (!r.ok) { alert(r.error || 'No se pudo reservar.'); return; }
-                setSpaceId(''); setSpStart(''); setSpEnd('');
-                onSaved('✓ Espacio reservado');
+                try {
+                  const r = await createBookingByToken(token, {
+                    spaceId, date: day.session_date, startTime: spStart, endTime: spEnd,
+                    title: data.campName ?? undefined,
+                  });
+                  if (!r.ok) { alert(r.error || 'No se pudo reservar.'); return; }
+                  setSpaceId(''); setSpStart(''); setSpEnd('');
+                  onSaved('✓ Espacio reservado');
+                } catch {
+                  alert('Sin conexión — reintentá.');
+                } finally {
+                  setBusy(false);
+                }
               }}
               className="rounded-full px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-40" style={{ background: 'var(--tss-navy)' }}>
               Reservar
@@ -296,15 +313,20 @@ function CellEditor({ kind, day, data, token, busy, setBusy, onSaved, onCloseEdi
                     const v = e.target.value;
                     const inv = data.availableBoards.find((b) => b.id === v);
                     setBusy(true);
-                    const r = await setStudentDayBoardByToken(token, day.camp_session_id, st.student_id, {
-                      board_id: inv?.id ?? null,
-                      board_type: inv ? (inv.board_type ?? null) : v.startsWith('type:') ? v.slice(5) : null,
-                      board_size_feet: inv?.length_feet ?? null,
-                      board_size_inches: inv?.length_inches ?? null,
-                    });
-                    setBusy(false);
-                    if (!r.ok) { alert(r.error || 'No se pudo asignar.'); return; }
-                    onSaved(`✓ Tabla de ${st.display_name.split(' ')[0]}`);
+                    try {
+                      const r = await setStudentDayBoardByToken(token, day.camp_session_id, st.student_id, {
+                        board_id: inv?.id ?? null,
+                        board_type: inv ? (inv.board_type ?? null) : v.startsWith('type:') ? v.slice(5) : null,
+                        board_size_feet: inv?.length_feet ?? null,
+                        board_size_inches: inv?.length_inches ?? null,
+                      });
+                      if (!r.ok) { alert(r.error || 'No se pudo asignar.'); return; }
+                      onSaved(`✓ Tabla de ${st.display_name.split(' ')[0]}`);
+                    } catch {
+                      alert('Sin conexión — reintentá.');
+                    } finally {
+                      setBusy(false);
+                    }
                   }}
                   className="text-[11px] px-2 py-1.5 rounded-lg border border-gray-200 max-w-[46%]"
                 >
@@ -324,15 +346,20 @@ function CellEditor({ kind, day, data, token, busy, setBusy, onSaved, onCloseEdi
                   onClick={async () => {
                     const inv = data.availableBoards.find((b) => b.id === curVal);
                     setBusy(true);
-                    const r = await applyStudentBoardToWeek(token, day.camp_session_id, st.student_id, {
-                      board_id: inv?.id ?? null,
-                      board_type: inv ? (inv.board_type ?? null) : curVal.startsWith('type:') ? curVal.slice(5) : null,
-                      board_size_feet: inv?.length_feet ?? null,
-                      board_size_inches: inv?.length_inches ?? null,
-                    });
-                    setBusy(false);
-                    if (!r.ok) { alert(r.error || 'No se pudo aplicar.'); return; }
-                    onSaved(`✓ Semana entera para ${st.display_name.split(' ')[0]}${r.skipped ? ` (${r.skipped} días con choque, sin tabla)` : ''}`);
+                    try {
+                      const r = await applyStudentBoardToWeek(token, day.camp_session_id, st.student_id, {
+                        board_id: inv?.id ?? null,
+                        board_type: inv ? (inv.board_type ?? null) : curVal.startsWith('type:') ? curVal.slice(5) : null,
+                        board_size_feet: inv?.length_feet ?? null,
+                        board_size_inches: inv?.length_inches ?? null,
+                      });
+                      if (!r.ok) { alert(r.error || 'No se pudo aplicar.'); return; }
+                      onSaved(`✓ Semana entera para ${st.display_name.split(' ')[0]}${r.skipped ? ` (${r.skipped} días con choque, sin tabla)` : ''}`);
+                    } catch {
+                      alert('Sin conexión — reintentá.');
+                    } finally {
+                      setBusy(false);
+                    }
                   }}
                   className="text-[10px] font-bold px-2 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-[var(--tss-cyan,#5AC3E7)] disabled:opacity-30 shrink-0">
                   ⇥ Semana
