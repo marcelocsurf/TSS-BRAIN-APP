@@ -36,6 +36,7 @@ import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
 import { AthleteScoreCard } from '@/components/portal/AthleteScoreCard';
 import { TeamWallCard } from '@/components/portal/TeamWallCard';
+import { TodayExtras } from '@/components/portal/TodayExtras';
 import { CompetitionCard } from '@/components/portal/CompetitionCard';
 import { CoachMessagesCard } from '@/components/portal/CoachMessagesCard';
 import { AppointmentCard } from '@/components/portal/AppointmentCard';
@@ -712,6 +713,9 @@ function HomeTab({
           <AthleteScoreCard token={data.token} />
           <CompetitionCard token={data.token} />
           <CoachMessagesCard token={data.token} />
+          {/* Lo que el staff deja para HOY (dieta + sesiones) — visible aunque
+              no tenga programa activo (hallazgo: quedaban invisibles). */}
+          <TodayExtras token={data.token} />
           {/* Muro del EQUIPO (staff + atleta) — solo con temporada activa. */}
           <TeamWallCard token={data.token} />
 

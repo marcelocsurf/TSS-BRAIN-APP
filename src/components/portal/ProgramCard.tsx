@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronLeft, Lock, Play, X } from 'lucide-react';
 import { SeasonTimeline } from '@/components/portal/SeasonTimeline';
-import { TodayExtras } from '@/components/portal/TodayExtras';
 import {
   getMyProgram,
   markProgramItem,
@@ -265,8 +264,6 @@ function ProgramViewer({
               onCompleteDay={completeDay}
             />
 
-            {/* F3: lo que el staff deja para HOY — dieta y sesiones online. */}
-            <TodayExtras token={token} />
           </>
         ) : (
         <>

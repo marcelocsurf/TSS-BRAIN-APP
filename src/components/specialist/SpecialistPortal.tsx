@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getSpecialistHome, getSpecialistAthlete, specialistPostWall, specialistSaveDiet, specialistCreateTask,
+  specialistCreateAppointment,
   type SpecialistHome, type SpecialistAthlete,
 } from '@/lib/actions/specialist';
-import { coachCreateAppointmentHP } from '@/lib/actions/program-coach';
+
 
 // ═══ PORTAL DEL EQUIPO HP — Brand v10 (ink #061C2B · cyan #00D2FF · gold #FFD166) ═══
 // Staff-facing → español. Cada especialista ve SUS atletas y sus herramientas.
@@ -456,7 +457,7 @@ function CitaCreator({ token, data, onChanged }: { token: string; data: Speciali
 
   const save = async () => {
     setMsg(null); setBusy(true);
-    const r = await coachCreateAppointmentHP(token, { seasonId: data.season.id, kind: kind as any, mode: 'presencial', date, time: time || null, title: null });
+    const r = await specialistCreateAppointment(token, data.student.id, { kind: kind as any, mode: 'presencial', date, time: time || null, title: null });
     setBusy(false);
     if (!r.ok) { setMsg(r.error ?? 'Error'); return; }
     setDate(''); setTime(''); setOpen(false);

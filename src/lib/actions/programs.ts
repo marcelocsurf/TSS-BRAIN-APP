@@ -699,7 +699,7 @@ export async function getMyTeamWall(portalToken: string): Promise<{ ok: boolean;
     const ctx = await resolveStudentByToken(portalToken);
     if (!ctx) return { ok: true, data: null };
     const { admin, student } = ctx;
-    const [{ data: posts }, { data: season }] = await Promise.all([
+    const [{ data: posts, error: pErr }, { data: season, error: seErr }] = await Promise.all([
       admin.from('athlete_team_posts')
         .select('id, body, created_at, author_student_id, author_coach_id, coaches:author_coach_id(display_name, specialist_role)')
         .eq('student_id', student.id)
@@ -707,6 +707,8 @@ export async function getMyTeamWall(portalToken: string): Promise<{ ok: boolean;
         .limit(30),
       admin.from('season_plans').select('id').eq('student_id', student.id).eq('active', true).limit(1).maybeSingle(),
     ]);
+    if (pErr) throw pErr;
+    if (seErr) throw seErr;
     if (!season && (posts ?? []).length === 0) return { ok: true, data: null };
     const ROLE_TAG: Record<string, string> = { psicologo: 'Mind', fisico: 'Physical', nutricionista: 'Nutrition' };
     return {

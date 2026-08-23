@@ -77,7 +77,7 @@ export async function getSpecialistHome(token: string): Promise<{ ok: boolean; d
       studentIds.length ? admin.from('students').select('id, first_name, last_name, nickname, photo_url, belt_level').in('id', studentIds) : Promise.resolve({ data: [] as any[] }),
       studentIds.length ? admin.from('athlete_competitions').select('student_id, name, comp_date').in('student_id', studentIds).gte('comp_date', today).order('comp_date') : Promise.resolve({ data: [] as any[] }),
       studentIds.length ? admin.from('program_appointments').select('student_id, kind, appointment_date').in('student_id', studentIds).gte('appointment_date', today).neq('status', 'cancelled').order('appointment_date') : Promise.resolve({ data: [] as any[] }),
-      studentIds.length ? admin.from('program_assignments').select('student_id, id, start_date, status').in('student_id', studentIds).eq('status', 'active') : Promise.resolve({ data: [] as any[] }),
+      studentIds.length ? admin.from('program_assignments').select('student_id, id, program_id, start_date, status').in('student_id', studentIds).eq('status', 'active') : Promise.resolve({ data: [] as any[] }),
     ]);
     const stuById = new Map((students ?? []).map((s: any) => [s.id, s]));
     const nextCompBy = new Map<string, any>();
@@ -89,7 +89,7 @@ export async function getSpecialistHome(token: string): Promise<{ ok: boolean; d
     const posBy = new Map<string, string>();
     for (const asg of asgs ?? []) {
       const [{ data: days }, { data: marks }] = await Promise.all([
-        admin.from('program_days').select('id, week_number, day_number').eq('program_id', (await admin.from('program_assignments').select('program_id').eq('id', asg.id).maybeSingle()).data?.program_id ?? ''),
+        admin.from('program_days').select('id, week_number, day_number').eq('program_id', asg.program_id),
         admin.from('program_day_marks').select('day_id').eq('assignment_id', asg.id),
       ]);
       const done = new Set((marks ?? []).map((m: any) => m.day_id));
@@ -97,7 +97,12 @@ export async function getSpecialistHome(token: string): Promise<{ ok: boolean; d
       posBy.set(asg.student_id, cur ? `M${cur.week_number} · D${cur.day_number}` : 'Completed ✓');
     }
 
-    const athletes = seasons.map((s: any) => {
+    const seenStudents = new Set<string>();
+    const athletes = seasons.filter((s: any) => {
+      if (seenStudents.has(s.student_id)) return false;
+      seenStudents.add(s.student_id);
+      return true;
+    }).map((s: any) => {
       const st = stuById.get(s.student_id);
       const comp = nextCompBy.get(s.student_id);
       const appt = nextApptBy.get(s.student_id);
@@ -247,8 +252,11 @@ export async function specialistSaveDiet(
     if (text.length > 3000) return { ok: false, error: 'Máximo 3000 caracteres.' };
     const ctx = await resolveSpecialist(token);
     if (!ctx) return { ok: false, error: 'Sin acceso.' };
-    if (!seasonForStudent(ctx, studentId)) return { ok: false, error: 'Este atleta no está en tus temporadas.' };
-    const canDiet = ctx.coach.specialist_role === 'nutricionista' || ctx.roleKey === 'head';
+    const season = seasonForStudent(ctx, studentId);
+    if (!season) return { ok: false, error: 'Este atleta no está en tus temporadas.' };
+    // Permiso POR TEMPORADA: nutricionista, o head de ESTA temporada (no de
+    // cualquier otra — hallazgo de la revisión).
+    const canDiet = ctx.coach.specialist_role === 'nutricionista' || (season as any).my_role === 'head';
     if (!canDiet) return { ok: false, error: 'Solo la nutricionista (o el head coach) edita la dieta.' };
     if (input.scope === 'micro' && (!input.week_number || input.week_number < 1 || input.week_number > 52)) return { ok: false, error: 'Elegí el microciclo.' };
     if (input.scope === 'day' && !/^\d{4}-\d{2}-\d{2}$/.test(input.note_date ?? '')) return { ok: false, error: 'Elegí el día.' };
@@ -297,5 +305,39 @@ export async function specialistCreateTask(
   } catch (e) {
     console.error('[specialist] task failed', e);
     return { ok: false, error: 'No se pudo crear la sesión.' };
+  }
+}
+
+// ─── Citas desde /equipo: gate por VÍNCULO DE TEMPORADA (la revisión atrapó
+// que coachCreateAppointmentHP exige E1 — curso + escalón — y rechazaba a
+// todos los especialistas externos, y hasta al head con escalón 0). ───
+export async function specialistCreateAppointment(
+  token: string,
+  studentId: string,
+  input: { kind: 'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro'; mode: 'online' | 'presencial'; date: string; time?: string | null; title?: string | null },
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!['fisico', 'mental', 'tecnico', 'nutricion', 'evaluacion', 'otro'].includes(input.kind)) return { ok: false, error: 'Tipo inválido.' };
+    if (!['online', 'presencial'].includes(input.mode)) return { ok: false, error: 'Modo inválido.' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { ok: false, error: 'La fecha no es válida.' };
+    if (input.time && !/^\d{2}:\d{2}$/.test(input.time)) return { ok: false, error: 'La hora no es válida.' };
+    if (input.date < elSalvadorToday()) return { ok: false, error: 'La cita no puede ser en el pasado.' };
+    const ctx = await resolveSpecialist(token);
+    if (!ctx) return { ok: false, error: 'Sin acceso.' };
+    if (!seasonForStudent(ctx, studentId)) return { ok: false, error: 'Este atleta no está en tus temporadas.' };
+    const { error } = await ctx.admin.from('program_appointments').insert({
+      student_id: studentId,
+      coach_id: ctx.coach.id,
+      kind: input.kind,
+      mode: input.mode,
+      title: input.title?.trim() || null,
+      appointment_date: input.date,
+      appointment_time: input.time || null,
+    });
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) {
+    console.error('[specialist] appointment failed', e);
+    return { ok: false, error: 'No se pudo agendar la cita.' };
   }
 }
