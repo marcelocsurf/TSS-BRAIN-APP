@@ -584,7 +584,7 @@ export async function markMyMessagesRead(portalToken: string): Promise<{ ok: boo
 export interface MyAthleteScores {
   pillars: { fis: number | null; tec: number | null; tac: number | null; men: number | null };
   global: number | null;
-  score_capacity: string | null;
+  score_capacity: number | null;
   eval_date: string | null;
   eval_kind: string | null;
 }
@@ -639,7 +639,7 @@ export async function getMyAthleteScores(
       data: {
         pillars,
         global: withVal.length ? Math.round((withVal.reduce((a, b) => a + b, 0) / withVal.length) * 10) / 10 : null,
-        score_capacity: (profile as any)?.score_capacity ?? null,
+        score_capacity: (profile as any)?.score_capacity != null ? Number((profile as any).score_capacity) : null,
         eval_date: evalRow?.created_at ? String(evalRow.created_at).slice(0, 10) : null,
         eval_kind: (evalRow as any)?.eval_kind ?? null,
       },

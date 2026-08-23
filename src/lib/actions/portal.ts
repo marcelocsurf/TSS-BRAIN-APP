@@ -113,6 +113,10 @@ export async function getStudentPortalData(token: string) {
   // 5. Compute quick stats
   const coachSessions = sessions || [];
   const selfSessions = selfTrainingSessions || [];
+  // Entrenos históricos migrados del app HP viejo: SÍ suman horas (fórmula
+  // única), pero NO inundan las listas visibles (76 tarjetas "Entreno HP"
+  // enterraban las sesiones reales — hallazgo de la revisión).
+  const selfVisible = selfSessions.filter((s: any) => !String(s.notes ?? '').startsWith('hp:checkin:'));
   const totalSessions = coachSessions.length + selfSessions.length;
   const selfTrainingCount = selfSessions.filter((s: any) => s.completed).length;
 
@@ -129,7 +133,7 @@ export async function getStudentPortalData(token: string) {
   // Drills practiced (unique names from self-training)
   const drillsPracticed = [
     ...new Set(
-      selfSessions
+      selfVisible
         .filter((s: any) => s.completed && s.drill_name)
         .map((s: any) => s.drill_name as string)
     ),
@@ -147,7 +151,7 @@ export async function getStudentPortalData(token: string) {
       });
     }
   }
-  for (const s of selfSessions) {
+  for (const s of selfVisible) {
     if (s.completed && s.drill_name) {
       recentDrills.push({
         name: s.drill_name,
@@ -370,7 +374,7 @@ export async function getStudentPortalData(token: string) {
   return {
     student,
     sessions: coachSessions,
-    selfTrainingSessions: selfSessions,
+    selfTrainingSessions: selfVisible,
     surveyResultIds: Array.from(surveyResultIds),
     hasSurveyEver,
     totalSessions,

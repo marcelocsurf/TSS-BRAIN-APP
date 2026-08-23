@@ -126,6 +126,8 @@ function ProgramViewer({
   const [view, setView] = useState<'today' | 'week'>(currentDay ? 'today' : 'week');
 
   const currentWeek = data.position?.week ?? data.weeks;
+  // El header de microciclo sigue a la VISTA: en today, el micro del día
+  // actual (no el estado del selector de semanas, que puede quedar en otra).
   const weekNumbers = useMemo(
     () => Array.from(new Set(data.days.map((d) => d.week_number))).sort((a, b) => a - b),
     [data.days]
@@ -137,6 +139,7 @@ function ProgramViewer({
   useEffect(() => {
     setWeek(currentWeek);
   }, [currentWeek]);
+  const headerWeek = view === 'today' && currentDay ? currentDay.week_number : week;
   const weekDays = data.days.filter((d) => d.week_number === week);
   const weekDone = (w: number) => data.days.filter((d) => d.week_number === w).every((d) => d.done);
 
@@ -198,17 +201,17 @@ function ProgramViewer({
           <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#7BA2B5' }}>
             Today is {new Date(data.today + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </p>
-          {(data.week_labels?.[String(week)] || data.week_meta?.[String(week)]) && (
+          {(data.week_labels?.[String(headerWeek)] || data.week_meta?.[String(headerWeek)]) && (
             <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#FFD166' }}>
-              Microcycle {week}
-              {data.week_labels?.[String(week)] ? ` · ${data.week_labels[String(week)]}` : ''}
-              {data.week_meta?.[String(week)]?.type ? ` · ${data.week_meta[String(week)].type}` : ''}
-              {data.week_meta?.[String(week)]?.intensity ? ` · ${data.week_meta[String(week)].intensity}` : ''}
+              Microcycle {headerWeek}
+              {data.week_labels?.[String(headerWeek)] ? ` · ${data.week_labels[String(headerWeek)]}` : ''}
+              {data.week_meta?.[String(headerWeek)]?.type ? ` · ${data.week_meta[String(headerWeek)].type}` : ''}
+              {data.week_meta?.[String(headerWeek)]?.intensity ? ` · ${data.week_meta[String(headerWeek)].intensity}` : ''}
             </p>
           )}
-          {data.week_meta?.[String(week)]?.objective && (
+          {data.week_meta?.[String(headerWeek)]?.objective && (
             <p className="text-[11px] mt-0.5 italic" style={{ color: '#8aa0b2' }}>
-              {data.week_meta[String(week)].objective}
+              {data.week_meta[String(headerWeek)].objective}
             </p>
           )}
         </div>
@@ -245,11 +248,6 @@ function ProgramViewer({
               onCompleteDay={completeDay}
             />
 
-            <CheckinCard token={token} data={data} onSaved={onChanged} />
-
-            <p className="text-[9.5px] text-center pb-4" style={{ ...MONO, color: '#4a6272' }}>
-              THE SURF SEQUENCE · TRAINING PROGRAM
-            </p>
           </>
         ) : (
         <>
@@ -304,14 +302,16 @@ function ProgramViewer({
           />
         ))}
 
-        {/* Check-in — configurable por programa */}
+        </>
+        )}
+
+        {/* Check-in — UNA instancia compartida por ambas vistas (si se
+            desmonta al alternar today↔week se pierde lo escrito a medias). */}
         <CheckinCard token={token} data={data} onSaved={onChanged} />
 
         <p className="text-[9.5px] text-center pb-4" style={{ ...MONO, color: '#4a6272' }}>
           THE SURF SEQUENCE · TRAINING PROGRAM
         </p>
-        </>
-        )}
       </div>
     </div>
   );
@@ -496,13 +496,27 @@ function CheckinCard({
     }
   };
 
-  const ENERGY = ['◔', '◑', '◕', '●'];
+  // Energía en NÚMEROS con rampa de color (pedido Marcelo 2026-08-23:
+  // los símbolos se veían feos) — 1 rojo → 4 verde, escala 1-4 del ranking.
+  const ENERGY_COLORS = ['#FF6B6B', '#FFD166', '#00D2FF', '#39D98A'];
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}>
-      <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
-        Daily check-in
-      </p>
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: 'linear-gradient(165deg, rgba(255,209,102,.12) 0%, rgba(0,210,255,.05) 70%)',
+        border: '1px solid rgba(255,209,102,.45)',
+        boxShadow: '0 0 24px rgba(255,209,102,.06) inset',
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#FFD166' }}>
+          ⚡ Daily check-in
+        </p>
+        <span className="text-[9px] uppercase tracking-wider" style={{ ...MONO, color: '#7BA2B5' }}>
+          Counts for the ranking 🏆
+        </span>
+      </div>
 
       {cfg.water && (
         <div className="flex items-center justify-between mt-3">
@@ -533,7 +547,11 @@ function CheckinCard({
       {cfg.sleep && (
         <div className="flex items-center justify-between mt-3">
           <span className="text-[12px]" style={{ color: '#b8cad8' }}>Sleep</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <button type="button" aria-label="Less sleep"
+              onClick={() => setSleep(String(Math.max(0, (Number(sleep.replace(',', '.')) || 0) - 0.5)))}
+              className="rounded-lg font-bold"
+              style={{ ...MONO, width: 28, height: 28, background: 'rgba(255,255,255,.06)', color: '#7BA2B5', border: '1px solid rgba(255,255,255,.14)' }}>−</button>
             <input
               type="number"
               inputMode="decimal"
@@ -544,10 +562,14 @@ function CheckinCard({
               onChange={(e) => setSleep(e.target.value)}
               placeholder="7.5"
               aria-label="Hours of sleep"
-              className="w-16 rounded-lg px-2 py-1 text-right text-[13px]"
-              style={{ background: 'rgba(255,255,255,.07)', border: '1px solid #2A4D5F', color: '#eaf4fa' }}
+              className="w-14 rounded-lg px-2 py-1 text-center text-[13px] font-bold"
+              style={{ ...MONO, background: 'rgba(255,255,255,.07)', border: '1px solid #2A4D5F', color: '#00D2FF' }}
             />
-            <span className="text-[11px]" style={{ color: '#8aa0b2' }}>hours</span>
+            <button type="button" aria-label="More sleep"
+              onClick={() => setSleep(String(Math.min(14, (Number(sleep.replace(',', '.')) || 0) + 0.5)))}
+              className="rounded-lg font-bold"
+              style={{ ...MONO, width: 28, height: 28, background: 'rgba(255,255,255,.06)', color: '#7BA2B5', border: '1px solid rgba(255,255,255,.14)' }}>+</button>
+            <span className="text-[11px]" style={{ color: '#8aa0b2' }}>h</span>
           </div>
         </div>
       )}
@@ -555,19 +577,33 @@ function CheckinCard({
       {cfg.energy && (
         <div className="flex items-center justify-between mt-3">
           <span className="text-[12px]" style={{ color: '#b8cad8' }}>Energy</span>
-          <div className="flex gap-2">
-            {ENERGY.map((sym, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setEnergy(i + 1)}
-                className="text-[16px] leading-none"
-                aria-label={`Energy ${i + 1} of 4`}
-                style={{ color: energy === i + 1 ? '#00D2FF' : '#4a6272' }}
-              >
-                {sym}
-              </button>
-            ))}
+          <div className="flex gap-1.5">
+            {ENERGY_COLORS.map((color, i) => {
+              const n = i + 1;
+              const active = energy === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setEnergy(active ? 0 : n)}
+                  aria-label={`Energy ${n} of 4`}
+                  className="rounded-xl font-bold transition-all"
+                  style={{
+                    ...MONO,
+                    width: 36,
+                    height: 36,
+                    fontSize: 14,
+                    background: active ? color : 'rgba(255,255,255,.05)',
+                    color: active ? '#061C2B' : color,
+                    border: `1.5px solid ${active ? color : 'rgba(255,255,255,.14)'}`,
+                    transform: active ? 'scale(1.08)' : 'none',
+                    boxShadow: active ? `0 0 14px ${color}55` : 'none',
+                  }}
+                >
+                  {n}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -601,10 +637,10 @@ function CheckinCard({
         type="button"
         disabled={saving}
         onClick={save}
-        className="w-full mt-3 rounded-full py-2.5 text-[11px] font-bold tracking-wide"
-        style={{ background: saved ? '#39D98A' : '#00D2FF', color: '#061C2B', opacity: saving ? 0.6 : 1 }}
+        className="w-full mt-3.5 rounded-full py-3 text-[11px] font-bold"
+        style={{ ...MONO, letterSpacing: '0.14em', background: saved ? '#39D98A' : 'linear-gradient(90deg, #00D2FF, #35E0FF)', color: '#061C2B', opacity: saving ? 0.6 : 1, boxShadow: saved ? 'none' : '0 4px 18px rgba(0,210,255,.25)' }}
       >
-        {saved ? 'SAVED ✓' : saving ? 'SAVING…' : 'SAVE CHECK-IN'}
+        {saved ? 'SAVED ✓ +POINTS' : saving ? 'SAVING…' : 'SAVE CHECK-IN'}
       </button>
     </div>
   );

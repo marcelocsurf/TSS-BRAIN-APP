@@ -66,13 +66,16 @@ export async function getStudentActivitySummary(
       .map((c: any) => ({ ...c, created_at: c.created_at || c.session_date }));
     const coachSessions = [...(results.data ?? []), ...unmatchedCascade];
     const selfSessions = self.data ?? [];
+    // Históricos HP: cuentan en HORAS, no en timeline/contadores (16/20
+    // atletas veían la Bitácora 12/12 "Entreno HP" — revisión 2026-08-23).
+    const selfVisible = selfSessions.filter((s: any) => !String(s.notes ?? '').startsWith('hp:checkin:'));
 
     const hours = computeSurfSplit(coachSessions, selfSessions);
 
     // Prácticas propias completadas esta semana (lunes SV, no la del portal
     // que es días consecutivos — por eso el copy dice "por su cuenta").
     const thisWeek = weekKey(new Date());
-    const week_practices = selfSessions.filter(
+    const week_practices = selfVisible.filter(
       (s: any) => s.completed && weekKey(s.created_at) === thisWeek
     ).length;
 
@@ -86,7 +89,7 @@ export async function getStudentActivitySummary(
         minutes: coachSessionMinutes(s),
         completed: true,
       })),
-      ...selfSessions.map((s: any) => ({
+      ...selfVisible.map((s: any) => ({
         kind: (s.kind === 'free_surf' ? 'free_surf' : 'mission') as 'free_surf' | 'mission',
         date: s.created_at,
         title: s.kind === 'free_surf' ? 'Free surf' : (s.drill_name || 'Misión'),
@@ -112,8 +115,8 @@ export async function getStudentActivitySummary(
         hours,
         counts: {
           coach_sessions: coachSessions.length,
-          self_missions: selfSessions.filter((s: any) => s.kind !== 'free_surf').length,
-          free_surfs: selfSessions.filter((s: any) => s.kind === 'free_surf').length,
+          self_missions: selfVisible.filter((s: any) => s.kind !== 'free_surf').length,
+          free_surfs: selfVisible.filter((s: any) => s.kind === 'free_surf').length,
         },
         week_practices,
         timeline: items,

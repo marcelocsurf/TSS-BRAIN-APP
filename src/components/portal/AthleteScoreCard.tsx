@@ -45,6 +45,7 @@ export function AthleteScoreCard({ token }: { token: string }) {
         )}
       </div>
 
+      {data.eval_date && (
       <div className="mt-3 space-y-2.5">
         {PILLARS.map((p) => {
           const v = data.pillars[p.key];
@@ -66,17 +67,20 @@ export function AthleteScoreCard({ token }: { token: string }) {
           );
         })}
       </div>
+      )}
 
+      {data.eval_date && (
       <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
         <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Overall score</span>
         <span className="text-[19px] font-bold" style={{ ...MONO, color: '#00D2FF' }}>
           {data.global != null ? `${data.global.toFixed(1)}/5` : '—'}
         </span>
       </div>
-      {data.score_capacity && (
+      )}
+      {data.score_capacity != null && (
         <div className="mt-1.5 flex items-center justify-between">
           <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Scoring capacity</span>
-          <span className="text-[12px] font-bold" style={{ ...MONO, color: '#FFD166' }}>{data.score_capacity}</span>
+          <span className="text-[12px] font-bold" style={{ ...MONO, color: '#FFD166' }}>{data.score_capacity}/10</span>
         </div>
       )}
     </div>
