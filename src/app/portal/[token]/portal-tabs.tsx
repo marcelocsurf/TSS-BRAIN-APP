@@ -34,6 +34,7 @@ import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
+import { AthleteScoreCard } from '@/components/portal/AthleteScoreCard';
 import { CompetitionCard } from '@/components/portal/CompetitionCard';
 import { CoachMessagesCard } from '@/components/portal/CoachMessagesCard';
 import { AppointmentCard } from '@/components/portal/AppointmentCard';
@@ -706,6 +707,8 @@ function HomeTab({
           <SeasonCard token={data.token} />
 
           <ProgramCard token={data.token} />
+          {/* Score por pilar (última evaluación profunda) — solo atletas HP. */}
+          <AthleteScoreCard token={data.token} />
           <CompetitionCard token={data.token} />
           <CoachMessagesCard token={data.token} />
 

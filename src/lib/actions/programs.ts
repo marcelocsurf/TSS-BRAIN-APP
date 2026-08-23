@@ -575,3 +575,71 @@ export async function markMyMessagesRead(portalToken: string): Promise<{ ok: boo
     return { ok: false };
   }
 }
+
+// ─── Score del atleta en SU portal (pedido Marcelo 2026-08-23) ───
+// Igual que el "SCORE POR PILAR" del app HP viejo: promedios por pilar de su
+// última evaluación profunda + capacidad de score de su ficha técnica.
+// Devuelve data:null si el alumno no tiene evaluaciones (no-HP → no se
+// renderiza nada, mismo patrón que el programa).
+export interface MyAthleteScores {
+  pillars: { fis: number | null; tec: number | null; tac: number | null; men: number | null };
+  global: number | null;
+  score_capacity: string | null;
+  eval_date: string | null;
+  eval_kind: string | null;
+}
+
+export async function getMyAthleteScores(
+  portalToken: string
+): Promise<{ ok: boolean; data: MyAthleteScores | null; error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const { data: student, error: sErr } = await admin
+      .from('students')
+      .select('id')
+      .eq('portal_token', portalToken)
+      .maybeSingle();
+    if (sErr) throw sErr;
+    if (!student) return { ok: true, data: null };
+
+    const [{ data: evalRow, error: eErr }, { data: profile }] = await Promise.all([
+      admin
+        .from('hp_deep_evaluations')
+        .select('scores, eval_kind, created_at')
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from('hp_athlete_profiles')
+        .select('score_capacity')
+        .eq('student_id', student.id)
+        .maybeSingle(),
+    ]);
+    if (eErr) throw eErr;
+    if (!evalRow && !profile?.score_capacity) return { ok: true, data: null };
+
+    const scores = (evalRow?.scores ?? {}) as Record<string, number>;
+    const avg = (prefix: string): number | null => {
+      const vals = Object.entries(scores)
+        .filter(([k, v]) => k.startsWith(prefix) && Number.isFinite(Number(v)))
+        .map(([, v]) => Number(v));
+      return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
+    };
+    const pillars = { fis: avg('fis_'), tec: avg('tec_'), tac: avg('tac_'), men: avg('men_') };
+    const withVal = Object.values(pillars).filter((v): v is number => v != null);
+    return {
+      ok: true,
+      data: {
+        pillars,
+        global: withVal.length ? Math.round((withVal.reduce((a, b) => a + b, 0) / withVal.length) * 10) / 10 : null,
+        score_capacity: (profile as any)?.score_capacity ?? null,
+        eval_date: evalRow?.created_at ? String(evalRow.created_at).slice(0, 10) : null,
+        eval_kind: (evalRow as any)?.eval_kind ?? null,
+      },
+    };
+  } catch (e) {
+    console.error('[programs] getMyAthleteScores failed', e);
+    return { ok: false, data: null, error: 'Could not load your scores.' };
+  }
+}

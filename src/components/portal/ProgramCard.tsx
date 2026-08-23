@@ -119,6 +119,12 @@ function ProgramViewer({
   const [playing, setPlaying] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  // HOY primero (pedido Marcelo 2026-08-23): el atleta aterriza en SU día —
+  // la semana completa queda a un tap ("View full program"). Sin día actual
+  // (programa completado) se abre directo la vista de semanas.
+  const currentDay = data.days.find((d) => d.current) ?? null;
+  const [view, setView] = useState<'today' | 'week'>(currentDay ? 'today' : 'week');
+
   const currentWeek = data.position?.week ?? data.weeks;
   const weekNumbers = useMemo(
     () => Array.from(new Set(data.days.map((d) => d.week_number))).sort((a, b) => a - b),
@@ -207,6 +213,57 @@ function ProgramViewer({
           )}
         </div>
 
+        {view === 'today' && currentDay ? (
+          <>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
+                Micro {currentDay.week_number} · Day {currentDay.day_number} — your session today
+              </p>
+              <button
+                type="button"
+                onClick={() => setView('week')}
+                className="text-[10px] uppercase tracking-wider font-bold"
+                style={{ ...MONO, color: '#00D2FF' }}
+              >
+                Full program →
+              </button>
+            </div>
+
+            {err && (
+              <p className="text-[11px] rounded-lg px-3 py-2" style={{ background: 'rgba(255,120,100,.12)', color: '#ffb4a6' }}>
+                {err}
+              </p>
+            )}
+
+            <DayCard
+              day={currentDay}
+              busyItem={busyItem}
+              busyDay={busyDay}
+              playing={playing}
+              setPlaying={setPlaying}
+              onToggleItem={toggleItem}
+              onCompleteDay={completeDay}
+            />
+
+            <CheckinCard token={token} data={data} onSaved={onChanged} />
+
+            <p className="text-[9.5px] text-center pb-4" style={{ ...MONO, color: '#4a6272' }}>
+              THE SURF SEQUENCE · TRAINING PROGRAM
+            </p>
+          </>
+        ) : (
+        <>
+        {currentDay && (
+          <button
+            type="button"
+            onClick={() => setView('today')}
+            className="w-full rounded-lg py-2 text-[10px] uppercase tracking-wider font-bold"
+            style={{ ...MONO, background: 'rgba(255,209,102,.12)', color: '#FFD166', border: '1px solid rgba(255,209,102,.35)' }}
+          >
+            ← Back to today (Micro {currentDay.week_number} · Day {currentDay.day_number})
+          </button>
+        )}
+
         {/* Semanas */}
         <div className="flex gap-1.5">
           {weekNumbers.map((w) => (
@@ -253,6 +310,8 @@ function ProgramViewer({
         <p className="text-[9.5px] text-center pb-4" style={{ ...MONO, color: '#4a6272' }}>
           THE SURF SEQUENCE · TRAINING PROGRAM
         </p>
+        </>
+        )}
       </div>
     </div>
   );
