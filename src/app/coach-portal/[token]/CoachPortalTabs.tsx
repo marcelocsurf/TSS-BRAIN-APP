@@ -1761,8 +1761,11 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
             <span className="text-[13px] font-bold text-[var(--tss-navy)]">🏄 Board inventory</span>
             <span className="text-[10px] text-gray-400">add · edit · rent</span>
           </summary>
-          <div className="px-3 pb-3 border-t border-gray-100">
-            <BoardInventoryManager academyId={coach.academy_id} portalToken={coach.portal_token} />
+          <div className="p-3 border-t border-gray-100">
+            {/* El manager es dark-theme: necesita fondo tinta o queda blanco sobre blanco. */}
+            <div className="rounded-xl p-3" style={{ background: '#0A1628' }}>
+              <BoardInventoryManager academyId={coach.academy_id} portalToken={coach.portal_token} />
+            </div>
           </div>
         </details>
       )}

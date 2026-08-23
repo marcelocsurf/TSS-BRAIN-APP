@@ -99,12 +99,12 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             </span>
           </label>
         )}
-        {role !== 'host' && (
+        {!['host', 'coordinator', 'admin'].includes(role) && (
           <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
             <input type="checkbox" checked={canBoards} onChange={(e) => setCanBoards(e.target.checked)} className="mt-0.5" />
             <span>
               <span className="font-semibold text-[var(--tss-navy)]">Board inventory access</span><br />
-              This coach can add, edit and rent boards from the 🏄 Inventory tool in their portal (the same inventory used for rentals and camps).
+              This coach can add, edit and rent boards from the 🏄 Inventory tool in their portal (the same inventory used for rentals and camps). Note: rentals include client contact info.
             </span>
           </label>
         )}

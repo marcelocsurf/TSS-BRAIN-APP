@@ -404,7 +404,7 @@ export async function getServicePlan(
   // hasta su salida (incluida) quedan intactos para el historial.
   const participants = (participantsRaw ?? []).filter((p: any) => {
     if (!p.finalized_at) return true;
-    const cutoff = p.departed_on || String(p.finalized_at).slice(0, 10);
+    const cutoff = p.departed_on || new Date(Date.parse(p.finalized_at) - 6 * 3600000).toISOString().slice(0, 10);
     return selectedDay.session_date <= cutoff;
   });
 
@@ -1978,11 +1978,22 @@ export async function closeServicePlan(
   // results, feedback emails or survey invites.
   const { data: activeParts } = await admin
     .from('camp_participants')
-    .select('student_id, finalized_at, enrollment_status')
+    .select('student_id, finalized_at, departed_on, enrollment_status')
     .eq('camp_instance_id', sessionAny.camp_instance_id);
+  // Corte POR FECHA (mismo criterio que el roster de getServicePlan): el día
+  // de salida (incluido) el alumno se evalúa y se guarda normal; solo los
+  // días POSTERIORES lo saltan. Antes cualquier finalized_at lo saltaba
+  // siempre — la UI exigía evaluarlo y el cierre tiraba la evaluación.
+  const closeDayDate = (sessionAny as any).session_date ?? null;
   const departed = new Set(
     (activeParts ?? [])
-      .filter((p: any) => p.finalized_at || p.enrollment_status !== 'active')
+      .filter((p: any) => {
+        if (p.enrollment_status !== 'active') return true;
+        if (!p.finalized_at) return false;
+        if (!closeDayDate) return true;
+        const cutoff = p.departed_on || new Date(Date.parse(p.finalized_at) - 6 * 3600000).toISOString().slice(0, 10);
+        return closeDayDate > cutoff;
+      })
       .map((p: any) => p.student_id),
   );
   let allBlocks = (blocks ?? []).filter((b: any) => !departed.has(b.student_id));

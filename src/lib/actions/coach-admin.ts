@@ -62,8 +62,9 @@ export async function updateCoachIdentity(
   if (typeof input.portal_can_manage_boards === 'boolean') patch.portal_can_manage_boards = input.portal_can_manage_boards;
 
   let { error } = await admin.from('coaches').update(patch).eq('id', coachId);
-  if (error && /portal_can_coordinate/.test(error.message)) {
+  if (error && /portal_can_coordinate|portal_can_manage_boards/.test(error.message)) {
     delete patch.portal_can_coordinate;
+    delete patch.portal_can_manage_boards;
     ({ error } = await admin.from('coaches').update(patch).eq('id', coachId));
   }
   if (error) return { ok: false, error: error.message };
