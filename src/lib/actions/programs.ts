@@ -724,11 +724,20 @@ export async function getMySeasonTimeline(
         label: (a.title || KIND_EN[a.kind] || 'Appointment') + (a.appointment_time ? ` · ${a.appointment_time}` : ''),
         date: String(a.appointment_date ?? '').slice(0, 10),
       }))),
-      ...((evals ?? []).map((e: any) => ({
-        icon: '✅',
-        label: e.eval_kind === 'competencia' ? 'Evaluation done (post-comp)' : 'Evaluation done',
-        date: String(e.created_at ?? '').slice(0, 10),
-      }))),
+      // Evaluaciones hechas: COLAPSADAS por fecha — las migradas del app viejo
+      // comparten el día de migración y apilaban 8 líneas "✅" en un micro.
+      ...(() => {
+        const byDate = new Map<string, number>();
+        for (const e of evals ?? []) {
+          const d = String((e as any).created_at ?? '').slice(0, 10);
+          if (d) byDate.set(d, (byDate.get(d) ?? 0) + 1);
+        }
+        return Array.from(byDate.entries()).map(([date, n]) => ({
+          icon: '✅',
+          label: n > 1 ? `${n} evaluations done` : 'Evaluation done',
+          date,
+        }));
+      })(),
     ].filter((e) => e.date);
 
     const weeks: SeasonTimelineWeek[] = weekNums.map((w) => {
