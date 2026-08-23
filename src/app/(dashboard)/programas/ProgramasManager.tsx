@@ -1469,12 +1469,14 @@ function MicroLabel({
 // ─── Temporadas · el Plan Anual (macrociclo, fases, eventos, especialistas) ───
 
 const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  general:     { bg: 'rgba(0,168,204,.10)', border: '#00A8CC', text: '#006C8C', label: 'Prep. General' },
-  especifica:  { bg: 'rgba(0,168,204,.28)', border: '#0090B8', text: '#006C8C', label: 'Prep. Específica' },
-  competitiva: { bg: 'rgba(184,134,43,.15)', border: '#B8862B', text: '#8E6614', label: 'Competitiva' },
-  transicion:  { bg: 'rgba(100,116,139,.10)', border: '#94A3B8', text: '#64748B', label: 'Transición' },
+  general:        { bg: 'rgba(0,168,204,.10)', border: '#00A8CC', text: '#006C8C', label: 'Prep. General' },
+  especifica:     { bg: 'rgba(0,168,204,.28)', border: '#0090B8', text: '#006C8C', label: 'Prep. Específica' },
+  precompetitiva: { bg: 'rgba(217,119,6,.14)', border: '#D97706', text: '#92580A', label: 'Precompetitiva' },
+  competitiva:    { bg: 'rgba(184,134,43,.15)', border: '#B8862B', text: '#8E6614', label: 'Competitiva' },
+  transicion:     { bg: 'rgba(100,116,139,.10)', border: '#94A3B8', text: '#64748B', label: 'Transición' },
+  recuperacion:   { bg: 'rgba(22,163,74,.12)', border: '#16A34A', text: '#166534', label: 'Recuperación' },
 };
-const EVENT_ICON: Record<string, string> = { camp: '🌊', nacional: '⭐', internacional: '🏆', otro: '📍' };
+const EVENT_ICON: Record<string, string> = { camp: '🌊', nacional: '⭐', internacional: '🏆', viaje: '✈️', medico: '🩺', otro: '📍' };
 
 function pctBetween(date: string, start: string, end: string): number {
   const d = Date.parse(date), a = Date.parse(start), b = Date.parse(end);
@@ -1720,8 +1722,8 @@ function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => vo
   );
 }
 
-const COLOR_OPTS = ['general', 'especifica', 'competitiva', 'transicion'] as const;
-const KIND_EVENT_OPTS = ['camp', 'nacional', 'internacional', 'otro'] as const;
+const COLOR_OPTS = ['general', 'especifica', 'precompetitiva', 'competitiva', 'transicion', 'recuperacion'] as const;
+const KIND_EVENT_OPTS = ['camp', 'nacional', 'internacional', 'viaje', 'medico', 'otro'] as const;
 
 function SeasonPhases({ seasonId, phases, onChanged, setErr }: {
   seasonId: string;
@@ -1788,14 +1790,16 @@ function SeasonEvents({ seasonId, events, onChanged, setErr }: {
   const [name, setName] = useState('');
   const [kind, setKind] = useState<string>('nacional');
   const [date, setDate] = useState('');
+  const [endDate, setEndDate] = useState(''); // opcional: viajes/camps con rango
+  const [notes, setNotes] = useState('');
   const [peak, setPeak] = useState(false);
 
   const add = async () => {
     if (!name.trim() || !date) return;
     setErr(null);
-    const r = await adminSaveSeasonEvent(seasonId, { name, kind, event_date: date, is_peak: peak });
+    const r = await adminSaveSeasonEvent(seasonId, { name, kind, event_date: date, end_date: endDate || null, notes: notes || null, is_peak: peak });
     if (!r.ok) setErr(r.error || null);
-    else { setName(''); setDate(''); setPeak(false); onChanged(); }
+    else { setName(''); setDate(''); setEndDate(''); setNotes(''); setPeak(false); onChanged(); }
   };
 
   return (
@@ -1806,7 +1810,8 @@ function SeasonEvents({ seasonId, events, onChanged, setErr }: {
           style={{ borderLeft: `3px solid ${ev.is_peak ? '#B8862B' : '#CBD5E1'}` }}>
           <span className="text-sm">{EVENT_ICON[ev.kind] ?? '📍'}</span>
           <span className="text-xs font-bold text-[var(--tss-navy)]">{ev.name}</span>
-          <span className="text-[11px] text-gray-500">{ev.event_date}</span>
+          <span className="text-[11px] text-gray-500">{ev.event_date}{ev.end_date ? ` → ${ev.end_date}` : ''}</span>
+          {ev.notes && <span className="text-[11px] text-gray-400">· {ev.notes}</span>}
           {ev.is_peak && <span className="text-[10px] font-mono font-bold text-amber-700">EL PICO</span>}
           <div className="flex-1" />
           <button type="button" onClick={async () => {
@@ -1822,6 +1827,8 @@ function SeasonEvents({ seasonId, events, onChanged, setErr }: {
           {KIND_EVENT_OPTS.map((k) => <option key={k} value={k}>{EVENT_ICON[k]} {k}</option>)}
         </select>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fecha del evento" />
+        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fin (opcional — viajes/camps)" title="Fin (opcional — viajes/camps de varios días)" />
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas (opcional)" className="flex-1 min-w-[110px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
         <label className="text-[11px] text-gray-500 flex items-center gap-1">
           <input type="checkbox" checked={peak} onChange={(e) => setPeak(e.target.checked)} /> el pico
         </label>

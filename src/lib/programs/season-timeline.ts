@@ -19,15 +19,34 @@ export interface SeasonTimelineWeek {
   days_done: number;
   current: boolean;
   events: Array<{ icon: string; label: string; date: string }>;
+  /** Fase macro de la temporada que cubre esta semana (por solapamiento de fechas). */
+  phase: string | null;
+  phase_color_key: string | null;
+}
+
+export interface SeasonTimelinePhase {
+  id: string;
+  name: string;
+  objective: string | null;
+  color_key: string;
+  start: string;
+  end: string;
+  state: 'done' | 'current' | 'future';
 }
 
 export interface MySeasonTimeline {
   season: { id?: string; title: string; objective: string | null; start: string; end: string } | null;
   program_title: string;
   weeks: SeasonTimelineWeek[];
+  /** Fases macro del PLAN ANUAL (season_phases) — vacío si la temporada no las tiene. */
+  phases: SeasonTimelinePhase[];
   /** Eventos DESPUÉS del programa (dentro de la temporada o próximos 6 meses). */
   ahead: Array<{ icon: string; label: string; date: string }>;
 }
+
+export const SEASON_EVENT_ICON: Record<string, string> = {
+  camp: '🌊', nacional: '⭐', internacional: '🏆', viaje: '✈️', medico: '🩺', otro: '📍',
+};
 
 export const APPT_KIND_ICON: Record<string, string> = {
   evaluacion: '📋', fisico: '💪', mental: '🧠', tecnico: '🎯', nutricion: '🥗', otro: '📅',
@@ -65,6 +84,21 @@ export async function buildSeasonTimeline(
   if (dErr) throw dErr;
   if (mErr) throw mErr;
 
+  // Plan anual: fases macro + eventos de la temporada (viajes, camps, picos).
+  // Segundo lote porque necesitan el id de la temporada resuelto arriba.
+  let seasonPhases: any[] = [];
+  let seasonEvents: any[] = [];
+  if (season) {
+    const [fRes, eRes] = await Promise.all([
+      admin.from('season_phases').select('id, name, objective, start_date, end_date, color_key').eq('season_id', (season as any).id).order('start_date'),
+      admin.from('season_events').select('id, name, kind, event_date, end_date, is_peak').eq('season_id', (season as any).id).order('event_date'),
+    ]);
+    if (fRes.error) throw fRes.error;
+    if (eRes.error) throw eRes.error;
+    seasonPhases = fRes.data ?? [];
+    seasonEvents = eRes.data ?? [];
+  }
+
   const doneIds = new Set((marks ?? []).map((m: any) => m.day_id));
   const weekNums = Array.from(new Set((days ?? []).map((d: any) => d.week_number))).sort((a, b) => a - b);
 
@@ -87,6 +121,12 @@ export async function buildSeasonTimeline(
       label: (a.title || APPT_KIND_EN[a.kind] || 'Appointment') + (a.appointment_time ? ` · ${a.appointment_time}` : ''),
       date: String(a.appointment_date ?? '').slice(0, 10),
     }))),
+    // Eventos del plan anual (viajes ✈️, camps 🌊, picos): con rango visible.
+    ...seasonEvents.map((e: any) => ({
+      icon: e.is_peak ? '▲' : (SEASON_EVENT_ICON[e.kind] ?? '📍'),
+      label: e.name + (e.end_date ? ` (→ ${String(e.end_date).slice(5)})` : '') + (e.is_peak ? ' — THE PEAK' : ''),
+      date: String(e.event_date ?? '').slice(0, 10),
+    })),
     // Evaluaciones hechas: colapsadas por fecha (las migradas comparten día).
     ...(() => {
       const byDate = new Map<string, number>();
@@ -106,6 +146,11 @@ export async function buildSeasonTimeline(
     const wStart = iso(startMs + (w - 1) * 7 * 86400000);
     const wEnd = iso(startMs + ((w - 1) * 7 + 6) * 86400000);
     const wDays = (days ?? []).filter((d: any) => d.week_number === w);
+    // Fase macro que cubre la semana: la que contiene su inicio, o la primera
+    // que se solape (semanas puente entre fases quedan con la fase entrante).
+    const ph = seasonPhases.find((f: any) => f.start_date <= wStart && f.end_date >= wStart)
+      ?? seasonPhases.find((f: any) => f.start_date <= wEnd && f.end_date >= wStart)
+      ?? null;
     return {
       week: w,
       label: program?.week_labels?.[String(w)] ?? null,
@@ -118,6 +163,8 @@ export async function buildSeasonTimeline(
       days_done: wDays.filter((d: any) => doneIds.has(d.id)).length,
       current: cur ? cur.week_number === w : false,
       events: allEvents.filter((e) => e.date >= wStart && e.date <= wEnd),
+      phase: ph?.name ?? null,
+      phase_color_key: ph?.color_key ?? null,
     };
   });
 
@@ -134,6 +181,11 @@ export async function buildSeasonTimeline(
       : null,
     program_title: program?.title ?? 'Training program',
     weeks,
+    phases: seasonPhases.map((f: any) => ({
+      id: f.id, name: f.name, objective: f.objective ?? null, color_key: f.color_key,
+      start: f.start_date, end: f.end_date,
+      state: f.end_date < today ? 'done' : f.start_date > today ? 'future' : 'current',
+    })),
     ahead,
   };
 }

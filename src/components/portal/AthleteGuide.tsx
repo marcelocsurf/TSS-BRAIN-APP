@@ -62,6 +62,7 @@ export function AthleteGuide({ onClose }: { onClose: () => void }) {
         <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.08)', border: '1px solid rgba(255,209,102,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: GOLD }}>For athletes on a training program</p>
           <div className="space-y-1.5 text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
+            <Li k="🗓 My year">Your whole season on one strip: training phases in color, peaks ▲, competitions 🏆 and trips ✈️ — with <strong style={{ color: '#eaf4fa' }}>YOU</strong> marking where you are today.</Li>
             <Li k="Your program">Three views: <strong style={{ color: '#eaf4fa' }}>TODAY</strong> (what to do right now), <strong style={{ color: '#eaf4fa' }}>WEEK</strong> (your full week) and <strong style={{ color: '#eaf4fa' }}>SEASON</strong> (the whole road to your competitions).</Li>
             <Li k="Daily check-in">Takes 30 seconds: water, sleep, energy, what you ate, <strong style={{ color: '#eaf4fa' }}>hours surfed</strong>, whether you hit today&apos;s goal, and your focus. It feeds your <strong style={{ color: '#eaf4fa' }}>weekly ranking</strong> — consistency wins.</Li>
             <Li k="💬 My Team">One thread shared with your whole team — coach, psychologist, physical trainer, nutritionist. Everyone reads it. Use it.</Li>

@@ -496,7 +496,10 @@ export interface MySeasonData {
   days_to_peak: number | null;
   peak_name: string | null;
   phases: { id: string; name: string; objective: string | null; start_date: string; end_date: string; color_key: string; state: 'done' | 'current' | 'future' }[];
-  events: { id: string; name: string; kind: string; event_date: string; is_peak: boolean }[];
+  events: { id: string; name: string; kind: string; event_date: string; end_date: string | null; notes: string | null; is_peak: boolean }[];
+  // Para la vista AÑO: competencias y citas del atleta dentro de la temporada.
+  competitions: { id: string; name: string; comp_date: string; location: string | null; status: string | null }[];
+  appointments: { kind: string; title: string | null; appointment_date: string }[];
   contributions: { id: string; kind: string; title: string; video_url: string | null; detail: string | null; target_date: string | null; coach_name: string; specialty: string | null }[];
 }
 
@@ -521,14 +524,18 @@ export async function getMySeason(
     if (snErr) throw snErr;
     if (!season) return { ok: true, data: null };
 
-    const [ph, ev, co] = await Promise.all([
+    const [ph, ev, co, cp, ap] = await Promise.all([
       admin.from('season_phases').select('id, name, objective, start_date, end_date, color_key').eq('season_id', season.id).order('start_date'),
-      admin.from('season_events').select('id, name, kind, event_date, is_peak').eq('season_id', season.id).order('event_date'),
+      admin.from('season_events').select('id, name, kind, event_date, end_date, notes, is_peak').eq('season_id', season.id).order('event_date'),
       admin.from('season_contributions').select('id, kind, title, video_url, detail, target_date, coaches(display_name, hp_specialty)').eq('season_id', season.id).order('created_at', { ascending: false }).limit(12),
+      admin.from('athlete_competitions').select('id, name, comp_date, location, status').eq('student_id', student.id).gte('comp_date', season.start_date).lte('comp_date', season.end_date).order('comp_date'),
+      admin.from('program_appointments').select('kind, title, appointment_date').eq('student_id', student.id).neq('status', 'cancelled').gte('appointment_date', season.start_date).lte('appointment_date', season.end_date).order('appointment_date').limit(40),
     ]);
     if (ph.error) throw ph.error;
     if (ev.error) throw ev.error;
     if (co.error) throw co.error;
+    if (cp.error) throw cp.error;
+    if (ap.error) throw ap.error;
 
     const today = elSalvadorToday();
     const peak = (ev.data ?? []).find((e: any) => e.is_peak) ?? null;
@@ -551,6 +558,8 @@ export async function getMySeason(
           state: f.end_date < today ? 'done' : f.start_date > today ? 'future' : 'current',
         })),
         events: ev.data ?? [],
+        competitions: cp.data ?? [],
+        appointments: ap.data ?? [],
         contributions: (co.data ?? []).map((c: any) => ({
           id: c.id, kind: c.kind, title: c.title, video_url: c.video_url,
           detail: c.detail, target_date: c.target_date,

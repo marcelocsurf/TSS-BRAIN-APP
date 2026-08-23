@@ -1212,7 +1212,7 @@ export interface AdminSeasonDetail {
   end_date: string;
   active: boolean;
   phases: { id: string; name: string; objective: string | null; start_date: string; end_date: string; color_key: string }[];
-  events: { id: string; name: string; kind: string; event_date: string; is_peak: boolean }[];
+  events: { id: string; name: string; kind: string; event_date: string; end_date: string | null; notes: string | null; is_peak: boolean }[];
   specialists: { coach_id: string; display_name: string; hp_specialty: string | null }[];
 }
 
@@ -1229,7 +1229,7 @@ export async function adminGetSeason(seasonId: string): Promise<{ ok: boolean; e
     if (!s) return { ok: false, error: 'Temporada no encontrada.', season: null };
     const [ph, ev, sp] = await Promise.all([
       admin.from('season_phases').select('id, name, objective, start_date, end_date, color_key').eq('season_id', seasonId).order('start_date'),
-      admin.from('season_events').select('id, name, kind, event_date, is_peak').eq('season_id', seasonId).order('event_date'),
+      admin.from('season_events').select('id, name, kind, event_date, end_date, notes, is_peak').eq('season_id', seasonId).order('event_date'),
       admin.from('season_specialists').select('coach_id, coaches(display_name, hp_specialty)').eq('season_id', seasonId),
     ]);
     if (ph.error) throw ph.error;
@@ -1356,13 +1356,19 @@ export async function adminDeleteSeasonPhase(phaseId: string): Promise<{ ok: boo
 
 export async function adminSaveSeasonEvent(
   seasonId: string,
-  ev: { id?: string; name: string; kind: string; event_date: string; is_peak: boolean }
+  ev: { id?: string; name: string; kind: string; event_date: string; end_date?: string | null; notes?: string | null; is_peak: boolean }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!(await assertAdmin())) return DENY;
     if (!ev.name.trim()) return { ok: false, error: 'El evento necesita un nombre.' };
+    // end_date opcional = eventos con RANGO (viajes, camps de varios días).
+    if (ev.end_date && ev.end_date < ev.event_date) return { ok: false, error: 'El evento termina antes de empezar — revisá las fechas.' };
     const admin = createAdminClient();
-    const row = { name: ev.name.trim(), kind: ev.kind, event_date: ev.event_date, is_peak: ev.is_peak };
+    const row = {
+      name: ev.name.trim(), kind: ev.kind, event_date: ev.event_date,
+      end_date: ev.end_date || null, notes: ev.notes?.trim().slice(0, 500) || null,
+      is_peak: ev.is_peak,
+    };
     if (ev.id) {
       const { error } = await admin.from('season_events').update(row).eq('id', ev.id).eq('season_id', seasonId);
       if (error) throw error;

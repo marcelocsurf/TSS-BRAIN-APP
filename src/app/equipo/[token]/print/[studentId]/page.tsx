@@ -21,18 +21,35 @@ export default async function PrintPlanPage({ params }: Props) {
   const d = r.data;
   const tl = d.timeline;
 
-  // Ruta crítica: hitos por fecha — competencias, citas de evaluación y
-  // semanas pico (intensidad alta o tipo competencia).
+  // Ruta crítica: hitos por fecha — inicios de FASE del plan anual,
+  // competencias, citas de evaluación y semanas pico.
   const critical: Array<{ date: string; label: string }> = [];
   if (tl) {
+    for (const f of tl.phases) {
+      critical.push({ date: f.start, label: `🚩 Fase: ${f.name}${f.objective ? ` — ${f.objective}` : ''}` });
+    }
     for (const w of tl.weeks) {
-      const peak = (w.intensity ?? '').toLowerCase().includes('alta') || (w.type ?? '').toLowerCase().includes('compet');
+      // MX_INTENSITIES guarda valores en inglés (Low/Medium/High/Peak) —
+      // el heurístico original buscaba 'alta' y nunca matcheaba.
+      const inten = (w.intensity ?? '').toLowerCase();
+      const peak = inten.includes('high') || inten.includes('peak') || inten.includes('alta') || (w.type ?? '').toLowerCase().includes('compet');
       if (peak) critical.push({ date: w.start, label: `⛰ Semana pico — M${w.week}${w.type ? ` · ${w.type}` : ''}${w.intensity ? ` · ${w.intensity}` : ''}` });
       for (const e of w.events) critical.push({ date: e.date, label: `${e.icon} ${e.label}` });
     }
     for (const e of tl.ahead) critical.push({ date: e.date, label: `${e.icon} ${e.label}` });
   }
   critical.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Franja del año para papel: % dentro de la temporada.
+  const season = tl?.season ?? null;
+  const spanMs = season ? Math.max(1, Date.parse(`${season.end}T23:59:59Z`) - Date.parse(`${season.start}T00:00:00Z`)) : 1;
+  const pctIn = (d: string) => season
+    ? Math.max(0, Math.min(100, ((Date.parse(`${d}T12:00:00Z`) - Date.parse(`${season.start}T00:00:00Z`)) / spanMs) * 100))
+    : 0;
+  const PHASE_INK: Record<string, string> = {
+    general: '#00A8CC', especifica: '#0090B8', precompetitiva: '#D97706',
+    competitiva: '#B8862B', transicion: '#94A3B8', recuperacion: '#16A34A',
+  };
 
   return (
     <div className="min-h-screen bg-white text-[#061C2B] px-8 py-8 print:px-0 print:py-0">
@@ -49,6 +66,30 @@ export default async function PrintPlanPage({ params }: Props) {
           </div>
           <PrintButton />
         </div>
+
+        {/* Plan anual: franja de fases del año */}
+        {tl && season && tl.phases.length > 0 && (
+          <div className="mt-5">
+            <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-[#0090B0] border-b border-gray-300 pb-1">
+              Plan anual · {season.start} → {season.end}
+            </h2>
+            <div className="relative h-9 rounded mt-2 overflow-hidden" style={{ background: '#F1F5F9' }}>
+              {tl.phases.map((f) => {
+                const l = pctIn(f.start), r = pctIn(f.end);
+                const c = PHASE_INK[f.color_key] ?? '#00A8CC';
+                return (
+                  <div key={f.id} className="absolute top-0 bottom-0 flex items-center justify-center overflow-hidden"
+                    style={{ left: `${l}%`, width: `${Math.max(r - l, 2)}%`, background: `${c}26`, borderLeft: `2px solid ${c}` }}>
+                    <span className="text-[8px] font-mono font-bold uppercase truncate px-1" style={{ color: c }}>{f.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1">
+              {tl.phases.map((f) => `${f.name}: ${f.start.slice(5)}→${f.end.slice(5)}`).join(' · ')}
+            </p>
+          </div>
+        )}
 
         {/* Timeline */}
         {tl ? (

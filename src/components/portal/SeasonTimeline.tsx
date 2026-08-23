@@ -12,6 +12,16 @@ import type { MySeasonTimeline } from '@/lib/programs/season-timeline';
 
 const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
 
+// Colores de fase macro — mismo mapa que la tarjeta "My year" (SeasonCard).
+const PHASE_STYLE: Record<string, { border: string; text: string }> = {
+  general: { border: '#00A8CC', text: '#7BE4FF' },
+  especifica: { border: '#00D2FF', text: '#7BE4FF' },
+  precompetitiva: { border: '#FFA94D', text: '#FFC58A' },
+  competitiva: { border: '#FFD166', text: '#FFD166' },
+  transicion: { border: '#64748B', text: '#9aa7ad' },
+  recuperacion: { border: '#39D98A', text: '#7deeb4' },
+};
+
 const fmtRange = (a: string, b: string) => {
   const f = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   return `${f(a)} – ${f(b)}`;
@@ -64,11 +74,25 @@ export function SeasonTimeline({ token, onJumpWeek }: {
       <div className="relative">
         <div className="absolute left-[21px] top-2 bottom-2 w-px" style={{ background: 'rgba(255,255,255,.1)' }} />
         <div className="space-y-1.5">
-          {data.weeks.map((w) => {
+          {data.weeks.map((w, wi) => {
             const done = w.days_total > 0 && w.days_done >= w.days_total;
+            // Header de FASE macro cuando cambia respecto de la semana anterior.
+            const prevPhase = wi > 0 ? data.weeks[wi - 1].phase : null;
+            const phaseHeader = w.phase && w.phase !== prevPhase
+              ? (PHASE_STYLE[w.phase_color_key ?? ''] ?? PHASE_STYLE.general)
+              : null;
             return (
+              <div key={w.week}>
+                {phaseHeader && (
+                  <div className="flex items-center gap-2 pl-1 pb-1.5 pt-1">
+                    <span className="rounded-full" style={{ width: 8, height: 8, background: phaseHeader.border }} />
+                    <span className="text-[9px] uppercase tracking-[0.16em] font-bold" style={{ ...MONO, color: phaseHeader.text }}>
+                      {w.phase}
+                    </span>
+                    <span className="flex-1 h-px" style={{ background: `${phaseHeader.border}44` }} />
+                  </div>
+                )}
               <button
-                key={w.week}
                 type="button"
                 onClick={() => onJumpWeek(w.week)}
                 className="relative w-full text-left rounded-xl px-2 py-2.5 grid items-start gap-1"
@@ -129,6 +153,7 @@ export function SeasonTimeline({ token, onJumpWeek }: {
                   </div>
                 </div>
               </button>
+              </div>
             );
           })}
         </div>
