@@ -146,6 +146,7 @@ export async function hpPanel(): Promise<{ ok: boolean; error?: string; data: HP
 
 export interface HPPlanRow {
   student_id: string;
+  program_id: string; // atajo "✎ Editar su plan" → /programas?programa={id}
   name: string;
   program_title: string;
   position: string; // "M2·D3" o "Completado"
@@ -199,6 +200,7 @@ export async function hpPlanToday(): Promise<{ ok: boolean; error?: string; rows
       const current = pdays.find((d: any) => !done.has(d.id)) ?? null;
       return {
         student_id: a.student_id,
+        program_id: a.program_id,
         name: `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—',
         program_title: a.programs?.title ?? '—',
         position: current ? `M${current.week_number}·D${current.day_number}` : 'Completado ✓',

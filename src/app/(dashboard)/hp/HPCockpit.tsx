@@ -222,9 +222,18 @@ function PlanHoy() {
               {r.day_title ? ` · ${r.day_title}` : ''}{r.items_count > 0 ? ` · ${r.items_count} ítems` : ''}
             </p>
           </div>
-          <span className="text-[10px] font-bold shrink-0" style={{ color: r.done_today ? GREEN : FAINT }}>
-            {r.done_today ? '✓ hecho hoy' : 'pendiente'}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[10px] font-bold" style={{ color: r.done_today ? GREEN : FAINT }}>
+              {r.done_today ? '✓ hecho hoy' : 'pendiente'}
+            </span>
+            {/* Atajo del app viejo (pedido 2026-08-23): del atleta directo al
+                editor de SU programa — agregar/quitar sin pasar por el catálogo. */}
+            <Link href={`/programas?programa=${r.program_id}`}
+              className="text-[10px] font-bold px-2.5 py-1.5 rounded-full"
+              style={{ border: `1px solid ${CYAN}`, color: CYAN }}>
+              ✎ Editar su plan
+            </Link>
+          </div>
         </div>
       ))}
       {rows.length === 0 && <p className="text-[12px] text-center py-4" style={{ color: FAINT }}>Sin atletas con programa activo.</p>}

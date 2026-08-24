@@ -6,9 +6,16 @@ import { ProgramasManager } from './ProgramasManager';
 // (is_platform_admin, como /academies). El rol 'admin' de coaches es de
 // academia y NO alcanza: esta superficie busca alumnos de todas las
 // academias. El coach con Escalón 2 tendrá su versión recortada en el Paso 4.
-export default async function ProgramasPage() {
+export default async function ProgramasPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ programa?: string }>;
+}) {
   const platform = await isRealPlatformAdmin().catch(() => false);
   if (!platform) redirect('/');
 
-  return <ProgramasManager />;
+  // Deep-link desde el cockpit /hp: "✎ Editar su plan" de un atleta abre
+  // directo el editor de SU programa (?programa={id}).
+  const sp = await searchParams;
+  return <ProgramasManager initialProgramId={sp?.programa ?? null} />;
 }

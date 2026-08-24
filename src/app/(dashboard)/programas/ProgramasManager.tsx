@@ -69,10 +69,11 @@ import {
 
 type Video = { id: string; title: string; pillar: string | null; video_url: string };
 
-export function ProgramasManager() {
-  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas' | 'temporadas' | 'competencias'>('catalogo');
+export function ProgramasManager({ initialProgramId }: { initialProgramId?: string | null } = {}) {
+  // Deep-link del cockpit: arranca directo en el editor del programa pedido.
+  const [view, setView] = useState<'catalogo' | 'editor' | 'asignaciones' | 'coaches' | 'citas' | 'temporadas' | 'competencias'>(initialProgramId ? 'editor' : 'catalogo');
   const [programs, setPrograms] = useState<AdminProgramRow[]>([]);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(initialProgramId ?? null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
