@@ -61,6 +61,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
     role: 'coach',
     max_belt_permission: 'yellow_belt',
     certification_level: 'L1',
+    specialist_role: '',
     specialty_area: '',
     languages: '',
     internal_notes: '',
@@ -318,6 +319,39 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
           </div>
         </div>
         </>)}
+
+        {/* Especialista del equipo HP — psicólogo, preparador físico o
+            nutricionista. Les abre el portal /equipo con sus atletas y sus
+            herramientas. Visible para cualquier tipo de miembro (un
+            psicólogo no siempre es del equipo de coaching). */}
+        <div>
+          <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
+            HP specialist (team portal /equipo)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: '', label: '— No es especialista —' },
+              { value: 'psicologo', label: '🧠 Psicólogo' },
+              { value: 'fisico', label: '💪 Preparador físico' },
+              { value: 'nutricionista', label: '🥗 Nutricionista' },
+            ].map((s) => (
+              <button key={s.value || 'none'} type="button" onClick={() => set('specialist_role', s.value)}
+                className={`px-3 py-2 text-xs rounded-xl border text-left transition-all ${
+                  form.specialist_role === s.value
+                    ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
+                    : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
+                }`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {form.specialist_role && (
+            <p className="text-xs text-[var(--tss-gray-500)] mt-2">
+              Entra por <b>/equipo</b> con su link de portal. Después asignalo a la temporada del atleta
+              en <b>Programas → Temporadas → Especialistas con acceso al plan</b> (necesita Escalón 1).
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Optional */}

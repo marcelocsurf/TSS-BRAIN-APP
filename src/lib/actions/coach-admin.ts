@@ -61,8 +61,16 @@ export async function updateCoachIdentity(
   if (typeof input.portal_can_coordinate === 'boolean') patch.portal_can_coordinate = input.portal_can_coordinate;
   if (typeof input.portal_can_manage_boards === 'boolean') patch.portal_can_manage_boards = input.portal_can_manage_boards;
   if (input.specialist_role !== undefined) {
-    patch.specialist_role = input.specialist_role && ['psicologo', 'fisico', 'nutricionista'].includes(input.specialist_role)
+    const valid = input.specialist_role && ['psicologo', 'fisico', 'nutricionista'].includes(input.specialist_role)
       ? input.specialist_role : null;
+    patch.specialist_role = valid;
+    // Escalón 1 automático: sin él NO aparece en "Especialistas con acceso
+    // al plan" de Temporadas y no hay forma de asignarlo (pedido de Marcelo
+    // 2026-08-25). Nunca lo BAJA: si ya tiene 2, se respeta.
+    if (valid) {
+      const { data: cur } = await admin.from('coaches').select('hp_escalon').eq('id', coachId).maybeSingle();
+      if (((cur as any)?.hp_escalon ?? 0) < 1) patch.hp_escalon = 1;
+    }
   }
 
   let { error } = await admin.from('coaches').update(patch).eq('id', coachId);

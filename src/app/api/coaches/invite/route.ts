@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       portal_category: rawPortalCategory,
       job_title,
       portal_can_sell,
+      specialist_role,
     } = body;
 
     if (!first_name || !last_name || !email) {
@@ -243,6 +244,15 @@ export async function POST(req: NextRequest) {
         ...(portal_category === 'support' ? { course_access_granted: true } : {}),
         max_belt_permission: max_belt_permission || 'yellow_belt',
         specialty_area: specialty_area?.trim() || null,
+        // Especialista del equipo HP (psicólogo / físico / nutricionista):
+        // se puede definir AL CREAR, no solo editando después (pedido de
+        // Marcelo 2026-08-25: "no encuentro dónde se crea el especialista").
+        // Se le da Escalón 1 de una: sin él NO aparece en la lista de
+        // "Especialistas con acceso al plan" de Temporadas y queda atascado
+        // sin ninguna señal de por qué.
+        ...(['psicologo', 'fisico', 'nutricionista'].includes(specialist_role)
+          ? { specialist_role, hp_escalon: 1 }
+          : { specialist_role: null }),
         languages: languages?.trim() || null,
         internal_notes: internal_notes?.trim() || null,
         active_status: true,
