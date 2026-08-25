@@ -1093,20 +1093,23 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
   // necesita mandar los transportes por WhatsApp o imprimirlos para el chofer.
   const hhmm = (t: string | null) => (t ? String(t).slice(0, 5) : '—');
   const dayText = (date: string, list: TransportBoardRow[]) => {
-    const L: string[] = [`🚐 TRANSPORTES · ${dayLabel(date).toUpperCase()}`];
-    for (const r of list) {
-      L.push('━━━━━━━━━━━━━━');
-      L.push(`${hhmm(r.depart)} → ${hhmm(r.ret)} · ${r.camp_name.toUpperCase()}`);
-      const l2: string[] = [`👥 ${r.passengers} pasajeros (${r.students} alumnos + ${r.staff} staff)`];
-      if (r.venue) l2.push(`📍 ${r.venue}`);
-      if (r.class_start) l2.push(`🕐 encuentro ${hhmm(r.class_start)}`);
-      L.push(l2.join(' · '));
-      if (r.coach_name) L.push(`Lo pide: ${r.coach_name}`);
-      if (r.status === 'taken') L.push('✓ ya salió');
-      else if (r.status === 'cancelled') L.push('✕ CANCELADO');
-    }
-    L.push('━━━━━━━━━━━━━━');
-    L.push('The Surf Sequence · Front Desk');
+    // Escrito para el CHOFER, que lo lee en el teléfono: primero la hora de
+    // salida, después a dónde y cuánta gente. Una línea por cosa, sin jerga.
+    const fecha = new Date(`${date}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+    const L: string[] = [];
+    L.push(`🚐 *TRANSPORTES · ${fecha.toUpperCase()}*`);
+    L.push(`${list.length} viaje${list.length === 1 ? '' : 's'}`);
+    list.forEach((r, i) => {
+      L.push('');
+      L.push(`*${i + 1}) SALE ${hhmm(r.depart)}*  ·  regreso ${hhmm(r.ret)}`);
+      L.push(`📍 ${r.venue || 'lugar por confirmar'}`);
+      L.push(`👥 ${r.passengers} personas — ${r.students} alumno${r.students === 1 ? '' : 's'} + ${r.staff} staff`);
+      L.push(`🏄 ${r.camp_name}${r.coach_name ? ` · coach ${r.coach_name}` : ''}`);
+      if (r.status === 'taken') L.push('✅ ya salió');
+      if (r.status === 'cancelled') L.push('❌ CANCELADO — no ir');
+    });
+    L.push('');
+    L.push('_The Surf Sequence · Front Desk_');
     return L.join('\n');
   };
   const allText = () => groups.map(([d, list]) => dayText(d, list)).join('\n\n');
@@ -1114,35 +1117,56 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
   // Imprimir: ventana propia con una tabla limpia (sirve para papel y para
   // "Guardar como PDF" o captura, que es como lo mandan por WhatsApp).
   const printBoard = () => {
+    // Pensado para pegarlo en la pared o mandarlo como foto: la HORA DE SALIDA
+    // enorme, y al lado los tres datos que importan. Nada de tabla apretada.
     const esc = (v: unknown) => String(v ?? '—').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const dLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
     const body = groups.map(([d, list]) => `
-      <h2>${esc(dayLabel(d))}</h2>
-      <table>
-        <thead><tr><th>Sale</th><th>Vuelve</th><th>Servicio</th><th>Pasajeros</th><th>Lugar</th><th>Encuentro</th><th>Lo pide</th><th>Estado</th></tr></thead>
-        <tbody>${list.map((r) => `<tr>
-          <td class="b">${esc(hhmm(r.depart))}</td>
-          <td>${esc(hhmm(r.ret))}</td>
-          <td class="b">${esc(r.camp_name)}</td>
-          <td>${esc(r.passengers)} <span class="s">(${esc(r.students)}+${esc(r.staff)})</span></td>
-          <td>${esc(r.venue)}</td>
-          <td>${esc(hhmm(r.class_start))}</td>
-          <td>${esc(r.coach_name)}</td>
-          <td>${r.status === 'taken' ? '✓ salió' : r.status === 'cancelled' ? '✕ cancelado' : 'pendiente'}</td>
-        </tr>`).join('')}</tbody>
-      </table>`).join('');
+      <section>
+        <h2>${esc(dLabel(d))} <span class="n">· ${list.length} viaje${list.length === 1 ? '' : 's'}</span></h2>
+        ${list.map((r) => `
+          <div class="trip${r.status === 'cancelled' ? ' cancelled' : ''}">
+            <div class="hora">
+              <div class="sale">${esc(hhmm(r.depart))}</div>
+              <div class="vuelve">vuelve ${esc(hhmm(r.ret))}</div>
+            </div>
+            <div class="info">
+              <div class="lugar">📍 ${esc(r.venue || 'lugar por confirmar')}</div>
+              <div class="gente">👥 <b>${esc(r.passengers)} personas</b> <span class="s">— ${esc(r.students)} alumno${r.students === 1 ? '' : 's'} + ${esc(r.staff)} staff</span></div>
+              <div class="serv">🏄 ${esc(r.camp_name)}${r.coach_name ? ` · coach ${esc(r.coach_name)}` : ''}</div>
+              ${r.status === 'taken' ? '<div class="est ok">✅ ya salió</div>' : ''}
+              ${r.status === 'cancelled' ? '<div class="est no">❌ CANCELADO — no ir</div>' : ''}
+            </div>
+          </div>`).join('')}
+      </section>`).join('');
     const w = window.open('', '_blank');
     if (!w) { alert('Permití las ventanas emergentes para imprimir.'); return; }
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Transportes</title><style>
-      body{font-family:system-ui,-apple-system,sans-serif;color:#061C2B;padding:24px;margin:0}
-      h1{font-size:18px;margin:0 0 2px} .sub{font-size:11px;color:#667;margin:0 0 18px}
-      h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;color:#0090B0}
-      table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
-      th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#889;border-bottom:1px solid #ccd;padding:4px 6px}
-      td{padding:6px;border-bottom:1px solid #eef} .b{font-weight:700} .s{color:#889;font-size:10px}
-      @media print{body{padding:0}}
+      *{box-sizing:border-box}
+      body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#061C2B;padding:28px;margin:0}
+      h1{font-size:22px;margin:0 0 2px}
+      .sub{font-size:11px;color:#7a8894;margin:0 0 20px}
+      section{margin-bottom:22px;break-inside:avoid}
+      h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#0090B0;
+         border-bottom:2px solid #0090B0;padding-bottom:5px;margin:0 0 10px}
+      h2 .n{color:#9aa7b2;letter-spacing:0;text-transform:none;font-weight:400}
+      .trip{display:flex;gap:16px;align-items:center;padding:12px 14px;margin-bottom:8px;
+            border:1px solid #dde4ea;border-left:6px solid #FFD166;border-radius:10px;break-inside:avoid}
+      .trip.cancelled{border-left-color:#c04545;opacity:.55}
+      .hora{min-width:104px;text-align:center;border-right:1px solid #e6ebef;padding-right:14px}
+      .sale{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
+      .vuelve{font-size:10px;color:#7a8894;margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+      .info{flex:1;min-width:0}
+      .lugar{font-size:16px;font-weight:700;margin-bottom:3px}
+      .gente{font-size:13px;margin-bottom:2px}
+      .gente .s{color:#7a8894}
+      .serv{font-size:12px;color:#5b6874}
+      .est{font-size:11px;font-weight:700;margin-top:3px}
+      .est.ok{color:#0a7c5d} .est.no{color:#c04545}
+      @media print{body{padding:0} .trip{border-color:#ccc}}
     </style></head><body>
-      <h1>🚐 Transportes · próximos 14 días</h1>
-      <p class="sub">The Surf Sequence · Front Desk · generado ${esc(new Date().toLocaleString('es-ES', { timeZone: 'America/El_Salvador' }))}</p>
+      <h1>🚐 Transportes</h1>
+      <p class="sub">The Surf Sequence · Front Desk · ${esc(new Date().toLocaleString('es-ES', { timeZone: 'America/El_Salvador' }))}</p>
       ${body || '<p>No hay transportes solicitados.</p>'}
     </body></html>`);
     w.document.close();
