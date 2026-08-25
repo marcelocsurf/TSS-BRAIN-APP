@@ -698,6 +698,10 @@ export async function getMyAthleteScores(
         .from('hp_deep_evaluations')
         .select('scores, eval_kind, created_at, eval_date')
         .eq('student_id', student.id)
+        // Por eval_date: las migradas comparten el timestamp de importación,
+        // así que ordenar por created_at podía elegir la de marzo como si
+        // fuera "la última". created_at solo desempata.
+        .order('eval_date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(6),
       admin
