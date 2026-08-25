@@ -142,7 +142,9 @@ export async function getStudentPortalData(token: string) {
     const n = String(s.notes ?? '');
     // hp:checkin: = histórico migrado · checkin: = puente de horas del
     // check-in diario. Ambos suman horas pero no son "sesiones" visibles.
-    return !n.startsWith('hp:checkin:') && !n.startsWith('checkin:');
+    // hpsession: = puente de la sesión presencial del equipo (suma horas,
+    // pero la sesión no es una práctica propia del alumno).
+    return !n.startsWith('hp:checkin:') && !n.startsWith('checkin:') && !n.startsWith('hpsession:');
   });
   const totalSessions = coachSessions.length + selfSessions.length;
   const selfTrainingCount = selfSessions.filter((s: any) => s.completed).length;

@@ -20,6 +20,7 @@ export interface ProgramItemView {
   title: string;
   detail: string | null;
   video_url: string | null;
+  duration_minutes: number | null; // la dosis, ahora dato y no prosa (00167)
   marked: boolean;
 }
 
@@ -116,7 +117,7 @@ export async function getMyProgram(
     if (dayIds.length) {
       const { data, error } = await admin
         .from('program_items')
-        .select('id, day_id, title, detail, video_url, display_order')
+        .select('id, day_id, title, detail, video_url, display_order, duration_minutes')
         .in('day_id', dayIds)
         .order('display_order');
       if (error) throw error;
@@ -153,6 +154,7 @@ export async function getMyProgram(
         title: it.title,
         detail: it.detail,
         video_url: it.video_url,
+        duration_minutes: it.duration_minutes ?? null,
         marked: markedItems.has(it.id),
       });
       itemsByDay.set(it.day_id, arr);

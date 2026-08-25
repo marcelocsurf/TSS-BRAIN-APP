@@ -394,7 +394,14 @@ function DayCard({
                       <p className="text-[12.5px] font-semibold leading-tight" style={{ color: '#eaf4fa' }}>
                         {it.title}
                       </p>
-                      {it.detail && (
+                      {/* La dosis ahora es dato: se muestra explícita (antes
+                          vivía dentro del texto del detalle). */}
+                      {(it as any).duration_minutes ? (
+                        <p className="text-[10.5px]" style={{ color: '#9fd7e8' }}>
+                          ⏱ {(it as any).duration_minutes} min
+                          {it.detail ? <span style={{ color: '#8aa0b2' }}> · {it.detail}</span> : null}
+                        </p>
+                      ) : it.detail && (
                         <p className="text-[10.5px]" style={{ color: '#8aa0b2' }}>{it.detail}</p>
                       )}
                     </div>

@@ -939,14 +939,18 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
     setOpen(false); onInserted();
   };
 
-  // "45 min" / "10-15 min" / "1 h" → minutos (las misiones traen time_estimate
-  // como texto; sin esto la dosis seguía siendo prosa).
+  // "45 min" / "10-15 min" / "1 h" → minutos. EXIGE la unidad: sin ella,
+  // "1 session" o "3 sets" se convertían en 1 y 3 minutos (revisión).
   const parseMinutes = (t?: string | null): number | null => {
     if (!t) return null;
-    const h = t.match(/(\d+(?:[.,]\d+)?)\s*h/i);
+    const h = t.match(/(\d+(?:[.,]\d+)?)\s*(?:h\b|hs\b|hora)/i);
     if (h) return Math.round(parseFloat(h[1].replace(',', '.')) * 60);
-    const m = t.match(/(\d+)/);
-    return m ? Number(m[1]) : null;
+    const m = t.match(/(\d+)\s*(?:m\b|min|minuto)/i);
+    if (m) {
+      const n = Number(m[1]);
+      return n > 0 && n <= 600 ? n : null;
+    }
+    return null;
   };
 
   const counts = {

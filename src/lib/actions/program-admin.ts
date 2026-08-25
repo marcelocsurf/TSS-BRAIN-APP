@@ -341,12 +341,19 @@ export async function adminDuplicateProgram(
         if (dErr) throw dErr;
         if (d.items.length) {
           const { error: iErr } = await admin.from('program_items').insert(
+            // La copia conserva la estructura (dosis, paso, origen, pilar):
+            // sin esto, duplicar un programa lo devolvía al estado sin
+            // estructura que la 00167 vino a resolver.
             d.items.map((it) => ({
               day_id: newDay.id,
               title: it.title,
               detail: it.detail,
               video_url: it.video_url,
               display_order: it.display_order,
+              duration_minutes: (it as any).duration_minutes ?? null,
+              step_id: (it as any).step_id ?? null,
+              drill_id: (it as any).drill_id ?? null,
+              pillar: (it as any).pillar ?? null,
             }))
           );
           if (iErr) throw iErr;
@@ -1686,11 +1693,19 @@ export async function adminInsertBlockTemplate(
   try {
     if (!(await assertAdmin())) return DENY;
     const admin = createAdminClient();
+    // pillar y step_ref se leen y se APLICAN: la plantilla los trae (198/199
+    // con pilar, 46 con paso) y el insert los tiraba — el ítem nacía sin
+    // clasificación aunque la plantilla la tuviera (revisión).
     const { data: tpl, error: tErr } = await admin
-      .from('program_block_templates').select('items').eq('id', templateId).maybeSingle();
+      .from('program_block_templates').select('items, pillar, step_ref').eq('id', templateId).maybeSingle();
     if (tErr) throw tErr;
     if (!tpl) return { ok: false, error: 'Plantilla no encontrada.' };
     const items = Array.isArray(tpl.items) ? tpl.items : [];
+    const PILLAR_OK = ['fisico', 'tecnico', 'tactico', 'mental', 'equipment', 'surf'];
+    const TPL_PILLAR: Record<string, string> = { technical: 'tecnico', tactical: 'tactico', physical: 'fisico', mental: 'mental', equipment: 'equipment', surf: 'surf' };
+    const rawPillar = String((tpl as any).pillar ?? '').toLowerCase().trim();
+    const tplPillar = PILLAR_OK.includes(rawPillar) ? rawPillar : (TPL_PILLAR[rawPillar] ?? null);
+    const tplStep = String((tpl as any).step_ref ?? '').trim() || null;
     if (items.length === 0) return { ok: false, error: 'La plantilla está vacía.' };
     const { data: existing, error: eErr } = await admin
       .from('program_items').select('display_order').eq('day_id', dayId)
@@ -1704,6 +1719,8 @@ export async function adminInsertBlockTemplate(
         detail: it.detail || null,
         video_url: it.video_url || null,
         display_order: base + i + 1,
+        pillar: tplPillar,
+        step_id: tplStep,
       }))
     );
     if (error) throw error;

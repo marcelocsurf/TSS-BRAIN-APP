@@ -71,7 +71,7 @@ export async function getStudentActivitySummary(
     const selfVisible = selfSessions.filter((s: any) => {
       const n = String(s.notes ?? '');
       // checkin: = puente de horas del check-in diario (misma regla que hp:).
-      return !n.startsWith('hp:checkin:') && !n.startsWith('checkin:');
+      return !n.startsWith('hp:checkin:') && !n.startsWith('checkin:') && !n.startsWith('hpsession:');
     });
 
     const hours = computeSurfSplit(coachSessions, selfSessions);

@@ -546,28 +546,42 @@ async function syncSessionHours(
   sessionId: string,
 ): Promise<void> {
   try {
-    const { data: sess } = await admin
+    // CADA lectura se chequea: un fallo transitorio interpretado como "sin
+    // duración" o "sin presentes" BORRABA las horas ya acreditadas a todo el
+    // equipo, en silencio (hallazgo crítico de la revisión). Ante un error se
+    // aborta el sync — mejor no tocar nada que destruir datos.
+    const { data: sess, error: sErr } = await admin
       .from('hp_team_sessions')
-      .select('id, title, duration_minutes, session_date')
+      .select('id, title, duration_minutes, session_date, kind')
       .eq('id', sessionId)
       .maybeSingle();
-    const minutes = (sess as any)?.duration_minutes ?? null;
+    if (sErr) throw sErr;
+    if (!sess) return; // la sesión ya no existe: nada que sincronizar
+    const minutes = (sess as any).duration_minutes ?? null;
+    // Solo el AGUA cuenta como minutos de agua: una sesión de gym, video o
+    // skate se acredita como entreno pero NO infla las horas de agua.
+    const isWater = !(sess as any).kind || ['agua', 'mixto'].includes((sess as any).kind);
+    // Una sesión FUTURA no acredita horas todavía (crearla el lunes para el
+    // viernes sumaba las horas al instante y las metía en el ranking).
+    const happened = String((sess as any).session_date) <= elSalvadorToday();
 
-    const { data: att } = await admin
+    const { data: att, error: aErr } = await admin
       .from('hp_session_attendance')
       .select('student_id, present')
       .eq('session_id', sessionId);
+    if (aErr) throw aErr;
     const present = new Set((att ?? []).filter((a: any) => a.present).map((a: any) => a.student_id));
 
     // Filas ya creadas por esta sesión.
-    const { data: existing } = await admin
+    const { data: existing, error: eErr } = await admin
       .from('self_training_sessions')
       .select('id, student_id, notes')
       .like('notes', `hpsession:${sessionId}:%`);
+    if (eErr) throw eErr; // sin esta lectura el bucle DUPLICARÍA las filas
     const byStudent = new Map((existing ?? []).map((r: any) => [r.student_id, r]));
 
-    // Sin duración = la sesión no declara horas: se limpia todo lo que hubiera.
-    const shouldHave = minutes && minutes > 0 ? present : new Set<string>();
+    // Sin duración (o sesión futura) = no declara horas: se limpia lo que hubiera.
+    const shouldHave = minutes && minutes > 0 && happened ? present : new Set<string>();
 
     const toDelete = (existing ?? []).filter((r: any) => !shouldHave.has(r.student_id)).map((r: any) => r.id);
     if (toDelete.length) await admin.from('self_training_sessions').delete().in('id', toDelete);
@@ -576,17 +590,20 @@ async function syncSessionHours(
       const row = byStudent.get(sid);
       if (row) {
         await admin.from('self_training_sessions')
-          .update({ duration_minutes: minutes, total_water_minutes: minutes })
+          .update({ duration_minutes: minutes, total_water_minutes: isWater ? minutes : 0 })
           .eq('id', (row as any).id);
       } else {
         await admin.from('self_training_sessions').insert({
           student_id: sid,
-          drill_name: `Sesión de equipo · ${(sess as any)?.title ?? 'HP'}`,
+          drill_name: `Sesión de equipo · ${(sess as any).title ?? 'HP'}`,
           duration_minutes: minutes,
-          total_water_minutes: minutes,
+          total_water_minutes: isWater ? minutes : 0,
           completed: true,
           notes: `hpsession:${sessionId}:${sid}`,
-          created_at: `${(sess as any)?.session_date}T18:00:00Z`,
+          // session_date para que la fila caiga en la SEMANA correcta del
+          // ranking y de la bitácora, no en el día en que se pasó lista.
+          session_date: (sess as any).session_date,
+          created_at: `${(sess as any).session_date}T18:00:00Z`,
         });
       }
     }
@@ -714,6 +731,56 @@ export async function hpSyncSessionRoster(sessionId: string): Promise<{ ok: bool
   } catch (e) {
     console.error('[hp-cockpit] hpSyncSessionRoster failed', e);
     return { ok: false, error: 'No se pudo actualizar la lista.' };
+  }
+}
+
+// EDITAR una sesión ya creada. No existía: si la duración salía mal o el
+// lugar cambiaba, la única salida era borrar y rehacer — y el CASCADE se
+// llevaba la asistencia ya pasada (hallazgo de la revisión).
+export async function hpUpdateSession(
+  sessionId: string,
+  patch: { title?: string; date?: string; time?: string | null; durationMinutes?: number | null; location?: string | null; coachId?: string | null; focus?: string | null; kind?: string | null },
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await assertAdmin())) return DENY;
+    const row: Record<string, unknown> = {};
+    if (patch.title !== undefined) {
+      if (!patch.title.trim()) return { ok: false, error: 'La sesión necesita un nombre.' };
+      row.title = patch.title.trim();
+    }
+    if (patch.date !== undefined) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(patch.date)) return { ok: false, error: 'La fecha no es válida.' };
+      row.session_date = patch.date;
+    }
+    if (patch.time !== undefined) {
+      if (patch.time && !/^\d{2}:\d{2}$/.test(patch.time)) return { ok: false, error: 'La hora no es válida.' };
+      row.session_time = patch.time || null;
+    }
+    if (patch.durationMinutes !== undefined) {
+      const d = patch.durationMinutes;
+      if (d != null && (!Number.isFinite(d) || d <= 0 || d > 600)) return { ok: false, error: 'La duración va de 1 a 600 minutos.' };
+      row.duration_minutes = d;
+    }
+    if (patch.location !== undefined) row.location = patch.location?.trim().slice(0, 200) || null;
+    if (patch.coachId !== undefined) row.coach_id = patch.coachId || null;
+    if (patch.focus !== undefined) row.focus = patch.focus?.trim().slice(0, 500) || null;
+    if (patch.kind !== undefined) {
+      if (patch.kind && !['agua', 'tierra', 'gym', 'skate', 'video', 'mixto'].includes(patch.kind)) {
+        return { ok: false, error: 'Tipo de sesión inválido.' };
+      }
+      row.kind = patch.kind || null;
+    }
+    if (Object.keys(row).length === 0) return { ok: false, error: 'Nada que guardar.' };
+
+    const admin = createAdminClient();
+    const { error } = await admin.from('hp_team_sessions').update(row).eq('id', sessionId);
+    if (error) throw error;
+    // Duración/fecha/tipo cambian las horas acreditadas.
+    await syncSessionHours(admin, sessionId);
+    return { ok: true };
+  } catch (e) {
+    console.error('[hp-cockpit] hpUpdateSession failed', e);
+    return { ok: false, error: 'No se pudo guardar la sesión.' };
   }
 }
 
