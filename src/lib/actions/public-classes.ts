@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { createNotification } from '@/lib/actions/notifications';
 import { campGuestIncludedIn } from '@/lib/utils/camp-guest';
+import { campEnrollmentClosed, campClosedNoticeEN } from '@/lib/utils/camp-window';
 import { findLikelySamePerson } from '@/lib/utils/student-match';
 
 // Aviso interno de una reserva del QR público: campanita para coordinadores,
@@ -66,7 +67,7 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
   const today = elSalvadorToday();
   let q = admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, head_coach_id, head_coach_status, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description, video_url), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status)')
+    .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, template_id, head_coach_id, head_coach_status, camp_templates:template_id!inner(id, template_name, service_kind, capacity_max, session_duration_minutes, list_price_cents, card_color, description, video_url), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status)')
     .eq('academy_id', academy.id)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson'])
     .gte('start_date', today)
@@ -79,7 +80,9 @@ export async function getPublicClasses(slug: string, templateId?: string | null)
   if (templateId) q = q.eq('template_id', templateId);
   const { data } = await q;
 
-  const classes = (data ?? []).map((c: any) => {
+  // Un servicio de varios días desaparece del QR en cuanto arranca: no tiene
+  // sentido mostrarle al huésped algo a lo que ya no se puede sumar.
+  const classes = (data ?? []).filter((c: any) => !campEnrollmentClosed(c)).map((c: any) => {
     const tpl = Array.isArray(c.camp_templates) ? c.camp_templates[0] : c.camp_templates;
     // Coach efectivo (invariante #1): head coach si aceptó la transferencia,
     // si no el coach original. El QR mostraba siempre el coach_id legacy.
@@ -204,7 +207,7 @@ export async function publicEnroll(input: {
   // 1. The class — must be a future 'class' service of this academy with room.
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, template_id, camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status, student_id)')
+    .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, template_id, camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status, student_id)')
     .eq('id', input.campId)
     .eq('academy_id', academy.id)
     .maybeSingle();
@@ -213,6 +216,10 @@ export async function publicEnroll(input: {
   // las lecciones de surf (Discover), o el cliente ve la clase pero no puede
   // reservarla ("Class not found").
   if (!camp || !['class', 'trip', 'surf_lesson'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
+  // Un servicio de varios días se cierra al arrancar — nadie entra a una
+  // secuencia empezada. Una clase de un día no se toca: el QR se escanea al
+  // llegar, a veces con la clase ya en marcha.
+  if (campEnrollmentClosed(camp as any)) return { ok: false, error: campClosedNoticeEN() };
   const active = ((camp as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const capacity = (camp as any).capacity_override ?? tpl?.capacity_max ?? 0;
   if (capacity > 0 && active.length >= capacity) return { ok: false, error: 'This class is full.' };
@@ -457,10 +464,11 @@ export async function publicAddCompanion(input: {
   // Clase + cupo disponible en vivo.
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, capacity_override, camp_templates:template_id(service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status)')
+    .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(service_kind, capacity_max, list_price_cents), camp_participants(id, enrollment_status)')
     .eq('id', input.campId).eq('academy_id', academy.id).maybeSingle();
   const tpl: any = camp ? (Array.isArray((camp as any).camp_templates) ? (camp as any).camp_templates[0] : (camp as any).camp_templates) : null;
   if (!camp || !['class', 'trip', 'surf_lesson'].includes(tpl?.service_kind)) return { ok: false, error: 'Class not found.' };
+  if (campEnrollmentClosed(camp as any)) return { ok: false, error: campClosedNoticeEN() };
   const active = ((camp as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const capacity = (camp as any).capacity_override ?? tpl?.capacity_max ?? 0;
   if (capacity > 0 && active.length >= capacity) return { ok: false, error: 'No spots left for another person.' };
@@ -637,7 +645,7 @@ export async function getPublicMoveTargets(bookingId: string) {
   const today = elSalvadorToday();
   const { data } = await admin
     .from('camp_instances')
-    .select('id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status)')
+    .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status)')
     .eq('academy_id', b.camp.academy_id)
     .eq('template_id', b.camp.template_id)
     .gte('start_date', today)
@@ -649,8 +657,8 @@ export async function getPublicMoveTargets(bookingId: string) {
     const tpl = Array.isArray(c.camp_templates) ? c.camp_templates[0] : c.camp_templates;
     const act = (c.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
     const cap = c.capacity_override ?? tpl?.capacity_max ?? 0;
-    return { id: c.id, date: c.start_date, time: c.scheduled_time, left: cap > 0 ? cap - act : null };
-  }).filter((c: any) => c.left == null || c.left > 0);
+    return { id: c.id, date: c.start_date, time: c.scheduled_time, left: cap > 0 ? cap - act : null, closed: campEnrollmentClosed(c) };
+  }).filter((c: any) => !c.closed && (c.left == null || c.left > 0));
 }
 
 async function notifyStaffChange(academyId: string, title: string, body: string, studentId: string | null) {
@@ -698,11 +706,12 @@ export async function publicMoveBooking(bookingId: string, targetCampId: string,
   const admin = createAdminClient();
   const { data: target } = await admin
     .from('camp_instances')
-    .select('id, academy_id, template_id, camp_name, start_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status, student_id)')
+    .select('id, academy_id, template_id, camp_name, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max), camp_participants(id, enrollment_status, student_id)')
     .eq('id', targetCampId).neq('status', 'cancelled').maybeSingle();
   if (!target || (target as any).academy_id !== b.camp.academy_id || (target as any).template_id !== b.camp.template_id) {
     return { ok: false, error: 'That date is not available.' };
   }
+  if (campEnrollmentClosed(target as any)) return { ok: false, error: campClosedNoticeEN() };
   const act = ((target as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const tpl = Array.isArray((target as any).camp_templates) ? (target as any).camp_templates[0] : (target as any).camp_templates;
   const cap = (target as any).capacity_override ?? tpl?.capacity_max ?? 0;

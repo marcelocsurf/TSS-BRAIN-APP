@@ -7,6 +7,7 @@
 // coordinator/admin.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { campEnrollmentClosed, campClosedNoticeES } from '@/lib/utils/camp-window';
 import { elSalvadorToday } from '@/lib/utils/tz';
 
 async function resolveDesk(token: string) {
@@ -201,8 +202,10 @@ export async function getTransferTargets(token: string, participantId: string) {
       full: cap > 0 && act.length >= cap,
       price_cents: tpl?.list_price_cents ?? null,
       already_in: act.some((p: any) => p.student_id === (seat as any).student_id),
+      // Un camp ya arrancado no se ofrece como destino — no se entra a mitad.
+      closed: campEnrollmentClosed(c),
     };
-  }).filter((c: any) => !c.already_in);
+  }).filter((c: any) => !c.already_in && !c.closed);
 }
 
 // Ajuste de cobro desde el mostrador (pedido de Cony 2026-08-09): el host
@@ -294,11 +297,13 @@ export async function deskTransferSeat(token: string, participantId: string, tar
 
   const { data: target } = await admin
     .from('camp_instances')
-    .select('id, academy_id, camp_name, coach_id, head_coach_id, head_coach_status, capacity_override, status, camp_templates:template_id(template_name, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
+    .select('id, academy_id, camp_name, start_date, end_date, scheduled_time, coach_id, head_coach_id, head_coach_status, capacity_override, status, camp_templates:template_id(template_name, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
     .eq('id', targetCampId).maybeSingle();
   if (!target || (target as any).academy_id !== who.academy_id || (target as any).status === 'cancelled') {
     return { ok: false, error: 'Servicio destino no disponible.' };
   }
+  // Tampoco se transfiere a un camp que ya arrancó.
+  if (campEnrollmentClosed(target as any)) return { ok: false, error: campClosedNoticeES(target as any) };
   const tTpl = Array.isArray((target as any).camp_templates) ? (target as any).camp_templates[0] : (target as any).camp_templates;
   const tAct = ((target as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const tCap = (target as any).capacity_override ?? tTpl?.capacity_max ?? 0;

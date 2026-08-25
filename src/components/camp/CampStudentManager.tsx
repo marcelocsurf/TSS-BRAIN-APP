@@ -48,14 +48,25 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
 
   // Cupo LLENO → el cupo del servicio es sugerido: ofrecer +1 en sobrecupo
   // (pedido de Rick — antes tocaba borrar el servicio y recrearlo más grande).
-  const addWithOverbook = async (studentId: string) => {
-    const r: any = await addStudentToCamp(campInstanceId, studentId);
+  const addWithOverbook = async (studentId: string, opts: { allowStarted?: boolean } = {}) => {
+    const r: any = await addStudentToCamp(campInstanceId, studentId, opts);
+    // Camp ya arrancado: se cierra al iniciar. Coordinación puede forzarlo
+    // SOLO para registrar a alguien que sí vino desde el día 1 y quedó fuera
+    // del sistema — queda marcado como incorporación tardía en el asiento.
+    if (r?.started) {
+      const ok = window.confirm(
+        `${r.started.notice}\n\nSolo forzalo si esta persona YA venía en el camp y faltaba registrarla. Quedará marcada como incorporación tardía.\n\n¿Agregarla de todos modos?`,
+      );
+      if (!ok) return;
+      await addWithOverbook(studentId, { allowStarted: true });
+      return;
+    }
     if (r?.full) {
       const ok = window.confirm(
         `This service is full (${r.full.act}/${r.full.cap} — suggested capacity).\n\nAdd 1 more as OVERBOOK anyway? It will be flagged on the seat.`,
       );
       if (!ok) return;
-      await addStudentToCamp(campInstanceId, studentId, { allowOverbook: true });
+      await addStudentToCamp(campInstanceId, studentId, { ...opts, allowOverbook: true });
     }
     router.refresh();
   };

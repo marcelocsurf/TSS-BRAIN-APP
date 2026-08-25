@@ -47,3 +47,8 @@ export function weekKey(tsUtc: string | Date | null | undefined): string | null 
   d.setUTCDate(d.getUTCDate() + diff);
   return d.toISOString().slice(0, 10);
 }
+
+/** Hora local de El Salvador ahora mismo, en formato HH:MM (24 h). */
+export function elSalvadorNowHM(): string {
+  return new Date(Date.now() - SV_OFFSET_MS).toISOString().slice(11, 16);
+}

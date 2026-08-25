@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createNotification } from '@/lib/actions/notifications';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { campGuestIncludedIn } from '@/lib/utils/camp-guest';
+import { campEnrollmentClosed, campClosedNoticeES } from '@/lib/utils/camp-window';
 
 // ── Seller 2C/2D (token-gated) ──────────────────────────────────
 // The seller RESERVES a spot (never marks it paid): the participant lands as
@@ -59,11 +60,14 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   // Service must be in the seller's academy, upcoming and sellable.
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, camp_name, academy_id, status, start_date, capacity_override, camp_templates:template_id(capacity_max, list_price_cents, service_kind)')
+    .select('id, camp_name, academy_id, status, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(capacity_max, list_price_cents, service_kind)')
     .eq('id', campId)
     .maybeSingle();
   if (!camp || camp.academy_id !== coach.academy_id) return { ok: false, error: 'Service not found.' };
   if (camp.status === 'cancelled') return { ok: false, error: 'This service is cancelled.' };
+  // Un camp de varios días se CIERRA al arrancar (regla de Marcelo 2026-08-25):
+  // nadie se suma a una secuencia empezada. Las clases sueltas no se tocan.
+  if (campEnrollmentClosed(camp as any)) return { ok: false, error: campClosedNoticeES(camp as any) };
   // Walk-in retroactivo (pedido del equipo, ice bath 2026-08-08): una clase
   // YA CERRADA sigue inscribible el MISMO día para el equipo de mostrador
   // (host/coordinador/admin), para registrar a quienes llegaron sin anotarse.

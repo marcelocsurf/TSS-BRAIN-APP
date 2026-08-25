@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { elSalvadorToday } from '@/lib/utils/tz';
+import { campEnrollmentClosed, campClosedNoticeES, campDayProgress } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
@@ -1056,9 +1057,39 @@ export async function closeCampSessionResult(input: {
 // ADD STUDENT TO CAMP
 // ═══════════════════════════════════════
 
-export async function addStudentToCamp(campInstanceId: string, studentId: string, opts?: { allowOverbook?: boolean }) {
+export async function addStudentToCamp(
+  campInstanceId: string,
+  studentId: string,
+  opts?: { allowOverbook?: boolean; allowStarted?: boolean },
+) {
   const supabase = await createClient();
   const me = await getCurrentCoach();
+
+  // ── Camp ya arrancado ──────────────────────────────────────────
+  // Regla de Marcelo (2026-08-25): un camp se CIERRA al iniciar; nadie se
+  // suma a una secuencia empezada. Acá — y SOLO acá, en el dashboard de
+  // coordinación — se permite forzarlo con allowStarted para arreglar el caso
+  // real "sí vino desde el día 1 pero se olvidaron de meterlo al sistema".
+  // Queda auditado en la nota del asiento. El QR, el vendedor y el mostrador
+  // están bloqueados sin excepción.
+  let lateNote: string | null = null;
+  {
+    const adminW = createAdminClient();
+    const { data: win } = await adminW
+      .from('camp_instances')
+      .select('start_date, end_date, scheduled_time')
+      .eq('id', campInstanceId)
+      .maybeSingle();
+    // Una lectura fallida NO se interpreta como "no arrancó": si no sabemos,
+    // no bloqueamos (el cupo es la guarda dura) pero tampoco inventamos nota.
+    if (win && campEnrollmentClosed(win as any)) {
+      if (!opts?.allowStarted) {
+        return { success: false as const, started: { notice: campClosedNoticeES(win as any) } };
+      }
+      const p = campDayProgress(win as any);
+      lateNote = `INCORPORACIÓN TARDÍA${p ? ` (día ${p.day} de ${p.total})` : ''} — autorizada por ${me?.display_name ?? 'coordinación'}`;
+    }
+  }
 
   // Check if already enrolled
   const { data: existing } = await supabase
@@ -1152,6 +1183,7 @@ export async function addStudentToCamp(campInstanceId: string, studentId: string
     const notes = [
       includedIn ? `INCLUIDO en ${includedIn} (huésped de camp) — no cobrar.` : null,
       overbookNote,
+      lateNote,
     ].filter(Boolean).join(' ') || null;
     const { error } = await supabase.from('camp_participants').insert({
       camp_instance_id: campInstanceId,

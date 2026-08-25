@@ -777,14 +777,23 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
         </div>
       )}
 
+      {/* Un camp de varios días se CIERRA al arrancar — nadie entra a mitad
+          de una secuencia. En vez del botón, el mostrador ve por qué. */}
+      {e.closed && (
+        <div className="mt-2.5 rounded-2xl px-3 py-2.5 text-center"
+          style={{ background: 'rgba(192,69,69,.08)', border: '1px solid rgba(192,69,69,.3)' }}>
+          <p className="text-[11px] font-bold" style={{ color: '#c04545' }}>🔒 Camp en curso — inscripción cerrada</p>
+          <p className="text-[10.5px] text-gray-500 mt-0.5">Se cierra al arrancar. Ofrecele al cliente el siguiente camp.</p>
+        </div>
+      )}
       {/* Cupo ∞ (capacity 0 = sin tope): sí se puede reservar, sin contador. */}
-      {spotsLeft === null && (
+      {!e.closed && spotsLeft === null && (
         <button type="button" onClick={onReserve}
           className="mt-2.5 w-full rounded-full py-2.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>
           + Reservar
         </button>
       )}
-      {spotsLeft !== null && spotsLeft > 0 && (
+      {!e.closed && spotsLeft !== null && spotsLeft > 0 && (
         <button type="button" onClick={onReserve}
           className="mt-2.5 w-full rounded-full py-2.5 text-[9px]" style={{ ...F_M, background: GREEN, color: INK }}>
           + Reservar ({spotsLeft} libre{spotsLeft === 1 ? '' : 's'})
@@ -1361,6 +1370,7 @@ function AvailabilityTab({ token }: { token: string }) {
   const seenEvent = new Set<string>();
   const visible = all.filter((r) => {
     if (r.is_event) { if (seenEvent.has(r.camp_id)) return false; seenEvent.add(r.camp_id); }
+    if (soloLibres && r.closed) return false;   // en curso = no vendible
     return !soloLibres || r.spots_left === null || r.spots_left > 0;
   });
 
@@ -1370,7 +1380,10 @@ function AvailabilityTab({ token }: { token: string }) {
     if (g) g[1].push(r); else groups.push([r.date, [r]]);
   }
 
+  // Un camp de varios días CIERRA al arrancar: aunque le sobre cupo, ya no
+  // entra nadie. El mostrador tiene que verlo distinto de "quedan 3 lugares".
   const cupoTxt = (r: AvailabilityRow) =>
+    r.closed ? 'EN CURSO' :
     r.spots_left === null ? 'sin límite' : r.spots_left === 0 ? 'LLENO' : `${r.spots_left} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`;
 
   // Texto para mandarle al huésped o al grupo por WhatsApp.
@@ -1378,7 +1391,8 @@ function AvailabilityTab({ token }: { token: string }) {
     const fecha = new Date(`${date}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
     const L: string[] = [`🏄 *ACTIVIDADES · ${fecha.toUpperCase()}*`, ''];
     for (const r of list) {
-      const libre = r.spots_left === null ? '' : r.spots_left === 0 ? '  (LLENO)' : `  · ${r.spots_left} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`;
+      const libre = r.closed ? '  (ya empezó — no admite inscripciones)'
+        : r.spots_left === null ? '' : r.spots_left === 0 ? '  (LLENO)' : `  · ${r.spots_left} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`;
       L.push(`*${hhmm(r.time)}*  ${r.name}${r.is_event && r.total_days ? ` (${r.total_days} días)` : ''}`);
       const sub: string[] = [];
       if (r.price_cents != null) sub.push(money(r.price_cents));
@@ -1402,7 +1416,7 @@ function AvailabilityTab({ token }: { token: string }) {
       <section>
         <h2>${esc(dLabel(d))}</h2>
         ${list.map((r) => `
-          <div class="act${r.spots_left === 0 ? ' lleno' : ''}">
+          <div class="act${r.spots_left === 0 || r.closed ? ' lleno' : ''}">
             <div class="h">${esc(hhmm(r.time))}</div>
             <div class="i">
               <div class="n">${esc(r.name)}${r.is_event && r.total_days ? ` <span class="ev">· evento de ${esc(r.total_days)} días</span>` : ''}</div>
@@ -1410,7 +1424,7 @@ function AvailabilityTab({ token }: { token: string }) {
             </div>
             <div class="r">
               ${r.price_cents != null ? `<div class="p">$${esc((r.price_cents / 100).toFixed(0))}</div>` : ''}
-              <div class="c${r.spots_left === 0 ? ' no' : ''}">${r.spots_left === null ? 'sin límite' : r.spots_left === 0 ? 'LLENO' : `${esc(r.spots_left)} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`}</div>
+              <div class="c${r.spots_left === 0 || r.closed ? ' no' : ''}">${esc(cupoTxt(r))}</div>
             </div>
           </div>`).join('')}
       </section>`).join('');
@@ -1494,7 +1508,7 @@ function AvailabilityTab({ token }: { token: string }) {
             <CopyTextButton text={dayText(date, list)} label="📋 Copiar día" />
           </div>
           {list.map((r) => {
-            const lleno = r.spots_left === 0;
+            const lleno = r.spots_left === 0 || r.closed;
             return (
               <div key={`${r.camp_id}-${r.date}`} className="rounded-2xl bg-white p-3.5"
                 style={{ borderLeft: `4px solid ${lleno ? '#c04545' : r.is_event ? GOLD : GREEN}` }}>

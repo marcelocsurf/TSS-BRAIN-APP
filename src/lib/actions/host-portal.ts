@@ -6,6 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
+import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { ageFromDob } from '@/lib/utils/age';
 import { sendIntakeLinkEmail } from '@/lib/actions/email';
 
@@ -278,6 +279,7 @@ export interface HostDayEvent {
   total_days: number | null;
   session_status: string | null;
   coach_status: string | null;   // 'pending' = invitado, aún sin aceptar
+  closed: boolean;               // camp de varios días que ya arrancó
   capacity: number;
   enrolled: number;
   // El asiento completo, igual que en el mostrador: la Agenda muestra el
@@ -367,6 +369,8 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       day_number: session?.day_number ?? null,
       total_days: (i.camp_sessions ?? []).length || null,
       session_status: session?.session_status ?? null,
+      // Un camp se cierra al arrancar: la Agenda ya no ofrece "+ Reservar".
+      closed: campEnrollmentClosed(i),
       capacity: i.capacity_override ?? tpl?.capacity_max ?? 0,
       price_cents: tpl?.list_price_cents ?? null,
       enrolled: act.length,
@@ -953,6 +957,7 @@ export interface AvailabilityRow {
   price_cents: number | null;
   coach_name: string | null;
   venue: string | null;
+  closed: boolean;            // camp que ya arrancó → no admite inscripciones
 }
 
 export async function hostAvailability(token: string): Promise<AvailabilityRow[] | null> {
@@ -965,7 +970,7 @@ export async function hostAvailability(token: string): Promise<AvailabilityRow[]
   const { data: sess, error } = await admin
     .from('camp_sessions')
     .select(`id, session_date, day_number, camp_instance_id,
-      camp_instances:camp_instance_id!inner(id, camp_name, scheduled_time, status, academy_id, capacity_override,
+      camp_instances:camp_instance_id!inner(id, camp_name, start_date, end_date, scheduled_time, status, academy_id, capacity_override,
         head_coach:head_coach_id(display_name), head_coach_status, coaches:coach_id(display_name),
         camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents),
         camp_sessions(id),
@@ -1012,6 +1017,9 @@ export async function hostAvailability(token: string): Promise<AvailabilityRow[]
       price_cents: tpl?.list_price_cents ?? null,
       coach_name: coach,
       venue: venueBySession.get(s.id) ?? null,
+      // Un camp se cierra al arrancar: el mostrador debe verlo como "en
+      // curso", no como cupo vendible.
+      closed: campEnrollmentClosed(inst),
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date) || String(a.time ?? '99').localeCompare(String(b.time ?? '99')));
