@@ -145,6 +145,47 @@ export async function finalizeModelClip(input: {
   return { ok: true };
 }
 
+// EDITAR un clip ya subido (pedido de Marcelo 2026-08-25: "no me deja
+// editar si quiero reclasificarlos o cambiarles nombre"). Hasta ahora solo
+// existían create y delete: corregir un typo o mover un clip de categoría
+// obligaba a borrarlo y volver a subir el video entero.
+// El archivo NO se toca — solo los metadatos.
+export async function updateModelClip(
+  id: string,
+  patch: { title?: string; description?: string | null; category?: string; categoryName?: string; displayOrder?: number },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const me = await getCurrentCoach();
+  if (!me?.is_platform_admin) return { ok: false, error: 'Not authorized' };
+
+  const row: Record<string, unknown> = {};
+  if (patch.title !== undefined) {
+    const t = patch.title.trim();
+    if (!t) return { ok: false, error: 'Title is required.' };
+    row.title = t.slice(0, 300);
+  }
+  if (patch.description !== undefined) row.description = patch.description?.trim().slice(0, 1000) || null;
+  if (patch.displayOrder !== undefined) {
+    if (!Number.isFinite(patch.displayOrder)) return { ok: false, error: 'Invalid order.' };
+    row.display_order = Math.max(0, Math.round(patch.displayOrder));
+  }
+  // Reclasificar: se re-deriva el slug del nombre para no fragmentar más la
+  // biblioteca (hoy hay 10 categorías para 11 clips por variantes de texto).
+  if (patch.category !== undefined || patch.categoryName !== undefined) {
+    const resolved = resolveCategory(patch.category ?? '', patch.categoryName ?? '');
+    if (!resolved) return { ok: false, error: 'Category is required.' };
+    row.category = resolved.category;
+    row.category_name = resolved.categoryName;
+  }
+  if (Object.keys(row).length === 0) return { ok: false, error: 'Nothing to update.' };
+
+  const admin = createAdminClient();
+  const { error } = await admin.from('model_clips').update(row).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin/video-library');
+  return { ok: true };
+}
+
 export async function deleteModelClip(
   id: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {

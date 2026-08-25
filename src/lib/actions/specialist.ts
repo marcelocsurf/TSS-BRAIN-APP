@@ -314,7 +314,10 @@ export async function specialistCreateTask(
 export async function specialistCreateAppointment(
   token: string,
   studentId: string,
-  input: { kind: 'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro'; mode: 'online' | 'presencial'; date: string; time?: string | null; title?: string | null },
+  // location = link de Zoom (online) o dónde se encuentran (presencial):
+  // sin esto la cita le llegaba al atleta sin decirle a dónde ir ni a qué
+  // link entrar (pedido de Marcelo 2026-08-25).
+  input: { kind: 'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro'; mode: 'online' | 'presencial'; date: string; time?: string | null; title?: string | null; location?: string | null; notes?: string | null },
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!['fisico', 'mental', 'tecnico', 'nutricion', 'evaluacion', 'otro'].includes(input.kind)) return { ok: false, error: 'Tipo inválido.' };
@@ -333,6 +336,8 @@ export async function specialistCreateAppointment(
       title: input.title?.trim() || null,
       appointment_date: input.date,
       appointment_time: input.time || null,
+      location: input.location?.trim().slice(0, 300) || null,
+      notes: input.notes?.trim().slice(0, 1000) || null,
     });
     if (error) throw error;
     return { ok: true };

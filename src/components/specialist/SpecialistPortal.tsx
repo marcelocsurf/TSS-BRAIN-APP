@@ -190,10 +190,110 @@ function AthletePanel({ token, studentId, roleKey }: { token: string; studentId:
   );
 }
 
+// Colores de fase — mismos que la tarjeta "My year" del atleta.
+const PHASE_INK: Record<string, string> = {
+  general: '#00A8CC', especifica: '#00D2FF', precompetitiva: '#FFA94D',
+  competitiva: '#FFD166', transicion: '#64748B', recuperacion: '#39D98A',
+};
+
+// ─── EL AÑO COMPLETO del atleta, en una agenda (pedido Marcelo 2026-08-25:
+// "que el especialista pueda ver todo el año como un calendario donde salen
+// todas las tareas, entrenos, carga, responsabilidades y eventos, y así
+// pueda adaptarse y planificar con visión global, no perdido"). Une lo que
+// ya existe disperso: fases, microciclos con su carga, competencias,
+// evaluaciones, citas de TODO el equipo y tareas de cualquier especialista.
+function YearAgenda({ data }: { data: SpecialistAthlete }) {
+  const tl = data.timeline;
+  if (!tl) return null;
+  const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
+
+  type Item = { date: string; icon: string; label: string; sub?: string | null; gold?: boolean; mine?: boolean };
+  const items: Item[] = [];
+
+  // Inicio de cada fase — el marco del año.
+  for (const f of tl.phases) {
+    items.push({ date: f.start, icon: '🚩', label: `Fase: ${f.name}`, sub: f.objective, gold: true });
+  }
+  // Eventos por semana (competencias 🏆, evaluaciones, viajes, picos ▲).
+  for (const w of tl.weeks) {
+    for (const e of w.events) items.push({ date: e.date, icon: e.icon, label: e.label, sub: `M${w.week}` });
+  }
+  for (const e of tl.ahead) items.push({ date: e.date, icon: e.icon, label: e.label });
+  // Citas de TODO el equipo (no solo las mías).
+  for (const a of data.appointments) {
+    const meta = KIND_META[a.kind] ?? KIND_META.otro;
+    items.push({ date: a.date, icon: meta.icon, label: a.title || meta.label, sub: a.time ? a.time.slice(0, 5) : null });
+  }
+  // Tareas/sesiones online — con quién las dejó y si ya están hechas.
+  for (const t of data.tasks) {
+    if (!t.due_date) continue;
+    const meta = KIND_META[t.kind] ?? KIND_META.otro;
+    items.push({ date: t.due_date, icon: t.done ? '✓' : meta.icon, label: t.title, sub: t.mine ? 'tuya' : null, mine: t.mine });
+  }
+  items.sort((a, b) => a.date.localeCompare(b.date));
+
+  const startMs = Date.parse(`${tl.season?.start ?? today}T12:00:00Z`);
+  const endMs = Date.parse(`${tl.season?.end ?? today}T12:00:00Z`);
+  const span = Math.max(1, endMs - startMs);
+  const pct = (d: string) => Math.max(0, Math.min(100, ((Date.parse(`${d}T12:00:00Z`) - startMs) / span) * 100));
+
+  const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+  return (
+    <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+      <p className="text-[9px] uppercase tracking-wider mb-2" style={{ ...MONO, color: GOLD }}>
+        🗓 Su año completo {tl.season ? `· ${tl.season.start.slice(5)} → ${tl.season.end.slice(5)}` : ''}
+      </p>
+
+      {/* Franja de fases con la marca de HOY */}
+      {tl.phases.length > 0 && (
+        <div className="relative rounded-md overflow-hidden mb-1" style={{ height: 16, background: 'rgba(255,255,255,.06)' }}>
+          {tl.phases.map((f) => {
+            const l = pct(f.start), r = pct(f.end);
+            const c = PHASE_INK[f.color_key] ?? '#00A8CC';
+            return (
+              <div key={f.id} title={`${f.name} · ${f.start} → ${f.end}`} className="absolute top-0 bottom-0"
+                style={{ left: `${l}%`, width: `${Math.max(r - l, 1.5)}%`, background: `${c}${f.state === 'done' ? '33' : '66'}`, borderLeft: `2px solid ${c}` }} />
+            );
+          })}
+          <div className="absolute top-0 bottom-0" style={{ left: `${pct(today)}%`, width: 2, background: '#fff' }} />
+        </div>
+      )}
+      <p className="text-[8px] mb-2.5" style={{ ...MONO, color: '#5f7a8c' }}>
+        {tl.phases.map((f) => f.name).join(' · ') || 'Sin fases cargadas'}
+      </p>
+
+      {/* La agenda: todo lo del atleta, en orden */}
+      <div className="space-y-1 max-h-80 overflow-y-auto">
+        {items.map((it, i) => {
+          const past = it.date < today;
+          return (
+            <div key={i} className="flex items-baseline gap-2" style={{ opacity: past ? 0.45 : 1 }}>
+              <span className="text-[9.5px] shrink-0 w-14" style={{ ...MONO, color: '#7BA2B5' }}>{fmt(it.date)}</span>
+              <span className="text-[11.5px] min-w-0 flex-1 truncate" style={{ color: it.gold ? GOLD : it.mine ? GREEN : '#dce8f0' }}>
+                {it.icon} {it.label}
+                {it.sub ? <span style={{ color: '#7BA2B5' }}> · {it.sub}</span> : null}
+              </span>
+            </div>
+          );
+        })}
+        {items.length === 0 && (
+          <p className="text-[11px]" style={{ color: '#7BA2B5' }}>Todavía no hay nada agendado en su año.</p>
+        )}
+      </div>
+      <p className="text-[8.5px] mt-2 pt-2" style={{ ...MONO, color: '#4a6272', borderTop: '1px solid rgba(255,255,255,.07)' }}>
+        🚩 fase · 🏆 competencia · ▲ pico · 📋 evaluación · lo tuyo en verde
+      </p>
+    </div>
+  );
+}
+
 function PlanTab({ data }: { data: SpecialistAthlete }) {
   const tl = data.timeline;
   return (
     <div className="space-y-3">
+      {/* La visión global primero: el año entero antes del detalle semanal. */}
+      <YearAgenda data={data} />
       {/* Score por pilar */}
       {data.pillars && (
         <div className="rounded-xl p-3" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.2)' }}>
@@ -466,15 +566,23 @@ function CitaCreator({ token, data, onChanged }: { token: string; data: Speciali
   const [kind, setKind] = useState<string>('evaluacion');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  // Online/presencial + dónde (link de Zoom o lugar) + qué van a trabajar:
+  // la cita le llegaba al atleta sin decirle a dónde ir (pedido Marcelo).
+  const [mode, setMode] = useState<'online' | 'presencial'>('presencial');
+  const [location, setLocation] = useState('');
+  const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const save = async () => {
     setMsg(null); setBusy(true);
-    const r = await specialistCreateAppointment(token, data.student.id, { kind: kind as any, mode: 'presencial', date, time: time || null, title: null });
+    const r = await specialistCreateAppointment(token, data.student.id, {
+      kind: kind as any, mode, date, time: time || null, title: null,
+      location: location || null, notes: notes || null,
+    });
     setBusy(false);
     if (!r.ok) { setMsg(r.error ?? 'Error'); return; }
-    setDate(''); setTime(''); setOpen(false);
+    setDate(''); setTime(''); setLocation(''); setNotes(''); setOpen(false);
     setMsg('✓ Cita agendada — aparece en el timeline del atleta'); setTimeout(() => setMsg(null), 3000);
     onChanged();
   };
@@ -502,6 +610,21 @@ function CitaCreator({ token, data, onChanged }: { token: string; data: Speciali
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
               className="rounded-lg px-2 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
           </div>
+          <div className="flex gap-1.5">
+            {(['presencial', 'online'] as const).map((m) => (
+              <button key={m} type="button" onClick={() => setMode(m)}
+                className="flex-1 rounded-full py-1.5 text-[9.5px] font-bold uppercase"
+                style={{ ...MONO, background: mode === m ? CYAN : 'rgba(255,255,255,.06)', color: mode === m ? INK : '#7BA2B5' }}>
+                {m === 'online' ? '💻 Online' : '📍 Presencial'}
+              </button>
+            ))}
+          </div>
+          <input value={location} onChange={(e) => setLocation(e.target.value)}
+            placeholder={mode === 'online' ? 'Link de Zoom / Meet…' : '📍 Dónde se encuentran…'}
+            className="w-full rounded-lg px-2 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
+          <input value={notes} onChange={(e) => setNotes(e.target.value)}
+            placeholder="Qué van a trabajar (opcional)…"
+            className="w-full rounded-lg px-2 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
           <button type="button" disabled={busy || !date} onClick={save}
             className="w-full rounded-full py-2 text-[10px] font-bold uppercase tracking-wider disabled:opacity-40" style={{ ...MONO, background: CYAN, color: INK }}>
             Agendar

@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, Trash2, Video } from 'lucide-react';
+import { Upload, Trash2, Video, Pencil, Check, X } from 'lucide-react';
 import {
   createModelUploadUrl,
   finalizeModelClip,
   deleteModelClip,
+  updateModelClip,
   type ModelClipRow,
 } from '@/lib/actions/model-clips';
 import { MODEL_CATEGORIES } from '@/lib/constants/model-categories';
@@ -21,6 +22,29 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
+  // Edición en línea de un clip ya subido (metadatos, no el archivo).
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [eTitle, setETitle] = useState('');
+  const [eDesc, setEDesc] = useState('');
+  const [eCat, setECat] = useState('');
+  const [eNewCat, setENewCat] = useState('');
+
+  const saveEdit = (id: string) => {
+    setError('');
+    const catName = eCat === '__new__' ? eNewCat.trim() : eCat;
+    if (!eTitle.trim()) { setError('El título no puede quedar vacío.'); return; }
+    if (!catName) { setError('Elegí o escribí una categoría.'); return; }
+    startTransition(async () => {
+      const r = await updateModelClip(id, {
+        title: eTitle,
+        description: eDesc,
+        categoryName: catName,
+      });
+      if (!r.ok) { setError(r.error); return; }
+      setEditingId(null);
+      router.refresh();
+    });
+  };
 
   const isCustom = category === '__custom__';
 
@@ -187,6 +211,58 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
             ) : (
               <div className="divide-y divide-gray-50">
                 {c.items.map((clip) => (
+                  editingId === clip.id ? (
+                    /* Editar sin volver a subir el video: título, detalle y
+                       categoría (reclasificar). Pedido de Marcelo 2026-08-25 —
+                       antes la única salida era borrar y re-subir. */
+                    <div key={clip.id} className="px-4 py-3 space-y-2 bg-gray-50/60">
+                      <input
+                        value={eTitle}
+                        onChange={(e) => setETitle(e.target.value)}
+                        placeholder="Título del clip"
+                        aria-label="Título del clip"
+                        className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm"
+                      />
+                      <input
+                        value={eDesc}
+                        onChange={(e) => setEDesc(e.target.value)}
+                        placeholder="Detalle (opcional)"
+                        aria-label="Detalle del clip"
+                        className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs"
+                      />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <select
+                          value={eCat}
+                          onChange={(e) => setECat(e.target.value)}
+                          aria-label="Categoría"
+                          className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs bg-white max-w-[220px]"
+                        >
+                          {/* Categorías que YA existen — reclasificar sin
+                              inventar variantes nuevas del mismo nombre. */}
+                          {byCat.map((x) => <option key={x.slug} value={x.name}>{x.name}</option>)}
+                          <option value="__new__">+ Categoría nueva…</option>
+                        </select>
+                        {eCat === '__new__' && (
+                          <input
+                            value={eNewCat}
+                            onChange={(e) => setENewCat(e.target.value)}
+                            placeholder="Nombre de la categoría nueva"
+                            aria-label="Categoría nueva"
+                            className="flex-1 min-w-[160px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs"
+                          />
+                        )}
+                        <div className="flex-1" />
+                        <button type="button" onClick={() => setEditingId(null)} disabled={pending}
+                          className="text-gray-400 hover:text-gray-600 px-2 py-1" aria-label="Cancelar">
+                          <X size={15} strokeWidth={1.9} />
+                        </button>
+                        <button type="button" onClick={() => saveEdit(clip.id)} disabled={pending}
+                          className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-50">
+                          <Check size={13} strokeWidth={2.2} /> Guardar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                   <div key={clip.id} className="px-4 py-2.5 flex items-center gap-3">
                     <Video size={15} className="text-[var(--tss-cyan,#5AC3E7)] shrink-0" strokeWidth={1.9} />
                     <div className="flex-1 min-w-0">
@@ -199,6 +275,22 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                     </div>
                     <button
                       type="button"
+                      onClick={() => {
+                        setEditingId(clip.id);
+                        setETitle(clip.title);
+                        setEDesc(clip.description ?? '');
+                        setECat(c.name);
+                        setENewCat('');
+                        setError('');
+                      }}
+                      disabled={pending}
+                      className="text-gray-400 hover:text-[var(--tss-navy)] disabled:opacity-50"
+                      aria-label="Editar clip"
+                    >
+                      <Pencil size={14} strokeWidth={1.9} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => remove(clip.id)}
                       disabled={pending}
                       className="text-gray-400 hover:text-red-600 disabled:opacity-50"
@@ -207,6 +299,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                       <Trash2 size={15} strokeWidth={1.9} />
                     </button>
                   </div>
+                  )
                 ))}
               </div>
             )}
