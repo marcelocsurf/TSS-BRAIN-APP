@@ -88,6 +88,14 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // montar — Next ejecuta las actions de un cliente EN FILA, así que la cola
   // sumaba todas las latencias. Ahora TODO se lee acá, en paralelo, y las
   // tarjetas reciben `initial` — el Home sale completo de una.
+  // ACCESO DE ALTO RENDIMIENTO (Marcelo 2026-08-25): "que de alguna forma se
+  // les otorgue high performance access y ahí automáticamente les muestra todo
+  // el año". Sin ese permiso, la línea HP no existe para el alumno — y sus
+  // OCHO lecturas ni siquiera se disparan. Son 2.765 de 2.786 alumnos activos:
+  // el Home de casi todos deja de pagar ocho consultas que nunca dieron nada.
+  const hpAccess = (student as any).hp_access === true;
+  const noHP = Promise.resolve(null);
+
   const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach, pendingExperience,
     hbProgram, hbSeason, hbCompetitions, hbAppointments, hbScores, hbMessages, hbTeamWall, hbTodayExtras, hbPresentations] = await Promise.all([
     getStudentMaterials(student.id, beltLevel),
@@ -98,14 +106,16 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     getCourseCatalog(student.id),
     coachUnlocked ? getMyCoachData(student.id) : Promise.resolve(null),
     getPendingExperienceForStudent(student.id).catch(() => null),
-    getMyProgram(token).catch(() => null),
-    getMySeason(token).catch(() => null),
-    getMyCompetitions(token).catch(() => null),
-    getMyAppointments(token).catch(() => null),
-    getMyAthleteScores(token).catch(() => null),
+    hpAccess ? getMyProgram(token).catch(() => null) : noHP,
+    hpAccess ? getMySeason(token).catch(() => null) : noHP,
+    hpAccess ? getMyCompetitions(token).catch(() => null) : noHP,
+    hpAccess ? getMyAppointments(token).catch(() => null) : noHP,
+    hpAccess ? getMyAthleteScores(token).catch(() => null) : noHP,
+    // Los mensajes del coach (campana 🔔) NO son de alto rendimiento: cualquier
+    // alumno puede recibir uno. Ese se lee siempre.
     getMyMessages(token).catch(() => null),
-    getMyTeamWall(token).catch(() => null),
-    getMyTodayExtras(token).catch(() => null),
+    hpAccess ? getMyTeamWall(token).catch(() => null) : noHP,
+    hpAccess ? getMyTodayExtras(token).catch(() => null) : noHP,
     getMyStudentResources(token).catch(() => [] as any[]),
   ]);
 
@@ -121,6 +131,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     teamWall: hbTeamWall?.ok ? hbTeamWall.data : null,
     todayExtras: hbTodayExtras?.ok ? hbTodayExtras.data : null,
     presentations: hbPresentations ?? [],
+    hpAccess,
   };
 
   // Course owners (TSS founders) bypass the access gate so they can review

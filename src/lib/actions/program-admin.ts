@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { elSalvadorToday, elSalvadorDatePlus, toElSalvadorDate } from '@/lib/utils/tz';
 import { computeWeekRanking, svWeekBounds } from '@/lib/programs/ranking';
+import { revalidatePath } from 'next/cache';
+import { getCurrentCoach } from '@/lib/actions/auth';
 
 // ─── Administración de programas de entreno (Paso 3: el editor) ───
 //
@@ -1495,6 +1497,11 @@ export interface StudentHPData {
     specialists: string[];
   } | null;
   evaluations: { pillar: string; score: number | null; notes: string | null; eval_date: string; coach_name: string }[];
+  /** Acceso de Alto Rendimiento otorgado (students.hp_access). */
+  hp_access: boolean;
+  hp_access_granted_at: string | null;
+  /** true cuando el alumno no tiene NADA de la línea HP todavía. */
+  empty: boolean;
 }
 
 export async function adminGetStudentHP(
@@ -1503,6 +1510,14 @@ export async function adminGetStudentHP(
   try {
     if (!(await assertAdmin())) return { ok: true, data: null }; // no-admin: el panel simplemente no aparece
     const admin = createAdminClient();
+
+    // El acceso HP se OTORGA (no se deduce). El panel tiene que aparecer
+    // aunque el alumno no tenga nada todavía — si no, no habría dónde darlo.
+    const { data: accessRow, error: accErr } = await admin
+      .from('students').select('hp_access, hp_access_granted_at').eq('id', studentId).maybeSingle();
+    if (accErr) throw accErr;
+    const hp_access = (accessRow as any)?.hp_access === true;
+    const hp_access_granted_at = ((accessRow as any)?.hp_access_granted_at as string | null) ?? null;
 
     const { data: asgs, error: aErr } = await admin
       .from('program_assignments')
@@ -1625,13 +1640,14 @@ export async function adminGetStudentHP(
       console.error('[program-admin] ranking position failed (no bloquea la ficha)', e);
     }
 
-    if (!assignment && past_programs.length === 0 && !season && (evals ?? []).length === 0
-        && (compCount.count ?? 0) === 0 && !ranking_position) {
-      return { ok: true, data: null };
-    }
+    const empty = !assignment && past_programs.length === 0 && !season && (evals ?? []).length === 0
+        && (compCount.count ?? 0) === 0 && !ranking_position;
     return {
       ok: true,
       data: {
+        hp_access,
+        hp_access_granted_at,
+        empty,
         competitions: {
           next: nextComp.data ?? null,
           last: lastComp.data ?? null,
@@ -1729,4 +1745,31 @@ export async function adminInsertBlockTemplate(
     console.error('[program-admin] adminInsertBlockTemplate failed', e);
     return { ok: false, error: 'No se pudo insertar el bloque.' };
   }
+}
+
+
+// ─── ACCESO DE ALTO RENDIMIENTO ───────────────────────────────────
+// Marcelo (2026-08-25): "que de alguna forma se les otorgue high performance
+// access y ahí automáticamente les muestra todo el año; ellos pueden poner
+// competencias, o el coach puede agregar citas, programas". Es un permiso que
+// se DA, no una heurística sobre los datos.
+export async function adminSetHpAccess(
+  studentId: string,
+  on: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await assertAdmin())) return { ok: false, error: 'No autorizado.' };
+  const me = await getCurrentCoach();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('students')
+    .update({
+      hp_access: on,
+      // Al quitarlo se conserva quién y cuándo lo dio: el dato NO se borra,
+      // solo deja de verse. Volver a encenderlo re-sella la fecha.
+      ...(on ? { hp_access_granted_at: new Date().toISOString(), hp_access_granted_by: me?.id ?? null } : {}),
+    })
+    .eq('id', studentId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/students/${studentId}`);
+  return { ok: true };
 }

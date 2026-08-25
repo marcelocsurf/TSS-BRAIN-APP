@@ -74,11 +74,15 @@ async function resolveActiveAssignment(portalToken: string) {
   // del caller lo convierte en {ok:false} (invariante #2).
   const { data: student, error: studentErr } = await admin
     .from('students')
-    .select('id')
+    .select('id, hp_access')
     .eq('portal_token', portalToken)
     .maybeSingle();
   if (studentErr) throw studentErr;
   if (!student) return null;
+  // ACCESO HP (invariante #3: el token + admin client saltea RLS, así que el
+  // candado ES esta línea). Sin acceso otorgado, la línea de alto rendimiento
+  // no existe para el alumno — ni siquiera se lee.
+  if ((student as any).hp_access !== true) return null;
 
   const { data: assignment, error: asgErr } = await admin
     .from('program_assignments')
@@ -465,11 +469,13 @@ export async function getMyAppointments(
     const admin = createAdminClient();
     const { data: student, error: sErr } = await admin
       .from('students')
-      .select('id')
+      .select('id, hp_access')
       .eq('portal_token', portalToken)
       .maybeSingle();
     if (sErr) throw sErr;
     if (!student) return { ok: true, appointments: [] };
+    // Sin acceso de Alto Rendimiento otorgado, esto no existe para el alumno.
+    if ((student as any).hp_access !== true) return { ok: true, appointments: [] };
 
     const { data, error } = await admin
       .from('program_appointments')
@@ -525,9 +531,11 @@ export async function getMySeason(
   try {
     const admin = createAdminClient();
     const { data: student, error: sErr } = await admin
-      .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+      .from('students').select('id, hp_access').eq('portal_token', portalToken).maybeSingle();
     if (sErr) throw sErr;
     if (!student) return { ok: true, data: null };
+    // Sin acceso de Alto Rendimiento otorgado, esto no existe para el alumno.
+    if ((student as any).hp_access !== true) return { ok: true, data: null };
 
     const { data: season, error: snErr } = await admin
       .from('season_plans')
@@ -609,7 +617,7 @@ export async function getMyMessages(
   try {
     const admin = createAdminClient();
     const { data: student, error: sErr } = await admin
-      .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+      .from('students').select('id, hp_access').eq('portal_token', portalToken).maybeSingle();
     if (sErr) throw sErr;
     if (!student) return { ok: true, messages: [] };
     const { data, error } = await admin
@@ -640,7 +648,7 @@ export async function markMyMessagesRead(portalToken: string): Promise<{ ok: boo
   try {
     const admin = createAdminClient();
     const { data: student, error: sErr } = await admin
-      .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+      .from('students').select('id, hp_access').eq('portal_token', portalToken).maybeSingle();
     if (sErr) throw sErr;
     if (!student) return { ok: true };
     // Solo SUS mensajes — el token es la seguridad (invariante #3).
@@ -677,11 +685,13 @@ export async function getMyAthleteScores(
     const admin = createAdminClient();
     const { data: student, error: sErr } = await admin
       .from('students')
-      .select('id')
+      .select('id, hp_access')
       .eq('portal_token', portalToken)
       .maybeSingle();
     if (sErr) throw sErr;
     if (!student) return { ok: true, data: null };
+    // Sin acceso de Alto Rendimiento otorgado, esto no existe para el alumno.
+    if ((student as any).hp_access !== true) return { ok: true, data: null };
 
     const [{ data: evalRows, error: eErr }, { data: profile }] = await Promise.all([
       admin
@@ -741,11 +751,13 @@ export async function getMySeasonTimeline(
     const admin = createAdminClient();
     const { data: student, error: sErr } = await admin
       .from('students')
-      .select('id')
+      .select('id, hp_access')
       .eq('portal_token', portalToken)
       .maybeSingle();
     if (sErr) throw sErr;
     if (!student) return { ok: true, data: null };
+    // Sin acceso de Alto Rendimiento otorgado, esto no existe para el alumno.
+    if ((student as any).hp_access !== true) return { ok: true, data: null };
     const data = await buildSeasonTimeline(admin, student.id);
     return { ok: true, data };
   } catch (e) {
@@ -758,15 +770,18 @@ export async function getMySeasonTimeline(
 // El atleta también participa: lee y escribe en el muro, ve la dieta de su
 // micro actual y las sesiones online que le dejan los especialistas.
 
+// Solo la usan superficies de ALTO RENDIMIENTO (muro del equipo, extras del
+// día, tareas del staff): el gate de acceso vive acá, una sola vez.
 async function resolveStudentByToken(portalToken: string) {
   const admin = createAdminClient();
   const { data: student, error } = await admin
     .from('students')
-    .select('id, first_name')
+    .select('id, first_name, hp_access')
     .eq('portal_token', portalToken)
     .maybeSingle();
   if (error) throw error;
-  return student ? { admin, student } : null;
+  if (!student || (student as any).hp_access !== true) return null;
+  return { admin, student };
 }
 
 export interface MyTeamData {

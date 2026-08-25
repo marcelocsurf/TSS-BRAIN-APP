@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { adminGetStudentHP, type StudentHPData } from '@/lib/actions/program-admin';
+import { adminGetStudentHP, adminSetHpAccess, type StudentHPData } from '@/lib/actions/program-admin';
 
 // ─── El bloque PROGRAMA de la ficha del alumno (sección 13 de la maqueta) ───
 // Dashboard (fondo claro): tarjeta blanca con acento dorado, texto navy.
@@ -12,6 +12,7 @@ const ENERGY = ['◔', '◑', '◕', '●'];
 
 export function StudentHPPanel({ studentId }: { studentId: string }) {
   const [data, setData] = useState<StudentHPData | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     adminGetStudentHP(studentId)
@@ -22,12 +23,70 @@ export function StudentHPPanel({ studentId }: { studentId: string }) {
   if (!data) return null;
   const a = data.assignment;
 
+  const toggleAccess = async () => {
+    const on = !data.hp_access;
+    if (!on && !window.confirm(
+      'Quitar el acceso de Alto Rendimiento.\n\nEl alumno deja de ver su año, su programa, sus citas, sus competencias y su score. NO se borra nada — si se lo devolvés, vuelve todo tal cual.\n\n¿Quitarlo?',
+    )) return;
+    setBusy(true);
+    const r = await adminSetHpAccess(studentId, on);
+    if (!r.ok) { alert(r.error ?? 'No se pudo cambiar el acceso.'); setBusy(false); return; }
+    const fresh = await adminGetStudentHP(studentId);
+    if (fresh.ok) setData(fresh.data);
+    setBusy(false);
+  };
+
+  // El interruptor SIEMPRE está — es la única forma de convertir a alguien en
+  // atleta de Alto Rendimiento. Cuando no hay acceso ni datos, el panel es
+  // solo esa línea: no ensucia la ficha de los ~2.765 alumnos normales.
+  const AccessSwitch = (
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="min-w-0">
+        <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#8E6614' }}>
+          Alto Rendimiento · Acceso
+        </p>
+        <p className="text-[11px] text-gray-500 mt-0.5">
+          {data.hp_access
+            ? <>Ve su año completo: temporada, programa, citas, competencias y score. Puede cargar sus propias competencias.{data.hp_access_granted_at ? ` · desde ${data.hp_access_granted_at.slice(0, 10)}` : ''}</>
+            : 'Hoy es un alumno normal: ve cinta, secuencia y next focus. Nada de alto rendimiento.'}
+        </p>
+      </div>
+      <button type="button" onClick={toggleAccess} disabled={busy}
+        className="shrink-0 rounded-full px-4 py-2 text-[10px] font-mono uppercase tracking-wider font-bold disabled:opacity-50"
+        style={data.hp_access
+          ? { background: '#fff', color: '#8E6614', border: '1px solid #F0C36D' }
+          : { background: '#B8862B', color: '#fff', border: '1px solid #B8862B' }}>
+        {busy ? '…' : data.hp_access ? 'Quitar acceso' : '⭐ Otorgar acceso HP'}
+      </button>
+    </div>
+  );
+
+  if (!data.hp_access && data.empty) {
+    return (
+      <div className="rounded-2xl bg-white p-4" style={{ border: '1px solid #EFE3C8' }}>
+        {AccessSwitch}
+      </div>
+    );
+  }
+
   return (
     <div
       className="rounded-2xl bg-white p-4 space-y-3"
       style={{ border: '1px solid #F0C36D', borderLeft: '4px solid #B8862B' }}
     >
-      <div className="flex items-center justify-between">
+      {AccessSwitch}
+
+      {/* Tiene datos HP pero el acceso está apagado: el staff lo ve, el
+          alumno no. Hay que decirlo o parece que la app perdió su año. */}
+      {!data.hp_access && !data.empty && (
+        <div className="rounded-xl p-2.5" style={{ background: 'rgba(192,69,69,.07)', border: '1px solid rgba(192,69,69,.28)' }}>
+          <p className="text-[11px] font-semibold" style={{ color: '#c04545' }}>
+            El alumno NO ve nada de esto en su portal — el acceso está apagado.
+          </p>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-1" style={{ borderTop: '1px solid #F3E7CE' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#8E6614' }}>
           Alto Rendimiento · Programa
         </p>

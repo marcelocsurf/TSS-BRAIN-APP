@@ -30,6 +30,15 @@ export function AthleteScoreCard({ token, initial }: { token: string; initial?: 
   }, [token]);
 
   if (!data) return null;
+  // NUNCA una tarjeta vacía. Un atleta HP recién otorgado todavía no tiene
+  // evaluación: mostrarle un "My Athlete Score" con guiones no le enseña que
+  // le falta la evaluación, le enseña que la app no funciona. La tarjeta
+  // APARECE el día que su coach lo evalúa por primera vez — así su aparición
+  // es un premio y no un hueco. (Hoy 9 de los 21 atletas están en ese caso.)
+  const hasPillar = PILLARS.some((p) => data.pillars?.[p.key] != null);
+  const hasSomething =
+    (!!data.eval_date && (hasPillar || data.global != null)) || data.score_capacity != null;
+  if (!hasSomething) return null;
 
   return (
     <div

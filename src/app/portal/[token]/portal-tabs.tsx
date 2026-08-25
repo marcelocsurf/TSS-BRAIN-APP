@@ -147,6 +147,7 @@ interface PortalData {
   homeBundle?: {
     program: any; season: any; competitions: any; appointments: any[];
     scores: any; messages: any[]; teamWall: any; todayExtras: any; presentations: any[];
+    hpAccess?: boolean;
   };
   submittedSurveys: any[];
   materials: { unlocked: BeltMaterial[]; locked: BeltMaterial[] };
@@ -787,21 +788,31 @@ function HomeTab({
               el plan (año → programa → scores → competencia → muro). Cada
               tarjeta se auto-oculta si no aplica al alumno. Los mensajes del
               coach viven ahora en la campana 🔔 del header. */}
-          <AthleteProfileCard token={data.token} placement="top" />
-          {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
-          <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
-          {/* Lo que el staff deja para HOY (dieta + sesiones). */}
-          <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
+          {/* ═══ LÍNEA DE ALTO RENDIMIENTO ═══
+              Solo para quien tiene el ACCESO otorgado (students.hp_access).
+              No se deduce de los datos: se da a mano desde la ficha. Para el
+              alumno normal —huésped, campista— esto no existe: su idioma es
+              cinta, secuencia y next focus, no pilares ni temporadas.
+              Antes bastaba con que existiera una ficha HP creada de paso, y
+              cuatro personas veían tarjetas vacías. */}
+          {data.homeBundle?.hpAccess && (
+            <>
+              <AthleteProfileCard token={data.token} placement="top" />
+              {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
+              <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
+              {/* Lo que el staff deja para HOY (dieta + sesiones). */}
+              <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
 
-          <SeasonCard token={data.token} initial={data.homeBundle?.season} />
-          <ProgramCard token={data.token} initial={data.homeBundle?.program} />
-          {/* Score por pilar (última evaluación profunda) — solo atletas HP. */}
-          <AthleteScoreCard token={data.token} initial={data.homeBundle?.scores} />
-          {/* Competencia/ranking — solo con competencia próxima o EQUIPO
-              (temporada activa); para el resto no existe. */}
-          <CompetitionCard token={data.token} initial={data.homeBundle?.competitions} />
-          {/* Muro del EQUIPO (staff + atleta) — solo con temporada activa. */}
-          <TeamWallCard token={data.token} initial={data.homeBundle?.teamWall} />
+              <SeasonCard token={data.token} initial={data.homeBundle?.season} />
+              <ProgramCard token={data.token} initial={data.homeBundle?.program} />
+              {/* Score por pilar (última evaluación profunda). */}
+              <AthleteScoreCard token={data.token} initial={data.homeBundle?.scores} />
+              {/* Competencia/ranking — solo con competencia próxima o EQUIPO. */}
+              <CompetitionCard token={data.token} initial={data.homeBundle?.competitions} />
+              {/* Muro del EQUIPO (staff + atleta) — solo con temporada activa. */}
+              <TeamWallCard token={data.token} initial={data.homeBundle?.teamWall} />
+            </>
+          )}
           {/* 🔔 Buzón: mensajes del coach, abierto desde la campana.
               margin:0 explícito — como hijo del space-y heredaría margen y el
               inset-0 se correría (revisión). */}
@@ -915,8 +926,8 @@ function HomeTab({
           </div>
 
           {/* Ficha completa al 100% → acceso de consulta al FONDO del cockpit
-              (antes quedaba a mitad del Home — revisión). */}
-          <AthleteProfileCard token={data.token} placement="bottom" />
+              (antes quedaba a mitad del Home — revisión). También es HP. */}
+          {data.homeBundle?.hpAccess && <AthleteProfileCard token={data.token} placement="bottom" />}
         </div>
       </div>
 

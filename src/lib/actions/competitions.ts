@@ -393,10 +393,14 @@ export async function adminGetWeeklyRanking(): Promise<{
 
 // ─── El atleta: sus competencias, su prep y su ranking (portal por token) ───
 
+// Solo la usan las superficies del ATLETA (sus competencias, su prep de
+// serie). El acceso de Alto Rendimiento se chequea acá: sin él, el alumno no
+// tiene competencias — ni para leer ni para escribir (invariante #3).
 async function resolveStudent(admin: ReturnType<typeof createAdminClient>, portalToken: string) {
   const { data: student, error } = await admin
-    .from('students').select('id').eq('portal_token', portalToken).maybeSingle();
+    .from('students').select('id, hp_access').eq('portal_token', portalToken).maybeSingle();
   if (error) throw error;
+  if (!student || (student as any).hp_access !== true) return null;
   return student;
 }
 
