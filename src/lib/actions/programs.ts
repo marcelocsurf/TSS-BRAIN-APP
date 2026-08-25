@@ -56,6 +56,7 @@ export interface MyProgramData {
     energy: number | null;
     comment: string | null;
     nutrition: string | null;
+    nutrition_clean: string | null; // si | parcial | no — "¿comiste limpio?"
     surf_hours: number | null;
     focus: number | null;
     goal_achieved: string | null;
@@ -138,7 +139,7 @@ export async function getMyProgram(
 
     const { data: checkin, error: ckErr } = await admin
       .from('program_checkins')
-      .select('water_glasses, sleep_hours, energy, comment, nutrition, surf_hours, focus, goal_achieved')
+      .select('water_glasses, sleep_hours, energy, comment, nutrition, nutrition_clean, surf_hours, focus, goal_achieved')
       .eq('assignment_id', assignment.id)
       .eq('checkin_date', elSalvadorToday())
       .maybeSingle();
@@ -348,6 +349,7 @@ export async function saveProgramCheckin(
     energy?: number | null;
     comment?: string | null;
     nutrition?: string | null;
+    nutrition_clean?: string | null; // si | parcial | no
     surf_hours?: number | null;   // horas surfeadas HOY (paridad app HP)
     focus?: number | null;        // 1-4
     goal_achieved?: string | null; // si | parcial | no
@@ -368,6 +370,7 @@ export async function saveProgramCheckin(
     if (surf != null && (surf < 0 || surf > 14)) return { ok: false, error: 'Surf hours must be 0–14.' };
     if (input.focus != null && (input.focus < 1 || input.focus > 4)) return { ok: false, error: 'Focus must be 1–4.' };
     if (input.goal_achieved != null && !['si', 'parcial', 'no'].includes(input.goal_achieved)) return { ok: false, error: 'Invalid goal answer.' };
+    if (input.nutrition_clean != null && !['si', 'parcial', 'no'].includes(input.nutrition_clean)) return { ok: false, error: 'Invalid nutrition answer.' };
 
     const today = elSalvadorToday();
     const { error } = await admin.from('program_checkins').upsert(
@@ -379,6 +382,7 @@ export async function saveProgramCheckin(
         energy: energy ?? null,
         comment: (input.comment ?? '').trim().slice(0, 1000) || null,
         nutrition: (input.nutrition ?? '').trim().slice(0, 1000) || null,
+        nutrition_clean: input.nutrition_clean ?? null,
         surf_hours: surf ?? null,
         focus: input.focus ?? null,
         goal_achieved: input.goal_achieved ?? null,

@@ -473,7 +473,9 @@ function CheckinCard({
   const [sleep, setSleep] = useState<string>(t?.sleep_hours != null ? String(t.sleep_hours) : '');
   const [energy, setEnergy] = useState<number>(t?.energy ?? 0);
   const [comment, setComment] = useState<string>(t?.comment ?? '');
-  const [nutrition, setNutrition] = useState<string>(t?.nutrition ?? '');
+  // Alimentación como pregunta cerrada (pedido Marcelo 2026-08-25): "¿comiste
+  // limpio / seguiste tu plan?" si|parcial|no — reemplaza el texto libre.
+  const [nutriClean, setNutriClean] = useState<string>((t as any)?.nutrition_clean ?? '');
   const [surfH, setSurfH] = useState<number>(t?.surf_hours != null ? Number(t.surf_hours) : 0);
   const [goal, setGoal] = useState<string>(t?.goal_achieved ?? '');
   const [focus, setFocus] = useState<number>(t?.focus ?? 0);
@@ -498,7 +500,7 @@ function CheckinCard({
       sleep_hours: cfg.sleep ? sleepNum : null,
       energy: cfg.energy && energy > 0 ? energy : null,
       comment: cfg.comment ? comment : null,
-      nutrition: cfg.nutrition ? nutrition : null,
+      nutrition_clean: cfg.nutrition ? (nutriClean || null) : null,
       surf_hours: surfH > 0 || t?.surf_hours != null ? surfH : null,
       goal_achieved: goal || null,
       focus: focus > 0 ? focus : null,
@@ -674,15 +676,26 @@ function CheckinCard({
         </div>
       )}
 
+      {/* 🥗 ¿Comiste limpio / seguiste tu plan? — pregunta cerrada (pedido
+          Marcelo 2026-08-25); mejor dato que el texto libre y puntúa fino
+          en el ranking (Yes +15 · Halfway +8 · No 0). */}
       {cfg.nutrition && (
-        <input
-          value={nutrition}
-          onChange={(e) => setNutrition(e.target.value)}
-          placeholder="What did you eat today?"
-          aria-label="Nutrition notes"
-          className="w-full mt-3 rounded-lg px-3 py-2 text-[12px]"
-          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid #2A4D5F', color: '#eaf4fa' }}
-        />
+        <div className="flex items-center justify-between mt-3 gap-2">
+          <span className="text-[12px] shrink-0" style={{ color: '#b8cad8' }}>Ate clean?</span>
+          <div className="flex gap-1.5">
+            {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Halfway', '#FFD166'], ['no', 'Not yet', '#FF6B6B']] as const).map(([v, label, color]) => (
+              <button key={v} type="button" onClick={() => setNutriClean(nutriClean === v ? '' : v)}
+                className="rounded-full px-3 py-1.5 text-[10.5px] font-bold"
+                style={{
+                  background: nutriClean === v ? color : 'rgba(255,255,255,.06)',
+                  color: nutriClean === v ? '#061C2B' : '#7BA2B5',
+                  border: nutriClean === v ? '1px solid transparent' : '1px solid #2A4D5F',
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {cfg.comment && (

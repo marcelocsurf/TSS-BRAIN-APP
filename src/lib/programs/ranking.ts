@@ -96,7 +96,7 @@ export async function computeWeekRanking(
       .gte('done_at', shiftDate(weekStart, -1) + 'T00:00:00Z')
       .lte('done_at', shiftDate(weekEnd, 2) + 'T00:00:00Z'),
     admin.from('program_checkins')
-      .select('assignment_id, checkin_date, sleep_hours, water_glasses, energy, nutrition, goal_achieved, focus')
+      .select('assignment_id, checkin_date, sleep_hours, water_glasses, energy, nutrition, nutrition_clean, goal_achieved, focus')
       .in('assignment_id', allIds)
       .gte('checkin_date', weekStart).lte('checkin_date', weekEnd),
     admin.from('hp_session_attendance')
@@ -131,7 +131,11 @@ export async function computeWeekRanking(
     let p = 10; // check-in hecho
     p += sleepPts(c.sleep_hours != null ? Number(c.sleep_hours) : null);
     p += waterPts(c.water_glasses);
-    if ((c.nutrition ?? '').trim()) p += 15;
+    // Alimentación: pregunta cerrada (Sí +15 · Parcial +8 · No 0); fallback
+    // legacy: el texto libre viejo no vacío sigue valiendo +15.
+    if (c.nutrition_clean === 'si') p += 15;
+    else if (c.nutrition_clean === 'parcial') p += 8;
+    else if (c.nutrition_clean == null && (c.nutrition ?? '').trim()) p += 15;
     p += Math.min(5, (c.energy ?? 0) * 1.25);
     // Objetivo del día (paridad app HP: Sí > Parcial) + enfoque.
     if (c.goal_achieved === 'si') p += 8;

@@ -453,14 +453,17 @@ export async function getMyCompetitions(
         .order('comp_date', { ascending: false })
         .limit(1)
         .maybeSingle(),
-      admin.from('program_assignments')
-        .select('id').eq('student_id', student.id).eq('status', 'active').limit(1).maybeSingle(),
+      // "Parte del EQUIPO" = temporada activa (pedido Marcelo 2026-08-25):
+      // el ranking ya no le sale a cualquiera con programa (drop-ins del
+      // quiz incluidos) — solo a la línea de equipo HP real.
+      admin.from('season_plans')
+        .select('id').eq('student_id', student.id).eq('active', true).limit(1).maybeSingle(),
     ]);
     if (up.error) throw up.error;
     if (past.error) throw past.error;
     if (asg.error) throw asg.error;
 
-    // Ranking en vivo de ESTA semana — solo para atletas HP (con programa activo).
+    // Ranking en vivo de ESTA semana — solo para atletas del EQUIPO.
     let ranking: MyCompetitionData['ranking'] = null;
     if (asg.data) {
       const { monday, sunday } = svWeekBounds(today);
@@ -507,7 +510,9 @@ export async function getMyCompetitions(
         }
       : null;
 
-    if (!upcoming && !past.data && !ranking) return { ok: true, data: null };
+    // Sin competencia próxima y sin equipo → la tarjeta no existe para este
+    // alumno (un resultado pasado solo, tampoco la resucita).
+    if (!upcoming && !ranking) return { ok: true, data: null };
     return {
       ok: true,
       data: {

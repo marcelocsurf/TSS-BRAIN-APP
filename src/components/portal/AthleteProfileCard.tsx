@@ -42,18 +42,32 @@ function Field({ k, label, type = 'text', placeholder, f, set }: {
   );
 }
 
-export function AthleteProfileCard({ token }: { token: string }) {
+// Caché de módulo: la tarjeta se monta DOS veces en el Home (arriba si está
+// incompleta, abajo como consulta si está al 100%) — una sola llamada real.
+let profileCache: { token: string; promise: Promise<{ ok: boolean; data: MyProfileData | null }> } | null = null;
+function fetchProfileOnce(token: string, fresh = false) {
+  if (fresh || !profileCache || profileCache.token !== token) {
+    profileCache = { token, promise: getMyAthleteProfile(token) };
+  }
+  return profileCache.promise;
+}
+
+export function AthleteProfileCard({ token, placement }: { token: string; placement?: 'top' | 'bottom' }) {
   const [data, setData] = useState<MyProfileData | null>(null);
   const [open, setOpen] = useState(false);
 
-  const load = () => {
-    getMyAthleteProfile(token).then((r) => { if (r.ok) setData(r.data); }).catch(() => {});
+  const load = (fresh = false) => {
+    fetchProfileOnce(token, fresh).then((r) => { if (r.ok) setData(r.data); }).catch(() => {});
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, [token]);
+  useEffect(() => { load(); }, [token]);
 
   if (!data) return null;
   const complete = data.pct >= 100;
+  // Orden del Home (pedido Marcelo 2026-08-25): incompleta = acción → arriba;
+  // completa = consulta → abajo.
+  if (placement === 'top' && complete) return null;
+  if (placement === 'bottom' && !complete) return null;
 
   return (
     <>
@@ -94,7 +108,7 @@ export function AthleteProfileCard({ token }: { token: string }) {
         </div>
       </button>
 
-      {open && <ProfileWizard token={token} data={data} onClose={() => { setOpen(false); load(); }} />}
+      {open && <ProfileWizard token={token} data={data} onClose={() => { setOpen(false); load(true); }} />}
     </>
   );
 }

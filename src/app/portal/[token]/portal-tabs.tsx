@@ -40,7 +40,7 @@ import { AthleteProfileCard } from '@/components/portal/AthleteProfileCard';
 import { AthleteGuide } from '@/components/portal/AthleteGuide';
 import { TodayExtras } from '@/components/portal/TodayExtras';
 import { CompetitionCard } from '@/components/portal/CompetitionCard';
-import { CoachMessagesCard } from '@/components/portal/CoachMessagesCard';
+import { markMyMessagesRead } from '@/lib/actions/programs';
 import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
@@ -541,6 +541,20 @@ function HomeTab({
   onGoTo: (tab: Tab) => void;
 }) {
   const { student, sessions, totalSessions, streak, selfTrainingCount, totalTrainingMinutes, drillsPracticed, recentDrills } = data;
+  // 🔔 Mensajes del coach unificados en la campana (pedido Marcelo 2026-08-25):
+  // badge con no-leídos, tap abre el buzón; sin mensajes, la campana lleva a
+  // Feedback como siempre. La tarjeta suelta del Home se eliminó.
+  const [inboxMsgs, setInboxMsgs] = useState<any[]>((data as any).homeBundle?.messages ?? []);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const unreadMsgs = inboxMsgs.filter((m: any) => !m.read).length;
+  const openInbox = () => {
+    setInboxOpen(true);
+    if (unreadMsgs > 0) {
+      markMyMessagesRead(data.token)
+        .then(() => setInboxMsgs((ms) => ms.map((m: any) => ({ ...m, read: true }))))
+        .catch(() => {});
+    }
+  };
   const latestResult = sessions[0];
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
   const beltLevel = student.belt_level as BeltLevel;
@@ -640,8 +654,15 @@ function HomeTab({
           style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
         >
           <span className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Student portal</span>
-          <button type="button" onClick={() => onGoTo('feedback')} aria-label="Notifications">
-            <Bell size={18} strokeWidth={1.75} style={{ color: 'rgba(247,249,250,.6)' }} />
+          <button type="button" onClick={() => (inboxMsgs.length > 0 ? openInbox() : onGoTo('feedback'))}
+            aria-label="Notifications" className="relative p-1 -m-1">
+            <Bell size={18} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : 'rgba(247,249,250,.6)' }} />
+            {unreadMsgs > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 rounded-full text-[8px] font-bold flex items-center justify-center"
+                style={{ minWidth: 14, height: 14, background: '#FF6B6B', color: '#fff', padding: '0 3px' }}>
+                {unreadMsgs}
+              </span>
+            )}
           </button>
         </div>
 
@@ -726,27 +747,58 @@ function HomeTab({
             </div>
           </div>
 
-          {/* Programa de entreno (línea Alto Rendimiento). El componente busca
-              sus propios datos y devuelve null si el alumno no tiene programa
-              activo — para los demás, el Home es idéntico al de siempre. */}
-          {/* Plan Anual (temporada) — solo atletas con temporada activa. */}
-          {/* Ficha del atleta: wizard primera vez + "qué te falta" (solo HP). */}
-          <AthleteProfileCard token={data.token} />
-          <SeasonCard token={data.token} initial={data.homeBundle?.season} />
+          {/* ORDEN del Home (pedido Marcelo 2026-08-25): primero lo ACCIONABLE
+              de hoy (ficha incompleta, citas, lo que el staff dejó), después
+              el plan (año → programa → scores → competencia → muro). Cada
+              tarjeta se auto-oculta si no aplica al alumno. Los mensajes del
+              coach viven ahora en la campana 🔔 del header. */}
+          <AthleteProfileCard token={data.token} placement="top" />
+          {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
+          <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
+          {/* Lo que el staff deja para HOY (dieta + sesiones). */}
+          <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
 
+          <SeasonCard token={data.token} initial={data.homeBundle?.season} />
           <ProgramCard token={data.token} initial={data.homeBundle?.program} />
           {/* Score por pilar (última evaluación profunda) — solo atletas HP. */}
           <AthleteScoreCard token={data.token} initial={data.homeBundle?.scores} />
+          {/* Competencia/ranking — solo con competencia próxima o EQUIPO
+              (temporada activa); para el resto no existe. */}
           <CompetitionCard token={data.token} initial={data.homeBundle?.competitions} />
-          <CoachMessagesCard token={data.token} initial={data.homeBundle?.messages} />
-          {/* Lo que el staff deja para HOY (dieta + sesiones) — visible aunque
-              no tenga programa activo (hallazgo: quedaban invisibles). */}
-          <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
           {/* Muro del EQUIPO (staff + atleta) — solo con temporada activa. */}
           <TeamWallCard token={data.token} initial={data.homeBundle?.teamWall} />
+          {/* Ficha completa al 100% → abajo, como acceso de consulta. */}
+          <AthleteProfileCard token={data.token} placement="bottom" />
 
-          {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
-          <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
+          {/* 🔔 Buzón: mensajes del coach, abierto desde la campana. */}
+          {inboxOpen && (
+            <div className="fixed inset-0 z-[100] overflow-y-auto"
+              style={{ background: '#061C2B', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={() => setInboxOpen(false)} className="text-[11px] font-mono uppercase tracking-wider py-2 pr-3" style={{ color: '#8aa0b2' }}>
+                    ← Home
+                  </button>
+                  <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>
+                    <Bell size={11} className="inline -mt-0.5" /> Notifications
+                  </span>
+                  <button type="button" onClick={() => setInboxOpen(false)} aria-label="Close" className="p-2 -m-2" style={{ color: '#8aa0b2' }}>✕</button>
+                </div>
+                {inboxMsgs.map((m: any) => (
+                  <div key={m.id} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+                    <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: '#7BA2B5' }}>
+                      {m.coach_name || 'Your coach'} · {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                    {m.subject && <p className="text-[14px] font-bold mt-1" style={{ color: '#f4f9fc' }}>{m.subject}</p>}
+                    <p className="text-[13px] mt-1 whitespace-pre-line leading-relaxed" style={{ color: '#cfdde8' }}>{m.body}</p>
+                  </div>
+                ))}
+                <p className="text-center text-[9px] font-mono uppercase tracking-wider py-2" style={{ color: '#57707f' }}>
+                  The Surf Sequence · Messages
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Training + Free Surf — bold, high-contrast title (Course-style) so
               the name doesn't get lost, with a cyan accent bar. */}
