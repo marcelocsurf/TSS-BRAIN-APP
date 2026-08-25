@@ -415,12 +415,17 @@ export async function saveProgramCheckin(
         if (ids.length) await admin.from('self_training_sessions').delete().in('id', ids);
       } else if (ids.length) {
         await admin.from('self_training_sessions')
-          .update({ duration_minutes: minutes, total_water_minutes: minutes, notes: `checkin:${assignment.id}:${today}` })
+          .update({ kind: 'free_surf', duration_minutes: minutes, total_water_minutes: minutes, notes: `checkin:${assignment.id}:${today}` })
           .eq('id', ids[0]);
         if (ids.length > 1) await admin.from('self_training_sessions').delete().in('id', ids.slice(1));
       } else {
         await admin.from('self_training_sessions').insert({
           student_id: studentId,
+          // kind 'free_surf': el atleta reporta SU surf del día, no una
+          // intervención del coach. Sin esto caía en el default 'drill' y
+          // sumaba a Training — el error exacto que la doctrina del portal
+          // advierte ("training es intervención, free surf es expresión").
+          kind: 'free_surf',
           drill_name: 'Surf · daily check-in',
           duration_minutes: minutes,
           total_water_minutes: minutes,
@@ -447,6 +452,7 @@ export interface MyAppointment {
   title: string | null;
   appointment_date: string;
   appointment_time: string | null;
+  location: string | null; // dónde (presencial) o link (online)
   coach_name: string;
 }
 
@@ -465,7 +471,7 @@ export async function getMyAppointments(
 
     const { data, error } = await admin
       .from('program_appointments')
-      .select('id, kind, mode, title, appointment_date, appointment_time, coaches(display_name)')
+      .select('id, kind, mode, title, appointment_date, appointment_time, location, coaches(display_name)')
       .eq('student_id', student.id)
       .eq('status', 'scheduled')
       .gte('appointment_date', elSalvadorToday())
@@ -480,6 +486,7 @@ export async function getMyAppointments(
         id: a.id,
         kind: a.kind,
         mode: a.mode ?? null,
+        location: (a as any).location ?? null,
         title: a.title,
         appointment_date: a.appointment_date,
         appointment_time: a.appointment_time,

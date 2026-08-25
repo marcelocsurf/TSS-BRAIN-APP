@@ -54,19 +54,20 @@ async function resolveEligibleStudent(portalToken: string) {
   if (error) throw error;
   if (!student) return null;
 
-  // Elegible = línea Alto Rendimiento: temporada activa, programa activo o
-  // ficha HP ya existente. Los ~2.700 alumnos regulares no ven la tarjeta.
-  const [{ data: season, error: sErr }, { data: asg, error: aErr }, { data: profile, error: pErr }] = await Promise.all([
+  // Elegible = EQUIPO de Alto Rendimiento: temporada activa o ficha HP ya
+  // existente. Tener un PROGRAMA asignado NO alcanza (pedido de Marcelo
+  // 2026-08-25: "eso solo aplica si son de alto rendimiento, no si solo va a
+  // seguir un programa de 4 semanas para prepararse para el camp") — mismo
+  // criterio de "equipo" que ya usa la tarjeta de competencia/ranking.
+  const [{ data: season, error: sErr }, { data: profile, error: pErr }] = await Promise.all([
     admin.from('season_plans').select('id').eq('student_id', student.id).eq('active', true).limit(1).maybeSingle(),
-    admin.from('program_assignments').select('id').eq('student_id', student.id).eq('status', 'active').limit(1).maybeSingle(),
     admin.from('hp_athlete_profiles').select('*').eq('student_id', student.id).maybeSingle(),
   ]);
   // Un fallo transitorio acá NO puede degradar a "no elegible": la tarjeta
   // desaparecería y los guardados fallarían en silencio para un atleta real.
   if (sErr) throw sErr;
-  if (aErr) throw aErr;
   if (pErr) throw pErr;
-  if (!season && !asg && !profile) return null;
+  if (!season && !profile) return null;
   return { admin, student, profile };
 }
 

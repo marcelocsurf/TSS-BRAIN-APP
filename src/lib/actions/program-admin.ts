@@ -1024,6 +1024,7 @@ export interface AdminAppointmentRow {
   title: string | null;
   appointment_date: string;
   appointment_time: string | null;
+  location: string | null;
   status: string;
   notes: string | null;
 }
@@ -1035,6 +1036,7 @@ export async function adminCreateAppointment(input: {
   date: string; // YYYY-MM-DD (El Salvador)
   time?: string | null; // HH:MM
   title?: string | null;
+  location?: string | null; // dónde — una cita presencial sin lugar no sirve
   notes?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -1069,6 +1071,7 @@ export async function adminCreateAppointment(input: {
       title: input.title?.trim() || null,
       appointment_date: input.date,
       appointment_time: input.time || null,
+      location: input.location?.trim().slice(0, 200) || null,
       notes: input.notes?.trim() || null,
     });
     if (error) throw error;
@@ -1092,7 +1095,7 @@ export async function adminListAppointments(): Promise<{
     // (aunque alumno y coach sí la vieran) una vez acumulado historial.
     const { data, error } = await admin
       .from('program_appointments')
-      .select('id, kind, mode, title, appointment_date, appointment_time, status, notes, students(first_name, last_name), coaches(display_name)')
+      .select('id, kind, mode, title, appointment_date, appointment_time, location, status, notes, students(first_name, last_name), coaches(display_name)')
       .in('status', ['scheduled', 'done'])
       .gte('appointment_date', elSalvadorDatePlus(-14))
       .order('appointment_date', { ascending: true })
@@ -1110,6 +1113,7 @@ export async function adminListAppointments(): Promise<{
         title: a.title,
         appointment_date: a.appointment_date,
         appointment_time: a.appointment_time,
+        location: a.location ?? null,
         status: a.status,
         notes: a.notes,
       })),

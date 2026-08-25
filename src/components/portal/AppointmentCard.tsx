@@ -66,6 +66,11 @@ export function AppointmentCard({ token, initial }: { token: string; initial?: M
                   {a.mode ? `${a.coach_name ? ' · ' : ''}${a.mode === 'online' ? 'Online' : 'In person'}` : ''}
                 </p>
               )}
+              {/* Dónde — sin esto una cita presencial no le dice al atleta a
+                  dónde ir (pedido Marcelo 2026-08-25). */}
+              {a.location && (
+                <p className="text-[11px] truncate" style={{ color: '#9fd7e8' }}>📍 {a.location}</p>
+              )}
             </div>
             <div className="text-right shrink-0">
               <p className="text-[12px] font-bold" style={{ color: '#FFD166' }}>{prettyDate(a.appointment_date)}</p>

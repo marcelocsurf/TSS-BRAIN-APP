@@ -842,23 +842,12 @@ function HomeTab({
             ))}
           </div>
 
-          {/* La app SEPARABA estas dos horas desde siempre y nunca explicaba la
-              diferencia: el alumno veía dos números sin saber por qué importan.
-              Es la tesis del cap. 2 de One Wave — casi todos llaman
-              "entrenamiento" a todo y después se preguntan por qué mejoran
-              lento. El número que ve todos los días enseña más que la lección
-              que leyó una vez, así que acá va el enlace. */}
-          <a
-            href="?tab=course&lesson=PC-PRE-10"
-            className="block rounded-2xl px-4 py-3"
-            style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.22)' }}
-          >
-            <p className="text-[11.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
-              <strong style={{ color: '#eaf4fa' }}>Training is intervention. Free surf is expression.</strong>{' '}
-              Both count. The only mistake is confusing one for the other.
-            </p>
-            <p className="text-[10px] mt-1" style={{ color: '#00D2FF' }}>Read: Free Surfing or Training →</p>
-          </a>
+          {/* La distinción training/free surf se explica en la lección
+              "Free Surfing or Training" (PC-PRE-10), que vive en Course —
+              el atajo salía de acá (pedido de Marcelo 2026-08-25) porque
+              además era un callejón sin salida: el alumno sin curso comprado
+              caía en "Course Access Required". Los dos números de arriba
+              siguen enseñando la diferencia todos los días. */}
 
           {/* Flow Channel — Canon v8.0 §C.7: the zone between boredom (too easy)
               and anxiety (too hard). Fed by the student's session ratings
@@ -1099,35 +1088,29 @@ function HomeTab({
 // student's own session ratings (survey_responses.flow_channel, 1-5; 3 = flow).
 const FLOW_LABELS = ['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrating'];
 
+// Rediseño 2026-08-25 (idea de Marcelo): tres ZONAS rotuladas en vez de un
+// gradiente continuo — se lee de un vistazo y enseña el concepto, no solo lo
+// mide. Además arregla una incoherencia vieja: el número mostraba el PROMEDIO
+// (1-5) pero el marcador se posicionaba con el conteo de extremos, así que
+// podían contradecirse. Ahora TODO sale del promedio.
+// Escala 1-5 → 0-100%: la zona óptima (2.5-3.5) es el 25% central.
+const ZONE_EASY_END = 37.5, ZONE_OPT_END = 62.5;
+
 function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number; boredom: number; anxiety: number } }) {
   const hasData = !!flow && flow.avg != null && flow.count > 0;
   const avg = flow?.avg ?? null;
   const label = avg != null ? (FLOW_LABELS[Math.round(avg) - 1] ?? '') : '';
-  const boredom = flow?.boredom ?? 0;
-  const anxiety = flow?.anxiety ?? 0;
-  // Lean: -1 = all too-easy (boredom) … 0 = balanced … +1 = all too-hard (anxiety)
-  const lean = boredom + anxiety > 0 ? (anxiety - boredom) / (boredom + anxiety) : 0;
-  const markerLeft = Math.max(8, Math.min(92, 50 + lean * 40));
+  // Posición del marcador = el mismo promedio que muestra el número.
+  const pct = avg != null ? Math.max(2, Math.min(98, ((avg - 1) / 4) * 100)) : 50;
+  const zone = avg == null ? 'opt' : pct < ZONE_EASY_END ? 'easy' : pct > ZONE_OPT_END ? 'hard' : 'opt';
   const advice = !hasData
     ? ''
-    : lean < -0.15
-    ? 'Leaning toward boredom — raise the challenge.'
-    : lean > 0.15
-    ? 'Leaning toward anxiety — lower the challenge.'
-    : "You're in the channel — challenge and ability aligned.";
-
-  const YinYang = (
-    <svg width="68" height="68" viewBox="0 0 100 100" aria-hidden="true">
-      <defs><clipPath id="fcyy"><circle cx="50" cy="50" r="48" /></clipPath></defs>
-      <g clipPath="url(#fcyy)">
-        <rect width="100" height="100" fill="#0a2a4a" />
-        <path d="M50 2 a48 48 0 0 1 0 96 a24 24 0 0 1 0 -48 a24 24 0 0 0 0 -48" fill="#00D2FF" />
-        <circle cx="50" cy="26" r="7.5" fill="#0a2a4a" />
-        <circle cx="50" cy="74" r="7.5" fill="#00D2FF" />
-      </g>
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#1f3b57" strokeWidth="2" />
-    </svg>
-  );
+    : zone === 'easy'
+    ? 'Too easy lately — raise the challenge.'
+    : zone === 'hard'
+    ? 'Too hard lately — lower the challenge.'
+    : "You're in the learning zone — keep it here.";
+  const ZONE_COLOR = { easy: '#3E6C97', opt: '#00D2FF', hard: '#A33F4A' } as const;
 
   return (
     <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)' }} aria-label="Flow Channel">
@@ -1139,45 +1122,48 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
         {hasData && <span className="text-[9px]" style={{ color: '#8aa0b2' }}>from your session ratings</span>}
       </div>
 
-      {hasData && (
-        <p className="text-[12px] italic mt-2" style={{ color: '#9fb3c2' }}>
-          Where challenge meets capability, flow appears.
+      {!hasData ? (
+        <p className="text-[13px] leading-relaxed mt-2" style={{ color: '#dbe8f1' }}>
+          Rate your sessions to map where your flow lives.
         </p>
-      )}
-
-      <div className="flex items-center gap-4 mt-3">
-        {YinYang}
-        <div className="flex-1">
-          {hasData ? (
-            <>
-              <div className="flex items-baseline gap-2">
-                <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '28px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
-                <span className="font-semibold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#00D2FF', fontSize: '15px' }}>{label}</span>
-              </div>
-              <p className="text-[11px] mt-1" style={{ color: '#8aa0b2' }}>Flow (3) = challenge and ability in balance</p>
-            </>
-          ) : (
-            <p className="text-[13px] leading-relaxed" style={{ color: '#dbe8f1' }}>
-              Rate your sessions to map where your flow lives.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {hasData && (
+      ) : (
         <>
-          <div className="mt-4">
-            <div className="relative" style={{ height: 8, borderRadius: 5, background: 'linear-gradient(90deg,#3a4a5e 0%,#00D2FF 50%,#7a4ab0 100%)', opacity: 0.7 }}>
-              <div className="absolute" style={{ left: '50%', top: -3, width: 1, height: 14, background: '#cfe8f2', opacity: 0.5 }} />
-              <div className="absolute" style={{ left: `${markerLeft}%`, top: -4, width: 16, height: 16, borderRadius: '50%', background: '#fff', border: '2px solid #00D2FF', transform: 'translateX(-50%)' }} />
+          {/* Eyebrow + zonas */}
+          <p className="text-[9px] uppercase tracking-[0.18em] mt-3 pb-2 mb-3 text-center"
+            style={{ fontFamily: 'DM Mono, monospace', color: '#8aa0b2', borderBottom: '1px solid #1f344a' }}>
+            Output · Learning zone
+          </p>
+
+          <div className="relative">
+            <div className="flex rounded-md overflow-hidden" style={{ height: 22 }}>
+              <div style={{ width: `${ZONE_EASY_END}%`, background: ZONE_COLOR.easy, opacity: zone === 'easy' ? 1 : 0.45 }} />
+              <div style={{ width: `${ZONE_OPT_END - ZONE_EASY_END}%`, background: ZONE_COLOR.opt, opacity: zone === 'opt' ? 1 : 0.45 }} />
+              <div style={{ width: `${100 - ZONE_OPT_END}%`, background: ZONE_COLOR.hard, opacity: zone === 'hard' ? 1 : 0.45 }} />
             </div>
-            <div className="flex justify-between mt-1.5">
-              <span className="text-[10px]" style={{ color: '#8aa0b2' }}>Bored · too easy</span>
-              <span className="text-[10px] font-medium" style={{ color: '#00D2FF' }}>Flow</span>
-              <span className="text-[10px]" style={{ color: '#8aa0b2' }}>Anxiety · too hard</span>
-            </div>
+            {/* Dónde estás (mismo promedio que el número de abajo) */}
+            <div className="absolute" style={{ left: `${pct}%`, top: -4, width: 3, height: 30, borderRadius: 2, background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(255,255,255,.5)' }} />
           </div>
-          <p className="text-[11px] mt-3 pt-3" style={{ color: '#dbe8f1', borderTop: '1px solid #1f344a' }}>{advice}</p>
+
+          <div className="flex justify-between mt-1.5">
+            <span className="text-[9.5px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'easy' ? '#9fd7e8' : '#7BA2B5' }}>Too easy</span>
+            <span className="text-[9.5px] uppercase tracking-wider font-bold" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'opt' ? '#00D2FF' : '#7BA2B5' }}>Optimal learning</span>
+            <span className="text-[9.5px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'hard' ? '#E28A93' : '#7BA2B5' }}>Too hard</span>
+          </div>
+
+          {/* La doctrina, en las palabras de Marcelo */}
+          <p className="text-[12.5px] font-bold mt-3.5 text-center" style={{ color: '#f0f7fa' }}>
+            Challenge matched to capability + conditions
+          </p>
+          <p className="text-[10px] mt-1 text-center" style={{ color: '#8aa0b2' }}>
+            Difficult enough to demand attention · possible enough to produce feedback
+          </p>
+
+          <div className="flex items-baseline justify-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #1f344a' }}>
+            <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '24px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
+            <span className="font-semibold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: ZONE_COLOR[zone], fontSize: '14px' }}>{label}</span>
+            <span className="text-[10px]" style={{ color: '#8aa0b2' }}>· {flow!.count} rating{flow!.count === 1 ? '' : 's'}</span>
+          </div>
+          <p className="text-[11px] mt-2 text-center" style={{ color: '#dbe8f1' }}>{advice}</p>
         </>
       )}
     </div>

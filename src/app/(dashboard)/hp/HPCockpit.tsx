@@ -492,6 +492,7 @@ function CitasTab() {
   const [kind, setKind] = useState<'fisico' | 'mental' | 'tecnico' | 'nutricion' | 'evaluacion' | 'otro'>('fisico');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [location, setLocation] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = () => adminListAppointments().then((r) => { if (r.ok) setRows(r.appointments); else setErr(r.error || null); }).catch(() => {});
@@ -510,10 +511,10 @@ function CitasTab() {
   const create = async () => {
     if (!picked || !coachId || !date) return;
     setErr(null); setBusy(true);
-    const r = await adminCreateAppointment({ studentId: picked.id, coachId, kind, date, time: time || null });
+    const r = await adminCreateAppointment({ studentId: picked.id, coachId, kind, date, time: time || null, location: location || null });
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
-    setPicked(null); setQ(''); setDate(''); setTime(''); setCreating(false);
+    setPicked(null); setQ(''); setDate(''); setTime(''); setLocation(''); setCreating(false);
     load();
   };
 
@@ -557,6 +558,10 @@ function CitasTab() {
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Fecha" style={{ ...inp, colorScheme: 'dark' }} />
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Hora" style={{ ...inp, colorScheme: 'dark' }} />
           </div>
+          {/* Lugar (pedido Marcelo 2026-08-25): una cita presencial sin lugar
+              deja al atleta sin saber a dónde ir. */}
+          <input value={location} onChange={(e) => setLocation(e.target.value)}
+            placeholder="Lugar — p. ej. Gym Puro Surf · o link de Zoom" aria-label="Lugar" style={inp} />
           <div className="flex gap-2">
             <button type="button" disabled={busy || !picked || !coachId || !date} onClick={create}
               className="flex-1 rounded-full py-2 text-[11px] font-bold" style={{ background: CYAN, color: '#06202F', opacity: busy || !picked || !coachId || !date ? 0.5 : 1 }}>
@@ -573,7 +578,7 @@ function CitasTab() {
             <div className="min-w-0">
               <p className="text-[12.5px] font-semibold truncate" style={{ color: TXT }}>{a.student_name}</p>
               <p className="text-[10.5px]" style={{ color: DIM }}>
-                {a.title || a.kind}{a.mode ? ` · ${a.mode}` : ''} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''} · {a.coach_name}
+                {a.title || a.kind}{a.mode ? ` · ${a.mode}` : ''} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''}{a.location ? ` · 📍 ${a.location}` : ''} · {a.coach_name}
               </p>
             </div>
             {a.status === 'scheduled' ? (
