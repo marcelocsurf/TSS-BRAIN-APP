@@ -86,6 +86,13 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           </Sec>
         )}
 
+        <Sec icon="📣" title="DISPONIBILIDAD — qué hay y dónde queda lugar">
+          <Li k="Para qué es">Responder al instante &quot;¿qué hay esta semana?&quot; y &quot;¿queda lugar?&quot; sin abrir la agenda día por día. Cada servicio con su hora, precio, lugares libres y coach.</Li>
+          <Li k="Solo con lugar">El botón filtra y te deja únicamente lo que se puede vender ahora.</Li>
+          <Li k="🗓 Evento">Los camps de varios días salen UNA vez, marcados con su duración — no repetidos cada día.</Li>
+          <Li k="📋 Copiar">Manda las actividades del día (o de los 14) por WhatsApp al huésped o al grupo. Para <strong>reservar</strong>, andá a AGENDA y usá el botón verde de la clase.</Li>
+        </Sec>
+
         <Sec icon="🚐" title="TRANSPORTE — la van de los próximos 14 días">
           <Li k="Qué muestra">Todo lo que los coaches solicitaron al planear sus clases y camps: salida → regreso, lugar, cuántos alumnos van y qué coach lo pide, agrupado por día.</Li>
           <Li k="✓ Salió">Marcalo cuando la van se vaya — todos ven que ese viaje ya está en camino. "Deshacer" lo regresa a pendiente.</Li>

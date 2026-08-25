@@ -16,8 +16,8 @@ import {
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
   hostSetTransport, hostConfirmRenewal, hostGrantRenewal,
-  hostTransportBoard, hostTransportNotices,
-  type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow,
+  hostTransportBoard, hostTransportNotices, hostAvailability,
+  type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow, type AvailabilityRow,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
 import { CopyTextButton } from '@/components/dashboard/CopyTextButton';
@@ -33,7 +33,7 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GR
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
 
-type Tab = 'hoy' | 'operacion' | 'transporte' | 'espacios' | 'tablas' | 'clientes';
+type Tab = 'hoy' | 'operacion' | 'disponibilidad' | 'transporte' | 'espacios' | 'tablas' | 'clientes';
 
 // Cinta legible + nivel entre paréntesis mientras el equipo aprende los
 // colores (pedido de Rick): "Purple Belt (Emerging)" en vez de "purple_belt".
@@ -375,7 +375,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           </button>
         </div>
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
+          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['disponibilidad', '📣 Disponibilidad'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               className="flex-1 shrink-0 whitespace-nowrap rounded-full py-2.5 px-3 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
@@ -586,6 +586,8 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
         {tab === 'transporte' && (
           <TransporteTab token={token} canCoordinate={canCoordinate} />
         )}
+
+        {tab === 'disponibilidad' && <AvailabilityTab token={token} />}
 
         {tab === 'espacios' && (
           /* El MISMO tablero de espacios de coaches/coordinadores — quién usa
@@ -1287,6 +1289,139 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
               )}
             </div>
           ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ═══ 📣 DISPONIBILIDAD — qué hay programado y dónde queda lugar ═══
+// Pedido de Marcelo (2026-08-25): el Front Desk necesita responder "¿qué hay
+// y queda lugar?" sin abrir la agenda día por día. Los EVENTOS (camps de
+// varios días) se muestran una sola vez, no repetidos por cada día.
+function AvailabilityTab({ token }: { token: string }) {
+  const [rows, setRows] = useState<AvailabilityRow[] | null | 'error'>(null);
+  const [soloLibres, setSoloLibres] = useState(false);
+
+  const load = () => { hostAvailability(token).then((r) => setRows(r ?? 'error')).catch(() => setRows('error')); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [token]);
+
+  const hoy = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+  const dayLabel = (d: string) => {
+    const l = new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    return d === hoy ? `HOY · ${l}` : l;
+  };
+  const hhmm = (t: string | null) => (t ? String(t).slice(0, 5) : '—');
+  const money = (c: number | null) => (c != null ? `$${(c / 100).toFixed(0)}` : '');
+
+  const all = Array.isArray(rows) ? rows : [];
+  // Un evento de varios días se anuncia UNA vez (su primer día del rango).
+  const seenEvent = new Set<string>();
+  const visible = all.filter((r) => {
+    if (r.is_event) { if (seenEvent.has(r.camp_id)) return false; seenEvent.add(r.camp_id); }
+    return !soloLibres || r.spots_left === null || r.spots_left > 0;
+  });
+
+  const groups: [string, AvailabilityRow[]][] = [];
+  for (const r of visible) {
+    const g = groups.find((x) => x[0] === r.date);
+    if (g) g[1].push(r); else groups.push([r.date, [r]]);
+  }
+
+  const cupoTxt = (r: AvailabilityRow) =>
+    r.spots_left === null ? 'sin límite' : r.spots_left === 0 ? 'LLENO' : `${r.spots_left} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`;
+
+  // Texto para mandarle al huésped o al grupo por WhatsApp.
+  const dayText = (date: string, list: AvailabilityRow[]) => {
+    const fecha = new Date(`${date}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+    const L: string[] = [`🏄 *ACTIVIDADES · ${fecha.toUpperCase()}*`, ''];
+    for (const r of list) {
+      const libre = r.spots_left === null ? '' : r.spots_left === 0 ? '  (LLENO)' : `  · ${r.spots_left} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`;
+      L.push(`*${hhmm(r.time)}*  ${r.name}${r.is_event && r.total_days ? ` (${r.total_days} días)` : ''}`);
+      const sub: string[] = [];
+      if (r.price_cents != null) sub.push(money(r.price_cents));
+      if (r.venue) sub.push(`📍 ${r.venue}`);
+      if (sub.length) L.push(`   ${sub.join(' · ')}${libre}`);
+      else if (libre) L.push(`  ${libre.trim()}`);
+    }
+    L.push('');
+    L.push('_The Surf Sequence_');
+    return L.join('\n');
+  };
+  const allText = () => groups.map(([d, l]) => dayText(d, l)).join('\n\n');
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Front Desk</p>
+        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>📣 Disponibilidad · próximos 14 días</h2>
+        <p className="text-[11px] text-white/50 mt-1">Todo lo programado con su cupo libre y su precio — para responder al instante y para reservar desde AGENDA.</p>
+        <div className="flex gap-2 mt-3 flex-wrap">
+          <button type="button" onClick={() => setSoloLibres(!soloLibres)}
+            className="shrink-0 text-[10px] font-bold rounded-full px-3 py-1.5 border"
+            style={soloLibres
+              ? { background: GOLD, color: '#412402', borderColor: GOLD }
+              : { background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.35)' }}>
+            {soloLibres ? '✓ Solo con lugar' : 'Solo con lugar'}
+          </button>
+          {groups.length > 0 && <CopyTextButton text={allText()} label="📋 Copiar todo" />}
+        </div>
+      </div>
+
+      {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
+      {rows === 'error' && (
+        <div className="rounded-2xl bg-white p-6 text-center">
+          <p className="text-sm text-gray-600">No se pudo cargar la disponibilidad.</p>
+          <button type="button" onClick={() => { setRows(null); load(); }}
+            className="mt-2 rounded-full px-4 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {Array.isArray(rows) && groups.length === 0 && (
+        <p className="text-sm text-gray-400 px-1">
+          {soloLibres ? 'Todo lleno en los próximos 14 días.' : 'No hay servicios programados en los próximos 14 días.'}
+        </p>
+      )}
+
+      {groups.map(([date, list]) => (
+        <div key={date} className="space-y-2">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-[10px] font-bold" style={{ ...F_M, color: date === hoy ? '#0090B0' : '#8a99a6' }}>{dayLabel(date)}</p>
+            <CopyTextButton text={dayText(date, list)} label="📋 Copiar día" />
+          </div>
+          {list.map((r) => {
+            const lleno = r.spots_left === 0;
+            return (
+              <div key={`${r.camp_id}-${r.date}`} className="rounded-2xl bg-white p-3.5"
+                style={{ borderLeft: `4px solid ${lleno ? '#c04545' : r.is_event ? GOLD : GREEN}` }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-extrabold leading-tight" style={{ color: INK }}>
+                      {hhmm(r.time)} · {r.name}
+                    </p>
+                    <p className="text-[11.5px] mt-0.5 text-gray-500">
+                      {r.is_event && r.total_days ? <b style={{ color: '#7a5c00' }}>🗓 Evento · {r.total_days} días · </b> : null}
+                      {r.coach_name ? `${r.coach_name}` : 'sin coach'}
+                      {r.venue ? ` · 📍 ${r.venue}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {r.price_cents != null && (
+                      <p className="text-[13px] font-extrabold" style={{ color: '#7a5c00' }}>{money(r.price_cents)}</p>
+                    )}
+                    <p className="text-[11px] font-bold mt-0.5" style={{ color: lleno ? '#c04545' : GREEN }}>
+                      {cupoTxt(r)}
+                    </p>
+                    {r.capacity > 0 && (
+                      <p className="text-[9px] text-gray-400">{r.enrolled}/{r.capacity}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>

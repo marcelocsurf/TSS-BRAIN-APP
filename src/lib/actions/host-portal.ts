@@ -933,3 +933,86 @@ export async function hostGrantRenewal(
   });
   return { ok: true };
 }
+
+// ═══ DISPONIBILIDAD DE SERVICIOS Y EVENTOS (pedido de Marcelo 2026-08-25) ═══
+// Lo que el Front Desk necesita para responder "¿qué hay y queda lugar?" sin
+// abrir la agenda día por día: los próximos 14 días con cupo libre, precio y
+// si es un evento de varios días (camp) o una clase suelta.
+export interface AvailabilityRow {
+  camp_id: string;
+  date: string;               // YYYY-MM-DD (SV)
+  time: string | null;
+  name: string;
+  kind: string | null;        // class · surf_lesson · surf_camp · custom
+  is_event: boolean;          // multi-día (camp/retiro) → se anuncia distinto
+  day_number: number | null;  // día X de Y cuando es evento
+  total_days: number | null;
+  capacity: number;           // 0 = sin tope
+  enrolled: number;
+  spots_left: number | null;  // null = sin tope
+  price_cents: number | null;
+  coach_name: string | null;
+  venue: string | null;
+}
+
+export async function hostAvailability(token: string): Promise<AvailabilityRow[] | null> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+  const today = elSalvadorToday();
+  const end = new Date(Date.parse(`${today}T00:00:00Z`) + 13 * 86400000).toISOString().slice(0, 10);
+
+  const { data: sess, error } = await admin
+    .from('camp_sessions')
+    .select(`id, session_date, day_number, camp_instance_id,
+      camp_instances:camp_instance_id!inner(id, camp_name, scheduled_time, status, academy_id, capacity_override,
+        head_coach:head_coach_id(display_name), head_coach_status, coaches:coach_id(display_name),
+        camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents),
+        camp_sessions(id),
+        camp_participants(id, enrollment_status))`)
+    .gte('session_date', today)
+    .lte('session_date', end)
+    .eq('camp_instances.academy_id', who.academy_id)
+    .order('session_date');
+  if (error) return null;
+
+  // Lugar planeado por el coach (si ya lo definió en su Vista Semana).
+  const ids = (sess ?? []).map((s: any) => s.id);
+  const venueBySession = new Map<string, string>();
+  if (ids.length) {
+    const { data: plans } = await admin
+      .from('service_plans').select('camp_session_id, surf_venue').in('camp_session_id', ids);
+    for (const p of plans ?? []) if ((p as any).surf_venue) venueBySession.set((p as any).camp_session_id, (p as any).surf_venue);
+  }
+
+  const rows: AvailabilityRow[] = [];
+  for (const s of (sess ?? []) as any[]) {
+    const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
+    if (!inst || inst.status === 'cancelled') continue;
+    const tpl = Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates;
+    const head = Array.isArray(inst.head_coach) ? inst.head_coach[0] : inst.head_coach;
+    const co = Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches;
+    // Coach efectivo: el head solo cuenta si ACEPTÓ (invariante del proyecto).
+    const coach = (head?.display_name && inst.head_coach_status === 'accepted' ? head.display_name : null) ?? co?.display_name ?? null;
+    const enrolled = (inst.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length;
+    const capacity = inst.capacity_override ?? tpl?.capacity_max ?? 0;
+    const totalDays = (inst.camp_sessions ?? []).length || 1;
+    rows.push({
+      camp_id: inst.id,
+      date: s.session_date,
+      time: inst.scheduled_time ?? null,
+      name: String(inst.camp_name ?? tpl?.template_name ?? 'Servicio').replace(/ · \d{4}-\d{2}-\d{2}$/, ''),
+      kind: tpl?.service_kind ?? null,
+      is_event: totalDays > 1,
+      day_number: totalDays > 1 ? s.day_number : null,
+      total_days: totalDays > 1 ? totalDays : null,
+      capacity,
+      enrolled,
+      spots_left: capacity > 0 ? Math.max(0, capacity - enrolled) : null,
+      price_cents: tpl?.list_price_cents ?? null,
+      coach_name: coach,
+      venue: venueBySession.get(s.id) ?? null,
+    });
+  }
+  return rows.sort((a, b) => a.date.localeCompare(b.date) || String(a.time ?? '99').localeCompare(String(b.time ?? '99')));
+}
