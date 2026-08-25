@@ -304,7 +304,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
 }
 
 export function HostPortal({ token, hostName, services, hostId, academyId }: { token: string; hostName: string; services: any[]; hostId?: string; academyId?: string }) {
-  const [tab, setTab] = useState<Tab>('hoy');
+  const [tab, setTab] = useState<Tab>('disponibilidad');
   const [board, setBoard] = useState<any>(null);
   const [incidents, setIncidents] = useState<any[] | null>(null);
   const [recent, setRecent] = useState<any[] | null>(null);
@@ -375,7 +375,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           </button>
         </div>
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-          {([['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['disponibilidad', '📣 Disponibilidad'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
+          {([['disponibilidad', '📣 Disponibilidad'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               className="flex-1 shrink-0 whitespace-nowrap rounded-full py-2.5 px-3 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
@@ -394,33 +394,15 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
               <strong style={{ color: '#0090B0' }}>Hoy = atender y cobrar.</strong> Solo lo que llega en los próximos 7 días.
               ¿Buscás una clase más adelante? Está en <button type="button" onClick={() => setTab('operacion')} className="underline decoration-dotted" style={{ color: '#0090B0' }}>🗓 Agenda</button>.
             </p>
-            {/* Semáforo del día: los incendios de coordinación, a la vista */}
-            {alerts && (
-              (alerts.no_coach.length || alerts.pending_coach.length || alerts.unclosed.length || alerts.overcap.length) ? (
-                <div className="rounded-2xl p-3.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(255,209,102,.5)' }}>
-                  <p className="text-[9px]" style={{ ...F_M, color: '#7a5c00' }}>🚦 Semáforo del día</p>
-                  {alerts.no_coach.length > 0 && (
-                    <p className="text-[12px] font-bold" style={{ color: '#c04545' }}>
-                      ⚠ Sin coach hoy: {alerts.no_coach.join(', ')}{canCoordinate ? ' — asignalo en AGENDA' : ' — avisale a coordinación'}
-                    </p>
-                  )}
-                  {alerts.pending_coach.length > 0 && (
-                    <p className="text-[12px]" style={{ color: '#7a5c00' }}>⏳ Coach por confirmar: {alerts.pending_coach.join(', ')}</p>
-                  )}
-                  {alerts.overcap.length > 0 && (
-                    <p className="text-[12px]" style={{ color: '#7a5c00' }}>📈 Sobrecupo: {alerts.overcap.join(' · ')}</p>
-                  )}
-                  {alerts.unclosed.length > 0 && (
-                    <p className="text-[12px]" style={{ color: '#7a5c00' }}>
-                      🔒 {alerts.unclosed.length} {alerts.unclosed.length === 1 ? 'sesión' : 'sesiones'} sin cierre: {alerts.unclosed.slice(0, 3).map((u) => `${u.service} ${u.date.slice(5)}${u.coach ? ` (${u.coach})` : ''}`).join(' · ')}{alerts.unclosed.length > 3 ? ` +${alerts.unclosed.length - 3} más` : ''}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-[11px] font-semibold rounded-2xl px-3.5 py-2.5" style={{ background: 'rgba(6,214,160,.1)', color: '#0a7c5d' }}>
-                  🚦 Día en orden — servicios con coach y cierres al día. 🤙
-                </p>
-              )
+            {/* Servicio al cliente NO coordina instructores ni clases (Marcelo,
+                2026-08-25): los incendios de coordinación —sin coach, coach por
+                confirmar, sesiones sin cierre— son de coordinación y salieron de
+                acá. Queda el SOBRECUPO, que sí lo maneja el mostrador. */}
+            {alerts && alerts.overcap.length > 0 && (
+              <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(255,209,102,.5)' }}>
+                <p className="text-[9px] mb-1" style={{ ...F_M, color: '#7a5c00' }}>📈 Grupos en sobrecupo</p>
+                <p className="text-[12px]" style={{ color: '#7a5c00' }}>{alerts.overcap.join(' · ')}</p>
+              </div>
             )}
             {/* Tareas que el coordinador le asignó — con reporte hecho/no hecho */}
             <CoachTasks token={token} />
@@ -620,7 +602,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           onClose={() => setReserveFor(null)}
           onDone={() => { setReserveFor(null); hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); }} />
       )}
-      {guideOpen && <HostGuide canCoordinate={canCoordinate} onClose={closeGuide} />}
+      {guideOpen && <HostGuide onClose={closeGuide} />}
     </div>
   );
 }

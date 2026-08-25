@@ -22,7 +22,7 @@ function Li({ k, children }: { k: string; children: React.ReactNode }) {
   return <p><strong style={{ color: INK }}>{k}</strong> — {children}</p>;
 }
 
-export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; onClose: () => void }) {
+export function HostGuide({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: PAPER }}>
       <div className="px-4 pt-5 pb-4 sticky top-0 z-10" style={{ background: INK }}>
@@ -40,9 +40,22 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
 
       <div className="max-w-md lg:max-w-3xl mx-auto px-4 py-4 space-y-3">
         <p className="text-[12.5px] text-gray-500 leading-relaxed">
-          Este portal es tu mostrador completo: con él atendés clientes, cobrás, reservás y ves todo lo que pasa en el día.
+          Este portal es tu mostrador: atendés clientes, reservás y ves lo que está programado.
           Volvés a esta guía cuando quieras con el botón <strong>📖</strong> de arriba.
         </p>
+
+        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(6,214,160,.10)', border: '1px solid rgba(6,214,160,.4)' }}>
+          <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0a7c5d' }}>Tus 4 pestañas de siempre</p>
+          <p className="text-[12.5px] leading-relaxed text-gray-700">
+            <strong style={{ color: INK }}>📣 Disponibilidad</strong> — qué hay programado y dónde queda lugar.<br />
+            <strong style={{ color: INK }}>🚐 Transporte</strong> — las vans de los próximos 14 días.<br />
+            <strong style={{ color: INK }}>🏛 Espacios</strong> — reservar salas y lugares.<br />
+            <strong style={{ color: INK }}>🗓 Agenda</strong> — reservar a un cliente en una clase.
+          </p>
+          <p className="text-[11.5px] leading-relaxed text-gray-500 mt-1.5">
+            Asignar instructores, mover o cancelar clases <strong>no es tu trabajo</strong>: eso lo hace coordinación. Si ves algo raro, avisales.
+          </p>
+        </div>
 
         {/* La confusión #1 del host (Cony, ago 2026): buscar en HOY una clase
             que está más adelante. Se aclara de entrada, antes de todo lo demás. */}
@@ -57,8 +70,8 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           </p>
         </div>
 
-        <Sec icon="🚦" title="Semáforo del día (arriba de HOY)">
-          <p>Lo primero que mirás al llegar. Te avisa si hay <strong>clases sin coach</strong>, invitaciones de coach <strong>sin aceptar</strong>, <strong>sesiones sin cierre</strong> de días anteriores o grupos en <strong>sobrecupo</strong>. Si está verde, el día está en orden.</p>
+        <Sec icon="📈" title="Sobrecupo (arriba de HOY)">
+          <p>Te avisa si algún grupo quedó con más gente que su cupo, para que lo tengas presente al recibirlos. Si no aparece nada, no hay sobrecupo.</p>
         </Sec>
 
         <Sec icon="📋" title="HOY — atender y cobrar (próximos 7 días)">
@@ -77,14 +90,6 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           <Li k="+ Reservar">Cliente enfrente → tocá el botón verde de la clase, buscalo (o crealo con nombre y teléfono) y listo. El cobro se confirma en HOY cuando llegue.</Li>
           <Li k="+ Clase en otro horario">¿Piden Skate un martes 2 PM? Elegí la plantilla y la hora — la clase se crea al instante y ya podés reservarle.</Li>
         </Sec>
-
-        {canCoordinate && (
-          <Sec icon="🛟" title="Modo cobertura — cuando el coordinador no está">
-            <Li k="Asignar coach">Si una clase dice “Sin coach”, tocá <strong>⚠ Asignar coach</strong> en su tarjeta de AGENDA y elegí a quién invitar. Le llega email y notificación, y debe <strong>aceptar</strong> desde su portal (igual que cuando lo asigna coordinación).</Li>
-            <Li k="🕐 Reprogramar">Mueve una clase de un día a otra fecha u hora. Solo clases sueltas — los camps los mueve coordinación.</Li>
-            <Li k="✕ Cancelar clase">Cancela la clase y te dice a qué alumnos avisar. Coordinación queda notificada de todo lo que hagas en este modo.</Li>
-          </Sec>
-        )}
 
         <Sec icon="📣" title="DISPONIBILIDAD — qué hay y dónde queda lugar">
           <Li k="Para qué es">Responder al instante &quot;¿qué hay esta semana?&quot; y &quot;¿queda lugar?&quot; sin abrir la agenda día por día. Cada servicio con su hora, precio, lugares libres y coach.</Li>
