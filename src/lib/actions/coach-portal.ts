@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
+import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
 import { getAcceptedAssistantCampIds } from '@/lib/actions/service-staff';
 import { revalidatePath } from 'next/cache';
@@ -342,7 +343,9 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       .eq('academy_id', coach.academy_id)
       .gte('start_date', today)
       .order('start_date');
-    academyServices = svc ?? [];
+    // Un camp de varios días deja de ser vendible en cuanto arranca: no se
+    // le ofrece al vendedor algo que la acción va a rechazar.
+    academyServices = (svc ?? []).filter((s: any) => !campEnrollmentClosed(s));
 
     // 2B — the selling deck per service: mint one signed URL per distinct deck
     // and attach it to every service whose template points at it.

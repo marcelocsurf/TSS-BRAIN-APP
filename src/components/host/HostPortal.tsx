@@ -799,7 +799,9 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
           + Reservar ({spotsLeft} libre{spotsLeft === 1 ? '' : 's'})
         </button>
       )}
-      {shareLink && (
+      {/* Sin link de reserva para un camp cerrado: llevaría al cliente a una
+          página donde ya no puede inscribirse. */}
+      {shareLink && !e.closed && (
         <button type="button" onClick={copyShare}
           className="mt-1.5 w-full rounded-full py-2 text-[9px] border" style={{ ...F_M, borderColor: '#e5e7eb', color: '#0090B0', background: '#fff' }}>
           🔗 Copiar link de reserva (WhatsApp)
