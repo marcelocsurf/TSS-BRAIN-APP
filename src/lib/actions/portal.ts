@@ -20,20 +20,55 @@ export async function getStudentPortalData(token: string) {
 
   if (studentErr || !student) return null;
 
-  // 2. Get session results (standalone + cascade linked)
-  const { data: sessionResults } = await admin
-    .from('student_session_results')
-    .select('*, standalone_sessions(*), coaches:coach_id(display_name)')
-    .eq('student_id', student.id)
-    .order('created_at', { ascending: false });
-
-  // 2b. Get cascade sessions directly (may not have student_session_results row)
-  const { data: cascadeSessions } = await admin
-    .from('cascade_sessions')
-    .select('*, coaches:coach_id(display_name)')
-    .eq('student_id', student.id)
-    .eq('completion_state', 'closed')
-    .order('session_date', { ascending: false });
+  // PERF (2026-08-25, "el app está lento — se queda cargando en cada
+  // acción"): estas SIETE lecturas solo dependen del alumno, pero corrían en
+  // FILA — cada una pagaba su round-trip completo y el portal tardaba 6-8s.
+  // Una sola ola paralela: mismo resultado, una fracción del tiempo.
+  const [
+    { data: sessionResults },
+    { data: cascadeSessions },
+    { data: selfTrainingSessions },
+    { data: surveys },
+    { data: multiBlockSessions },
+    { data: participations },
+    academyRes,
+  ] = await Promise.all([
+    admin.from('student_session_results')
+      .select('*, standalone_sessions(*), coaches:coach_id(display_name)')
+      .eq('student_id', student.id)
+      .order('created_at', { ascending: false }),
+    admin.from('cascade_sessions')
+      .select('*, coaches:coach_id(display_name)')
+      .eq('student_id', student.id)
+      .eq('completion_state', 'closed')
+      .order('session_date', { ascending: false }),
+    admin.from('self_training_sessions')
+      .select('*')
+      .eq('student_id', student.id)
+      .order('created_at', { ascending: false }),
+    admin.from('survey_responses')
+      .select('id, session_result_id, flow_channel')
+      .eq('student_id', student.id),
+    admin.from('multi_block_sessions')
+      .select('id, session_date, training_venue, completion_state, total_planned_minutes, total_actual_minutes, general_coach_feedback, general_homework, general_whats_next, started_at, closed_at, created_at, coach_id, coaches:coach_id(display_name)')
+      .eq('student_id', student.id)
+      .order('session_date', { ascending: false })
+      .limit(30),
+    admin.from('camp_participants')
+      .select(
+        'camp_instance_id, ' +
+          'camp_instances:camp_instance_id(' +
+            'id, camp_name, start_date, end_date, status, scheduled_time, ' +
+            'template_id, head_coach_id, coach_id, ' +
+            'camp_templates:template_id(template_name, service_kind), ' +
+            'head_coach:head_coach_id(display_name, photo_url, certification_level, max_belt_permission)' +
+          ')'
+      )
+      .eq('student_id', student.id),
+    student.academy_id
+      ? admin.from('academies').select('name, logo_url, primary_color, accent_color, tagline').eq('id', student.academy_id).single()
+      : Promise.resolve({ data: null } as any),
+  ]);
 
   // 2c. Merge: cascade sessions that DON'T have a matching student_session_results row
   const resultCascadeIds = new Set(
@@ -74,19 +109,6 @@ export async function getStudentPortalData(token: string) {
 
   const sessions = [...(sessionResults || []), ...unmatchedCascade]
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-  // 3. Get self-training sessions
-  const { data: selfTrainingSessions } = await admin
-    .from('self_training_sessions')
-    .select('*')
-    .eq('student_id', student.id)
-    .order('created_at', { ascending: false });
-
-  // 4. Get all survey responses for this student
-  const { data: surveys } = await admin
-    .from('survey_responses')
-    .select('id, session_result_id, flow_channel')
-    .eq('student_id', student.id);
 
   const surveyResultIds = new Set((surveys || []).map((s: any) => s.session_result_id));
   const hasSurveyEver = (surveys || []).length > 0;
@@ -196,16 +218,7 @@ export async function getStudentPortalData(token: string) {
     }
   }
 
-  // ── Multi-block sessions: pull upcoming (planned/in_progress) + closed history
-  const { data: multiBlockSessions } = await admin
-    .from('multi_block_sessions')
-    .select(
-      'id, session_date, training_venue, completion_state, total_planned_minutes, total_actual_minutes, general_coach_feedback, general_homework, general_whats_next, started_at, closed_at, created_at, coach_id, coaches:coach_id(display_name)'
-    )
-    .eq('student_id', student.id)
-    .order('session_date', { ascending: false })
-    .limit(30);
-
+  // ── Multi-block sessions (leídas arriba en la ola paralela) ──
   const upcomingMultiBlock = (multiBlockSessions ?? []).filter(
     (m: any) => m.completion_state === 'planned' || m.completion_state === 'in_progress'
   );
@@ -238,22 +251,7 @@ export async function getStudentPortalData(token: string) {
     blocks: blocksBySession.get(m.id) ?? [],
   }));
 
-  // M45 — pull the student's official services (camp_instances) so the
-  // portal shows what the coordinator programmed. This is the new source
-  // of truth; multi_block_sessions remains as legacy until cleanup.
-  const { data: participations } = await admin
-    .from('camp_participants')
-    .select(
-      'camp_instance_id, ' +
-        'camp_instances:camp_instance_id(' +
-          'id, camp_name, start_date, end_date, status, scheduled_time, ' +
-          'template_id, head_coach_id, coach_id, ' +
-          'camp_templates:template_id(template_name, service_kind), ' +
-          'head_coach:head_coach_id(display_name, photo_url, certification_level, max_belt_permission)' +
-        ')'
-    )
-    .eq('student_id', student.id);
-
+  // M45 — servicios oficiales (leídos arriba en la ola paralela).
   const today = elSalvadorToday();
   const upcomingCamps: any[] = [];
   const pastCamps: any[] = [];
@@ -358,23 +356,14 @@ export async function getStudentPortalData(token: string) {
     ...(upcomingCampPreview[c.id] ?? { next_session: null, blocks: [] }),
   }));
 
-  // M9 — load the student's academy branding so the portal can theme
-  // its top bar / hero. Falls back to TSS defaults when missing.
-  let academyBranding: {
+  // M9 — branding de la academia (leído arriba en la ola paralela).
+  const academyBranding: {
     name: string | null;
     logo_url: string | null;
     primary_color: string | null;
     accent_color: string | null;
     tagline: string | null;
-  } | null = null;
-  if (student.academy_id) {
-    const { data: aca } = await admin
-      .from('academies')
-      .select('name, logo_url, primary_color, accent_color, tagline')
-      .eq('id', student.academy_id)
-      .single();
-    academyBranding = aca ?? null;
-  }
+  } | null = (academyRes as any)?.data ?? null;
 
   return {
     student,
