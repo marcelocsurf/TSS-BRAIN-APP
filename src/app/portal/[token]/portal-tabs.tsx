@@ -719,11 +719,16 @@ function HomeTab({
           <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <div className="relative shrink-0" style={{ width: 104, height: 104 }}>
               <svg viewBox="0 0 120 120" width="104" height="104">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#1f344a" strokeWidth="10" />
+                {/* El aro es el SPLIT de estas horas, no otro dato: el arco
+                    verde son las de Free Surf y el cyan las de Training.
+                    Antes dibujaba el progreso de CINTA alrededor de la cifra
+                    de horas — por eso parecía un segundo score (Marcelo,
+                    2026-08-25). El nivel ya tiene su propia barra al lado. */}
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#39D98A" strokeWidth="10" />
                 <circle
-                  cx="60" cy="60" r="52" fill="none" stroke="#00D2FF" strokeWidth="10" strokeLinecap="round"
+                  cx="60" cy="60" r="52" fill="none" stroke="#00D2FF" strokeWidth="10"
                   strokeDasharray="326.7"
-                  strokeDashoffset={326.7 * (1 - (BELT_RANK[beltLevel] ?? 1) / 6)}
+                  strokeDashoffset={326.7 * (1 - (surf.totalMinutes > 0 ? surf.trainingMinutes / surf.totalMinutes : 0))}
                   transform="rotate(-90 60 60)"
                 />
               </svg>
@@ -748,6 +753,18 @@ function HomeTab({
               </p>
               <div className="h-1.5 rounded-full overflow-hidden mt-2 mb-2" style={{ background: '#1f344a' }}>
                 <div className="h-full rounded-full" style={{ width: `${((BELT_RANK[beltLevel] ?? 1) / 6) * 100}%`, background: '#00D2FF' }} />
+              </div>
+              {/* Desglose de LAS MISMAS horas del anillo — un solo lugar
+                  para el dato (antes eran dos tarjetas sueltas más abajo). */}
+              <div className="flex items-center gap-3 mb-2">
+                <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: '#b8cad8' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />
+                  Training <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.trainingMinutes)}</b>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: '#b8cad8' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#39D98A', display: 'inline-block' }} />
+                  Free surf <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.freeSurfMinutes)}</b>
+                </span>
               </div>
               {(() => {
                 const idx = BELT_HIERARCHY.indexOf(beltLevel);
@@ -822,25 +839,6 @@ function HomeTab({
               </div>
             </div>
           )}
-
-          {/* Training + Free Surf — bold, high-contrast title (Course-style) so
-              the name doesn't get lost, with a cyan accent bar. */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Training', value: fmtHm(surf.trainingMinutes), accent: '#00D2FF' },
-              { label: 'Free Surf', value: fmtHm(surf.freeSurfMinutes), accent: '#00D2FF' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <div className="flex items-center gap-2">
-                  <span style={{ width: 4, height: 18, borderRadius: 3, background: s.accent, display: 'inline-block' }} />
-                  <span className="font-bold whitespace-nowrap" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '17px', letterSpacing: '0.005em' }}>{s.label}</span>
-                </div>
-                {/* Mismo problema que el anillo: en teléfono la tarjeta mide
-                    ~145px y "13h 18m" a 30px partía en dos líneas. */}
-                <p className="font-bold mt-2 whitespace-nowrap" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#00D2FF', fontSize: s.value.length <= 3 ? '30px' : s.value.length <= 5 ? '26px' : s.value.length <= 7 ? '21px' : '17px', lineHeight: 1 }}>{s.value}</p>
-              </div>
-            ))}
-          </div>
 
           {/* La distinción training/free surf se explica en la lección
               "Free Surfing or Training" (PC-PRE-10), que vive en Course —
