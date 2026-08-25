@@ -25,6 +25,9 @@ interface OpsRow {
   meeting: string | null; // class_start_time = hora de encuentro
   depart: string | null;
   ret: string | null;
+  // ok = con horarios · pending_times = pedida sin horario (⚠) ·
+  // cancelled = el front desk la canceló (transport_needed queda true) · none
+  vanState: 'ok' | 'pending_times' | 'cancelled' | 'none';
   venue: string | null;
   spaces: string[]; // "Salón 2 (Yoga) 09:00"
   students: number;
@@ -66,7 +69,7 @@ async function getWeekOps(academyId: string) {
 
   const [plansRes, spacesRes, staffRes] = await Promise.all([
     sessIds.length
-      ? admin.from('service_plans').select('camp_session_id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return').in('camp_session_id', sessIds)
+      ? admin.from('service_plans').select('camp_session_id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status').in('camp_session_id', sessIds)
       : Promise.resolve({ data: [], error: null } as any),
     campIds.length
       ? admin.from('space_bookings').select('camp_instance_id, starts_at, status, academy_spaces:space_id(name)')
@@ -109,6 +112,14 @@ async function getWeekOps(academyId: string) {
     }
     return Array.from(m.entries()).map(([k, n]) => (n > 1 ? `${k}×${n}` : k)).join(' · ');
   };
+  // languages es TEXT libre y el intake sugiere "English, Spanish" — sin el
+  // split, ese alumno contaba como el idioma "ENGLISH, SPANISH" (revisión).
+  const LANG_SHORT: Record<string, string> = { ENGLISH: 'EN', INGLES: 'EN', 'INGLÉS': 'EN', SPANISH: 'ES', 'ESPAÑOL': 'ES', ESPANOL: 'ES', PORTUGUESE: 'PT', 'PORTUGUÊS': 'PT', PORTUGUES: 'PT', FRENCH: 'FR', 'FRANCÉS': 'FR', FRANCES: 'FR', GERMAN: 'DE', 'ALEMÁN': 'DE', ALEMAN: 'DE' };
+  const splitLangs = (v: unknown): string[] =>
+    String(v ?? '').split(/[,/;·]+/).map((x) => {
+      const k = x.trim().toUpperCase();
+      return k ? (LANG_SHORT[k] ?? k) : '';
+    }).filter(Boolean);
 
   const byDay = new Map<string, OpsRow[]>();
   for (const s of (sess ?? []) as any[]) {
@@ -116,12 +127,15 @@ async function getWeekOps(academyId: string) {
     const tpl = Array.isArray(inst?.camp_templates) ? inst.camp_templates[0] : inst?.camp_templates;
     const head = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;
     const co = Array.isArray(inst?.coaches) ? inst.coaches[0] : inst?.coaches;
-    // Coach efectivo: head solo si ACEPTÓ (invariante #1 del proyecto).
-    const coach = (head?.display_name && inst?.head_coach_status === 'accepted' ? head.display_name : null) ?? co?.display_name ?? head?.display_name ?? null;
+    // Coach efectivo: head solo si ACEPTÓ (invariante #1 del proyecto) —
+    // sin fallback al head pendiente: ocultaría el "Sin coach ⚠" que la
+    // coordinación necesita ver justo en ese caso (revisión).
+    const coach = (head?.display_name && inst?.head_coach_status === 'accepted' ? head.display_name : null) ?? co?.display_name ?? null;
     const parts = (inst?.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
     const plan = planByS.get(s.id) as any;
     const studs = parts.map((p: any) => (Array.isArray(p.students) ? p.students[0] : p.students));
-    const langsFlat = studs.flatMap((st: any) => (Array.isArray(st?.languages) ? st.languages : st?.languages ? [st.languages] : []));
+    const langsFlat = studs.flatMap((st: any) =>
+      Array.isArray(st?.languages) ? st.languages.flatMap(splitLangs) : splitLangs(st?.languages));
     const row: OpsRow = {
       campId: inst?.id ?? s.camp_instance_id,
       name: String(inst?.camp_name ?? tpl?.template_name ?? 'Service').replace(/ · \d{4}-\d{2}-\d{2}$/, ''),
@@ -132,6 +146,13 @@ async function getWeekOps(academyId: string) {
       meeting: hh(plan?.class_start_time) ?? hh(inst?.scheduled_time),
       depart: plan?.transport_needed ? hh(plan?.transport_depart) : null,
       ret: plan?.transport_needed ? hh(plan?.transport_return) : null,
+      vanState: !plan?.transport_needed
+        ? 'none'
+        : plan?.transport_status === 'cancelled'
+          ? 'cancelled'
+          : plan?.transport_depart
+            ? 'ok'
+            : 'pending_times',
       venue: plan?.surf_venue ?? null,
       spaces: spacesByCampDay.get(`${s.camp_instance_id}|${s.session_date}`) ?? [],
       students: parts.length,
@@ -154,7 +175,9 @@ function dayText(dateISO: string, rows: OpsRow[]): string {
     L.push('━━━━━━━━━━━━━━');
     L.push(`🕐 ${r.meeting ?? '—'} · ${r.name.toUpperCase()}${r.dayNumber && r.totalDays && r.totalDays > 1 ? ` (D${r.dayNumber}/${r.totalDays})` : ''}`);
     L.push(`Coach: ${r.coach ?? 'SIN COACH ⚠'}${r.staff.length ? ` · ${r.staff.join(' · ')}` : ''}`);
-    if (r.depart || r.ret) L.push(`🚐 Sale ${r.depart ?? '—'} → vuelve ${r.ret ?? '—'}`);
+    if (r.vanState === 'ok') L.push(`🚐 Sale ${r.depart} → vuelve ${r.ret ?? '—'}`);
+    else if (r.vanState === 'pending_times') L.push('🚐 Pedida · SIN HORARIO ⚠');
+    else if (r.vanState === 'cancelled') L.push('🚐 Cancelada ✕');
     const linea3: string[] = [];
     if (r.venue) linea3.push(`📍 ${r.venue}`);
     linea3.push(`👥 ${r.students}${r.langs ? ` (${r.langs})` : ''}`);
@@ -170,7 +193,15 @@ function dayText(dateISO: string, rows: OpsRow[]): string {
 
 export async function WeekOpsBoard({ academyId }: { academyId: string }) {
   let data;
-  try { data = await getWeekOps(academyId); } catch (e) { console.error('[week-ops] failed', e); return null; }
+  try { data = await getWeekOps(academyId); } catch (e) {
+    console.error('[week-ops] failed', e);
+    // Distinguible de "semana vacía": un fallo de carga se ve, no desaparece.
+    return (
+      <div className="mb-6 rounded-2xl bg-white border border-amber-200 p-4">
+        <p className="text-[12px] text-amber-800">⚠ Week operations no pudo cargar — recargá la página.</p>
+      </div>
+    );
+  }
   const { days, byDay, today } = data;
   if (Array.from(byDay.values()).every((r) => r.length === 0)) return null;
 
@@ -198,7 +229,7 @@ export async function WeekOpsBoard({ academyId }: { academyId: string }) {
                   {fmtDay(d)}{isToday ? ' · HOY' : isTomorrow ? ' · MAÑANA' : ''}
                   <span className="text-gray-400 font-semibold normal-case"> · {rows.length} servicio{rows.length === 1 ? '' : 's'}</span>
                 </p>
-                <CopyTextButton text={dayText(d, rows)} label={isTomorrow ? '📋 Copiar (chat performance)' : '📋 Copiar'} />
+                <CopyTextButton text={dayText(d, rows)} label="📋 Copiar" />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
@@ -226,7 +257,12 @@ export async function WeekOpsBoard({ academyId }: { academyId: string }) {
                           {r.staff.length > 0 && <span className="text-gray-400"> · {r.staff.join(' · ')}</span>}
                         </td>
                         <td className="py-2 pr-2 font-extrabold whitespace-nowrap" style={{ color: '#0090B0' }}>{r.meeting ?? '—'}</td>
-                        <td className="py-2 pr-2 whitespace-nowrap text-gray-600">{r.depart ? `${r.depart} → ${r.ret ?? '—'}` : '—'}</td>
+                        <td className="py-2 pr-2 whitespace-nowrap text-gray-600">
+                          {r.vanState === 'ok' ? `${r.depart} → ${r.ret ?? '—'}`
+                            : r.vanState === 'pending_times' ? <span className="text-amber-700 font-semibold">pedida · sin horario ⚠</span>
+                            : r.vanState === 'cancelled' ? <span className="text-red-500">cancelada ✕</span>
+                            : '—'}
+                        </td>
                         <td className="py-2 pr-2 text-gray-600">{r.venue ?? '—'}</td>
                         <td className="py-2 pr-2 text-gray-600">{r.spaces.length ? r.spaces.join(' · ') : '—'}</td>
                         <td className="py-2 pr-3 text-gray-600 whitespace-nowrap">
