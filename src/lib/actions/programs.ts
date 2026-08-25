@@ -381,7 +381,10 @@ export async function saveProgramCheckin(
         sleep_hours: sleep ?? null,
         energy: energy ?? null,
         comment: (input.comment ?? '').trim().slice(0, 1000) || null,
-        nutrition: (input.nutrition ?? '').trim().slice(0, 1000) || null,
+        // nutrition (texto legacy) solo se escribe si el cliente lo MANDA:
+        // el upsert con null pisaba el texto pre-deploy del mismo día y le
+        // borraba sus +15 del ranking (hallazgo de la revisión).
+        ...(input.nutrition !== undefined ? { nutrition: (input.nutrition ?? '').trim().slice(0, 1000) || null } : {}),
         nutrition_clean: input.nutrition_clean ?? null,
         surf_hours: surf ?? null,
         focus: input.focus ?? null,

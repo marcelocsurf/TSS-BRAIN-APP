@@ -42,12 +42,22 @@ function Field({ k, label, type = 'text', placeholder, f, set }: {
   );
 }
 
-// Caché de módulo: la tarjeta se monta DOS veces en el Home (arriba si está
-// incompleta, abajo como consulta si está al 100%) — una sola llamada real.
+// Caché de módulo con SUSCRIPTORES: la tarjeta se monta DOS veces en el Home
+// (arriba si está incompleta, abajo como consulta al 100%) — una sola llamada
+// real, y un refetch (cerrar el wizard) actualiza AMBOS mounts. Un resultado
+// fallido NO se cachea: el próximo mount reintenta (hallazgos de la revisión:
+// la ficha desaparecía de los dos lados al cambiar de estado, y un error
+// transitorio la escondía toda la sesión).
 let profileCache: { token: string; promise: Promise<{ ok: boolean; data: MyProfileData | null }> } | null = null;
+const profileListeners = new Set<() => void>();
 function fetchProfileOnce(token: string, fresh = false) {
   if (fresh || !profileCache || profileCache.token !== token) {
-    profileCache = { token, promise: getMyAthleteProfile(token) };
+    const promise = getMyAthleteProfile(token);
+    profileCache = { token, promise };
+    promise
+      .then((r) => { if (!r.ok && profileCache?.promise === promise) profileCache = null; })
+      .catch(() => { if (profileCache?.promise === promise) profileCache = null; });
+    profileListeners.forEach((fn) => fn());
   }
   return profileCache.promise;
 }
@@ -59,8 +69,13 @@ export function AthleteProfileCard({ token, placement }: { token: string; placem
   const load = (fresh = false) => {
     fetchProfileOnce(token, fresh).then((r) => { if (r.ok) setData(r.data); }).catch(() => {});
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    const sync = () => { profileCache?.promise.then((r) => { if (r.ok) setData(r.data); }).catch(() => {}); };
+    profileListeners.add(sync);
+    load();
+    return () => { profileListeners.delete(sync); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   if (!data) return null;
   const complete = data.pct >= 100;

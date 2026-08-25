@@ -681,9 +681,10 @@ function CheckinCard({
           en el ranking (Yes +15 · Halfway +8 · No 0). */}
       {cfg.nutrition && (
         <div className="flex items-center justify-between mt-3 gap-2">
-          <span className="text-[12px] shrink-0" style={{ color: '#b8cad8' }}>Ate clean?</span>
+          {/* "Not yet" acá sonaba a "todavía no comí" (revisión) — No es No. */}
+          <span className="text-[12px] shrink-0" style={{ color: '#b8cad8' }}>Ate clean today?</span>
           <div className="flex gap-1.5">
-            {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Halfway', '#FFD166'], ['no', 'Not yet', '#FF6B6B']] as const).map(([v, label, color]) => (
+            {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Kind of', '#FFD166'], ['no', 'No', '#FF6B6B']] as const).map(([v, label, color]) => (
               <button key={v} type="button" onClick={() => setNutriClean(nutriClean === v ? '' : v)}
                 className="rounded-full px-3 py-1.5 text-[10.5px] font-bold"
                 style={{

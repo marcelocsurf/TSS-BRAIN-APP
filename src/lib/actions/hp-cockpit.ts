@@ -784,7 +784,7 @@ export async function hpAthleteReport(
     if (asgIds.length > 0) {
       const { data: cks, error: ckErr } = await admin
         .from('program_checkins')
-        .select('checkin_date, sleep_hours, water_glasses, energy, nutrition, comment')
+        .select('checkin_date, sleep_hours, water_glasses, energy, nutrition, nutrition_clean, comment')
         .in('assignment_id', asgIds)
         .gte('checkin_date', elSalvadorDatePlus(-6))
         .order('checkin_date', { ascending: false });
@@ -796,7 +796,7 @@ export async function hpAthleteReport(
         avg_sleep: avg(rows.map((r: any) => Number(r.sleep_hours)).filter((x: number) => Number.isFinite(x) && x > 0)),
         avg_water: avg(rows.map((r: any) => r.water_glasses).filter((x: any) => x != null)),
         avg_energy: avg(rows.map((r: any) => r.energy).filter((x: any) => x != null)),
-        nutrition_days: rows.filter((r: any) => (r.nutrition ?? '').trim()).length,
+        nutrition_days: rows.filter((r: any) => r.nutrition_clean === 'si' || r.nutrition_clean === 'parcial' || (r.nutrition ?? '').trim()).length,
       };
       last_comment = rows.find((r: any) => (r.comment ?? '').trim())?.comment ?? null;
     }
@@ -1056,7 +1056,7 @@ export async function hpAthleteFull(
     if (asgIds.length > 0) {
       const [{ data: cks, error: ckErr }, { count: ckCount, error: ccErr }] = await Promise.all([
         admin.from('program_checkins')
-          .select('checkin_date, sleep_hours, water_glasses, energy, nutrition')
+          .select('checkin_date, sleep_hours, water_glasses, energy, nutrition, nutrition_clean')
           .in('assignment_id', asgIds)
           .gte('checkin_date', elSalvadorDatePlus(-13))
           .order('checkin_date', { ascending: false }),
@@ -1072,7 +1072,7 @@ export async function hpAthleteFull(
         avg_sleep: avg(rows.map((r: any) => Number(r.sleep_hours)).filter((x: number) => Number.isFinite(x) && x > 0)),
         avg_water: avg(rows.map((r: any) => r.water_glasses).filter((x: any) => x != null)),
         avg_energy: avg(rows.map((r: any) => r.energy).filter((x: any) => x != null)),
-        nutrition_days: rows.filter((r: any) => (r.nutrition ?? '').trim()).length,
+        nutrition_days: rows.filter((r: any) => r.nutrition_clean === 'si' || r.nutrition_clean === 'parcial' || (r.nutrition ?? '').trim()).length,
         last_nights: rows.slice(0, 7).map((r: any) => ({ date: r.checkin_date.slice(5), sleep: r.sleep_hours != null ? Number(r.sleep_hours) : null })),
       };
     }
