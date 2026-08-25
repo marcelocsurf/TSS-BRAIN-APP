@@ -23,6 +23,7 @@ import { listAcademyTasks, listTaskAssignees } from '@/lib/actions/tasks';
 import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { OperationsBoard } from '@/components/dashboard/OperationsBoard';
+import { WeekOpsBoard } from '@/components/dashboard/WeekOpsBoard';
 import { AdminOpsBoard } from '@/components/dashboard/AdminOpsBoard';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
@@ -279,6 +280,10 @@ export default async function DashboardHome() {
       {role === 'coordinator' && academyId && (
         <>
           <OperationsBoard academyId={academyId} />
+          {/* Week operations (pedido de Rick): la LOGÍSTICA de la semana que
+              los coaches planearon — encuentro, transfer, lugar, espacios,
+              staff, alumnos — con copia por día para el chat de performance. */}
+          <WeekOpsBoard academyId={academyId} />
           <div className="mb-6"><TideWidget isAdmin={false} /></div>
         </>
       )}
