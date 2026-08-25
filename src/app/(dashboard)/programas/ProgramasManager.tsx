@@ -5,6 +5,7 @@ import {
   adminListBlockTemplates, adminInsertBlockTemplate, type BlockTemplateRow, type WeekMeta,
 } from '@/lib/actions/program-admin';
 import { hpLibrary, type HPLibrary } from '@/lib/actions/hp-cockpit';
+import { BELT_HIERARCHY, getBeltLabel } from '@/lib/constants/belts';
 import {
   adminListCompetitions, adminCreateCompetition, adminGetCompetition, adminUpdateCompetition,
   adminDeleteCompetition, adminAddHeat, adminDeleteHeat, adminAddWave, adminDeleteWave,
@@ -231,15 +232,17 @@ function Catalogo({
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newKind, setNewKind] = useState<'template' | 'custom'>('template');
+  const [newWeeks, setNewWeeks] = useState(4);
+  const [newBelt, setNewBelt] = useState('');
   const [busy, setBusy] = useState(false);
 
   const create = async () => {
     setBusy(true);
-    const r = await adminCreateProgram({ title: newTitle, kind: newKind });
+    const r = await adminCreateProgram({ title: newTitle, kind: newKind, weeks: newWeeks, targetBelt: newBelt || null });
     setBusy(false);
     if (!r.ok) { setMsg(r.error || null); return; }
     setCreating(false);
-    setNewTitle('');
+    setNewTitle(''); setNewWeeks(4); setNewBelt('');
     if (r.id) onEdit(r.id);
   };
 
@@ -262,6 +265,25 @@ function Catalogo({
             placeholder="Nombre del programa (de cara al alumno, en inglés)"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
+          {/* Semanas y cinta objetivo: antes las semanas se fijaban en 4 sin
+              preguntar y la cinta no tenía dónde guardarse (las 199 plantillas
+              HP sí la traen). Pedido de Marcelo 2026-08-25. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-[11px] text-gray-500">
+              Microciclos
+              <input type="number" min={1} max={24} value={newWeeks}
+                onChange={(e) => setNewWeeks(Math.max(1, Math.min(24, Number(e.target.value) || 1)))}
+                className="ml-1.5 w-16 rounded-lg border border-gray-300 px-2 py-1 text-sm" />
+            </label>
+            <label className="text-[11px] text-gray-500">
+              Cinta objetivo
+              <select value={newBelt} onChange={(e) => setNewBelt(e.target.value)}
+                className="ml-1.5 rounded-lg border border-gray-300 px-2 py-1 text-xs">
+                <option value="">— cualquiera —</option>
+                {BELT_PERMISSIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             {(['template', 'custom'] as const).map((k) => (
               <button
@@ -866,7 +888,9 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
   dayId: string; nextOrder: number; onInserted: () => void; setErr: (e: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [cat, setCat] = useState<'plantillas' | 'drills' | 'misiones'>('plantillas');
+  // 'secuencia' agregada (pedido Marcelo 2026-08-25): hpLibrary YA descargaba
+  // las 439 secuencias — el picker simplemente nunca las dibujaba.
+  const [cat, setCat] = useState<'plantillas' | 'secuencia' | 'drills' | 'misiones'>('plantillas');
   const [templates, setTemplates] = useState<BlockTemplateRow[]>([]);
   const [lib, setLib] = useState<HPLibrary | null>(null);
   const [q, setQ] = useState('');
@@ -895,16 +919,39 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
   const hit = (...vals: (string | null | undefined)[]) =>
     !needle || vals.some((v) => (v ?? '').toLowerCase().includes(needle));
 
-  const insertItem = async (title: string, detail: string | null) => {
+  // El ítem ahora guarda de dónde salió (paso, drill/misión, pilar) en vez de
+  // perderlo: antes el ítem quedaba huérfano de la biblioteca canónica.
+  const insertItem = async (
+    title: string,
+    detail: string | null,
+    meta?: { step_id?: string | null; drill_id?: string | null; pillar?: string | null; duration_minutes?: number | null },
+  ) => {
     setErr(null); setBusy(true);
-    const r = await adminSaveItem(dayId, { title, detail, video_url: null, display_order: nextOrder });
+    const r = await adminSaveItem(dayId, {
+      title, detail, video_url: null, display_order: nextOrder,
+      step_id: meta?.step_id ?? null,
+      drill_id: meta?.drill_id ?? null,
+      pillar: meta?.pillar ?? null,
+      duration_minutes: meta?.duration_minutes ?? null,
+    });
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
     setOpen(false); onInserted();
   };
 
+  // "45 min" / "10-15 min" / "1 h" → minutos (las misiones traen time_estimate
+  // como texto; sin esto la dosis seguía siendo prosa).
+  const parseMinutes = (t?: string | null): number | null => {
+    if (!t) return null;
+    const h = t.match(/(\d+(?:[.,]\d+)?)\s*h/i);
+    if (h) return Math.round(parseFloat(h[1].replace(',', '.')) * 60);
+    const m = t.match(/(\d+)/);
+    return m ? Number(m[1]) : null;
+  };
+
   const counts = {
     plantillas: templates.length,
+    secuencia: lib?.sequences.length ?? 0,
     drills: lib?.drills.length ?? 0,
     misiones: lib?.missions.length ?? 0,
   };
@@ -912,14 +959,14 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
   return (
     <div className="w-full rounded-xl p-2.5 space-y-1.5" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
       <div className="flex items-center gap-1.5 flex-wrap">
-        {(['plantillas', 'drills', 'misiones'] as const).map((k) => (
+        {(['plantillas', 'secuencia', 'drills', 'misiones'] as const).map((k) => (
           <button key={k} type="button" onClick={() => setCat(k)}
             className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize"
             style={cat === k ? { background: '#B8862B', color: '#fff' } : { background: '#fff', color: '#8E6614', border: '1px solid #F0C36D' }}>
             {k} {counts[k] || ''}
           </button>
         ))}
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" autoFocus
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar… (o STP-035)" autoFocus
           className="flex-1 min-w-[140px] rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white" aria-label="Buscar en la biblioteca" />
         <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-400 px-1">✕</button>
       </div>
@@ -943,14 +990,33 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
             </button>
           ))}
 
+        {/* SECUENCIA — el método por pasos, buscable por STP y por cinta. */}
+        {cat === 'secuencia' && (lib?.sequences ?? [])
+          .filter((s) => hit(s.sequence_part, s.expectation_standard, s.belt_level, s.id))
+          .slice(0, 40)
+          .map((s) => (
+            <button key={s.id} type="button" disabled={busy}
+              onClick={() => insertItem(
+                s.sequence_part || 'Paso de la secuencia',
+                s.expectation_standard || null,
+                { pillar: 'tecnico' },
+              )}
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              <span className="text-[12px] font-medium text-[var(--tss-navy)]">{s.sequence_part || '—'}</span>
+              <span className="text-[10px] text-gray-400 ml-2 uppercase">{s.belt_level ?? ''}{s.step_order != null ? ` · paso ${s.step_order}` : ''}</span>
+              {s.expectation_standard && <span className="block text-[10px] text-gray-400 truncate">{s.expectation_standard}</span>}
+            </button>
+          ))}
+
         {cat === 'drills' && (lib?.drills ?? [])
-          .filter((d) => hit(d.drill_name, d.goal, d.key_cue, d.related_pilar))
+          .filter((d) => hit(d.drill_name, d.goal, d.key_cue, d.related_pilar, d.id))
           .slice(0, 30)
           .map((d) => (
             <button key={d.id} type="button" disabled={busy}
               onClick={() => insertItem(
                 d.drill_name,
-                [d.goal, d.key_cue ? `Cue: ${d.key_cue}` : null].filter(Boolean).join(String.fromCharCode(10)) || null
+                [d.goal, d.key_cue ? `Cue: ${d.key_cue}` : null].filter(Boolean).join(String.fromCharCode(10)) || null,
+                { drill_id: d.id, pillar: PILLAR_MAP[(d.related_pilar ?? '').toLowerCase()] ?? null },
               )}
               className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
               <span className="text-[12px] font-medium text-[var(--tss-navy)]">{d.drill_name}</span>
@@ -959,19 +1025,24 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
             </button>
           ))}
 
+        {/* MISIONES — las únicas que traen el paso (step_id) del método. */}
         {cat === 'misiones' && (lib?.missions ?? [])
-          .filter((m) => hit(m.title, m.success_criteria, m.belt))
+          .filter((m) => hit(m.title, m.success_criteria, m.belt, (m as any).step_id, m.id))
           .slice(0, 30)
           .map((m) => (
             <button key={m.id} type="button" disabled={busy}
               onClick={() => insertItem(
                 m.title,
-                [m.description_md, m.success_criteria ? `Success: ${m.success_criteria}` : null, m.time_estimate ? `Time: ${m.time_estimate}` : null]
-                  .filter(Boolean).join(String.fromCharCode(10, 10)) || null
+                [m.description_md, m.success_criteria ? `Success: ${m.success_criteria}` : null]
+                  .filter(Boolean).join(String.fromCharCode(10, 10)) || null,
+                { drill_id: m.id, step_id: (m as any).step_id ?? null, duration_minutes: parseMinutes(m.time_estimate) },
               )}
               className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
               <span className="text-[12px] font-medium text-[var(--tss-navy)]">{m.title}</span>
-              <span className="text-[10px] text-gray-400 ml-2 uppercase">{m.type ?? ''}{m.belt ? ` · ${m.belt}` : ''}{m.time_estimate ? ` · ${m.time_estimate}` : ''}</span>
+              <span className="text-[10px] text-gray-400 ml-2 uppercase">
+                {(m as any).step_id ? <b style={{ color: '#8E6614' }}>{(m as any).step_id}</b> : null}
+                {m.type ? ` · ${m.type}` : ''}{m.belt ? ` · ${m.belt}` : ''}{m.time_estimate ? ` · ${m.time_estimate}` : ''}
+              </span>
             </button>
           ))}
 
@@ -993,7 +1064,7 @@ function ItemRow({
   onCancel,
 }: {
   dayId: string;
-  item: { id: string; title: string; detail: string | null; video_url: string | null; display_order: number };
+  item: { id: string; title: string; detail: string | null; video_url: string | null; display_order: number; duration_minutes?: number | null; step_id?: string | null; drill_id?: string | null; pillar?: string | null };
   videos: Video[];
   onChanged: () => void;
   setErr: (e: string | null) => void;
@@ -1003,6 +1074,10 @@ function ItemRow({
   const [title, setTitle] = useState(item.title);
   const [detail, setDetail] = useState(item.detail ?? '');
   const [videoUrl, setVideoUrl] = useState(item.video_url ?? '');
+  // Estructura del ítem (migración 00167): dosis, paso y pilar.
+  const [mins, setMins] = useState(item.duration_minutes != null ? String(item.duration_minutes) : '');
+  const [stepId, setStepId] = useState(item.step_id ?? '');
+  const [pillar, setPillar] = useState(item.pillar ?? '');
   const [dirty, setDirty] = useState(isNew);
   const [busy, setBusy] = useState(false);
 
@@ -1015,6 +1090,10 @@ function ItemRow({
       detail,
       video_url: videoUrl,
       display_order: item.display_order,
+      duration_minutes: mins ? Number(mins) : null,
+      step_id: stepId || null,
+      drill_id: item.drill_id ?? null,
+      pillar: pillar || null,
     });
     setBusy(false);
     if (!r.ok) setErr(r.error || null);
@@ -1034,9 +1113,47 @@ function ItemRow({
         <input
           value={detail}
           onChange={(e) => { setDetail(e.target.value); setDirty(true); }}
-          placeholder="3×10 · 30s · follow along"
+          placeholder="3×10 · follow along"
           className="w-40 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs"
         />
+      </div>
+
+      {/* Dosis · paso · pilar — la estructura que le faltaba al programa HP.
+          Con minutos se puede sumar tiempo; con el paso el ítem se ata a la
+          progresión de cinta; con el pilar el % de la matriz se vuelve
+          contrastable (migración 00167). */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <input
+          type="number" min={0} max={600}
+          value={mins}
+          onChange={(e) => { setMins(e.target.value); setDirty(true); }}
+          placeholder="min"
+          aria-label="Duración en minutos"
+          className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs"
+        />
+        <input
+          value={stepId}
+          onChange={(e) => { setStepId(e.target.value.toUpperCase()); setDirty(true); }}
+          placeholder="STP-035"
+          aria-label="Paso de la secuencia"
+          className="w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-mono"
+        />
+        <select
+          value={pillar}
+          onChange={(e) => { setPillar(e.target.value); setDirty(true); }}
+          aria-label="Pilar"
+          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-600"
+        >
+          <option value="">Pilar…</option>
+          {['fisico', 'tecnico', 'tactico', 'mental', 'equipment', 'surf'].map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+        {item.drill_id && (
+          <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-gray-100 text-gray-500" title="Drill/misión de origen">
+            {item.drill_id}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         <select
@@ -1468,6 +1585,19 @@ function MicroLabel({
 
 
 // ─── Temporadas · el Plan Anual (macrociclo, fases, eventos, especialistas) ───
+
+// drills.related_pilar viene en inglés/enum; program_items.pillar usa el
+// vocabulario de la matriz de periodización. Traducción para que el ítem
+// insertado desde la biblioteca herede su pilar.
+const BELT_PERMISSIONS = BELT_HIERARCHY.map((b) => ({ value: b, label: getBeltLabel(b, 'en') }));
+
+const PILLAR_MAP: Record<string, string> = {
+  technical: 'tecnico', tecnico: 'tecnico',
+  tactical: 'tactico', tactico: 'tactico',
+  mental: 'mental',
+  physical: 'fisico', fisico: 'fisico', 'físico': 'fisico',
+  equipment: 'equipment', surf: 'surf',
+};
 
 const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; label: string }> = {
   general:        { bg: 'rgba(0,168,204,.10)', border: '#00A8CC', text: '#006C8C', label: 'Prep. General' },

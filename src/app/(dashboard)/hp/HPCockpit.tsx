@@ -353,18 +353,37 @@ function SesionTab() {
   const [err, setErr] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(elSalvadorToday());
+  // Migración 00167: la sesión registra TODO (pedido de Marcelo 2026-08-25).
+  const [time, setTime] = useState('');
+  const [dur, setDur] = useState('');
+  const [location, setLocation] = useState('');
+  const [focus, setFocus] = useState('');
+  const [kind, setKind] = useState('');
+  const [coachId, setCoachId] = useState('');
+  const [coaches, setCoaches] = useState<{ id: string; display_name: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = () => hpListSessions().then((r) => { if (r.ok) setSessions(r.sessions); else setErr(r.error || null); }).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    adminListHPCoaches().then((r: any) => { if (r.ok) setCoaches(r.coaches ?? []); }).catch(() => {});
+  }, []);
 
   const create = async () => {
     setErr(null); setBusy(true);
-    const r = await hpCreateSession({ date, title });
+    const r = await hpCreateSession({
+      date, title,
+      time: time || null,
+      durationMinutes: dur ? Number(dur) : null,
+      location: location || null,
+      coachId: coachId || null,
+      focus: focus || null,
+      kind: kind || null,
+    });
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
-    setTitle('');
+    setTitle(''); setTime(''); setDur(''); setLocation(''); setFocus(''); setKind(''); setCoachId('');
     load();
     if (r.id) setOpenId(r.id);
   };
@@ -375,8 +394,31 @@ function SesionTab() {
         <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: CYAN }}>Nueva sesión presencial</p>
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Fecha de la sesión" style={{ ...inp, width: 150, colorScheme: 'dark' }} />
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Water training · El Zonte…" aria-label="Nombre de la sesión" style={inp} />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nombre — p. ej. Water training" aria-label="Nombre de la sesión" style={inp} />
         </div>
+        {/* Hora · duración · lugar — antes NADA de esto existía y el lugar
+            terminaba escrito dentro del título ("EL ZONTE"). */}
+        <div className="flex gap-2">
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Hora de la sesión" style={{ ...inp, width: 120, colorScheme: 'dark' }} />
+          <input type="number" min={1} max={600} value={dur} onChange={(e) => setDur(e.target.value)} placeholder="Minutos" aria-label="Duración en minutos" style={{ ...inp, width: 110 }} />
+          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="📍 Lugar — El Zonte, K-61…" aria-label="Lugar" style={inp} />
+        </div>
+        <div className="flex gap-2">
+          <select value={coachId} onChange={(e) => setCoachId(e.target.value)} aria-label="Coach a cargo" style={{ ...inp, color: coachId ? TXT : FAINT }}>
+            <option value="">Coach a cargo…</option>
+            {coaches.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+          </select>
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {(['agua', 'tierra', 'gym', 'skate', 'video', 'mixto'] as const).map((k) => (
+            <button key={k} type="button" onClick={() => setKind(kind === k ? '' : k)}
+              className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
+              style={kind === k ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
+              {k}
+            </button>
+          ))}
+        </div>
+        <input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="¿Qué se entrena? — p. ej. Bottom turn + lectura de serie" aria-label="Qué se entrena" style={inp} />
         <button type="button" disabled={busy || !title.trim() || !date} onClick={create}
           className="w-full rounded-full py-2.5 text-[11px] font-bold uppercase tracking-wider"
           style={{ ...MONO, background: CYAN, color: '#06202F', opacity: busy || !title.trim() || !date ? 0.5 : 1 }}>
@@ -384,6 +426,7 @@ function SesionTab() {
         </button>
         <p className="text-[10px]" style={{ color: FAINT }}>
           La lista nace con TODOS los atletas presentes — solo destildás a los que faltaron. Asistir suma +10 en el ranking.
+          {' '}<b style={{ color: DIM }}>Con minutos, la sesión suma horas de agua a cada presente.</b>
         </p>
         {err && <p className="text-[11px]" style={{ color: RED }}>{err}</p>}
       </div>
@@ -392,10 +435,17 @@ function SesionTab() {
         <div key={s.id} style={card}>
           <button type="button" onClick={() => setOpenId(openId === s.id ? null : s.id)} className="w-full text-left flex items-center justify-between gap-2">
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: TXT }}>{s.title}</p>
+              <p className="text-[13px] font-semibold" style={{ color: TXT }}>
+                {s.session_time ? `${s.session_time.slice(0, 5)} · ` : ''}{s.title}
+                {s.kind ? <span className="text-[10px] ml-1.5" style={{ color: CYAN }}>{s.kind}</span> : null}
+              </p>
               <p className="text-[10.5px]" style={{ color: DIM }}>
                 {s.session_date} · {s.attendance.filter((a) => a.present).length}/{s.attendance.length} presentes
+                {s.duration_minutes ? ` · ${s.duration_minutes} min` : ''}
+                {s.location ? ` · 📍 ${s.location}` : ''}
+                {s.coach_name ? ` · ${s.coach_name}` : ''}
               </p>
+              {s.focus && <p className="text-[10.5px] italic" style={{ color: FAINT }}>{s.focus}</p>}
             </div>
             <span className="text-[10px]" style={{ color: FAINT }}>{openId === s.id ? '▴' : '▾ pasar lista'}</span>
           </button>

@@ -221,7 +221,10 @@ export async function hpPlanToday(): Promise<{ ok: boolean; error?: string; rows
 export interface HPLibrary {
   sequences: { id: string; belt_level: string | null; sequence_number: number | null; step_order: number | null; sequence_part: string | null; expectation_standard: string | null; pilar_reference: string | null }[];
   drills: { id: string; drill_name: string; related_pilar: string | null; drill_type: string | null; goal: string | null; key_cue: string | null; related_error: string | null; related_solution: string | null; environment: string | null; belt_level_range: string | null }[];
-  missions: { id: string; title: string; type: string | null; belt: string | null; time_estimate: string | null; success_criteria: string | null; description_md: string | null }[];
+  // step_id = el paso del método (STP-###), el único enlace real drill↔paso.
+  // No se estaba seleccionando: sin él, el ítem que se inserta en un programa
+  // queda huérfano de la progresión de cinta (student_step_ratings).
+  missions: { id: string; step_id: string | null; title: string; type: string | null; belt: string | null; time_estimate: string | null; success_criteria: string | null; description_md: string | null }[];
   videos: { id: string; title: string; pillar: string | null; video_url: string }[];
 }
 
@@ -238,7 +241,7 @@ export async function hpLibrary(): Promise<{ ok: boolean; error?: string; data: 
         .select('id, drill_name, related_pilar, drill_type, goal, key_cue, related_error, related_solution, environment, belt_level_range')
         .eq('active_status', true).order('drill_name').limit(400),
       admin.from('drills_missions')
-        .select('id, title, type, belt, time_estimate, success_criteria, description_md')
+        .select('id, step_id, title, type, belt, time_estimate, success_criteria, description_md')
         .eq('active', true).order('belt').order('display_order').limit(300),
       admin.from('program_video_library')
         .select('id, title, pillar, video_url').eq('archived', false).order('pillar').order('title'),
@@ -482,6 +485,13 @@ export interface HPSessionRow {
   session_date: string;
   title: string;
   notes: string | null;
+  // Migración 00167 — la sesión registra todo (antes solo fecha + título).
+  session_time: string | null;
+  duration_minutes: number | null;
+  location: string | null;
+  focus: string | null;
+  kind: string | null;
+  coach_name: string | null;
   attendance: { student_id: string; name: string; present: boolean; note: string | null }[];
 }
 
@@ -491,8 +501,11 @@ export async function hpListSessions(): Promise<{ ok: boolean; error?: string; s
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('hp_team_sessions')
-      .select('id, session_date, title, notes, hp_session_attendance(student_id, present, note, students(first_name, last_name))')
+      .select('id, session_date, session_time, duration_minutes, location, focus, kind, title, notes, coaches:coach_id(display_name), hp_session_attendance(student_id, present, note, students(first_name, last_name))')
       .order('session_date', { ascending: false })
+      // Desempate por hora: dos sesiones el mismo día salían en orden
+      // no determinístico y eran visualmente idénticas.
+      .order('session_time', { ascending: false, nullsFirst: false })
       .limit(12);
     if (error) throw error;
     return {
@@ -502,6 +515,12 @@ export async function hpListSessions(): Promise<{ ok: boolean; error?: string; s
         session_date: s.session_date,
         title: s.title,
         notes: s.notes,
+        session_time: s.session_time ?? null,
+        duration_minutes: s.duration_minutes ?? null,
+        location: s.location ?? null,
+        focus: s.focus ?? null,
+        kind: s.kind ?? null,
+        coach_name: (Array.isArray(s.coaches) ? s.coaches[0] : s.coaches)?.display_name ?? null,
         attendance: (s.hp_session_attendance ?? []).map((r: any) => ({
           student_id: r.student_id,
           name: `${r.students?.first_name ?? ''} ${r.students?.last_name ?? ''}`.trim() || '—',
@@ -516,17 +535,103 @@ export async function hpListSessions(): Promise<{ ok: boolean; error?: string; s
   }
 }
 
+// ─── Puente: la sesión presencial SUMA HORAS al atleta ───
+// Hasta ahora la sesión existía solo para el staff: no aparecía en el portal
+// del atleta ni sumaba un minuto a sus horas de agua. Con la duración de la
+// migración 00167 ya se puede. Idempotente por (sesión, atleta) vía el tag en
+// notes; kind 'drill' = TRAINING, que es lo correcto: una sesión presencial
+// dirigida por el coach es intervención, no surf libre.
+async function syncSessionHours(
+  admin: ReturnType<typeof createAdminClient>,
+  sessionId: string,
+): Promise<void> {
+  try {
+    const { data: sess } = await admin
+      .from('hp_team_sessions')
+      .select('id, title, duration_minutes, session_date')
+      .eq('id', sessionId)
+      .maybeSingle();
+    const minutes = (sess as any)?.duration_minutes ?? null;
+
+    const { data: att } = await admin
+      .from('hp_session_attendance')
+      .select('student_id, present')
+      .eq('session_id', sessionId);
+    const present = new Set((att ?? []).filter((a: any) => a.present).map((a: any) => a.student_id));
+
+    // Filas ya creadas por esta sesión.
+    const { data: existing } = await admin
+      .from('self_training_sessions')
+      .select('id, student_id, notes')
+      .like('notes', `hpsession:${sessionId}:%`);
+    const byStudent = new Map((existing ?? []).map((r: any) => [r.student_id, r]));
+
+    // Sin duración = la sesión no declara horas: se limpia todo lo que hubiera.
+    const shouldHave = minutes && minutes > 0 ? present : new Set<string>();
+
+    const toDelete = (existing ?? []).filter((r: any) => !shouldHave.has(r.student_id)).map((r: any) => r.id);
+    if (toDelete.length) await admin.from('self_training_sessions').delete().in('id', toDelete);
+
+    for (const sid of shouldHave) {
+      const row = byStudent.get(sid);
+      if (row) {
+        await admin.from('self_training_sessions')
+          .update({ duration_minutes: minutes, total_water_minutes: minutes })
+          .eq('id', (row as any).id);
+      } else {
+        await admin.from('self_training_sessions').insert({
+          student_id: sid,
+          drill_name: `Sesión de equipo · ${(sess as any)?.title ?? 'HP'}`,
+          duration_minutes: minutes,
+          total_water_minutes: minutes,
+          completed: true,
+          notes: `hpsession:${sessionId}:${sid}`,
+          created_at: `${(sess as any)?.session_date}T18:00:00Z`,
+        });
+      }
+    }
+  } catch (e) {
+    // Best-effort: nunca debe tumbar el pase de lista.
+    console.error('[hp-cockpit] syncSessionHours failed', e);
+  }
+}
+
 export async function hpCreateSession(input: {
   date: string; title: string;
+  // Migración 00167 — la sesión presencial ahora registra TODO (pedido de
+  // Marcelo 2026-08-25): antes solo tenía fecha y un texto libre, y el staff
+  // terminaba escribiendo el lugar dentro del título ("EL ZONTE").
+  time?: string | null;
+  durationMinutes?: number | null;
+  location?: string | null;
+  coachId?: string | null;
+  focus?: string | null;
+  kind?: string | null;
 }): Promise<{ ok: boolean; error?: string; id?: string }> {
   try {
     if (!(await assertAdmin())) return DENY;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { ok: false, error: 'La fecha no es válida.' };
     if (!input.title.trim()) return { ok: false, error: 'La sesión necesita un nombre.' };
+    if (input.time && !/^\d{2}:\d{2}$/.test(input.time)) return { ok: false, error: 'La hora no es válida.' };
+    const dur = input.durationMinutes ?? null;
+    if (dur != null && (!Number.isFinite(dur) || dur <= 0 || dur > 600)) {
+      return { ok: false, error: 'La duración va de 1 a 600 minutos.' };
+    }
+    const KINDS = ['agua', 'tierra', 'gym', 'skate', 'video', 'mixto'];
+    if (input.kind && !KINDS.includes(input.kind)) return { ok: false, error: 'Tipo de sesión inválido.' };
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('hp_team_sessions')
-      .insert({ session_date: input.date, title: input.title.trim() })
+      .insert({
+        session_date: input.date,
+        title: input.title.trim(),
+        session_time: input.time || null,
+        duration_minutes: dur,
+        location: input.location?.trim().slice(0, 200) || null,
+        coach_id: input.coachId || null,
+        focus: input.focus?.trim().slice(0, 500) || null,
+        kind: input.kind || null,
+      })
       .select('id').single();
     if (error) throw error;
 
@@ -542,6 +647,7 @@ export async function hpCreateSession(input: {
       );
       if (attErr) throw attErr;
     }
+    await syncSessionHours(admin, data.id);
     return { ok: true, id: data.id };
   } catch (e) {
     console.error('[hp-cockpit] hpCreateSession failed', e);
@@ -575,6 +681,8 @@ export async function hpSetAttendance(
       .from('hp_session_attendance')
       .upsert(row, { onConflict: 'session_id,student_id' });
     if (error) throw error;
+    // Presente/ausente cambia las horas del atleta.
+    if (patch.present !== undefined) await syncSessionHours(admin, sessionId);
     return { ok: true };
   } catch (e) {
     console.error('[hp-cockpit] hpSetAttendance failed', e);
@@ -600,6 +708,7 @@ export async function hpSyncSessionRoster(sessionId: string): Promise<{ ok: bool
         missing.map((sid) => ({ session_id: sessionId, student_id: sid, present: true }))
       );
       if (error) throw error;
+      await syncSessionHours(admin, sessionId);
     }
     return { ok: true, added: missing.length };
   } catch (e) {
@@ -612,6 +721,9 @@ export async function hpDeleteSession(sessionId: string): Promise<{ ok: boolean;
   try {
     if (!(await assertAdmin())) return DENY;
     const admin = createAdminClient();
+    // Las horas que generó esta sesión se van con ella (el CASCADE solo se
+    // lleva la asistencia, no las filas de self_training_sessions).
+    await admin.from('self_training_sessions').delete().like('notes', `hpsession:${sessionId}:%`);
     const { error } = await admin.from('hp_team_sessions').delete().eq('id', sessionId);
     if (error) throw error;
     return { ok: true };

@@ -107,7 +107,7 @@ export interface AdminProgramDetail {
     day_number: number;
     title: string;
     focus: string | null;
-    items: { id: string; title: string; detail: string | null; video_url: string | null; display_order: number }[];
+    items: { id: string; title: string; detail: string | null; video_url: string | null; display_order: number; duration_minutes: number | null; step_id: string | null; drill_id: string | null; pillar: string | null }[];
   }[];
 }
 
@@ -139,7 +139,7 @@ export async function adminGetProgram(
     if (dayIds.length) {
       const { data, error: iErr } = await admin
         .from('program_items')
-        .select('id, day_id, title, detail, video_url, display_order')
+        .select('id, day_id, title, detail, video_url, display_order, duration_minutes, step_id, drill_id, pillar')
         .in('day_id', dayIds)
         .order('display_order');
       if (iErr) throw iErr;
@@ -177,15 +177,23 @@ export async function adminGetProgram(
 export async function adminCreateProgram(input: {
   title: string;
   kind: 'custom' | 'template';
+  // Antes se fijaban 4 semanas sin preguntar y la cinta objetivo no tenía
+  // dónde guardarse, aunque las 199 plantillas HP sí la traen (00167).
+  weeks?: number;
+  targetBelt?: string | null;
 }): Promise<{ ok: boolean; error?: string; id?: string }> {
   try {
     if (!(await assertAdmin())) return DENY;
     const title = input.title.trim();
     if (!title) return { ok: false, error: 'El programa necesita un nombre.' };
+    const weeks = input.weeks ?? 4;
+    if (!Number.isInteger(weeks) || weeks < 1 || weeks > 24) {
+      return { ok: false, error: 'Los microciclos van de 1 a 24.' };
+    }
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('programs')
-      .insert({ title, kind: input.kind, weeks: 4 })
+      .insert({ title, kind: input.kind, weeks, target_belt: input.targetBelt || null })
       .select('id')
       .single();
     if (error) throw error;
@@ -509,17 +517,36 @@ export async function adminDeleteDay(dayId: string): Promise<{ ok: boolean; erro
 
 export async function adminSaveItem(
   dayId: string,
-  item: { id?: string; title: string; detail?: string | null; video_url?: string | null; display_order: number }
+  item: {
+    id?: string; title: string; detail?: string | null; video_url?: string | null; display_order: number;
+    // Migración 00167 — estructura del ítem: sin esto el programa HP no podía
+    // sumar tiempo, ni atarse a un paso (progresión de cinta), ni contrastar
+    // el % por pilar de la matriz de periodización.
+    duration_minutes?: number | null;
+    step_id?: string | null;
+    drill_id?: string | null;
+    pillar?: string | null;
+  }
 ): Promise<{ ok: boolean; error?: string; id?: string }> {
   try {
     if (!(await assertAdmin())) return DENY;
     if (!item.title.trim()) return { ok: false, error: 'El ítem necesita un título.' };
+    const dur = item.duration_minutes ?? null;
+    if (dur != null && (!Number.isFinite(dur) || dur < 0 || dur > 600)) {
+      return { ok: false, error: 'La duración va de 0 a 600 minutos.' };
+    }
+    const PILLARS = ['fisico', 'tecnico', 'tactico', 'mental', 'equipment', 'surf'];
+    if (item.pillar && !PILLARS.includes(item.pillar)) return { ok: false, error: 'Pilar inválido.' };
     const admin = createAdminClient();
     const row = {
       title: item.title.trim(),
       detail: item.detail?.trim() || null,
       video_url: item.video_url?.trim() || null,
       display_order: item.display_order,
+      duration_minutes: dur,
+      step_id: item.step_id?.trim().slice(0, 32) || null,
+      drill_id: item.drill_id?.trim().slice(0, 64) || null,
+      pillar: item.pillar || null,
     };
     if (item.id) {
       const { error } = await admin.from('program_items').update(row).eq('id', item.id).eq('day_id', dayId);
