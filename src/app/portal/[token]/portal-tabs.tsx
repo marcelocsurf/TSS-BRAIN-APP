@@ -355,7 +355,7 @@ export function PortalTabs({
           </button>
           <LogoutButton portalToken={data.token} />
         </div>
-        {guideOpen && <AthleteGuide onClose={closeGuide} />}
+        {guideOpen && <AthleteGuide onClose={closeGuide} hpAccess={!!data.homeBundle?.hpAccess} />}
         <div className="flex items-center justify-between gap-3 pr-6">
           <div className="flex items-center gap-2.5 min-w-0">
             {brand.logoUrl && (

@@ -22,7 +22,7 @@ function Li({ k, children }: { k: string; children: React.ReactNode }) {
   return <p><strong style={{ color: '#eaf4fa' }}>{k}</strong> — {children}</p>;
 }
 
-export function AthleteGuide({ onClose }: { onClose: () => void }) {
+export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => void; hpAccess?: boolean }) {
   return (
     <div className="fixed inset-0 z-[90] overflow-y-auto" style={{ background: INK }}>
       <div className="px-4 pt-5 pb-4 sticky top-0 z-10" style={{ background: INK, borderBottom: '1px solid rgba(0,210,255,.25)' }}>
@@ -59,6 +59,10 @@ export function AthleteGuide({ onClose }: { onClose: () => void }) {
           <Li k="Log it">Surfed on your own? Trained at home? Log it here — it counts toward your hours and your coach sees it. The more honest the log, the better your coaching gets.</Li>
         </Sec>
 
+        {/* Solo para quien tiene el ACCESO de alto rendimiento. Prometerle "tu
+            año", "tu programa" y "tu equipo" a un alumno que nunca los va a
+            ver es peor que no decir nada: le enseña que le falta algo. */}
+        {hpAccess && (
         <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.08)', border: '1px solid rgba(255,209,102,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: GOLD }}>For athletes on a training program</p>
           <div className="space-y-1.5 text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
@@ -70,6 +74,7 @@ export function AthleteGuide({ onClose }: { onClose: () => void }) {
             <Li k="🪪 Your athlete profile">Fill it once, keep it at 100% — passport, insurance, emergency contact. It&apos;s what travels with you to every competition.</Li>
           </div>
         </div>
+        )}
 
         <Sec icon="💬" title="Feedback & My Coach">
           <p>After your sessions, tell us how it went — your coach reads every word. And in <strong style={{ color: '#eaf4fa' }}>My Coach</strong> you can see who&apos;s guiding you and their credentials.</p>
