@@ -499,7 +499,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
               : opEvents.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">Nada programado este día.</p>
               : opEvents.map((e) => (
                 <OpEventCard key={e.camp_id} token={token} e={e} canCoordinate={canCoordinate} academySlug={academySlug}
-                  onReserve={() => setReserveFor(e)}
+                  onReserve={() => { if (e.closed) return; setReserveFor(e); }}
                   onChanged={() => { hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); hostDayAlerts(token).then(setAlerts).catch(() => {}); }} />
               ))}
 
@@ -809,8 +809,10 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
       )}
       {linkMsg && <p className="mt-1 text-[10px] font-semibold text-center" style={{ color: '#0090B0' }}>{linkMsg}</p>}
 
-      {/* LLENO: el cupo es sugerido — el host puede meter +1 en sobrecupo */}
-      {spotsLeft !== null && spotsLeft <= 0 && (
+      {/* LLENO: el cupo es sugerido — el host puede meter +1 en sobrecupo.
+          OJO: un camp arrancado casi siempre está lleno, así que sin el
+          !e.closed este botón convivía con el candado e invitaba a reservar. */}
+      {!e.closed && spotsLeft !== null && spotsLeft <= 0 && (
         <button type="button" onClick={onReserve}
           className="mt-2.5 w-full rounded-full py-2.5 text-[9px] border-2" style={{ ...F_M, borderColor: GOLD, color: '#7a5c00', background: 'rgba(255,209,102,.12)' }}>
           + Sobrecupo (lleno {e.enrolled}/{e.capacity})

@@ -233,6 +233,13 @@ export function DeskBoard({ token, classes, onChanged }: { token: string; classe
                                   className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] bg-white border border-gray-200 disabled:opacity-50 text-left">
                                   <span className="min-w-0 truncate" style={{ color: '#061C2B' }}>
                                     <strong>{t.name}</strong> · {fmtDate(t.date)}{t.time ? ` ${t.time.slice(0, 5)}` : ''}
+                                    {/* Destino ya arrancado: solo aparece para mover a alguien que
+                                        YA viene en un camp en curso. Hay que verlo. */}
+                                    {t.closed && (
+                                      <em className="not-italic ml-1 text-[10px] font-bold" style={{ color: '#b45309' }}>
+                                        · en curso{t.day_progress ? ` · día ${t.day_progress.day} de ${t.day_progress.total}` : ''}
+                                      </em>
+                                    )}
                                   </span>
                                   <span className="shrink-0 text-[10px] ml-1" style={{ color: t.full ? '#b45309' : '#9ca3af' }}>
                                     {t.price_cents != null ? `$${(t.price_cents / 100).toFixed(0)}` : ''}{t.full ? ' · LLENO (sobrecupo)' : t.left != null ? ` · ${t.left} libre${t.left === 1 ? '' : 's'}` : ''}

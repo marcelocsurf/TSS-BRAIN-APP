@@ -1094,7 +1094,7 @@ export async function addStudentToCamp(
   // Check if already enrolled
   const { data: existing } = await supabase
     .from('camp_participants')
-    .select('id')
+    .select('id, notes')
     .eq('camp_instance_id', campInstanceId)
     .eq('student_id', studentId)
     .single();
@@ -1124,10 +1124,18 @@ export async function addStudentToCamp(
   } catch { /* non-blocking */ }
 
   if (existing) {
-    await supabase
+    // Re-activar un asiento quitado antes. Si se forzó sobre un camp ya
+    // arrancado, la nota de auditoría tiene que quedar acá TAMBIÉN — si no,
+    // el confirm promete una huella que nunca se escribe.
+    const prev = ((existing as any).notes as string | null) ?? null;
+    const { error: reErr } = await supabase
       .from('camp_participants')
-      .update({ enrollment_status: 'active' })
+      .update({
+        enrollment_status: 'active',
+        ...(lateNote ? { notes: [prev, lateNote].filter(Boolean).join(' ') } : {}),
+      })
       .eq('id', existing.id);
+    if (reErr) return { success: false as const, error: reErr.message };
   } else {
     // Guardia de cupo — nunca sobre-reservar EN SILENCIO. El cupo es el
     // override de la instancia o el capacity_max de la plantilla; sin cupo

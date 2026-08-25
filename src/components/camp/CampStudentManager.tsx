@@ -48,7 +48,10 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
 
   // Cupo LLENO → el cupo del servicio es sugerido: ofrecer +1 en sobrecupo
   // (pedido de Rick — antes tocaba borrar el servicio y recrearlo más grande).
-  const addWithOverbook = async (studentId: string, opts: { allowStarted?: boolean } = {}) => {
+  // Devuelve si el asiento QUEDÓ creado: quien llama necesita saberlo para no
+  // seguir adelante (mandar la invitación, pintar el panel de éxito) cuando la
+  // persona canceló el confirm.
+  const addWithOverbook = async (studentId: string, opts: { allowStarted?: boolean } = {}): Promise<boolean> => {
     const r: any = await addStudentToCamp(campInstanceId, studentId, opts);
     // Camp ya arrancado: se cierra al iniciar. Coordinación puede forzarlo
     // SOLO para registrar a alguien que sí vino desde el día 1 y quedó fuera
@@ -57,18 +60,18 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
       const ok = window.confirm(
         `${r.started.notice}\n\nSolo forzalo si esta persona YA venía en el camp y faltaba registrarla. Quedará marcada como incorporación tardía.\n\n¿Agregarla de todos modos?`,
       );
-      if (!ok) return;
-      await addWithOverbook(studentId, { allowStarted: true });
-      return;
+      if (!ok) return false;
+      return addWithOverbook(studentId, { ...opts, allowStarted: true });
     }
     if (r?.full) {
       const ok = window.confirm(
         `This service is full (${r.full.act}/${r.full.cap} — suggested capacity).\n\nAdd 1 more as OVERBOOK anyway? It will be flagged on the seat.`,
       );
-      if (!ok) return;
+      if (!ok) return false;
       await addStudentToCamp(campInstanceId, studentId, { ...opts, allowOverbook: true });
     }
     router.refresh();
+    return true;
   };
 
   const handleAdd = async (studentId: string) => {
@@ -143,7 +146,17 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
           alert(res.error || 'Could not create student.');
           return false;
         }
-        await addWithOverbook(res.studentId);
+        // Si cancelaron el aviso de "camp ya arrancó" (o el de sobrecupo), el
+        // alumno queda creado pero SIN asiento: no se le manda invitación ni se
+        // pinta el panel de éxito, que le haría creer al coordinador que quedó
+        // inscrito.
+        const seated = await addWithOverbook(res.studentId);
+        if (!seated) {
+          alert('El alumno quedó creado pero NO se inscribió al camp. Podés agregarlo desde la lista cuando quieras.');
+          setNewLead({ first_name: '', last_name: '', email: '', phone: '' });
+          router.refresh();
+          return false;
+        }
         const result = await sendLeadInvitation(res.studentId);
         setJustCreated({
           studentId: res.studentId,

@@ -7,7 +7,7 @@
 // coordinator/admin.
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { campEnrollmentClosed, campClosedNoticeES } from '@/lib/utils/camp-window';
+import { campEnrollmentClosed, campClosedNoticeES, campDayProgress } from '@/lib/utils/camp-window';
 import { elSalvadorToday } from '@/lib/utils/tz';
 
 async function resolveDesk(token: string) {
@@ -172,10 +172,15 @@ export async function getTransferTargets(token: string, participantId: string) {
   const admin = createAdminClient();
   const { data: seat } = await admin
     .from('camp_participants')
-    .select('id, student_id, camp_instances:camp_instance_id!inner(id, academy_id)')
+    .select('id, student_id, camp_instances:camp_instance_id!inner(id, academy_id, start_date, end_date, scheduled_time)')
     .eq('id', participantId).maybeSingle();
   const cur = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
   if (!cur || cur.academy_id !== who.academy_id) return [];
+  // Quien YA está dentro de un camp en curso no se está inscribiendo: se está
+  // MUDANDO de grupo (el coach lo vio y es de otro nivel). Ese traslado
+  // lateral entre los camps de la misma semana sí se permite. Quien viene de
+  // una clase suelta o de un camp futuro, no — eso sería entrar a mitad.
+  const movingInsideRunningCamp = campEnrollmentClosed(cur);
 
   const today = elSalvadorToday();
   const { data } = await admin
@@ -202,10 +207,12 @@ export async function getTransferTargets(token: string, participantId: string) {
       full: cap > 0 && act.length >= cap,
       price_cents: tpl?.list_price_cents ?? null,
       already_in: act.some((p: any) => p.student_id === (seat as any).student_id),
-      // Un camp ya arrancado no se ofrece como destino — no se entra a mitad.
+      // Un camp arrancado solo se ofrece como destino cuando es un traslado
+      // lateral; el mostrador lo ve etiquetado "en curso · día X de Y".
       closed: campEnrollmentClosed(c),
+      day_progress: campDayProgress(c),
     };
-  }).filter((c: any) => !c.already_in && !c.closed);
+  }).filter((c: any) => !c.already_in && (!c.closed || movingInsideRunningCamp));
 }
 
 // Ajuste de cobro desde el mostrador (pedido de Cony 2026-08-09): el host
@@ -290,7 +297,7 @@ export async function deskTransferSeat(token: string, participantId: string, tar
 
   const { data: seat } = await admin
     .from('camp_participants')
-    .select('id, student_id, payment_status, amount_cents, list_price_cents, notes, camp_instances:camp_instance_id!inner(id, academy_id, camp_name, coach_id, head_coach_id, head_coach_status, start_date), students(first_name, last_name)')
+    .select('id, student_id, payment_status, amount_cents, list_price_cents, notes, camp_instances:camp_instance_id!inner(id, academy_id, camp_name, coach_id, head_coach_id, head_coach_status, start_date, end_date, scheduled_time), students(first_name, last_name)')
     .eq('id', participantId).maybeSingle();
   const cur = seat ? (Array.isArray((seat as any).camp_instances) ? (seat as any).camp_instances[0] : (seat as any).camp_instances) : null;
   if (!cur || cur.academy_id !== who.academy_id) return { ok: false, error: 'Reserva no encontrada.' };
@@ -302,8 +309,12 @@ export async function deskTransferSeat(token: string, participantId: string, tar
   if (!target || (target as any).academy_id !== who.academy_id || (target as any).status === 'cancelled') {
     return { ok: false, error: 'Servicio destino no disponible.' };
   }
-  // Tampoco se transfiere a un camp que ya arrancó.
-  if (campEnrollmentClosed(target as any)) return { ok: false, error: campClosedNoticeES(target as any) };
+  // Un camp arrancado no recibe gente NUEVA. Pero mover a alguien que ya
+  // viene surfeando desde el día 1 al grupo de su nivel real es una MUDANZA,
+  // no una inscripción — y es justo para lo que se construyó la transferencia.
+  const lateralMove = campEnrollmentClosed(cur);
+  const targetRunning = campEnrollmentClosed(target as any);
+  if (targetRunning && !lateralMove) return { ok: false, error: campClosedNoticeES(target as any) };
   const tTpl = Array.isArray((target as any).camp_templates) ? (target as any).camp_templates[0] : (target as any).camp_templates;
   const tAct = ((target as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
   const tCap = (target as any).capacity_override ?? tTpl?.capacity_max ?? 0;
@@ -322,7 +333,9 @@ export async function deskTransferSeat(token: string, participantId: string, tar
   // nota de la diferencia para que el coordinador ajuste (cobrar o dejar).
   const priceDiff = paid && targetPrice != null && (seat as any).amount_cents != null && targetPrice !== (seat as any).amount_cents
     ? targetPrice - (seat as any).amount_cents : 0;
+  const tProg = targetRunning ? campDayProgress(target as any) : null;
   const note = `Transferido ${fromName} → ${toName} (${stamp}, mostrador)` +
+    (targetRunning ? ` · TRASLADO A CAMP EN CURSO${tProg ? ` (día ${tProg.day} de ${tProg.total})` : ''} — autorizado por ${who.display_name || 'mostrador'}` : '') +
     (overCap ? ` · SOBRECUPO (${tAct.length + 1}/${tCap})` : '') +
     (priceDiff !== 0 ? ` · dif. de precio ${priceDiff > 0 ? '+' : ''}$${(priceDiff / 100).toFixed(2)} — ajustar en recepción` : '');
 
