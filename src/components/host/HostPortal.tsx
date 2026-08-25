@@ -1052,6 +1052,7 @@ function ReserveModal({ token, event, onClose, onDone }: {
 // marca "salió" y puede ajustar horarios (mismo hostSetTransport de Agenda).
 function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate: boolean }) {
   const [rows, setRows] = useState<TransportBoardRow[] | null | 'error'>(null);
+  const [sel, setSel] = useState<Set<string>>(new Set()); // vacío = todos los días
   const [notices, setNotices] = useState<Array<{ id: string; title: string; body: string | null; created_at: string }>>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
@@ -1114,7 +1115,9 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
     L.push('_The Surf Sequence · Front Desk_');
     return L.join('\n');
   };
-  const allText = () => groups.map(([d, list]) => dayText(d, list)).join('\n\n');
+  // Sin selección = los 14 días; con selección = solo esos.
+  const chosen = () => groups.filter(([d]) => sel.size === 0 || sel.has(d));
+  const allText = () => chosen().map(([d, list]) => dayText(d, list)).join('\n\n');
 
   // Imprimir: ventana propia con una tabla limpia (sirve para papel y para
   // "Guardar como PDF" o captura, que es como lo mandan por WhatsApp).
@@ -1123,7 +1126,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
     // enorme, y al lado los tres datos que importan. Nada de tabla apretada.
     const esc = (v: unknown) => String(v ?? '—').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
     const dLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-    const body = groups.map(([d, list]) => `
+    const body = chosen().map(([d, list]) => `
       <section>
         <h2>${esc(dLabel(d))} <span class="n">· ${list.length} viaje${list.length === 1 ? '' : 's'}</span></h2>
         ${list.map((r) => `
@@ -1183,14 +1186,17 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
         <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>🚐 Transporte · próximos 14 días</h2>
         <p className="text-[11px] text-white/50 mt-1">Lo que los coaches solicitaron al planear sus clases y camps. Marcá "salió" cuando el transporte se vaya.</p>
         {groups.length > 0 && (
-          <div className="flex gap-2 mt-3 flex-wrap">
-            <CopyTextButton text={allText()} label="📋 Copiar todo (WhatsApp)" />
-            <button type="button" onClick={printBoard}
-              className="shrink-0 text-[10px] font-bold rounded-full px-3 py-1.5 border"
-              style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.35)', minWidth: 96 }}>
-              🖨 Imprimir / PDF
-            </button>
-          </div>
+          <>
+            <div className="flex gap-2 mt-3 flex-wrap">
+              <CopyTextButton text={allText()} label={sel.size === 0 ? '📋 Copiar todo' : `📋 Copiar (${sel.size})`} />
+              <button type="button" onClick={printBoard}
+                className="shrink-0 text-[10px] font-bold rounded-full px-3 py-1.5 border"
+                style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.35)', minWidth: 96 }}>
+                🖨 Imprimir / PDF
+              </button>
+            </div>
+            <DaySelector days={groups.map(([d]) => d)} selected={sel} onChange={setSel} hoy={hoy} />
+          </>
         )}
       </div>
 
@@ -1295,6 +1301,58 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
   );
 }
 
+
+// ─── Selector de días para compartir/imprimir (pedido de Marcelo 2026-08-25:
+// "que ellos decidan si solo quieren el día de mañana o todo lo programado").
+// Sin selección = TODO, que es el caso más común y evita una pantalla vacía.
+function DaySelector({
+  days, selected, onChange, hoy,
+}: {
+  days: string[]; selected: Set<string>; onChange: (s: Set<string>) => void; hoy: string;
+}) {
+  const manana = new Date(Date.parse(`${hoy}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+  const chip = (active: boolean) => ({
+    background: active ? '#FFD166' : 'rgba(255,255,255,.10)',
+    color: active ? '#412402' : '#fff',
+    borderColor: active ? '#FFD166' : 'rgba(255,255,255,.25)',
+  });
+  const short = (d: string) =>
+    new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
+  const toggle = (d: string) => {
+    const n = new Set(selected);
+    if (n.has(d)) n.delete(d); else n.add(d);
+    onChange(n);
+  };
+  return (
+    <div className="mt-3">
+      <p className="text-[9px] mb-1.5" style={{ ...F_M, color: 'rgba(255,255,255,.5)' }}>
+        Elegí qué días compartir {selected.size === 0 ? '· ahora: TODO' : `· ${selected.size} seleccionado${selected.size === 1 ? '' : 's'}`}
+      </p>
+      <div className="flex gap-1.5 flex-wrap">
+        <button type="button" onClick={() => onChange(new Set(days.includes(hoy) ? [hoy] : []))}
+          className="text-[9.5px] font-bold rounded-full px-2.5 py-1 border" style={chip(selected.size === 1 && selected.has(hoy))}>
+          Hoy
+        </button>
+        <button type="button" onClick={() => onChange(new Set(days.includes(manana) ? [manana] : []))}
+          className="text-[9.5px] font-bold rounded-full px-2.5 py-1 border" style={chip(selected.size === 1 && selected.has(manana))}>
+          Mañana
+        </button>
+        <button type="button" onClick={() => onChange(new Set())}
+          className="text-[9.5px] font-bold rounded-full px-2.5 py-1 border" style={chip(selected.size === 0)}>
+          Todo
+        </button>
+        <span className="w-px my-1" style={{ background: 'rgba(255,255,255,.2)' }} />
+        {days.map((d) => (
+          <button key={d} type="button" onClick={() => toggle(d)}
+            className="text-[9.5px] font-bold rounded-full px-2.5 py-1 border capitalize" style={chip(selected.has(d))}>
+            {short(d)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ═══ 📣 DISPONIBILIDAD — qué hay programado y dónde queda lugar ═══
 // Pedido de Marcelo (2026-08-25): el Front Desk necesita responder "¿qué hay
 // y queda lugar?" sin abrir la agenda día por día. Los EVENTOS (camps de
@@ -1302,6 +1360,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
 function AvailabilityTab({ token }: { token: string }) {
   const [rows, setRows] = useState<AvailabilityRow[] | null | 'error'>(null);
   const [soloLibres, setSoloLibres] = useState(false);
+  const [sel, setSel] = useState<Set<string>>(new Set()); // vacío = todos los días
 
   const load = () => { hostAvailability(token).then((r) => setRows(r ?? 'error')).catch(() => setRows('error')); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1349,7 +1408,56 @@ function AvailabilityTab({ token }: { token: string }) {
     L.push('_The Surf Sequence_');
     return L.join('\n');
   };
-  const allText = () => groups.map(([d, l]) => dayText(d, l)).join('\n\n');
+  // Sin selección = todo lo programado; con selección = solo esos días.
+  const chosen = () => groups.filter(([d]) => sel.size === 0 || sel.has(d));
+  const allText = () => chosen().map(([d, l]) => dayText(d, l)).join('\n\n');
+
+  const printAvail = () => {
+    const esc = (v: unknown) => String(v ?? '—').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const dLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+    const picked = chosen();
+    const body = picked.map(([d, list]) => `
+      <section>
+        <h2>${esc(dLabel(d))}</h2>
+        ${list.map((r) => `
+          <div class="act${r.spots_left === 0 ? ' lleno' : ''}">
+            <div class="h">${esc(hhmm(r.time))}</div>
+            <div class="i">
+              <div class="n">${esc(r.name)}${r.is_event && r.total_days ? ` <span class="ev">· evento de ${esc(r.total_days)} días</span>` : ''}</div>
+              <div class="d">${r.coach_name ? esc(r.coach_name) : 'sin coach'}${r.venue ? ` · ${esc(r.venue)}` : ''}</div>
+            </div>
+            <div class="r">
+              ${r.price_cents != null ? `<div class="p">$${esc((r.price_cents / 100).toFixed(0))}</div>` : ''}
+              <div class="c${r.spots_left === 0 ? ' no' : ''}">${r.spots_left === null ? 'sin límite' : r.spots_left === 0 ? 'LLENO' : `${esc(r.spots_left)} ${r.spots_left === 1 ? 'lugar' : 'lugares'}`}</div>
+            </div>
+          </div>`).join('')}
+      </section>`).join('');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Permití las ventanas emergentes para imprimir.'); return; }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Actividades</title><style>
+      *{box-sizing:border-box}
+      body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#061C2B;padding:28px;margin:0}
+      h1{font-size:22px;margin:0 0 2px} .sub{font-size:11px;color:#7a8894;margin:0 0 20px}
+      section{margin-bottom:20px;break-inside:avoid}
+      h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#0090B0;border-bottom:2px solid #0090B0;padding-bottom:5px;margin:0 0 8px}
+      .act{display:flex;gap:14px;align-items:center;padding:10px 12px;margin-bottom:6px;
+           border:1px solid #dde4ea;border-left:6px solid #06D6A0;border-radius:10px;break-inside:avoid}
+      .act.lleno{border-left-color:#c04545;opacity:.6}
+      .h{min-width:64px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+      .i{flex:1;min-width:0} .n{font-size:15px;font-weight:700} .n .ev{font-size:11px;color:#7a5c00;font-weight:600}
+      .d{font-size:11px;color:#7a8894;margin-top:2px}
+      .r{text-align:right;min-width:92px}
+      .p{font-size:15px;font-weight:800;color:#7a5c00}
+      .c{font-size:11px;font-weight:700;color:#0a7c5d} .c.no{color:#c04545}
+      @media print{body{padding:0}}
+    </style></head><body>
+      <h1>🏄 Actividades programadas</h1>
+      <p class="sub">The Surf Sequence · ${esc(new Date().toLocaleString('es-ES', { timeZone: 'America/El_Salvador' }))}${soloLibres ? ' · solo con lugar disponible' : ''}</p>
+      ${body || '<p>No hay actividades en los días elegidos.</p>'}
+    </body></html>`);
+    w.document.close(); w.focus();
+    setTimeout(() => w.print(), 300);
+  };
 
   return (
     <div className="space-y-4 pb-4">
@@ -1365,8 +1473,20 @@ function AvailabilityTab({ token }: { token: string }) {
               : { background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.35)' }}>
             {soloLibres ? '✓ Solo con lugar' : 'Solo con lugar'}
           </button>
-          {groups.length > 0 && <CopyTextButton text={allText()} label="📋 Copiar todo" />}
+          {groups.length > 0 && (
+            <>
+              <CopyTextButton text={allText()} label={sel.size === 0 ? '📋 Copiar todo' : `📋 Copiar (${sel.size})`} />
+              <button type="button" onClick={printAvail}
+                className="shrink-0 text-[10px] font-bold rounded-full px-3 py-1.5 border"
+                style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.35)', minWidth: 96 }}>
+                🖨 Imprimir
+              </button>
+            </>
+          )}
         </div>
+        {groups.length > 0 && (
+          <DaySelector days={groups.map(([d]) => d)} selected={sel} onChange={setSel} hoy={hoy} />
+        )}
       </div>
 
       {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
