@@ -20,6 +20,7 @@ import {
   type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
+import { CopyTextButton } from '@/components/dashboard/CopyTextButton';
 import { sellerSearchStudents, sellerReserveSpot } from '@/lib/actions/seller';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
@@ -1088,12 +1089,83 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
     load();
   };
 
+  // ── Compartir el tablero (pedido de Marcelo 2026-08-25): el Front Desk
+  // necesita mandar los transportes por WhatsApp o imprimirlos para el chofer.
+  const hhmm = (t: string | null) => (t ? String(t).slice(0, 5) : '—');
+  const dayText = (date: string, list: TransportBoardRow[]) => {
+    const L: string[] = [`🚐 TRANSPORTES · ${dayLabel(date).toUpperCase()}`];
+    for (const r of list) {
+      L.push('━━━━━━━━━━━━━━');
+      L.push(`${hhmm(r.depart)} → ${hhmm(r.ret)} · ${r.camp_name.toUpperCase()}`);
+      const l2: string[] = [`👥 ${r.passengers} pasajeros (${r.students} alumnos + ${r.staff} staff)`];
+      if (r.venue) l2.push(`📍 ${r.venue}`);
+      if (r.class_start) l2.push(`🕐 encuentro ${hhmm(r.class_start)}`);
+      L.push(l2.join(' · '));
+      if (r.coach_name) L.push(`Lo pide: ${r.coach_name}`);
+      if (r.status === 'taken') L.push('✓ ya salió');
+      else if (r.status === 'cancelled') L.push('✕ CANCELADO');
+    }
+    L.push('━━━━━━━━━━━━━━');
+    L.push('The Surf Sequence · Front Desk');
+    return L.join('\n');
+  };
+  const allText = () => groups.map(([d, list]) => dayText(d, list)).join('\n\n');
+
+  // Imprimir: ventana propia con una tabla limpia (sirve para papel y para
+  // "Guardar como PDF" o captura, que es como lo mandan por WhatsApp).
+  const printBoard = () => {
+    const esc = (v: unknown) => String(v ?? '—').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const body = groups.map(([d, list]) => `
+      <h2>${esc(dayLabel(d))}</h2>
+      <table>
+        <thead><tr><th>Sale</th><th>Vuelve</th><th>Servicio</th><th>Pasajeros</th><th>Lugar</th><th>Encuentro</th><th>Lo pide</th><th>Estado</th></tr></thead>
+        <tbody>${list.map((r) => `<tr>
+          <td class="b">${esc(hhmm(r.depart))}</td>
+          <td>${esc(hhmm(r.ret))}</td>
+          <td class="b">${esc(r.camp_name)}</td>
+          <td>${esc(r.passengers)} <span class="s">(${esc(r.students)}+${esc(r.staff)})</span></td>
+          <td>${esc(r.venue)}</td>
+          <td>${esc(hhmm(r.class_start))}</td>
+          <td>${esc(r.coach_name)}</td>
+          <td>${r.status === 'taken' ? '✓ salió' : r.status === 'cancelled' ? '✕ cancelado' : 'pendiente'}</td>
+        </tr>`).join('')}</tbody>
+      </table>`).join('');
+    const w = window.open('', '_blank');
+    if (!w) { alert('Permití las ventanas emergentes para imprimir.'); return; }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Transportes</title><style>
+      body{font-family:system-ui,-apple-system,sans-serif;color:#061C2B;padding:24px;margin:0}
+      h1{font-size:18px;margin:0 0 2px} .sub{font-size:11px;color:#667;margin:0 0 18px}
+      h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;color:#0090B0}
+      table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
+      th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#889;border-bottom:1px solid #ccd;padding:4px 6px}
+      td{padding:6px;border-bottom:1px solid #eef} .b{font-weight:700} .s{color:#889;font-size:10px}
+      @media print{body{padding:0}}
+    </style></head><body>
+      <h1>🚐 Transportes · próximos 14 días</h1>
+      <p class="sub">The Surf Sequence · Front Desk · generado ${esc(new Date().toLocaleString('es-ES', { timeZone: 'America/El_Salvador' }))}</p>
+      ${body || '<p>No hay transportes solicitados.</p>'}
+    </body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  };
+
   return (
     <div className="space-y-4 pb-4">
       <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Front Desk</p>
         <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>🚐 Transporte · próximos 14 días</h2>
         <p className="text-[11px] text-white/50 mt-1">Lo que los coaches solicitaron al planear sus clases y camps. Marcá "salió" cuando el transporte se vaya.</p>
+        {groups.length > 0 && (
+          <div className="flex gap-2 mt-3 flex-wrap">
+            <CopyTextButton text={allText()} label="📋 Copiar todo (WhatsApp)" />
+            <button type="button" onClick={printBoard}
+              className="shrink-0 text-[10px] font-bold rounded-full px-3 py-1.5 border"
+              style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.35)', minWidth: 96 }}>
+              🖨 Imprimir / PDF
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 🔔 Notas de los coaches: pedidos, cambios de horario, cancelaciones */}
@@ -1131,7 +1203,10 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
 
       {groups.map(([date, list]) => (
         <div key={date} className="space-y-2">
-          <p className="text-[10px] font-bold px-1" style={{ ...F_M, color: date === hoy ? '#0090B0' : '#8a99a6' }}>{dayLabel(date)}</p>
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-[10px] font-bold" style={{ ...F_M, color: date === hoy ? '#0090B0' : '#8a99a6' }}>{dayLabel(date)}</p>
+            <CopyTextButton text={dayText(date, list)} label="📋 Copiar día" />
+          </div>
           {list.map((r) => (
             <div key={r.plan_id} className="rounded-2xl bg-white p-3.5 space-y-2" style={{ borderLeft: `4px solid ${r.status === 'taken' ? GREEN : r.status === 'cancelled' ? '#c04545' : GOLD}` }}>
               <div className="flex items-start justify-between gap-2">

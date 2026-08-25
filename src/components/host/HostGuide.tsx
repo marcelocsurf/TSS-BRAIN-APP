@@ -90,6 +90,7 @@ export function HostGuide({ canCoordinate, onClose }: { canCoordinate: boolean; 
           <Li k="Qué muestra">Todo lo que los coaches solicitaron al planear sus clases y camps: salida → regreso, lugar, cuántos alumnos van y qué coach lo pide, agrupado por día.</Li>
           <Li k="✓ Salió">Marcalo cuando la van se vaya — todos ven que ese viaje ya está en camino. "Deshacer" lo regresa a pendiente.</Li>
           <Li k="🕐 Horario">Ajustá la hora de salida o regreso si cambia el plan del día.</Li>
+          <Li k="📋 Copiar / 🖨 Imprimir">Con <strong>📋 Copiar día</strong> mandás los transportes de ese día por WhatsApp al chofer o al grupo; <strong>📋 Copiar todo</strong> manda los 14 días. Con <strong>🖨 Imprimir / PDF</strong> se abre un cuadro limpio para papel — o elegí &quot;Guardar como PDF&quot; y lo compartís por donde quieras.</Li>
         </Sec>
 
         <Sec icon="🏛" title="ESPACIOS — salas y lugares">
