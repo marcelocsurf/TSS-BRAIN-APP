@@ -35,10 +35,12 @@ export function AthleteScoreCard({ token, initial }: { token: string; initial?: 
   // le falta la evaluación, le enseña que la app no funciona. La tarjeta
   // APARECE el día que su coach lo evalúa por primera vez — así su aparición
   // es un premio y no un hueco. (Hoy 9 de los 21 atletas están en ese caso.)
+  // Hace falta un SCORE de verdad. La "scoring capacity" suelta no alcanza:
+  // una tarjeta titulada "My Athlete Score" que no muestra ningún score no
+  // cumple lo que promete (caso Julissa y Jax: capacidad cargada, cero
+  // evaluaciones). Aparece el día que el coach evalúa.
   const hasPillar = PILLARS.some((p) => data.pillars?.[p.key] != null);
-  const hasSomething =
-    (!!data.eval_date && (hasPillar || data.global != null)) || data.score_capacity != null;
-  if (!hasSomething) return null;
+  if (!hasPillar && data.global == null) return null;
 
   return (
     <div

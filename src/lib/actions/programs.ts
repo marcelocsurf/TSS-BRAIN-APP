@@ -696,7 +696,7 @@ export async function getMyAthleteScores(
     const [{ data: evalRows, error: eErr }, { data: profile }] = await Promise.all([
       admin
         .from('hp_deep_evaluations')
-        .select('scores, eval_kind, created_at')
+        .select('scores, eval_kind, created_at, eval_date')
         .eq('student_id', student.id)
         .order('created_at', { ascending: false })
         .limit(6),
@@ -731,7 +731,13 @@ export async function getMyAthleteScores(
         pillars,
         global: withVal.length ? Math.round((withVal.reduce((a, b) => a + b, 0) / withVal.length) * 10) / 10 : null,
         score_capacity: (profile as any)?.score_capacity != null ? Number((profile as any).score_capacity) : null,
-        eval_date: evalRow?.created_at ? String(evalRow.created_at).slice(0, 10) : null,
+        // OJO: created_at es cuándo se IMPORTÓ la evaluación, no cuándo se
+        // hizo. A Clayton se le mostraba "Last evaluation · Aug 20" cuando su
+        // coach lo evaluó el 13 de mayo. Manda eval_date; created_at solo si
+        // la fila vieja no la tiene.
+        eval_date: (evalRow as any)?.eval_date
+          ? String((evalRow as any).eval_date).slice(0, 10)
+          : (evalRow?.created_at ? String(evalRow.created_at).slice(0, 10) : null),
         eval_kind: (evalRow as any)?.eval_kind ?? null,
       },
     };

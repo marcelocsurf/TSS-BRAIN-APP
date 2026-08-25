@@ -158,7 +158,7 @@ export async function getSpecialistAthlete(token: string, studentId: string): Pr
     const [{ data: st }, timeline, { data: evalRows }, { data: appts }, { data: wallRows }, { data: dietRows }, { data: taskRows }] = await Promise.all([
       admin.from('students').select('id, first_name, last_name, nickname, photo_url, belt_level').eq('id', studentId).maybeSingle(),
       buildSeasonTimeline(admin, studentId),
-      admin.from('hp_deep_evaluations').select('scores, created_at').eq('student_id', studentId).order('created_at', { ascending: false }).limit(6),
+      admin.from('hp_deep_evaluations').select('scores, eval_date, created_at').eq('student_id', studentId).order('eval_date', { ascending: false }).order('created_at', { ascending: false }).limit(6),
       admin.from('program_appointments').select('id, kind, title, appointment_date, appointment_time, status').eq('student_id', studentId).neq('status', 'cancelled').order('appointment_date', { ascending: false }).limit(10),
       admin.from('athlete_team_posts').select('id, body, created_at, author_student_id, author_coach_id, coaches:author_coach_id(display_name, specialist_role, role), students:author_student_id(first_name)').eq('student_id', studentId).order('created_at', { ascending: false }).limit(30),
       admin.from('athlete_diet_notes').select('scope, week_number, note_date, body, created_at').eq('student_id', studentId).order('created_at', { ascending: false }).limit(40),
@@ -175,7 +175,7 @@ export async function getSpecialistAthlete(token: string, studentId: string): Pr
     if (evalRow) {
       const p = { fis: avgOf((evalRow as any).scores, 'fis_'), tec: avgOf((evalRow as any).scores, 'tec_'), tac: avgOf((evalRow as any).scores, 'tac_'), men: avgOf((evalRow as any).scores, 'men_') };
       const withVal = Object.values(p).filter((v): v is number => v != null);
-      pillars = { ...p, global: withVal.length ? Math.round((withVal.reduce((a, b) => a + b, 0) / withVal.length) * 10) / 10 : null, eval_date: String((evalRow as any).created_at).slice(0, 10) };
+      pillars = { ...p, global: withVal.length ? Math.round((withVal.reduce((a, b) => a + b, 0) / withVal.length) * 10) / 10 : null, eval_date: String((evalRow as any).eval_date ?? (evalRow as any).created_at).slice(0, 10) };
     }
 
     // Dieta: última nota por micro + notas de día recientes.

@@ -80,7 +80,7 @@ export async function buildSeasonTimeline(
     admin.from('season_plans').select('id, title, objective, start_date, end_date').eq('student_id', studentId).eq('active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('athlete_competitions').select('name, comp_date, location, status').eq('student_id', studentId).order('comp_date'),
     admin.from('program_appointments').select('kind, title, appointment_date, appointment_time, status').eq('student_id', studentId).neq('status', 'cancelled').order('appointment_date'),
-    admin.from('hp_deep_evaluations').select('eval_kind, created_at').eq('student_id', studentId).order('created_at'),
+    admin.from('hp_deep_evaluations').select('eval_kind, eval_date, created_at').eq('student_id', studentId).order('eval_date'),
   ]);
   if (dErr) throw dErr;
   if (mErr) throw mErr;
@@ -146,7 +146,11 @@ export async function buildSeasonTimeline(
     ...(() => {
       const byDate = new Map<string, number>();
       for (const e of evals ?? []) {
-        const d = String((e as any).created_at ?? '').slice(0, 10);
+        // eval_date = cuándo lo evaluó su coach. created_at = cuándo entró la
+        // fila al sistema. En el año del atleta el hito va donde ocurrió: las
+        // 35 evaluaciones migradas tienen las dos fechas distintas y todas
+        // aterrizaban en agosto.
+        const d = String((e as any).eval_date ?? (e as any).created_at ?? '').slice(0, 10);
         if (d) byDate.set(d, (byDate.get(d) ?? 0) + 1);
       }
       return Array.from(byDate.entries()).map(([date, n]) => ({
