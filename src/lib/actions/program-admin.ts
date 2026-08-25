@@ -665,11 +665,24 @@ export async function adminSearchStudents(q: string): Promise<{
 
 // Un alumno lleva UN programa activo a la vez: el visor del portal muestra la
 // asignación más reciente, así que permitir dos solo generaría confusión.
+
+// ─── Aviso de escritura fantasma ──────────────────────────────────
+// Desde que el acceso HP se otorga a mano, asignarle un programa, una
+// temporada o una cita a un alumno SIN acceso guarda el dato pero el alumno
+// no lo ve nunca. No lo otorgamos solos —Marcelo fue explícito en que tener
+// un programa NO convierte a nadie en atleta— pero sí lo avisamos, para que
+// quien lo asigna decida ahí mismo.
+async function hpAccessMissing(admin: ReturnType<typeof createAdminClient>, studentId: string): Promise<boolean> {
+  const { data, error } = await admin.from('students').select('hp_access').eq('id', studentId).maybeSingle();
+  if (error) return false;             // ante la duda no alarmamos
+  return (data as any)?.hp_access !== true;
+}
+
 export async function adminAssignProgram(
   programId: string,
   studentId: string,
   coachId?: string | null
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; hpAccessOff?: boolean }> {
   try {
     if (!(await assertAdmin())) return DENY;
     const admin = createAdminClient();
@@ -728,7 +741,7 @@ export async function adminAssignProgram(
       coach_id: coachId ?? null,
     });
     if (error) throw error;
-    return { ok: true };
+    return { ok: true, hpAccessOff: await hpAccessMissing(admin, studentId) };
   } catch (e) {
     console.error('[program-admin] adminAssignProgram failed', e);
     return { ok: false, error: 'No se pudo asignar.' };
@@ -1074,7 +1087,7 @@ export async function adminCreateAppointment(input: {
   title?: string | null;
   location?: string | null; // dónde — una cita presencial sin lugar no sirve
   notes?: string | null;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; hpAccessOff?: boolean }> {
   try {
     if (!(await assertAdmin())) return DENY;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { ok: false, error: 'La fecha no es válida.' };
@@ -1111,7 +1124,7 @@ export async function adminCreateAppointment(input: {
       notes: input.notes?.trim() || null,
     });
     if (error) throw error;
-    return { ok: true };
+    return { ok: true, hpAccessOff: await hpAccessMissing(admin, input.studentId) };
   } catch (e) {
     console.error('[program-admin] adminCreateAppointment failed', e);
     return { ok: false, error: 'No se pudo crear la cita.' };
@@ -1296,7 +1309,7 @@ export async function adminGetSeason(seasonId: string): Promise<{ ok: boolean; e
 
 export async function adminCreateSeason(input: {
   studentId: string; title: string; startDate: string; endDate: string;
-}): Promise<{ ok: boolean; error?: string; id?: string }> {
+}): Promise<{ ok: boolean; error?: string; id?: string; hpAccessOff?: boolean }> {
   try {
     if (!(await assertAdmin())) return DENY;
     if (!input.title.trim()) return { ok: false, error: 'La temporada necesita un nombre.' };
@@ -1313,7 +1326,7 @@ export async function adminCreateSeason(input: {
       .insert({ student_id: input.studentId, title: input.title.trim(), start_date: input.startDate, end_date: input.endDate })
       .select('id').single();
     if (error) throw error;
-    return { ok: true, id: data.id };
+    return { ok: true, id: data.id, hpAccessOff: await hpAccessMissing(admin, input.studentId) };
   } catch (e) {
     console.error('[program-admin] adminCreateSeason failed', e);
     return { ok: false, error: 'No se pudo crear la temporada.' };
@@ -1640,8 +1653,13 @@ export async function adminGetStudentHP(
       console.error('[program-admin] ranking position failed (no bloquea la ficha)', e);
     }
 
+    // "Vacío" tiene que significar lo MISMO que en la migración 00168, o el
+    // aviso rojo ("el alumno NO ve nada de esto") nunca se dispara para quien
+    // solo tiene citas agendadas.
+    const { count: apptCount } = await admin
+      .from('program_appointments').select('id', { count: 'exact', head: true }).eq('student_id', studentId);
     const empty = !assignment && past_programs.length === 0 && !season && (evals ?? []).length === 0
-        && (compCount.count ?? 0) === 0 && !ranking_position;
+        && (compCount.count ?? 0) === 0 && !ranking_position && (apptCount ?? 0) === 0;
     return {
       ok: true,
       data: {

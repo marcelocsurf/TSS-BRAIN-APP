@@ -12,7 +12,7 @@ import {
   type HPPanelData, type HPPlanRow, type HPLibrary, type HPTeamRow,
   type HPMessageRow, type HPSessionRow, type HPEvalRow,
 } from '@/lib/actions/hp-cockpit';
-import { adminSearchStudents, adminListAppointments, adminCreateAppointment, adminListHPCoaches, adminSetAppointmentStatus, type AdminAppointmentRow } from '@/lib/actions/program-admin';
+import { adminSetHpAccess, adminSearchStudents, adminListAppointments, adminCreateAppointment, adminListHPCoaches, adminSetAppointmentStatus, type AdminAppointmentRow } from '@/lib/actions/program-admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { LayoutDashboard, ClipboardList, CalendarClock, Star, Mail, Users, Waves, BookOpen } from 'lucide-react';
 
@@ -564,6 +564,18 @@ function CitasTab() {
     const r = await adminCreateAppointment({ studentId: picked.id, coachId, kind, date, time: time || null, location: location || null });
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
+    // Guardado, pero el alumno no tiene acceso de Alto Rendimiento: el dato
+    // existe para el staff y es invisible en su portal. Se avisa y se ofrece
+    // darlo ahí mismo — no se otorga solo (tener un programa NO convierte a
+    // nadie en atleta, decisión de Marcelo).
+    if ((r as any).hpAccessOff) {
+      if (window.confirm(
+        `Guardado.\n\nPERO ${picked.name || 'el alumno'} no tiene ACCESO DE ALTO RENDIMIENTO, así que NO va a ver nada de esto en su portal.\n\n¿Se lo doy ahora?`,
+      )) {
+        const g = await adminSetHpAccess(picked.id, true);
+        if (!g.ok) alert(g.error ?? 'No se pudo otorgar el acceso.');
+      }
+    }
     setPicked(null); setQ(''); setDate(''); setTime(''); setLocation(''); setCreating(false);
     load();
   };

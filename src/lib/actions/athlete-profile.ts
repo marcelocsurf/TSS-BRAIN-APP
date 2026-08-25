@@ -48,26 +48,29 @@ async function resolveEligibleStudent(portalToken: string) {
   const admin = createAdminClient();
   const { data: student, error } = await admin
     .from('students')
-    .select('id, first_name, photo_url')
+    .select('id, first_name, photo_url, hp_access')
     .eq('portal_token', portalToken)
     .maybeSingle();
   if (error) throw error;
   if (!student) return null;
 
-  // Elegible = EQUIPO de Alto Rendimiento: temporada activa o ficha HP ya
-  // existente. Tener un PROGRAMA asignado NO alcanza (pedido de Marcelo
-  // 2026-08-25: "eso solo aplica si son de alto rendimiento, no si solo va a
-  // seguir un programa de 4 semanas para prepararse para el camp") — mismo
-  // criterio de "equipo" que ya usa la tarjeta de competencia/ranking.
-  const [{ data: season, error: sErr }, { data: profile, error: pErr }] = await Promise.all([
-    admin.from('season_plans').select('id').eq('student_id', student.id).eq('active', true).limit(1).maybeSingle(),
-    admin.from('hp_athlete_profiles').select('*').eq('student_id', student.id).maybeSingle(),
-  ]);
+  // Elegible = tiene el ACCESO de Alto Rendimiento otorgado. Antes se deducía
+  // ("temporada activa o ficha HP ya existente") y fallaba por los dos lados:
+  //  · dejaba LEER y sobre todo ESCRIBIR la ficha a 4 alumnos que no son
+  //    atletas — su fila hp_athlete_profiles se había creado de paso, que es
+  //    justo lo que la migración 00168 vino a dejar de contar;
+  //  · y al atleta recién otorgado, que todavía no tiene ni temporada ni
+  //    ficha, le respondía "Not available for this account." — o sea, dar el
+  //    acceso NO encendía su ficha, que es la primera tarjeta de su Home.
+  // Invariante #3: el token + admin client saltea RLS, así que el candado ES
+  // esta línea.
+  if ((student as any).hp_access !== true) return null;
+
+  const { data: profile, error: pErr } = await admin
+    .from('hp_athlete_profiles').select('*').eq('student_id', student.id).maybeSingle();
   // Un fallo transitorio acá NO puede degradar a "no elegible": la tarjeta
   // desaparecería y los guardados fallarían en silencio para un atleta real.
-  if (sErr) throw sErr;
   if (pErr) throw pErr;
-  if (!season && !profile) return null;
   return { admin, student, profile };
 }
 

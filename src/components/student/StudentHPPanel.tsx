@@ -10,6 +10,10 @@ import { adminGetStudentHP, adminSetHpAccess, type StudentHPData } from '@/lib/a
 
 const ENERGY = ['◔', '◑', '◕', '●'];
 
+// El timestamp va en UTC; El Salvador es UTC-6. Cortar el ISO a pelo mostraba
+// el día siguiente para todo lo otorgado después de las 6 PM local.
+const svDate = (ts: string) => new Date(Date.parse(ts) - 6 * 3600000).toISOString().slice(0, 10);
+
 export function StudentHPPanel({ studentId }: { studentId: string }) {
   const [data, setData] = useState<StudentHPData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,7 +51,7 @@ export function StudentHPPanel({ studentId }: { studentId: string }) {
         </p>
         <p className="text-[11px] text-gray-500 mt-0.5">
           {data.hp_access
-            ? <>Ve su año completo: temporada, programa, citas, competencias y score. Puede cargar sus propias competencias.{data.hp_access_granted_at ? ` · desde ${data.hp_access_granted_at.slice(0, 10)}` : ''}</>
+            ? <>Ve su año completo: temporada, programa, citas, competencias y score. Su coach le puede agregar programas, citas y evaluaciones.{data.hp_access_granted_at ? ` · desde ${svDate(data.hp_access_granted_at)}` : ''}</>
             : 'Hoy es un alumno normal: ve cinta, secuencia y next focus. Nada de alto rendimiento.'}
         </p>
       </div>

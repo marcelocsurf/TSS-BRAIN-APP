@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   adminListBlockTemplates, adminInsertBlockTemplate, type BlockTemplateRow, type WeekMeta,
+  adminSetHpAccess,
 } from '@/lib/actions/program-admin';
 import { hpLibrary, type HPLibrary } from '@/lib/actions/hp-cockpit';
 import { BELT_HIERARCHY, getBeltLabel } from '@/lib/constants/belts';
@@ -1252,6 +1253,18 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
     const r = await adminAssignProgram(programId, pickedStudent.id, coachId || null);
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
+    // Guardado, pero el alumno no tiene acceso de Alto Rendimiento: el dato
+    // existe para el staff y es invisible en su portal. Se avisa y se ofrece
+    // darlo ahí mismo — no se otorga solo (tener un programa NO convierte a
+    // nadie en atleta, decisión de Marcelo).
+    if ((r as any).hpAccessOff) {
+      if (window.confirm(
+        `Guardado.\n\nPERO ${pickedStudent.name || 'el alumno'} no tiene ACCESO DE ALTO RENDIMIENTO, así que NO va a ver nada de esto en su portal.\n\n¿Se lo doy ahora?`,
+      )) {
+        const g = await adminSetHpAccess(pickedStudent.id, true);
+        if (!g.ok) alert(g.error ?? 'No se pudo otorgar el acceso.');
+      }
+    }
     setPickedStudent(null);
     setQ('');
     setProgramId('');
@@ -1441,6 +1454,18 @@ function Citas() {
     });
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
+    // Guardado, pero el alumno no tiene acceso de Alto Rendimiento: el dato
+    // existe para el staff y es invisible en su portal. Se avisa y se ofrece
+    // darlo ahí mismo — no se otorga solo (tener un programa NO convierte a
+    // nadie en atleta, decisión de Marcelo).
+    if ((r as any).hpAccessOff) {
+      if (window.confirm(
+        `Guardado.\n\nPERO ${picked.name || 'el alumno'} no tiene ACCESO DE ALTO RENDIMIENTO, así que NO va a ver nada de esto en su portal.\n\n¿Se lo doy ahora?`,
+      )) {
+        const g = await adminSetHpAccess(picked.id, true);
+        if (!g.ok) alert(g.error ?? 'No se pudo otorgar el acceso.');
+      }
+    }
     setPicked(null); setQ(''); setDate(''); setTime(''); setTitle('');
     load();
   };
@@ -1651,6 +1676,18 @@ function Temporadas() {
     const r = await adminCreateSeason({ studentId: picked.id, title, startDate: start, endDate: end });
     setBusy(false);
     if (!r.ok) { setErr(r.error || null); return; }
+    // Guardado, pero el alumno no tiene acceso de Alto Rendimiento: el dato
+    // existe para el staff y es invisible en su portal. Se avisa y se ofrece
+    // darlo ahí mismo — no se otorga solo (tener un programa NO convierte a
+    // nadie en atleta, decisión de Marcelo).
+    if ((r as any).hpAccessOff) {
+      if (window.confirm(
+        `Guardado.\n\nPERO ${picked.name || 'el alumno'} no tiene ACCESO DE ALTO RENDIMIENTO, así que NO va a ver nada de esto en su portal.\n\n¿Se lo doy ahora?`,
+      )) {
+        const g = await adminSetHpAccess(picked.id, true);
+        if (!g.ok) alert(g.error ?? 'No se pudo otorgar el acceso.');
+      }
+    }
     setPicked(null); setQ(''); setTitle(''); setStart(''); setEnd('');
     load();
     if (r.id) setOpenId(r.id);
