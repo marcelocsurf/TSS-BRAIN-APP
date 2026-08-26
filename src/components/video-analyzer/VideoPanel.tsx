@@ -157,6 +157,7 @@ export default function VideoPanel({
   function togglePlay() {
     const el = videoRef.current;
     if (!el) return;
+    cancelHold();
     if (el.paused) {
       el.play();
       setPlaying(true);
@@ -175,6 +176,7 @@ export default function VideoPanel({
   function step(seconds: number) {
     const el = videoRef.current;
     if (!el) return;
+    cancelHold();
     el.pause();
     setPlaying(false);
     el.currentTime = Math.min(
@@ -215,22 +217,52 @@ export default function VideoPanel({
 
   useEffect(() => {
     if (!playing || holding.current) return;
-    const due = shapes.find(
-      (sh) => sh.hold && sh.dur != null && sh.t != null && !consumed.has(sh.id) && now >= sh.t
+    // TODAS las líneas de ese instante, no una: si el coach dibujó seis en el
+    // mismo momento, antes se pausaba SEIS veces seguidas — se veía como que
+    // el video se pausaba y arrancaba solo sin control (reporte de Marcelo).
+    // Ahora una sola pausa, con la duración más larga de las que caen ahí.
+    // Y solo dispara en una ventana corta después del segundo del dibujo: sin
+    // eso, cualquier línea vieja no consumida frenaba el video apenas le daba
+    // play, una y otra vez.
+    const due = shapes.filter(
+      (sh) => sh.hold && sh.dur != null && sh.t != null
+        && !consumed.has(sh.id) && now >= sh.t && now < sh.t + 0.5
     );
-    if (!due) return;
+    if (due.length === 0) return;
     const el = videoRef.current;
     if (!el) return;
+    const secs = Math.max(...due.map((d) => d.dur ?? 1));
     holding.current = true;
     el.pause();
     setPlaying(false);
     holdTimer.current = setTimeout(() => {
-      setConsumed((c) => new Set(c).add(due.id));   // la línea se va
+      holdTimer.current = null;
+      setConsumed((c) => { const n = new Set(c); for (const d of due) n.add(d.id); return n; });
       holding.current = false;
       const v = videoRef.current;
       if (v) { v.play().then(() => setPlaying(true)).catch(() => {}); }
-    }, (due.dur ?? 1) * 1000);
+    }, secs * 1000);
   }, [now, playing, shapes, consumed, videoRef]);
+
+  // El coach MANDA. Si toca play/pausa mientras una línea tiene el video
+  // congelado, se cancela la pausa automática y no se vuelve a soltar sola —
+  // antes el temporizador seguía corriendo y le daba play encima, y por eso
+  // "costaba que respondiera el botón".
+  function cancelHold() {
+    if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+    if (holding.current) {
+      holding.current = false;
+      // Las que estaban frenando se dan por vistas: si no, vuelve a pausar
+      // en el mismo punto apenas le dé play.
+      setConsumed((c) => {
+        const n = new Set(c);
+        for (const sh of shapes) {
+          if (sh.hold && sh.t != null && sh.dur != null && now >= sh.t && now < sh.t + 0.5) n.add(sh.id);
+        }
+        return n;
+      });
+    }
+  }
 
   useEffect(() => () => { if (holdTimer.current) clearTimeout(holdTimer.current); }, []);
 
@@ -251,6 +283,7 @@ export default function VideoPanel({
   function onSeek(e: ChangeEvent<HTMLInputElement>) {
     const el = videoRef.current;
     if (!el || !el.duration) return;
+    cancelHold();
     const v = Number(e.target.value);
     el.currentTime = v * el.duration;
     setProgress(v);

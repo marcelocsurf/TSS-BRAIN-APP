@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useRef, useState } from "react";
-import { Stage, Layer, Line, Arrow, Circle, Text, Group } from "react-konva";
+import { Stage, Layer, Line, Arrow, Circle, Text, Group, Arc } from "react-konva";
 import type Konva from "konva";
 import { shapeVisible, type Shape, type DrawSettings } from "./types";
 
@@ -24,14 +24,34 @@ type Props = {
 let idCounter = 0;
 const nextId = () => `s${++idCounter}_${performance.now().toFixed(0)}`;
 
-// Angle (in degrees) at vertex v between rays v->a and v->b.
+// Ángulo en el vértice v entre los rayos v->a y v->b, con UN DECIMAL.
+// Kinovea muestra 124.1°, no 124°: en un bottom turn la diferencia de un
+// grado entre dos intentos es justamente lo que el coach quiere señalar.
 function angleDeg(p: number[]) {
   const [vx, vy, ax, ay, bx, by] = p;
   const a1 = Math.atan2(ay - vy, ax - vx);
   const a2 = Math.atan2(by - vy, bx - vx);
   let d = Math.abs((a1 - a2) * (180 / Math.PI));
   if (d > 180) d = 360 - d;
-  return Math.round(d);
+  return d;
+}
+
+// El SECTOR sombreado entre los dos rayos — lo que hace que el ángulo se lea
+// de un vistazo en vez de tener que seguir dos líneas sueltas.
+function angleArc(p: number[]) {
+  const [vx, vy, ax, ay, bx, by] = p;
+  const deg = (r: number) => (r * 180) / Math.PI;
+  const a1 = deg(Math.atan2(ay - vy, ax - vx));
+  const a2 = deg(Math.atan2(by - vy, bx - vx));
+  let sweep = a2 - a1;
+  while (sweep <= -180) sweep += 360;
+  while (sweep > 180) sweep -= 360;
+  // El radio sigue al rayo más corto para que el abanico no se pase de largo.
+  const r = Math.min(Math.hypot(ax - vx, ay - vy), Math.hypot(bx - vx, by - vy)) * 0.55;
+  return { x: vx, y: vy, rotation: sweep < 0 ? a2 : a1, angle: Math.abs(sweep), radius: r,
+    // Dónde va el número: en la mitad del abanico, un poco afuera del centro.
+    lx: vx + Math.cos((((sweep < 0 ? a2 : a1) + Math.abs(sweep) / 2) * Math.PI) / 180) * r * 0.62,
+    ly: vy + Math.sin((((sweep < 0 ? a2 : a1) + Math.abs(sweep) / 2) * Math.PI) / 180) * r * 0.62 };
 }
 
 const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
@@ -194,8 +214,16 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
           if (s.tool === "angle") {
             const [vx, vy, ax, ay, bx, by] = s.points;
             const pts = [ax, ay, vx, vy, bx, by];
+            const arc = angleArc(s.points);
             return (
               <Group key={s.id}>
+                {/* El abanico relleno, como Kinovea. Semitransparente para no
+                    tapar lo que está midiendo. */}
+                {arc.radius > 4 / scale && (
+                  <Arc x={arc.x} y={arc.y} innerRadius={0} outerRadius={arc.radius}
+                    rotation={arc.rotation} angle={arc.angle}
+                    fill={s.color} opacity={0.32} />
+                )}
                 <Line points={pts} stroke="rgba(0,0,0,.55)" strokeWidth={halo} lineCap="round" lineJoin="round" />
                 <Line points={pts} stroke={s.color} strokeWidth={w} {...common} />
               </Group>
@@ -212,42 +240,31 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
           );
         })}
 
-        {/* Degree labels for finished angles */}
+        {/* El número del ángulo, DENTRO del abanico y con contorno oscuro:
+            sobre agua un texto plano no se lee. Un decimal, como Kinovea. */}
         {visible
           .filter((s) => s.tool === "angle")
-          .map((s) => (
-            <Text
-              key={s.id + "_t"}
-              x={s.points[0] + 8 / scale}
-              y={s.points[1] - 22 / scale}
-              text={`${angleDeg(s.points)}°`}
-              fontSize={18 / scale}
-              fontStyle="bold"
-              fill={s.color}
-            />
-          ))}
-
-        {/* Live preview while placing an angle */}
-        {pending.length >= 2 && (
-          <Line
-            points={
-              pending.length === 2
-                ? [pending[0], pending[1], hover?.x ?? pending[0], hover?.y ?? pending[1]]
-                : [
-                    pending[2],
-                    pending[3],
-                    pending[0],
-                    pending[1],
-                    hover?.x ?? pending[0],
-                    hover?.y ?? pending[1],
-                  ]
-            }
-            stroke={settings.color}
-            strokeWidth={settings.width / scale}
-            dash={[6 / scale, 6 / scale]}
-            lineCap="round"
-          />
-        )}
+          .map((s) => {
+            const arc = angleArc(s.points);
+            const txt = `${angleDeg(s.points).toFixed(1)}°`;
+            return (
+              <Text
+                key={s.id + "_t"}
+                x={arc.lx - 30 / scale}
+                y={arc.ly - 11 / scale}
+                width={60 / scale}
+                align="center"
+                text={txt}
+                fontSize={20 / scale}
+                fontStyle="bold"
+                fill={s.color}
+                stroke="rgba(0,0,0,.75)"
+                strokeWidth={3 / scale}
+                fillAfterStrokeEnabled
+                listening={false}
+              />
+            );
+          })}
       </Layer>
     </Stage>
   );
