@@ -13,6 +13,9 @@ type Props = {
   onAddFiles: (files: FileList) => void;
   onSelectClip: (clipId: string) => void;
   onRemoveClip: (clipId: string) => void;
+  /** Clips recuperados de una sesión anterior que aún no tienen su archivo. */
+  pendingLink?: Record<string, true>;
+  onRelinkClip?: (clipId: string, file: File) => void;
 };
 
 export default function StudentClips({
@@ -25,6 +28,9 @@ export default function StudentClips({
   onAddFiles,
   onSelectClip,
   onRemoveClip,
+
+  pendingLink,
+  onRelinkClip,
 }: Props) {
   const group = groups.find((g) => g.id === activeGroupId) ?? groups[0];
 
@@ -103,6 +109,37 @@ export default function StudentClips({
               currentClipId === c.id ? "bg-cyan-500/30 ring-1 ring-cyan-400" : "bg-white/5"
             }`}
           >
+            {/* Clip recuperado sin su archivo: en vez de un botón muerto, el
+                coach toca y vuelve a elegir el video. Sus dibujos ya están
+                esperando adentro. */}
+            {pendingLink?.[c.id] ? (
+              <label className="flex flex-1 cursor-pointer items-center gap-2 text-left">
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && onRelinkClip) onRelinkClip(c.id, f);
+                    e.target.value = "";
+                  }}
+                />
+                <span className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-black">
+                  {c.thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.thumb} alt="" className="h-full w-full object-cover opacity-50" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-white/40">▶</span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-base">↻</span>
+                </span>
+                <span className="line-clamp-2 text-xs">
+                  <span className="text-amber-300">↻ Volver a elegir</span>
+                  <br />
+                  <span className="text-white/60">{i + 1}. {c.name}</span>
+                </span>
+              </label>
+            ) : (
             <button
               onClick={() => onSelectClip(c.id)}
               className="flex flex-1 items-center gap-2 text-left"
@@ -121,6 +158,7 @@ export default function StudentClips({
                 {i + 1}. {c.name}
               </span>
             </button>
+            )}
             <button
               onClick={() => onRemoveClip(c.id)}
               className="px-2 py-2 text-xs text-white/50 active:scale-95"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type Konva from "konva";
 import VideoPanel from "./VideoPanel";
 import Toolbar from "./Toolbar";
@@ -10,8 +10,11 @@ import { makeThumb, MAX_CLIPS_PER_GROUP, type Group } from "./clips";
 import type { Shape, DrawSettings } from "./types";
 import type { ModelCategory } from "./library";
 import { getModelClips } from "@/lib/actions/model-clips";
+import { saveSession, loadSession, clearSession, worthRestoring, type StoredSession } from "./session-store";
 
 type PanelKey = "student" | "model";
+
+const EMPTY_SHAPES: Shape[] = [];
 
 let seq = 0;
 const uid = (p: string) => `${p}${++seq}_${performance.now().toFixed(0)}`;
@@ -21,8 +24,24 @@ export default function VideoAnalyzer() {
   const [modelSrc, setModelSrc] = useState<string | null>(null);
   const [modelTitle, setModelTitle] = useState<string>("The Surf Sequence Model");
 
-  const [studentShapes, setStudentShapes] = useState<Shape[]>([]);
+  // Un juego de dibujos POR CLIP. Antes había uno solo para todos: pasabas al
+  // siguiente video y las líneas del anterior se perdían para siempre.
+  const [shapesByClip, setShapesByClip] = useState<Record<string, Shape[]>>({});
   const [modelShapes, setModelShapes] = useState<Shape[]>([]);
+  // Clave del video del alumno en pantalla: el id del clip, o "__file" cuando
+  // vino del botón de abrir archivo suelto.
+  const [shapeKey, setShapeKey] = useState<string>("__file");
+  const studentShapes = shapesByClip[shapeKey] ?? EMPTY_SHAPES;
+  const setStudentShapes = useCallback(
+    (next: Shape[] | ((prev: Shape[]) => Shape[])) => {
+      setShapesByClip((all) => {
+        const prev = all[shapeKeyRef.current] ?? EMPTY_SHAPES;
+        const value = typeof next === "function" ? (next as (p: Shape[]) => Shape[])(prev) : next;
+        return { ...all, [shapeKeyRef.current]: value };
+      });
+    },
+    []
+  );
 
   const [active, setActive] = useState<PanelKey>("student");
   const [showLibrary, setShowLibrary] = useState(true);
@@ -31,6 +50,17 @@ export default function VideoAnalyzer() {
   const [library, setLibrary] = useState<ModelCategory[]>([]);
   // Corta el lote de miniaturas si el coach cierra el analizador.
   const thumbAbort = useRef<AbortController | null>(null);
+
+  // Sesión anterior encontrada: se ofrece recuperarla en vez de restaurarla
+  // sola — el coach decide si sigue con eso o arranca limpio.
+  const [prev, setPrev] = useState<StoredSession | null>(null);
+  // Clips restaurados que todavía esperan que el coach vuelva a elegir el
+  // archivo (el video no se guarda: solo su nombre, miniatura y dibujos).
+  const [pendingLink, setPendingLink] = useState<Record<string, true>>({});
+
+  useEffect(() => {
+    loadSession().then((sess) => { if (worthRestoring(sess)) setPrev(sess); }).catch(() => {});
+  }, []);
 
   // Load the admin-managed model clips from Supabase on first open.
   useEffect(() => {
@@ -53,6 +83,9 @@ export default function VideoAnalyzer() {
     width: 5,
   });
 
+  const shapeKeyRef = useRef(shapeKey);
+  shapeKeyRef.current = shapeKey;
+
   const studentVideo = useRef<HTMLVideoElement>(null);
   const modelVideo = useRef<HTMLVideoElement>(null);
   const studentStage = useRef<Konva.Stage>(null);
@@ -70,8 +103,10 @@ export default function VideoAnalyzer() {
     if (studentUrl.current) URL.revokeObjectURL(studentUrl.current);
     const url = URL.createObjectURL(file);
     studentUrl.current = url;
-    setStudentShapes([]);
+    setShapeKey("__file");
+    setShapesByClip((all) => ({ ...all, __file: [] }));
     setStudentSrc(url);
+    setCurrentClipId(null);
     setActive("student");
   }
 
@@ -131,6 +166,71 @@ export default function VideoAnalyzer() {
     })();
   }
 
+  // ── Guardado continuo (con freno de 800 ms) ──────────────────────
+  // Se guarda la ESTRUCTURA del trabajo, nunca el video. Si la app se cae o
+  // el coach cierra sin querer, al volver está todo: sus grupos, el orden,
+  // las miniaturas y —lo que más duele perder— sus dibujos por clip.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (prev) return;                       // todavía no decidió si recupera
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveSession({
+        groups: groups.map((g) => ({
+          id: g.id,
+          name: g.name,
+          clips: g.clips.map((c) => ({ id: c.id, name: c.name, thumb: c.thumb, linked: !pendingLink[c.id] })),
+        })),
+        activeGroupId,
+        currentClipId,
+        shapesByClip,
+        modelShapes,
+        modelSrc,
+        modelTitle,
+        savedAt: Date.now(),
+      }).catch(() => {});
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [groups, activeGroupId, currentClipId, shapesByClip, modelShapes, modelSrc, modelTitle, pendingLink, prev]);
+
+  // Recuperar la sesión anterior: vuelve todo menos el archivo de video, que
+  // el coach re-elige con un toque en el clip (queda marcado con ↻).
+  function restorePrev() {
+    if (!prev) return;
+    setGroups(prev.groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      clips: g.clips.map((c) => ({ id: c.id, name: c.name, url: "", thumb: c.thumb })),
+    })));
+    setPendingLink(Object.fromEntries(
+      prev.groups.flatMap((g) => g.clips.map((c) => [c.id, true as const]))
+    ));
+    setActiveGroupId(prev.activeGroupId);
+    setShapesByClip(prev.shapesByClip ?? {});
+    setModelShapes(prev.modelShapes ?? []);
+    if (prev.modelSrc) { setModelSrc(prev.modelSrc); setModelTitle(prev.modelTitle); }
+    setPrev(null);
+  }
+
+  function discardPrev() {
+    setPrev(null);
+    clearSession().catch(() => {});
+  }
+
+  // Volver a vincular un clip restaurado con su archivo real.
+  function relinkClip(clipId: string, file: File) {
+    const url = URL.createObjectURL(file);
+    setGroups((prevG) => prevG.map((g) => ({
+      ...g,
+      clips: g.clips.map((c) => (c.id === clipId ? { ...c, url, name: file.name } : c)),
+    })));
+    setPendingLink((m) => { const { [clipId]: _drop, ...rest } = m; return rest; });
+    setShapeKey(clipId);
+    setStudentSrc(url);
+    setCurrentClipId(clipId);
+    setActive("student");
+  }
+
   // Al cerrar el analizador: cortar el lote de miniaturas y devolver todos
   // los object URLs. Antes no se liberaba ni uno solo.
   const groupsRef = useRef(groups);
@@ -147,7 +247,10 @@ export default function VideoAnalyzer() {
     const group = groups.find((g) => g.id === activeGroupId);
     const clip = group?.clips.find((c) => c.id === clipId);
     if (!clip) return;
-    setStudentShapes([]);
+    // Clip recuperado sin archivo todavía: no hay nada que reproducir, hay
+    // que pedírselo. StudentClips muestra el ↻ y dispara el selector.
+    if (!clip.url) return;
+    setShapeKey(clipId);          // sus dibujos vuelven solos
     setStudentSrc(clip.url);
     setCurrentClipId(clipId);
     setActive("student");
@@ -163,9 +266,13 @@ export default function VideoAnalyzer() {
     const viendo = currentClipId === clipId;
     if (viendo) {
       setStudentSrc(null);
-      setStudentShapes([]);
       setCurrentClipId(null);
+      setShapeKey("__file");
     }
+    setShapesByClip((all) => {
+      const { [clipId]: _drop, ...rest } = all;
+      return rest;
+    });
     setGroups((prev) =>
       prev.map((g) =>
         g.id === activeGroupId ? { ...g, clips: g.clips.filter((c) => c.id !== clipId) } : g
@@ -268,8 +375,48 @@ export default function VideoAnalyzer() {
 
   const activeLabel = active === "student" ? "Student" : "Model";
 
+  const prevClips = prev ? prev.groups.reduce((n, g) => n + g.clips.length, 0) : 0;
+  const prevShapes = prev
+    ? Object.values(prev.shapesByClip ?? {}).reduce((n, a) => n + a.length, 0)
+    : 0;
+
   return (
     <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
+      {/* ── Sesión anterior encontrada ──────────────────────────────
+          Si la app se cerró (o el coach cerró sin querer), acá está su
+          trabajo esperándolo. No se restaura solo: él decide. */}
+      {prev && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="w-full max-w-sm rounded-2xl bg-[#12293F] p-5 text-center">
+            <p className="text-2xl">↻</p>
+            <h2 className="mt-1 text-base font-bold">Tenés una sesión sin terminar</h2>
+            <p className="mt-1.5 text-[13px] text-white/70">
+              {prevClips > 0 && <>{prevClips} video{prevClips === 1 ? "" : "s"}</>}
+              {prevClips > 0 && prevShapes > 0 && " · "}
+              {prevShapes > 0 && <>{prevShapes} dibujo{prevShapes === 1 ? "" : "s"}</>}
+              {" — con sus grupos y sus anotaciones."}
+            </p>
+            <p className="mt-2 text-[11.5px] text-white/45">
+              Los videos no se guardan en la app, así que te los va a volver a pedir
+              con un toque. Todo lo demás vuelve como estaba.
+            </p>
+            <button
+              type="button"
+              onClick={restorePrev}
+              className="mt-4 w-full rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-[#0B1B2B] active:scale-95"
+            >
+              Recuperar mi sesión
+            </button>
+            <button
+              type="button"
+              onClick={discardPrev}
+              className="mt-2 w-full rounded-xl bg-white/10 px-4 py-2 text-[13px] active:scale-95"
+            >
+              Empezar de cero
+            </button>
+          </div>
+        </div>
+      )}
       <header className="flex shrink-0 flex-wrap items-center gap-2 px-3 py-1.5 pr-24">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {/* ?v cache-bust: Safari cached the pre-middleware-fix 307 redirect
@@ -363,6 +510,8 @@ export default function VideoAnalyzer() {
                   onAddFiles={addFiles}
                   onSelectClip={selectClip}
                   onRemoveClip={removeClip}
+                  pendingLink={pendingLink}
+                  onRelinkClip={relinkClip}
                 />
               ) : (
                 <ModelLibrary selectedSrc={modelSrc} onSelect={selectModel} library={library} />
