@@ -33,6 +33,8 @@ export type SequenceItem = {
   step_id: string;
   step_title: string;
   pillar: string | null;
+  /** Cinta de la que viene el drill — la secuencia es acumulativa. */
+  belt: string;
   block_number: number;
   block_name: string;
   display_order: number;
@@ -59,6 +61,7 @@ export type SequenceData = {
   /** Pasos con solo auto-evaluación del alumno (sin oficial). */
   selfRatedSteps: number;
   blocks: {
+    belt: string;
     block_number: number;
     block_name: string;
     items: SequenceItem[];
@@ -73,14 +76,24 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
   // Normalize belt: students.belt_level uses 'white_belt'/'yellow_belt'/etc,
   // but drills_missions.belt uses 'white'/'yellow'/etc.
   const beltKey = belt.replace(/_belt$/, '');
-  const courseSection = beltKey === 'white' ? 'white_belt' : `${beltKey}_belt`;
+  // La secuencia es ACUMULATIVA: un alumno de Yellow entrena también los
+  // drills de White, y uno de Blue los de White y Yellow. Antes cada cinta
+  // solo veía los suyos (Yellow veía 33 de 147).
+  const BELT_ORDER = ['white', 'yellow', 'blue', 'purple', 'brown', 'black'];
+  const upto = BELT_ORDER.indexOf(beltKey);
+  const beltKeys = upto >= 0 ? BELT_ORDER.slice(0, upto + 1) : [beltKey];
+  const courseSections = beltKeys.map((b) => `${b}_belt`);
+  const beltRank = (b: string) => {
+    const i = BELT_ORDER.indexOf(b);
+    return i < 0 ? BELT_ORDER.length : i;
+  };
 
   // 1. Get all drills/missions for this belt (student-visible only — admins can
   // mark a drill coach-only via the Drill Library, which hides it here).
   const { data: drills } = await admin
     .from('drills_missions')
     .select('*')
-    .eq('belt', beltKey)
+    .in('belt', beltKeys)
     .eq('active', true)
     .eq('student_visible', true)
     .order('display_order', { ascending: true });
@@ -89,7 +102,7 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
   const { data: lessons } = await admin
     .from('lessons')
     .select('id, title, pillar, display_order')
-    .eq('course_section', courseSection)
+    .in('course_section', courseSections)
     .eq('active', true);
 
   // 3. Get student ratings
@@ -142,6 +155,7 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
       step_id: stepId,
       step_title: lesson?.title || stepId,
       pillar: lesson?.pillar || null,
+      belt: primary?.belt || beltKey,
       block_number: primary?.block_number || 0,
       block_name: primary?.block_name || '',
       display_order: primary?.display_order || 0,
@@ -156,24 +170,35 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
     };
   });
 
-  // Group by block
-  const blocksMap = new Map<number, { block_name: string; items: SequenceItem[] }>();
+  // Group by belt + block. La clave no puede ser solo block_number: white
+  // "Block 1 · ENTRY / CONTROL / RETURN" y yellow "Block 1 · Yellow Belt" son
+  // bloques distintos y se fusionarían en uno.
+  const blocksMap = new Map<
+    string,
+    { belt: string; block_number: number; block_name: string; items: SequenceItem[] }
+  >();
   items.forEach((item) => {
-    if (!blocksMap.has(item.block_number)) {
-      blocksMap.set(item.block_number, {
+    const key = `${item.belt}:${item.block_number}`;
+    if (!blocksMap.has(key)) {
+      blocksMap.set(key, {
+        belt: item.belt,
+        block_number: item.block_number,
         block_name: item.block_name,
         items: [],
       });
     }
-    blocksMap.get(item.block_number)!.items.push(item);
+    blocksMap.get(key)!.items.push(item);
   });
 
-  const blocks = Array.from(blocksMap.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([block_number, data]) => ({
-      block_number,
-      block_name: data.block_name,
-      items: data.items.sort((a, b) => a.display_order - b.display_order),
+  const blocks = Array.from(blocksMap.values())
+    .sort(
+      (a, b) => beltRank(a.belt) - beltRank(b.belt) || a.block_number - b.block_number
+    )
+    .map((g) => ({
+      belt: g.belt,
+      block_number: g.block_number,
+      block_name: g.block_name,
+      items: g.items.sort((a, b) => a.display_order - b.display_order),
     }));
 
   // Overall execution — la evaluación OFICIAL del coach pesa más que la

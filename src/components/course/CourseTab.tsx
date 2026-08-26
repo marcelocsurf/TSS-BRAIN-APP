@@ -13,6 +13,8 @@ import {
   isMappedToBlocks,
   BELT_SEQUENCES,
   stepKey,
+  PRIOR_PATH_BLOCKS,
+  THREE_CIRCLES_LESSON_ID,
 } from '@/lib/constants/learning-blocks';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import {
@@ -207,14 +209,18 @@ export function CourseTab({ data }: { data: CourseData }) {
   // ordenados y no hay razón para moverlos.
   const beltUsesBlocks = activeCourse.key === 'blue_belt' && isMappedToBlocks(beltLessons);
   const beltSequences = beltUsesBlocks
-    ? groupByBlocks(beltLessons, 'en').map((g) => ({
-        id: g.key,
-        name: g.label,
-        order: g.block ?? 99,
-        block: g.block as number | null,
-        subtitle: g.sub,
-        lessons: g.rows as LessonRow[],
-      }))
+    ? groupByBlocks(beltLessons, 'en')
+        // Rotación, proyección y maniobras viven dentro de las secuencias:
+        // mostrarlos además como bloque suelto era ver el mismo paso dos veces.
+        .filter((g) => g.block === null)
+        .map((g) => ({
+          id: g.key,
+          name: g.label,
+          order: g.block ?? 99,
+          block: g.block as number | null,
+          subtitle: g.sub,
+          lessons: g.rows as LessonRow[],
+        }))
     : groupByWbSequence(beltLessons).map((g) => ({
         id: g.id,
         name: g.name,
@@ -234,6 +240,13 @@ export function CourseTab({ data }: { data: CourseData }) {
     ...activeCourse.lessonSections,
     ...activeCourse.sharedLessonSections,
   ]);
+
+  // La clase de los tres círculos ya existe (YB-FND-01, en yb_onboarding, que
+  // el curso de Blue ya incluye entre sus secciones compartidas).
+  const threeCirclesLesson =
+    activeCourse.key === 'blue_belt'
+      ? data.lessons.find((l) => l.id === THREE_CIRCLES_LESSON_ID) ?? null
+      : null;
 
   const lessonByKey = new Map<string, LessonRow>();
   for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
@@ -396,20 +409,98 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
+      {/* El recorrido que ya trae de White y Yellow. Solo el mapa: título y
+          cuántos pasos. No hay lecciones adentro, así que no cuenta para el
+          progreso ni para el examen final. */}
+      {beltUsesBlocks && (
+        <div className="rounded-xl border border-white/10 px-4 py-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+            The road so far · from White and Yellow
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
+            {PRIOR_PATH_BLOCKS.map((b) => (
+              <span key={b.n} className="flex items-baseline gap-2 text-[12.5px] text-white/70">
+                <span
+                  className="font-mono text-[10px] shrink-0"
+                  style={{ color: beltTheme.bright }}
+                >
+                  {b.n}
+                </span>
+                {b.en}
+                <span className="font-mono text-[10px] text-white/35">{b.count}</span>
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-white/40">
+            The Three Circles switch on after the pop-up. Everything before that is
+            diagnosed with the Block System.
+          </p>
+        </div>
+      )}
+
+      {/* La clase de los fundamentos, antes de las secuencias. */}
+      {threeCirclesLesson && (
+        <div className="space-y-3 pt-2">
+          <GroupHeader
+            theme={beltTheme}
+            eyebrow="The fundamentals · body · board · wave"
+            title="The Three Circles of Power"
+            subtitle="Where the three overlap, you get flow. This is the language everything after the pop-up is built on."
+            videoUrl={null}
+          />
+          <SectionBlock
+            title="The Three Circles of Power"
+            subtitle={threeCirclesLesson.subtitle}
+            Icon={Compass}
+            badge={null}
+            lessons={[threeCirclesLesson]}
+            onOpenLesson={(id) => setOpenLessonId(id)}
+            theme={beltTheme}
+          />
+        </div>
+      )}
+
       {/* BELT — cumulative sequences */}
       {beltSequences.length > 0 && (
         <div className="space-y-3 pt-2">
+          {/* Las seis secuencias, de principio a fin. Cierran volviendo a la
+              postura — el círculo infinito del método. */}
+          {courseSequences.length > 0 && (
+            <div className="space-y-3 pt-3">
+              <GroupHeader
+                theme={beltTheme}
+                eyebrow={`Sequences #${courseSequences[0].number}–#${courseSequences[courseSequences.length - 1].number} · start to finish`}
+                title="Your Sequences"
+                subtitle="Continuing from White and Yellow. Every sequence starts from your stance and closes by coming back to it."
+                videoUrl={null}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                {courseSequences.map((seq) => (
+                  <SequenceChain
+                    key={seq.id}
+                    name={`Sequence #${seq.number}: ${seq.name}`}
+                    side={seq.side}
+                    stages={seq.stages}
+                    onOpenLesson={(id) => setOpenLessonId(id)}
+                    theme={beltTheme}
+                    openableSections={openableSections}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <GroupHeader
             theme={beltTheme}
             eyebrow={
               beltUsesBlocks
-                ? `${beltSequences.length} learning blocks`
+                ? 'closing the belt'
                 : `${beltSequences.length} sequences · cumulative`
             }
             title={beltLabelShort}
             subtitle={
               beltUsesBlocks
-                ? 'The blocks follow the order things happen in the water.'
+                ? 'The modules that close the belt, after your sequences.'
                 : 'Cumulative — each sequence builds on all previous.'
             }
             videoUrl={intros[beltSection]?.video_url}
@@ -441,33 +532,6 @@ export function CourseTab({ data }: { data: CourseData }) {
               theme={beltTheme}
             />
           ))}
-
-          {/* Las seis secuencias, de principio a fin. Cierran volviendo a la
-              postura — el círculo infinito del método. */}
-          {courseSequences.length > 0 && (
-            <div className="space-y-3 pt-3">
-              <GroupHeader
-                theme={beltTheme}
-                eyebrow={`Sequences #${courseSequences[0].number}–#${courseSequences[courseSequences.length - 1].number} · start to finish`}
-                title="Your Sequences"
-                subtitle="Continuing from White and Yellow. Every sequence starts from your stance and closes by coming back to it."
-                videoUrl={null}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                {courseSequences.map((seq) => (
-                  <SequenceChain
-                    key={seq.id}
-                    name={`Sequence #${seq.number}: ${seq.name}`}
-                    side={seq.side}
-                    stages={seq.stages}
-                    onOpenLesson={(id) => setOpenLessonId(id)}
-                    theme={beltTheme}
-                    openableSections={openableSections}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

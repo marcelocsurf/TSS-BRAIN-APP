@@ -140,7 +140,8 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
       <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
       {data.blocks.map((block) => (
         <BlockSection
-          key={block.block_number}
+          key={`${block.belt}:${block.block_number}`}
+          belt={block.belt}
           blockNumber={block.block_number}
           blockName={block.block_name}
           items={block.items}
@@ -154,12 +155,14 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
 }
 
 function BlockSection({
+  belt: blockBelt,
   blockNumber,
   blockName,
   items,
   onOpenStep,
   theme,
 }: {
+  belt: string;
   blockNumber: number;
   blockName: string;
   items: SequenceItem[];
@@ -176,7 +179,7 @@ function BlockSection({
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between" style={{ background: theme.tint }}>
         <div>
           <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
-            Block {blockNumber}
+            {blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1)} Belt · Block {blockNumber}
           </div>
           <div className="text-[13px] mt-0.5" style={{ ...F_D, color: INK }}>{blockName}</div>
         </div>

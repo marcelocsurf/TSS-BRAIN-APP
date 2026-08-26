@@ -586,3 +586,20 @@ export function groupByBlocks<T extends BlockGroupable>(
 export function isMappedToBlocks<T extends BlockGroupable>(rows: T[]): boolean {
   return rows.some((r) => blockOf(r.course_section, r.step_number) !== undefined);
 }
+
+/**
+ * El mapa del recorrido que el alumno de Blue Belt ya trae de White y Yellow:
+ * los tres primeros bloques. Se muestra solo como recordatorio —título y
+ * cuántos pasos tiene— sin lecciones adentro, así que no cuenta para el
+ * progreso ni para el examen final del curso.
+ */
+export const PRIOR_PATH_BLOCKS: { n: number; en: string; es: string; count: number }[] =
+  [0, 1, 2].map((n) => {
+    const meta = LEARNING_BLOCKS.find((b) => b.n === n)!;
+    const grp = BLOCK_STEPS.find((g) => g.block === n);
+    return { n, en: meta.en, es: meta.es, count: grp ? grp.steps.length : 0 };
+  });
+
+/** La lección que enseña los tres círculos. Vive en yb_onboarding y el curso
+ *  de Blue ya la incluye entre sus secciones compartidas. */
+export const THREE_CIRCLES_LESSON_ID = 'YB-FND-01';
