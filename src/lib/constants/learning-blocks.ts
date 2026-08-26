@@ -345,8 +345,10 @@ export const THREE_CIRCLES: { name: string; detail: string }[] = [
 ];
 
 export interface SequenceStage {
-  /** Stage name, staff-facing. */
+  /** Stage name, staff-facing (Spanish). */
   stage: string;
+  /** Same stage, student-facing (English). */
+  stageEn: string;
   /** One or more step keys performed at this stage. */
   steps: string[];
 }
@@ -372,9 +374,9 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     side: 'fs',
     belt: 'blue_belt',
     stages: [
-      { stage: 'Posición del pie', steps: ['blue_belt:35'] },
-      { stage: 'Postura', steps: ['white_belt:18'] },
-      { stage: 'Generar velocidad', steps: ['blue_belt:36'] },
+      { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
+      { stage: 'Postura', stageEn: 'Stance', steps: ['white_belt:18'] },
+      { stage: 'Generar velocidad', stageEn: 'Generate speed', steps: ['blue_belt:36'] },
     ],
   },
   {
@@ -383,9 +385,9 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     side: 'bs',
     belt: 'blue_belt',
     stages: [
-      { stage: 'Posición del pie', steps: ['blue_belt:35'] },
-      { stage: 'Postura backside', steps: ['blue_belt:38'] },
-      { stage: 'Generar velocidad', steps: ['blue_belt:37'] },
+      { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
+      { stage: 'Postura backside', stageEn: 'Backside stance', steps: ['blue_belt:38'] },
+      { stage: 'Generar velocidad', stageEn: 'Generate speed', steps: ['blue_belt:37'] },
     ],
   },
   {
@@ -394,12 +396,12 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     side: 'fs',
     belt: 'blue_belt',
     stages: [
-      { stage: 'Posición del pie', steps: ['blue_belt:35'] },
-      { stage: 'Postura', steps: ['white_belt:18'] },
-      { stage: 'Bottom turn', steps: ['blue_belt:39'] },
-      { stage: 'Proyección', steps: ['blue_belt:40'] },
-      { stage: 'Maniobra', steps: ['blue_belt:41'] },
-      { stage: 'Cierre', steps: ['blue_belt:42'] },
+      { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
+      { stage: 'Postura', stageEn: 'Stance', steps: ['white_belt:18'] },
+      { stage: 'Bottom turn', stageEn: 'Bottom turn', steps: ['blue_belt:39'] },
+      { stage: 'Proyección', stageEn: 'Projection', steps: ['blue_belt:40'] },
+      { stage: 'Maniobra', stageEn: 'Maneuver', steps: ['blue_belt:41'] },
+      { stage: 'Cierre', stageEn: 'Closure', steps: ['blue_belt:42'] },
     ],
   },
   {
@@ -408,12 +410,12 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     side: 'bs',
     belt: 'blue_belt',
     stages: [
-      { stage: 'Posición del pie', steps: ['blue_belt:35'] },
-      { stage: 'Postura backside', steps: ['blue_belt:38'] },
-      { stage: 'Bottom turn', steps: ['blue_belt:396'] },
-      { stage: 'Proyección', steps: ['blue_belt:43'] },
-      { stage: 'Maniobra', steps: ['blue_belt:44'] },
-      { stage: 'Cierre', steps: ['blue_belt:45'] },
+      { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
+      { stage: 'Postura backside', stageEn: 'Backside stance', steps: ['blue_belt:38'] },
+      { stage: 'Bottom turn', stageEn: 'Bottom turn', steps: ['blue_belt:396'] },
+      { stage: 'Proyección', stageEn: 'Projection', steps: ['blue_belt:43'] },
+      { stage: 'Maniobra', stageEn: 'Maneuver', steps: ['blue_belt:44'] },
+      { stage: 'Cierre', stageEn: 'Closure', steps: ['blue_belt:45'] },
     ],
   },
   {
@@ -422,12 +424,12 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     side: 'fs',
     belt: 'blue_belt',
     stages: [
-      { stage: 'Posición del pie', steps: ['blue_belt:35'] },
-      { stage: 'Postura', steps: ['white_belt:18'] },
-      { stage: 'Bottom turn', steps: ['blue_belt:39'] },
-      { stage: 'Proyección', steps: ['blue_belt:40'] },
-      { stage: 'Maniobra', steps: ['blue_belt:46'] },
-      { stage: 'Cierre', steps: ['blue_belt:47'] },
+      { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
+      { stage: 'Postura', stageEn: 'Stance', steps: ['white_belt:18'] },
+      { stage: 'Bottom turn', stageEn: 'Bottom turn', steps: ['blue_belt:39'] },
+      { stage: 'Proyección', stageEn: 'Projection', steps: ['blue_belt:40'] },
+      { stage: 'Maniobra', stageEn: 'Maneuver', steps: ['blue_belt:46'] },
+      { stage: 'Cierre', stageEn: 'Closure', steps: ['blue_belt:47'] },
     ],
   },
   {
@@ -436,12 +438,12 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     side: 'bs',
     belt: 'blue_belt',
     stages: [
-      { stage: 'Posición del pie', steps: ['blue_belt:35'] },
-      { stage: 'Postura backside', steps: ['blue_belt:38'] },
-      { stage: 'Bottom turn', steps: ['blue_belt:396'] },
-      { stage: 'Proyección', steps: ['blue_belt:43'] },
-      { stage: 'Maniobra', steps: ['blue_belt:48'] },
-      { stage: 'Cierre', steps: ['blue_belt:49', 'blue_belt:45'] },
+      { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
+      { stage: 'Postura backside', stageEn: 'Backside stance', steps: ['blue_belt:38'] },
+      { stage: 'Bottom turn', stageEn: 'Bottom turn', steps: ['blue_belt:396'] },
+      { stage: 'Proyección', stageEn: 'Projection', steps: ['blue_belt:43'] },
+      { stage: 'Maniobra', stageEn: 'Maneuver', steps: ['blue_belt:48'] },
+      { stage: 'Cierre', stageEn: 'Closure', steps: ['blue_belt:49', 'blue_belt:45'] },
     ],
   },
 ];
@@ -449,11 +451,11 @@ export const BELT_SEQUENCES: BeltSequence[] = [
 /** key -> the sequences that use it, with the stage it plays there. */
 export const STEP_SEQUENCES: Record<
   string,
-  { id: string; name: string; side: 'fs' | 'bs'; stage: string }[]
+  { id: string; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[]
 > = (() => {
   const out: Record<
     string,
-    { id: string; name: string; side: 'fs' | 'bs'; stage: string }[]
+    { id: string; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[]
   > = {};
   for (const seq of BELT_SEQUENCES) {
     for (const st of seq.stages) {
@@ -463,6 +465,7 @@ export const STEP_SEQUENCES: Record<
           name: seq.name,
           side: seq.side,
           stage: st.stage,
+          stageEn: st.stageEn,
         });
       }
     }
@@ -473,7 +476,7 @@ export const STEP_SEQUENCES: Record<
 export function sequencesFor(
   courseSection: string,
   stepNumber: number | string
-): { id: string; name: string; side: 'fs' | 'bs'; stage: string }[] {
+): { id: string; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[] {
   return STEP_SEQUENCES[stepKey(courseSection, stepNumber)] ?? [];
 }
 

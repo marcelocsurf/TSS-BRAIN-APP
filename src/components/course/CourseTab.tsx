@@ -220,6 +220,13 @@ export function CourseTab({ data }: { data: CourseData }) {
   // cinta anterior (la postura es White Belt), así que se resuelven contra
   // TODAS las lecciones del alumno, no solo las de su cinta actual — por eso
   // antes "Frontside Snap" se veía sin su inicio.
+  // Qué secciones puede abrir realmente este alumno con el curso que compró.
+  const openableSections = new Set<string>([
+    ...(SHARED_PRE_COURSE_SECTIONS as readonly string[]),
+    ...activeCourse.lessonSections,
+    ...activeCourse.sharedLessonSections,
+  ]);
+
   const lessonByKey = new Map<string, LessonRow>();
   for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
   const courseSequences =
@@ -227,7 +234,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       ? BELT_SEQUENCES.map((seq) => ({
           ...seq,
           stages: seq.stages.map((st) => ({
-            stage: st.stage,
+            stage: st.stageEn,
             lessons: st.steps
               .map((k) => lessonByKey.get(k))
               .filter((l): l is LessonRow => Boolean(l)),
@@ -433,6 +440,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                     stages={seq.stages}
                     onOpenLesson={(id) => setOpenLessonId(id)}
                     theme={beltTheme}
+                    openableSections={openableSections}
                   />
                 ))}
               </div>
@@ -553,12 +561,14 @@ function SequenceChain({
   stages,
   onOpenLesson,
   theme,
+  openableSections,
 }: {
   name: string;
   side: 'fs' | 'bs';
   stages: { stage: string; lessons: LessonRow[] }[];
   onOpenLesson: (id: string) => void;
   theme: BeltTheme;
+  openableSections: Set<string>;
 }) {
   const all = stages.flatMap((s) => s.lessons);
   const done = all.filter((l) => l.completed).length;
@@ -598,17 +608,38 @@ function SequenceChain({
               <p className="text-[9.5px] font-mono uppercase tracking-wider text-white/40">
                 {st.stage}
               </p>
-              {st.lessons.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => onOpenLesson(l.id)}
-                  className="block w-full text-left text-[12.5px] leading-snug text-white/85 hover:underline"
-                >
-                  {l.completed && <span style={{ color: theme.bright }}>✓ </span>}
-                  {l.title}
-                </button>
-              ))}
+              {st.lessons.map((l) => {
+                // Mismo criterio que LessonCard, más la propiedad del curso:
+                // la postura es White Belt y la mayoría de los alumnos con
+                // acceso Blue no compraron White. El paso se sigue viendo en
+                // la cadena — ese es el punto — pero no se abre.
+                const blocked =
+                  !openableSections.has(l.course_section) ||
+                  (l.locked && !l.completed && l.status_v1 !== 'PROPOSED');
+                if (blocked) {
+                  return (
+                    <p
+                      key={l.id}
+                      title={l.lockReason ?? 'Locked'}
+                      className="flex items-center gap-1 text-[12.5px] leading-snug text-white/35"
+                    >
+                      <Lock size={11} strokeWidth={1.75} className="shrink-0" />
+                      <span className="truncate">{l.title}</span>
+                    </p>
+                  );
+                }
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => onOpenLesson(l.id)}
+                    className="block w-full text-left text-[12.5px] leading-snug text-white/85 hover:underline"
+                  >
+                    {l.completed && <span style={{ color: theme.bright }}>✓ </span>}
+                    {l.title}
+                  </button>
+                );
+              })}
             </div>
           </li>
         ))}
