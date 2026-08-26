@@ -15,5 +15,7 @@ export const STICKERS: StickerDef[] = [
   { id: 'tabla', src: '/stickers/tabla.png', ratio: 3.9474 },
   { id: 'tres-circulos', src: '/stickers/tres-circulos.png', ratio: 0.83 },
   { id: 'llamas', src: '/stickers/llamas.svg', ratio: 0.3541 },
+  { id: 'pizza-mitad', src: '/stickers/pizza-mitad.svg', ratio: 0.5755 },
+  { id: 'pizza-porcion', src: '/stickers/pizza-porcion.svg', ratio: 1.303 },
   { id: 'sweet-spot', src: '/stickers/sweet-spot.svg', ratio: 1 },
 ];

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-18 -18 396 516" width="396" height="516">
+  <!-- ═══ PORCIÓN DE PIZZA (triangular) ═══
+       El sector angosto: el ángulo de ataque, la ventana donde entra el giro.
+       Punta abajo, corteza arriba — como se agarra. -->
+  <defs>
+    <filter id="ps2" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000" flood-opacity=".5"/>
+    </filter>
+    <!-- Punta en el vértice de abajo, arco de corteza arriba -->
+    <path id="slice" d="M 180 470 L 22 74 A 300 300 0 0 1 338 74 Z"/>
+  </defs>
+
+  <g filter="url(#ps2)">
+    <!-- troquelado -->
+    <use href="#slice" fill="#fff" stroke="#fff" stroke-width="30" stroke-linejoin="round"/>
+    <!-- queso (toda la porción) -->
+    <use href="#slice" fill="#FFCE47" stroke="#1A1206" stroke-width="9" stroke-linejoin="round"/>
+    <!-- corteza: la banda de arriba -->
+    <path d="M 22 74 A 300 300 0 0 1 338 74 L 322 112 A 258 258 0 0 0 38 112 Z"
+          fill="#E9A33C" stroke="#1A1206" stroke-width="8" stroke-linejoin="round"/>
+    <!-- pepperoni -->
+    <g stroke="#1A1206" stroke-width="6">
+      <circle cx="180" cy="180" r="33" fill="#D8402F"/>
+      <circle cx="120" cy="272" r="26" fill="#D8402F"/>
+      <circle cx="238" cy="272" r="26" fill="#D8402F"/>
+      <circle cx="180" cy="356" r="21" fill="#D8402F"/>
+    </g>
+    <!-- brillos -->
+    <g fill="#FFF0B8" opacity=".75">
+      <ellipse cx="132" cy="214" rx="15" ry="8"/>
+      <ellipse cx="228" cy="212" rx="13" ry="7"/>
+      <ellipse cx="180" cy="300" rx="14" ry="7"/>
+    </g>
+  </g>
+</svg>
