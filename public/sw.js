@@ -34,10 +34,20 @@ self.addEventListener('fetch', (event) => {
   // Network-first for navigations, HTML, AND Next.js build assets — so a new
   // deploy is picked up immediately instead of serving a stale cached app shell
   // (this is what made code fixes appear "not deployed" on installed devices).
+  // Los ASSETS de Next (/_next/*.js) van a la red, pero si la red falla NO se
+  // les puede contestar con el HTML de '/': el navegador recibe "<!DOCTYPE" en
+  // vez de JavaScript, tira error de sintaxis y el trozo nunca carga. Eso
+  // rompía el analizador de video en la playa con señal mala — parecía que la
+  // herramienta no abría. Mejor que falle limpio y Next reintente.
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(fetch(request).catch(() => caches.match(request).then((r) => r || Response.error())));
+    return;
+  }
+
+  // Navegaciones y HTML sí pueden caer al shell cacheado.
   if (
     request.mode === 'navigate' ||
-    request.headers.get('accept')?.includes('text/html') ||
-    url.pathname.startsWith('/_next/')
+    request.headers.get('accept')?.includes('text/html')
   ) {
     event.respondWith(
       fetch(request).catch(() => caches.match(request).then((r) => r || caches.match('/'))),

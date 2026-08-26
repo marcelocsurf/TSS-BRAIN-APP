@@ -15,23 +15,33 @@ export const MAX_CLIPS_PER_GROUP = 20;
 
 // Capture the first frame of a local video as a small JPEG thumbnail.
 // Resolves to undefined if the browser can't decode/seek the file.
-export function makeThumb(url: string): Promise<string | undefined> {
+export function makeThumb(url: string, signal?: AbortSignal): Promise<string | undefined> {
   return new Promise((resolve) => {
+    if (signal?.aborted) return resolve(undefined);
     const v = document.createElement("video");
     v.src = url;
     v.muted = true;
     v.playsInline = true;
-    v.preload = "auto";
+    // 'metadata', no 'auto': para sacar UN cuadro no hace falta bufferear
+    // 100 MB. Con 'auto' cada miniatura descargaba el archivo completo — 20
+    // clips seguidos eran 20 archivos enteros pasando por memoria, y eso
+    // fabricaba el error de decodificación que después detonaba el crash.
+    v.preload = "metadata";
 
     let settled = false;
     const done = (val: string | undefined) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
       v.removeAttribute("src");
       v.load();
       resolve(val);
     };
+    // Cerrar el analizador tiene que cortar el lote en seco: antes seguía
+    // decodificando hasta 160 s después de que el coach ya se había ido.
+    const onAbort = () => done(undefined);
+    signal?.addEventListener("abort", onAbort, { once: true });
 
     // iPad/Safari can leave a decoder stuck when several videos load at
     // once — bail after 8s so the slot frees and the clip still lists.

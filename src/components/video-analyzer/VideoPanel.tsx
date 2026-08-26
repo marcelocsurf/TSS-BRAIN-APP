@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
+  type MutableRefObject,
   type RefObject,
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
@@ -49,31 +51,44 @@ export default function VideoPanel({
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0); // 0..1
   const [missing, setMissing] = useState(false);
-  // iOS Safari often fails to play a local video from a blob: URL (blob URLs
-  // don't serve the Range requests iOS expects). When that happens we re-read
-  // the same blob as a data: URL, which iOS plays reliably.
-  const [fallbackSrc, setFallbackSrc] = useState<string | null>(null);
-  const triedFallback = useRef(false);
 
-  const effectiveSrc = fallbackSrc ?? src;
-
-  async function handleVideoError() {
-    // First failure on a local blob → retry once via a data: URL.
-    if (src && src.startsWith("blob:") && !triedFallback.current) {
-      triedFallback.current = true;
-      try {
-        const blob = await fetch(src).then((r) => r.blob());
-        const reader = new FileReader();
-        reader.onload = () => setFallbackSrc(reader.result as string);
-        reader.onerror = () => setMissing(true);
-        reader.readAsDataURL(blob);
-        return;
-      } catch {
-        /* fall through to the error overlay */
-      }
-    }
+  // ⚠ ACÁ SE CERRABA LA APP (Stanley, 2026-08-25, con clientes enfrente).
+  // Había un "fallback": si el video no arrancaba, se releía el archivo
+  // COMPLETO y se convertía a texto base64 (data: URL) para volver a
+  // intentarlo. Un clip de iPhone en 4K de 15 s son ~100 MB; en base64 son
+  // ~140 MB, y hay que tener los dos a la vez → un pico de 250-400 MB de
+  // golpe. Safari en iPad no avisa cuando se pasa: mata la pestaña. Como la
+  // app está instalada, eso se ve como "se cerró la aplicación".
+  // Y encima era inútil: si el video no arranca por el códec (los .mov HEVC
+  // del iPhone), pasarlo a base64 no cambia el códec — gastaba la memoria y
+  // fallaba igual. El commit que lo introdujo decía que el bug era de iPad y
+  // que se había verificado "in headless Chrome": el camino que solo corre en
+  // iPad nunca se probó en un iPad.
+  // Sin fallback: si el video no abre, se lo decimos y listo. Nadie se queda
+  // sin app a mitad de una clase.
+  function handleVideoError() {
     setMissing(true);
   }
+
+  // ⚠ CAUSA #2 del cierre: al desmontar el panel, el <video> se iba con su
+  // decodificador y sus buffers vivos. Y se desmonta seguido: cada toque en
+  // "2 pantallas / Solo alumno / Solo modelo" tira un panel entero, y cerrar
+  // el analizador tira los dos. En iPad eso se acumula hasta que el sistema
+  // mata la pestaña.
+  // Va como callback ref y NO como cleanup de useEffect: React corre el
+  // cleanup DESPUÉS de escribir el DOM, así que un cleanup con deps [src]
+  // borraría el src NUEVO y el video quedaría en negro tras cada cambio de
+  // clip. El callback ref solo recibe null en el desmontaje real.
+  const attachVideo = useCallback((node: HTMLVideoElement | null) => {
+    const ref = videoRef as MutableRefObject<HTMLVideoElement | null>;
+    const prev = ref.current;
+    if (!node && prev) {
+      prev.pause();
+      prev.removeAttribute("src");
+      prev.load();          // fuerza a WebKit a soltar el recurso ya
+    }
+    ref.current = node;
+  }, [videoRef]);
 
   // Zoom / pan state (shared by video + drawing overlay).
   const [zoom, setZoom] = useState(1);
@@ -98,8 +113,6 @@ export default function VideoPanel({
     setMissing(false);
     setPlaying(false);
     setProgress(0);
-    setFallbackSrc(null);
-    triedFallback.current = false;
     resetView();
     const el = videoRef.current;
     if (el) el.playbackRate = speed;
@@ -237,14 +250,18 @@ export default function VideoPanel({
         {src ? (
           <>
             <video
-              ref={videoRef}
-              src={effectiveSrc ?? undefined}
+              ref={attachVideo}
+              src={src ?? undefined}
               // Only request CORS for remote model clips (needed to export the
               // annotated frame). Local files are blob:/data: URLs — setting
               // crossOrigin on them can stop Safari/iPad from loading the video.
               crossOrigin={src.startsWith("blob:") || src.startsWith("data:") ? undefined : "anonymous"}
               playsInline
-              preload="auto"
+              // 'auto' le pide a WebKit bufferear todo lo que pueda del
+              // archivo — y en vista dual hay DOS pidiendo lo mismo sobre
+              // archivos de cientos de MB. 'metadata' carga solo lo necesario
+              // para mostrar el primer cuadro; el resto entra al darle play.
+              preload="metadata"
               className="h-full w-full object-contain"
               style={{
                 transformOrigin: "top left",

@@ -29,6 +29,8 @@ export default function VideoAnalyzer() {
   const [sidebarTab, setSidebarTab] = useState<"students" | "models">("students");
   const [layout, setLayout] = useState<"dual" | "student" | "model">("dual");
   const [library, setLibrary] = useState<ModelCategory[]>([]);
+  // Corta el lote de miniaturas si el coach cierra el analizador.
+  const thumbAbort = useRef<AbortController | null>(null);
 
   // Load the admin-managed model clips from Supabase on first open.
   useEffect(() => {
@@ -109,10 +111,14 @@ export default function VideoAnalyzer() {
     // Generate thumbnails ONE AT A TIME — iPad/Safari can only decode a few
     // videos concurrently, so firing all at once made some clips (and the
     // player) fail to load. Sequential keeps every clip stable.
+    const ac = new AbortController();
+    thumbAbort.current?.abort();
+    thumbAbort.current = ac;
     (async () => {
       for (const clip of added) {
-        const thumb = await makeThumb(clip.url);
-        if (!thumb) continue;
+        if (ac.signal.aborted) return;
+        const thumb = await makeThumb(clip.url, ac.signal);
+        if (!thumb || ac.signal.aborted) continue;
         setGroups((cur) =>
           cur.map((gg) => ({
             ...gg,
@@ -124,6 +130,18 @@ export default function VideoAnalyzer() {
       }
     })();
   }
+
+  // Al cerrar el analizador: cortar el lote de miniaturas y devolver todos
+  // los object URLs. Antes no se liberaba ni uno solo.
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
+  useEffect(() => () => {
+    thumbAbort.current?.abort();
+    if (studentUrl.current) URL.revokeObjectURL(studentUrl.current);
+    for (const g of groupsRef.current) {
+      for (const c of g.clips) URL.revokeObjectURL(c.url);
+    }
+  }, []);
 
   function selectClip(clipId: string) {
     const group = groups.find((g) => g.id === activeGroupId);
@@ -137,15 +155,25 @@ export default function VideoAnalyzer() {
   }
 
   function removeClip(clipId: string) {
+    const group = groups.find((g) => g.id === activeGroupId);
+    const clip = group?.clips.find((c) => c.id === clipId);
+    // Si el que se borra es el que está en pantalla, hay que soltar el video
+    // ANTES de revocar su URL — si no, el coach ve un cartel de error y cree
+    // que la herramienta se rompió.
+    const viendo = currentClipId === clipId;
+    if (viendo) {
+      setStudentSrc(null);
+      setStudentShapes([]);
+      setCurrentClipId(null);
+    }
     setGroups((prev) =>
-      prev.map((g) => {
-        if (g.id !== activeGroupId) return g;
-        const clip = g.clips.find((c) => c.id === clipId);
-        if (clip) URL.revokeObjectURL(clip.url);
-        return { ...g, clips: g.clips.filter((c) => c.id !== clipId) };
-      })
+      prev.map((g) =>
+        g.id === activeGroupId ? { ...g, clips: g.clips.filter((c) => c.id !== clipId) } : g
+      )
     );
-    if (currentClipId === clipId) setCurrentClipId(null);
+    // El revoke va FUERA del updater (que React puede ejecutar dos veces en
+    // desarrollo) y después de que el <video> soltó la fuente.
+    if (clip) setTimeout(() => URL.revokeObjectURL(clip.url), 0);
   }
 
   function addGroup() {
@@ -184,14 +212,19 @@ export default function VideoAnalyzer() {
     const vh = video.videoHeight;
     if (!vw || !vh) return;
 
+    // Tope de 1920 px de ancho: un cuadro 4K son 3840×2160 = 33 MB de canvas
+    // (más el de Konva encima), y en iPad ese pico se suma a los dos videos
+    // vivos. Para mandarle una imagen anotada al alumno, 1080p sobra.
+    const MAX_W = 1920;
+    const k = vw > MAX_W ? MAX_W / vw : 1;
     const canvas = document.createElement("canvas");
-    canvas.width = vw;
-    canvas.height = vh;
+    canvas.width = Math.round(vw * k);
+    canvas.height = Math.round(vh * k);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // 1) current video frame
-    ctx.drawImage(video, 0, 0, vw, vh);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // 2) annotations, scaled from on-screen size to native video size.
     // Temporarily neutralize zoom/pan so the overlay maps to the full frame.
@@ -209,7 +242,7 @@ export default function VideoAnalyzer() {
         const offX = (sw - dispW) / 2;
         const offY = (sh - dispH) / 2;
         const overlay = stage.toCanvas();
-        ctx.drawImage(overlay, offX, offY, dispW, dispH, 0, 0, vw, vh);
+        ctx.drawImage(overlay, offX, offY, dispW, dispH, 0, 0, canvas.width, canvas.height);
       }
       // restore zoom/pan
       stage.scale({ x: savedScale, y: savedScale });
@@ -220,10 +253,16 @@ export default function VideoAnalyzer() {
     canvas.toBlob((blob) => {
       if (!blob) return;
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
+      const href = URL.createObjectURL(blob);
+      a.href = href;
       a.download = `tss-analysis-${active}-${Date.now()}.png`;
       a.click();
-      URL.revokeObjectURL(a.href);
+      // Safari empieza la descarga en el tick siguiente: revocar de inmediato
+      // la cancelaba y no bajaba nada. Se libera un minuto después.
+      setTimeout(() => URL.revokeObjectURL(href), 60000);
+      // Y se suelta el canvas grande a mano — iOS tarda en recogerlo solo.
+      canvas.width = 0;
+      canvas.height = 0;
     }, "image/png");
   }
 
