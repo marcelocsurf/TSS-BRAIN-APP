@@ -55,7 +55,7 @@ export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
   const sectionMeta: Record<string, { title: string; emoji: string }> = {
     pre_course_fundamentals: { title: 'Pre-Course · Fundamentals', emoji: '📖' },
     pre_course_values: { title: 'Pre-Course · Values', emoji: '✨' },
-    white_belt: { title: 'White Belt · 24 Steps', emoji: '🤍' },
+    white_belt: { title: 'White Belt · 25 Steps', emoji: '🤍' },
   };
 
   // Get student goal & stance from form responses

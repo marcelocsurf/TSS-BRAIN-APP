@@ -10,6 +10,7 @@ import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/const
 import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/belt-theme';
 import {
   groupByBlocks,
+  isMappedToBlocks,
   BELT_SEQUENCES,
   stepKey,
 } from '@/lib/constants/learning-blocks';
@@ -193,14 +194,27 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Learning Blocks — la estructura del método, la misma que ve el coach al
   // evaluar. Antes esto se agrupaba por wb_sequence_id, que era un tercer
   // agrupamiento distinto del de la evaluación y del de las secuencias reales.
-  const beltSequences = groupByBlocks(beltLessons, 'en').map((g) => ({
-    id: `block-${g.block ?? 'int'}`,
-    name: g.label,
-    order: g.block ?? 99,
-    block: g.block,
-    subtitle: g.sub,
-    lessons: g.rows as LessonRow[],
-  }));
+  // Purple, Brown, Black y los cursos de coach todavía no están mapeados a
+  // bloques. Sin este guard su curso entero colapsaba en un solo grupo
+  // "Other steps"; para esas cintas se mantiene el agrupamiento anterior.
+  const beltUsesBlocks = isMappedToBlocks(beltLessons);
+  const beltSequences = beltUsesBlocks
+    ? groupByBlocks(beltLessons, 'en').map((g) => ({
+        id: g.key,
+        name: g.label,
+        order: g.block ?? 99,
+        block: g.block,
+        subtitle: g.sub,
+        lessons: g.rows as LessonRow[],
+      }))
+    : groupByWbSequence(beltLessons).map((g) => ({
+        id: g.id,
+        name: g.name,
+        order: g.order,
+        block: null as number | null,
+        subtitle: g.lessons[0]?.wb_sequence_promise || '',
+        lessons: g.lessons,
+      }));
 
   // Las seis secuencias, completas. Un paso de la secuencia puede vivir en una
   // cinta anterior (la postura es White Belt), así que se resuelven contra
@@ -372,9 +386,17 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <GroupHeader
             theme={beltTheme}
-            eyebrow={`${beltSequences.length} learning blocks`}
+            eyebrow={
+              beltUsesBlocks
+                ? `${beltSequences.length} learning blocks`
+                : `${beltSequences.length} sequences · cumulative`
+            }
             title={beltLabelShort}
-            subtitle="The blocks follow the order things happen in the water."
+            subtitle={
+              beltUsesBlocks
+                ? 'The blocks follow the order things happen in the water.'
+                : 'Cumulative — each sequence builds on all previous.'
+            }
             videoUrl={intros[beltSection]?.video_url}
           />
 
@@ -485,6 +507,37 @@ function groupByPcSection(lessons: LessonRow[]) {
       ...s,
       lessons: s.lessons.sort(
         (a, b) => (a.display_order || 0) - (b.display_order || 0)
+      ),
+    }));
+}
+
+// Agrupamiento anterior por wb_sequence_id. Sigue vivo como fallback para las
+// cintas que todavía no están mapeadas a Learning Blocks (purple/brown/black).
+function groupByWbSequence(lessons: LessonRow[]) {
+  const map = new Map<
+    string,
+    { id: string; name: string; order: number; lessons: LessonRow[] }
+  >();
+  for (const l of lessons) {
+    const id = l.wb_sequence_id || 'unassigned';
+    if (!map.has(id)) {
+      map.set(id, {
+        id,
+        name: l.wb_sequence_name || id,
+        order: l.wb_sequence_order || 99,
+        lessons: [],
+      });
+    }
+    map.get(id)!.lessons.push(l);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => a.order - b.order)
+    .map((c) => ({
+      ...c,
+      lessons: c.lessons.sort(
+        (a, b) =>
+          (a.sequence_step_order || a.display_order || 0) -
+          (b.sequence_step_order || b.display_order || 0)
       ),
     }));
 }

@@ -615,11 +615,18 @@ export async function getServicePlan(
     (d: any) => (beltRank[d.belt] ?? 1) <= myRank
   );
 
-  // STP catalog for the planner's sequence-focus picker (white belt 25 STPs).
+  // STP catalog for the planner's sequence-focus picker. Sigue las mismas
+  // secciones que la cinta objetivo del camp: estaba fijado a white_belt, así
+  // que en un camp de Yellow o Blue el coach no podía elegir STP-027..STP-049
+  // como foco del día. Es la misma regla que usa el catálogo de graduación.
+  const plannerRule = tpl?.includes_course_key
+    ? GRADUATION_RULES[tpl.includes_course_key]
+    : undefined;
+  const plannerSections = plannerRule?.sections ?? ['white_belt'];
   const { data: stpRows } = await admin
     .from('lessons')
     .select('id, title, pillar, display_order, course_section, step_number')
-    .eq('course_section', 'white_belt')
+    .in('course_section', plannerSections)
     .eq('active', true)
     .order('display_order');
 
@@ -627,17 +634,9 @@ export async function getServicePlan(
   // sequence the belt requires: White Belt = the 25 WB STPs; Yellow Belt =
   // White + Yellow (33 STPs) so all fundamentals are re-confirmed. Driven
   // by the belt's GRADUATION_RULES.sections.
-  const gradRule = tpl?.includes_course_key ? GRADUATION_RULES[tpl.includes_course_key] : undefined;
-  const gradSections = gradRule?.sections ?? ['white_belt'];
-  const { data: gradRows } =
-    gradSections.length === 1 && gradSections[0] === 'white_belt'
-      ? { data: stpRows }
-      : await admin
-          .from('lessons')
-          .select('id, title, pillar, display_order, course_section, step_number')
-          .in('course_section', gradSections)
-          .eq('active', true)
-          .order('display_order');
+  // El catálogo de graduación usa exactamente las mismas secciones, así que se
+  // reusa la misma consulta en vez de repetirla.
+  const gradRows = stpRows;
 
   // M44 — load the template plan if there is a template attached.
   // Days come from camp_template_days, blocks from camp_template_blocks

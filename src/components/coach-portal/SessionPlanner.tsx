@@ -2713,7 +2713,7 @@ function BlockEditor({
               del día viendo en qué parte de la ola cae, no en una lista plana. */}
           {groupByBlocks(stpCatalog as any[]).map((g) => (
             <optgroup
-              key={`${g.block ?? 'int'}`}
+              key={g.key}
               label={g.block != null ? `Bloque ${g.block} · ${g.label}` : g.label}
             >
               {g.rows.map((stp: any) => (

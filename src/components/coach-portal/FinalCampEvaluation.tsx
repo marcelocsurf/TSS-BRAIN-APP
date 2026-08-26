@@ -479,7 +479,7 @@ export function FinalCampEvaluation({
                         por ahí entrelazaba white/yellow/blue. Ahora cada paso cae
                         en su bloque y el coach ve dónde está parado. */}
                     {catalogBlocks.map((g) => (
-                      <div key={`${g.block ?? 'int'}`} className="pt-1">
+                      <div key={g.key} className="pt-1">
                         <div className="flex items-baseline gap-2 mb-2 pb-1.5 border-b border-gray-200">
                           {g.block != null && (
                             <span

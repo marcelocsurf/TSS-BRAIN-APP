@@ -19,8 +19,10 @@ export interface LearningBlock {
   es: string;
   /** Student-facing name, English — brand voice. */
   en: string;
-  /** One line of context, staff-facing. */
+  /** One line of context, staff-facing (Spanish). */
   sub: string;
+  /** Same line, student-facing (English) — the student's app is in English. */
+  subEn: string;
   /** Checkpoints as written in the source document. */
   checkpoints: string[];
 }
@@ -31,6 +33,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'Pre surf — preparación y posicionamiento',
     en: 'Before You Paddle Out',
     sub: 'Leer el lugar, prepararse y llegar al punto donde empieza el surf.',
+    subEn: 'Read the spot, get your body ready, and reach the place where surfing starts.',
     checkpoints: [
       'Venue analysis',
       'Set goals',
@@ -49,6 +52,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'La entrada a la ola',
     en: 'Catching the Wave',
     sub: 'A la ola o a la espuma: ángulo, remada y la línea que elijo.',
+    subEn: 'Green wave or whitewater: your angle, your paddle, and the line you pick.',
     checkpoints: [
       'Ángulo de remada',
       'Remada de flecha + presión en el pecho',
@@ -60,6 +64,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'Pop up',
     en: 'Pop Up',
     sub: 'De prono a parado, con los pies donde tienen que ir.',
+    subEn: 'From lying down to standing, with your feet where they belong.',
     checkpoints: [
       'Ninja pop up',
       'Regular pop up',
@@ -73,6 +78,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'Power posture',
     en: 'Power Posture',
     sub: 'Donde todo empieza. Ocho chequeos, no uno.',
+    subEn: 'Where everything starts. Eight checkpoints, not one.',
     checkpoints: [
       'Pecho apunta en dirección de la nariz de la tabla',
       'Get low',
@@ -89,6 +95,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'Rotación con oblicuo y mirada',
     en: 'Rotation — the Bottom Turn',
     sub: 'Partiendo de postura. Frontside y backside.',
+    subEn: 'Starting from your stance. Frontside and backside.',
     checkpoints: [
       'Partiendo de postura',
       'Peso en pie delantero',
@@ -106,6 +113,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'Proyección',
     en: 'Projection',
     sub: 'Adds more angle and speed.',
+    subEn: 'Adds more angle and speed.',
     checkpoints: [
       'FS · Hips up and forward',
       'FS · Touch water + tirar balón por atrás',
@@ -121,6 +129,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     es: 'Maniobras',
     en: 'Maneuvers',
     sub: 'El dibujo en la cara de la ola — y cómo termina la ola.',
+    subEn: 'The line you draw on the wave — and how the ride ends.',
     checkpoints: [
       'FS · Cruz de cristo — pecho alineado con la cadera o más adelante',
       'FS · Ver sobre el hombro y activar oblicuo',
@@ -152,6 +161,7 @@ export const INTEGRATION_GROUP = {
   es: 'Integración y certificación',
   en: 'Integration & Certification',
   sub: 'Módulos que cierran la cinta. No son un bloque de aprendizaje.',
+  subEn: 'The modules that close the belt. These are not learning blocks.',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -486,6 +496,9 @@ export function sortByBlocks<T extends BlockGroupable>(rows: T[]): T[] {
 }
 
 export interface BlockGroup<T> {
+  /** Unique React key. Integration and unmapped both carry block === null,
+   *  so the block number alone is not unique. */
+  key: string;
   block: number | null;
   /** undefined for the integration group. */
   meta?: LearningBlock;
@@ -500,10 +513,13 @@ export function groupByBlocks<T extends BlockGroupable>(
   rows: T[],
   lang: 'es' | 'en' = 'es'
 ): BlockGroup<T>[] {
+  const known = new Set(LEARNING_BLOCKS.map((b) => b.n));
   const buckets = new Map<string, T[]>();
   for (const r of sortByBlocks(rows)) {
     const b = blockOf(r.course_section, r.step_number);
-    const k = b === undefined ? 'x' : b === null ? 'i' : String(b);
+    // Un número de bloque sin entrada en LEARNING_BLOCKS no tiene nombre ni
+    // orden: se trata como no mapeado en vez de desaparecer de la pantalla.
+    const k = b === undefined || (b !== null && !known.has(b)) ? 'x' : b === null ? 'i' : String(b);
     (buckets.get(k) ?? buckets.set(k, []).get(k)!).push(r);
   }
   const out: BlockGroup<T>[] = [];
@@ -511,10 +527,11 @@ export function groupByBlocks<T extends BlockGroupable>(
     const rs = buckets.get(String(b.n));
     if (rs?.length) {
       out.push({
+        key: `b${b.n}`,
         block: b.n,
         meta: b,
         label: lang === 'en' ? b.en : b.es,
-        sub: b.sub,
+        sub: lang === 'en' ? b.subEn : b.sub,
         rows: rs,
       });
     }
@@ -522,20 +539,32 @@ export function groupByBlocks<T extends BlockGroupable>(
   const integ = buckets.get('i');
   if (integ?.length) {
     out.push({
+      key: 'integration',
       block: null,
       label: lang === 'en' ? INTEGRATION_GROUP.en : INTEGRATION_GROUP.es,
-      sub: INTEGRATION_GROUP.sub,
+      sub: lang === 'en' ? INTEGRATION_GROUP.subEn : INTEGRATION_GROUP.sub,
       rows: integ,
     });
   }
   const rest = buckets.get('x');
   if (rest?.length) {
     out.push({
+      key: 'unmapped',
       block: null,
       label: lang === 'en' ? 'Other steps' : 'Otros pasos',
-      sub: 'Pasos que todavía no están asignados a un bloque.',
+      sub:
+        lang === 'en'
+          ? 'Steps that are not assigned to a block yet.'
+          : 'Pasos que todavía no están asignados a un bloque.',
       rows: rest,
     });
   }
   return out;
+}
+
+/** True cuando NINGUNA de las filas cae en un bloque conocido — el caso de
+ *  purple/brown/black y de los cursos de coach, que todavía no están mapeados.
+ *  Las superficies la usan para no colapsar un curso entero en "Other steps". */
+export function isMappedToBlocks<T extends BlockGroupable>(rows: T[]): boolean {
+  return rows.some((r) => blockOf(r.course_section, r.step_number) !== undefined);
 }
