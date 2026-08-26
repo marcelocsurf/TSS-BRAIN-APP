@@ -190,6 +190,50 @@ export default function VideoPanel({
     setNow(el.currentTime);
   }
 
+  // ── PAUSA AUTOMÁTICA EN EL DIBUJO ────────────────────────────────
+  // El video llega al segundo de una línea marcada con ⏸, se congela lo que
+  // dure, y sigue sin ella. `consumed` recuerda cuáles ya cumplieron su turno
+  // en esta pasada — si no, al soltar el video se volvería a pausar en el
+  // mismo punto para siempre.
+  const [consumed, setConsumed] = useState<Set<string>>(() => new Set());
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holding = useRef(false);
+
+  // Volver atrás (o cambiar de video) rearma todas las pausas: el coach le da
+  // play de nuevo y la clase se vuelve a explicar sola.
+  const lastNow = useRef(0);
+  useEffect(() => {
+    if (now < lastNow.current - 0.35) setConsumed(new Set());
+    lastNow.current = now;
+  }, [now]);
+  useEffect(() => {
+    setConsumed(new Set());
+    holding.current = false;
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
+
+  useEffect(() => {
+    if (!playing || holding.current) return;
+    const due = shapes.find(
+      (sh) => sh.hold && sh.dur != null && sh.t != null && !consumed.has(sh.id) && now >= sh.t
+    );
+    if (!due) return;
+    const el = videoRef.current;
+    if (!el) return;
+    holding.current = true;
+    el.pause();
+    setPlaying(false);
+    holdTimer.current = setTimeout(() => {
+      setConsumed((c) => new Set(c).add(due.id));   // la línea se va
+      holding.current = false;
+      const v = videoRef.current;
+      if (v) { v.play().then(() => setPlaying(true)).catch(() => {}); }
+    }, (due.dur ?? 1) * 1000);
+  }, [now, playing, shapes, consumed, videoRef]);
+
+  useEffect(() => () => { if (holdTimer.current) clearTimeout(holdTimer.current); }, []);
+
   // Reloj fino solo mientras reproduce; se apaga al pausar (no dejamos un
   // rAF corriendo en un iPad que ya va justo de memoria).
   useEffect(() => {
@@ -300,6 +344,7 @@ export default function VideoPanel({
             <DrawingCanvas
               ref={stageRef}
               now={now}
+              consumed={consumed}
               width={size.w}
               height={size.h}
               scale={zoom}

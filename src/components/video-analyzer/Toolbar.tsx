@@ -57,6 +57,18 @@ export default function Toolbar({
         ))}
       </div>
 
+      {/* Con ⏸ prendido, el video se CONGELA al llegar al dibujo lo que dure
+          y después sigue sin él — la clase se explica sola. Solo tiene
+          sentido con una duración elegida. */}
+      <button
+        onClick={() => onChange({ ...settings, hold: !settings.hold })}
+        disabled={(settings.dur ?? null) === null}
+        title="Pausar el video al llegar a la línea"
+        className={`${btn} disabled:opacity-30 ${settings.hold ? "bg-amber-400 text-[#0B1B2B]" : "bg-white/10"}`}
+      >
+        ⏸ Pausa
+      </button>
+
       <div className="flex gap-1">
         {TOOLS.map((t) => (
           <button

@@ -8,6 +8,8 @@ import { shapeVisible, type Shape, type DrawSettings } from "./types";
 type Props = {
   /** Segundo actual del video — decide qué dibujos se ven. */
   now?: number;
+  /** Dibujos de pausa que ya cumplieron su turno en esta pasada. */
+  consumed?: Set<string>;
   width: number;
   height: number;
   scale: number;
@@ -33,7 +35,7 @@ function angleDeg(p: number[]) {
 }
 
 const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
-  { now = 0, width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
+  { now = 0, consumed, width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
   ref
 ) {
   const drawing = useRef(false);
@@ -47,7 +49,7 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
   // El trazo que se está dibujando AHORA siempre se ve, aunque el video siga
   // corriendo y ya se haya pasado de su ventana — si no, se desvanece bajo el
   // dedo del coach mientras lo dibuja.
-  const visible = shapes.filter((s) => s.id === draftId.current || shapeVisible(s, now));
+  const visible = shapes.filter((s) => s.id === draftId.current || shapeVisible(s, now, consumed));
 
   // Pointer position in *content* coordinates (already accounts for zoom/pan).
   function point(stage: Konva.Stage | null) {
@@ -72,6 +74,7 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
             width: settings.width,
             t: now,
             dur: settings.dur ?? null,
+            hold: (settings.dur ?? null) !== null && !!settings.hold,
             points: np,
           },
         ]);
@@ -88,7 +91,8 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
     draftId.current = id;
     // Nace anclado al instante del video en que se dibujó, con la duración
     // que el coach tenga elegida (null = queda fijo).
-    const base = { id, color: settings.color, width: settings.width, t: now, dur: settings.dur ?? null };
+    const base = { id, color: settings.color, width: settings.width, t: now, dur: settings.dur ?? null,
+      hold: (settings.dur ?? null) !== null && !!settings.hold };
     let shape: Shape;
     if (settings.tool === "circle") {
       shape = { ...base, tool: "circle", points: [p.x, p.y, 0] };

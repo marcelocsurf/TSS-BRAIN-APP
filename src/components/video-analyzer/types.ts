@@ -14,6 +14,13 @@ export type Shape = {
   // comportándose igual.
   t?: number;
   dur?: number | null;
+  // ── PAUSA AUTOMÁTICA (pedido de Marcelo, 2026-08-26) ──
+  // "hacés una línea y el video se pausa donde hiciste la línea, por el mismo
+  // tiempo opcional, y luego se va la línea y el video continúa".
+  // El video llega al segundo del dibujo, se CONGELA `dur` segundos con la
+  // línea a la vista, y sigue sin ella. Es la explicación sola: el coach no
+  // tiene que pausar a mano ni narrar mientras busca el momento.
+  hold?: boolean;
   // line / arrow: [x1, y1, x2, y2]
   // free: [x1, y1, x2, y2, ...]
   // circle: [cx, cy, radius]
@@ -27,6 +34,8 @@ export type DrawSettings = {
   width: number;
   /** Duración con la que nacen los dibujos nuevos. null = permanente. */
   dur?: number | null;
+  /** Si los dibujos nuevos además PAUSAN el video al llegar a ellos. */
+  hold?: boolean;
 };
 
 /** Opciones de duración que ve el coach. */
@@ -38,8 +47,13 @@ export const DURATIONS: Array<{ v: number | null; label: string }> = [
   { v: 5, label: "5s" },
 ];
 
-/** ¿Se ve este dibujo en el instante `now` del video? */
-export function shapeVisible(s: Shape, now: number): boolean {
+/**
+ * ¿Se ve este dibujo en el instante `now` del video?
+ * `consumed` = dibujos de pausa que ya cumplieron su turno en esta pasada:
+ * al soltar el video la línea se va, que es justo lo que pidió Marcelo.
+ */
+export function shapeVisible(s: Shape, now: number, consumed?: Set<string>): boolean {
   if (s.t == null || s.dur == null) return true;   // permanente
+  if (s.hold && consumed?.has(s.id)) return false;
   return now >= s.t && now < s.t + s.dur;
 }
