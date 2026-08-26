@@ -503,14 +503,24 @@ export function FinalCampEvaluation({
                               <div key={stp.id} className="flex items-center justify-between gap-3">
                                 <div className="min-w-0 flex-1">
                                   <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
-                                  {seqs.length > 0 && (
-                                    <p className="text-[10px] text-gray-500 truncate">
-                                      {seqs.map((q) => `${q.name} · ${q.stage}`).join('  ·  ')}
-                                    </p>
-                                  )}
-                                  {weak && (
-                                    <p className="text-[10px] font-mono text-amber-600">below {rule.stpThreshold}★</p>
-                                  )}
+                                  {/* El código vuelve porque dentro de un bloque se juntan
+                                      pasos de cintas distintas con títulos casi iguales
+                                      —"Cobra Pick Line" (WB) y "Cobra + Pick Line" (YB)—
+                                      y el coach los califica por separado. */}
+                                  <p className="text-[10px] font-mono text-gray-400 truncate">
+                                    {stp.id}
+                                    {seqs.length > 0 && (
+                                      <span className="text-gray-500">
+                                        {' · '}
+                                        {seqs.length > 2
+                                          ? `${seqs.length} secuencias · ${seqs[0].stage}`
+                                          : seqs.map((q) => `${q.name} · ${q.stage}`).join(' · ')}
+                                      </span>
+                                    )}
+                                    {weak && (
+                                      <span className="text-amber-600">{` · below ${rule.stpThreshold}★`}</span>
+                                    )}
+                                  </p>
                                 </div>
                                 <StarRating
                                   value={current}

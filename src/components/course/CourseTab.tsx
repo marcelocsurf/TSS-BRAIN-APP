@@ -405,7 +405,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               key={group.id}
               title={group.block != null ? `Block ${group.block} · ${group.name}` : group.name}
               subtitle={group.subtitle}
-              Icon={WB_SEQUENCE_ICON[group.lessons[0]?.wb_sequence_id || ''] || BookOpen}
+              Icon={WB_SEQUENCE_ICON[group.lessons[0]?.wb_sequence_id || ''] ?? BookOpen}
               badge={null}
               lessons={group.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
@@ -563,10 +563,10 @@ function SequenceChain({
   const all = stages.flatMap((s) => s.lessons);
   const done = all.filter((l) => l.completed).length;
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-white/10 overflow-hidden">
       <div
-        className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100"
-        style={{ background: theme.tint }}
+        className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10"
+        style={{ background: `${theme.accent}1F` }}
       >
         <span
           className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-mono font-semibold tracking-wider"
@@ -574,10 +574,8 @@ function SequenceChain({
         >
           {side === 'fs' ? 'FS' : 'BS'}
         </span>
-        <p className="text-[13px] font-semibold truncate" style={{ color: theme.ink }}>
-          {name}
-        </p>
-        <span className="ml-auto shrink-0 text-[10px] font-mono" style={{ color: theme.ink }}>
+        <p className="text-[13px] font-semibold truncate text-white">{name}</p>
+        <span className="ml-auto shrink-0 text-[10px] font-mono text-white/50">
           {done}/{all.length}
         </span>
       </div>
@@ -587,17 +585,17 @@ function SequenceChain({
             {i < stages.length - 1 && (
               <span
                 className="absolute left-[9px] top-5 bottom-0 w-px"
-                style={{ background: theme.accent, opacity: 0.28 }}
+                style={{ background: theme.bright, opacity: 0.3 }}
               />
             )}
             <span
               className="relative z-10 mt-0.5 shrink-0 grid place-items-center w-[19px] h-[19px] rounded-full text-[9px] font-mono font-semibold"
-              style={{ background: theme.tint, color: theme.ink }}
+              style={{ background: `${theme.bright}26`, color: theme.bright }}
             >
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[9.5px] font-mono uppercase tracking-wider text-gray-400">
+              <p className="text-[9.5px] font-mono uppercase tracking-wider text-white/40">
                 {st.stage}
               </p>
               {st.lessons.map((l) => (
@@ -605,9 +603,9 @@ function SequenceChain({
                   key={l.id}
                   type="button"
                   onClick={() => onOpenLesson(l.id)}
-                  className="block w-full text-left text-[12.5px] leading-snug text-gray-800 hover:underline"
+                  className="block w-full text-left text-[12.5px] leading-snug text-white/85 hover:underline"
                 >
-                  {l.completed && <span style={{ color: theme.accent }}>✓ </span>}
+                  {l.completed && <span style={{ color: theme.bright }}>✓ </span>}
                   {l.title}
                 </button>
               ))}
@@ -616,8 +614,8 @@ function SequenceChain({
         ))}
       </ol>
       <p
-        className="px-4 py-2 text-[10px] font-mono uppercase tracking-wider border-t border-gray-100"
-        style={{ background: theme.tint, color: theme.ink }}
+        className="px-4 py-2 text-[10px] font-mono uppercase tracking-wider border-t border-white/10 text-white/50"
+        style={{ background: `${theme.accent}14` }}
       >
         ↻ back to your stance
       </p>
