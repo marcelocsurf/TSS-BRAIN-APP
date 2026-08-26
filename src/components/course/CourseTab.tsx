@@ -8,6 +8,11 @@ import { toEmbedUrl } from '@/lib/utils/video-embed';
 import { CourseSwitcher } from './CourseSwitcher';
 import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
 import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/belt-theme';
+import {
+  groupByBlocks,
+  BELT_SEQUENCES,
+  stepKey,
+} from '@/lib/constants/learning-blocks';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import {
   BookOpen, Compass, Award, Trophy, Lock, Unlock, CheckCircle2,
@@ -98,13 +103,7 @@ const WB_SEQUENCE_ICON: Record<string, LucideIcon> = {
 };
 
 // Cumulative steps mastered after completing each sequence (canon)
-const WB_SEQUENCE_CUMULATIVE: Record<string, number> = {
-  'WB-SEQ-1': 9,
-  'WB-SEQ-2': 14,
-  'WB-SEQ-3': 20,
-  'WB-SEQ-4': 22,
-  'WB-SEQ-5': 25,
-};
+
 
 export function CourseTab({ data }: { data: CourseData }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
@@ -191,9 +190,36 @@ export function CourseTab({ data }: { data: CourseData }) {
       ? groupByPcSection(onboardingLessons)
       : null;
 
-  // Group belt lessons by wb_sequence_id (5 cumulative sequences for WB,
-  // and the YB sequences for the yellow course — same column reused).
-  const beltSequences = groupByWbSequence(beltLessons);
+  // Learning Blocks — la estructura del método, la misma que ve el coach al
+  // evaluar. Antes esto se agrupaba por wb_sequence_id, que era un tercer
+  // agrupamiento distinto del de la evaluación y del de las secuencias reales.
+  const beltSequences = groupByBlocks(beltLessons, 'en').map((g) => ({
+    id: `block-${g.block ?? 'int'}`,
+    name: g.label,
+    order: g.block ?? 99,
+    block: g.block,
+    subtitle: g.sub,
+    lessons: g.rows as LessonRow[],
+  }));
+
+  // Las seis secuencias, completas. Un paso de la secuencia puede vivir en una
+  // cinta anterior (la postura es White Belt), así que se resuelven contra
+  // TODAS las lecciones del alumno, no solo las de su cinta actual — por eso
+  // antes "Frontside Snap" se veía sin su inicio.
+  const lessonByKey = new Map<string, LessonRow>();
+  for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
+  const courseSequences =
+    activeCourse.key === 'blue_belt'
+      ? BELT_SEQUENCES.map((seq) => ({
+          ...seq,
+          stages: seq.stages.map((st) => ({
+            stage: st.stage,
+            lessons: st.steps
+              .map((k) => lessonByKey.get(k))
+              .filter((l): l is LessonRow => Boolean(l)),
+          })),
+        })).filter((seq) => seq.stages.some((st) => st.lessons.length > 0))
+      : [];
 
   const beltLabelShort =
     activeCourse.key === 'yellow_belt' ? 'Yellow Belt'
@@ -346,32 +372,50 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <GroupHeader
             theme={beltTheme}
-            eyebrow={`${beltSequences.length} sequences · cumulative`}
+            eyebrow={`${beltSequences.length} learning blocks`}
             title={beltLabelShort}
-            subtitle="Cumulative — each sequence builds on all previous."
+            subtitle="The blocks follow the order things happen in the water."
             videoUrl={intros[beltSection]?.video_url}
           />
 
-          {beltSequences.map((sequence) => {
-            const SeqIcon = WB_SEQUENCE_ICON[sequence.id] || BookOpen;
-            const cumulative = WB_SEQUENCE_CUMULATIVE[sequence.id];
-            const promise = sequence.lessons[0]?.wb_sequence_promise || '';
-            // Numbered sequences (1–13) show "Sequence #N: Name"; framing groups
-            // like Foundation / Concepts / Exit (order 0 or 14+) show just the name.
-            const isNumberedSeq = sequence.order >= 1 && sequence.order <= 13;
-            return (
-              <SectionBlock
-                key={sequence.id}
-                title={isNumberedSeq ? `Sequence #${sequence.order}: ${sequence.name}` : sequence.name}
-                subtitle={promise}
-                Icon={SeqIcon}
-                badge={cumulative ? `${cumulative}/25 cumulative` : null}
-                lessons={sequence.lessons}
-                onOpenLesson={(id) => setOpenLessonId(id)}
+          {beltSequences.map((group) => (
+            <SectionBlock
+              key={group.id}
+              title={group.block != null ? `Block ${group.block} · ${group.name}` : group.name}
+              subtitle={group.subtitle}
+              Icon={WB_SEQUENCE_ICON[group.lessons[0]?.wb_sequence_id || ''] || BookOpen}
+              badge={null}
+              lessons={group.lessons}
+              onOpenLesson={(id) => setOpenLessonId(id)}
+              theme={beltTheme}
+            />
+          ))}
+
+          {/* Las seis secuencias, de principio a fin. Cierran volviendo a la
+              postura — el círculo infinito del método. */}
+          {courseSequences.length > 0 && (
+            <div className="space-y-3 pt-3">
+              <GroupHeader
                 theme={beltTheme}
+                eyebrow={`${courseSequences.length} sequences · start to finish`}
+                title="Your Sequences"
+                subtitle="Every sequence starts from your stance and closes by coming back to it."
+                videoUrl={null}
               />
-            );
-          })}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {courseSequences.map((seq) => (
+                  <SequenceChain
+                    key={seq.id}
+                    name={seq.name}
+                    side={seq.side}
+                    stages={seq.stages}
+                    onOpenLesson={(id) => setOpenLessonId(id)}
+                    theme={beltTheme}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -445,34 +489,89 @@ function groupByPcSection(lessons: LessonRow[]) {
     }));
 }
 
-function groupByWbSequence(lessons: LessonRow[]) {
-  const map = new Map<
-    string,
-    { id: string; name: string; order: number; lessons: LessonRow[] }
-  >();
-  for (const l of lessons) {
-    const id = l.wb_sequence_id || 'unassigned';
-    if (!map.has(id)) {
-      map.set(id, {
-        id,
-        name: l.wb_sequence_name || id,
-        order: l.wb_sequence_order || 99,
-        lessons: [],
-      });
-    }
-    map.get(id)!.lessons.push(l);
-  }
-  return Array.from(map.values())
-    .sort((a, b) => a.order - b.order)
-    .map((c) => ({
-      ...c,
-      lessons: c.lessons.sort(
-        (a, b) =>
-          (a.sequence_step_order || a.display_order || 0) -
-          (b.sequence_step_order || b.display_order || 0)
-      ),
-    }));
+/**
+ * One sequence, start to finish. The stage names come from the method, and the
+ * chain closes by returning to the stance — that is the point of showing it as
+ * a chain instead of a flat list. A step can appear in more than one sequence.
+ */
+function SequenceChain({
+  name,
+  side,
+  stages,
+  onOpenLesson,
+  theme,
+}: {
+  name: string;
+  side: 'fs' | 'bs';
+  stages: { stage: string; lessons: LessonRow[] }[];
+  onOpenLesson: (id: string) => void;
+  theme: BeltTheme;
+}) {
+  const all = stages.flatMap((s) => s.lessons);
+  const done = all.filter((l) => l.completed).length;
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100"
+        style={{ background: theme.tint }}
+      >
+        <span
+          className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-mono font-semibold tracking-wider"
+          style={{ background: theme.accent, color: '#fff' }}
+        >
+          {side === 'fs' ? 'FS' : 'BS'}
+        </span>
+        <p className="text-[13px] font-semibold truncate" style={{ color: theme.ink }}>
+          {name}
+        </p>
+        <span className="ml-auto shrink-0 text-[10px] font-mono" style={{ color: theme.ink }}>
+          {done}/{all.length}
+        </span>
+      </div>
+      <ol className="px-4 py-3 space-y-0">
+        {stages.map((st, i) => (
+          <li key={`${st.stage}-${i}`} className="relative flex gap-3 pb-3 last:pb-0">
+            {i < stages.length - 1 && (
+              <span
+                className="absolute left-[9px] top-5 bottom-0 w-px"
+                style={{ background: theme.accent, opacity: 0.28 }}
+              />
+            )}
+            <span
+              className="relative z-10 mt-0.5 shrink-0 grid place-items-center w-[19px] h-[19px] rounded-full text-[9px] font-mono font-semibold"
+              style={{ background: theme.tint, color: theme.ink }}
+            >
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9.5px] font-mono uppercase tracking-wider text-gray-400">
+                {st.stage}
+              </p>
+              {st.lessons.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => onOpenLesson(l.id)}
+                  className="block w-full text-left text-[12.5px] leading-snug text-gray-800 hover:underline"
+                >
+                  {l.completed && <span style={{ color: theme.accent }}>✓ </span>}
+                  {l.title}
+                </button>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p
+        className="px-4 py-2 text-[10px] font-mono uppercase tracking-wider border-t border-gray-100"
+        style={{ background: theme.tint, color: theme.ink }}
+      >
+        ↻ back to your stance
+      </p>
+    </div>
+  );
 }
+
 
 function beltLevelForCourse(key: CourseKey): BeltLevel {
   return key === 'yellow_belt' ? 'yellow'

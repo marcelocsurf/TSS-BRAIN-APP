@@ -7,7 +7,7 @@
 // camp_instance flips to 'completed'. These cyan stars become the
 // student's official The Surf Sequence evaluation for that step in their portal.
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import { StarRating } from '@/components/sequence/StarRating';
 import { closeCampFinal, getCampWeekMissionsByToken } from '@/lib/actions/service-planner';
@@ -15,6 +15,7 @@ import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-
 import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduation';
 import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
+import { groupByBlocks, sequencesFor } from '@/lib/constants/learning-blocks';
 
 interface Props {
   token: string;
@@ -59,6 +60,10 @@ export function FinalCampEvaluation({
 }: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
   /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
   earlyMode?: boolean }) {
+  // El catálogo agrupado en los Learning Blocks del método. Se calcula una vez:
+  // es el mismo para todos los alumnos del camp.
+  const catalogBlocks = useMemo(() => groupByBlocks(stpCatalog as any[]), [stpCatalog]);
+
   // Recorrido del camp por alumno (qué misión/STP/drill trabajó cada día) —
   // sin esto el coach evaluaba a ciegas: solo veía el día seleccionado.
   const [weekMissions, setWeekMissions] = useState<Record<string, Array<{ day: number; items: string[] }>> | null>(null);
@@ -469,31 +474,56 @@ export function FinalCampEvaluation({
                             ? `🏁 Cerrar a ${s.display_name.split(' ')[0]} HOY (evaluación + encuestas)`
                             : '💾 Guardar este alumno (no se pierde)'}
                     </button>
-                    {/* iPad (md:): la secuencia en 2 columnas — la mitad de
-                        scroll con 25-48 STPs. Teléfono: lista única, igual. */}
-                    <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5">
-                    {stpCatalog.map((stp) => {
-                      const current = ratings[s.student_id]?.[stp.id] ?? null;
-                      const weak = current != null && current < rule.stpThreshold;
-                      return (
-                        <div key={stp.id} className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-mono text-gray-400">
-                              {stp.id}
-                              {weak && <span className="ml-1 text-amber-600">· below {rule.stpThreshold}★</span>}
-                            </p>
-                            <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
-                          </div>
-                          <StarRating
-                            value={current}
-                            size="sm"
-                            variant="official"
-                            onChange={(v) => setRating(s.student_id, stp.id, v)}
-                          />
+                    {/* Learning Blocks — el orden del método, no el de la base.
+                        display_order se reinicia en cada cinta, así que ordenarlo
+                        por ahí entrelazaba white/yellow/blue. Ahora cada paso cae
+                        en su bloque y el coach ve dónde está parado. */}
+                    {catalogBlocks.map((g) => (
+                      <div key={`${g.block ?? 'int'}`} className="pt-1">
+                        <div className="flex items-baseline gap-2 mb-2 pb-1.5 border-b border-gray-200">
+                          {g.block != null && (
+                            <span
+                              className="shrink-0 w-5 h-5 rounded grid place-items-center text-[10px] font-bold text-white"
+                              style={{ background: BRAND.colors.navy }}
+                            >
+                              {g.block}
+                            </span>
+                          )}
+                          <p className="text-[12px] font-semibold text-gray-900 leading-tight">{g.label}</p>
+                          <span className="ml-auto shrink-0 text-[10px] font-mono text-gray-400">
+                            {g.rows.filter((r: any) => (ratings[s.student_id]?.[r.id] ?? 0) >= rule.stpThreshold).length}/{g.rows.length}
+                          </span>
                         </div>
-                      );
-                    })}
-                    </div>
+                        <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5">
+                          {g.rows.map((stp: any) => {
+                            const current = ratings[s.student_id]?.[stp.id] ?? null;
+                            const weak = current != null && current < rule.stpThreshold;
+                            const seqs = sequencesFor(stp.course_section, stp.step_number);
+                            return (
+                              <div key={stp.id} className="flex items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
+                                  {seqs.length > 0 && (
+                                    <p className="text-[10px] text-gray-500 truncate">
+                                      {seqs.map((q) => `${q.name} · ${q.stage}`).join('  ·  ')}
+                                    </p>
+                                  )}
+                                  {weak && (
+                                    <p className="text-[10px] font-mono text-amber-600">below {rule.stpThreshold}★</p>
+                                  )}
+                                </div>
+                                <StarRating
+                                  value={current}
+                                  size="sm"
+                                  variant="official"
+                                  onChange={(v) => setRating(s.student_id, stp.id, v)}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
 
                     {/* Canon principles — part of the level graduation check */}
                     {rule.principles.length > 0 && (

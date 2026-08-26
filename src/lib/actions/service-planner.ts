@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
+import { sortByBlocks } from '@/lib/constants/learning-blocks';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -85,9 +86,9 @@ export interface ServicePlanData {
     success_criteria: string[] | null;
   }>;
   // Canonical STP catalog (for picking sequence focus)
-  stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
+  stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number }>;
   // Belt-specific sequence rated in the FINAL evaluation (graduation check).
-  graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number }>;
+  graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number }>;
   // Academy board inventory available for assignment (M108).
   availableBoards: Array<{ id: string; code: string; board_type: string | null; shape: string | null; length_feet: number | null; length_inches: number | null; volume_liters: string | null; status: string }>;
   // True when the viewer is an accepted assistant (view-only, no edits).
@@ -617,7 +618,7 @@ export async function getServicePlan(
   // STP catalog for the planner's sequence-focus picker (white belt 25 STPs).
   const { data: stpRows } = await admin
     .from('lessons')
-    .select('id, title, pillar, display_order')
+    .select('id, title, pillar, display_order, course_section, step_number')
     .eq('course_section', 'white_belt')
     .eq('active', true)
     .order('display_order');
@@ -633,7 +634,7 @@ export async function getServicePlan(
       ? { data: stpRows }
       : await admin
           .from('lessons')
-          .select('id, title, pillar, display_order')
+          .select('id, title, pillar, display_order, course_section, step_number')
           .in('course_section', gradSections)
           .eq('active', true)
           .order('display_order');
@@ -729,8 +730,8 @@ export async function getServicePlan(
     students,
     finalEvaluatedIds,
     availableDrills: availableDrills as any[],
-    stpCatalog: (stpRows ?? []) as any[],
-    graduationCatalog: (gradRows ?? stpRows ?? []) as any[],
+    stpCatalog: sortByBlocks((stpRows ?? []) as any[]) as any[],
+    graduationCatalog: sortByBlocks((gradRows ?? stpRows ?? []) as any[]) as any[],
     availableBoards,
     boardConflictIds,
     readOnly,
