@@ -47,14 +47,24 @@ export function makeThumb(url: string, signal?: AbortSignal): Promise<string | u
     // once — bail after 8s so the slot frees and the clip still lists.
     const timer = setTimeout(() => done(undefined), 8000);
 
-    v.onloadeddata = () => {
+    // OJO — esto se dispara con `loadedmetadata`, NO con `loadeddata`.
+    // Con preload="metadata" el navegador carga los datos del archivo pero
+    // NO se compromete a decodificar el primer cuadro, así que `loadeddata`
+    // puede no llegar nunca: cada miniatura se colgaría 8 s y volvería vacía
+    // — veinte clips serían 160 s sin una sola miniatura. Y sin miniaturas se
+    // cae también la recuperación de sesión, que es como el coach reconoce
+    // sus videos al volver.
+    // El SEEK sí obliga al navegador a traer y decodificar ese cuadro, con
+    // preload metadata o sin él. Por eso pedimos el cuadro directamente.
+    v.onloadedmetadata = () => {
       try {
         v.currentTime = Math.min(0.1, (v.duration || 0.2) / 2);
       } catch {
         done(undefined);
       }
     };
-    v.onseeked = () => {
+
+    const draw = () => {
       try {
         const W = 160;
         const ratio = v.videoWidth ? v.videoHeight / v.videoWidth : 0.56;
@@ -64,10 +74,23 @@ export function makeThumb(url: string, signal?: AbortSignal): Promise<string | u
         const ctx = c.getContext("2d");
         if (!ctx) return done(undefined);
         ctx.drawImage(v, 0, 0, c.width, c.height);
-        done(c.toDataURL("image/jpeg", 0.6));
+        const data = c.toDataURL("image/jpeg", 0.6);
+        c.width = 0; c.height = 0;          // soltar el lienzo enseguida
+        done(data);
       } catch {
         done(undefined);
       }
+    };
+
+    v.onseeked = () => {
+      // `seeked` avisa que el tiempo se movió, no que el cuadro ya esté
+      // pintado. Donde existe, esperamos al cuadro real — si no, la
+      // miniatura sale negra de vez en cuando.
+      const rvfc = (v as unknown as {
+        requestVideoFrameCallback?: (cb: () => void) => number;
+      }).requestVideoFrameCallback;
+      if (typeof rvfc === "function") rvfc.call(v, draw);
+      else draw();
     };
     v.onerror = () => done(undefined);
   });

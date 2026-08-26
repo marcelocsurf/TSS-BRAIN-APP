@@ -20,6 +20,10 @@ export const MODEL_BELTS: { slug: string; name: string }[] = [
   { slug: 'purple', name: 'Emerging · Purple Belt' },
   { slug: 'brown', name: 'Pre-Elite · Brown Belt' },
   { slug: 'black', name: 'Elite · Black Belt' },
+  // Último a propósito: lo que no encaja en ninguna cinta NO puede encabezar
+  // la biblioteca. Antes caía en "All levels" y el clip de prueba quedaba
+  // arriba de todo, que es justo lo contrario de lo que queremos.
+  { slug: 'unclassified', name: 'Sin clasificar' },
 ];
 
 /** Slug de cinta → belt_level de la tabla `sequences`. */
@@ -31,6 +35,7 @@ export const BELT_LEVEL_OF: Record<string, string | null> = {
   purple: 'purple_belt',
   brown: 'brown_belt',
   black: 'black_belt',
+  unclassified: null,
 };
 
 // Las categorías viejas escritas a mano, mapeadas a su cinta. Se conserva para
@@ -50,7 +55,8 @@ export const LEGACY_CATEGORY_BELT: Record<string, { belt: string; sequence?: str
 /** La cinta de un clip: la columna nueva si está, si no la categoría vieja. */
 export function beltOf(row: { belt?: string | null; category?: string | null }): string {
   if (row.belt && MODEL_BELTS.some((b) => b.slug === row.belt)) return row.belt;
-  return LEGACY_CATEGORY_BELT[row.category ?? '']?.belt ?? 'all';
+  // Nada se pierde: lo desconocido va al final, no al principio.
+  return LEGACY_CATEGORY_BELT[row.category ?? '']?.belt ?? 'unclassified';
 }
 
 /** La secuencia de un clip, si tiene. */
