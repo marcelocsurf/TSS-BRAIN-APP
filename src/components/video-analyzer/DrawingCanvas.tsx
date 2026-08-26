@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { Stage, Layer, Line, Arrow, Circle, Text, Group, Arc } from "react-konva";
 import type Konva from "konva";
 import { shapeVisible, type Shape, type DrawSettings } from "./types";
@@ -54,6 +54,36 @@ function angleArc(p: number[]) {
     ly: vy + Math.sin((((sweep < 0 ? a2 : a1) + Math.abs(sweep) / 2) * Math.PI) / 180) * r * 0.62 };
 }
 
+// ═══ CÓMO ENTRAN Y SALEN LAS LÍNEAS ═══
+// En televisión un trazo NUNCA aparece de golpe: se dibuja siguiendo el gesto
+// del analista y al irse se desvanece. Ese detalle solo es la mayor parte de
+// la diferencia entre "casero" y "profesional".
+//
+// El dibujado va en tiempo REAL (reloj de pared), no en tiempo de video: si
+// una línea con ⏸ congela el video, el tiempo del video se detiene y el trazo
+// se quedaría dibujado a medias. El desvanecido, en cambio, sí va en tiempo
+// de VIDEO — pertenece a la ola, y mientras está congelado no debe irse.
+const DRAW_MS = 240;
+const FADE_S = 0.35;
+const easeOut = (p: number) => 1 - Math.pow(1 - p, 3);
+
+/** Recorta un trazo para mostrar solo la fracción `p` de su recorrido. */
+function partialPoints(pts: number[], p: number): number[] {
+  if (p >= 1 || pts.length < 4) return pts;
+  const n = pts.length / 2;
+  const last = Math.max(1, Math.ceil((n - 1) * p));
+  const out = pts.slice(0, (last + 1) * 2);
+  // El último tramo se interpola para que la punta avance suave y no a saltos.
+  const f = (n - 1) * p - (last - 1);
+  if (f > 0 && f < 1 && out.length >= 4) {
+    const x0 = out[out.length - 4], y0 = out[out.length - 3];
+    const x1 = out[out.length - 2], y1 = out[out.length - 1];
+    out[out.length - 2] = x0 + (x1 - x0) * f;
+    out[out.length - 1] = y0 + (y1 - y0) * f;
+  }
+  return out;
+}
+
 const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
   { now = 0, consumed, width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
   ref
@@ -70,6 +100,44 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
   // corriendo y ya se haya pasado de su ventana — si no, se desvanece bajo el
   // dedo del coach mientras lo dibuja.
   const visible = shapes.filter((s) => s.id === draftId.current || shapeVisible(s, now, consumed));
+
+  // Cuándo (reloj de pared) apareció cada trazo, para dibujarlo entrando.
+  const appearedAt = useRef<Map<string, number>>(new Map());
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const seen = appearedAt.current;
+    const nowMs = performance.now();
+    let animating = false;
+    const live = new Set<string>();
+    for (const sh of visible) {
+      live.add(sh.id);
+      if (!seen.has(sh.id)) seen.set(sh.id, nowMs);
+      if (nowMs - (seen.get(sh.id) ?? nowMs) < DRAW_MS) animating = true;
+    }
+    // Un trazo que dejó de verse tiene que volver a entrar la próxima vez
+    // (al repasar el video, la explicación se repite igual).
+    for (const id of [...seen.keys()]) if (!live.has(id)) seen.delete(id);
+    if (!animating) return;
+    let raf = requestAnimationFrame(function loop() {
+      forceTick((v) => v + 1);
+      raf = requestAnimationFrame(loop);
+    });
+    return () => cancelAnimationFrame(raf);
+  });
+
+  /** Progreso de entrada (0→1) y opacidad de salida de un trazo. */
+  function anim(sh: Shape) {
+    const born = appearedAt.current.get(sh.id);
+    const p = sh.id === draftId.current || born == null
+      ? 1
+      : Math.min(1, (performance.now() - born) / DRAW_MS);
+    let opacity = 1;
+    if (sh.t != null && sh.dur != null && sh.id !== draftId.current) {
+      const left = sh.t + sh.dur - now;
+      if (left < FADE_S) opacity = Math.max(0, left / FADE_S);
+    }
+    return { p: easeOut(p), opacity };
+  }
 
   // Pointer position in *content* coordinates (already accounts for zoom/pan).
   function point(stage: Konva.Stage | null) {
@@ -179,6 +247,8 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
             cualquier fondo. Cuesta una pasada más de dibujo y cambia todo.
             HALO es un múltiplo del grosor para que escale parejo. */}
         {visible.map((s) => {
+          const { p: ap, opacity } = anim(s);
+          if (opacity <= 0) return null;
           const w = s.width / scale;
           const halo = w + 3 / scale;
           const common = {
@@ -191,10 +261,10 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
           };
           if (s.tool === "circle") {
             return (
-              <Group key={s.id}>
-                <Circle x={s.points[0]} y={s.points[1]} radius={s.points[2]}
+              <Group key={s.id} opacity={opacity}>
+                <Circle x={s.points[0]} y={s.points[1]} radius={s.points[2] * ap}
                   stroke="rgba(0,0,0,.55)" strokeWidth={halo} />
-                <Circle x={s.points[0]} y={s.points[1]} radius={s.points[2]}
+                <Circle x={s.points[0]} y={s.points[1]} radius={s.points[2] * ap}
                   stroke={s.color} strokeWidth={w} {...common} />
               </Group>
             );
@@ -202,11 +272,11 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
           if (s.tool === "arrow") {
             const head = Math.max(12, s.width * 3.2) / scale;
             return (
-              <Group key={s.id}>
-                <Arrow points={s.points} stroke="rgba(0,0,0,.55)" fill="rgba(0,0,0,.55)"
+              <Group key={s.id} opacity={opacity}>
+                <Arrow points={partialPoints(s.points, ap)} stroke="rgba(0,0,0,.55)" fill="rgba(0,0,0,.55)"
                   strokeWidth={halo} pointerLength={head + 1.5 / scale} pointerWidth={head + 1.5 / scale}
                   lineCap="round" lineJoin="round" />
-                <Arrow points={s.points} stroke={s.color} fill={s.color}
+                <Arrow points={partialPoints(s.points, ap)} stroke={s.color} fill={s.color}
                   strokeWidth={w} pointerLength={head} pointerWidth={head} {...common} />
               </Group>
             );
@@ -216,12 +286,12 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
             const pts = [ax, ay, vx, vy, bx, by];
             const arc = angleArc(s.points);
             return (
-              <Group key={s.id}>
+              <Group key={s.id} opacity={opacity}>
                 {/* El abanico relleno, como Kinovea. Semitransparente para no
-                    tapar lo que está midiendo. */}
+                    tapar lo que está midiendo. Se abre al aparecer. */}
                 {arc.radius > 4 / scale && (
                   <Arc x={arc.x} y={arc.y} innerRadius={0} outerRadius={arc.radius}
-                    rotation={arc.rotation} angle={arc.angle}
+                    rotation={arc.rotation} angle={arc.angle * ap}
                     fill={s.color} opacity={0.32} />
                 )}
                 <Line points={pts} stroke="rgba(0,0,0,.55)" strokeWidth={halo} lineCap="round" lineJoin="round" />
@@ -231,11 +301,12 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
           }
           // línea recta + mano alzada
           const tension = s.tool === "free" ? 0.5 : 0;
+          const pts = partialPoints(s.points, ap);
           return (
-            <Group key={s.id}>
-              <Line points={s.points} stroke="rgba(0,0,0,.55)" strokeWidth={halo}
+            <Group key={s.id} opacity={opacity}>
+              <Line points={pts} stroke="rgba(0,0,0,.55)" strokeWidth={halo}
                 lineCap="round" lineJoin="round" tension={tension} />
-              <Line points={s.points} stroke={s.color} strokeWidth={w} tension={tension} {...common} />
+              <Line points={pts} stroke={s.color} strokeWidth={w} tension={tension} {...common} />
             </Group>
           );
         })}
@@ -247,9 +318,12 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
           .map((s) => {
             const arc = angleArc(s.points);
             const txt = `${angleDeg(s.points).toFixed(1)}°`;
+            const a = anim(s);
+            if (a.opacity <= 0 || a.p < 0.55) return null;   // entra con el abanico
             return (
               <Text
                 key={s.id + "_t"}
+                opacity={a.opacity}
                 x={arc.lx - 30 / scale}
                 y={arc.ly - 11 / scale}
                 width={60 / scale}
