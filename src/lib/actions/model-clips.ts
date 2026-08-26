@@ -10,13 +10,15 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from './auth';
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { MODEL_CATEGORIES } from '@/lib/constants/model-categories';
+import { MODEL_BELTS, BELT_LEVEL_OF, beltOf, sequenceOf } from '@/lib/constants/model-categories';
 
 const BUCKET = 'tss-library';
 
 export type ModelClipRow = {
   id: string;
   category: string;
+  belt?: string | null;
+  sequence_number?: string | null;
   category_name: string;
   title: string;
   description: string | null;
@@ -31,34 +33,64 @@ export type ModelCategoryGrouped = {
   clips: { id: string; title: string; src: string; description?: string | null }[];
 };
 
-// Grouped by category: the fixed MODEL_CATEGORIES first (in order), then any
-// custom categories (e.g. "Secuencia 4") in the order they appear.
+// Agrupado por CINTA (lista cerrada, en orden del canon) y dentro de cada
+// cinta por SECUENCIA. Un clip sin secuencia queda suelto arriba, bajo su
+// cinta. Los clips viejos se ubican por su categoría vieja aunque todavía no
+// tengan la columna `belt` — la biblioteca sale ordenada desde ya.
 export async function getModelClips(): Promise<ModelCategoryGrouped[]> {
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from('model_clips')
     .select('*')
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });
+  if (error) return [];                       // invariante #2: nunca lanzar
   const rows = (data ?? []) as ModelClipRow[];
 
-  // Ordered list of category slugs: fixed ones first, then custom ones found.
-  const order: { slug: string; name: string }[] = [...MODEL_CATEGORIES];
-  for (const r of rows) {
-    if (!order.some((c) => c.slug === r.category)) {
-      order.push({ slug: r.category, name: r.category_name });
+  const out: ModelCategoryGrouped[] = [];
+  for (const belt of MODEL_BELTS) {
+    const mine = rows.filter((r) => beltOf(r) === belt.slug);
+    if (mine.length === 0) continue;
+
+    const loose = mine.filter((r) => !sequenceOf(r));
+    if (loose.length > 0) {
+      out.push({
+        id: belt.slug,
+        name: belt.name,
+        clips: loose.map((r) => ({ id: r.id, title: r.title, src: r.video_url, description: r.description })),
+      });
+    }
+    // Las secuencias, en orden numérico.
+    const seqs = [...new Set(mine.map((r) => sequenceOf(r)).filter(Boolean) as string[])]
+      .sort((a, b) => (Number(a) || 99) - (Number(b) || 99));
+    for (const sq of seqs) {
+      out.push({
+        id: `${belt.slug}-seq-${sq}`,
+        name: `${belt.name} · Sequence #${sq}`,
+        clips: mine
+          .filter((r) => sequenceOf(r) === sq)
+          .map((r) => ({ id: r.id, title: r.title, src: r.video_url, description: r.description })),
+      });
     }
   }
+  return out;
+}
 
-  return order
-    .map((cat) => ({
-      id: cat.slug,
-      name: cat.name,
-      clips: rows
-        .filter((r) => r.category === cat.slug)
-        .map((r) => ({ id: r.id, title: r.title, src: r.video_url, description: r.description })),
-    }))
-    .filter((c) => c.clips.length > 0);
+// Las secuencias reales de una cinta, leídas de la MISMA tabla que usa el
+// resto de la app: la biblioteca no puede desincronizarse del canon.
+export async function getBeltSequences(beltSlug: string): Promise<string[]> {
+  const level = BELT_LEVEL_OF[beltSlug];
+  if (!level) return [];
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('sequences')
+    .select('sequence_number')
+    .eq('belt_level', level);
+  if (error) return [];
+  const nums = [...new Set((data ?? []).map((r: any) => String(r.sequence_number)))];
+  return nums
+    .filter((n) => /^[0-9.]+$/.test(n))          // fuera "Transition", "Requirements"
+    .sort((a, b) => Number(a) - Number(b));
 }
 
 // Flat list for the admin manager (so empty categories are still visible there).
@@ -72,15 +104,12 @@ export async function listModelClips(): Promise<ModelClipRow[]> {
   return (data ?? []) as ModelClipRow[];
 }
 
-// Resolve a (slug, display name) pair from either a fixed category slug or a
-// custom typed name.
-function resolveCategory(slug: string, customName: string): { category: string; categoryName: string } | null {
-  const fixed = MODEL_CATEGORIES.find((c) => c.slug === slug);
-  if (fixed) return { category: fixed.slug, categoryName: fixed.name };
-  const raw = (customName || slug).trim();
-  if (!raw) return null;
-  const s = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  return s ? { category: s, categoryName: raw } : null;
+// Ya NO se aceptan categorías escritas a mano: solo cintas de la lista
+// cerrada. Eso es lo que impide que vuelvan a existir tres formas de escribir
+// "blue belt a purple belt".
+function resolveCategory(slug: string): { category: string; categoryName: string } | null {
+  const belt = MODEL_BELTS.find((c) => c.slug === slug);
+  return belt ? { category: belt.slug, categoryName: belt.name } : null;
 }
 
 // Step 1 — admin asks for a signed upload URL. The browser then uploads the
@@ -97,8 +126,8 @@ export async function createModelUploadUrl(
   const me = await getCurrentCoach();
   if (!me?.is_platform_admin) return { ok: false, error: 'Not authorized' };
 
-  const cat = resolveCategory(slug, customName);
-  if (!cat) return { ok: false, error: 'Pick or name a category.' };
+  const cat = resolveCategory(slug);
+  if (!cat) return { ok: false, error: 'Elegí la cinta.' };
 
   const safeExt = (ext || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
   const path = `${cat.category}/${randomUUID()}.${safeExt}`;
@@ -152,7 +181,7 @@ export async function finalizeModelClip(input: {
 // El archivo NO se toca — solo los metadatos.
 export async function updateModelClip(
   id: string,
-  patch: { title?: string; description?: string | null; category?: string; categoryName?: string; displayOrder?: number },
+  patch: { title?: string; description?: string | null; category?: string; sequence?: string | null; displayOrder?: number },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const me = await getCurrentCoach();
   if (!me?.is_platform_admin) return { ok: false, error: 'Not authorized' };
@@ -168,13 +197,20 @@ export async function updateModelClip(
     if (!Number.isFinite(patch.displayOrder)) return { ok: false, error: 'Invalid order.' };
     row.display_order = Math.max(0, Math.round(patch.displayOrder));
   }
-  // Reclasificar: se re-deriva el slug del nombre para no fragmentar más la
-  // biblioteca (hoy hay 10 categorías para 11 clips por variantes de texto).
-  if (patch.category !== undefined || patch.categoryName !== undefined) {
-    const resolved = resolveCategory(patch.category ?? '', patch.categoryName ?? '');
-    if (!resolved) return { ok: false, error: 'Category is required.' };
+  // Reclasificar: cinta de la lista cerrada + secuencia opcional. Marcelo
+  // puede mover cualquier clip en dos toques, que era el punto — dijo "la
+  // verdad no sé" sobre dónde va cada uno, así que lo caro no puede ser
+  // cambiarlo de lugar.
+  if (patch.category !== undefined) {
+    const resolved = resolveCategory(patch.category);
+    if (!resolved) return { ok: false, error: 'Elegí la cinta.' };
     row.category = resolved.category;
     row.category_name = resolved.categoryName;
+    row.belt = resolved.category;
+  }
+  if (patch.sequence !== undefined) {
+    const sq = (patch.sequence ?? '').trim();
+    row.sequence_number = sq === '' ? null : sq;
   }
   if (Object.keys(row).length === 0) return { ok: false, error: 'Nothing to update.' };
 

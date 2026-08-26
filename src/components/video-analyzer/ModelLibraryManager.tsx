@@ -10,12 +10,24 @@ import {
   updateModelClip,
   type ModelClipRow,
 } from '@/lib/actions/model-clips';
-import { MODEL_CATEGORIES } from '@/lib/constants/model-categories';
+import { MODEL_BELTS, beltOf, sequenceOf } from '@/lib/constants/model-categories';
+
+// Las secuencias de cada cinta, según el canon (tabla `sequences`). Acá van
+// fijas para no pegarle a la base desde el navegador en cada edición.
+const SEQ_BY_BELT: Record<string, string[]> = {
+  all: [],
+  white: ['1', '2', '3', '4', '5'],
+  yellow: ['6', '7'],
+  blue: ['8', '9', '10', '11', '12', '13'],
+  purple: ['14', '15', '16', '17'],
+  brown: [],
+  black: [],
+};
 import { createClient } from '@/lib/supabase/client';
 
 export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   const router = useRouter();
-  const [category, setCategory] = useState(MODEL_CATEGORIES[0]?.slug ?? '__custom__');
+  const [category, setCategory] = useState(MODEL_BELTS[1]?.slug ?? 'all');
   const [customName, setCustomName] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -27,18 +39,18 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   const [eTitle, setETitle] = useState('');
   const [eDesc, setEDesc] = useState('');
   const [eCat, setECat] = useState('');
-  const [eNewCat, setENewCat] = useState('');
+  const [eSeq, setESeq] = useState('');
 
   const saveEdit = (id: string) => {
     setError('');
-    const catName = eCat === '__new__' ? eNewCat.trim() : eCat;
     if (!eTitle.trim()) { setError('El título no puede quedar vacío.'); return; }
-    if (!catName) { setError('Elegí o escribí una categoría.'); return; }
+    if (!eCat) { setError('Elegí la cinta.'); return; }
     startTransition(async () => {
       const r = await updateModelClip(id, {
         title: eTitle,
         description: eDesc,
-        categoryName: catName,
+        category: eCat,
+        sequence: eSeq || null,
       });
       if (!r.ok) { setError(r.error); return; }
       setEditingId(null);
@@ -46,12 +58,11 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
     });
   };
 
-  const isCustom = category === '__custom__';
+  const isCustom = false;   // ya no hay categorías escritas a mano
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (isCustom && !customName.trim()) { setError('Name the custom category (e.g. Sequence 4).'); return; }
     if (!title.trim()) { setError('Title is required.'); return; }
     if (!file) { setError('Choose a video file.'); return; }
     const theFile = file;
@@ -59,7 +70,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
       try {
         const ext = theFile.name.split('.').pop() || 'mp4';
         // 1) get a signed upload URL (admin-gated)
-        const up = await createModelUploadUrl(isCustom ? '__custom__' : category, isCustom ? customName.trim() : '', ext);
+        const up = await createModelUploadUrl(category, '', ext);
         if (!up.ok) { setError(up.error); return; }
 
         // 2) upload the video straight to Storage (no server-action size limit)
@@ -102,15 +113,13 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   };
 
   // Fixed categories first, then any custom ones present in the clips.
-  const order: { slug: string; name: string }[] = [...MODEL_CATEGORIES];
+  const order: { slug: string; name: string }[] = [...MODEL_BELTS];
   for (const cl of clips) {
-    if (!order.some((c) => c.slug === cl.category)) {
-      order.push({ slug: cl.category, name: cl.category_name });
-    }
+
   }
   const byCat = order.map((c) => ({
     ...c,
-    items: clips.filter((cl) => cl.category === c.slug),
+    items: clips.filter((cl) => beltOf(cl) === c.slug),
   }));
 
   return (
@@ -134,7 +143,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
             >
-              {MODEL_CATEGORIES.map((c) => (
+              {MODEL_BELTS.map((c) => (
                 <option key={c.slug} value={c.slug}>{c.name}</option>
               ))}
               <option value="__custom__">Custom…</option>
@@ -231,25 +240,30 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                         className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs"
                       />
                       <div className="flex items-center gap-2 flex-wrap">
+                        {/* Cinta: lista CERRADA. Sin escribir a mano no se
+                            pueden volver a crear tres variantes del mismo
+                            nombre ni typos como "whoite". */}
                         <select
                           value={eCat}
-                          onChange={(e) => setECat(e.target.value)}
-                          aria-label="Categoría"
+                          onChange={(e) => { setECat(e.target.value); setESeq(''); }}
+                          aria-label="Cinta"
                           className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs bg-white max-w-[220px]"
                         >
-                          {/* Categorías que YA existen — reclasificar sin
-                              inventar variantes nuevas del mismo nombre. */}
-                          {byCat.map((x) => <option key={x.slug} value={x.name}>{x.name}</option>)}
-                          <option value="__new__">+ Categoría nueva…</option>
+                          {MODEL_BELTS.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
                         </select>
-                        {eCat === '__new__' && (
-                          <input
-                            value={eNewCat}
-                            onChange={(e) => setENewCat(e.target.value)}
-                            placeholder="Nombre de la categoría nueva"
-                            aria-label="Categoría nueva"
-                            className="flex-1 min-w-[160px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs"
-                          />
+                        {/* Secuencia dentro de la cinta — opcional. */}
+                        {SEQ_BY_BELT[eCat]?.length > 0 && (
+                          <select
+                            value={eSeq}
+                            onChange={(e) => setESeq(e.target.value)}
+                            aria-label="Secuencia"
+                            className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs bg-white"
+                          >
+                            <option value="">Sin secuencia</option>
+                            {SEQ_BY_BELT[eCat].map((n) => (
+                              <option key={n} value={n}>Sequence #{n}</option>
+                            ))}
+                          </select>
                         )}
                         <div className="flex-1" />
                         <button type="button" onClick={() => setEditingId(null)} disabled={pending}
@@ -279,8 +293,8 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                         setEditingId(clip.id);
                         setETitle(clip.title);
                         setEDesc(clip.description ?? '');
-                        setECat(c.name);
-                        setENewCat('');
+                        setECat(beltOf(clip));
+                        setESeq(sequenceOf(clip) ?? '');
                         setError('');
                       }}
                       disabled={pending}
