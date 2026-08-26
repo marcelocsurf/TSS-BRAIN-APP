@@ -135,6 +135,10 @@ function StickerNode({ shape, scale, selected, onSelect, onChange, opacity }: {
         opacity={(shape.alpha ?? 1) * opacity}
         draggable
         onPointerDown={onSelect}
+        // Doble toque = espejo. En el iPad, con el cliente enfrente, bajar la
+        // vista hasta la barra para voltear un sticker corta la explicación.
+        onDblClick={() => onChange({ flipX: !shape.flipX })}
+        onDblTap={() => onChange({ flipX: !shape.flipX })}
         onDragEnd={(e) => onChange({ points: [e.target.x(), e.target.y()] })}
         onTransformEnd={() => {
           const n = nodeRef.current;

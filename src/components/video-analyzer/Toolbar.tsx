@@ -111,21 +111,31 @@ export default function Toolbar({
         </div>
       )}
 
-      {/* Con un sticker agarrado: transparencia y quitar. */}
+      {/* Con un sticker agarrado. Los símbolos solos (⇋ ⇅) no le decían nada
+          a nadie — van con palabra. Girar NO está acá: es el tirador redondo
+          de arriba del sticker, y se avisa. */}
       {stickerAlpha != null && (
-        <div className="flex items-center gap-1.5 rounded-lg bg-cyan-500/20 px-2 py-1">
-          <span className="text-[10px] uppercase tracking-wider text-white/60">Sticker</span>
+        <div className="flex items-center gap-1.5 rounded-lg bg-cyan-500/25 px-2 py-1 ring-1 ring-cyan-400/50">
+          <span className="text-[10px] uppercase tracking-wider font-bold text-cyan-200">Sticker</span>
+          <span className="text-[10px] text-white/50">transp.</span>
           <input
             type="range" min={0.15} max={1} step={0.05} value={stickerAlpha}
             onChange={(e) => onStickerAlpha?.(Number(e.target.value))}
             aria-label="Transparencia del sticker"
-            className="w-20"
+            className="w-16"
           />
           {/* Voltear: la porción de pizza al revés sirve como ángulo hacia
               el otro lado, sin necesidad de otro sticker. */}
-          <button onClick={() => onFlipSticker?.('x')} className={`${btn} bg-white/10`} title="Voltear horizontal">⇋</button>
-          <button onClick={() => onFlipSticker?.('y')} className={`${btn} bg-white/10`} title="Voltear vertical">⇅</button>
-          <button onClick={onDeleteSticker} className={`${btn} bg-white/10`} title="Quitar sticker">✕</button>
+          <button onClick={() => onFlipSticker?.('x')} className={`${btn} bg-white/15`}
+            title="Espejo horizontal — la porción de pizza sirve como ángulo hacia el otro lado">
+            ⇋ Espejo
+          </button>
+          <button onClick={() => onFlipSticker?.('y')} className={`${btn} bg-white/15`}
+            title="Espejo vertical — lo da vuelta de arriba a abajo">
+            ⇅ Invertir
+          </button>
+          <span className="text-[10px] text-cyan-200/70 px-1">girá con el tirador ↻ de arriba</span>
+          <button onClick={onDeleteSticker} className={`${btn} bg-white/15`} title="Quitar sticker">✕ Quitar</button>
         </div>
       )}
 
