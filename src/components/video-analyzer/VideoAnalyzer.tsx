@@ -353,7 +353,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
       tool: "sticker",
       color: "#ffffff",
       width: 0,
-      points: [W / 2 - w / 2, H / 2 - (w * ratio) / 2],
+      points: [W / 2, H / 2],   // el punto guardado es el CENTRO (ver offsetX/Y)
       src,
       w,
       h: w * ratio,
@@ -744,6 +744,11 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
         onAddSticker={addSticker}
         stickerAlpha={selectedSticker ? (selectedSticker.alpha ?? 0.85) : null}
         onStickerAlpha={(a) => updateSelected({ alpha: a })}
+        onFlipSticker={(axis) =>
+          updateSelected(axis === 'x'
+            ? { flipX: !selectedSticker?.flipX }
+            : { flipY: !selectedSticker?.flipY })
+        }
         onDeleteSticker={() => {
           if (!selectedId) return;
           const drop = (arr: Shape[]) => arr.filter((x) => x.id !== selectedId);

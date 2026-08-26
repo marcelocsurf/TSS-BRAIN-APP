@@ -25,6 +25,7 @@ type Props = {
   stickerAlpha?: number | null;
   onStickerAlpha?: (a: number) => void;
   onDeleteSticker?: () => void;
+  onFlipSticker?: (axis: 'x' | 'y') => void;
   onChange: (next: DrawSettings) => void;
   onUndo: () => void;
   onClear: () => void;
@@ -38,6 +39,7 @@ export default function Toolbar({
   stickerAlpha,
   onStickerAlpha,
   onDeleteSticker,
+  onFlipSticker,
   onChange,
   onUndo,
   onClear,
@@ -119,6 +121,10 @@ export default function Toolbar({
             aria-label="Transparencia del sticker"
             className="w-20"
           />
+          {/* Voltear: la porción de pizza al revés sirve como ángulo hacia
+              el otro lado, sin necesidad de otro sticker. */}
+          <button onClick={() => onFlipSticker?.('x')} className={`${btn} bg-white/10`} title="Voltear horizontal">⇋</button>
+          <button onClick={() => onFlipSticker?.('y')} className={`${btn} bg-white/10`} title="Voltear vertical">⇅</button>
           <button onClick={onDeleteSticker} className={`${btn} bg-white/10`} title="Quitar sticker">✕</button>
         </div>
       )}

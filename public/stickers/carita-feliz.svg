@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-18 -18 336 336" width="336" height="336">
+  <!-- ═══ CARITA FELIZ ═══
+       Para marcar lo que salió bien, sin escribir nada. -->
+  <defs>
+    <filter id="cs" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000" flood-opacity=".5"/>
+    </filter>
+    <radialGradient id="cara" cx="38%" cy="32%" r="78%">
+      <stop offset="0" stop-color="#FFE86B"/>
+      <stop offset="1" stop-color="#FFC531"/>
+    </radialGradient>
+  </defs>
+
+  <g filter="url(#cs)">
+    <circle cx="150" cy="150" r="150" fill="#fff"/>
+    <circle cx="150" cy="150" r="138" fill="url(#cara)" stroke="#1A1206" stroke-width="10"/>
+    <!-- ojos -->
+    <ellipse cx="104" cy="118" rx="17" ry="23" fill="#1A1206"/>
+    <ellipse cx="196" cy="118" rx="17" ry="23" fill="#1A1206"/>
+    <!-- brillo de los ojos -->
+    <circle cx="110" cy="109" r="6" fill="#fff" opacity=".9"/>
+    <circle cx="202" cy="109" r="6" fill="#fff" opacity=".9"/>
+    <!-- sonrisa -->
+    <path d="M 78 176 C 104 232 196 232 222 176"
+          fill="none" stroke="#1A1206" stroke-width="15" stroke-linecap="round"/>
+    <!-- cachetes -->
+    <ellipse cx="70" cy="168" rx="20" ry="13" fill="#FF8AA0" opacity=".55"/>
+    <ellipse cx="230" cy="168" rx="20" ry="13" fill="#FF8AA0" opacity=".55"/>
+  </g>
+</svg>

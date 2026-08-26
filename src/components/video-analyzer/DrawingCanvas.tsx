@@ -126,6 +126,12 @@ function StickerNode({ shape, scale, selected, onSelect, onChange, opacity }: {
         width={shape.w ?? 200}
         height={shape.h ?? 200}
         rotation={shape.rot ?? 0}
+        // El espejo se hace con escala negativa y el punto de anclaje al
+        // medio, para que voltear NO mueva el sticker de lugar.
+        offsetX={(shape.w ?? 200) / 2}
+        offsetY={(shape.h ?? 200) / 2}
+        scaleX={shape.flipX ? -1 : 1}
+        scaleY={shape.flipY ? -1 : 1}
         opacity={(shape.alpha ?? 1) * opacity}
         draggable
         onPointerDown={onSelect}
@@ -135,14 +141,16 @@ function StickerNode({ shape, scale, selected, onSelect, onChange, opacity }: {
           if (!n) return;
           // Konva escala el nodo; lo pasamos a ancho/alto reales y reseteamos
           // la escala, así el sticker no se deforma al volver a tocarlo.
-          const sx = n.scaleX(), sy = n.scaleY();
-          n.scaleX(1); n.scaleY(1);
-          onChange({
-            points: [n.x(), n.y()],
-            w: Math.max(20, n.width() * sx),
-            h: Math.max(20, n.height() * sy),
-            rot: n.rotation(),
-          });
+          // El transformer deja la escala en el nodo; se pasa a ancho/alto
+          // reales. Se toma el VALOR ABSOLUTO para no perder el espejo, que
+          // vive aparte en flipX/flipY.
+          const sx = Math.abs(n.scaleX()), sy = Math.abs(n.scaleY());
+          const w = Math.max(20, n.width() * sx);
+          const h = Math.max(20, n.height() * sy);
+          n.scaleX(shape.flipX ? -1 : 1);
+          n.scaleY(shape.flipY ? -1 : 1);
+          n.offsetX(w / 2); n.offsetY(h / 2);
+          onChange({ points: [n.x(), n.y()], w, h, rot: n.rotation() });
         }}
       />
       {selected && (

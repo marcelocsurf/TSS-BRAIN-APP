@@ -14,6 +14,8 @@ export const STICKERS: StickerDef[] = [
   { id: 'ola', src: '/stickers/ola.png', ratio: 0.3333 },
   { id: 'tabla', src: '/stickers/tabla.png', ratio: 3.9474 },
   { id: 'tres-circulos', src: '/stickers/tres-circulos.png', ratio: 0.83 },
+  { id: 'carita-feliz', src: '/stickers/carita-feliz.svg', ratio: 1 },
+  { id: 'dragon', src: '/stickers/dragon.svg', ratio: 0.6774 },
   { id: 'llamas', src: '/stickers/llamas.svg', ratio: 0.3541 },
   { id: 'pizza-mitad', src: '/stickers/pizza-mitad.svg', ratio: 0.5755 },
   { id: 'pizza-porcion', src: '/stickers/pizza-porcion.svg', ratio: 1.303 },

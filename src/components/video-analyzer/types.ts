@@ -31,6 +31,8 @@ export type Shape = {
   h?: number;
   rot?: number;        // grados
   alpha?: number;      // 0..1 — para no tapar la ola
+  flipX?: boolean;     // espejo horizontal (la porción como ángulo al revés)
+  flipY?: boolean;     // espejo vertical
   // line / arrow: [x1, y1, x2, y2]
   // free: [x1, y1, x2, y2, ...]
   // circle: [cx, cy, radius]
