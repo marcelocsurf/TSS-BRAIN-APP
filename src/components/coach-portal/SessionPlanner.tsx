@@ -66,7 +66,6 @@ import {
 } from '@/lib/actions/spaces';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
-import { groupByBlocks } from '@/lib/constants/learning-blocks';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
 // can also write a custom one. Keys are stored as service_plans.mental_hack.
@@ -692,6 +691,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           campName={data.camp.camp_name}
           students={students.filter((st) => st.student_id === earlyStudentId)}
           stpCatalog={data.graduationCatalog}
+          useBlocks={data.graduationUsesBlocks}
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
@@ -722,6 +722,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           campName={data.camp.camp_name}
           students={students}
           stpCatalog={data.graduationCatalog}
+          useBlocks={data.graduationUsesBlocks}
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
@@ -2709,19 +2710,10 @@ function BlockEditor({
           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
         >
           <option value="">— pick a step —</option>
-          {/* Agrupado en los Learning Blocks del método: el coach elige el foco
-              del día viendo en qué parte de la ola cae, no en una lista plana. */}
-          {groupByBlocks(stpCatalog as any[]).map((g) => (
-            <optgroup
-              key={g.key}
-              label={g.block != null ? `Bloque ${g.block} · ${g.label}` : g.label}
-            >
-              {g.rows.map((stp: any) => (
-                <option key={stp.id} value={stp.id}>
-                  {stp.title}
-                </option>
-              ))}
-            </optgroup>
+          {stpCatalog.map((stp) => (
+            <option key={stp.id} value={stp.id}>
+              {stp.id} · {stp.title}
+            </option>
           ))}
         </select>
       </div>

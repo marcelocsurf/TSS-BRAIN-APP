@@ -23,6 +23,8 @@ interface Props {
   campName: string;
   students: ServicePlanStudent[];
   stpCatalog: ServicePlanData['stpCatalog'];
+  /** Solo Blue Belt usa los Learning Blocks. */
+  useBlocks?: boolean;
   // Coach ratings already given across the camp days (student → step →
   // rating). Pre-loaded so the final evaluation reflects daily progress
   // and the coach only adjusts what changed.
@@ -49,6 +51,7 @@ export function FinalCampEvaluation({
   campName,
   students,
   stpCatalog,
+  useBlocks = false,
   initialRatings,
   targetBelt,
   canAccreditTarget = true,
@@ -60,9 +63,23 @@ export function FinalCampEvaluation({
 }: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
   /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
   earlyMode?: boolean }) {
-  // El catálogo agrupado en los Learning Blocks del método. Se calcula una vez:
-  // es el mismo para todos los alumnos del camp.
-  const catalogBlocks = useMemo(() => groupByBlocks(stpCatalog as any[]), [stpCatalog]);
+  // Los Learning Blocks son SOLO para Blue Belt. En White y Yellow la lista
+  // queda plana y en el mismo orden de siempre.
+  const catalogBlocks = useMemo(
+    () =>
+      useBlocks
+        ? groupByBlocks(stpCatalog as any[])
+        : [
+            {
+              key: 'flat',
+              block: null,
+              label: '',
+              sub: '',
+              rows: stpCatalog as any[],
+            },
+          ],
+    [stpCatalog, useBlocks]
+  );
 
   // Recorrido del camp por alumno (qué misión/STP/drill trabajó cada día) —
   // sin esto el coach evaluaba a ciegas: solo veía el día seleccionado.
@@ -479,7 +496,8 @@ export function FinalCampEvaluation({
                         por ahí entrelazaba white/yellow/blue. Ahora cada paso cae
                         en su bloque y el coach ve dónde está parado. */}
                     {catalogBlocks.map((g) => (
-                      <div key={g.key} className="pt-1">
+                      <div key={g.key} className={useBlocks ? 'pt-1' : ''}>
+                        {useBlocks && (
                         <div className="flex items-baseline gap-2 mb-2 pb-1.5 border-b border-gray-200">
                           {g.block != null && (
                             <span
@@ -494,6 +512,7 @@ export function FinalCampEvaluation({
                             {g.rows.filter((r: any) => (ratings[s.student_id]?.[r.id] ?? 0) >= rule.stpThreshold).length}/{g.rows.length}
                           </span>
                         </div>
+                        )}
                         <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5">
                           {g.rows.map((stp: any) => {
                             const current = ratings[s.student_id]?.[stp.id] ?? null;
@@ -502,11 +521,18 @@ export function FinalCampEvaluation({
                             return (
                               <div key={stp.id} className="flex items-center justify-between gap-3">
                                 <div className="min-w-0 flex-1">
+                                  {!useBlocks && (
+                                    <p className="text-[11px] font-mono text-gray-400">
+                                      {stp.id}
+                                      {weak && <span className="ml-1 text-amber-600">· below {rule.stpThreshold}★</span>}
+                                    </p>
+                                  )}
                                   <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
-                                  {/* El código vuelve porque dentro de un bloque se juntan
-                                      pasos de cintas distintas con títulos casi iguales
-                                      —"Cobra Pick Line" (WB) y "Cobra + Pick Line" (YB)—
-                                      y el coach los califica por separado. */}
+                                  {/* En Blue Belt el bloque junta pasos de cintas distintas
+                                      con títulos casi iguales —"Cobra Pick Line" (WB) y
+                                      "Cobra + Pick Line" (YB)— y se califican por separado,
+                                      así que el código va debajo con su secuencia. */}
+                                  {useBlocks && (
                                   <p className="text-[10px] font-mono text-gray-400 truncate">
                                     {stp.id}
                                     {seqs.length > 0 && (
@@ -521,6 +547,7 @@ export function FinalCampEvaluation({
                                       <span className="text-amber-600">{` · below ${rule.stpThreshold}★`}</span>
                                     )}
                                   </p>
+                                  )}
                                 </div>
                                 <StarRating
                                   value={current}

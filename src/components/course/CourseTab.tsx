@@ -106,6 +106,14 @@ const WB_SEQUENCE_ICON: Record<string, LucideIcon> = {
 // Cumulative steps mastered after completing each sequence (canon)
 
 
+const WB_SEQUENCE_CUMULATIVE: Record<string, number> = {
+  'WB-SEQ-1': 9,
+  'WB-SEQ-2': 14,
+  'WB-SEQ-3': 20,
+  'WB-SEQ-4': 22,
+  'WB-SEQ-5': 25,
+};
+
 export function CourseTab({ data }: { data: CourseData }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
   const [intros, setIntros] = useState<Record<string, SectionIntro>>({});
@@ -194,16 +202,16 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Learning Blocks — la estructura del método, la misma que ve el coach al
   // evaluar. Antes esto se agrupaba por wb_sequence_id, que era un tercer
   // agrupamiento distinto del de la evaluación y del de las secuencias reales.
-  // Purple, Brown, Black y los cursos de coach todavía no están mapeados a
-  // bloques. Sin este guard su curso entero colapsaba en un solo grupo
-  // "Other steps"; para esas cintas se mantiene el agrupamiento anterior.
-  const beltUsesBlocks = isMappedToBlocks(beltLessons);
+  // Los Learning Blocks son SOLO para Blue Belt. White, Yellow y el resto
+  // conservan su organización de siempre por wb_sequence — ya estaban
+  // ordenados y no hay razón para moverlos.
+  const beltUsesBlocks = activeCourse.key === 'blue_belt' && isMappedToBlocks(beltLessons);
   const beltSequences = beltUsesBlocks
     ? groupByBlocks(beltLessons, 'en').map((g) => ({
         id: g.key,
         name: g.label,
         order: g.block ?? 99,
-        block: g.block,
+        block: g.block as number | null,
         subtitle: g.sub,
         lessons: g.rows as LessonRow[],
       }))
@@ -410,10 +418,24 @@ export function CourseTab({ data }: { data: CourseData }) {
           {beltSequences.map((group) => (
             <SectionBlock
               key={group.id}
-              title={group.block != null ? `Block ${group.block} · ${group.name}` : group.name}
+              title={
+                group.block != null
+                  ? `Block ${group.block} · ${group.name}`
+                  : !beltUsesBlocks && group.order >= 1 && group.order <= 13
+                    ? `Sequence #${group.order}: ${group.name}`
+                    : group.name
+              }
               subtitle={group.subtitle}
-              Icon={WB_SEQUENCE_ICON[group.lessons[0]?.wb_sequence_id || ''] ?? BookOpen}
-              badge={null}
+              Icon={
+                (beltUsesBlocks
+                  ? WB_SEQUENCE_ICON[group.lessons[0]?.wb_sequence_id || '']
+                  : WB_SEQUENCE_ICON[group.id]) || BookOpen
+              }
+              badge={
+                !beltUsesBlocks && WB_SEQUENCE_CUMULATIVE[group.id]
+                  ? `${WB_SEQUENCE_CUMULATIVE[group.id]}/25 cumulative`
+                  : null
+              }
               lessons={group.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
               theme={beltTheme}
