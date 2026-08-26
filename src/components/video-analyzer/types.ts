@@ -1,4 +1,4 @@
-export type Tool = "line" | "arrow" | "circle" | "free" | "angle";
+export type Tool = "line" | "arrow" | "circle" | "free" | "angle" | "sticker";
 
 export type Shape = {
   id: string;
@@ -21,6 +21,16 @@ export type Shape = {
   // línea a la vista, y sigue sin ella. Es la explicación sola: el coach no
   // tiene que pausar a mano ni narrar mientras busca el momento.
   hold?: boolean;
+  // ── STICKERS (pedido de Marcelo, 2026-08-26) ──
+  // Material de enseñanza de The Surf Sequence pegado ENCIMA del video: la
+  // diana del sweet spot, las zonas del pie en el tail (full speed / neutro /
+  // maniobras), el mat de memoria muscular, las partes de la ola. El coach lo
+  // ubica sobre la tabla del alumno, lo agranda y lo gira hasta que calza.
+  src?: string;        // ruta del PNG/SVG
+  w?: number;          // ancho en coordenadas del lienzo
+  h?: number;
+  rot?: number;        // grados
+  alpha?: number;      // 0..1 — para no tapar la ola
   // line / arrow: [x1, y1, x2, y2]
   // free: [x1, y1, x2, y2, ...]
   // circle: [cx, cy, radius]

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- LA DIANA DEL SWEET SPOT — la que Marcelo tiene pintada en su tabla.
+       Rosa afuera, amarillo, verde en el centro, con la cruz de referencia. -->
+  <circle cx="100" cy="100" r="78" fill="#FF3FA4" stroke="#111" stroke-width="7"/>
+  <circle cx="100" cy="100" r="55" fill="#F5E63D" stroke="#111" stroke-width="6"/>
+  <circle cx="100" cy="100" r="30" fill="#5BE04A" stroke="#111" stroke-width="6"/>
+  <line x1="100" y1="8"  x2="100" y2="192" stroke="#111" stroke-width="6"/>
+  <line x1="8"   y1="100" x2="192" y2="100" stroke="#111" stroke-width="6"/>
+</svg>

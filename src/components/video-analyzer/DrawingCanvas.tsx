@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useRef, useState } from "react";
-import { Stage, Layer, Line, Arrow, Circle, Text, Group, Arc } from "react-konva";
+import { Stage, Layer, Line, Arrow, Circle, Text, Group, Arc, Image as KImage, Transformer } from "react-konva";
 import type Konva from "konva";
 import { shapeVisible, type Shape, type DrawSettings } from "./types";
 
@@ -10,6 +10,9 @@ type Props = {
   now?: number;
   /** Dibujos de pausa que ya cumplieron su turno en esta pasada. */
   consumed?: Set<string>;
+  /** Sticker seleccionado (el que muestra los tiradores). */
+  selectedId?: string | null;
+  onSelectShape?: (id: string | null) => void;
   width: number;
   height: number;
   scale: number;
@@ -84,8 +87,82 @@ function partialPoints(pts: number[], p: number): number[] {
   return out;
 }
 
+// Las imágenes de los stickers se cargan UNA vez y se reusan: el mismo
+// sticker puede estar puesto varias veces sobre el mismo cuadro.
+const imgCache = new Map<string, HTMLImageElement>();
+function useStickerImage(src?: string) {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    if (!src || imgCache.has(src)) return;
+    const im = new window.Image();
+    im.onload = () => { imgCache.set(src, im); bump((v) => v + 1); };
+    im.src = src;
+  }, [src]);
+  return src ? imgCache.get(src) : undefined;
+}
+
+// Un sticker: se mueve, se agranda y se gira con los tiradores de Konva.
+function StickerNode({ shape, scale, selected, onSelect, onChange, opacity }: {
+  shape: Shape; scale: number; selected: boolean;
+  onSelect: () => void; onChange: (patch: Partial<Shape>) => void; opacity: number;
+}) {
+  const img = useStickerImage(shape.src);
+  const nodeRef = useRef<Konva.Image>(null);
+  const trRef = useRef<Konva.Transformer>(null);
+  useEffect(() => {
+    if (selected && trRef.current && nodeRef.current) {
+      trRef.current.nodes([nodeRef.current]);
+      trRef.current.getLayer()?.batchDraw();
+    }
+  }, [selected, img]);
+  if (!img) return null;
+  return (
+    <>
+      <KImage
+        ref={nodeRef}
+        image={img}
+        x={shape.points[0]}
+        y={shape.points[1]}
+        width={shape.w ?? 200}
+        height={shape.h ?? 200}
+        rotation={shape.rot ?? 0}
+        opacity={(shape.alpha ?? 0.85) * opacity}
+        draggable
+        onPointerDown={onSelect}
+        onDragEnd={(e) => onChange({ points: [e.target.x(), e.target.y()] })}
+        onTransformEnd={() => {
+          const n = nodeRef.current;
+          if (!n) return;
+          // Konva escala el nodo; lo pasamos a ancho/alto reales y reseteamos
+          // la escala, así el sticker no se deforma al volver a tocarlo.
+          const sx = n.scaleX(), sy = n.scaleY();
+          n.scaleX(1); n.scaleY(1);
+          onChange({
+            points: [n.x(), n.y()],
+            w: Math.max(20, n.width() * sx),
+            h: Math.max(20, n.height() * sy),
+            rot: n.rotation(),
+          });
+        }}
+      />
+      {selected && (
+        <Transformer
+          ref={trRef}
+          rotateEnabled
+          keepRatio={false}
+          anchorSize={14 / scale}
+          borderStroke="#00E5FF"
+          anchorStroke="#00E5FF"
+          anchorFill="#0B1B2B"
+          boundBoxFunc={(oldBox, newBox) => (newBox.width < 24 || newBox.height < 24 ? oldBox : newBox)}
+        />
+      )}
+    </>
+  );
+}
+
 const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
-  { now = 0, consumed, width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
+  { now = 0, consumed, selectedId, onSelectShape, width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
   ref
 ) {
   const drawing = useRef(false);
@@ -146,6 +223,10 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
 
   function handleDown(e: Konva.KonvaEventObject<PointerEvent | TouchEvent>) {
     onActivate();
+    // Tocar el fondo suelta el sticker que estuviera seleccionado.
+    if (e.target === e.target.getStage()) onSelectShape?.(null);
+    // Con un sticker agarrado no se dibuja: el dedo lo está moviendo.
+    if (settings.tool === "sticker") return;
     const stage = e.target.getStage();
     const p = point(stage);
     if (!p) return;
@@ -249,6 +330,21 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
         {visible.map((s) => {
           const { p: ap, opacity } = anim(s);
           if (opacity <= 0) return null;
+          if (s.tool === "sticker") {
+            return (
+              <StickerNode
+                key={s.id}
+                shape={s}
+                scale={scale}
+                opacity={opacity}
+                selected={selectedId === s.id}
+                onSelect={() => onSelectShape?.(s.id)}
+                onChange={(patch) =>
+                  onShapesChange(shapes.map((x) => (x.id === s.id ? { ...x, ...patch } : x)))
+                }
+              />
+            );
+          }
           const w = s.width / scale;
           const halo = w + 3 / scale;
           const common = {

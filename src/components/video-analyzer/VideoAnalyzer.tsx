@@ -10,6 +10,7 @@ import { makeThumb, MAX_CLIPS_PER_GROUP, type Group } from "./clips";
 import type { Shape, DrawSettings } from "./types";
 import type { ModelCategory } from "./library";
 import { getModelClips } from "@/lib/actions/model-clips";
+import { STICKERS } from "@/lib/constants/analyzer-stickers";
 import { saveSession, loadSession, clearSession, worthRestoring, type StoredSession } from "./session-store";
 
 type PanelKey = "student" | "model";
@@ -57,6 +58,8 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
   // porque las dos olas nunca empiezan igual.
   const [synced, setSynced] = useState(false);
   const [syncOffset, setSyncOffset] = useState(0);
+  // El sticker agarrado (el que muestra los tiradores para mover/agrandar).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [library, setLibrary] = useState<ModelCategory[]>([]);
   // Cola ÚNICA de miniaturas. El AbortController se aborta SOLO al cerrar el
   // analizador. Antes cada importación abortaba la anterior: si el coach
@@ -335,6 +338,37 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     }
   }, []);
 
+  // Pega un sticker en el centro del panel activo. Nace grande y en el medio
+  // para que el coach lo vea enseguida y lo acomode arrastrando.
+  function addSticker(src: string, ratio: number) {
+    const stage = active === "student" ? studentStage.current : modelStage.current;
+    const W = stage?.width() ?? 640;
+    const H = stage?.height() ?? 360;
+    const w = Math.min(W, H) * 0.45;
+    const shape: Shape = {
+      id: uid("k"),
+      tool: "sticker",
+      color: "#ffffff",
+      width: 0,
+      points: [W / 2 - w / 2, H / 2 - (w * ratio) / 2],
+      src,
+      w,
+      h: w * ratio,
+      rot: 0,
+      alpha: 0.85,
+    };
+    if (active === "student") setStudentShapes([...studentShapes, shape]);
+    else setModelShapes([...modelShapes, shape]);
+    setSelectedId(shape.id);
+    setSettings((v) => ({ ...v, tool: "sticker" }));
+  }
+
+  function updateSelected(patch: Partial<Shape>) {
+    const apply = (arr: Shape[]) => arr.map((x) => (x.id === selectedId ? { ...x, ...patch } : x));
+    if (active === "student") setStudentShapes(apply(studentShapes));
+    else setModelShapes(apply(modelShapes));
+  }
+
   function toggleSync() {
     if (synced) { setSynced(false); return; }
     const sv = studentVideo.current, mv = modelVideo.current;
@@ -475,6 +509,11 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
   }
 
   const activeLabel = active === "student" ? "Student" : "Model";
+
+  const selectedSticker =
+    (active === "student" ? studentShapes : modelShapes).find(
+      (x) => x.id === selectedId && x.tool === "sticker"
+    ) ?? null;
 
   const prevClips = prev ? prev.groups.reduce((n, g) => n + g.clips.length, 0) : 0;
   const prevShapes = prev
@@ -655,6 +694,8 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
               onActivate={() => setActive("student")}
               onPickFile={pickStudentFile}
               emptyHint="Importa un video del alumno desde el iPad."
+              selectedId={selectedId}
+              onSelectShape={setSelectedId}
               peer={modelVideo}
               peerOffset={syncOffset}
               synced={synced && layout === "dual"}
@@ -672,6 +713,8 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
               onShapesChange={setModelShapes}
               onActivate={() => setActive("model")}
               emptyHint="Elige un video modelo de la librería."
+              selectedId={selectedId}
+              onSelectShape={setSelectedId}
               peer={studentVideo}
               peerOffset={-syncOffset}
               synced={synced && layout === "dual"}
@@ -681,6 +724,16 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
       </div>
 
       <Toolbar
+        onAddSticker={addSticker}
+        stickerAlpha={selectedSticker ? (selectedSticker.alpha ?? 0.85) : null}
+        onStickerAlpha={(a) => updateSelected({ alpha: a })}
+        onDeleteSticker={() => {
+          if (!selectedId) return;
+          const drop = (arr: Shape[]) => arr.filter((x) => x.id !== selectedId);
+          if (active === "student") setStudentShapes(drop(studentShapes));
+          else setModelShapes(drop(modelShapes));
+          setSelectedId(null);
+        }}
         settings={settings}
         onChange={setSettings}
         onUndo={undo}

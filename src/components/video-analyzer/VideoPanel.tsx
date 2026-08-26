@@ -34,6 +34,8 @@ type Props = {
   // El coach alinea al alumno y al modelo en el MISMO instante de la ola
   // (por ejemplo el bottom turn) y a partir de ahí se mueven juntos: play,
   // pausa, cuadro a cuadro y velocidad valen para los dos.
+  selectedId?: string | null;
+  onSelectShape?: (id: string | null) => void;
   peer?: RefObject<HTMLVideoElement>;
   /** Segundos que hay que sumarle a MI tiempo para obtener el del otro. */
   peerOffset?: number;
@@ -51,6 +53,8 @@ export default function VideoPanel({
   onShapesChange,
   onActivate,
   onPickFile,
+  selectedId,
+  onSelectShape,
   peer,
   peerOffset = 0,
   synced = false,
@@ -429,6 +433,8 @@ export default function VideoPanel({
               ref={stageRef}
               now={now}
               consumed={consumed}
+              selectedId={selectedId}
+              onSelectShape={onSelectShape}
               width={size.w}
               height={size.h}
               scale={zoom}

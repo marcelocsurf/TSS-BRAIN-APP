@@ -1,6 +1,7 @@
 "use client";
 
 import { DURATIONS, type DrawSettings, type Tool } from "./types";
+import { STICKERS } from "@/lib/constants/analyzer-stickers";
 
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "line", label: "Línea" },
@@ -18,6 +19,11 @@ const WIDTHS = [3, 5, 8];
 
 type Props = {
   settings: DrawSettings;
+  onAddSticker?: (src: string, ratio: number) => void;
+  /** Transparencia del sticker agarrado, si hay uno. */
+  stickerAlpha?: number | null;
+  onStickerAlpha?: (a: number) => void;
+  onDeleteSticker?: () => void;
   onChange: (next: DrawSettings) => void;
   onUndo: () => void;
   onClear: () => void;
@@ -27,6 +33,10 @@ type Props = {
 
 export default function Toolbar({
   settings,
+  onAddSticker,
+  stickerAlpha,
+  onStickerAlpha,
+  onDeleteSticker,
   onChange,
   onUndo,
   onClear,
@@ -68,6 +78,38 @@ export default function Toolbar({
       >
         ⏸ Pausa
       </button>
+
+      {/* ── STICKERS ── El material de The Surf Sequence encima del video:
+          el coach lo pega, lo arrastra sobre la tabla del alumno, lo agranda
+          y lo gira hasta que calza. */}
+      {onAddSticker && (
+        <div className="flex items-center gap-1">
+          {STICKERS.map((k) => (
+            <button
+              key={k.id}
+              onClick={() => onAddSticker(k.src, k.ratio)}
+              title={`Pegar ${k.name}`}
+              className={`${btn} bg-white/10`}
+            >
+              {k.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Con un sticker agarrado: transparencia y quitar. */}
+      {stickerAlpha != null && (
+        <div className="flex items-center gap-1.5 rounded-lg bg-cyan-500/20 px-2 py-1">
+          <span className="text-[10px] uppercase tracking-wider text-white/60">Transp.</span>
+          <input
+            type="range" min={0.15} max={1} step={0.05} value={stickerAlpha}
+            onChange={(e) => onStickerAlpha?.(Number(e.target.value))}
+            aria-label="Transparencia del sticker"
+            className="w-20"
+          />
+          <button onClick={onDeleteSticker} className={`${btn} bg-white/10`} title="Quitar sticker">✕</button>
+        </div>
+      )}
 
       <div className="flex gap-1">
         {TOOLS.map((t) => (
