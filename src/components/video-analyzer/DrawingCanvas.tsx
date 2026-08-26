@@ -126,7 +126,7 @@ function StickerNode({ shape, scale, selected, onSelect, onChange, opacity }: {
         width={shape.w ?? 200}
         height={shape.h ?? 200}
         rotation={shape.rot ?? 0}
-        opacity={(shape.alpha ?? 0.85) * opacity}
+        opacity={(shape.alpha ?? 1) * opacity}
         draggable
         onPointerDown={onSelect}
         onDragEnd={(e) => onChange({ points: [e.target.x(), e.target.y()] })}

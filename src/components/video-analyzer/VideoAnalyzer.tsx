@@ -355,7 +355,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
       w,
       h: w * ratio,
       rot: 0,
-      alpha: 0.85,
+      alpha: 1,        // pegado, no transparente
     };
     if (active === "student") setStudentShapes([...studentShapes, shape]);
     else setModelShapes([...modelShapes, shape]);

@@ -1,7 +1,8 @@
 "use client";
 
 import { DURATIONS, type DrawSettings, type Tool } from "./types";
-import { STICKERS } from "@/lib/constants/analyzer-stickers";
+import { STICKERS, STICKER_GROUPS } from "@/lib/constants/analyzer-stickers";
+import { useState } from "react";
 
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "line", label: "Línea" },
@@ -44,6 +45,7 @@ export default function Toolbar({
   activeLabel,
 }: Props) {
   const btn = "rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 transition";
+  const [stickersOpen, setStickersOpen] = useState(false);
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-white/10 bg-black/60 p-1.5">
@@ -79,28 +81,44 @@ export default function Toolbar({
         ⏸ Pausa
       </button>
 
-      {/* ── STICKERS ── El material de The Surf Sequence encima del video:
-          el coach lo pega, lo arrastra sobre la tabla del alumno, lo agranda
-          y lo gira hasta que calza. */}
+      {/* ── STICKERS ── El material de The Surf Sequence PEGADO encima del
+          video: el coach lo arrastra sobre la tabla del alumno, lo agranda y
+          lo gira. Van en un cajón porque son varios y la barra ya está llena. */}
       {onAddSticker && (
-        <div className="flex items-center gap-1">
-          {STICKERS.map((k) => (
-            <button
-              key={k.id}
-              onClick={() => onAddSticker(k.src, k.ratio)}
-              title={`Pegar ${k.name}`}
-              className={`${btn} bg-white/10`}
-            >
-              {k.name}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            onClick={() => setStickersOpen((v) => !v)}
+            className={`${btn} ${stickersOpen ? "bg-cyan-500" : "bg-white/10"}`}
+          >
+            🏷 Stickers
+          </button>
+          {stickersOpen && (
+            <div className="absolute bottom-full left-0 z-30 mb-1.5 w-64 rounded-xl border border-white/15 bg-[#0B1B2B] p-2 shadow-2xl">
+              {STICKER_GROUPS.map((g) => (
+                <div key={g} className="mb-1.5 last:mb-0">
+                  <p className="px-1 pb-1 text-[9px] uppercase tracking-wider text-white/40">{g}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {STICKERS.filter((k) => k.group === g).map((k) => (
+                      <button
+                        key={k.id}
+                        onClick={() => { onAddSticker(k.src, k.ratio); setStickersOpen(false); }}
+                        className="rounded-lg bg-white/10 px-2 py-1.5 text-[11px] font-semibold active:scale-95"
+                      >
+                        {k.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* Con un sticker agarrado: transparencia y quitar. */}
       {stickerAlpha != null && (
         <div className="flex items-center gap-1.5 rounded-lg bg-cyan-500/20 px-2 py-1">
-          <span className="text-[10px] uppercase tracking-wider text-white/60">Transp.</span>
+          <span className="text-[10px] uppercase tracking-wider text-white/60">Sticker</span>
           <input
             type="range" min={0.15} max={1} step={0.05} value={stickerAlpha}
             onChange={(e) => onStickerAlpha?.(Number(e.target.value))}
