@@ -19,7 +19,11 @@ const EMPTY_SHAPES: Shape[] = [];
 let seq = 0;
 const uid = (p: string) => `${p}${++seq}_${performance.now().toFixed(0)}`;
 
-export default function VideoAnalyzer() {
+export default function VideoAnalyzer({ scope }: { scope?: string }) {
+  // Identidad de quien abrió el analizador. Sin ella no se guarda nada — ver
+  // session-store.ts: una clave global mezclaba las sesiones de dos personas
+  // en el iPad compartido de la academia.
+  const canPersist = !!scope;
   const [studentSrc, setStudentSrc] = useState<string | null>(null);
   const [modelSrc, setModelSrc] = useState<string | null>(null);
   const [modelTitle, setModelTitle] = useState<string>("The Surf Sequence Model");
@@ -48,8 +52,15 @@ export default function VideoAnalyzer() {
   const [sidebarTab, setSidebarTab] = useState<"students" | "models">("students");
   const [layout, setLayout] = useState<"dual" | "student" | "model">("dual");
   const [library, setLibrary] = useState<ModelCategory[]>([]);
-  // Corta el lote de miniaturas si el coach cierra el analizador.
+  // Cola ÚNICA de miniaturas. El AbortController se aborta SOLO al cerrar el
+  // analizador. Antes cada importación abortaba la anterior: si el coach
+  // agregaba una segunda tanda mientras la primera todavía procesaba (hay
+  // decenas de segundos de ventana con clips 4K), esos clips se quedaban SIN
+  // miniatura para siempre — y la miniatura es lo único que le permite
+  // reconocer sus videos al recuperar la sesión.
   const thumbAbort = useRef<AbortController | null>(null);
+  const thumbQueue = useRef<{ id: string; url: string }[]>([]);
+  const thumbBusy = useRef(false);
 
   // Sesión anterior encontrada: se ofrece recuperarla en vez de restaurarla
   // sola — el coach decide si sigue con eso o arranca limpio.
@@ -58,9 +69,23 @@ export default function VideoAnalyzer() {
   // archivo (el video no se guarda: solo su nombre, miniatura y dibujos).
   const [pendingLink, setPendingLink] = useState<Record<string, true>>({});
 
+  // `checked` = ya sabemos si había sesión. Hasta entonces NO se guarda ni se
+  // deja trabajar: si el coach empezaba a importar antes de que llegara el
+  // diálogo, el autoguardado pisaba la sesión buena y "Recuperar" se comía lo
+  // recién hecho. Y una lectura FALLIDA no es "no hay sesión": ahí tampoco se
+  // guarda, para no borrar por un error transitorio.
+  const [checked, setChecked] = useState(false);
+  const [readOk, setReadOk] = useState(false);
   useEffect(() => {
-    loadSession().then((sess) => { if (worthRestoring(sess)) setPrev(sess); }).catch(() => {});
-  }, []);
+    if (!canPersist) { setChecked(true); return; }
+    loadSession(scope!)
+      .then((r) => {
+        if (r.ok) { setReadOk(true); if (worthRestoring(r.session)) setPrev(r.session); }
+      })
+      .catch(() => {})
+      .finally(() => setChecked(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope]);
 
   // Load the admin-managed model clips from Supabase on first open.
   useEffect(() => {
@@ -100,14 +125,26 @@ export default function VideoAnalyzer() {
   }, [layout]);
 
   function pickStudentFile(file: File) {
-    if (studentUrl.current) URL.revokeObjectURL(studentUrl.current);
+    // Antes esto guardaba los dibujos bajo una clave suelta ("__file") que no
+    // pertenecía a ningún clip: se contaban en el diálogo de recuperar pero
+    // no había forma de volver a ellos, y al reabrir el archivo se borraban
+    // solos. Ahora el botón "Importar video" del panel crea un clip normal en
+    // el grupo activo, así entra en el guardado y en la recuperación como
+    // cualquier otro.
     const url = URL.createObjectURL(file);
-    studentUrl.current = url;
-    setShapeKey("__file");
-    setShapesByClip((all) => ({ ...all, __file: [] }));
+    const id = uid("c");
+    setGroups((prevG) =>
+      prevG.map((g) =>
+        g.id === activeGroupId && g.clips.length < MAX_CLIPS_PER_GROUP
+          ? { ...g, clips: [...g.clips, { id, name: file.name, url }] }
+          : g
+      )
+    );
+    setShapeKey(id);
+    setCurrentClipId(id);
     setStudentSrc(url);
-    setCurrentClipId(null);
     setActive("student");
+    enqueueThumbs([{ id, url }]);
   }
 
   function selectModel(src: string, title: string) {
@@ -146,22 +183,32 @@ export default function VideoAnalyzer() {
     // Generate thumbnails ONE AT A TIME — iPad/Safari can only decode a few
     // videos concurrently, so firing all at once made some clips (and the
     // player) fail to load. Sequential keeps every clip stable.
-    const ac = new AbortController();
-    thumbAbort.current?.abort();
-    thumbAbort.current = ac;
+    enqueueThumbs(added.map((c) => ({ id: c.id, url: c.url })));
+  }
+
+  // Una miniatura por vez (el decodificador del iPad no aguanta varias a la
+  // vez) pero SIN cancelar lo anterior: las tandas nuevas se suman a la cola.
+  function enqueueThumbs(items: { id: string; url: string }[]) {
+    thumbQueue.current.push(...items);
+    if (thumbBusy.current) return;
+    thumbBusy.current = true;
+    const signal = (thumbAbort.current ??= new AbortController()).signal;
     (async () => {
-      for (const clip of added) {
-        if (ac.signal.aborted) return;
-        const thumb = await makeThumb(clip.url, ac.signal);
-        if (!thumb || ac.signal.aborted) continue;
-        setGroups((cur) =>
-          cur.map((gg) => ({
-            ...gg,
-            clips: gg.clips.map((cc) =>
-              cc.id === clip.id ? { ...cc, thumb } : cc
-            ),
-          }))
-        );
+      try {
+        while (thumbQueue.current.length > 0) {
+          if (signal.aborted) return;
+          const next = thumbQueue.current.shift()!;
+          const thumb = await makeThumb(next.url, signal);
+          if (!thumb || signal.aborted) continue;
+          setGroups((cur) =>
+            cur.map((gg) => ({
+              ...gg,
+              clips: gg.clips.map((cc) => (cc.id === next.id ? { ...cc, thumb } : cc)),
+            }))
+          );
+        }
+      } finally {
+        thumbBusy.current = false;
       }
     })();
   }
@@ -172,10 +219,21 @@ export default function VideoAnalyzer() {
   // las miniaturas y —lo que más duele perder— sus dibujos por clip.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (prev) return;                       // todavía no decidió si recupera
+    if (!canPersist || !checked || !readOk || prev) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveSession({
+      saveSession(scope!, snap());
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+    // OJO: este cleanup corre en CADA cambio de dependencia, así que acá no
+    // se puede volcar el guardado (anularía el freno). El volcado va en el
+    // efecto de desmontaje, más abajo.
+  }, [groups, activeGroupId, currentClipId, shapesByClip, modelShapes, modelSrc, modelTitle, pendingLink, prev, canPersist, checked, readOk, scope]);
+
+  // El retrato de la sesión, en un solo lugar: lo usa el guardado con freno y
+  // también el volcado inmediato al cerrar.
+  function snap(): StoredSession {
+    const value: StoredSession = {
         groups: groups.map((g) => ({
           id: g.id,
           name: g.name,
@@ -188,15 +246,21 @@ export default function VideoAnalyzer() {
         modelSrc,
         modelTitle,
         savedAt: Date.now(),
-      }).catch(() => {});
-    }, 800);
-    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [groups, activeGroupId, currentClipId, shapesByClip, modelShapes, modelSrc, modelTitle, pendingLink, prev]);
+    };
+    snapRef.current = value;
+    return value;
+  }
 
   // Recuperar la sesión anterior: vuelve todo menos el archivo de video, que
   // el coach re-elige con un toque en el clip (queda marcado con ↻).
   function restorePrev() {
     if (!prev) return;
+    // Soltar lo que hubiera abierto: si no, esos object URLs quedan colgados.
+    if (studentUrl.current) { URL.revokeObjectURL(studentUrl.current); studentUrl.current = null; }
+    for (const g of groupsRef.current) for (const c of g.clips) if (c.url) URL.revokeObjectURL(c.url);
+    setStudentSrc(null);
+    setCurrentClipId(null);
+    setShapeKey("__file");
     setGroups(prev.groups.map((g) => ({
       id: g.id,
       name: g.name,
@@ -214,7 +278,7 @@ export default function VideoAnalyzer() {
 
   function discardPrev() {
     setPrev(null);
-    clearSession().catch(() => {});
+    if (scope) clearSession(scope).catch(() => {});
   }
 
   // Volver a vincular un clip restaurado con su archivo real.
@@ -235,7 +299,28 @@ export default function VideoAnalyzer() {
   // los object URLs. Antes no se liberaba ni uno solo.
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
+  // Lo último que hizo el coach no se puede perder por el freno de 800 ms:
+  // al cerrar el analizador —o al mandar la app a segundo plano, que en iPad
+  // es el paso previo a que iOS la mate— se escribe ya.
+  const snapRef = useRef<StoredSession | null>(null);
+  const flush = useCallback(() => {
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    if (!scope || !snapRef.current) return;
+    saveSession(scope, { ...snapRef.current, savedAt: Date.now() }).catch(() => {});
+  }, [scope]);
+
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [flush]);
+
   useEffect(() => () => {
+    flush();
     thumbAbort.current?.abort();
     if (studentUrl.current) URL.revokeObjectURL(studentUrl.current);
     for (const g of groupsRef.current) {

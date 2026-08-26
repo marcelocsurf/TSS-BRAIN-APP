@@ -458,6 +458,7 @@ export function PortalTabs({
                   Video Analysis
                 </p>
                 <VideoAnalyzerLauncher
+                  scope={`student:${data.token}`}
                   title="Analyze your surfing"
                   subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
                 />

@@ -1753,7 +1753,7 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
 
       {/* ── FIELD TOOLS ── */}
       <p className="text-[10px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>Field tools</p>
-      <VideoAnalyzerLauncher variant="card" />
+      <VideoAnalyzerLauncher variant="card" scope={coach?.id ? `coach:${coach.id}` : undefined} />
       <BoardSelectorLauncher variant="card" />
 
       {/* Inventario de tablas — SOLO con permiso otorgado por coordinación

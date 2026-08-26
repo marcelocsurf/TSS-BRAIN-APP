@@ -12,10 +12,14 @@ export function VideoAnalyzerLauncher({
   variant = 'card',
   title = 'Video Analyzer',
   subtitle = 'Draw on a student clip — angles, lines, frame-by-frame.',
+  scope,
 }: {
   variant?: 'card' | 'button';
   title?: string;
   subtitle?: string;
+  /** Quién abre el analizador: su sesión guardada es SOLO suya. Sin esto no
+   *  se guarda nada — el iPad de la academia lo usan varias personas. */
+  scope?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -65,7 +69,7 @@ export function VideoAnalyzerLauncher({
             <X size={15} /> Close
           </button>
           <div className="flex-1 min-h-0">
-            <VideoAnalyzer />
+            <VideoAnalyzer scope={scope} />
           </div>
         </div>
       )}

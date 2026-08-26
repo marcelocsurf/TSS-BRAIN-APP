@@ -421,7 +421,7 @@ export default async function DashboardHome() {
             <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--tss-navy)] font-semibold" style={{ fontFamily: 'DM Mono, monospace' }}>Tools &amp; access</p>
           </div>
           <div className="grid sm:grid-cols-3 gap-3 mb-4">
-            <VideoAnalyzerLauncher variant="card" />
+            <VideoAnalyzerLauncher variant="card" scope={coach ? `admin:${coach.id}` : undefined} />
             <BoardSelectorLauncher variant="card" />
             {academyId && <BoardInventoryLauncher academyId={academyId} variant="card" />}
           </div>
