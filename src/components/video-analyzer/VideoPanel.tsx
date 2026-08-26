@@ -30,6 +30,14 @@ type Props = {
   onActivate: () => void;
   onPickFile?: (file: File) => void;
   emptyHint?: string;
+  // ── SINCRONIZAR LOS DOS VIDEOS ──────────────────────────────────
+  // El coach alinea al alumno y al modelo en el MISMO instante de la ola
+  // (por ejemplo el bottom turn) y a partir de ahí se mueven juntos: play,
+  // pausa, cuadro a cuadro y velocidad valen para los dos.
+  peer?: RefObject<HTMLVideoElement>;
+  /** Segundos que hay que sumarle a MI tiempo para obtener el del otro. */
+  peerOffset?: number;
+  synced?: boolean;
 };
 
 export default function VideoPanel({
@@ -43,6 +51,9 @@ export default function VideoPanel({
   onShapesChange,
   onActivate,
   onPickFile,
+  peer,
+  peerOffset = 0,
+  synced = false,
   emptyHint,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -159,10 +170,13 @@ export default function VideoPanel({
     if (!el) return;
     cancelHold();
     if (el.paused) {
+      mirrorTime(el.currentTime);       // alinear antes de arrancar
       el.play();
+      mirrorPlay(true);
       setPlaying(true);
     } else {
       el.pause();
+      mirrorPlay(false);
       setPlaying(false);
     }
   }
@@ -171,6 +185,7 @@ export default function VideoPanel({
     setSpeed(s);
     const el = videoRef.current;
     if (el) el.playbackRate = s;
+    if (synced && peer?.current) peer.current.playbackRate = s;
   }
 
   function step(seconds: number) {
@@ -178,11 +193,13 @@ export default function VideoPanel({
     if (!el) return;
     cancelHold();
     el.pause();
+    mirrorPlay(false);
     setPlaying(false);
     el.currentTime = Math.min(
       Math.max(0, el.currentTime + seconds),
       el.duration || el.currentTime + seconds
     );
+    mirrorTime(el.currentTime);
   }
 
   function onTimeUpdate() {
@@ -191,6 +208,24 @@ export default function VideoPanel({
     setProgress(el.currentTime / el.duration);
     setNow(el.currentTime);
   }
+
+  // Lleva al OTRO video al instante que le corresponde según el desfase que
+  // el coach fijó al sincronizar.
+  const mirrorTime = useCallback((t: number) => {
+    if (!synced) return;
+    const o = peer?.current;
+    if (!o || !o.duration) return;
+    const target = Math.max(0, Math.min(o.duration - 0.05, t + peerOffset));
+    if (Math.abs(o.currentTime - target) > 0.04) o.currentTime = target;
+  }, [synced, peer, peerOffset]);
+
+  const mirrorPlay = useCallback((play: boolean) => {
+    if (!synced) return;
+    const o = peer?.current;
+    if (!o) return;
+    if (play) o.play().catch(() => {});
+    else o.pause();
+  }, [synced, peer]);
 
   // ── PAUSA AUTOMÁTICA EN EL DIBUJO ────────────────────────────────
   // El video llega al segundo de una línea marcada con ⏸, se congela lo que
@@ -234,13 +269,14 @@ export default function VideoPanel({
     const secs = Math.max(...due.map((d) => d.dur ?? 1));
     holding.current = true;
     el.pause();
+    mirrorPlay(false);
     setPlaying(false);
     holdTimer.current = setTimeout(() => {
       holdTimer.current = null;
       setConsumed((c) => { const n = new Set(c); for (const d of due) n.add(d.id); return n; });
       holding.current = false;
       const v = videoRef.current;
-      if (v) { v.play().then(() => setPlaying(true)).catch(() => {}); }
+      if (v) { v.play().then(() => { mirrorPlay(true); setPlaying(true); }).catch(() => {}); }
     }, secs * 1000);
   }, [now, playing, shapes, consumed, videoRef]);
 
@@ -271,14 +307,28 @@ export default function VideoPanel({
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
+    let drift = 0;
     const tick = () => {
       const el = videoRef.current;
-      if (el) setNow(el.currentTime);
+      if (el) {
+        setNow(el.currentTime);
+        // Dos videos con distinto fps se van separando solos. Cada ~15
+        // cuadros se revisa: si se corrieron más de 0,12 s, se re-alinean.
+        // Por debajo de eso el ojo no lo nota y re-sincronizar más seguido
+        // produce saltos feos.
+        if (synced && ++drift % 15 === 0) {
+          const o = peer?.current;
+          if (o && o.duration) {
+            const target = Math.max(0, Math.min(o.duration - 0.05, el.currentTime + peerOffset));
+            if (Math.abs(o.currentTime - target) > 0.12) o.currentTime = target;
+          }
+        }
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, videoRef]);
+  }, [playing, videoRef, synced, peer, peerOffset]);
 
   function onSeek(e: ChangeEvent<HTMLInputElement>) {
     const el = videoRef.current;
@@ -288,6 +338,7 @@ export default function VideoPanel({
     el.currentTime = v * el.duration;
     setProgress(v);
     setNow(el.currentTime);
+    mirrorTime(el.currentTime);
   }
 
   function fullscreen() {

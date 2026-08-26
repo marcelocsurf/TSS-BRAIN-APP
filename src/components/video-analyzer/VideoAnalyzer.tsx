@@ -51,6 +51,12 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
   const [showLibrary, setShowLibrary] = useState(true);
   const [sidebarTab, setSidebarTab] = useState<"students" | "models">("students");
   const [layout, setLayout] = useState<"dual" | "student" | "model">("dual");
+  // SINCRONIZAR: el coach pone al alumno y al modelo en el MISMO instante de
+  // la ola (el bottom turn, el take-off) y toca 🔗. A partir de ahí se mueven
+  // juntos conservando ese desfase — no arrancan los dos del segundo cero,
+  // porque las dos olas nunca empiezan igual.
+  const [synced, setSynced] = useState(false);
+  const [syncOffset, setSyncOffset] = useState(0);
   const [library, setLibrary] = useState<ModelCategory[]>([]);
   // Cola ÚNICA de miniaturas. El AbortController se aborta SOLO al cerrar el
   // analizador. Antes cada importación abortaba la anterior: si el coach
@@ -148,6 +154,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
   }
 
   function selectModel(src: string, title: string) {
+    setSynced(false);   // el desfase era de OTRO par de videos
     setModelShapes([]);
     setModelSrc(src);
     setModelTitle(title);
@@ -328,6 +335,14 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     }
   }, []);
 
+  function toggleSync() {
+    if (synced) { setSynced(false); return; }
+    const sv = studentVideo.current, mv = modelVideo.current;
+    if (!sv || !mv) return;
+    setSyncOffset(mv.currentTime - sv.currentTime);   // el desfase de AHORA
+    setSynced(true);
+  }
+
   function selectClip(clipId: string) {
     const group = groups.find((g) => g.id === activeGroupId);
     const clip = group?.clips.find((c) => c.id === clipId);
@@ -335,6 +350,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     // Clip recuperado sin archivo todavía: no hay nada que reproducir, hay
     // que pedírselo. StudentClips muestra el ↻ y dispara el selector.
     if (!clip.url) return;
+    setSynced(false);   // el desfase era de OTRO par de videos
     setShapeKey(clipId);          // sus dibujos vuelven solos
     setStudentSrc(clip.url);
     setCurrentClipId(clipId);
@@ -545,6 +561,20 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
             </button>
           ))}
         </div>
+        {/* 🔗 SINCRONIZAR — solo tiene sentido con los dos videos a la vista.
+            Se apoya en dónde están AHORA los dos: el coach los deja en el
+            mismo momento de la ola y toca acá. */}
+        {layout === "dual" && studentSrc && modelSrc && (
+          <button
+            onClick={toggleSync}
+            title={synced ? "Los dos videos se mueven juntos" : "Poné los dos en el mismo momento de la ola y tocá acá"}
+            className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 ${
+              synced ? "bg-amber-400 text-[#0B1B2B]" : "bg-white/10"
+            }`}
+          >
+            {synced ? "🔗 Sincronizados" : "🔗 Sincronizar"}
+          </button>
+        )}
         <button
           onClick={() => setShowLibrary((v) => !v)}
           className="rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold active:scale-95"
@@ -625,6 +655,9 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
               onActivate={() => setActive("student")}
               onPickFile={pickStudentFile}
               emptyHint="Importa un video del alumno desde el iPad."
+              peer={modelVideo}
+              peerOffset={syncOffset}
+              synced={synced && layout === "dual"}
             />
           )}
           {layout !== "student" && (
@@ -639,6 +672,9 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
               onShapesChange={setModelShapes}
               onActivate={() => setActive("model")}
               emptyHint="Elige un video modelo de la librería."
+              peer={studentVideo}
+              peerOffset={-syncOffset}
+              synced={synced && layout === "dual"}
             />
           )}
         </main>
