@@ -448,16 +448,16 @@ export function CourseTab({ data }: { data: CourseData }) {
             <div className="space-y-3 pt-3">
               <GroupHeader
                 theme={beltTheme}
-                eyebrow={`${courseSequences.length} sequences · start to finish`}
+                eyebrow={`Sequences #${courseSequences[0].number}–#${courseSequences[courseSequences.length - 1].number} · start to finish`}
                 title="Your Sequences"
-                subtitle="Every sequence starts from your stance and closes by coming back to it."
+                subtitle="Continuing from White and Yellow. Every sequence starts from your stance and closes by coming back to it."
                 videoUrl={null}
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 {courseSequences.map((seq) => (
                   <SequenceChain
                     key={seq.id}
-                    name={seq.name}
+                    name={`Sequence #${seq.number}: ${seq.name}`}
                     side={seq.side}
                     stages={seq.stages}
                     onOpenLesson={(id) => setOpenLessonId(id)}

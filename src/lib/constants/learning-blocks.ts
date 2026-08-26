@@ -355,6 +355,9 @@ export interface SequenceStage {
 
 export interface BeltSequence {
   id: string;
+  /** Número de secuencia del método, continuo desde White Belt:
+   *  White #1-#5, Yellow #6-#7, Blue #8-#13. */
+  number: number;
   /** Student-facing name, English. */
   name: string;
   side: 'fs' | 'bs';
@@ -366,10 +369,16 @@ export interface BeltSequence {
  * The six Blue Belt sequences, each with a start and an end. A step repeats
  * across sequences on purpose — that is how the method works.
  * Every sequence closes by returning to posture (INFINITE_CIRCLE).
+ *
+ * Los números son continuos desde White Belt (#1-#5) y Yellow (#6-#7): Blue
+ * es #8 a #13. Un paso de la secuencia puede vivir en una cinta anterior — la
+ * postura es White Belt — y por eso la cadena se resuelve contra todas las
+ * lecciones del alumno, no solo las de su cinta.
  */
 export const BELT_SEQUENCES: BeltSequence[] = [
   {
     id: 'BB-SEQ-PUMP-FS',
+    number: 8,
     name: 'Frontside Pumping',
     side: 'fs',
     belt: 'blue_belt',
@@ -381,6 +390,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
   },
   {
     id: 'BB-SEQ-PUMP-BS',
+    number: 9,
     name: 'Backside Pumping',
     side: 'bs',
     belt: 'blue_belt',
@@ -392,6 +402,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
   },
   {
     id: 'BB-SEQ-SNAP-FS',
+    number: 10,
     name: 'Frontside Snap',
     side: 'fs',
     belt: 'blue_belt',
@@ -406,6 +417,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
   },
   {
     id: 'BB-SEQ-SNAP-BS',
+    number: 11,
     name: 'Backside Snap',
     side: 'bs',
     belt: 'blue_belt',
@@ -420,6 +432,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
   },
   {
     id: 'BB-SEQ-CUTBACK-FS',
+    number: 12,
     name: 'Frontside Cutback',
     side: 'fs',
     belt: 'blue_belt',
@@ -434,6 +447,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
   },
   {
     id: 'BB-SEQ-CUTBACK-BS',
+    number: 13,
     name: 'Backside Cutback',
     side: 'bs',
     belt: 'blue_belt',
@@ -451,17 +465,18 @@ export const BELT_SEQUENCES: BeltSequence[] = [
 /** key -> the sequences that use it, with the stage it plays there. */
 export const STEP_SEQUENCES: Record<
   string,
-  { id: string; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[]
+  { id: string; number: number; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[]
 > = (() => {
   const out: Record<
     string,
-    { id: string; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[]
+    { id: string; number: number; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[]
   > = {};
   for (const seq of BELT_SEQUENCES) {
     for (const st of seq.stages) {
       for (const k of st.steps) {
         (out[k] ??= []).push({
           id: seq.id,
+          number: seq.number,
           name: seq.name,
           side: seq.side,
           stage: st.stage,
@@ -476,7 +491,7 @@ export const STEP_SEQUENCES: Record<
 export function sequencesFor(
   courseSection: string,
   stepNumber: number | string
-): { id: string; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[] {
+): { id: string; number: number; name: string; side: 'fs' | 'bs'; stage: string; stageEn: string }[] {
   return STEP_SEQUENCES[stepKey(courseSection, stepNumber)] ?? [];
 }
 

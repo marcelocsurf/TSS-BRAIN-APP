@@ -540,7 +540,9 @@ export function FinalCampEvaluation({
                                         {' · '}
                                         {seqs.length > 2
                                           ? `${seqs.length} secuencias · ${seqs[0].stage}`
-                                          : seqs.map((q) => `${q.name} · ${q.stage}`).join(' · ')}
+                                          : seqs
+                                              .map((q) => `#${q.number} ${q.name} · ${q.stage}`)
+                                              .join(' · ')}
                                       </span>
                                     )}
                                     {weak && (
