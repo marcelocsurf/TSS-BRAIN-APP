@@ -347,7 +347,15 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     const stage = active === "student" ? studentStage.current : modelStage.current;
     const W = stage?.width() ?? 640;
     const H = stage?.height() ?? 360;
-    const w = Math.min(W, H) * 0.45;
+    // El tamaño tiene que CABER, mire como mire el sticker. Antes se calculaba
+    // solo el ancho y la altura salía de ahí: la tabla, que es casi 4 veces
+    // más alta que ancha, entraba gigante y tapaba el panel entero.
+    // Se prueba por ancho y, si se pasa de alto, se recalcula por altura.
+    const maxW = W * 0.45;
+    const maxH = H * 0.45;
+    let w = maxW;
+    let h = w * ratio;
+    if (h > maxH) { h = maxH; w = h / ratio; }
     const shape: Shape = {
       id: uid("k"),
       tool: "sticker",
@@ -356,7 +364,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
       points: [W / 2, H / 2],   // el punto guardado es el CENTRO (ver offsetX/Y)
       src,
       w,
-      h: w * ratio,
+      h,
       rot: 0,
       alpha: 1,        // pegado, no transparente
     };
