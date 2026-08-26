@@ -9,17 +9,9 @@
 export type StickerDef = { id: string; src: string; ratio: number };
 
 export const STICKERS: StickerDef[] = [
+  { id: 'circulo-infinito', src: '/stickers/circulo-infinito.png', ratio: 1.7964 },
+  { id: 'etapas-de-la-ola', src: '/stickers/etapas-de-la-ola.png', ratio: 0.36 },
   { id: 'ola', src: '/stickers/ola.png', ratio: 0.3333 },
   { id: 'tabla', src: '/stickers/tabla.png', ratio: 3.9474 },
   { id: 'tres-circulos', src: '/stickers/tres-circulos.png', ratio: 0.83 },
-  { id: 'eyes', src: '/stickers/eyes.svg', ratio: 0.5909 },
-  { id: 'foot-zones', src: '/stickers/foot-zones.svg', ratio: 1.32 },
-  { id: 'knees', src: '/stickers/knees.svg', ratio: 0.65 },
-  { id: 'no', src: '/stickers/no.svg', ratio: 1 },
-  { id: 'num-1', src: '/stickers/num-1.svg', ratio: 1 },
-  { id: 'num-2', src: '/stickers/num-2.svg', ratio: 1 },
-  { id: 'num-3', src: '/stickers/num-3.svg', ratio: 1 },
-  { id: 'sweet-spot', src: '/stickers/sweet-spot.svg', ratio: 1 },
-  { id: 'wave-stages', src: '/stickers/wave-stages.svg', ratio: 0.6111 },
-  { id: 'yes', src: '/stickers/yes.svg', ratio: 1 },
 ];

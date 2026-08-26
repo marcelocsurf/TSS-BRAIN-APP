@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140">
-  <defs><filter id="s" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity=".45"/></filter></defs>
-  <g filter="url(#s)"><circle cx="70" cy="70" r="64" fill="#fff"/><circle cx="70" cy="70" r="54" fill="#FFD166"/>
-  <text x="70" y="94" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="62" font-weight="900" fill="#061C2B">2</text></g>
-</svg>

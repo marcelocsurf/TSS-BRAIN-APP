@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 130" width="220" height="130">
-  <defs><filter id="s" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity=".45"/></filter></defs>
-  <g filter="url(#s)"><rect x="6" y="6" width="208" height="118" rx="24" fill="#fff"/>
-  <rect x="16" y="16" width="188" height="98" rx="18" fill="#061C2B"/>
-  <ellipse cx="72" cy="56" rx="26" ry="17" fill="#fff"/><circle cx="72" cy="56" r="9" fill="#061C2B"/>
-  <ellipse cx="140" cy="56" rx="26" ry="17" fill="#fff"/><circle cx="140" cy="56" r="9" fill="#061C2B"/>
-  <text x="110" y="100" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="20" font-weight="900" fill="#00E5FF">LOOK AHEAD</text></g>
-</svg>
