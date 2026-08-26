@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronLeft, Lock, Play, X } from 'lucide-react';
 import { SeasonTimeline } from '@/components/portal/SeasonTimeline';
+import { SeasonCard } from '@/components/portal/SeasonCard';
+import { AppointmentCard } from '@/components/portal/AppointmentCard';
+import { TodayExtras } from '@/components/portal/TodayExtras';
 import {
   getMyProgram,
   markProgramItem,
@@ -33,7 +36,16 @@ function toEmbed(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
-export function ProgramCard({ token, initial }: { token: string; initial?: MyProgramData | null }) {
+export function ProgramCard({ token, initial, season, appointments, todayExtras }: {
+  token: string;
+  initial?: MyProgramData | null;
+  // El Home dejó de tener una tarjeta por cosa (pedido de Marcelo
+  // 2026-08-25): el PROGRAMA es el contenedor. El año entra como vista ANUAL;
+  // las citas y lo que deja el equipo, dentro de HOY.
+  season?: any;
+  appointments?: any;
+  todayExtras?: any;
+}) {
   const [data, setData] = useState<MyProgramData | null>(initial ?? null);
   const [open, setOpen] = useState(false);
 
@@ -92,6 +104,9 @@ export function ProgramCard({ token, initial }: { token: string; initial?: MyPro
 
       {open && (
         <ProgramViewer
+          season={season}
+          appointments={appointments}
+          todayExtras={todayExtras}
           token={token}
           data={data}
           onClose={() => setOpen(false)}
@@ -109,11 +124,17 @@ function ProgramViewer({
   data,
   onClose,
   onChanged,
+  season,
+  appointments,
+  todayExtras,
 }: {
   token: string;
   data: MyProgramData;
   onClose: () => void;
   onChanged: () => void;
+  season?: any;
+  appointments?: any;
+  todayExtras?: any;
 }) {
   const [busyItem, setBusyItem] = useState<string | null>(null);
   const [busyDay, setBusyDay] = useState(false);
@@ -124,7 +145,7 @@ function ProgramViewer({
   // la semana completa queda a un tap ("View full program"). Sin día actual
   // (programa completado) se abre directo la vista de semanas.
   const currentDay = data.days.find((d) => d.current) ?? null;
-  const [view, setView] = useState<'today' | 'week' | 'season'>(currentDay ? 'today' : 'week');
+  const [view, setView] = useState<'today' | 'week' | 'season' | 'year'>(currentDay ? 'today' : 'week');
 
   const currentWeek = data.position?.week ?? data.weeks;
   // El header de microciclo sigue a la VISTA: en today, el micro del día
@@ -223,7 +244,7 @@ function ProgramViewer({
 
         {/* Tres niveles de zoom: día · micro · temporada (dale 2026-08-23). */}
         <div className="flex gap-1.5">
-          {([['today', 'Today'], ['week', 'Week'], ['season', 'Season']] as const).map(([id, label]) => (
+          {([['today', 'Today'], ['week', 'Week'], ['season', 'Season'], ['year', 'Year']] as const).map(([id, label]) => (
             <button
               key={id}
               type="button"
@@ -241,7 +262,11 @@ function ProgramViewer({
           ))}
         </div>
 
-        {view === 'season' ? (
+        {view === 'year' ? (
+          season
+            ? <SeasonCard token={token} initial={season} embedded />
+            : <p className="text-[12px]" style={{ color: '#7BA2B5' }}>Your coach hasn&apos;t mapped your season yet.</p>
+        ) : view === 'season' ? (
           <SeasonTimeline
             token={token}
             onJumpWeek={(w) => { setWeek(w); setView('week'); }}
@@ -267,6 +292,12 @@ function ProgramViewer({
               onToggleItem={toggleItem}
               onCompleteDay={completeDay}
             />
+
+            {/* Lo que el EQUIPO deja para hoy vive en el día, no suelto en el
+                Home: la comida que le toca y las tareas de sus especialistas.
+                Cada uno se auto-oculta si no hay nada. */}
+            <TodayExtras token={token} initial={todayExtras} />
+            <AppointmentCard token={token} initial={appointments} />
 
           </>
         ) : (

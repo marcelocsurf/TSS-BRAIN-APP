@@ -387,6 +387,10 @@ export function PortalTabs({
         {activeTab === 'course' && data.courseData && (
           <div className="space-y-4">
             <CourseTab data={data.courseData} />
+            {/* Las presentaciones otorgadas viven en COURSE, no en el Home
+                (pedido de Marcelo 2026-08-25). Es el mismo lugar que ya usa
+                el coach en su pestaña Cursos. No dibuja nada si no hay. */}
+            <StudentPresentations token={data.token} initial={data.homeBundle?.presentations} />
             {/* Glossary — collapsible at the bottom of Course (moved out of the nav) */}
             <details className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
               <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
@@ -798,13 +802,33 @@ function HomeTab({
           {data.homeBundle?.hpAccess && (
             <>
               <AthleteProfileCard token={data.token} placement="top" />
-              {/* Próximas citas (fisio, mental, técnica) — solo si existen. */}
-              <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
-              {/* Lo que el staff deja para HOY (dieta + sesiones). */}
-              <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
 
-              <SeasonCard token={data.token} initial={data.homeBundle?.season} />
-              <ProgramCard token={data.token} initial={data.homeBundle?.program} />
+              {/* EL PROGRAMA ES EL CONTENEDOR (pedido de Marcelo 2026-08-25:
+                  "debería de salir solo en TRAINING PROGRAM y ahí adentro que
+                  dice ANUAL, ahí sea la forma de ver anual"). El Home tenía
+                  una tarjeta por cosa —año, programa, citas, nutrición— y era
+                  un muro. Ahora entra todo en el programa: HOY (su día + la
+                  comida que le toca + sus citas) · SEMANA · SEASON · YEAR.
+                  Afuera quedan solo competencia y el muro del equipo. */}
+              <ProgramCard
+                token={data.token}
+                initial={data.homeBundle?.program}
+                season={data.homeBundle?.season}
+                appointments={data.homeBundle?.appointments}
+                todayExtras={data.homeBundle?.todayExtras}
+              />
+
+              {/* Sin programa asignado el año no puede desaparecer: sigue
+                  como tarjeta propia hasta que tenga uno. */}
+              {!data.homeBundle?.program && data.homeBundle?.season && (
+                <SeasonCard token={data.token} initial={data.homeBundle?.season} />
+              )}
+              {!data.homeBundle?.program && (
+                <>
+                  <AppointmentCard token={data.token} initial={data.homeBundle?.appointments} />
+                  <TodayExtras token={data.token} initial={data.homeBundle?.todayExtras} />
+                </>
+              )}
               {/* Score por pilar (última evaluación profunda). */}
               <AthleteScoreCard token={data.token} initial={data.homeBundle?.scores} />
               {/* Competencia/ranking — solo con competencia próxima o EQUIPO. */}
@@ -941,9 +965,6 @@ function HomeTab({
           </p>
         </div>
       )}
-
-      {/* Presentations granted to this student (renders nothing if none) */}
-      <StudentPresentations token={data.token} initial={data.homeBundle?.presentations} />
 
       {/* Free Surf quick-logger */}
       <FreeSurfLogger token={data.token} />

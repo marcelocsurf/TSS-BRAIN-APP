@@ -160,7 +160,12 @@ function YearStrip({ data, mini }: { data: MySeasonData; mini?: boolean }) {
   );
 }
 
-export function SeasonCard({ token, initial }: { token: string; initial?: MySeasonData | null }) {
+export function SeasonCard({ token, initial, embedded }: {
+  token: string;
+  initial?: MySeasonData | null;
+  /** Dentro del programa (vista ANUAL): sin botón ni overlay, el año directo. */
+  embedded?: boolean;
+}) {
   // `initial` viene del bundle server-side del Home: sin él, cada tarjeta
   // disparaba su server action al montar y Next las ejecuta EN FILA por
   // cliente — el Home tardaba 40-60s en completarse (reporte 2026-08-23).
@@ -177,7 +182,7 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
 
   // Overlay abierto = el Home de atrás no debe scrollear (scroll chaining iOS).
   useEffect(() => {
-    if (!open) return;
+    if (!open || embedded) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
@@ -215,52 +220,10 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
     })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
-  return (
+  // El AÑO en sí — el mismo contenido servido de dos formas: como overlay
+  // desde el Home (uso histórico) o embebido en la vista ANUAL del programa.
+  const yearBody = (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="w-full text-left rounded-2xl p-4"
-        style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: '#FFD166' }}>
-            <CalendarRange size={12} /> My year
-          </span>
-          {data.days_to_peak != null && (
-            <span className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#FFD166' }}>
-              {data.days_to_peak} days to peak
-            </span>
-          )}
-        </div>
-        <p className="font-bold mt-1.5" style={{ ...ARCHIVO, color: '#f4f9fc', fontSize: 17 }}>{data.title}</p>
-        {/* Mini franja del año — la visión completa a un vistazo */}
-        {data.phases.length > 0 && <div className="mt-2"><YearStrip data={data} mini /></div>}
-        <p className="text-[11.5px] mt-1.5" style={{ color: '#b8cad8' }}>
-          {current ? `Now: ${current.name}` : 'See your whole year →'}
-          {data.objective ? ` · ${data.objective}` : ''}
-        </p>
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[100] overflow-y-auto"
-          style={{ background: '#061C2B', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-        >
-          <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <button type="button" onClick={() => setOpen(false)}
-                className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider py-2.5 pr-3 -my-2" style={{ ...MONO, color: '#7BA2B5' }}>
-                <ChevronLeft size={13} /> Home
-              </button>
-              <span className="text-[9.5px] uppercase tracking-wider" style={{ ...MONO, color: '#6f8698' }}>
-                My year
-              </span>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-2.5 -m-2" style={{ color: '#7BA2B5' }}>
-                <X size={16} />
-              </button>
-            </div>
-
             <div>
               <h2 className="font-bold" style={{ ...ARCHIVO, color: '#fff', fontSize: 22, letterSpacing: '-0.01em' }}>{data.title}</h2>
               {data.objective && <p className="text-[12px] mt-0.5" style={{ color: '#8aa0b2' }}>Goal: {data.objective}</p>}
@@ -270,7 +233,6 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
                 </p>
               )}
             </div>
-
             {/* LA FRANJA DEL AÑO — también sin fases (marcadores + YOU solos) */}
             {(data.phases.length > 0 || road.length > 0) && (
               <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
@@ -376,6 +338,59 @@ export function SeasonCard({ token, initial }: { token: string; initial?: MySeas
                 </div>
               </div>
             )}
+
+    </>
+  );
+
+  if (embedded) return <div className="space-y-3">{yearBody}</div>;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full text-left rounded-2xl p-4"
+        style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: '#FFD166' }}>
+            <CalendarRange size={12} /> My year
+          </span>
+          {data.days_to_peak != null && (
+            <span className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#FFD166' }}>
+              {data.days_to_peak} days to peak
+            </span>
+          )}
+        </div>
+        <p className="font-bold mt-1.5" style={{ ...ARCHIVO, color: '#f4f9fc', fontSize: 17 }}>{data.title}</p>
+        {/* Mini franja del año — la visión completa a un vistazo */}
+        {data.phases.length > 0 && <div className="mt-2"><YearStrip data={data} mini /></div>}
+        <p className="text-[11.5px] mt-1.5" style={{ color: '#b8cad8' }}>
+          {current ? `Now: ${current.name}` : 'See your whole year →'}
+          {data.objective ? ` · ${data.objective}` : ''}
+        </p>
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-[100] overflow-y-auto"
+          style={{ background: '#061C2B', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider py-2.5 pr-3 -my-2" style={{ ...MONO, color: '#7BA2B5' }}>
+                <ChevronLeft size={13} /> Home
+              </button>
+              <span className="text-[9.5px] uppercase tracking-wider" style={{ ...MONO, color: '#6f8698' }}>
+                My year
+              </span>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-2.5 -m-2" style={{ color: '#7BA2B5' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {yearBody}
 
             <p className="text-[9.5px] text-center pb-4" style={{ ...MONO, color: '#4a6272' }}>
               THE SURF SEQUENCE · SEASON PLAN
