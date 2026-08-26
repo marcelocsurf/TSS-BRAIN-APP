@@ -44,14 +44,26 @@ export function TodayExtras({ token, initial }: { token: string; initial?: MyTod
           <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GOLD }}>
             🥗 Nutrition — from your nutritionist
           </p>
+          {/* El ajuste de HOY manda sobre la base de la semana, y se dice
+              cuál es cuál: si no, el atleta lee dos textos sueltos y no sabe
+              si el de arriba reemplaza al de abajo o se suman. */}
           {data.diet_today && (
             <div className="mt-2 rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.12)' }}>
-              <p className="text-[9px] uppercase tracking-wide font-bold" style={{ ...MONO, color: GOLD }}>Today</p>
+              <p className="text-[9px] uppercase tracking-wide font-bold" style={{ ...MONO, color: GOLD }}>
+                Just for today
+              </p>
               <p className="text-[12px] mt-0.5 whitespace-pre-line" style={{ color: '#f4ecd7' }}>{data.diet_today}</p>
             </div>
           )}
           {data.diet_micro && (
-            <p className="text-[12px] mt-2 whitespace-pre-line" style={{ color: '#dce8f0' }}>{data.diet_micro}</p>
+            <>
+              {data.diet_today && (
+                <p className="text-[9px] uppercase tracking-wide font-bold mt-2.5" style={{ ...MONO, color: '#8aa0b2' }}>
+                  Your week — still applies
+                </p>
+              )}
+              <p className="text-[12px] mt-1 whitespace-pre-line" style={{ color: '#dce8f0' }}>{data.diet_micro}</p>
+            </>
           )}
         </div>
       )}

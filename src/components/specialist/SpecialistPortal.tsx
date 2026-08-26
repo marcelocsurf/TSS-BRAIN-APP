@@ -507,6 +507,22 @@ function DietEditor({ token, studentId, data, onChanged }: { token: string; stud
   const [msg, setMsg] = useState<string | null>(null);
 
   const wMeta = weeks.find((w) => w.week === week);
+
+  // Los días del microciclo elegido, con lo que ya está escrito en cada uno.
+  // Antes había un <input type="date"> a ciegas: no se veía qué días ya
+  // tenían ajuste ni cuáles faltaban (pedido de Marcelo 2026-08-25: "que la
+  // nutricionista pueda ver y ajustar día a día").
+  const dayNote = (d: string) => data.diet.day.find((x) => x.note_date === d)?.body ?? null;
+  const microDays = wMeta
+    ? Array.from({ length: Math.round((Date.parse(`${wMeta.end}T12:00:00Z`) - Date.parse(`${wMeta.start}T12:00:00Z`)) / 86400000) + 1 },
+        (_, i) => new Date(Date.parse(`${wMeta.start}T12:00:00Z`) + i * 86400000).toISOString().slice(0, 10))
+    : [];
+  const todaySV = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+
+  // Al elegir un día con nota, se precarga para AJUSTARLA (antes solo se
+  // podía apilar una nueva encima sin ver la anterior).
+  const pickDay = (d: string) => { setDate(d); setBody(dayNote(d) ?? ''); };
+
   const save = async () => {
     setMsg(null); setBusy(true);
     const r = await specialistSaveDiet(token, studentId, { scope, week_number: scope === 'micro' ? week : null, note_date: scope === 'day' ? date : null, body });
@@ -533,22 +549,66 @@ function DietEditor({ token, studentId, data, onChanged }: { token: string; stud
             {weeks.length === 0 && <option value={1}>M1</option>}
           </select>
         ) : (
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+          <input type="date" value={date} onChange={(e) => pickDay(e.target.value)}
             className="ml-auto rounded-lg px-2 py-1 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
         )}
       </div>
+
+      {/* LA SEMANA DÍA POR DÍA — verde = ya tiene ajuste escrito. */}
+      {scope === 'day' && microDays.length > 0 && (
+        <>
+          <div className="flex gap-1 mt-2 overflow-x-auto pb-1">
+            {microDays.map((d) => {
+              const has = !!dayNote(d);
+              const sel = d === date;
+              return (
+                <button key={d} type="button" onClick={() => pickDay(d)}
+                  className="shrink-0 rounded-lg px-2 py-1.5 text-center"
+                  style={{
+                    minWidth: 46,
+                    background: sel ? GOLD : has ? 'rgba(57,217,138,.14)' : 'rgba(255,255,255,.05)',
+                    border: `1px solid ${sel ? GOLD : has ? 'rgba(57,217,138,.45)' : 'rgba(255,255,255,.12)'}`,
+                  }}>
+                  <p className="text-[8.5px] uppercase" style={{ ...MONO, color: sel ? INK : '#7BA2B5' }}>
+                    {new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'UTC' })}
+                  </p>
+                  <p className="text-[12px] font-bold" style={{ color: sel ? INK : has ? GREEN : '#eaf4fa' }}>
+                    {Number(d.slice(8, 10))}
+                  </p>
+                  <p className="text-[8px]" style={{ color: sel ? INK : has ? GREEN : '#4a6272' }}>
+                    {has ? '✓' : d === todaySV ? 'hoy' : '·'}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+          {/* La base del micro, para ajustar SOBRE ella y no a ciegas. */}
+          {(() => {
+            const base = data.diet.micro.find((m) => m.week_number === week)?.body;
+            return base ? (
+              <p className="text-[10px] mt-1 rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,.04)', color: '#b8cad8' }}>
+                <b style={{ color: GOLD }}>Base del M{week}:</b> {base.slice(0, 160)}{base.length > 160 ? '…' : ''}
+              </p>
+            ) : (
+              <p className="text-[10px] mt-1" style={{ color: '#7BA2B5' }}>
+                Este microciclo todavía no tiene base. El ajuste del día es lo único que va a ver.
+              </p>
+            );
+          })()}
+        </>
+      )}
       {scope === 'micro' && wMeta && (wMeta.type || wMeta.intensity) && (
         <p className="text-[10px] mt-1.5" style={{ color: '#b8cad8' }}>
           Carga del M{week}: <b style={{ color: GOLD }}>{[wMeta.type, wMeta.intensity].filter(Boolean).join(' · ')}</b>{wMeta.objective ? ` — ${wMeta.objective}` : ''}
         </p>
       )}
       <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
-        placeholder={scope === 'micro' ? 'Dieta para todo el microciclo (desayuno, almuerzo, cena, hidratación…)' : 'Nota puntual para ese día (pre-competencia, ajuste, etc.)'}
+        placeholder={scope === 'micro' ? 'Base del microciclo: qué come todos los días (desayuno, almuerzo, cena, hidratación…)' : 'Ajuste solo para ese día — el atleta ve la base del micro Y esto (víspera de competencia, día libre, viaje…)'}
         className="w-full mt-2 rounded-lg px-3 py-2 text-[12px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
       {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#ffb4a6' }}>{msg}</p>}
       <button type="button" disabled={busy || !body.trim()} onClick={save}
         className="w-full mt-2 rounded-full py-2 text-[10px] font-bold uppercase tracking-wider disabled:opacity-40" style={{ ...MONO, background: GOLD, color: INK }}>
-        Guardar dieta
+        {scope === 'micro' ? 'Guardar base del microciclo' : dayNote(date) ? 'Actualizar el ajuste de ese día' : 'Guardar ajuste de ese día'}
       </button>
       {data.diet.micro.length > 0 && (
         <div className="mt-2 space-y-1">
