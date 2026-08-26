@@ -140,6 +140,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     // solos. Ahora el botón "Importar video" del panel crea un clip normal en
     // el grupo activo, así entra en el guardado y en la recuperación como
     // cualquier otro.
+    setSynced(false);   // el desfase era de otro par de videos
     const url = URL.createObjectURL(file);
     const id = uid("c");
     setGroups((prevG) =>
@@ -265,6 +266,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
   // el coach re-elige con un toque en el clip (queda marcado con ↻).
   function restorePrev() {
     if (!prev) return;
+    setSynced(false);   // el desfase era de otro par de videos
     // Soltar lo que hubiera abierto: si no, esos object URLs quedan colgados.
     if (studentUrl.current) { URL.revokeObjectURL(studentUrl.current); studentUrl.current = null; }
     for (const g of groupsRef.current) for (const c of g.clips) if (c.url) URL.revokeObjectURL(c.url);
@@ -293,6 +295,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
 
   // Volver a vincular un clip restaurado con su archivo real.
   function relinkClip(clipId: string, file: File) {
+    setSynced(false);   // el desfase era de otro par de videos
     const url = URL.createObjectURL(file);
     setGroups((prevG) => prevG.map((g) => ({
       ...g,
@@ -369,11 +372,25 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     else setModelShapes(apply(modelShapes));
   }
 
+  // Al volver a vista dual con la sincronía encendida hay que RE-ALINEAR: el
+  // panel que estuvo desmontado vuelve en 0 y la corrección de deriva lo
+  // scrubearía en vez de reproducirlo.
+  useEffect(() => {
+    if (!synced || layout !== "dual") return;
+    const sv = studentVideo.current, mv = modelVideo.current;
+    if (!sv || !mv || !mv.duration) return;
+    const want = sv.currentTime + syncOffset;
+    if (want >= 0 && want <= mv.duration - 0.05) mv.currentTime = want;
+    mv.playbackRate = sv.playbackRate;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout, synced]);
+
   function toggleSync() {
     if (synced) { setSynced(false); return; }
     const sv = studentVideo.current, mv = modelVideo.current;
     if (!sv || !mv) return;
     setSyncOffset(mv.currentTime - sv.currentTime);   // el desfase de AHORA
+    mv.playbackRate = sv.playbackRate;                // y la misma velocidad
     setSynced(true);
   }
 

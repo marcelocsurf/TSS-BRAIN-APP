@@ -1,7 +1,7 @@
 "use client";
 
 import { DURATIONS, type DrawSettings, type Tool } from "./types";
-import { STICKERS, STICKER_GROUPS } from "@/lib/constants/analyzer-stickers";
+import { STICKERS } from "@/lib/constants/analyzer-stickers";
 import { useState } from "react";
 
 const TOOLS: { id: Tool; label: string }[] = [
@@ -81,9 +81,9 @@ export default function Toolbar({
         ⏸ Pausa
       </button>
 
-      {/* ── STICKERS ── El material de The Surf Sequence PEGADO encima del
-          video: el coach lo arrastra sobre la tabla del alumno, lo agranda y
-          lo gira. Van en un cajón porque son varios y la barra ya está llena. */}
+      {/* ── STICKERS ── Se VEN y se eligen: una grilla con el dibujo de
+          cada uno, sin nombres ni categorías. Ponerle nombre a cada sticker
+          era complicarlo (pedido de Marcelo). */}
       {onAddSticker && (
         <div className="relative">
           <button
@@ -93,22 +93,16 @@ export default function Toolbar({
             🏷 Stickers
           </button>
           {stickersOpen && (
-            <div className="absolute bottom-full left-0 z-30 mb-1.5 w-64 rounded-xl border border-white/15 bg-[#0B1B2B] p-2 shadow-2xl">
-              {STICKER_GROUPS.map((g) => (
-                <div key={g} className="mb-1.5 last:mb-0">
-                  <p className="px-1 pb-1 text-[9px] uppercase tracking-wider text-white/40">{g}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {STICKERS.filter((k) => k.group === g).map((k) => (
-                      <button
-                        key={k.id}
-                        onClick={() => { onAddSticker(k.src, k.ratio); setStickersOpen(false); }}
-                        className="rounded-lg bg-white/10 px-2 py-1.5 text-[11px] font-semibold active:scale-95"
-                      >
-                        {k.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className="absolute bottom-full left-0 z-30 mb-1.5 grid w-[264px] grid-cols-4 gap-1.5 rounded-xl border border-white/15 bg-[#0B1B2B] p-2 shadow-2xl">
+              {STICKERS.map((k) => (
+                <button
+                  key={k.id}
+                  onClick={() => { onAddSticker(k.src, k.ratio); setStickersOpen(false); }}
+                  className="flex aspect-square items-center justify-center rounded-lg bg-white/10 p-1 active:scale-95"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={k.src} alt="" className="max-h-full max-w-full object-contain" />
+                </button>
               ))}
             </div>
           )}

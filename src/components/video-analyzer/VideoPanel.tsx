@@ -189,6 +189,9 @@ export default function VideoPanel({
     setSpeed(s);
     const el = videoRef.current;
     if (el) el.playbackRate = s;
+    // El playbackRate del otro también: en cámara lenta, si uno va a 0.25x y
+    // el otro a 1x, la corrección de deriva lo arrastra hacia atrás varias
+    // veces por segundo y se ve como saltos.
     if (synced && peer?.current) peer.current.playbackRate = s;
   }
 
@@ -219,8 +222,12 @@ export default function VideoPanel({
     if (!synced) return;
     const o = peer?.current;
     if (!o || !o.duration) return;
-    const target = Math.max(0, Math.min(o.duration - 0.05, t + peerOffset));
-    if (Math.abs(o.currentTime - target) > 0.04) o.currentTime = target;
+    const want = t + peerOffset;
+    // Si el desfase lo empuja fuera del video, NO se lo pega al borde: pegarlo
+    // hacía que la corrección de deriva lo re-seekeara cada pocos cuadros y el
+    // video tartamudeaba. Fuera de rango simplemente no se toca.
+    if (want < 0 || want > o.duration - 0.05) return;
+    if (Math.abs(o.currentTime - want) > 0.04) o.currentTime = want;
   }, [synced, peer, peerOffset]);
 
   const mirrorPlay = useCallback((play: boolean) => {
@@ -237,6 +244,11 @@ export default function VideoPanel({
   // en esta pasada — si no, al soltar el video se volvería a pausar en el
   // mismo punto para siempre.
   const [consumed, setConsumed] = useState<Set<string>>(() => new Set());
+  // OJO — `consumed` hace DOS cosas: evita repetir la pausa Y oculta el dibujo
+  // (que es lo correcto cuando la pausa terminó sola). Pero cuando el coach
+  // CANCELA la pausa a mano, el dibujo tiene que SEGUIR viéndose: él lo está
+  // explicando. Para eso está `skip`: no repetir, sin ocultar.
+  const skip = useRef<Set<string>>(new Set());
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holding = useRef(false);
 
@@ -244,11 +256,12 @@ export default function VideoPanel({
   // play de nuevo y la clase se vuelve a explicar sola.
   const lastNow = useRef(0);
   useEffect(() => {
-    if (now < lastNow.current - 0.35) setConsumed(new Set());
+    if (now < lastNow.current - 0.35) { setConsumed(new Set()); skip.current = new Set(); }
     lastNow.current = now;
   }, [now]);
   useEffect(() => {
     setConsumed(new Set());
+    skip.current = new Set();
     holding.current = false;
     if (holdTimer.current) clearTimeout(holdTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,6 +269,9 @@ export default function VideoPanel({
 
   useEffect(() => {
     if (!playing || holding.current) return;
+    // Con los dos videos sincronizados manda UNO solo: si los dos programaran
+    // pausas, se pisarían entre ellos.
+    if (synced && !isActive) return;
     // TODAS las líneas de ese instante, no una: si el coach dibujó seis en el
     // mismo momento, antes se pausaba SEIS veces seguidas — se veía como que
     // el video se pausaba y arrancaba solo sin control (reporte de Marcelo).
@@ -265,7 +281,8 @@ export default function VideoPanel({
     // play, una y otra vez.
     const due = shapes.filter(
       (sh) => sh.hold && sh.dur != null && sh.t != null
-        && !consumed.has(sh.id) && now >= sh.t && now < sh.t + 0.5
+        && !consumed.has(sh.id) && !skip.current.has(sh.id)
+        && now >= sh.t && now < sh.t + 0.5
     );
     if (due.length === 0) return;
     const el = videoRef.current;
@@ -282,7 +299,7 @@ export default function VideoPanel({
       const v = videoRef.current;
       if (v) { v.play().then(() => { mirrorPlay(true); setPlaying(true); }).catch(() => {}); }
     }, secs * 1000);
-  }, [now, playing, shapes, consumed, videoRef]);
+  }, [now, playing, shapes, consumed, videoRef, synced, isActive]);
 
   // El coach MANDA. Si toca play/pausa mientras una línea tiene el video
   // congelado, se cancela la pausa automática y no se vuelve a soltar sola —
@@ -292,15 +309,13 @@ export default function VideoPanel({
     if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
     if (holding.current) {
       holding.current = false;
-      // Las que estaban frenando se dan por vistas: si no, vuelve a pausar
-      // en el mismo punto apenas le dé play.
-      setConsumed((c) => {
-        const n = new Set(c);
-        for (const sh of shapes) {
-          if (sh.hold && sh.t != null && sh.dur != null && now >= sh.t && now < sh.t + 0.5) n.add(sh.id);
+      // No se vuelve a pausar en el mismo punto, PERO el dibujo se sigue
+      // viendo: el coach canceló la pausa para explicarlo, no para borrarlo.
+      for (const sh of shapes) {
+        if (sh.hold && sh.t != null && sh.dur != null && now >= sh.t && now < sh.t + 0.5) {
+          skip.current.add(sh.id);
         }
-        return n;
-      });
+      }
     }
   }
 
@@ -323,8 +338,10 @@ export default function VideoPanel({
         if (synced && ++drift % 15 === 0) {
           const o = peer?.current;
           if (o && o.duration) {
-            const target = Math.max(0, Math.min(o.duration - 0.05, el.currentTime + peerOffset));
-            if (Math.abs(o.currentTime - target) > 0.12) o.currentTime = target;
+            const want = el.currentTime + peerOffset;
+            if (want >= 0 && want <= o.duration - 0.05 && Math.abs(o.currentTime - want) > 0.12) {
+              o.currentTime = want;
+            }
           }
         }
       }
@@ -424,9 +441,20 @@ export default function VideoPanel({
                 // scaled width to keep the video in view.
                 transform: `translate(${pan.x + (mirrored ? size.w * zoom : 0)}px, ${pan.y}px) scale(${mirrored ? -zoom : zoom}, ${zoom})`,
               }}
+              // ⚠ SIN ESTOS DOS, el panel espejo no se entera de que su video
+              // arrancó (lo arrancó el otro panel): su botón decía lo contrario
+              // de lo que hacía, quedaba un rAF girando sobre un video pausado,
+              // y —lo peor— con el estado mentiroso el video se ponía a
+              // reproducir solo. O sea, volvía el bug que Marcelo reportó.
+              // El estado sigue al ELEMENTO, no a quién tocó el botón.
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
               onLoadedMetadata={() => setMissing(false)}
               onTimeUpdate={onTimeUpdate}
-              onEnded={() => setPlaying(false)}
+              // Si el video que manda termina, el otro no puede seguir solo:
+              // la comparación deja de tener sentido y el coach lo ve como que
+              // "se descontroló".
+              onEnded={() => { setPlaying(false); mirrorPlay(false); }}
               onError={handleVideoError}
             />
             <DrawingCanvas

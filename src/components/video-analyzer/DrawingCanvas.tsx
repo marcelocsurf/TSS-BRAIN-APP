@@ -188,7 +188,6 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
     const live = new Set<string>();
     for (const sh of visible) {
       live.add(sh.id);
-      if (!seen.has(sh.id)) seen.set(sh.id, nowMs);
       if (nowMs - (seen.get(sh.id) ?? nowMs) < DRAW_MS) animating = true;
     }
     // Un trazo que dejó de verse tiene que volver a entrar la próxima vez
@@ -204,6 +203,12 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
 
   /** Progreso de entrada (0→1) y opacidad de salida de un trazo. */
   function anim(sh: Shape) {
+    // Se registra ACÁ, durante el render. Antes lo hacía el efecto, que corre
+    // DESPUÉS de pintar: el trazo salía completo un cuadro y recién ahí
+    // empezaba a dibujarse — justo el "pop" que veníamos a eliminar.
+    if (!appearedAt.current.has(sh.id) && sh.id !== draftId.current) {
+      appearedAt.current.set(sh.id, performance.now());
+    }
     const born = appearedAt.current.get(sh.id);
     const p = sh.id === draftId.current || born == null
       ? 1
@@ -406,6 +411,32 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
             </Group>
           );
         })}
+
+        {/* VISTA PREVIA del ángulo mientras se colocan los tres toques.
+            Se había perdido al reescribir el bloque de dibujo: el coach ponía
+            los tres puntos a ciegas, sin ver nada en pantalla. */}
+        {settings.tool === "angle" && pending.length > 0 && (
+          <>
+            <Circle x={pending[0]} y={pending[1]} radius={6 / scale}
+              stroke={settings.color} strokeWidth={2.5 / scale} />
+            {pending.length >= 4 && (
+              <Line points={[pending[2], pending[3], pending[0], pending[1]]}
+                stroke={settings.color} strokeWidth={settings.width / scale}
+                dash={[7 / scale, 5 / scale]} lineCap="round" opacity={0.9} />
+            )}
+            {hover && (
+              <Line
+                points={
+                  pending.length >= 4
+                    ? [pending[0], pending[1], hover.x, hover.y]
+                    : [pending[0], pending[1], hover.x, hover.y]
+                }
+                stroke={settings.color} strokeWidth={settings.width / scale}
+                dash={[7 / scale, 5 / scale]} lineCap="round" opacity={0.6}
+              />
+            )}
+          </>
+        )}
 
         {/* El número del ángulo, DENTRO del abanico y con contorno oscuro:
             sobre agua un texto plano no se lee. Un decimal, como Kinovea. */}
