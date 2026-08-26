@@ -50,6 +50,12 @@ export default function VideoPanel({
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0); // 0..1
+  // Segundo actual del video. Los dibujos con duración aparecen y desaparecen
+  // según esto. `timeupdate` en WebKit solo dispara ~4 veces por segundo —
+  // demasiado grueso para que una línea de 1 s se vea entrar y salir limpia —
+  // así que mientras REPRODUCE se refresca por cuadro con rAF, y cuando está
+  // pausado alcanza con timeupdate/seek.
+  const [now, setNow] = useState(0);
   const [missing, setMissing] = useState(false);
 
   // ⚠ ACÁ SE CERRABA LA APP (Stanley, 2026-08-25, con clientes enfrente).
@@ -113,6 +119,7 @@ export default function VideoPanel({
     setMissing(false);
     setPlaying(false);
     setProgress(0);
+    setNow(0);
     resetView();
     const el = videoRef.current;
     if (el) el.playbackRate = speed;
@@ -180,7 +187,22 @@ export default function VideoPanel({
     const el = videoRef.current;
     if (!el || !el.duration) return;
     setProgress(el.currentTime / el.duration);
+    setNow(el.currentTime);
   }
+
+  // Reloj fino solo mientras reproduce; se apaga al pausar (no dejamos un
+  // rAF corriendo en un iPad que ya va justo de memoria).
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0;
+    const tick = () => {
+      const el = videoRef.current;
+      if (el) setNow(el.currentTime);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, videoRef]);
 
   function onSeek(e: ChangeEvent<HTMLInputElement>) {
     const el = videoRef.current;
@@ -188,6 +210,7 @@ export default function VideoPanel({
     const v = Number(e.target.value);
     el.currentTime = v * el.duration;
     setProgress(v);
+    setNow(el.currentTime);
   }
 
   function fullscreen() {
@@ -276,6 +299,7 @@ export default function VideoPanel({
             />
             <DrawingCanvas
               ref={stageRef}
+              now={now}
               width={size.w}
               height={size.h}
               scale={zoom}

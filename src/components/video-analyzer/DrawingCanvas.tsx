@@ -1,11 +1,13 @@
 "use client";
 
 import { forwardRef, useRef, useState } from "react";
-import { Stage, Layer, Line, Arrow, Circle, Text } from "react-konva";
+import { Stage, Layer, Line, Arrow, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
-import type { Shape, DrawSettings } from "./types";
+import { shapeVisible, type Shape, type DrawSettings } from "./types";
 
 type Props = {
+  /** Segundo actual del video — decide qué dibujos se ven. */
+  now?: number;
   width: number;
   height: number;
   scale: number;
@@ -31,7 +33,7 @@ function angleDeg(p: number[]) {
 }
 
 const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
-  { width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
+  { now = 0, width, height, scale, posX, posY, shapes, settings, onShapesChange, onActivate },
   ref
 ) {
   const drawing = useRef(false);
@@ -39,6 +41,13 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
   // For the multi-tap angle tool.
   const [pending, setPending] = useState<number[]>([]);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+
+  // Solo se pintan los dibujos vivos en este instante del video. Los que no
+  // tienen duración son permanentes y se ven siempre (comportamiento viejo).
+  // El trazo que se está dibujando AHORA siempre se ve, aunque el video siga
+  // corriendo y ya se haya pasado de su ventana — si no, se desvanece bajo el
+  // dedo del coach mientras lo dibuja.
+  const visible = shapes.filter((s) => s.id === draftId.current || shapeVisible(s, now));
 
   // Pointer position in *content* coordinates (already accounts for zoom/pan).
   function point(stage: Konva.Stage | null) {
@@ -61,6 +70,8 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
             tool: "angle",
             color: settings.color,
             width: settings.width,
+            t: now,
+            dur: settings.dur ?? null,
             points: np,
           },
         ]);
@@ -75,7 +86,9 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
     drawing.current = true;
     const id = nextId();
     draftId.current = id;
-    const base = { id, color: settings.color, width: settings.width };
+    // Nace anclado al instante del video en que se dibujó, con la duración
+    // que el coach tenga elegida (null = queda fijo).
+    const base = { id, color: settings.color, width: settings.width, t: now, dur: settings.dur ?? null };
     let shape: Shape;
     if (settings.tool === "circle") {
       shape = { ...base, tool: "circle", points: [p.x, p.y, 0] };
@@ -134,61 +147,69 @@ const DrawingCanvas = forwardRef<Konva.Stage, Props>(function DrawingCanvas(
       onPointerLeave={handleUp}
     >
       <Layer>
-        {shapes.map((s) => {
+        {/* ── Cómo se ven las líneas ──────────────────────────────────
+            Cada trazo se dibuja DOS VECES: primero un contorno oscuro más
+            grueso, después el color encima. Es el truco de la televisión
+            deportiva: sobre agua brillante al mediodía un trazo plano se
+            lava y se ve amateur; con el contorno, el color resalta contra
+            cualquier fondo. Cuesta una pasada más de dibujo y cambia todo.
+            HALO es un múltiplo del grosor para que escale parejo. */}
+        {visible.map((s) => {
+          const w = s.width / scale;
+          const halo = w + 3 / scale;
+          const common = {
+            lineCap: "round" as const,
+            lineJoin: "round" as const,
+            shadowColor: "#000",
+            shadowBlur: 6 / scale,
+            shadowOpacity: 0.35,
+            shadowForStrokeEnabled: true,
+          };
           if (s.tool === "circle") {
             return (
-              <Circle
-                key={s.id}
-                x={s.points[0]}
-                y={s.points[1]}
-                radius={s.points[2]}
-                stroke={s.color}
-                strokeWidth={s.width / scale}
-              />
+              <Group key={s.id}>
+                <Circle x={s.points[0]} y={s.points[1]} radius={s.points[2]}
+                  stroke="rgba(0,0,0,.55)" strokeWidth={halo} />
+                <Circle x={s.points[0]} y={s.points[1]} radius={s.points[2]}
+                  stroke={s.color} strokeWidth={w} {...common} />
+              </Group>
             );
           }
           if (s.tool === "arrow") {
+            const head = Math.max(12, s.width * 3.2) / scale;
             return (
-              <Arrow
-                key={s.id}
-                points={s.points}
-                stroke={s.color}
-                fill={s.color}
-                strokeWidth={s.width / scale}
-                pointerLength={Math.max(10, s.width * 3) / scale}
-                pointerWidth={Math.max(10, s.width * 3) / scale}
-              />
+              <Group key={s.id}>
+                <Arrow points={s.points} stroke="rgba(0,0,0,.55)" fill="rgba(0,0,0,.55)"
+                  strokeWidth={halo} pointerLength={head + 1.5 / scale} pointerWidth={head + 1.5 / scale}
+                  lineCap="round" lineJoin="round" />
+                <Arrow points={s.points} stroke={s.color} fill={s.color}
+                  strokeWidth={w} pointerLength={head} pointerWidth={head} {...common} />
+              </Group>
             );
           }
           if (s.tool === "angle") {
             const [vx, vy, ax, ay, bx, by] = s.points;
+            const pts = [ax, ay, vx, vy, bx, by];
             return (
-              <Line
-                key={s.id}
-                points={[ax, ay, vx, vy, bx, by]}
-                stroke={s.color}
-                strokeWidth={s.width / scale}
-                lineCap="round"
-                lineJoin="round"
-              />
+              <Group key={s.id}>
+                <Line points={pts} stroke="rgba(0,0,0,.55)" strokeWidth={halo} lineCap="round" lineJoin="round" />
+                <Line points={pts} stroke={s.color} strokeWidth={w} {...common} />
+              </Group>
             );
           }
-          // line + free
+          // línea recta + mano alzada
+          const tension = s.tool === "free" ? 0.5 : 0;
           return (
-            <Line
-              key={s.id}
-              points={s.points}
-              stroke={s.color}
-              strokeWidth={s.width / scale}
-              lineCap="round"
-              lineJoin="round"
-              tension={s.tool === "free" ? 0.4 : 0}
-            />
+            <Group key={s.id}>
+              <Line points={s.points} stroke="rgba(0,0,0,.55)" strokeWidth={halo}
+                lineCap="round" lineJoin="round" tension={tension} />
+              <Line points={s.points} stroke={s.color} strokeWidth={w} tension={tension} {...common} />
+            </Group>
           );
         })}
 
         {/* Degree labels for finished angles */}
-        {shapes
+        {visible
           .filter((s) => s.tool === "angle")
           .map((s) => (
             <Text

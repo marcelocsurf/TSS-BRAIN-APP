@@ -1,6 +1,6 @@
 "use client";
 
-import type { DrawSettings, Tool } from "./types";
+import { DURATIONS, type DrawSettings, type Tool } from "./types";
 
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "line", label: "Línea" },
@@ -10,7 +10,10 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: "free", label: "Libre" },
 ];
 
-const COLORS = ["#ef4444", "#22d3ee", "#facc15", "#22c55e", "#ffffff"];
+// Paleta elegida para leerse SOBRE AGUA. El rojo puro se apaga contra el
+// azul del mar; estos tonos son más saturados y claros, y con el contorno
+// oscuro que ahora lleva cada trazo resaltan con sol o con sombra.
+const COLORS = ["#FF3B5C", "#00E5FF", "#FFD166", "#39D98A", "#FFFFFF"];
 const WIDTHS = [3, 5, 8];
 
 type Props = {
@@ -35,6 +38,24 @@ export default function Toolbar({
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-white/10 bg-black/60 p-1.5">
       <span className="px-1 text-xs text-white/50">Dibujar en: {activeLabel}</span>
+
+      {/* Cuánto dura el dibujo. "Fija" = queda para siempre (lo de antes).
+          Con una duración, aparece en el segundo en que lo dibujaste y se va;
+          al volver a pasar el video, reaparece. */}
+      <div className="flex items-center gap-1">
+        <span className="px-1 text-[10px] uppercase tracking-wider text-white/40">Dura</span>
+        {DURATIONS.map((d) => (
+          <button
+            key={String(d.v)}
+            onClick={() => onChange({ ...settings, dur: d.v })}
+            className={`${btn} ${
+              (settings.dur ?? null) === d.v ? "bg-cyan-500" : "bg-white/10"
+            }`}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
 
       <div className="flex gap-1">
         {TOOLS.map((t) => (
