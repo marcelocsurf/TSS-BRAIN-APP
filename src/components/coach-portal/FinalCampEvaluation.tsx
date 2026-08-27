@@ -24,6 +24,8 @@ interface Props {
   campName: string;
   students: ServicePlanStudent[];
   stpCatalog: ServicePlanData['stpCatalog'];
+  /** Progreso del pre-curso por alumno — requisito, pero no bloquea. */
+  preCourse?: ServicePlanData['preCourseByStudent'];
   // Coach ratings already given across the camp days (student → step →
   // rating). Pre-loaded so the final evaluation reflects daily progress
   // and the coach only adjusts what changed.
@@ -50,6 +52,7 @@ export function FinalCampEvaluation({
   campName,
   students,
   stpCatalog,
+  preCourse = {},
   initialRatings,
   targetBelt,
   canAccreditTarget = true,
@@ -193,7 +196,7 @@ export function FinalCampEvaluation({
     const base = `${owned}/${seqGroups.length} secuencias`;
     const pend = unseen ? ` · ${unseen} sin evaluar` : '';
     if (!rule.principles.length) return base + pend;
-    return `${base}${pend} · ${studentPrinciplesMet(studentId)}/${rule.principles.length} principles`;
+    return `${base}${pend} · autonomía ${studentPrinciplesMet(studentId)}/${rule.principles.length}`;
   };
 
   const totalRated = students.reduce((sum, s) => sum + studentRatedCount(s.student_id), 0);
@@ -352,7 +355,7 @@ export function FinalCampEvaluation({
           <p className="text-[10px] text-white/50 mt-1">
             {rule.beltLabel} ready = las {seqGroups.length} secuencias logradas
             {` (${rule.stpThreshold}★ en cada parte)`}
-            {rule.principles.length > 0 && ` + ≥${rule.minPrinciples}/${rule.principles.length} principles`}.
+            {rule.principles.length > 0 && ' + autonomía'}.
             {' '}Lo que no viste queda pendiente, no reprobado — el alumno lo encuentra en su curso.
           </p>
         </div>
@@ -497,6 +500,31 @@ export function FinalCampEvaluation({
                             ? `🏁 Cerrar a ${s.display_name.split(' ')[0]} HOY (evaluación + encuestas)`
                             : '💾 Guardar este alumno (no se pierde)'}
                     </button>
+                    {/* Todo lo que necesita para avanzar, en un solo lugar.
+                        El pre-curso es requisito pero NO bloquea el cierre: se
+                        muestra para que el coach y el alumno sepan qué falta.
+                        El examen final es informativo por decisión de Marcelo. */}
+                    {(() => {
+                      const pc = preCourse[s.student_id];
+                      if (!pc) return null;
+                      const full = pc.total > 0 && pc.done >= pc.total;
+                      return (
+                        <div className="rounded-lg border border-gray-200 px-3 py-2 mb-2 flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                            Pre-curso
+                          </span>
+                          <span className={`text-[12px] font-semibold ${full ? 'text-emerald-600' : 'text-gray-700'}`}>
+                            {full ? '✓ leído' : `${pc.done}/${pc.total} leídas`}
+                          </span>
+                          {!full && (
+                            <span className="text-[11px] text-gray-400">
+                              · requisito para avanzar, no bloquea el cierre
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* La evaluación es por SECUENCIA, no por 55 pasos
                         sueltos. Ver src/components/evaluation/SequenceEvaluation.
                         Es la misma pantalla que en la ficha del alumno: cerrar
@@ -520,8 +548,7 @@ export function FinalCampEvaluation({
                     {rule.principles.length > 0 && (
                       <div className="pt-3 mt-1 border-t border-gray-100">
                         <p className="text-[11px] font-mono uppercase tracking-wider text-gray-500 mb-1.5">
-                          Canon principles · {studentPrinciplesMet(s.student_id)}/{rule.principles.length}
-                          {' '}(need {rule.minPrinciples})
+                          Autonomía · {studentPrinciplesMet(s.student_id)}/{rule.principles.length}
                         </p>
                         <div className="space-y-1.5">
                           {rule.principles.map((p, i) => (

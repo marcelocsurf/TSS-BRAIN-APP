@@ -43,14 +43,12 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     stpThreshold: 4,
     minStps: 35,
     requireAllStps: true,
-    principles: [
-      'Endurance and enjoyment are not opposites',
-      'Cobra + Line = TIME',
-      'External × Internal = sustained line',
-      'Exit with elegance, not with turbulence',
-      'Errors are signals, not failures',
-    ],
-    minPrinciples: 3,
+    // Los principios del canon salieron de la evaluación (Marcelo 2026-08-27):
+    // quedan como INFORMACIÓN en CANON_REFERENCE, no como casillas que el
+    // coach marca. No se perdió nada medible: nunca se guardaron — eran
+    // estado del navegador que solo abría o cerraba la aprobación.
+    principles: [],
+    minPrinciples: 0,
   },
   // Blue Belt — full White->Yellow->Blue sequence. Verificado contra
   // producción 2026-08-27: son 25 + 10 + 20 = 55 pasos activos, no 48.
@@ -63,13 +61,42 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     stpThreshold: 4,
     minStps: 55,
     requireAllStps: true,
+    // De los cinco principios de Blue, CUATRO eran lo mismo que el coach ya
+    // evalúa en otro lado y los marcaba dos veces:
+    //   "Universal Sequence Formula (Seq #10-#13)" = esas cuatro secuencias
+    //   "Pump FS y BS (Seq #8, #9)"                = esas dos secuencias
+    //   "Demonstrate the 4 BB Concepts"            = el paso BB-CONCEPTS-01
+    //   "Verbalize Compromiso Consciente"          = la lección BB-ONB-01
+    // El quinto no está en ninguna otra parte y es el que importa: saber decir
+    // solo qué etapa falló es la autonomía — el alumno dejando de necesitar
+    // que le digan qué pasó. Queda ese, y solo en Blue.
     principles: [
-      'Execute the Universal Sequence Formula on at least 4 of 5 attempts per sequence (Seq #10, #11, #12, #13)',
-      'Pump effectively on FS and BS (Seq #8, #9) at least 3 of 5 attempts per side',
-      'Self-identify which stage failed when execution is below threshold',
-      'Demonstrate the 4 BB Concepts (Floater, Impulso, Low Finish, BT Concept) in context',
-      'Verbalize Compromiso Consciente in your own words',
+      'Sabe decir por sí mismo qué etapa de la secuencia falló cuando la ejecución no llega',
     ],
-    minPrinciples: 4,
+    minPrinciples: 1,
   },
+};
+
+/**
+ * El canon como INFORMACIÓN, no como evaluación.
+ *
+ * Estos principios se marcaban uno por uno al cerrar un camp. Salieron de la
+ * evaluación porque en Blue cuatro de cinco repetían algo que el coach ya
+ * calificaba, y porque nunca se guardaron: eran estado del navegador. Siguen
+ * acá para mostrarlos al alumno y al coach como referencia del nivel.
+ */
+export const CANON_REFERENCE: Record<string, string[]> = {
+  yellow_belt: [
+    'Endurance and enjoyment are not opposites',
+    'Cobra + Line = TIME',
+    'External × Internal = sustained line',
+    'Exit with elegance, not with turbulence',
+    'Errors are signals, not failures',
+  ],
+  blue_belt: [
+    'Execute the Universal Sequence Formula on at least 4 of 5 attempts per sequence (Seq #10, #11, #12, #13)',
+    'Pump effectively on FS and BS (Seq #8, #9) at least 3 of 5 attempts per side',
+    'Demonstrate the 4 BB Concepts (Floater, Impulso, Low Finish, BT Concept) in context',
+    'Verbalize Compromiso Consciente in your own words',
+  ],
 };

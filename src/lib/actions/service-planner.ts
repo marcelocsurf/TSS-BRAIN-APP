@@ -5,6 +5,7 @@ import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
 import { sortByBlocks } from '@/lib/constants/learning-blocks';
+import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -89,6 +90,10 @@ export interface ServicePlanData {
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number }>;
   // Belt-specific sequence rated in the FINAL evaluation (graduation check).
   graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number }>;
+  /** Progreso del PRE-CURSO por alumno. Es requisito para avanzar de cinta,
+   *  pero NO bloquea el cierre: se muestra para que el coach y el alumno sepan
+   *  qué falta. */
+  preCourseByStudent: Record<string, { done: number; total: number }>;
   /** Los Learning Blocks son solo para Blue Belt; el resto queda como estaba. */
   graduationUsesBlocks: boolean;
   // Academy board inventory available for assignment (M108).
@@ -651,6 +656,31 @@ export async function getServicePlan(
   // organización de siempre.
   const graduationUsesBlocks = tpl?.includes_course_key === 'blue_belt';
 
+  // Pre-curso: cuántas de sus lecciones lleva leídas cada alumno del camp. Es
+  // uno de los requisitos para avanzar de cinta — informativo, no bloquea.
+  const preCourseByStudent: Record<string, { done: number; total: number }> = {};
+  {
+    const { data: pcLessons } = await admin
+      .from('lessons')
+      .select('id')
+      .in('course_section', SHARED_PRE_COURSE_SECTIONS as unknown as string[])
+      .eq('active', true);
+    const pcIds = (pcLessons ?? []).map((l: any) => l.id);
+    const studentIds = students.map((s) => s.student_id);
+    if (pcIds.length && studentIds.length) {
+      const { data: prog } = await admin
+        .from('lesson_progress')
+        .select('student_id, lesson_id')
+        .in('student_id', studentIds)
+        .in('lesson_id', pcIds)
+        .eq('completed', true);
+      for (const sid of studentIds) preCourseByStudent[sid] = { done: 0, total: pcIds.length };
+      for (const r of (prog ?? []) as any[]) {
+        if (preCourseByStudent[r.student_id]) preCourseByStudent[r.student_id].done += 1;
+      }
+    }
+  }
+
   // M44 — load the template plan if there is a template attached.
   // Days come from camp_template_days, blocks from camp_template_blocks
   // (joined via template_day_id). Phase B (read view) needs drill +
@@ -747,6 +777,7 @@ export async function getServicePlan(
       ? sortByBlocks((gradRows ?? stpRows ?? []) as any[])
       : (gradRows ?? stpRows ?? [])) as any[],
     graduationUsesBlocks,
+    preCourseByStudent,
     availableBoards,
     boardConflictIds,
     readOnly,
