@@ -198,11 +198,16 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('student_id', id)
       .order('created_at', { ascending: false })
       .limit(30),
-    // M4: STP catalog for OfficialEvaluationPanel (rows to rate)
+    // M4: STP catalog for OfficialEvaluationPanel (rows to rate).
+    // Estaba fijado a white_belt: un alumno de Blue tiene 55 pasos y el coach
+    // veía 25 en su ficha. Ahora trae las tres cintas y el panel las agrupa
+    // por secuencia, la misma lectura que ve el alumno en su portal.
     supabase
       .from('lessons')
-      .select('id, title, step_number')
-      .eq('course_section', 'white_belt')
+      .select(
+        'id, title, step_number, course_section, wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
+      )
+      .in('course_section', ['white_belt', 'yellow_belt', 'blue_belt'])
       .eq('active', true)
       .order('step_number'),
     // Portal activity: course final-exam attempts (belt exit tests)
@@ -281,6 +286,12 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     return {
       step_id: l.id,
       step_title: l.title ?? null,
+      course_section: l.course_section ?? null,
+      step_number: l.step_number ?? null,
+      sequence_id: l.wb_sequence_id ?? null,
+      sequence_name: l.wb_sequence_name ?? null,
+      sequence_order: l.wb_sequence_order ?? null,
+      sequence_step_order: l.sequence_step_order ?? null,
       student_self_rating: r?.current_rating ?? null,
       coach_rating: r?.coach_rating ?? null,
       coach_rated_at: r?.coach_rated_at ?? null,

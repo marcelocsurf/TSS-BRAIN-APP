@@ -191,6 +191,15 @@ interface PortalData {
   coachProfileUnlocked?: boolean;
   /** Si esta persona además es coach, el link a su portal de coach. */
   coachSide?: { href: string; name: string } | null;
+  /** La primera secuencia sin lograr y el paso que la frena. */
+  nextMove?: {
+    sequenceOrder: number;
+    sequenceName: string;
+    stepId: string;
+    stepTitle: string;
+    stars: number | null;
+    official: boolean;
+  } | null;
 }
 
 // ─── Venue Analysis Constants ───
@@ -396,7 +405,13 @@ export function PortalTabs({
       {/* Tab Content — en tablet/iPad (md:) el lienzo se ensancha para no
           dejar la columna de teléfono flotando en medio de la pantalla. */}
       <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-4">
-        {activeTab === 'home' && <HomeTab data={data} belt={belt} onGoTo={setActiveTab} />}
+        {activeTab === 'home' && (
+          <HomeTab
+            data={data}
+            belt={belt}
+            onGoTo={setActiveTab}
+          />
+        )}
         {activeTab === 'course' && data.courseData && (
           <div className="space-y-4">
             <CourseTab data={data.courseData} />
@@ -813,6 +828,33 @@ function HomeTab({
               cinta, secuencia y next focus, no pilares ni temporadas.
               Antes bastaba con que existiera una ficha HP creada de paso, y
               cuatro personas veían tarjetas vacías. */}
+          {/* TU PRÓXIMO MOVIMIENTO — la primera secuencia que todavía no está
+              lograda y el paso que la frena. Sale de las notas que el coach ya
+              puso al cerrar el camp; el alumno no tiene que deducir nada de 48
+              estrellas sueltas. Toca y cae directo en el drill de ese paso. */}
+          {data.nextMove && (
+            <a
+              href={`?step=${encodeURIComponent(data.nextMove.stepId)}`}
+              className="block rounded-2xl px-4 py-3.5"
+              style={{ background: 'rgba(255,209,102,.10)', border: '1px solid rgba(255,209,102,.35)' }}
+            >
+              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.gold }}>
+                Your next move
+              </p>
+              <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
+                {data.nextMove.stepTitle}
+              </p>
+              <p className="text-[12px] text-white/60 mt-0.5">
+                Holding back Sequence #{data.nextMove.sequenceOrder}: {data.nextMove.sequenceName}
+                {data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}
+                {data.nextMove.official && ' — your coach'}
+              </p>
+              <p className="text-[12px] mt-1.5" style={{ color: BRAND.colors.gold }}>
+                Practice it →
+              </p>
+            </a>
+          )}
+
           {data.homeBundle?.hpAccess && (
             <>
               <AthleteProfileCard token={data.token} placement="top" />

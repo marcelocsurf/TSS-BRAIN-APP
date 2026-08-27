@@ -531,3 +531,39 @@ export async function getWeeklyPracticeCount(studentId: string): Promise<number>
     .gte('created_at', since.toISOString());
   return count ?? 0;
 }
+
+/**
+ * El próximo movimiento del alumno, para el Home.
+ *
+ * Es la misma lectura de Let's Play condensada en una línea: la primera
+ * secuencia que todavía no está lograda y el paso que la frena. Sale de las
+ * notas que el coach ya puso — no hay nada nuevo que llenar.
+ */
+export async function getNextMove(
+  studentId: string,
+  belt: string
+): Promise<{
+  sequenceOrder: number;
+  sequenceName: string;
+  stepId: string;
+  stepTitle: string;
+  stars: number | null;
+  official: boolean;
+} | null> {
+  try {
+    const data = await getMySequence(studentId, belt);
+    const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
+    if (!seq || !seq.weakestStepId) return null;
+    return {
+      sequenceOrder: seq.order,
+      sequenceName: seq.name,
+      stepId: seq.weakestStepId,
+      stepTitle: seq.weakestTitle ?? seq.weakestStepId,
+      stars: seq.minRating,
+      official: seq.weakestIsOfficial,
+    };
+  } catch {
+    // El Home no se cae por esto: es una ayuda, no el contenido.
+    return null;
+  }
+}

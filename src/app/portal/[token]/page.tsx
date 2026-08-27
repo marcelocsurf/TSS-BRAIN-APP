@@ -16,6 +16,7 @@ import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate'
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
+import { getNextMove } from '@/lib/actions/sequence';
 import { RenewalGate } from './RenewalGate';
 import { getMembershipInfo } from '@/lib/actions/memberships';
 import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMyMessages, getMyTeamWall, getMyTodayExtras } from '@/lib/actions/programs';
@@ -200,6 +201,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           myCoach,
           coachProfileUnlocked: coachUnlocked,
           coachSide: await getCoachSideForStudent(student.id),
+          // El próximo movimiento: la primera secuencia sin lograr y el paso
+          // que la frena. Sale de las notas que el coach ya puso.
+          nextMove: await getNextMove(student.id, activeCourse?.belt ?? 'white'),
         }}
         initialTab={initialTab}
         initialSurveyId={survey || null}
