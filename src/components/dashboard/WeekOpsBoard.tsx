@@ -21,6 +21,8 @@ interface OpsRow {
   dayNumber: number | null;
   totalDays: number | null;
   coach: string | null;
+  /** 'pending' = asignado pero todavía no aceptó · 'rejected' = rechazó. */
+  coachNote: 'pending' | 'rejected' | null;
   staff: string[]; // "Katy (assistant)"
   meeting: string | null; // class_start_time = hora de encuentro
   depart: string | null;
@@ -127,10 +129,33 @@ async function getWeekOps(academyId: string) {
     const tpl = Array.isArray(inst?.camp_templates) ? inst.camp_templates[0] : inst?.camp_templates;
     const head = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;
     const co = Array.isArray(inst?.coaches) ? inst.coaches[0] : inst?.coaches;
-    // Coach efectivo: head solo si ACEPTÓ (invariante #1 del proyecto) —
-    // sin fallback al head pendiente: ocultaría el "Sin coach ⚠" que la
-    // coordinación necesita ver justo en ese caso (revisión).
-    const coach = (head?.display_name && inst?.head_coach_status === 'accepted' ? head.display_name : null) ?? co?.display_name ?? null;
+    // Quién aparece como coach del servicio.
+    //
+    // El head coach ES la asignación real; coach_id es el campo de creación y
+    // muchas veces queda el coordinador que armó el calendario. Antes se
+    // nombraba al head SOLO si había aceptado, y si no se caía a coach_id: con
+    // 33 servicios con head pendiente eso producía dos errores en el mensaje
+    // que se manda a los chats — decía "SIN COACH" en servicios que sí tenían
+    // coach asignado, y en Discover Surfing nombraba al coordinador en vez de
+    // a la coach asignada. El tablero de servicios ya mostraba al head sin
+    // mirar el estado, así que las dos pantallas se contradecían.
+    //
+    // Ahora se nombra al head siempre, marcando si todavía no confirmó. El
+    // aviso que coordinación necesita no se pierde: cambia de "SIN COACH ⚠" a
+    // "sin confirmar ⚠", que es lo que de verdad está pasando.
+    //
+    // Esto NO toca el invariante #1: el coach efectivo para permisos y
+    // acciones sigue exigiendo 'accepted' donde corresponde. Acá solo se
+    // decide un texto de coordinación.
+    const hcStatus = inst?.head_coach_status ?? null;
+    const headName = head?.display_name ?? null;
+    const rejected = hcStatus === 'rejected';
+    const coach = rejected ? null : (headName ?? co?.display_name ?? null);
+    const coachNote: 'pending' | 'rejected' | null = rejected
+      ? 'rejected'
+      : headName && hcStatus === 'pending'
+        ? 'pending'
+        : null;
     const parts = (inst?.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
     const plan = planByS.get(s.id) as any;
     const studs = parts.map((p: any) => (Array.isArray(p.students) ? p.students[0] : p.students));
@@ -142,6 +167,7 @@ async function getWeekOps(academyId: string) {
       dayNumber: s.day_number,
       totalDays: (inst?.camp_sessions ?? []).length || null,
       coach,
+      coachNote,
       staff: staffByCamp.get(s.camp_instance_id) ?? [],
       meeting: hh(plan?.class_start_time) ?? hh(inst?.scheduled_time),
       depart: plan?.transport_needed ? hh(plan?.transport_depart) : null,
@@ -174,7 +200,14 @@ function dayText(dateISO: string, rows: OpsRow[]): string {
   for (const r of rows) {
     L.push('━━━━━━━━━━━━━━');
     L.push(`🕐 ${r.meeting ?? '—'} · ${r.name.toUpperCase()}${r.dayNumber && r.totalDays && r.totalDays > 1 ? ` (D${r.dayNumber}/${r.totalDays})` : ''}`);
-    L.push(`Coach: ${r.coach ?? 'SIN COACH ⚠'}${r.staff.length ? ` · ${r.staff.join(' · ')}` : ''}`);
+    const coachTxt = r.coachNote === 'rejected'
+      ? 'SIN COACH ⚠ · el head coach rechazó — reasignar'
+      : !r.coach
+        ? 'SIN COACH ⚠'
+        : r.coachNote === 'pending'
+          ? `${r.coach} · sin confirmar ⚠`
+          : r.coach;
+    L.push(`Coach: ${coachTxt}${r.staff.length ? ` · ${r.staff.join(' · ')}` : ''}`);
     if (r.vanState === 'ok') L.push(`🚐 Sale ${r.depart} → vuelve ${r.ret ?? '—'}`);
     else if (r.vanState === 'pending_times') L.push('🚐 Pedida · SIN HORARIO ⚠');
     else if (r.vanState === 'cancelled') L.push('🚐 Cancelada ✕');
@@ -253,7 +286,18 @@ export async function WeekOpsBoard({ academyId }: { academyId: string }) {
                           </Link>
                         </td>
                         <td className="py-2 pr-2">
-                          {r.coach ?? <span className="text-red-600 font-bold">Sin coach ⚠</span>}
+                          {r.coachNote === 'rejected' ? (
+                            <span className="text-red-600 font-bold">Sin coach ⚠ · rechazó — reasignar</span>
+                          ) : !r.coach ? (
+                            <span className="text-red-600 font-bold">Sin coach ⚠</span>
+                          ) : (
+                            <>
+                              {r.coach}
+                              {r.coachNote === 'pending' && (
+                                <span className="text-amber-700 font-semibold"> · sin confirmar ⚠</span>
+                              )}
+                            </>
+                          )}
                           {r.staff.length > 0 && <span className="text-gray-400"> · {r.staff.join(' · ')}</span>}
                         </td>
                         <td className="py-2 pr-2 font-extrabold whitespace-nowrap" style={{ color: '#0090B0' }}>{r.meeting ?? '—'}</td>
