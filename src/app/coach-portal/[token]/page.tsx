@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { getCoachPortalData } from '@/lib/actions/coach-portal';
 import { CoachPortalTabs } from './CoachPortalTabs';
+import { getStudentSideForCoach } from '@/lib/actions/dual-profile';
 import { resolveAcademyBranding } from '@/lib/branding';
 import { Lock } from 'lucide-react';
 import { LogoutButton } from '@/components/shared/LogoutButton';
@@ -104,7 +105,11 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <CoachPortalTabs data={data} initialTab={initialTab} />
+      <CoachPortalTabs
+        data={data}
+        initialTab={initialTab}
+        studentSide={await getStudentSideForCoach(data.coach.id)}
+      />
     </div>
   );
 }

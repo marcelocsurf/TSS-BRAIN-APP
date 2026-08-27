@@ -188,6 +188,8 @@ interface PortalData {
     };
   } | null;
   coachProfileUnlocked?: boolean;
+  /** Si esta persona además es coach, el link a su portal de coach. */
+  coachSide?: { href: string; name: string } | null;
 }
 
 // ─── Venue Analysis Constants ───
@@ -355,6 +357,17 @@ export function PortalTabs({
           </button>
           <LogoutButton portalToken={data.token} />
         </div>
+        {/* Perfil doble: esta persona también trabaja como coach. Las dos caras
+            viven separadas a propósito; esto solo salta de una a la otra. */}
+        {data.coachSide && (
+          <a
+            href={data.coachSide.href}
+            className="absolute top-1.5 left-1.5 rounded-full px-2.5 h-7 flex items-center gap-1 text-[10px] font-semibold"
+            style={{ background: 'rgba(255,255,255,.14)', color: brand.accent }}
+          >
+            🧢 Coach view →
+          </a>
+        )}
         {guideOpen && <AthleteGuide onClose={closeGuide} hpAccess={!!data.homeBundle?.hpAccess} />}
         <div className="flex items-center justify-between gap-3 pr-6">
           <div className="flex items-center gap-2.5 min-w-0">

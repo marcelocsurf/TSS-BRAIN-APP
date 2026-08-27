@@ -104,9 +104,12 @@ const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
 export function CoachPortalTabs({
   data,
   initialTab,
+  studentSide,
 }: {
   data: CoachPortalData;
   initialTab?: Tab;
+  /** Si este coach además entrena como alumno, el link a su portal de alumno. */
+  studentSide?: { href: string; name: string } | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   // When a class is open in the planner we switch to a focused, light-themed
@@ -187,7 +190,7 @@ export function CoachPortalTabs({
             {isSupport ? (
               <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} emergencyPlan={data.emergencyPlan} onGoTo={setActiveTab} />
             ) : (
-              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} />
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} />
             )}
           </div>
         )}
@@ -693,6 +696,7 @@ function HomeTab({
   coachCourses = [],
   courseProgress = {},
   todayLogistics = null,
+  studentSide = null,
 }: {
   coach: any;
   stats: any;
@@ -703,6 +707,8 @@ function HomeTab({
   coachCourses?: any[];
   courseProgress?: Record<string, { completed: boolean }>;
   todayLogistics?: any;
+  /** Si este coach además entrena como alumno, el link a su portal. */
+  studentSide?: { href: string; name: string } | null;
   emergencyPlan?: {
     emergency_numbers: string | null;
     nearest_hospital: string | null;
@@ -739,13 +745,26 @@ function HomeTab({
         <div className="px-5 pt-5 pb-6">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Here and now · Coach portal</p>
-            <Link
-              href={`/coach-portal/${coach.portal_token}/profile`}
-              className="text-[10px] hover:opacity-80"
-              style={{ ...F_LABEL, color: 'rgba(247,249,250,.55)' }}
-            >
-              Edit profile
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Perfil doble: este coach además entrena como alumno. Las dos
+                  caras viven separadas; esto solo salta de una a la otra. */}
+              {studentSide && (
+                <a
+                  href={studentSide.href}
+                  className="text-[10px] hover:opacity-80"
+                  style={{ ...F_LABEL, color: '#00D2FF' }}
+                >
+                  🏄 My progress →
+                </a>
+              )}
+              <Link
+                href={`/coach-portal/${coach.portal_token}/profile`}
+                className="text-[10px] hover:opacity-80"
+                style={{ ...F_LABEL, color: 'rgba(247,249,250,.55)' }}
+              >
+                Edit profile
+              </Link>
+            </div>
           </div>
 
           <div className="mt-4 flex items-center gap-4">

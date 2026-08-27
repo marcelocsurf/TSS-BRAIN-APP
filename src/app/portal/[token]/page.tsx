@@ -15,6 +15,7 @@ import { validateStudentSession } from '@/lib/actions/student-pin';
 import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
+import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
 import { RenewalGate } from './RenewalGate';
 import { getMembershipInfo } from '@/lib/actions/memberships';
 import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMyMessages, getMyTeamWall, getMyTodayExtras } from '@/lib/actions/programs';
@@ -198,6 +199,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           courseData,
           myCoach,
           coachProfileUnlocked: coachUnlocked,
+          coachSide: await getCoachSideForStudent(student.id),
         }}
         initialTab={initialTab}
         initialSurveyId={survey || null}
