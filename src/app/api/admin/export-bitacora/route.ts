@@ -18,6 +18,10 @@ const TABLES = [
   'student_session_results',
   'survey_responses',
   'student_step_ratings',
+  // El acta de cada evaluación: el veredicto, el "qué trabajar después"
+  // obligatorio y las dos notas. Faltaba — se exportaban las estrellas pero
+  // no lo que el coach escribió.
+  'camp_final_evaluations',
   'course_grants',
   'audit_log',
 ];

@@ -836,6 +836,29 @@ function HomeTab({
               cinta, secuencia y next focus, no pilares ni temporadas.
               Antes bastaba con que existiera una ficha HP creada de paso, y
               cuatro personas veían tarjetas vacías. */}
+          {/* LO QUE TE DIJO TU COACH. El "qué trabajar después" es obligatorio
+              en cada evaluación, pero solo llegaba al alumno cuando venía del
+              cierre de un camp: una evaluación hecha desde su ficha en
+              cualquier momento no se mostraba en ningún lado. */}
+          {(data as any).standaloneEvaluation?.focus && (
+            <div
+              className="rounded-2xl px-4 py-3.5"
+              style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
+            >
+              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+                Lo que te dijo tu coach
+              </p>
+              <p className="text-[14px] text-white mt-1 leading-snug">
+                🎯 {(data as any).standaloneEvaluation.focus}
+              </p>
+              {(data as any).standaloneEvaluation.note && (
+                <p className="text-[12.5px] text-white/70 mt-1.5 leading-snug">
+                  {(data as any).standaloneEvaluation.note}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* TU PRÓXIMO MOVIMIENTO — la primera secuencia que todavía no está
               lograda y el paso que la frena. Sale de las notas que el coach ya
               puso al cerrar el camp; el alumno no tiene que deducir nada de 48

@@ -292,19 +292,35 @@ export async function getStudentPortalData(token: string) {
   // Final-evaluation note the coach wrote for this student (student-visible
   // only — coach_private_note is intentionally NOT selected here). Attach to
   // each past camp so the portal can show "your coach's note".
-  if (pastCamps.length > 0) {
+  let standaloneEvaluation: { note: string | null; focus: string | null; at: string } | null = null;
+  {
+    // Se piden TODAS las actas del alumno, no solo las de sus camps pasados:
+    // una evaluación hecha desde la ficha en cualquier momento tiene
+    // camp_instance_id null, y con el filtro por camps el alumno no la veía
+    // nunca. La nota interna del coach NO se selecciona a propósito.
     const { data: finalNotes } = await admin
       .from('camp_final_evaluations')
-      .select('camp_instance_id, student_visible_note')
+      .select('camp_instance_id, student_visible_note, areas_to_improve, created_at')
       .eq('student_id', student.id)
-      .in('camp_instance_id', pastCamps.map((c) => c.id));
+      .order('created_at', { ascending: false });
     const noteByCamp = new Map<string, string>();
     for (const n of finalNotes ?? []) {
-      if (n.student_visible_note) noteByCamp.set(n.camp_instance_id, n.student_visible_note);
+      if (n.camp_instance_id && n.student_visible_note) {
+        noteByCamp.set(n.camp_instance_id, n.student_visible_note);
+      }
     }
     for (const c of pastCamps) {
       c.coach_final_note = noteByCamp.get(c.id) ?? null;
     }
+    // La última evaluación fuera de un camp — la que el alumno no veía.
+    const loose = (finalNotes ?? []).find((n: any) => !n.camp_instance_id);
+    standaloneEvaluation = loose
+      ? {
+          note: loose.student_visible_note ?? null,
+          focus: loose.areas_to_improve ?? null,
+          at: loose.created_at as string,
+        }
+      : null;
   }
 
   // For each upcoming camp, pull its next day's blocks so the student
@@ -386,6 +402,7 @@ export async function getStudentPortalData(token: string) {
     // M45 — official services (camp_instances). Single source of truth.
     upcomingCamps: upcomingCampsWithPreview,
     pastCamps,
+    standaloneEvaluation,
     academyBranding,
   };
 }
