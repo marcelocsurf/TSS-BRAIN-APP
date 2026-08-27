@@ -19,6 +19,7 @@ import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton'
 import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
+import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
 import { CoursesPanel } from '@/components/student/CoursesPanel';
@@ -704,6 +705,27 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           currentLevel={student.ocean_level}
           history={oceanHistory}
           provisional={!!(student as any).ocean_level_provisional}
+        />
+      </CollapsibleSection>
+
+      {/* --- 3c-bis. PRUEBAS DE AGUA (collapsible) ---
+           Cómo se GANA el nivel de océano. Va pegado al panel de Ocean Level
+           porque es lo que lo respalda: hasta ahora ese nivel salía del quiz
+           de intake —lo que el alumno dice de sí mismo— y del criterio del
+           coach. Se pasa o no se pasa; no cambia el nivel por su cuenta. */}
+      <CollapsibleSection
+        title={
+          <>
+            <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            Pruebas de agua
+          </>
+        }
+        defaultOpen={false}
+      >
+        <WaterTestsPanel
+          studentId={id}
+          coachId={coach?.id || ''}
+          currentLevel={student.ocean_level}
         />
       </CollapsibleSection>
 
