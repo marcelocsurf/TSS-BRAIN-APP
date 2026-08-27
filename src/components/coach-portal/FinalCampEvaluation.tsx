@@ -7,7 +7,7 @@
 // camp_instance flips to 'completed'. These cyan stars become the
 // student's official The Surf Sequence evaluation for that step in their portal.
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import { StarRating } from '@/components/sequence/StarRating';
 import { closeCampFinal, getCampWeekMissionsByToken } from '@/lib/actions/service-planner';
@@ -15,7 +15,8 @@ import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-
 import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduation';
 import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
-import { groupByBlocks, sequencesFor } from '@/lib/constants/learning-blocks';
+import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
+import { groupBySequence, sequenceVerdict } from '@/lib/constants/learning-blocks';
 
 interface Props {
   token: string;
@@ -23,8 +24,6 @@ interface Props {
   campName: string;
   students: ServicePlanStudent[];
   stpCatalog: ServicePlanData['stpCatalog'];
-  /** Solo Blue Belt usa los Learning Blocks. */
-  useBlocks?: boolean;
   // Coach ratings already given across the camp days (student → step →
   // rating). Pre-loaded so the final evaluation reflects daily progress
   // and the coach only adjusts what changed.
@@ -51,7 +50,6 @@ export function FinalCampEvaluation({
   campName,
   students,
   stpCatalog,
-  useBlocks = false,
   initialRatings,
   targetBelt,
   canAccreditTarget = true,
@@ -63,24 +61,6 @@ export function FinalCampEvaluation({
 }: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
   /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
   earlyMode?: boolean }) {
-  // Los Learning Blocks son SOLO para Blue Belt. En White y Yellow la lista
-  // queda plana y en el mismo orden de siempre.
-  const catalogBlocks = useMemo(
-    () =>
-      useBlocks
-        ? groupByBlocks(stpCatalog as any[])
-        : [
-            {
-              key: 'flat',
-              block: null,
-              label: '',
-              sub: '',
-              rows: stpCatalog as any[],
-            },
-          ],
-    [stpCatalog, useBlocks]
-  );
-
   // Recorrido del camp por alumno (qué misión/STP/drill trabajó cada día) —
   // sin esto el coach evaluaba a ciegas: solo veía el día seleccionado.
   const [weekMissions, setWeekMissions] = useState<Record<string, Array<{ day: number; items: string[] }>> | null>(null);
@@ -183,11 +163,37 @@ export function FinalCampEvaluation({
     return stpsOk && studentPrinciplesMet(studentId) >= rule.minPrinciples;
   };
 
-  // Compact verdict, e.g. "6/8 STPs ≥4★ · 3/5 principles".
+  // El catálogo agrupado en secuencias: es la unidad con la que el coach
+  // decide, así que el veredicto también se cuenta en secuencias.
+  const catalogRows = (stpCatalog as any[]).map((stp) => ({
+    step_id: stp.id,
+    step_title: stp.title,
+    course_section: stp.course_section,
+    step_number: stp.step_number,
+    sequence_id: stp.wb_sequence_id ?? null,
+    sequence_name: stp.wb_sequence_name ?? null,
+    sequence_order: stp.wb_sequence_order ?? null,
+    sequence_step_order: stp.sequence_step_order ?? null,
+  }));
+  const seqGroups = groupBySequence(catalogRows).groups;
+
+  // Veredicto en el idioma del coach: "9/13 secuencias · 2 sin evaluar".
+  // La regla NO cambia — sigue siendo 4★ en cada parte — pero contarlo en
+  // pasos cuando él decide por secuencia era hablarle en otro idioma. Y las
+  // "sin evaluar" se dicen aparte: no las vio, no es que las reprobó.
   const readinessSummary = (studentId: string): string => {
-    const stp = `${studentStpsOk(studentId)}/${stpCatalog.length} STPs ≥${rule.stpThreshold}★`;
-    if (!rule.principles.length) return stp;
-    return `${stp} · ${studentPrinciplesMet(studentId)}/${rule.principles.length} principles`;
+    const r = ratings[studentId] ?? {};
+    let owned = 0;
+    let unseen = 0;
+    for (const g of seqGroups) {
+      const v = sequenceVerdict(g.rows.map((x) => r[x.step_id] ?? null));
+      if (v.state === 'owned') owned++;
+      else if (v.state === 'unrated') unseen++;
+    }
+    const base = `${owned}/${seqGroups.length} secuencias`;
+    const pend = unseen ? ` · ${unseen} sin evaluar` : '';
+    if (!rule.principles.length) return base + pend;
+    return `${base}${pend} · ${studentPrinciplesMet(studentId)}/${rule.principles.length} principles`;
   };
 
   const totalRated = students.reduce((sum, s) => sum + studentRatedCount(s.student_id), 0);
@@ -337,17 +343,17 @@ export function FinalCampEvaluation({
           </p>
           <div className="flex items-center gap-3 mt-2">
             <p className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold">
-              {totalRated} / {totalNeeded} steps rated
+              {seqGroups.length} secuencias · {stpCatalog.length} pasos
             </p>
             <p className="text-[11px] text-white/80 font-semibold">
               {approvedCount} / {students.length} approved
             </p>
           </div>
           <p className="text-[10px] text-white/50 mt-1">
-            {rule.beltLabel} ready = {rule.requireAllStps
-              ? `all ${stpCatalog.length} STPs at ${rule.stpThreshold}★`
-              : `≥${rule.minStps}/${stpCatalog.length} STPs at ${rule.stpThreshold}★`}
+            {rule.beltLabel} ready = las {seqGroups.length} secuencias logradas
+            {` (${rule.stpThreshold}★ en cada parte)`}
             {rule.principles.length > 0 && ` + ≥${rule.minPrinciples}/${rule.principles.length} principles`}.
+            {' '}Lo que no viste queda pendiente, no reprobado — el alumno lo encuentra en su curso.
           </p>
         </div>
 
@@ -491,78 +497,24 @@ export function FinalCampEvaluation({
                             ? `🏁 Cerrar a ${s.display_name.split(' ')[0]} HOY (evaluación + encuestas)`
                             : '💾 Guardar este alumno (no se pierde)'}
                     </button>
-                    {/* Learning Blocks — el orden del método, no el de la base.
-                        display_order se reinicia en cada cinta, así que ordenarlo
-                        por ahí entrelazaba white/yellow/blue. Ahora cada paso cae
-                        en su bloque y el coach ve dónde está parado. */}
-                    {catalogBlocks.map((g) => (
-                      <div key={g.key} className={useBlocks ? 'pt-1' : ''}>
-                        {useBlocks && (
-                        <div className="flex items-baseline gap-2 mb-2 pb-1.5 border-b border-gray-200">
-                          {g.block != null && (
-                            <span
-                              className="shrink-0 w-5 h-5 rounded grid place-items-center text-[10px] font-bold text-white"
-                              style={{ background: BRAND.colors.navy }}
-                            >
-                              {g.block}
-                            </span>
-                          )}
-                          <p className="text-[12px] font-semibold text-gray-900 leading-tight">{g.label}</p>
-                          <span className="ml-auto shrink-0 text-[10px] font-mono text-gray-400">
-                            {g.rows.filter((r: any) => (ratings[s.student_id]?.[r.id] ?? 0) >= rule.stpThreshold).length}/{g.rows.length}
-                          </span>
-                        </div>
-                        )}
-                        <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5">
-                          {g.rows.map((stp: any) => {
-                            const current = ratings[s.student_id]?.[stp.id] ?? null;
-                            const weak = current != null && current < rule.stpThreshold;
-                            const seqs = sequencesFor(stp.course_section, stp.step_number);
-                            return (
-                              <div key={stp.id} className="flex items-center justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  {!useBlocks && (
-                                    <p className="text-[11px] font-mono text-gray-400">
-                                      {stp.id}
-                                      {weak && <span className="ml-1 text-amber-600">· below {rule.stpThreshold}★</span>}
-                                    </p>
-                                  )}
-                                  <p className={`text-[12px] truncate ${weak ? 'text-amber-700 font-medium' : 'text-gray-800'}`}>{stp.title}</p>
-                                  {/* En Blue Belt el bloque junta pasos de cintas distintas
-                                      con títulos casi iguales —"Cobra Pick Line" (WB) y
-                                      "Cobra + Pick Line" (YB)— y se califican por separado,
-                                      así que el código va debajo con su secuencia. */}
-                                  {useBlocks && (
-                                  <p className="text-[10px] font-mono text-gray-400 truncate">
-                                    {stp.id}
-                                    {seqs.length > 0 && (
-                                      <span className="text-gray-500">
-                                        {' · '}
-                                        {seqs.length > 2
-                                          ? `${seqs.length} secuencias · ${seqs[0].stage}`
-                                          : seqs
-                                              .map((q) => `#${q.number} ${q.name} · ${q.stage}`)
-                                              .join(' · ')}
-                                      </span>
-                                    )}
-                                    {weak && (
-                                      <span className="text-amber-600">{` · below ${rule.stpThreshold}★`}</span>
-                                    )}
-                                  </p>
-                                  )}
-                                </div>
-                                <StarRating
-                                  value={current}
-                                  size="sm"
-                                  variant="official"
-                                  onChange={(v) => setRating(s.student_id, stp.id, v)}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+                    {/* La evaluación es por SECUENCIA, no por 55 pasos
+                        sueltos. Ver src/components/evaluation/SequenceEvaluation.
+                        Es la misma pantalla que en la ficha del alumno: cerrar
+                        un camp es solo uno de los momentos en que se corre. */}
+                    <SequenceEvaluation
+                      rows={catalogRows}
+                      ratings={ratings[s.student_id] ?? {}}
+                      onRate={(changes) =>
+                        setRatings((prev) => {
+                          const mine = { ...(prev[s.student_id] ?? {}) };
+                          for (const c of changes) {
+                            if (c.stars === null) delete mine[c.stepId];
+                            else mine[c.stepId] = c.stars;
+                          }
+                          return { ...prev, [s.student_id]: mine };
+                        })
+                      }
+                    />
 
                     {/* Canon principles — part of the level graduation check */}
                     {rule.principles.length > 0 && (

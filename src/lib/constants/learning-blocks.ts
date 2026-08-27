@@ -683,3 +683,93 @@ export const COURSE_SEQUENCE_STAGE: Record<string, Record<string, string>> = (()
  * 3.5 y no funciona. El paso más débil no miente nunca.
  */
 export const SEQUENCE_PASS_STARS = 4;
+
+// ---------------------------------------------------------------------------
+// Agrupar un catálogo de pasos en las secuencias del método.
+// Lo usan las DOS puertas de la evaluación oficial: el cierre de un camp y la
+// ficha del alumno. Es la misma evaluación — cerrar un camp es solo uno de los
+// momentos en que se corre.
+// ---------------------------------------------------------------------------
+
+export interface SequenceGroupable {
+  step_id: string;
+  course_section?: string | null;
+  step_number?: number | null;
+  sequence_id?: string | null;
+  sequence_name?: string | null;
+  sequence_order?: number | null;
+  sequence_step_order?: number | null;
+}
+
+export interface SequenceGroup<T> {
+  id: string;
+  name: string;
+  order: number;
+  rows: T[];
+}
+
+/**
+ * Agrupa por secuencia, respetando COURSE_SEQUENCE_ORDER cuando la secuencia
+ * se completa con pasos de una cinta anterior. Los pasos sin secuencia salen
+ * aparte en `orphans` — no se pierden.
+ */
+export function groupBySequence<T extends SequenceGroupable>(
+  rows: T[]
+): { groups: SequenceGroup<T>[]; orphans: T[] } {
+  const byKey = new Map<string, T>();
+  for (const r of rows) {
+    if (r.course_section && r.step_number != null) {
+      byKey.set(stepKey(r.course_section, r.step_number), r);
+    }
+  }
+  const seen: string[] = [];
+  for (const r of rows) {
+    if (r.sequence_id && !seen.includes(r.sequence_id)) seen.push(r.sequence_id);
+  }
+  const groups = seen
+    .map((sid) => {
+      const meta = rows.find((r) => r.sequence_id === sid)!;
+      const order = COURSE_SEQUENCE_ORDER[sid];
+      const list = order
+        ? order.map((k) => byKey.get(k)).filter((r): r is T => Boolean(r))
+        : rows
+            .filter((r) => r.sequence_id === sid)
+            .sort(
+              (a, b) =>
+                (a.sequence_step_order ?? a.step_number ?? 0) -
+                (b.sequence_step_order ?? b.step_number ?? 0)
+            );
+      return {
+        id: sid,
+        name: meta.sequence_name ?? sid,
+        order: meta.sequence_order ?? 99,
+        rows: list,
+      };
+    })
+    .filter((g) => g.rows.length > 0)
+    .sort((a, b) => a.order - b.order);
+  return { groups, orphans: rows.filter((r) => !r.sequence_id) };
+}
+
+/** El estado de una secuencia a partir de las notas de sus pasos. */
+export function sequenceVerdict(stars: (number | null)[]): {
+  state: 'owned' | 'working' | 'partial' | 'unrated';
+  min: number | null;
+  /** Índice del paso más TEMPRANO que no llega a la barra. -1 si ninguno. */
+  blockerIndex: number;
+} {
+  const rated = stars.filter((v): v is number => v !== null);
+  const min = rated.length ? Math.min(...rated) : null;
+  const blockerIndex = stars.findIndex(
+    (v) => v !== null && v < SEQUENCE_PASS_STARS
+  );
+  const state =
+    rated.length === 0
+      ? 'unrated'
+      : rated.length < stars.length
+        ? 'partial'
+        : min! >= SEQUENCE_PASS_STARS
+          ? 'owned'
+          : 'working';
+  return { state, min, blockerIndex };
+}

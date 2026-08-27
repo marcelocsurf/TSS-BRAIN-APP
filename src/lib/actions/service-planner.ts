@@ -620,7 +620,10 @@ export async function getServicePlan(
   // STP catalog for the planner's sequence-focus picker (white belt 25 STPs).
   const { data: stpRows } = await admin
     .from('lessons')
-    .select('id, title, pillar, display_order, course_section, step_number')
+    .select(
+      'id, title, pillar, display_order, course_section, step_number, ' +
+        'wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
+    )
     .eq('course_section', 'white_belt')
     .eq('active', true)
     .order('display_order');
@@ -636,7 +639,10 @@ export async function getServicePlan(
       ? { data: stpRows }
       : await admin
           .from('lessons')
-          .select('id, title, pillar, display_order, course_section, step_number')
+          .select(
+            'id, title, pillar, display_order, course_section, step_number, ' +
+              'wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
+          )
           .in('course_section', gradSections)
           .eq('active', true)
           .order('display_order');

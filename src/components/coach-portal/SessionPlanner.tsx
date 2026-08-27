@@ -691,7 +691,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           campName={data.camp.camp_name}
           students={students.filter((st) => st.student_id === earlyStudentId)}
           stpCatalog={data.graduationCatalog}
-          useBlocks={data.graduationUsesBlocks}
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
@@ -722,7 +721,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           campName={data.camp.camp_name}
           students={students}
           stpCatalog={data.graduationCatalog}
-          useBlocks={data.graduationUsesBlocks}
           initialRatings={data.coachRatingByStudentStep}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
