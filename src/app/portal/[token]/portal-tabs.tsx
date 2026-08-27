@@ -58,6 +58,7 @@ import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
 } from '@/lib/actions/portal';
+import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import {
   Home,
   GraduationCap,
@@ -358,15 +359,11 @@ export function PortalTabs({
           <LogoutButton portalToken={data.token} />
         </div>
         {/* Perfil doble: esta persona también trabaja como coach. Las dos caras
-            viven separadas a propósito; esto solo salta de una a la otra. */}
+            viven separadas a propósito; el interruptor solo salta de una a la otra. */}
         {data.coachSide && (
-          <a
-            href={data.coachSide.href}
-            className="absolute top-1.5 left-1.5 rounded-full px-2.5 h-7 flex items-center gap-1 text-[10px] font-semibold"
-            style={{ background: 'rgba(255,255,255,.14)', color: brand.accent }}
-          >
-            🧢 Coach view →
-          </a>
+          <div className="absolute top-1.5 left-1.5">
+            <RoleSwitch current="athlete" otherHref={data.coachSide.href} accent={brand.accent} />
+          </div>
         )}
         {guideOpen && <AthleteGuide onClose={closeGuide} hpAccess={!!data.homeBundle?.hpAccess} />}
         <div className="flex items-center justify-between gap-3 pr-6">

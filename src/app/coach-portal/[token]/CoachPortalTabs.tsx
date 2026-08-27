@@ -35,6 +35,7 @@ import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelector
 import { BoardInventoryManager } from '@/components/board-inventory/BoardInventoryManager';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
+import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import {
   Home,
   BookOpen,
@@ -743,19 +744,13 @@ function HomeTab({
       {/* ── INK HERO — Brand Manual v10 (Archivo Expanded · Plex Mono · #00D2FF) ── */}
       <div className="rounded-3xl overflow-hidden" style={{ background: '#061C2B' }}>
         <div className="px-5 pt-5 pb-6">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="text-[10px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Here and now · Coach portal</p>
             <div className="flex items-center gap-3">
               {/* Perfil doble: este coach además entrena como alumno. Las dos
-                  caras viven separadas; esto solo salta de una a la otra. */}
+                  caras viven separadas; el interruptor solo salta de una a la otra. */}
               {studentSide && (
-                <a
-                  href={studentSide.href}
-                  className="text-[10px] hover:opacity-80"
-                  style={{ ...F_LABEL, color: '#00D2FF' }}
-                >
-                  🏄 My progress →
-                </a>
+                <RoleSwitch current="coach" otherHref={studentSide.href} accent="#00D2FF" />
               )}
               <Link
                 href={`/coach-portal/${coach.portal_token}/profile`}
