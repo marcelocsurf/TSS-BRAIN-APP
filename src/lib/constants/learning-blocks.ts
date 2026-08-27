@@ -603,3 +603,32 @@ export const PRIOR_PATH_BLOCKS: { n: number; en: string; es: string; count: numb
 /** La lección que enseña los tres círculos. Vive en yb_onboarding y el curso
  *  de Blue ya la incluye entre sus secciones compartidas. */
 export const THREE_CIRCLES_LESSON_ID = 'YB-FND-01';
+
+/**
+ * Secuencias del curso que se completan con pasos PRESTADOS de otra cinta.
+ *
+ * La tabla `lessons` deja a cada paso en una sola secuencia (`wb_sequence_id`),
+ * así que no se puede poner "Get on Your Board" en la secuencia 2 de White Y
+ * en la 6 de Yellow al mismo tiempo. Esto lo resuelve en pantalla: define el
+ * orden completo de la secuencia y el curso la arma con esos pasos, vengan de
+ * donde vengan. Ninguna fila se toca, así que White queda igual.
+ *
+ * Clave: wb_sequence_id. Valor: los pasos en orden, con la llave estable
+ * `course_section:step_number`.
+ */
+export const COURSE_SEQUENCE_ORDER: Record<string, string[]> = {
+  // Yellow Belt · Secuencia 6 — "Reading & Earning the Wave".
+  // Marcelo (2026-08-27): que cierre completa, para que un Yellow Belt no se
+  // pierda nada de lo importante. Arranca subiéndose a la tabla y pasando la
+  // espuma, y termina desmontando por el hombro.
+  'YB-SEQ-6.0': [
+    'white_belt:10',  // Get on Your Board / Find Sweet Spot   ← prestado de White
+    'white_belt:24',  // Turtle Roll                           ← prestado de White
+    'yellow_belt:27', // Paddling Speeds 1-2-3-4
+    'yellow_belt:33', // Reading Wave Stages 1-4 in the Lineup
+    'yellow_belt:28', // Chase the Pocket
+    'yellow_belt:29', // Paddle with the Correct Angle
+    'yellow_belt:34', // Cobra + Pick Line
+    'yellow_belt:32', // Out from the Shoulder  ← el cierre: desmontar al costado
+  ],
+};

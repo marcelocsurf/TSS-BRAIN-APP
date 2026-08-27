@@ -15,6 +15,7 @@ import {
   stepKey,
   PRIOR_PATH_BLOCKS,
   THREE_CIRCLES_LESSON_ID,
+  COURSE_SEQUENCE_ORDER,
 } from '@/lib/constants/learning-blocks';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import {
@@ -204,6 +205,12 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Learning Blocks — la estructura del método, la misma que ve el coach al
   // evaluar. Antes esto se agrupaba por wb_sequence_id, que era un tercer
   // agrupamiento distinto del de la evaluación y del de las secuencias reales.
+  // Índice de TODAS las lecciones del alumno por su llave estable. Lo usan
+  // tanto las secuencias de Blue como las secuencias completadas con pasos
+  // prestados de otra cinta.
+  const lessonByKey = new Map<string, LessonRow>();
+  for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
+
   // Los Learning Blocks son SOLO para Blue Belt. White, Yellow y el resto
   // conservan su organización de siempre por wb_sequence — ya estaban
   // ordenados y no hay razón para moverlos.
@@ -227,7 +234,15 @@ export function CourseTab({ data }: { data: CourseData }) {
         order: g.order,
         block: null as number | null,
         subtitle: g.lessons[0]?.wb_sequence_promise || '',
-        lessons: g.lessons,
+        // Algunas secuencias se completan con pasos prestados de una cinta
+        // anterior: la tabla deja a cada paso en una sola secuencia, así que
+        // el orden completo vive en COURSE_SEQUENCE_ORDER y se arma acá.
+        // Nada se toca en la base — la cinta de origen queda igual.
+        lessons: COURSE_SEQUENCE_ORDER[g.id]
+          ? COURSE_SEQUENCE_ORDER[g.id]
+              .map((k) => lessonByKey.get(k))
+              .filter((l): l is LessonRow => Boolean(l))
+          : g.lessons,
       }));
 
   // Las seis secuencias, completas. Un paso de la secuencia puede vivir en una
@@ -248,8 +263,6 @@ export function CourseTab({ data }: { data: CourseData }) {
       ? data.lessons.find((l) => l.id === THREE_CIRCLES_LESSON_ID) ?? null
       : null;
 
-  const lessonByKey = new Map<string, LessonRow>();
-  for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
   const courseSequences =
     activeCourse.key === 'blue_belt'
       ? BELT_SEQUENCES.map((seq) => ({
