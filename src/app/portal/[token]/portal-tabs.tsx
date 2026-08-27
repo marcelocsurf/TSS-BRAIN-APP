@@ -358,13 +358,7 @@ export function PortalTabs({
           </button>
           <LogoutButton portalToken={data.token} />
         </div>
-        {/* Perfil doble: esta persona también trabaja como coach. Las dos caras
-            viven separadas a propósito; el interruptor solo salta de una a la otra. */}
-        {data.coachSide && (
-          <div className="absolute top-1.5 left-1.5">
-            <RoleSwitch current="athlete" otherHref={data.coachSide.href} accent={brand.accent} />
-          </div>
-        )}
+
         {guideOpen && <AthleteGuide onClose={closeGuide} hpAccess={!!data.homeBundle?.hpAccess} />}
         <div className="flex items-center justify-between gap-3 pr-6">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -388,6 +382,15 @@ export function PortalTabs({
             className="h-5 object-contain opacity-90 shrink-0"
           />
         </div>
+
+        {/* Perfil doble: esta persona también trabaja como coach. Las dos caras
+            viven separadas a propósito; el interruptor solo salta de una a la
+            otra. Va en su propia línea: en la esquina tapaba el logo. */}
+        {data.coachSide && (
+          <div className="mt-2.5 flex justify-center">
+            <RoleSwitch current="athlete" otherHref={data.coachSide.href} accent={brand.accent} />
+          </div>
+        )}
       </div>
 
       {/* Tab Content — en tablet/iPad (md:) el lienzo se ensancha para no
