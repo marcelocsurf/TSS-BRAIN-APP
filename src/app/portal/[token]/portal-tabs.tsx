@@ -304,6 +304,11 @@ export function PortalTabs({
   initialStepId?: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // El paso que hay que abrir en Let's Play. Arranca con el del deep-link y
+  // también lo setea el Home al tocar "tu próximo movimiento": mandar al
+  // alumno por ?tab=sequence&step= no funcionaba con los dos parámetros
+  // juntos, y cambiar de pestaña por estado es más directo igual.
+  const [deepStepId, setDeepStepId] = useState<string | null>(initialStepId || null);
   // 📖 Manual de uso del portal: se abre solo la primera vez que la persona
   // entra y queda siempre a un toque en el botón del encabezado.
   const [guideOpen, setGuideOpen] = useState(false);
@@ -459,7 +464,7 @@ export function PortalTabs({
                 studentId={student.id}
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
-                initialStepId={initialStepId}
+                initialStepId={deepStepId}
               />
               <button
                 type="button"
@@ -573,10 +578,13 @@ function HomeTab({
   data,
   belt,
   onGoTo,
+  onOpenStep,
 }: {
   data: PortalData;
   belt: any;
   onGoTo: (tab: Tab) => void;
+  /** Abre un paso puntual en Let's Play. */
+  onOpenStep?: (stepId: string) => void;
 }) {
   const { student, sessions, totalSessions, streak, selfTrainingCount, totalTrainingMinutes, drillsPracticed, recentDrills } = data;
   // 🔔 Mensajes del coach unificados en la campana (pedido Marcelo 2026-08-25):
@@ -833,9 +841,10 @@ function HomeTab({
               puso al cerrar el camp; el alumno no tiene que deducir nada de 48
               estrellas sueltas. Toca y cae directo en el drill de ese paso. */}
           {data.nextMove && (
-            <a
-              href={`?tab=sequence&step=${encodeURIComponent(data.nextMove.stepId)}`}
-              className="block rounded-2xl px-4 py-3.5"
+            <button
+              type="button"
+              onClick={() => onOpenStep?.(data.nextMove!.stepId)}
+              className="block w-full text-left rounded-2xl px-4 py-3.5"
               style={{ background: 'rgba(255,209,102,.10)', border: '1px solid rgba(255,209,102,.35)' }}
             >
               <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.gold }}>
@@ -852,7 +861,7 @@ function HomeTab({
               <p className="text-[12px] mt-1.5" style={{ color: BRAND.colors.gold }}>
                 Practice it →
               </p>
-            </a>
+            </button>
           )}
 
           {data.homeBundle?.hpAccess && (
