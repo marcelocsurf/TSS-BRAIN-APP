@@ -26,6 +26,12 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
   // Por secuencia es la entrada natural: es como se enseña en el curso.
   const [view, setView] = useState<'sequence' | 'all'>('sequence');
+  // La que se abre sola: la primera que todavía tiene pasos sin evaluar. Es
+  // "en qué estoy trabajando" sin preguntárselo.
+  const focusSequenceId =
+    data?.sequences.find((s) =>
+      s.items.some((i) => (i.coach_rating ?? i.rating ?? null) === null)
+    )?.id ?? data?.sequences[0]?.id ?? null;
 
   useEffect(() => {
     let mounted = true;
@@ -173,6 +179,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
               blockName={seq.name}
               promise={seq.promise}
               asSequence
+              defaultOpen={seq.id === focusSequenceId}
               items={seq.items}
               onOpenStep={(id) => setOpenStepId(id)}
               theme={theme}
@@ -209,6 +216,7 @@ function BlockSection({
   blockName,
   promise = null,
   asSequence = false,
+  defaultOpen = true,
   items,
   onOpenStep,
   theme,
@@ -220,6 +228,9 @@ function BlockSection({
   promise?: string | null;
   /** true = se rotula como secuencia del método, no como bloque de drills. */
   asSequence?: boolean;
+  /** En la vista por secuencia vienen plegadas: si no, son 65 pasos de scroll
+   *  y no se gana nada. Se abre sola la primera que le falta trabajo. */
+  defaultOpen?: boolean;
   items: SequenceItem[];
   onOpenStep: (id: string) => void;
   theme: BeltTheme;
@@ -230,8 +241,12 @@ function BlockSection({
     : null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ borderLeft: `4px solid ${theme.accent}` }}>
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between" style={{ background: theme.tint }}>
+    <details
+      open={defaultOpen}
+      className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+      style={{ borderLeft: `4px solid ${theme.accent}` }}
+    >
+      <summary className="px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer list-none" style={{ background: theme.tint }}>
         <div>
           <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
             {asSequence
@@ -252,15 +267,19 @@ function BlockSection({
           ) : (
             <div className="text-gray-400 text-[10px]">Not rated</div>
           )}
+          <div className="text-[10px] text-gray-400 mt-0.5">
+            {items.length} steps <span className="group-open:hidden">▾</span>
+            <span className="hidden group-open:inline">▴</span>
+          </div>
         </div>
-      </div>
+      </summary>
 
       <div className="divide-y divide-gray-100">
         {items.map((item) => (
           <StepRow key={item.step_id} item={item} onOpen={() => onOpenStep(item.step_id)} />
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 
