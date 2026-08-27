@@ -1395,6 +1395,25 @@ export async function closeCampFinal(
   // Invariante #2: estados esperables se DEVUELVEN, no se lanzan (Next enmascara
   // los throw de server actions en producción).
   const finalize = opts?.finalize !== false;
+
+  // El "qué trabajar después" es OBLIGATORIO en cada evaluación. Estaba
+  // bloqueado solo en el navegador, así que el servidor aceptaba un acta sin
+  // él — y ese texto es lo que el alumno ve y con lo que el próximo coach
+  // planea. Un results vacío sí pasa: es el camino que solo finaliza el camp
+  // después de haber guardado alumno por alumno.
+  const sinFoco = (results ?? []).filter(
+    (r) => (r.next_focus ?? '').trim().length < 5
+  );
+  if (sinFoco.length > 0) {
+    return {
+      ok: false,
+      error:
+        'Falta "qué trabajar después" en ' +
+        (sinFoco.length === 1 ? '1 alumno' : `${sinFoco.length} alumnos`) +
+        '. Es obligatorio: el alumno lo ve y el próximo coach planea con eso.',
+    };
+  }
+
   const admin = createAdminClient();
 
   const { data: coach } = await admin
