@@ -847,7 +847,32 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         />
       </CollapsibleSection>
 
-      {/* --- COURSES (granted + earmarked + manual grant) --- */}
+      {/* ── ACCESOS ──
+           Estaban en cinco tarjetas sueltas y pegadas: cursos, alto
+           rendimiento, presentaciones, niveles. Para saber qué compró y qué le
+           falta había que leer las cinco. Ahora van bajo un solo título, con
+           una línea que dice de entrada qué tiene.
+
+           Y queda dicho lo que antes no estaba en ningún lado: el curso viene
+           con sus drills y misiones. No se otorgan aparte. */}
+      <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
+            Accesos
+          </p>
+          <p className="text-[13px] text-gray-800 mt-0.5">
+            {courseGrants.length > 0
+              ? `${courseGrants.length} ${courseGrants.length === 1 ? 'curso otorgado' : 'cursos otorgados'}`
+              : 'Sin cursos otorgados'}
+            {pendingCourses.length > 0 && ` · ${pendingCourses.length} apartado(s)`}
+          </p>
+          <p className="text-[11.5px] text-gray-500 mt-1">
+            Cada curso viene con sus drills y misiones — no se otorgan aparte. Inscribir al alumno
+            en un camp le otorga el curso de esa cinta automáticamente.
+          </p>
+        </div>
+        <div className="p-3 space-y-3">
+
       <CoursesPanel
         studentId={id}
         grants={courseGrants}
@@ -869,6 +894,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* Level Access */}
       <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />
+        </div>
+      </div>
 
       {/* --- 3·b. SURF-LEVEL QUIZ HISTORY (incl. retakes) --- */}
       {quizAttempts.length > 0 && (

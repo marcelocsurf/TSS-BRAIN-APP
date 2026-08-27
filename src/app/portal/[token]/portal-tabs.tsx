@@ -191,6 +191,8 @@ interface PortalData {
   coachProfileUnlocked?: boolean;
   /** Si esta persona además es coach, el link a su portal de coach. */
   coachSide?: { href: string; name: string } | null;
+  /** Los drills vienen con el curso: sin curso, no hay Let's Play. */
+  hasAnyCourse?: boolean;
   /** La primera secuencia sin lograr y el paso que la frena. */
   nextMove?: {
     sequenceOrder: number;
@@ -457,6 +459,21 @@ export function PortalTabs({
               onCancel={() => setShowCustomSession(false)}
               onDone={() => setShowCustomSession(false)}
             />
+          ) : !data.hasAnyCourse ? (
+            // Los drills vienen EN EL PAQUETE con el curso. Inscribirse a un
+            // camp ya lo otorga, así que esto solo aparece para quien nunca
+            // compró ni entrenó con nosotros.
+            <div className="text-center py-16 px-6">
+              <Lock className="mx-auto mb-4 text-[var(--tss-cyan)]" size={56} strokeWidth={1.5} />
+              <h2 className="text-xl font-bold mb-2 text-white">Your drills come with your course</h2>
+              <p className="text-white/70 mb-2">
+                Every level includes its drills and missions. Ask your coach to activate your course
+                and they show up here.
+              </p>
+              <p className="text-sm text-white/40">
+                If you are booked on a camp, your course activates when you enrol.
+              </p>
+            </div>
           ) : (
             // 3) Default: pick a drill or mission from your sequence
             <div className="space-y-4">

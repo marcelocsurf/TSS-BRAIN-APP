@@ -159,6 +159,12 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const activeCourse =
     ownedCourses.find((c) => c.key === storedActive) ?? ownedCourses[0] ?? null;
 
+  // Los drills vienen EN EL PAQUETE con el curso (Marcelo 2026-08-27). Hasta
+  // hoy Let's Play era abierto: se mostraba por cinta, sin mirar si el alumno
+  // tenía el curso. Inscribirse a un camp ya otorga el curso automáticamente
+  // (auto_on_camp_enrol), así que nadie que esté entrenando pierde nada.
+  const hasAnyCourse = ownedCourses.length > 0;
+
   // Build course data
   const courseData = {
     lessons: courseCatalog.lessons,
@@ -201,6 +207,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           myCoach,
           coachProfileUnlocked: coachUnlocked,
           coachSide: await getCoachSideForStudent(student.id),
+          hasAnyCourse,
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
           nextMove: await getNextMove(student.id, activeCourse?.belt ?? 'white'),
