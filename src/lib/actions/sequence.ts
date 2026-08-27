@@ -270,8 +270,36 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
                 (b.sequence_step_order ?? b.display_order ?? 0)
             )
             .map((l: any) => l.id);
+      // Un paso sin drill ni misión NO puede desaparecer de la secuencia: la
+      // cadena es el método y el drill es algo que se le cuelga. Pasaba con
+      // "Bottom Turn Medium — Backside", que no tiene drill: las dos
+      // secuencias backside se mostraban SIN su bottom turn, que es la
+      // bisagra de la maniobra. Se arma el ítem desde la lección.
       const seqItems = stepIdsInSeq
-        .map((id: string) => itemById.get(id))
+        .map((id: string): SequenceItem | null => {
+          const existing = itemById.get(id);
+          if (existing) return existing;
+          const l = lessonMap.get(id);
+          if (!l) return null;
+          const rating = ratingMap.get(id);
+          return {
+            step_id: id,
+            step_title: l.title || id,
+            pillar: l.pillar ?? null,
+            belt: beltKey,
+            block_number: 0,
+            block_name: '',
+            display_order: l.display_order ?? 0,
+            drill: null,
+            mission: null,
+            rating: rating?.current_rating || null,
+            rating_count: rating?.rating_count || 0,
+            last_rated: rating?.last_updated || null,
+            coach_rating: rating?.coach_rating ?? null,
+            coach_rated_at: rating?.coach_rated_at ?? null,
+            last_practiced: lastPracticedMap.get(id) || null,
+          };
+        })
         .filter((i): i is SequenceItem => Boolean(i));
       // La secuencia vale lo que vale su paso más flojo (canon: 4★ en cada
       // parte). Así el alumno ve QUÉ lo frena, no un promedio que esconde el
