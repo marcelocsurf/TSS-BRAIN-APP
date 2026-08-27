@@ -366,6 +366,12 @@ export interface BeltSequence {
 }
 
 /**
+ * Nota de método (Marcelo 2026-08-27): el "turn" y el "bottom turn" son la
+ * MISMA acción — una rotación simple que nace de la postura. "Bottom turn" es
+ * el nombre que se le da cuando esa rotación dibuja la U. Por eso la rotación
+ * no lleva un paso propio en la secuencia: el bottom turn ya es ese paso, y
+ * lo que le sigue es la proyección.
+ *
  * The six Blue Belt sequences, each with a start and an end. A step repeats
  * across sequences on purpose — that is how the method works.
  * Every sequence closes by returning to posture (INFINITE_CIRCLE).
@@ -396,7 +402,12 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     belt: 'blue_belt',
     stages: [
       { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
-      { stage: 'Postura backside', stageEn: 'Backside stance', steps: ['blue_belt:38'] },
+      { stage: 'Postura', stageEn: 'Stance', steps: ['white_belt:18'] },
+      // BS Body Mechanics es CÓMO se genera la fuerza para bombear backside
+      // —pecho abierto, ojos sobre el hombro—, no la postura. Su propio
+      // subtítulo en la base dice "Sequence #9 · Step 2": es de acá y de
+      // ninguna otra secuencia.
+      { stage: 'Mecánica backside', stageEn: 'Backside mechanics', steps: ['blue_belt:38'] },
       { stage: 'Generar velocidad', stageEn: 'Generate speed', steps: ['blue_belt:37'] },
     ],
   },
@@ -423,7 +434,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     belt: 'blue_belt',
     stages: [
       { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
-      { stage: 'Postura backside', stageEn: 'Backside stance', steps: ['blue_belt:38'] },
+      { stage: 'Postura', stageEn: 'Stance', steps: ['white_belt:18'] },
       { stage: 'Bottom turn', stageEn: 'Bottom turn', steps: ['blue_belt:396'] },
       { stage: 'Proyección', stageEn: 'Projection', steps: ['blue_belt:43'] },
       { stage: 'Maniobra', stageEn: 'Maneuver', steps: ['blue_belt:44'] },
@@ -453,7 +464,7 @@ export const BELT_SEQUENCES: BeltSequence[] = [
     belt: 'blue_belt',
     stages: [
       { stage: 'Posición del pie', stageEn: 'Foot position', steps: ['blue_belt:35'] },
-      { stage: 'Postura backside', stageEn: 'Backside stance', steps: ['blue_belt:38'] },
+      { stage: 'Postura', stageEn: 'Stance', steps: ['white_belt:18'] },
       { stage: 'Bottom turn', stageEn: 'Bottom turn', steps: ['blue_belt:396'] },
       { stage: 'Proyección', stageEn: 'Projection', steps: ['blue_belt:43'] },
       { stage: 'Maniobra', stageEn: 'Maneuver', steps: ['blue_belt:48'] },
@@ -625,11 +636,11 @@ export const COURSE_SEQUENCE_ORDER: Record<string, string[]> = {
   // Cada una arranca en la posición del pie y la postura —que viven en White—
   // y cierra volviendo a ella (el círculo infinito del método).
   'BB-SEQ-08': ['blue_belt:35', 'white_belt:18', 'blue_belt:36'],
-  'BB-SEQ-09': ['blue_belt:35', 'blue_belt:38', 'blue_belt:37'],
+  'BB-SEQ-09': ['blue_belt:35', 'white_belt:18', 'blue_belt:38', 'blue_belt:37'],
   'BB-SEQ-10': ['blue_belt:35', 'white_belt:18', 'blue_belt:39', 'blue_belt:40', 'blue_belt:41', 'blue_belt:42'],
-  'BB-SEQ-11': ['blue_belt:35', 'blue_belt:38', 'blue_belt:396', 'blue_belt:43', 'blue_belt:44', 'blue_belt:45'],
+  'BB-SEQ-11': ['blue_belt:35', 'white_belt:18', 'blue_belt:396', 'blue_belt:43', 'blue_belt:44', 'blue_belt:45'],
   'BB-SEQ-12': ['blue_belt:35', 'white_belt:18', 'blue_belt:39', 'blue_belt:40', 'blue_belt:46', 'blue_belt:47'],
-  'BB-SEQ-13': ['blue_belt:35', 'blue_belt:38', 'blue_belt:396', 'blue_belt:43', 'blue_belt:48', 'blue_belt:49', 'blue_belt:45'],
+  'BB-SEQ-13': ['blue_belt:35', 'white_belt:18', 'blue_belt:396', 'blue_belt:43', 'blue_belt:48', 'blue_belt:49', 'blue_belt:45'],
 
   'YB-SEQ-6.0': [
     'white_belt:10',  // Get on Your Board / Find Sweet Spot   ← prestado de White
