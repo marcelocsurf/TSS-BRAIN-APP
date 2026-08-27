@@ -11,11 +11,11 @@ import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/bel
 import {
   groupByBlocks,
   isMappedToBlocks,
-  BELT_SEQUENCES,
   stepKey,
   PRIOR_PATH_BLOCKS,
   THREE_CIRCLES_LESSON_ID,
   COURSE_SEQUENCE_ORDER,
+  COURSE_SEQUENCE_STAGE,
 } from '@/lib/constants/learning-blocks';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import {
@@ -51,6 +51,9 @@ interface LessonRow {
   wb_sequence_name: string | null;
   wb_sequence_order: number | null;
   wb_sequence_promise: string | null;
+  /** Cuando el paso viene prestado de otra cinta para completar la secuencia:
+   *  el nombre de esa cinta, para rotularlo. */
+  borrowedFrom?: string | null;
   sequence_step_order: number | null;
 }
 
@@ -205,30 +208,33 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Learning Blocks — la estructura del método, la misma que ve el coach al
   // evaluar. Antes esto se agrupaba por wb_sequence_id, que era un tercer
   // agrupamiento distinto del de la evaluación y del de las secuencias reales.
+  // Qué secciones puede abrir realmente este alumno con el curso que compró.
+  const openableSections = new Set<string>([
+    ...(SHARED_PRE_COURSE_SECTIONS as readonly string[]),
+    ...activeCourse.lessonSections,
+    ...activeCourse.sharedLessonSections,
+  ]);
+
+  // Nombre legible de la cinta de la que viene un paso prestado.
+  const BELT_OF_SECTION: Record<string, string> = {
+    white_belt: 'White Belt',
+    yellow_belt: 'Yellow Belt',
+    blue_belt: 'Blue Belt',
+    purple_belt: 'Purple Belt',
+  };
+
   // Índice de TODAS las lecciones del alumno por su llave estable. Lo usan
   // tanto las secuencias de Blue como las secuencias completadas con pasos
   // prestados de otra cinta.
   const lessonByKey = new Map<string, LessonRow>();
   for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
 
-  // Los Learning Blocks son SOLO para Blue Belt. White, Yellow y el resto
-  // conservan su organización de siempre por wb_sequence — ya estaban
-  // ordenados y no hay razón para moverlos.
+  // Blue muestra arriba el mapa de bloques y la clase de los tres círculos,
+  // pero sus secuencias van en el MISMO formato que White y Yellow: un
+  // acordeón por secuencia con la habilidad que construye, que al abrirlo
+  // despliega todos sus pasos, completos de principio a fin.
   const beltUsesBlocks = activeCourse.key === 'blue_belt' && isMappedToBlocks(beltLessons);
-  const beltSequences = beltUsesBlocks
-    ? groupByBlocks(beltLessons, 'en')
-        // Rotación, proyección y maniobras viven dentro de las secuencias:
-        // mostrarlos además como bloque suelto era ver el mismo paso dos veces.
-        .filter((g) => g.block === null)
-        .map((g) => ({
-          id: g.key,
-          name: g.label,
-          order: g.block ?? 99,
-          block: g.block as number | null,
-          subtitle: g.sub,
-          lessons: g.rows as LessonRow[],
-        }))
-    : groupByWbSequence(beltLessons).map((g) => ({
+  const beltSequences = groupByWbSequence(beltLessons).map((g) => ({
         id: g.id,
         name: g.name,
         order: g.order,
@@ -242,6 +248,22 @@ export function CourseTab({ data }: { data: CourseData }) {
           ? COURSE_SEQUENCE_ORDER[g.id]
               .map((k) => lessonByKey.get(k))
               .filter((l): l is LessonRow => Boolean(l))
+              .map((l) => {
+                // Un paso prestado de una cinta anterior se abre igual: es
+                // parte de esta secuencia, y para eso se trajo. Si el alumno
+                // ya lo estudió en su cinta, `completed` ya viene marcado —
+                // el progreso se guarda por lección, no por curso. La
+                // etiqueta dice de dónde viene, así se ve que es nuevo acá
+                // pero que ya se vio atrás.
+                const borrowed = !openableSections.has(l.course_section);
+                if (!borrowed) return l;
+                return {
+                  ...l,
+                  locked: false,
+                  lockReason: null,
+                  borrowedFrom: BELT_OF_SECTION[l.course_section] ?? null,
+                };
+              })
           : g.lessons,
       }));
 
@@ -249,12 +271,6 @@ export function CourseTab({ data }: { data: CourseData }) {
   // cinta anterior (la postura es White Belt), así que se resuelven contra
   // TODAS las lecciones del alumno, no solo las de su cinta actual — por eso
   // antes "Frontside Snap" se veía sin su inicio.
-  // Qué secciones puede abrir realmente este alumno con el curso que compró.
-  const openableSections = new Set<string>([
-    ...(SHARED_PRE_COURSE_SECTIONS as readonly string[]),
-    ...activeCourse.lessonSections,
-    ...activeCourse.sharedLessonSections,
-  ]);
 
   // La clase de los tres círculos ya existe (YB-FND-01, en yb_onboarding, que
   // el curso de Blue ya incluye entre sus secciones compartidas).
@@ -262,19 +278,6 @@ export function CourseTab({ data }: { data: CourseData }) {
     activeCourse.key === 'blue_belt'
       ? data.lessons.find((l) => l.id === THREE_CIRCLES_LESSON_ID) ?? null
       : null;
-
-  const courseSequences =
-    activeCourse.key === 'blue_belt'
-      ? BELT_SEQUENCES.map((seq) => ({
-          ...seq,
-          stages: seq.stages.map((st) => ({
-            stage: st.stageEn,
-            lessons: st.steps
-              .map((k) => lessonByKey.get(k))
-              .filter((l): l is LessonRow => Boolean(l)),
-          })),
-        })).filter((seq) => seq.stages.some((st) => st.lessons.length > 0))
-      : [];
 
   const beltLabelShort =
     activeCourse.key === 'yellow_belt' ? 'Yellow Belt'
@@ -476,32 +479,6 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* BELT — cumulative sequences */}
       {beltSequences.length > 0 && (
         <div className="space-y-3 pt-2">
-          {/* Las seis secuencias, de principio a fin. Cierran volviendo a la
-              postura — el círculo infinito del método. */}
-          {courseSequences.length > 0 && (
-            <div className="space-y-3 pt-3">
-              <GroupHeader
-                theme={beltTheme}
-                eyebrow={`Sequences #${courseSequences[0].number}–#${courseSequences[courseSequences.length - 1].number} · start to finish`}
-                title="Your Sequences"
-                subtitle="Continuing from White and Yellow. Every sequence starts from your stance and closes by coming back to it."
-                videoUrl={null}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                {courseSequences.map((seq) => (
-                  <SequenceChain
-                    key={seq.id}
-                    name={`Sequence #${seq.number}: ${seq.name}`}
-                    side={seq.side}
-                    stages={seq.stages}
-                    onOpenLesson={(id) => setOpenLessonId(id)}
-                    theme={beltTheme}
-                    openableSections={openableSections}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
 
           <GroupHeader
             theme={beltTheme}
@@ -648,111 +625,6 @@ function groupByWbSequence(lessons: LessonRow[]) {
       ),
     }));
 }
-
-/**
- * One sequence, start to finish. The stage names come from the method, and the
- * chain closes by returning to the stance — that is the point of showing it as
- * a chain instead of a flat list. A step can appear in more than one sequence.
- */
-function SequenceChain({
-  name,
-  side,
-  stages,
-  onOpenLesson,
-  theme,
-  openableSections,
-}: {
-  name: string;
-  side: 'fs' | 'bs';
-  stages: { stage: string; lessons: LessonRow[] }[];
-  onOpenLesson: (id: string) => void;
-  theme: BeltTheme;
-  openableSections: Set<string>;
-}) {
-  const all = stages.flatMap((s) => s.lessons);
-  const done = all.filter((l) => l.completed).length;
-  return (
-    <div className="rounded-xl border border-white/10 overflow-hidden">
-      <div
-        className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10"
-        style={{ background: `${theme.accent}1F` }}
-      >
-        <span
-          className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-mono font-semibold tracking-wider"
-          style={{ background: theme.accent, color: '#fff' }}
-        >
-          {side === 'fs' ? 'FS' : 'BS'}
-        </span>
-        <p className="text-[13px] font-semibold truncate text-white">{name}</p>
-        <span className="ml-auto shrink-0 text-[10px] font-mono text-white/50">
-          {done}/{all.length}
-        </span>
-      </div>
-      <ol className="px-4 py-3 space-y-0">
-        {stages.map((st, i) => (
-          <li key={`${st.stage}-${i}`} className="relative flex gap-3 pb-3 last:pb-0">
-            {i < stages.length - 1 && (
-              <span
-                className="absolute left-[9px] top-5 bottom-0 w-px"
-                style={{ background: theme.bright, opacity: 0.3 }}
-              />
-            )}
-            <span
-              className="relative z-10 mt-0.5 shrink-0 grid place-items-center w-[19px] h-[19px] rounded-full text-[9px] font-mono font-semibold"
-              style={{ background: `${theme.bright}26`, color: theme.bright }}
-            >
-              {i + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[9.5px] font-mono uppercase tracking-wider text-white/40">
-                {st.stage}
-              </p>
-              {st.lessons.map((l) => {
-                // Mismo criterio que LessonCard, más la propiedad del curso:
-                // la postura es White Belt y la mayoría de los alumnos con
-                // acceso Blue no compraron White. El paso se sigue viendo en
-                // la cadena — ese es el punto — pero no se abre.
-                const blocked =
-                  !openableSections.has(l.course_section) ||
-                  (l.locked && !l.completed && l.status_v1 !== 'PROPOSED');
-                if (blocked) {
-                  return (
-                    <p
-                      key={l.id}
-                      title={l.lockReason ?? 'Locked'}
-                      className="flex items-center gap-1 text-[12.5px] leading-snug text-white/35"
-                    >
-                      <Lock size={11} strokeWidth={1.75} className="shrink-0" />
-                      <span className="truncate">{l.title}</span>
-                    </p>
-                  );
-                }
-                return (
-                  <button
-                    key={l.id}
-                    type="button"
-                    onClick={() => onOpenLesson(l.id)}
-                    className="block w-full text-left text-[12.5px] leading-snug text-white/85 hover:underline"
-                  >
-                    {l.completed && <span style={{ color: theme.bright }}>✓ </span>}
-                    {l.title}
-                  </button>
-                );
-              })}
-            </div>
-          </li>
-        ))}
-      </ol>
-      <p
-        className="px-4 py-2 text-[10px] font-mono uppercase tracking-wider border-t border-white/10 text-white/50"
-        style={{ background: `${theme.accent}14` }}
-      >
-        ↻ back to your stance
-      </p>
-    </div>
-  );
-}
-
 
 function beltLevelForCourse(key: CourseKey): BeltLevel {
   return key === 'yellow_belt' ? 'yellow'
@@ -965,6 +837,13 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
           {lesson.is_test && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold uppercase tracking-wide flex-shrink-0">
               Gate Test
+            </span>
+          )}
+          {/* Paso traído de una cinta anterior para completar esta secuencia.
+              Si ya lo estudió allá, además aparece ✓ Completed. */}
+          {lesson.borrowedFrom && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 font-bold uppercase tracking-wide flex-shrink-0">
+              From {lesson.borrowedFrom}
             </span>
           )}
         </div>

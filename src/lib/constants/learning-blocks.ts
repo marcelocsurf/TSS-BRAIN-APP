@@ -621,6 +621,16 @@ export const COURSE_SEQUENCE_ORDER: Record<string, string[]> = {
   // Marcelo (2026-08-27): que cierre completa, para que un Yellow Belt no se
   // pierda nada de lo importante. Arranca subiéndose a la tabla y pasando la
   // espuma, y termina desmontando por el hombro.
+  // Blue Belt · las seis secuencias #8-#13, completas de principio a fin.
+  // Cada una arranca en la posición del pie y la postura —que viven en White—
+  // y cierra volviendo a ella (el círculo infinito del método).
+  'BB-SEQ-08': ['blue_belt:35', 'white_belt:18', 'blue_belt:36'],
+  'BB-SEQ-09': ['blue_belt:35', 'blue_belt:38', 'blue_belt:37'],
+  'BB-SEQ-10': ['blue_belt:35', 'white_belt:18', 'blue_belt:39', 'blue_belt:40', 'blue_belt:41', 'blue_belt:42'],
+  'BB-SEQ-11': ['blue_belt:35', 'blue_belt:38', 'blue_belt:396', 'blue_belt:43', 'blue_belt:44', 'blue_belt:45'],
+  'BB-SEQ-12': ['blue_belt:35', 'white_belt:18', 'blue_belt:39', 'blue_belt:40', 'blue_belt:46', 'blue_belt:47'],
+  'BB-SEQ-13': ['blue_belt:35', 'blue_belt:38', 'blue_belt:396', 'blue_belt:43', 'blue_belt:48', 'blue_belt:49', 'blue_belt:45'],
+
   'YB-SEQ-6.0': [
     'white_belt:10',  // Get on Your Board / Find Sweet Spot   ← prestado de White
     'white_belt:24',  // Turtle Roll                           ← prestado de White
@@ -632,3 +642,25 @@ export const COURSE_SEQUENCE_ORDER: Record<string, string[]> = {
     'yellow_belt:32', // Out from the Shoulder  ← el cierre: desmontar al costado
   ],
 };
+
+/** La etapa que juega cada paso dentro de una secuencia del curso, para
+ *  rotularla en la lista: "Foot position", "Bottom turn", "Closure"… */
+export const COURSE_SEQUENCE_STAGE: Record<string, Record<string, string>> = (() => {
+  const out: Record<string, Record<string, string>> = {};
+  const bySeqId: Record<string, string> = {
+    'BB-SEQ-08': 'BB-SEQ-PUMP-FS',
+    'BB-SEQ-09': 'BB-SEQ-PUMP-BS',
+    'BB-SEQ-10': 'BB-SEQ-SNAP-FS',
+    'BB-SEQ-11': 'BB-SEQ-SNAP-BS',
+    'BB-SEQ-12': 'BB-SEQ-CUTBACK-FS',
+    'BB-SEQ-13': 'BB-SEQ-CUTBACK-BS',
+  };
+  for (const [courseSeq, defId] of Object.entries(bySeqId)) {
+    const def = BELT_SEQUENCES.find((s) => s.id === defId);
+    if (!def) continue;
+    const m: Record<string, string> = {};
+    for (const st of def.stages) for (const k of st.steps) m[k] = st.stageEn;
+    out[courseSeq] = m;
+  }
+  return out;
+})();
