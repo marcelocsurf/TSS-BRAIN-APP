@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { COURSE_SEQUENCE_ORDER, stepKey } from '@/lib/constants/learning-blocks';
 
 // ─── Types ───
 
@@ -66,6 +67,17 @@ export type SequenceData = {
     block_name: string;
     items: SequenceItem[];
   }[];
+  /** Las mismas habilidades agrupadas por SECUENCIA del método, que es como
+   *  se enseñan en el curso. Practicar el paso suelto no enseña la secuencia:
+   *  el drill llega en su contexto y se ve qué va antes y qué va después. */
+  sequences: {
+    id: string;
+    order: number;
+    name: string;
+    promise: string | null;
+    belt: string;
+    items: SequenceItem[];
+  }[];
 };
 
 // ─── Get full sequence catalog for a student ───
@@ -101,7 +113,10 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
   // 2. Get all STP lessons (for titles + pillars)
   const { data: lessons } = await admin
     .from('lessons')
-    .select('id, title, pillar, display_order')
+    .select(
+      'id, title, pillar, display_order, course_section, step_number, ' +
+        'wb_sequence_id, wb_sequence_name, wb_sequence_order, wb_sequence_promise, sequence_step_order'
+    )
     .in('course_section', courseSections)
     .eq('active', true);
 
@@ -214,8 +229,51 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
   const coachRatedSteps = items.filter((i) => i.coach_rating != null).length;
   const selfRatedSteps = items.filter((i) => i.coach_rating == null && i.rating != null).length;
 
+  // ── Las habilidades agrupadas por secuencia ──────────────────────────
+  // El orden completo de las secuencias que se completan con pasos de una
+  // cinta anterior vive en COURSE_SEQUENCE_ORDER (la tabla deja a cada paso
+  // en una sola secuencia). El resto se agrupa por wb_sequence_id.
+  const itemById = new Map(items.map((i) => [i.step_id, i]));
+  const lessonByKey2 = new Map<string, any>();
+  for (const l of (lessons ?? []) as any[]) {
+    lessonByKey2.set(stepKey(l.course_section, l.step_number), l);
+  }
+  const seqMeta = new Map<string, any>();
+  for (const l of (lessons ?? []) as any[]) {
+    if (l.wb_sequence_id && !seqMeta.has(l.wb_sequence_id)) seqMeta.set(l.wb_sequence_id, l);
+  }
+
+  const sequences = Array.from(seqMeta.entries())
+    .map(([seqId, meta]) => {
+      const order = COURSE_SEQUENCE_ORDER[seqId];
+      const stepIdsInSeq = order
+        ? order.map((k) => lessonByKey2.get(k)?.id).filter(Boolean)
+        : (lessons ?? [])
+            .filter((l: any) => l.wb_sequence_id === seqId)
+            .sort(
+              (a: any, b: any) =>
+                (a.sequence_step_order ?? a.display_order ?? 0) -
+                (b.sequence_step_order ?? b.display_order ?? 0)
+            )
+            .map((l: any) => l.id);
+      const seqItems = stepIdsInSeq
+        .map((id: string) => itemById.get(id))
+        .filter((i): i is SequenceItem => Boolean(i));
+      return {
+        id: seqId,
+        order: meta.wb_sequence_order ?? 99,
+        name: meta.wb_sequence_name ?? seqId,
+        promise: meta.wb_sequence_promise ?? null,
+        belt: (meta.course_section ?? '').replace('_belt', ''),
+        items: seqItems,
+      };
+    })
+    .filter((s) => s.items.length > 0)
+    .sort((a, b) => beltRank(a.belt) - beltRank(b.belt) || a.order - b.order);
+
   return {
     belt,
+    sequences,
     overallRating,
     totalSteps: items.length,
     ratedSteps: ratedItems.length,

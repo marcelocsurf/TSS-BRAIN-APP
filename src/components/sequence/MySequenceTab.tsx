@@ -24,6 +24,8 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
+  // Por secuencia es la entrada natural: es como se enseña en el curso.
+  const [view, setView] = useState<'sequence' | 'all'>('sequence');
 
   useEffect(() => {
     let mounted = true;
@@ -131,13 +133,60 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
       <div className="rounded-2xl p-3.5" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
         <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
         <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
-          Tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.
+          Pick the sequence you are working on → tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.
         </p>
       </div>
 
+      {/* Primero la SECUENCIA, después la habilidad suelta.
+          Un alumno de Blue tiene 48 pasos: elegir entre 48 no es libertad, es
+          parálisis. Y practicar el paso suelto no enseña la secuencia — el
+          drill sirve cuando llega en su contexto, viendo qué va antes y qué
+          va después. La lista completa sigue disponible para buscar algo
+          puntual. */}
+      {data.sequences.length > 0 && (
+        <div className="flex gap-1 p-1 rounded-full" style={{ background: '#0A2438' }}>
+          {(['sequence', 'all'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className="flex-1 h-9 rounded-full text-[11px] font-bold transition"
+              style={
+                view === v
+                  ? { background: theme.bright, color: '#061C2B' }
+                  : { color: 'rgba(247,249,250,.55)' }
+              }
+            >
+              {v === 'sequence' ? 'By sequence' : 'All my skills'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {view === 'sequence' && data.sequences.length > 0 && (
+        <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
+          {data.sequences.map((seq) => (
+            <BlockSection
+              key={seq.id}
+              belt={seq.belt}
+              blockNumber={seq.order}
+              blockName={seq.name}
+              promise={seq.promise}
+              asSequence
+              items={seq.items}
+              onOpenStep={(id) => setOpenStepId(id)}
+              theme={theme}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Blocks — en tablet (md:) van en 2 columnas: la secuencia completa
           (25-48 pasos) entra de un vistazo en vez de scroll infinito. */}
-      <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
+      <div
+        className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start"
+        hidden={view === 'sequence' && data.sequences.length > 0}
+      >
       {data.blocks.map((block) => (
         <BlockSection
           key={`${block.belt}:${block.block_number}`}
@@ -158,6 +207,8 @@ function BlockSection({
   belt: blockBelt,
   blockNumber,
   blockName,
+  promise = null,
+  asSequence = false,
   items,
   onOpenStep,
   theme,
@@ -165,6 +216,10 @@ function BlockSection({
   belt: string;
   blockNumber: number;
   blockName: string;
+  /** La habilidad que construye la secuencia. */
+  promise?: string | null;
+  /** true = se rotula como secuencia del método, no como bloque de drills. */
+  asSequence?: boolean;
   items: SequenceItem[];
   onOpenStep: (id: string) => void;
   theme: BeltTheme;
@@ -179,9 +234,14 @@ function BlockSection({
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between" style={{ background: theme.tint }}>
         <div>
           <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
-            {blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1)} Belt · Block {blockNumber}
+            {asSequence
+              ? `${blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1)} Belt${blockNumber >= 1 && blockNumber <= 13 ? ` · Sequence #${blockNumber}` : ''}`
+              : `${blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1)} Belt · Block ${blockNumber}`}
           </div>
           <div className="text-[13px] mt-0.5" style={{ ...F_D, color: INK }}>{blockName}</div>
+          {promise && (
+            <div className="text-[11px] mt-0.5 text-gray-500 italic leading-snug">{promise}</div>
+          )}
         </div>
         <div className="text-right text-xs">
           {avgRating !== null ? (
