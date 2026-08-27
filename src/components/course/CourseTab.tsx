@@ -482,17 +482,9 @@ export function CourseTab({ data }: { data: CourseData }) {
 
           <GroupHeader
             theme={beltTheme}
-            eyebrow={
-              beltUsesBlocks
-                ? 'closing the belt'
-                : `${beltSequences.length} sequences · cumulative`
-            }
+            eyebrow={`${beltSequences.length} sequences · cumulative`}
             title={beltLabelShort}
-            subtitle={
-              beltUsesBlocks
-                ? 'The modules that close the belt, after your sequences.'
-                : 'Cumulative — each sequence builds on all previous.'
-            }
+            subtitle="Cumulative — each sequence builds on all previous."
             videoUrl={intros[beltSection]?.video_url}
           />
 
@@ -500,20 +492,14 @@ export function CourseTab({ data }: { data: CourseData }) {
             <SectionBlock
               key={group.id}
               title={
-                group.block != null
-                  ? `Block ${group.block} · ${group.name}`
-                  : !beltUsesBlocks && group.order >= 1 && group.order <= 13
-                    ? `Sequence #${group.order}: ${group.name}`
-                    : group.name
+                group.order >= 1 && group.order <= 13
+                  ? `Sequence #${group.order}: ${group.name}`
+                  : group.name
               }
               subtitle={group.subtitle}
-              Icon={
-                (beltUsesBlocks
-                  ? WB_SEQUENCE_ICON[group.lessons[0]?.wb_sequence_id || '']
-                  : WB_SEQUENCE_ICON[group.id]) || BookOpen
-              }
+              Icon={WB_SEQUENCE_ICON[group.id] || BookOpen}
               badge={
-                !beltUsesBlocks && WB_SEQUENCE_CUMULATIVE[group.id]
+                WB_SEQUENCE_CUMULATIVE[group.id]
                   ? `${WB_SEQUENCE_CUMULATIVE[group.id]}/25 cumulative`
                   : null
               }
