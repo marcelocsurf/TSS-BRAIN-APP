@@ -503,6 +503,81 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         beltLabel={belt?.levelName ?? student.belt_level.replace(/_/g, ' ')}
         seqStep={oceanShort}
       />
+      {/* ── QUIÉN ES ──
+           Marcelo, sobre para qué abre una ficha: "identificarlo, saber
+           quién es, dónde va en su viaje, cómo aprende, qué fue lo último
+           que vio". Ese es el orden. Todo esto ya existía: estaba en las
+           posiciones 18 a 20 de una página de 21 secciones. Saber que
+           alguien vino cuatro veces cambia cómo se lo trata, y si tiene
+           asma el coach no puede tener que abrir una sección plegada para
+           enterarse. */}
+      {/* --- RELATIONSHIP / VISITS (who is this, at a glance) --- */}
+      <Card title="Relationship" highlighted={visitStats.visits > 1}>
+        <div className="pt-2 space-y-3">
+          <div className="flex items-center gap-2">
+            {visitStats.visits > 1 ? (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tss-navy)] bg-[var(--tss-cyan,#5AC3E7)]/15 border border-[var(--tss-cyan,#5AC3E7)]/40 rounded-full px-2.5 py-0.5">
+                Returning · Visit #{visitStats.visits}
+              </span>
+            ) : visitStats.visits === 1 ? (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
+                First visit
+              </span>
+            ) : (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
+                No visits yet
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-50 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[11px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
+            </div>
+          </div>
+          <Row label="First visit" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
+          <Row label="Last visit" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
+          <PriorVisitsEditor studentId={student.id} initial={visitStats.priorVisits} />
+        </div>
+      </Card>
+
+      {/* --- SAFETY & MEDICAL (highlighted if data) --- */}
+      <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
+        <div className="space-y-2">
+          <Row label="Emergency Contact" value={student.emergency_contact_name} />
+          <Row label="Emergency Phone" value={student.emergency_contact_phone} />
+          {student.allergies && (
+            <div className="flex items-start justify-between gap-4">
+              <span className="text-xs text-gray-500 shrink-0">Allergies</span>
+              <span className="text-sm text-right text-red-600 font-medium">{student.allergies}</span>
+            </div>
+          )}
+          {student.injuries && (
+            <div className="flex items-start justify-between gap-4">
+              <span className="text-xs text-gray-500 shrink-0">Injuries</span>
+              <span className="text-sm text-right text-amber-600 font-medium">{student.injuries}</span>
+            </div>
+          )}
+          <Row label="Medical Notes" value={student.medical_notes} />
+          <Row label="Swim Level" value={student.swim_level} />
+          <Row label="Risk Notes" value={student.risk_notes} />
+        </div>
+      </Card>
+
+      {/* --- LEARNING PROFILE (how this student learns — coach scans before every session) --- */}
+      <LearningProfileCard
+        studentId={student.id}
+        primary={(student as any).learning_profile_primary as LearningChannel | null}
+        secondary={(student as any).learning_profile_secondary as LearningChannel | null}
+        portalToken={student.portal_token}
+        intakeLearningStyle={(student as any).learning_style as string | null}
+      />
+
+
       {/* --- 2. LAST SESSION (always visible, highlighted) ---
           Use the most recent real session entry (richest: coach feedback,
           mission, what's next). Fall back to the student snapshot only if
@@ -866,29 +941,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
         </>}
         perfil={<>
-      {/* --- SAFETY & MEDICAL (highlighted if data) --- */}
-      <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
-        <div className="space-y-2">
-          <Row label="Emergency Contact" value={student.emergency_contact_name} />
-          <Row label="Emergency Phone" value={student.emergency_contact_phone} />
-          {student.allergies && (
-            <div className="flex items-start justify-between gap-4">
-              <span className="text-xs text-gray-500 shrink-0">Allergies</span>
-              <span className="text-sm text-right text-red-600 font-medium">{student.allergies}</span>
-            </div>
-          )}
-          {student.injuries && (
-            <div className="flex items-start justify-between gap-4">
-              <span className="text-xs text-gray-500 shrink-0">Injuries</span>
-              <span className="text-sm text-right text-amber-600 font-medium">{student.injuries}</span>
-            </div>
-          )}
-          <Row label="Medical Notes" value={student.medical_notes} />
-          <Row label="Swim Level" value={student.swim_level} />
-          <Row label="Risk Notes" value={student.risk_notes} />
-        </div>
-      </Card>
-
       {/* --- WAIVER STATUS --- */}
       <Card title="Waiver Status">
         {student.waiver_signed ? (
@@ -934,49 +986,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <p className="text-xs text-gray-500">Uso de imagen: sin registrar (waiver anterior o sin responder)</p>
         </div>
       )}
-
-      {/* --- LEARNING PROFILE (how this student learns — coach scans before every session) --- */}
-      <LearningProfileCard
-        studentId={student.id}
-        primary={(student as any).learning_profile_primary as LearningChannel | null}
-        secondary={(student as any).learning_profile_secondary as LearningChannel | null}
-        portalToken={student.portal_token}
-        intakeLearningStyle={(student as any).learning_style as string | null}
-      />
-
-      {/* --- RELATIONSHIP / VISITS (who is this, at a glance) --- */}
-      <Card title="Relationship" highlighted={visitStats.visits > 1}>
-        <div className="pt-2 space-y-3">
-          <div className="flex items-center gap-2">
-            {visitStats.visits > 1 ? (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tss-navy)] bg-[var(--tss-cyan,#5AC3E7)]/15 border border-[var(--tss-cyan,#5AC3E7)]/40 rounded-full px-2.5 py-0.5">
-                Returning · Visit #{visitStats.visits}
-              </span>
-            ) : visitStats.visits === 1 ? (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
-                First visit
-              </span>
-            ) : (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
-                No visits yet
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
-              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[11px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
-              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
-            </div>
-          </div>
-          <Row label="First visit" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
-          <Row label="Last visit" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
-          <PriorVisitsEditor studentId={student.id} initial={visitStats.priorVisits} />
-        </div>
-      </Card>
 
       {/* --- 7. PROFILE DETAILS (collapsible, default closed) --- */}
       <CollapsibleSection title="Profile Details" defaultOpen={false}>
