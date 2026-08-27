@@ -77,8 +77,13 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows }: Props) {
         .map((r) => r.coach_rating)
         .filter((v): v is number => v !== null);
       const min = vals.length ? Math.min(...vals) : null;
+      // El freno es el paso más TEMPRANO de la cadena que no llega a la barra,
+      // no el de menos estrellas: si la postura está floja, lo que viene
+      // después lo está por consecuencia.
       const weakest =
-        min === null ? null : rows.find((r) => r.coach_rating === min) ?? null;
+        rows.find(
+          (r) => r.coach_rating !== null && r.coach_rating < SEQUENCE_PASS_STARS
+        ) ?? null;
       return {
         id: sid,
         name: meta.sequence_name ?? sid,
@@ -150,7 +155,7 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows }: Props) {
                 <span className="text-emerald-600 font-bold">✓ owned</span>
               ) : (
                 <span className="text-amber-700">
-                  {g.min}★{g.weakest ? ` · ${g.weakest.step_title ?? g.weakest.step_id}` : ''}
+                  {g.min}★{g.weakest ? ` · empezar por ${g.weakest.step_title ?? g.weakest.step_id}` : ''}
                   {!g.complete && ` · ${g.rated}/${g.rows.length}`}
                 </span>
               )}

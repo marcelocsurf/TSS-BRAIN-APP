@@ -310,10 +310,12 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
       const minRating = withRating.length
         ? Math.min(...withRating.map((x) => x.v))
         : null;
+      // Por dónde empezar: el paso más TEMPRANO de la cadena que no llega a la
+      // barra, no el de menos estrellas. Si la postura está floja, el bottom
+      // turn va a estar flojo por consecuencia — arreglar la postura arregla
+      // los dos. Es la doctrina: no hay atajos, hay que caminar el camino.
       const weakest =
-        minRating === null
-          ? null
-          : withRating.find((x) => x.v === minRating)!.i;
+        withRating.find((x) => x.v < SEQUENCE_PASS_STARS)?.i ?? null;
       const state: 'owned' | 'working' | 'partial' | 'unrated' =
         withRating.length === 0
           ? 'unrated'

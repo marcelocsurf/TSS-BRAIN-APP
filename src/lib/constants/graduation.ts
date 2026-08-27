@@ -34,13 +34,14 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     principles: [],
     minPrinciples: 0,
   },
-  // Yellow Belt — full White->Yellow sequence (25 + 8 = 33). Re-confirm all
-  // fundamentals + the 8 YB steps: >= 24 of 33 STPs + >= 3 of 5 principles.
+  // Yellow Belt — full White->Yellow sequence. Verificado contra producción
+  // 2026-08-27: son 25 + 10 = 35 pasos activos, no 33. La constante había
+  // quedado de cuando Yellow tenía 8.
   yellow_belt: {
     beltLabel: 'Yellow Belt',
     sections: ['white_belt', 'yellow_belt'],
     stpThreshold: 4,
-    minStps: 33,
+    minStps: 35,
     requireAllStps: true,
     principles: [
       'Endurance and enjoyment are not opposites',
@@ -51,14 +52,16 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
     ],
     minPrinciples: 3,
   },
-  // Blue Belt — full White->Yellow->Blue sequence (25 + 8 + 15 = 48). Principles
+  // Blue Belt — full White->Yellow->Blue sequence. Verificado contra
+  // producción 2026-08-27: son 25 + 10 + 20 = 55 pasos activos, no 48.
+  // Principles
   // are the Blue Belt Exit Test criteria (verbatim from the manual). Canon rule:
   // 4★ in EVERY part of the sequence to advance (requireAllStps).
   blue_belt: {
     beltLabel: 'Blue Belt',
     sections: ['white_belt', 'yellow_belt', 'blue_belt'],
     stpThreshold: 4,
-    minStps: 48,
+    minStps: 55,
     requireAllStps: true,
     principles: [
       'Execute the Universal Sequence Formula on at least 4 of 5 attempts per sequence (Seq #10, #11, #12, #13)',
