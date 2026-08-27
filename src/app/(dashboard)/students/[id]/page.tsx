@@ -19,6 +19,7 @@ import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton'
 import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
+import { groupBySequence, sequenceVerdict } from '@/lib/constants/learning-blocks';
 import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
@@ -280,6 +281,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     last_updated: string;
   }>;
 
+  // La secuencia en la que está trabajando y qué la frena — derivado de las
+  // notas del coach, igual que en el portal del alumno y en Let's Play.
+  const oceanShort = (student.ocean_level ?? '').replace(/_/g, ' ').toUpperCase();
+
+
   // M4: build official-eval rows (lessons catalog + ratings join)
   const stepRatingsMap = new Map(stepRatings.map((r) => [r.step_id, r]));
   const officialEvalRows = (stpLessonsResult?.data ?? []).map((l: any) => {
@@ -298,6 +304,23 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       coach_rated_at: r?.coach_rated_at ?? null,
     };
   });
+  const focusSeq = (() => {
+    const { groups } = groupBySequence(officialEvalRows as any[]);
+    for (const g of groups) {
+      const stars = g.rows.map((r: any) => r.coach_rating ?? null);
+      const v = sequenceVerdict(stars);
+      if (v.state === 'owned') continue;
+      const label =
+        g.order >= 1 && g.order <= 13 ? `#${g.order} · ${g.name}` : g.name;
+      const blocker =
+        v.blockerIndex >= 0
+          ? `${(g.rows[v.blockerIndex] as any).step_title ?? ''}${v.min != null ? ` · ${v.min}★` : ''}`
+          : null;
+      return { label, blocker };
+    }
+    return null;
+  })();
+
   const lessonsCompleted = (lessonProgressResult.data ?? []).map((l: any) => ({
     lesson_id: l.lesson_id,
     lesson_title: l.lessons?.title ?? null,
@@ -427,7 +450,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               className="text-[10px] uppercase tracking-wider text-gray-400 mt-1.5"
               style={{ fontFamily: 'DM Mono, monospace' }}
             >
-              Seq {student.current_sequence_number} · Step {student.current_step_order}
+              {belt?.levelName ?? ''}
             </p>
             {(student as any).created_at && (
               <p className="text-[11px] text-gray-400 mt-1">
@@ -478,7 +501,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       <StudentActivitySummary
         studentId={student.id}
         beltLabel={belt?.levelName ?? student.belt_level.replace(/_/g, ' ')}
-        seqStep={`SEQ ${student.current_sequence_number} · STP ${student.current_step_order}`}
+        seqStep={oceanShort}
       />
       {/* --- 2. LAST SESSION (always visible, highlighted) ---
           Use the most recent real session entry (richest: coach feedback,
@@ -643,9 +666,23 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             />
             <span className="text-sm font-medium text-[var(--tss-navy)]">{belt?.en} — {belt?.levelName}</span>
           </div>
-          <Row label="Sequence" value={`#${student.current_sequence_number}`} />
-          <Row label="Step" value={`${student.current_step_order}`} />
-          <Row label="Ocean Level" value={student.ocean_level} />
+          {/* Antes acá decía "Sequence #1 · Step 1" — un puntero de un modelo
+              viejo que nunca se movió: 997 de 1000 alumnos en #1 y los 1000 en
+              el paso 1. Peor, contradecía la evaluación real: alguien con 54
+              pasos calificados por su coach igual leía "Sequence #1".
+              Ahora sale lo que sí sabemos, derivado de esas notas — lo mismo
+              que el alumno ve en su portal. */}
+          {focusSeq ? (
+            <>
+              <Row label="Trabajando en" value={focusSeq.label} />
+              {focusSeq.blocker && (
+                <Row label="La frena" value={focusSeq.blocker} highlight />
+              )}
+            </>
+          ) : (
+            <Row label="Trabajando en" value="sin evaluar todavía" />
+          )}
+          <Row label="En el agua" value={student.ocean_level} />
           <Row label="Progression Status" value={student.progression_status} />
         </div>
       </Card>
@@ -673,23 +710,22 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         );
       })()}
 
-      {/* --- 3b. SEQUENCE EVALUATION (collapsible) --- */}
-      <CollapsibleSection title="Sequence Evaluation" defaultOpen={false}>
-        <SequenceEvaluationPanel
-          studentId={id}
-          coachId={coach?.id || ''}
-          currentSequence={student.current_sequence_number}
-          currentStep={student.current_step_order}
-          history={seqHistory}
-        />
-      </CollapsibleSection>
+      {/* El panel "Sequence Evaluation" se quitó (2026-08-27). Era de un
+          modelo viejo —un puntero "vas en la secuencia N, paso M"— con 4
+          evaluaciones en toda la app y el puntero sin moverse: 997 de 1000
+          alumnos en #1. Contradecía la evaluación real, que vive en las
+          estrellas por paso. Las 4 filas de sequence_evaluations quedan en la
+          base como historial. */}
 
-      {/* --- 3c. OCEAN LEVEL EVALUATION (collapsible) --- */}
+      {/* --- 3c. EL AGUA: nivel + las pruebas que lo respaldan ---
+           Estaban en dos secciones separadas y son la misma cosa: una es el
+           veredicto y la otra la evidencia. Juntas se entiende de dónde sale
+           el nivel; separadas parecían dos evaluaciones distintas. */}
       <CollapsibleSection
         title={
           <>
             <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-            Ocean Level
+            El agua
             {(student as any).ocean_level_provisional && (
               <span className="inline-flex items-center gap-1 text-amber-700 font-normal">
                 · <Hourglass size={11} strokeWidth={1.75} /> Provisional
@@ -699,34 +735,25 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         }
         defaultOpen={!!(student as any).ocean_level_provisional}
       >
-        <OceanLevelPanel
-          studentId={id}
-          coachId={coach?.id || ''}
-          currentLevel={student.ocean_level}
-          history={oceanHistory}
-          provisional={!!(student as any).ocean_level_provisional}
-        />
-      </CollapsibleSection>
-
-      {/* --- 3c-bis. PRUEBAS DE AGUA (collapsible) ---
-           Cómo se GANA el nivel de océano. Va pegado al panel de Ocean Level
-           porque es lo que lo respalda: hasta ahora ese nivel salía del quiz
-           de intake —lo que el alumno dice de sí mismo— y del criterio del
-           coach. Se pasa o no se pasa; no cambia el nivel por su cuenta. */}
-      <CollapsibleSection
-        title={
-          <>
-            <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-            Pruebas de agua
-          </>
-        }
-        defaultOpen={false}
-      >
-        <WaterTestsPanel
-          studentId={id}
-          coachId={coach?.id || ''}
-          currentLevel={student.ocean_level}
-        />
+        <div className="space-y-4">
+          <OceanLevelPanel
+            studentId={id}
+            coachId={coach?.id || ''}
+            currentLevel={student.ocean_level}
+            history={oceanHistory}
+            provisional={!!(student as any).ocean_level_provisional}
+          />
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+              Las pruebas que lo respaldan
+            </p>
+            <WaterTestsPanel
+              studentId={id}
+              coachId={coach?.id || ''}
+              currentLevel={student.ocean_level}
+            />
+          </div>
+        </div>
       </CollapsibleSection>
 
       {/* --- 3d. COURSE PROGRESS (collapsible) --- */}
