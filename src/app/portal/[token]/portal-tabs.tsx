@@ -834,7 +834,7 @@ function HomeTab({
               estrellas sueltas. Toca y cae directo en el drill de ese paso. */}
           {data.nextMove && (
             <a
-              href={`?step=${encodeURIComponent(data.nextMove.stepId)}`}
+              href={`?tab=sequence&step=${encodeURIComponent(data.nextMove.stepId)}`}
               className="block rounded-2xl px-4 py-3.5"
               style={{ background: 'rgba(255,209,102,.10)', border: '1px solid rgba(255,209,102,.35)' }}
             >
