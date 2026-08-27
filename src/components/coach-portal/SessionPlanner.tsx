@@ -66,6 +66,7 @@ import {
 } from '@/lib/actions/spaces';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
+import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
 // can also write a custom one. Keys are stored as service_plans.mental_hack.
@@ -388,7 +389,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         // official evaluation (rate every STP per student → graduation).
         // Simple lessons (surf_lesson / Discover Surfing) close with the
         // per-student general analysis instead — no 25-STP belt eval.
-        if (isLastDay && data.camp.service_kind !== 'surf_lesson') {
+        if (isLastDay && usesBeltEvaluation(data.camp.service_kind)) {
           setShowFinalEval(true);
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -440,7 +441,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const finalEvalPending =
     allDaysClosed &&
     (data.camp as any).status !== 'completed' &&
-    data.camp.service_kind !== 'class' && data.camp.service_kind !== 'trip' &&
+    usesBeltEvaluation(data.camp.service_kind) &&
     finalPendingCount > 0;
 
   // M47 — Drill / mission detail modal. Tapping a drill name anywhere in
@@ -626,7 +627,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           de hoy se perdería en silencio (hallazgo de la revisión). */}
       {!allDaysClosed && !isLastDay && data.daySummaries.length > 1 &&
         (data.camp as any).status !== 'completed' &&
-        data.camp.service_kind !== 'class' && data.camp.service_kind !== 'trip' && data.camp.service_kind !== 'surf_lesson' &&
+        usesBeltEvaluation(data.camp.service_kind) &&
         students.some((st) => !finalSaved.has(st.student_id)) && (() => {
           const svToday = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
           const todaySummary = data.daySummaries.find((d) => d.session_date === svToday);
