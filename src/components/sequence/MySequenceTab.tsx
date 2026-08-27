@@ -250,9 +250,14 @@ function BlockSection({
   onOpenStep: (id: string) => void;
   theme: BeltTheme;
 }) {
-  const ratedCount = items.filter((i) => i.rating !== null).length;
+  // La nota que cuenta es la EFECTIVA: la del coach si existe, si no la
+  // auto-evaluación. Contando solo el auto-rating, un alumno con toda su
+  // secuencia validada por el coach leía "0/6 rated".
+  const effective = (i: SequenceItem) => i.coach_rating ?? i.rating ?? null;
+  const ratedItems = items.filter((i) => effective(i) !== null);
+  const ratedCount = ratedItems.length;
   const avgRating = ratedCount > 0
-    ? items.reduce((sum, i) => sum + (i.rating || 0), 0) / ratedCount
+    ? ratedItems.reduce((sum, i) => sum + (effective(i) || 0), 0) / ratedCount
     : null;
 
   return (
