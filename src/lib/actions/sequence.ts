@@ -1,7 +1,11 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { COURSE_SEQUENCE_ORDER, stepKey } from '@/lib/constants/learning-blocks';
+import {
+  COURSE_SEQUENCE_ORDER,
+  stepKey,
+  SEQUENCE_PASS_STARS,
+} from '@/lib/constants/learning-blocks';
 
 // ─── Types ───
 
@@ -77,6 +81,16 @@ export type SequenceData = {
     promise: string | null;
     belt: string;
     items: SequenceItem[];
+    /** owned = todos sus pasos llegaron al umbral · working = alguno no llegó ·
+     *  partial = todavía faltan pasos por evaluar · unrated = ninguno. */
+    state: 'owned' | 'working' | 'partial' | 'unrated';
+    /** Las estrellas del paso más flojo — lo que vale la secuencia. */
+    minRating: number | null;
+    /** El paso que la frena: por dónde empezar. */
+    weakestStepId: string | null;
+    weakestTitle: string | null;
+    /** true = ese freno lo puso el coach, no la auto-evaluación. */
+    weakestIsOfficial: boolean;
   }[];
 };
 
@@ -259,6 +273,27 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
       const seqItems = stepIdsInSeq
         .map((id: string) => itemById.get(id))
         .filter((i): i is SequenceItem => Boolean(i));
+      // La secuencia vale lo que vale su paso más flojo (canon: 4★ en cada
+      // parte). Así el alumno ve QUÉ lo frena, no un promedio que esconde el
+      // hueco.
+      const withRating = seqItems
+        .map((i) => ({ i, v: i.coach_rating ?? i.rating ?? null }))
+        .filter((x): x is { i: SequenceItem; v: number } => x.v !== null);
+      const minRating = withRating.length
+        ? Math.min(...withRating.map((x) => x.v))
+        : null;
+      const weakest =
+        minRating === null
+          ? null
+          : withRating.find((x) => x.v === minRating)!.i;
+      const state: 'owned' | 'working' | 'partial' | 'unrated' =
+        withRating.length === 0
+          ? 'unrated'
+          : withRating.length < seqItems.length
+            ? 'partial'
+            : minRating! >= SEQUENCE_PASS_STARS
+              ? 'owned'
+              : 'working';
       return {
         id: seqId,
         order: meta.wb_sequence_order ?? 99,
@@ -266,6 +301,11 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
         promise: meta.wb_sequence_promise ?? null,
         belt: (meta.course_section ?? '').replace('_belt', ''),
         items: seqItems,
+        state,
+        minRating,
+        weakestStepId: weakest?.step_id ?? null,
+        weakestTitle: weakest?.step_title ?? null,
+        weakestIsOfficial: weakest?.coach_rating != null,
       };
     })
     .filter((s) => s.items.length > 0)

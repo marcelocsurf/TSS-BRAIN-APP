@@ -664,3 +664,11 @@ export const COURSE_SEQUENCE_STAGE: Record<string, Record<string, string>> = (()
   }
   return out;
 })();
+
+/**
+ * Estrellas que necesita CADA paso de una secuencia para darla por lograda.
+ * Es la regla del canon: 4★ en cada parte de la secuencia, no un promedio.
+ * El promedio miente — un snap con bottom turn 5★ y proyección 2★ promedia
+ * 3.5 y no funciona. El paso más débil no miente nunca.
+ */
+export const SEQUENCE_PASS_STARS = 4;

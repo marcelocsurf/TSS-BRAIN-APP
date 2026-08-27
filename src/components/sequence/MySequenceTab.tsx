@@ -29,9 +29,9 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
   // La que se abre sola: la primera que todavía tiene pasos sin evaluar. Es
   // "en qué estoy trabajando" sin preguntárselo.
   const focusSequenceId =
-    data?.sequences.find((s) =>
-      s.items.some((i) => (i.coach_rating ?? i.rating ?? null) === null)
-    )?.id ?? data?.sequences[0]?.id ?? null;
+    data?.sequences.find((s) => s.state !== 'owned')?.id ??
+    data?.sequences[0]?.id ??
+    null;
 
   useEffect(() => {
     let mounted = true;
@@ -179,6 +179,11 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
               blockName={seq.name}
               promise={seq.promise}
               asSequence
+              state={seq.state}
+              minRating={seq.minRating}
+              weakestStepId={seq.weakestStepId}
+              weakestTitle={seq.weakestTitle}
+              weakestIsOfficial={seq.weakestIsOfficial}
               defaultOpen={seq.id === focusSequenceId}
               items={seq.items}
               onOpenStep={(id) => setOpenStepId(id)}
@@ -217,6 +222,11 @@ function BlockSection({
   promise = null,
   asSequence = false,
   defaultOpen = true,
+  state,
+  minRating = null,
+  weakestStepId = null,
+  weakestTitle = null,
+  weakestIsOfficial = false,
   items,
   onOpenStep,
   theme,
@@ -229,8 +239,13 @@ function BlockSection({
   /** true = se rotula como secuencia del método, no como bloque de drills. */
   asSequence?: boolean;
   /** En la vista por secuencia vienen plegadas: si no, son 65 pasos de scroll
-   *  y no se gana nada. Se abre sola la primera que le falta trabajo. */
+   *  y no se gana nada. Se abre sola la primera que no está lograda. */
   defaultOpen?: boolean;
+  state?: 'owned' | 'working' | 'partial' | 'unrated';
+  minRating?: number | null;
+  weakestStepId?: string | null;
+  weakestTitle?: string | null;
+  weakestIsOfficial?: boolean;
   items: SequenceItem[];
   onOpenStep: (id: string) => void;
   theme: BeltTheme;
@@ -258,8 +273,19 @@ function BlockSection({
             <div className="text-[11px] mt-0.5 text-gray-500 italic leading-snug">{promise}</div>
           )}
         </div>
-        <div className="text-right text-xs">
-          {avgRating !== null ? (
+        <div className="text-right text-xs shrink-0">
+          {/* La secuencia vale lo que vale su paso más flojo — no el promedio,
+              que esconde el hueco. Es la regla del canon: 4★ en cada parte. */}
+          {asSequence && state === 'owned' ? (
+            <div className="font-bold" style={{ color: '#1E9E5A' }}>✓ Owned</div>
+          ) : asSequence && minRating !== null ? (
+            <>
+              <div className="font-bold" style={{ color: theme.ink }}>{minRating}★</div>
+              <div className="text-[10px] text-gray-400">
+                {state === 'partial' ? `${ratedCount}/${items.length} rated` : 'weakest step'}
+              </div>
+            </>
+          ) : avgRating !== null ? (
             <>
               <div className="font-bold" style={{ color: theme.ink }}>{avgRating.toFixed(1)}/5</div>
               <div className="text-[10px] text-gray-400">{ratedCount}/{items.length} rated</div>
@@ -274,16 +300,50 @@ function BlockSection({
         </div>
       </summary>
 
+      {/* La dirección: por dónde empezar. Sin esto la secuencia dice cómo va
+          pero no qué hacer. */}
+      {asSequence && weakestStepId && state !== 'owned' && (
+        <button
+          type="button"
+          onClick={() => onOpenStep(weakestStepId)}
+          className="w-full text-left px-4 py-2.5 border-b border-gray-100"
+          style={{ background: '#FFF8E7' }}
+        >
+          <span className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>
+            Start here
+          </span>
+          <span className="block text-[12.5px] text-gray-800 leading-snug">
+            <b>{weakestTitle}</b> is holding this sequence back
+            {minRating !== null && ` — ${minRating}★`}
+            {weakestIsOfficial && ' (your coach)'}
+          </span>
+        </button>
+      )}
+
       <div className="divide-y divide-gray-100">
         {items.map((item) => (
-          <StepRow key={item.step_id} item={item} onOpen={() => onOpenStep(item.step_id)} />
+          <StepRow
+            key={item.step_id}
+            item={item}
+            highlight={asSequence && item.step_id === weakestStepId && state !== 'owned'}
+            onOpen={() => onOpenStep(item.step_id)}
+          />
         ))}
       </div>
     </details>
   );
 }
 
-function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
+function StepRow({
+  item,
+  onOpen,
+  highlight = false,
+}: {
+  item: SequenceItem;
+  onOpen: () => void;
+  /** El paso que frena la secuencia: se marca para que no haya que buscarlo. */
+  highlight?: boolean;
+}) {
   const hasDrill = !!item.drill;
   const hasMission = !!item.mission;
   const hasSubtitle = hasDrill || hasMission;
@@ -292,6 +352,7 @@ function StepRow({ item, onOpen }: { item: SequenceItem; onOpen: () => void }) {
     <button
       onClick={onOpen}
       className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+      style={highlight ? { background: '#FFFBF0', boxShadow: 'inset 3px 0 0 #E0A62B' } : undefined}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
