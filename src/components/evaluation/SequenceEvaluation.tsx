@@ -28,12 +28,15 @@
 //               a la barra, y 4★ es el mínimo consistente con eso.
 //   Le falta  → las que marca con sus estrellas; el resto de la secuencia, 4★
 //               donde estuviera vacío.
-//   No la vi  → nada.
+//   No la vi  → deshace SOLO lo que se escribió en esta pasada. Una nota
+//               anterior no se toca: para borrarla está la × del paso, que es
+//               deliberada y de a una. setOfficialStepRating hace upsert con
+//               null y NO hay historial: una nota borrada no vuelve.
 //
 // Es la MISMA evaluación en las dos puertas: al cerrar un camp y en la ficha
 // del alumno en cualquier momento. Cerrar un camp es solo uno de los momentos.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
 import {
   groupBySequence,
@@ -65,15 +68,37 @@ export function SequenceEvaluation({
 
   const starsOf = (id: string) => ratings[id] ?? null;
 
+  // Qué notas escribió ESTA pantalla. "No la vi" solo puede deshacer esto:
+  // nunca la nota que otro coach dejó en otro camp.
+  //
+  // En la ficha del alumno cada cambio se guarda al instante, y
+  // setOfficialStepRating hace UPSERT con coach_rating: null — o sea PISA la
+  // fila. No hay historial de student_step_ratings en ninguna migración, así
+  // que una nota borrada no se recupera. Y como STP-035 y STP-018 están en
+  // las SEIS secuencias de Blue, un "No la vi" sobre una arrastraba los
+  // prerequisitos de las otras cinco.
+  const written = useRef<Set<string>>(new Set());
+  const emit = (changes: { stepId: string; stars: number | null }[]) => {
+    if (changes.length === 0) return; // nunca escribir de gusto
+    for (const c of changes) written.current.add(c.stepId);
+    onRate(changes);
+  };
+
   const markOwned = (rs: EvalRow[]) =>
-    onRate(
+    emit(
       rs
         .filter((r) => starsOf(r.step_id) === null)
         .map((r) => ({ stepId: r.step_id, stars: SEQUENCE_PASS_STARS }))
     );
 
+  /** Deshace lo de esta pasada. Lo anterior no se toca — para borrar una nota
+   *  vieja está la × del paso, que es deliberada y de a una. */
   const markUnseen = (rs: EvalRow[]) =>
-    onRate(rs.map((r) => ({ stepId: r.step_id, stars: null })));
+    emit(
+      rs
+        .filter((r) => starsOf(r.step_id) !== null && written.current.has(r.step_id))
+        .map((r) => ({ stepId: r.step_id, stars: null }))
+    );
 
   return (
     <div className="space-y-2.5">
@@ -158,6 +183,7 @@ export function SequenceEvaluation({
                           {r.step_title || r.step_id}
                         </p>
                       </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
                       <StarRating
                         value={val}
                         size="sm"
@@ -168,9 +194,20 @@ export function SequenceEvaluation({
                               (x) => x.step_id !== r.step_id && starsOf(x.step_id) === null
                             )
                             .map((x) => ({ stepId: x.step_id, stars: SEQUENCE_PASS_STARS }));
-                          onRate([{ stepId: r.step_id, stars: n }, ...rest]);
+                          emit([{ stepId: r.step_id, stars: n }, ...rest]);
                         }}
                       />
+                      {val !== null && (
+                        <button
+                          type="button"
+                          onClick={() => emit([{ stepId: r.step_id, stars: null }])}
+                          className="text-[11px] text-gray-400 hover:text-red-600"
+                          title="Borrar esta nota"
+                        >
+                          ×
+                        </button>
+                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -187,12 +224,24 @@ export function SequenceEvaluation({
               <p className="text-[12.5px] text-gray-800 truncate flex-1 min-w-0">
                 {r.step_title || r.step_id}
               </p>
-              <StarRating
-                value={starsOf(r.step_id)}
-                size="sm"
-                variant="official"
-                onChange={(n) => onRate([{ stepId: r.step_id, stars: n }])}
-              />
+              <div className="flex items-center gap-1.5 shrink-0">
+                <StarRating
+                  value={starsOf(r.step_id)}
+                  size="sm"
+                  variant="official"
+                  onChange={(n) => emit([{ stepId: r.step_id, stars: n }])}
+                />
+                {starsOf(r.step_id) !== null && (
+                  <button
+                    type="button"
+                    onClick={() => emit([{ stepId: r.step_id, stars: null }])}
+                    className="text-[11px] text-gray-400 hover:text-red-600"
+                    title="Borrar esta nota"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
