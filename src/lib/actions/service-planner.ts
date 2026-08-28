@@ -6,6 +6,7 @@ import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
 import { sortByBlocks } from '@/lib/constants/learning-blocks';
 import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
+import { exigeCierreDeDias } from '@/lib/utils/camp-window';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -1432,7 +1433,7 @@ export async function closeCampFinal(
 
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, coach_id, head_coach_id, academy_id')
+    .select('id, coach_id, head_coach_id, academy_id, start_date')
     .eq('id', campInstanceId)
     .maybeSingle();
   if (!camp) return { ok: false, error: 'Service not found.' };
@@ -1451,8 +1452,11 @@ export async function closeCampFinal(
   //
   // Solo aplica al cierre del camp. El guardado alumno por alumno y el short
   // camp (finalize:false) siguen libres — pasan a mitad de semana.
+  //
+  // Solo de 2026-08-28 en adelante (ver camp-window.ts): lo de atrás fue
+  // temporada de pruebas y no se arrastra.
   let diasAbiertos: Array<{ day_number: number; session_date: string }> = [];
-  if (finalize) {
+  if (finalize && exigeCierreDeDias((camp as any).start_date)) {
     const { data: diasCamp } = await admin
       .from('camp_sessions')
       .select('day_number, session_date, session_status')

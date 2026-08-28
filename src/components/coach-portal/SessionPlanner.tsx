@@ -67,6 +67,7 @@ import {
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
+import { exigeCierreDeDias } from '@/lib/utils/camp-window';
 import { displayDate } from '@/lib/utils/tz';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
@@ -394,7 +395,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         if (isLastDay && usesBeltEvaluation(data.camp.service_kind)) {
           // Si quedaron días sin cerrar, la evaluación final no abre: el
           // servidor la va a rechazar igual. Se le dice cuáles faltan.
-          if (otherOpenDays.length === 0) {
+          if (!exigeCierre || otherOpenDays.length === 0) {
             setShowFinalEval(true);
           } else {
             alert(
@@ -459,10 +460,19 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // el coach ACABA de cerrar seguía contando como abierto: al terminar el último
   // día se abría la evaluación final y adentro el pie decía "faltan cerrar Día 5"
   // — el día que acababa de cerrar — y le escondía el botón de finalizar.
-  const dayGiven = (d: { camp_session_id: string; session_status: string | null }) =>
-    d.session_status === 'completed' ||
-    d.session_status === 'cancelled' ||
-    closedNow.has(d.camp_session_id);
+  // El candado corre de 2026-08-28 en adelante (camp-window.ts). Los camps de
+  // la temporada de pruebas se miden como antes — con el plan cerrado — para
+  // que sigan finalizándose igual y nadie herede avisos imposibles de cerrar.
+  const exigeCierre = exigeCierreDeDias(data.camp.start_date);
+  const dayGiven = (d: {
+    camp_session_id: string;
+    session_status: string | null;
+    completion_state: 'planned' | 'in_progress' | 'closed';
+  }) =>
+    closedNow.has(d.camp_session_id) ||
+    (exigeCierre
+      ? d.session_status === 'completed' || d.session_status === 'cancelled'
+      : d.completion_state === 'closed');
   const openDays = data.daySummaries.filter((d) => !dayGiven(d));
   const allDaysClosed = data.daySummaries.length > 0 && openDays.length === 0;
   // Los que faltan aparte del día que el coach tiene abierto ahora: al cerrar
@@ -483,6 +493,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     (lastDaySummary ? dayGiven(lastDaySummary) : false) ||
     (data.camp.end_date ?? '') < svTodayISO;
   const pendingDaysBlock =
+    exigeCierre &&
     usesBeltEvaluation(data.camp.service_kind) &&
     (data.camp as any).status !== 'completed' &&
     timeToFinalize
@@ -806,7 +817,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <FinalCampEvaluation
           token={token}
           campInstanceId={data.camp.id}
-          openDays={openDays}
+          openDays={exigeCierre ? openDays : []}
           savedIds={Array.from(finalSaved)}
           onStudentSaved={(id: string) => setFinalSaved((prev) => new Set(prev).add(id))}
           campName={data.camp.camp_name}

@@ -67,3 +67,18 @@ export function campClosedNoticeES(c: CampWindow): string {
 export function campClosedNoticeEN(): string {
   return 'This camp has already started — sign-ups close when the camp begins. Ask at the front desk about the next one.';
 }
+
+// ═══ DESDE CUÁNDO SE EXIGE CERRAR TODOS LOS DÍAS ═══
+// La regla "no se finaliza un camp con días sin cerrar" (Marcelo 2026-08-28)
+// arranca de hoy en adelante. Lo de atrás fue temporada de pruebas: aplicarla
+// al pasado dejaba 19 camps viejos pidiendo cierres que nadie va a hacer, y
+// un aviso que nadie puede completar se vuelve ruido y se ignora.
+//
+// Los camps anteriores siguen exactamente como estaban: se finalizan igual
+// que antes, sin este candado.
+export const CIERRE_DE_DIAS_OBLIGATORIO_DESDE = '2026-08-28';
+
+/** ¿A este camp le corresponde el candado de cerrar todos los días? */
+export function exigeCierreDeDias(startDate: string | null | undefined): boolean {
+  return !!startDate && startDate >= CIERRE_DE_DIAS_OBLIGATORIO_DESDE;
+}
