@@ -573,6 +573,7 @@ export async function getNextMove(
   studentId: string,
   belt: string
 ): Promise<{
+  sequenceId: string;
   sequenceOrder: number;
   sequenceName: string;
   stepId: string;
@@ -585,6 +586,7 @@ export async function getNextMove(
     const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
     if (!seq || !seq.weakestStepId) return null;
     return {
+      sequenceId: seq.id,
       sequenceOrder: seq.order,
       sequenceName: seq.name,
       stepId: seq.weakestStepId,

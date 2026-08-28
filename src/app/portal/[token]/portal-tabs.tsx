@@ -49,6 +49,7 @@ import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
+import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
@@ -196,6 +197,7 @@ interface PortalData {
   hasAnyCourse?: boolean;
   /** La primera secuencia sin lograr y el paso que la frena. */
   nextMove?: {
+    sequenceId?: string;
     sequenceOrder: number;
     sequenceName: string;
     stepId: string;
@@ -678,6 +680,12 @@ function HomeTab({
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [inboxOpen]);
+  // Lo último que el coach le dejó para trabajar. Puede venir de una
+  // evaluación suelta desde su ficha o del cierre de un camp.
+  const coachFocus: string | null =
+    (data as any).standaloneEvaluation?.focus ||
+    (student as any).next_recommended_focus ||
+    null;
   const latestResult = sessions[0];
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
   const beltLevel = student.belt_level as BeltLevel;
@@ -900,55 +908,75 @@ function HomeTab({
               cinta, secuencia y next focus, no pilares ni temporadas.
               Antes bastaba con que existiera una ficha HP creada de paso, y
               cuatro personas veían tarjetas vacías. */}
-          {/* LO QUE TE DIJO TU COACH. El "qué trabajar después" es obligatorio
-              en cada evaluación, pero solo llegaba al alumno cuando venía del
-              cierre de un camp: una evaluación hecha desde su ficha en
-              cualquier momento no se mostraba en ningún lado. */}
-          {(data as any).standaloneEvaluation?.focus && (
+          {/* ═══ QUÉ TRABAJAR ═══ (2026-08-28)
+              Eran TRES tarjetas seguidas contestando la misma pregunta —lo que
+              dijo el coach, el próximo movimiento y el "today" del cue—, cada
+              una con su color. Marcelo: "se ve medio rara, cargada".
+              Ahora es UNA sola, con jerarquía: primero lo que dijo una PERSONA,
+              después el paso que lo frena (que es el botón para ir a
+              practicarlo) y al final la frase de One Wave.
+              El alumno la abre muchas veces SOLO, sin el coach al lado: por eso
+              esto va arriba de las horas y del camino de cintas. */}
+          {(coachFocus || data.nextMove || sessionCue.cue) && (
             <div
-              className="rounded-2xl px-4 py-3.5"
-              style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
+              className="rounded-2xl overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
             >
-              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
-                Lo que te dijo tu coach
-              </p>
-              <p className="text-[14px] text-white mt-1 leading-snug">
-                🎯 {(data as any).standaloneEvaluation.focus}
-              </p>
-              {(data as any).standaloneEvaluation.note && (
-                <p className="text-[12.5px] text-white/70 mt-1.5 leading-snug">
-                  {(data as any).standaloneEvaluation.note}
-                </p>
+              {coachFocus && (
+                <div className="px-4 pt-3.5 pb-3">
+                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+                    From your coach
+                  </p>
+                  <p className="text-[14px] text-white mt-1 leading-snug">🎯 {coachFocus}</p>
+                  {(data as any).standaloneEvaluation?.note && (
+                    <p className="text-[12.5px] text-white/70 mt-1.5 leading-snug">
+                      {(data as any).standaloneEvaluation.note}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {data.nextMove && (
+                <button
+                  type="button"
+                  onClick={() => onOpenStep?.(data.nextMove!.stepId)}
+                  className="block w-full text-left px-4 py-3.5"
+                  style={coachFocus ? { borderTop: '1px solid rgba(255,255,255,.08)' } : undefined}
+                >
+                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.gold }}>
+                    Work on this
+                  </p>
+                  <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
+                    {data.nextMove.stepTitle}
+                  </p>
+                  <p className="text-[12px] text-white/60 mt-0.5">
+                    Holding back {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}
+                    {data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}
+                  </p>
+                  <p className="text-[12px] mt-1.5 font-semibold" style={{ color: BRAND.colors.gold }}>
+                    Practice it →
+                  </p>
+                </button>
+              )}
+
+              {sessionCue.cue && (
+                <div
+                  className="px-4 py-3"
+                  style={{
+                    borderTop: coachFocus || data.nextMove ? '1px solid rgba(255,255,255,.08)' : undefined,
+                  }}
+                >
+                  <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
+                    {sessionCue.cue}
+                  </p>
+                  <p className="text-[13px] mt-1.5 leading-snug" style={{ color: '#eaf4fa' }}>
+                    <span className="font-mono uppercase text-[8.5px] tracking-wider mr-1.5" style={{ color: '#00D2FF' }}>Today</span>
+                    {sessionCue.today}
+                  </p>
+                  <p className="text-[9.5px] mt-1.5" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
+                </div>
               )}
             </div>
-          )}
-
-          {/* TU PRÓXIMO MOVIMIENTO — la primera secuencia que todavía no está
-              lograda y el paso que la frena. Sale de las notas que el coach ya
-              puso al cerrar el camp; el alumno no tiene que deducir nada de 48
-              estrellas sueltas. Toca y cae directo en el drill de ese paso. */}
-          {data.nextMove && (
-            <button
-              type="button"
-              onClick={() => onOpenStep?.(data.nextMove!.stepId)}
-              className="block w-full text-left rounded-2xl px-4 py-3.5"
-              style={{ background: 'rgba(255,209,102,.10)', border: '1px solid rgba(255,209,102,.35)' }}
-            >
-              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.gold }}>
-                Your next move
-              </p>
-              <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
-                {data.nextMove.stepTitle}
-              </p>
-              <p className="text-[12px] text-white/60 mt-0.5">
-                Holding back Sequence #{data.nextMove.sequenceOrder}: {data.nextMove.sequenceName}
-                {data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}
-                {data.nextMove.official && ' — your coach'}
-              </p>
-              <p className="text-[12px] mt-1.5" style={{ color: BRAND.colors.gold }}>
-                Practice it →
-              </p>
-            </button>
           )}
 
           {data.homeBundle?.hpAccess && (
@@ -1036,38 +1064,13 @@ function HomeTab({
 
           {/* Flow Channel — Canon v8.0 §C.7: the zone between boredom (too easy)
               and anxiety (too hard). Fed by the student's session ratings
-              (survey_responses.flow_channel, 1-5; 3 = flow). */}
-          <FlowChannelCard flow={data.flowChannel} />
-
-          {/* Mental cue — doctrina de One Wave. Tres piezas: el ESPEJO del
-              nivel (valida dónde está, no motiva), la enseñanza, y una acción
-              concreta — una frase suelta contradiría la tesis del libro, que
-              el sistema nervioso se adapta a la repetición y no a entender. */}
-          <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}>
-            <div>
-              <p className="text-[9px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#00D2FF' }}>
-                Where you are · {beltLevel.replace('_belt', '').toUpperCase()} Belt
-              </p>
-              <p className="text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
-                {beltMirror}
-              </p>
-            </div>
-
-            <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-              <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
-                {sessionCue.cue}
-              </p>
-            </div>
-
-            <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.25)' }}>
-              <p className="text-[8.5px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>Today</p>
-              <p className="text-[13px] font-semibold leading-snug" style={{ color: '#eaf4fa' }}>
-                {sessionCue.today}
-              </p>
-            </div>
-
-            <p className="text-[9.5px]" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
-          </div>
+              (survey_responses.flow_channel, 1-5; 3 = flow).
+              Solo aparece cuando tiene qué decir: sin sesiones calificadas era
+              la tarjeta más grande y más vacía del Home, y el alumno nuevo
+              —que es el que menos tiene— la veía primero. */}
+          {data.flowChannel && data.flowChannel.avg != null && data.flowChannel.count > 0 && (
+            <FlowChannelCard flow={data.flowChannel} />
+          )}
 
           {/* Belt journey strip — es también la puerta a "qué me falta": el
               alumno mira su camino y ahí mismo pregunta cómo se avanza. */}
@@ -1077,10 +1080,18 @@ function HomeTab({
             className="block w-full text-left rounded-2xl p-4"
             style={{ background: 'rgba(255,255,255,0.05)' }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>Your belt journey</p>
-              <span className="text-[10.5px] font-semibold" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
+                Where you are · {beltLevel.replace('_belt', '').toUpperCase()} Belt
+              </p>
+              <span className="text-[10.5px] font-semibold shrink-0" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
             </div>
+            {/* El ESPEJO del nivel: valida dónde está, no motiva. Vivía a mitad
+                del Home repitiendo la cinta por tercera vez; su lugar es acá,
+                junto al camino. */}
+            <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: '#b8cad8' }}>
+              {beltMirror}
+            </p>
             <div className="flex items-center justify-between">
               {BELT_HIERARCHY.map((b, i) => {
                 const d = BELT_DISPLAY[b];
@@ -1237,36 +1248,39 @@ function HomeTab({
         );
       })()}
 
-            {/* Sessions — collapsible at the bottom (moved out of the nav) */}
-      <details className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm">
-        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#061C2B' }}>
-            <ClipboardList size={15} strokeWidth={1.75} style={{ color: '#0090B0' }} />
-            My Sessions
-          </span>
-          <ChevronDown size={16} className="text-gray-300" />
-        </summary>
-        <div className="px-3 pb-3 pt-1 border-t border-gray-100">
-          <SessionsTab data={data} />
-        </div>
-      </details>
-
-      {/* Feedback — collapsible at the bottom (moved out of the nav) */}
-      <details className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm">
-        <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#061C2B' }}>
-            <MessageCircle size={15} strokeWidth={1.75} style={{ color: '#0090B0' }} />
-            My Feedback
-            {(data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/10 text-[#FF6B6B] font-bold">{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
-            )}
-          </span>
-          <ChevronDown size={16} className="text-gray-300" />
-        </summary>
-        <div className="px-3 pb-3 pt-1 border-t border-gray-100">
-          <FeedbackTab data={data} />
-        </div>
-      </details>
+      {/* ARCHIVO — lo de atrás. Eran dos tarjetas blancas del mismo tamaño que
+          lo accionable, y partían la pantalla en dos mundos (reporte de
+          Marcelo 2026-08-28: "se ve cargada"). Son filas: se abren cuando se
+          las busca y mientras tanto no compiten con nada. */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
+        <details className="group">
+          <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
+              <ClipboardList size={15} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
+              My Sessions
+            </span>
+            <ChevronDown size={16} style={{ color: '#4e6a80' }} />
+          </summary>
+          <div className="px-3 pb-3 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
+            <SessionsTab data={data} />
+          </div>
+        </details>
+        <details className="group" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
+          <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
+              <MessageCircle size={15} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
+              My Feedback
+              {(data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#FF6B6B] font-bold">{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
+              )}
+            </span>
+            <ChevronDown size={16} style={{ color: '#4e6a80' }} />
+          </summary>
+          <div className="px-3 pb-3 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
+            <FeedbackTab data={data} />
+          </div>
+        </details>
+      </div>
     </div>
   );
 }

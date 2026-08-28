@@ -32,27 +32,25 @@ export function FreeSurfLogger({ token }: { token: string }) {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
 
+  // Cerrada es una FILA, no una tarjeta blanca: registrar una surfeada son dos
+  // segundos y no puede pesar lo mismo que lo que hay que trabajar hoy
+  // (reporte de Marcelo 2026-08-28: el Home "se ve cargado").
   if (!open) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,210,255,.12)' }}>
-          <SurfboardIcon />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-extrabold uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#061C2B' }}>
-            Log free surf
-          </p>
-          <p className="text-[11px] text-gray-500 leading-snug">Your free surfing counts toward your water hours.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="shrink-0 rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em]"
-          style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-plex), DM Mono, monospace' }}
-        >
-          Log it
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left"
+        style={{ background: '#0A1628' }}
+      >
+        <SurfboardIcon size={16} color="#00D2FF" />
+        <span className="flex-1 min-w-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), DM Mono, monospace', letterSpacing: '.06em', color: '#dbe8f1' }}>
+          LOG FREE SURF
+        </span>
+        <span className="shrink-0 text-[10.5px] font-semibold" style={{ color: '#00D2FF' }}>
+          Log it →
+        </span>
+      </button>
     );
   }
 
