@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { DollarSign, FileText, CheckCircle2, Send, Ban, Building2, Plus, Trash2 } from 'lucide-react';
+import { displayDate } from '@/lib/utils/tz';
 import {
   updateCoursePrice,
   upsertAcademyCoursePrice,
@@ -152,7 +153,7 @@ function PriceRow({
           {COURSE_LABELS[price.course_key] ?? price.course_key}
         </p>
         <p className="text-[11px] text-gray-400 mt-0.5">
-          Updated {new Date(price.updated_at).toLocaleDateString()}
+          Updated {displayDate(price.updated_at)}
         </p>
       </div>
       {edit ? (
@@ -288,7 +289,7 @@ function InvoiceRow({
           {invoice.academy_name ?? invoice.academy_id}
         </p>
         <p className="text-[11px] text-gray-400 mt-0.5">
-          Generated {new Date(invoice.generated_at).toLocaleDateString()}
+          Generated {displayDate(invoice.generated_at)}
         </p>
       </div>
       <span className="text-sm font-mono text-[var(--tss-navy)]">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { COURSES } from '@/lib/constants/courses';
+import { displayDate } from '@/lib/utils/tz';
 import {
   grantCourseToStudent,
   revokeCourseGrant,
@@ -142,7 +143,7 @@ export function CoursesPanel({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs text-gray-400">
-                    {new Date(g.granted_at).toLocaleDateString()}
+                    {displayDate(g.granted_at)}
                   </span>
                   {isPlatformAdmin && (
                     <button
@@ -194,7 +195,7 @@ export function CoursesPanel({
                   {courseLabel(g.course_key)}
                 </span>
                 <span className="text-[10px] text-gray-400">
-                  revoked {g.revoked_at ? new Date(g.revoked_at).toLocaleDateString() : ''}
+                  revoked {g.revoked_at ? displayDate(g.revoked_at) : ''}
                 </span>
               </div>
             ))}

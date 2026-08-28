@@ -22,6 +22,8 @@ const KIND_META: Record<string, { icon: string; label: string; color: string }> 
 export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
   studentId: string;
   beltLabel: string;
+  /** Nivel de agua del alumno. Antes acá venía "Seq N · Step M", un puntero
+   *  que nunca se movía: 997 de 1000 alumnos en la secuencia #1. */
   seqStep: string;
 }) {
   const [d, setD] = useState<Summary | null>(null);
@@ -79,7 +81,7 @@ export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
         {[
           { n: beltLabel, l: 'Nivel', accent: '#B8862B' },
-          { n: seqStep, l: 'Secuencia · Paso', accent: '#007A9E' },
+          { n: seqStep || '—', l: 'En el agua', accent: '#007A9E' },
           { n: fmtH(d.hours.totalMinutes), l: 'Horas en agua', accent: '#0C2231' },
           { n: fmtH(d.hours.trainingMinutes), l: 'Entreno', accent: '#007A9E' },
           { n: fmtH(d.hours.freeSurfMinutes), l: 'Free surf', accent: '#177A54' },

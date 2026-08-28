@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { acknowledgeIncident, type IncidentAlert } from '@/lib/actions/dashboard';
 import { incidentTypeLabel } from '@/lib/constants/brand';
 import { AlertTriangle, Check, ChevronDown } from 'lucide-react';
+import { displayDate } from '@/lib/utils/tz';
 
 // Coordinator/admin incident feed: unread badge on top, mark-as-read per
 // reported incident, and a link to the full monthly report.
@@ -58,7 +59,7 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
                     {incidentTypeLabel(inc.incident_type)}
                   </span>
                   <span className="text-[10px] text-gray-400">
-                    {inc.created_at ? new Date(inc.created_at).toLocaleDateString() : ''}
+                    {inc.created_at ? displayDate(inc.created_at) : ''}
                   </span>
                 </div>
                 <p className="text-sm text-[var(--tss-navy)] mt-1">

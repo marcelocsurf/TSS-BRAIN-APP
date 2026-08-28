@@ -5,6 +5,7 @@ import { getStepDetail, updateStepRating } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { Dumbbell, Waves, Target, BookOpen, Check, PenLine } from 'lucide-react';
+import { displayDate } from '@/lib/utils/tz';
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
@@ -108,7 +109,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
 
         {lastRated && (
           <div className="text-[11px] text-gray-400 mt-3">
-            Updated {ratingCount} {ratingCount === 1 ? 'time' : 'times'} · Last: {new Date(lastRated).toLocaleDateString()}
+            Updated {ratingCount} {ratingCount === 1 ? 'time' : 'times'} · Last: {displayDate(lastRated)}
           </div>
         )}
 
@@ -155,7 +156,7 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
             {sessionHistory.map((s: any) => (
               <div key={s.id} className="pl-3 py-1" style={{ borderLeft: `3px solid ${CYAN}66` }}>
                 <div className="text-xs text-gray-500">
-                  {new Date(s.created_at).toLocaleDateString()}
+                  {displayDate(s.created_at)}
                 </div>
                 <div className="text-sm">
                   {s.duration_minutes ? `${s.duration_minutes} min` : 'Duration not set'}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { generateAccessCodeBatch, getCodeUsageByAcademy } from '@/lib/actions/course';
+import { displayDate } from '@/lib/utils/tz';
 
 interface AccessCodeRow {
   code: string;
@@ -374,7 +375,7 @@ export function CourseCodesClient({
                           : '—'}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-gray-400 hidden lg:table-cell">
-                        {new Date(c.created_at).toLocaleDateString()}
+                        {displayDate(c.created_at)}
                       </td>
                       <td className="px-4 py-2.5">
                         {!isRedeemed && <CopyButton text={c.code} />}

@@ -67,6 +67,7 @@ import {
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
+import { displayDate } from '@/lib/utils/tz';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
 // can also write a custom one. Keys are stored as service_plans.mental_hack.
@@ -1488,7 +1489,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           {state === 'closed' && (
             <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 inline-flex items-center justify-center gap-1.5">
               <Flag size={14} strokeWidth={1.75} />
-              Finalized{plan.closed_at ? ` · ${new Date(plan.closed_at).toLocaleDateString()}` : ''}
+              Finalized{plan.closed_at ? ` · ${displayDate(plan.closed_at)}` : ''}
             </div>
           )}
         </div>

@@ -52,3 +52,23 @@ export function weekKey(tsUtc: string | Date | null | undefined): string | null 
 export function elSalvadorNowHM(): string {
   return new Date(Date.now() - SV_OFFSET_MS).toISOString().slice(11, 16);
 }
+
+/**
+ * Fecha corta para mostrar, IGUAL en el servidor y en el navegador.
+ *
+ * `new Date(x).toLocaleDateString()` sin locale usa el del entorno: el
+ * servidor de Node renderiza "7/12/2026" y el navegador del coach "12/7/2026".
+ * React ve dos textos distintos, tira un error de hidratación y MATA LA
+ * INTERACTIVIDAD de todo ese subárbol — botones y pestañas dejan de responder
+ * sin ningún mensaje visible. Encontrado en la ficha del alumno el 2026-08-27:
+ * la pestaña Progresión no abría por una fecha de un grant.
+ *
+ * Devuelve dd/mm/aaaa en hora de El Salvador, que es como se lee acá.
+ */
+export function displayDate(ts: string | Date | null | undefined): string {
+  if (!ts) return '';
+  const iso = toElSalvadorDate(ts);
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}

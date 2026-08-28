@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2, Hourglass, Check } from 'lucide-react';
+import { displayDate } from '@/lib/utils/tz';
 
 interface Props {
   portalToken: string;
@@ -51,7 +52,7 @@ export function IntakeStatusCard({ portalToken, intakeCompletedAt }: Props) {
               intakeCompletedAt ? 'text-emerald-700' : 'text-amber-700'
             }`}>
               {intakeCompletedAt
-                ? `Profile completed ${new Date(intakeCompletedAt).toLocaleDateString()}`
+                ? `Profile completed ${displayDate(intakeCompletedAt)}`
                 : 'Profile not completed yet'
               }
             </p>

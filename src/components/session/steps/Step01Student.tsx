@@ -5,6 +5,7 @@ import { getStudentWithCascadeContext } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import type { CascadeFormState, StudentCascadeContext } from '@/types/session';
 import type { CoachForAssignment } from '@/lib/actions/cascade-sessions';
+import { displayDate } from '@/lib/utils/tz';
 
 const normalize = (s: string) =>
   s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -210,7 +211,7 @@ export function Step01Student({
               <span className="text-gray-400 text-xs">Last Session</span>
               <p className="font-medium">
                 {loadedStudent.last_session_date
-                  ? new Date(loadedStudent.last_session_date).toLocaleDateString()
+                  ? displayDate(loadedStudent.last_session_date)
                   : 'None'}
               </p>
             </div>

@@ -6,6 +6,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { submitCoachIntake, type CoachProfile } from '@/lib/actions/coach-intake';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
 import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
+import { displayDate } from '@/lib/utils/tz';
 
 interface Props {
   token: string;
@@ -85,7 +86,7 @@ export function CoachProfileForm({ token, initial }: Props) {
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-start gap-2.5">
           <CheckCircle2 size={18} className="text-emerald-700 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-emerald-900 leading-relaxed">
-            Profile saved. Last updated {new Date(savedAt).toLocaleDateString()}.
+            Profile saved. Last updated {displayDate(savedAt)}.
           </p>
         </div>
       )}
