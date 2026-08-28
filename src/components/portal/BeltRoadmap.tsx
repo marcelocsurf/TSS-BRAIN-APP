@@ -149,16 +149,17 @@ export function BeltRoadmap({
   // La verdad en una línea. Solo cuenta lo que BLOQUEA (secuencias y agua):
   // el curso se ve pero no frena la cinta.
   const blocking = working.length + unseen.length + waterLeft;
-  const isOwnBelt = !!data && data.targetBelt === data.ownTargetBelt;
+  const isOwnBelt = !!data && data.fromBelt === data.ownBelt;
+  const count = (n: number) => `${n} ${n === 1 ? 'thing' : 'things'}`;
   const headline = !data
     ? ''
     : blocking === 0
-    ? isOwnBelt
+    ? isOwnBelt && !data.targetIsCurrent
       ? "You've got everything on the list. Talk to your coach about your evaluation."
-      : `You already meet everything ${data.targetBeltLabel} asks for.`
-    : isOwnBelt
-    ? `${blocking} ${blocking === 1 ? 'thing' : 'things'} left before your ${data.targetBeltLabel} evaluation.`
-    : `${blocking} ${blocking === 1 ? 'thing' : 'things'} left for ${data.targetBeltLabel}.`;
+      : `You meet everything ${data.targetBeltLabel} asks for.`
+    : isOwnBelt && !data.targetIsCurrent
+    ? `${count(blocking)} left before your ${data.targetBeltLabel} evaluation.`
+    : `${count(blocking)} left for ${data.targetBeltLabel}.`;
 
   return (
     // El fondo va SÓLIDO. Con la capa traslúcida se leía el curso por detrás
@@ -181,7 +182,13 @@ export function BeltRoadmap({
               What it takes
             </p>
             <h2 className="text-[17px] font-bold mt-0.5" style={{ color: '#eaf4fa' }}>
-              {data ? `Your road to ${data.targetBeltLabel}` : 'Your road'}
+              {!data
+                ? 'Your road'
+                : data.targetIsCurrent
+                ? // Desde acá no hay camino publicado hacia arriba: lo que se
+                  // muestra es el estándar que ya sostiene, no un destino.
+                  `Your ${data.targetBeltLabel} standard`
+                : `Your road to ${data.targetBeltLabel}`}
             </h2>
             {headline && (
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: GOLD }}>
@@ -206,9 +213,9 @@ export function BeltRoadmap({
             className="shrink-0 px-4 py-2.5 flex gap-1.5 overflow-x-auto no-scrollbar"
             style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
           >
-            {data.availableBelts.map((b) => {
-              const active = b.key === data.targetBelt;
-              const mine = b.key === data.ownTargetBelt;
+            {data.availableBelts.map((b) => {  // b.key = la cinta que se tiene
+              const active = b.key === data.fromBelt;
+              const mine = b.key === data.ownBelt;
               return (
                 <button
                   key={b.key}
@@ -251,7 +258,7 @@ export function BeltRoadmap({
                   style={{ background: 'rgba(255,255,255,.05)', color: '#8aa0b2' }}
                 >
                   The requirements for the belt after {data.targetBeltLabel} aren&apos;t published yet.
-                  This is the standard you hold today.
+                  This is the standard that belt asks for.
                 </p>
               )}
 

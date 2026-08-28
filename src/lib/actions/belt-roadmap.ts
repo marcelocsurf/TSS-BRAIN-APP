@@ -114,11 +114,21 @@ export interface BeltRoadmap {
   autonomyPrinciples: string[];
   // ── Lo último que le dijo su coach ──
   coachFocus: string | null;
-  /** Las cintas con requisitos publicados, para poder mirar cualquiera. */
-  availableBelts: Array<{ key: string; label: string }>;
-  /** La cinta que le toca a ÉL (para marcarla entre las demás). */
-  ownTargetBelt: string;
+  /** Las cintas desde las que se puede mirar el camino. `key` es la cinta que
+   *  se TIENE; `leadsTo` la que se persigue desde ahí. */
+  availableBelts: Array<{ key: string; label: string; leadsTo: string }>;
+  /** La cinta que se está mirando COMO PUNTO DE PARTIDA. */
+  fromBelt: string;
+  /** La cinta que él tiene de verdad (para marcarla entre las demás). */
+  ownBelt: string;
 }
+
+/** Rótulo para las cintas que no tienen regla publicada. */
+const BELT_LABEL: Record<string, string> = {
+  purple_belt: 'Purple Belt',
+  brown_belt: 'Brown Belt',
+  black_belt: 'Black Belt',
+};
 
 const BELT_ORDER: BeltLevel[] = [
   'white_belt',
@@ -153,7 +163,7 @@ export async function getBeltRoadmap(
   /** Mirar los requisitos de OTRA cinta (Marcelo 2026-08-28: "si pongo en
    *  white que salga ese, si pongo blue que salga ese"). Sin esto, la que le
    *  toca. */
-  beltOverride?: string,
+  fromBeltOverride?: string,
 ): Promise<{ ok: true; data: BeltRoadmap } | { ok: false; error: string }> {
   if (!token) return { ok: false, error: 'Missing token.' };
   const admin = createAdminClient();
@@ -165,18 +175,32 @@ export async function getBeltRoadmap(
     .maybeSingle();
   if (!student) return { ok: false, error: 'Student not found.' };
 
-  const currentBelt = (student as any).belt_level || 'white_belt';
-  const candidate = nextBelt(currentBelt);
-  // Solo White, Yellow y Blue tienen requisitos publicados. Para las de arriba
-  // se muestra el estándar de la cinta que ya tiene — decir "no publicado" es
-  // más honesto que inventar una regla.
-  const ownTargetBelt =
-    candidate && GRADUATION_RULES[candidate] ? candidate : currentBelt;
-  // La cinta que se está mirando: la pedida si tiene requisitos publicados,
-  // si no la suya. Un valor inventado nunca pasa de acá.
+  const ownBelt = (student as any).belt_level || 'white_belt';
+  // Se elige la cinta que se TIENE y la guía muestra a dónde lleva (Marcelo
+  // 2026-08-28: "el white es your road to yellow, y yellow your road to blue").
+  // Un valor inventado nunca pasa de acá.
+  const fromBelt =
+    fromBeltOverride && BELT_ORDER.includes(fromBeltOverride as BeltLevel)
+      ? fromBeltOverride
+      : ownBelt;
+  const candidate = nextBelt(fromBelt);
+  // Solo White, Yellow y Blue tienen requisitos publicados. Desde Blue en
+  // adelante se muestra el estándar de la cinta que ya tiene — decir "todavía
+  // no está publicado" es más honesto que inventar una regla.
   const targetBelt =
-    beltOverride && GRADUATION_RULES[beltOverride] ? beltOverride : ownTargetBelt;
-  const rule = GRADUATION_RULES[targetBelt] ?? GRADUATION_RULES.white_belt;
+    candidate && GRADUATION_RULES[candidate] ? candidate : fromBelt;
+  const rule = GRADUATION_RULES[targetBelt] ?? GRADUATION_RULES.blue_belt;
+  // Desde dónde se puede mirar: las cintas cuyo siguiente escalón tiene
+  // requisitos, más la propia (para que siempre encuentre la suya).
+  const fromOptions = Array.from(
+    new Set([
+      ...BELT_ORDER.filter((b) => {
+        const nx = nextBelt(b);
+        return !!(nx && GRADUATION_RULES[nx]);
+      }),
+      ownBelt,
+    ]),
+  ).sort((a, b) => BELT_ORDER.indexOf(a as BeltLevel) - BELT_ORDER.indexOf(b as BeltLevel));
 
   // Las secuencias, con el MISMO corte acumulativo que usa la evaluación del
   // coach: getMySequence(belt) trae White→…→belt.
@@ -293,15 +317,24 @@ export async function getBeltRoadmap(
     ok: true,
     data: {
       studentFirstName: (student as any).first_name ?? 'there',
-      currentBelt,
+      currentBelt: ownBelt,
       targetBelt,
       targetBeltLabel: rule.beltLabel,
-      targetIsCurrent: targetBelt === currentBelt && targetBelt === ownTargetBelt,
-      ownTargetBelt,
-      availableBelts: BELT_ORDER.filter((b) => GRADUATION_RULES[b]).map((b) => ({
-        key: b,
-        label: GRADUATION_RULES[b].beltLabel,
-      })),
+      // true = desde esta cinta no hay camino publicado hacia arriba.
+      targetIsCurrent: targetBelt === fromBelt,
+      fromBelt,
+      ownBelt,
+      availableBelts: fromOptions.map((b) => {
+        const nx = nextBelt(b);
+        return {
+          key: b,
+          label: GRADUATION_RULES[b]?.beltLabel ?? BELT_LABEL[b] ?? b,
+          leadsTo:
+            nx && GRADUATION_RULES[nx]
+              ? GRADUATION_RULES[nx].beltLabel
+              : (GRADUATION_RULES[b]?.beltLabel ?? BELT_LABEL[b] ?? b),
+        };
+      }),
       passStars: rule.stpThreshold,
       sequences,
       sequencesOwned: sequences.filter((s) => s.state === 'owned').length,
