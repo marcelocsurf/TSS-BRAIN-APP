@@ -285,10 +285,20 @@ export function FinalCampEvaluation({
     // Focus para su próxima etapa: OBLIGATORIO para cerrar el camp.
     const missingFocus = students.filter((s) => (nextFocus[s.student_id]?.trim().length ?? 0) < 5);
     if (missingFocus.length > 0) {
-      alert(
-        `Write the "Next focus" for: ${missingFocus.map((s) => s.display_name.split(' ')[0]).join(', ')}.\n\nWhat should each of them keep working on after this camp? It shows in their portal and guides their next coach.`
-      );
+      // No alcanza con avisar: con 17 secuencias por alumno el campo que falta
+      // queda lejos, y el coach se queda mirando el aviso sin saber dónde ir.
+      // Se le abre el alumno y se lo lleva hasta el campo.
+      const first = missingFocus[0];
+      setOpenStudent(first.student_id);
       setConfirming(false);
+      alert(
+        `Falta "Next focus" para: ${missingFocus.map((s) => s.display_name.split(' ')[0]).join(', ')}.\n\nEs lo que el alumno ve en su portal y con lo que su próximo coach planea. Te llevo al campo.`
+      );
+      setTimeout(() => {
+        const el = document.getElementById(`next-focus-${first.student_id}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (el as HTMLTextAreaElement | null)?.focus();
+      }, 150);
       return;
     }
     const payload: Array<{ student_id: string; step_id: string; rating: number }> = [];
@@ -336,10 +346,26 @@ export function FinalCampEvaluation({
           className="text-white px-4 py-5 shrink-0"
           style={{ background: BRAND.colors.navy }}
         >
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">
-            Final official evaluation
-          </p>
-          <h2 className="text-base font-bold mt-0.5">{campName}</h2>
+          {/* Salir. Antes la única forma de cerrar era bajar hasta el fondo y
+              tocar "Later": con 17 secuencias por alumno eso es mucho scroll,
+              y si el guardado devolvía un error se sentía como quedar
+              atrapado. Lo ya guardado por alumno no se pierde al cerrar. */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">
+                Final official evaluation
+              </p>
+              <h2 className="text-base font-bold mt-0.5">{campName}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onCancel}
+              aria-label="Cerrar"
+              className="shrink-0 -mt-1 -mr-1 w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <span className="text-xl leading-none">×</span>
+            </button>
+          </div>
           <p className="text-[11px] text-white/70 mt-1">
             Rate every step of the sequence for every student. These cyan
             stars become the official The Surf Sequence record in their portal.
@@ -611,6 +637,7 @@ export function FinalCampEvaluation({
                         )}
                       </div>
                       <textarea
+                        id={`next-focus-${s.student_id}`}
                         value={nextFocus[s.student_id] ?? ''}
                         onChange={(e) => setNextFocus((prev) => ({ ...prev, [s.student_id]: e.target.value }))}
                         rows={2}
