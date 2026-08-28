@@ -16,6 +16,12 @@ export interface ServiceDaySummary {
   day_number: number;
   session_date: string;
   completion_state: 'planned' | 'in_progress' | 'closed';
+  // El día está DADO cuando camp_sessions.session_status = 'completed' — es
+  // el último write de closeServicePlan (candado de pago) y la única prueba
+  // de que la sesión del alumno existe. `completion_state` puede decir
+  // 'closed' sin que el día se haya dado (planes sembrados), así que el
+  // cierre del camp se mide con este campo, no con aquél.
+  session_status: string | null;
 }
 
 export interface ServicePlanData {
@@ -337,7 +343,7 @@ export async function getServicePlan(
   // to the earliest non-closed day) as the "selected" day to load.
   const { data: campSessions } = await admin
     .from('camp_sessions')
-    .select('id, day_number, session_date')
+    .select('id, day_number, session_date, session_status')
     .eq('camp_instance_id', campInstanceId)
     .order('day_number');
   const sessions = campSessions ?? [];
@@ -364,6 +370,7 @@ export async function getServicePlan(
     day_number: s.day_number,
     session_date: s.session_date,
     completion_state: (planBySessionId.get(s.id)?.completion_state as any) ?? 'planned',
+    session_status: s.session_status ?? null,
   }));
 
   // Pick the day to load. Order of preference:
@@ -1433,10 +1440,38 @@ export async function closeCampFinal(
     return { ok: false, error: 'You are not assigned to this service.' };
   }
 
+  // CERRAR TODOS LOS DÍAS ES OBLIGATORIO (Marcelo 2026-08-28): "así es parte
+  // del sistema del coach y los obliga a hacerlo".
+  //
+  // Sin el cierre del día no existe la sesión del alumno — y sin sesión no hay
+  // bitácora, ni horas de agua, ni encuesta del coach: el acta quedaba escrita
+  // sobre el vacío (camp DEMO: 3 días, 0 sesiones, acta firmada). El día DADO
+  // se mide por session_status='completed', que closeServicePlan escribe de
+  // último; un plan marcado 'closed' sin ese sello NO cuenta.
+  //
+  // Solo aplica al cierre del camp. El guardado alumno por alumno y el short
+  // camp (finalize:false) siguen libres — pasan a mitad de semana.
+  let diasAbiertos: Array<{ day_number: number; session_date: string }> = [];
+  if (finalize) {
+    const { data: diasCamp } = await admin
+      .from('camp_sessions')
+      .select('day_number, session_date, session_status')
+      .eq('camp_instance_id', campInstanceId)
+      .order('day_number');
+    diasAbiertos = (diasCamp ?? [])
+      .filter((d: any) => d.session_status !== 'completed' && d.session_status !== 'cancelled')
+      .map((d: any) => ({ day_number: d.day_number, session_date: d.session_date }));
+  }
+  // Bloqueado = se pidió finalizar pero faltan días. Lo que el coach ya
+  // escribió (estrellas, acta, nivel de agua, next focus) SÍ se guarda: se
+  // trata como el guardado por alumno, y al final se devuelve el error.
+  const bloqueadoPorDias = finalize && diasAbiertos.length > 0;
+  const finalizeNow = finalize && !bloqueadoPorDias;
+
   // M150 — the final evaluation (normal OR forced-early) is the moment the
   // coach-rating survey unlocks for every student: take each student's most
   // recent session result of this camp and unlock it.
-  if (finalize) try {
+  if (finalizeNow) try {
     const { data: campSess } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
     const sessIds = (campSess ?? []).map((x: any) => x.id);
     if (sessIds.length) {
@@ -1458,7 +1493,7 @@ export async function closeCampFinal(
   // como paso 2 del survey de entreno y el host puede perseguirla por
   // WhatsApp. Idempotente (UNIQUE camp+alumno). Best-effort: nunca traba
   // el cierre del camp.
-  if (finalize) try {
+  if (finalizeNow) try {
     const { data: expParts } = await admin
       .from('camp_participants')
       .select('student_id, enrollment_status')
@@ -1661,7 +1696,27 @@ export async function closeCampFinal(
   // hasta acá y marcaba el camp ENTERO como completed + mandaba el correo de
   // encuesta a TODOS a mitad de camp (latente desde M153 — solo se disparaba
   // el último día, por eso nunca se vio).
-  if (!finalize) return { ok: true };
+  if (!finalizeNow) {
+    if (bloqueadoPorDias) {
+      const fecha = (iso: string) => {
+        const [, m, d] = (iso ?? '').split('-');
+        return m && d ? ` (${d}/${m})` : '';
+      };
+      const lista = diasAbiertos
+        .map((d) => `Día ${d.day_number}${fecha(d.session_date)}`)
+        .join(', ');
+      return {
+        ok: false,
+        error:
+          (diasAbiertos.length === 1 ? 'Falta cerrar ' : 'Faltan cerrar ') +
+          lista +
+          '. Tu evaluación quedó guardada. Cerrá ' +
+          (diasAbiertos.length === 1 ? 'ese día' : 'esos días') +
+          ' (Dar la clase → Cerrar la clase) y volvé a finalizar: sin el cierre del día el alumno se queda sin sesión en su bitácora y sin encuesta del coach.',
+      };
+    }
+    return { ok: true };
+  }
 
   await admin
     .from('camp_instances')

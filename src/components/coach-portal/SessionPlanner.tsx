@@ -391,7 +391,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         // Simple lessons (surf_lesson / Discover Surfing) close with the
         // per-student general analysis instead — no 25-STP belt eval.
         if (isLastDay && usesBeltEvaluation(data.camp.service_kind)) {
-          setShowFinalEval(true);
+          // Si quedaron días sin cerrar, la evaluación final no abre: el
+          // servidor la va a rechazar igual. Se le dice cuáles faltan.
+          if (otherOpenDays.length === 0) {
+            setShowFinalEval(true);
+          } else {
+            alert(
+              `Antes de la evaluación final faltan cerrar: ${otherOpenDays.map(dayLabel).join(', ')}.\n\n` +
+                'Sin el cierre del día el alumno se queda sin esa sesión en su bitácora y sin encuesta del coach.',
+            );
+          }
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e: any) {
@@ -437,7 +446,38 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const [finalSaved, setFinalSaved] = useState<Set<string>>(
     () => new Set((data as any).finalEvaluatedIds ?? []),
   );
-  const allDaysClosed = data.daySummaries.length > 0 && data.daySummaries.every((d) => d.completion_state === 'closed');
+  // Cerrar TODOS los días es obligatorio para finalizar el camp (Marcelo
+  // 2026-08-28). El día cuenta como DADO con el sello de cierre
+  // (session_status='completed'), el MISMO criterio que exige el servidor —
+  // un plan marcado 'closed' sin ese sello no cuenta, y la pantalla no puede
+  // decir "listo" para que el servidor después diga que no.
+  const dayGiven = (d: { session_status: string | null }) =>
+    d.session_status === 'completed' || d.session_status === 'cancelled';
+  const openDays = data.daySummaries.filter((d) => !dayGiven(d));
+  const allDaysClosed = data.daySummaries.length > 0 && openDays.length === 0;
+  // Los que faltan aparte del día que el coach tiene abierto ahora: al cerrar
+  // el último día, `data` todavía no refleja ese cierre.
+  const otherOpenDays = openDays.filter(
+    (d) => d.camp_session_id !== data.selectedDay.camp_session_id,
+  );
+  const dayLabel = (d: { day_number: number; session_date: string }) => {
+    const [, m, dd] = (d.session_date ?? '').split('-');
+    return m && dd ? `Día ${d.day_number} (${dd}/${m})` : `Día ${d.day_number}`;
+  };
+  // Días sueltos que BLOQUEAN el cierre. No se avisa a mitad de camp (que el
+  // día 3 esté abierto el día 1 es lo normal): solo cuando ya toca finalizar
+  // — el último día ya está dado, o el camp terminó y quedaron días sin dar.
+  const svTodayISO = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+  const lastDaySummary = data.daySummaries.find((d) => d.day_number === lastDayNumber);
+  const timeToFinalize =
+    (lastDaySummary ? dayGiven(lastDaySummary) : false) ||
+    (data.camp.end_date ?? '') < svTodayISO;
+  const pendingDaysBlock =
+    usesBeltEvaluation(data.camp.service_kind) &&
+    (data.camp as any).status !== 'completed' &&
+    timeToFinalize
+      ? openDays
+      : [];
   const finalPendingCount = students.filter((s) => !finalSaved.has(s.student_id)).length;
   const finalEvalPending =
     allDaysClosed &&
@@ -583,6 +623,35 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
   return (
     <div className="space-y-4 pb-32">
+      {/* 🔒 Cerrar todos los días es obligatorio para finalizar el camp.
+          Aparece cuando ya es hora de cerrar (el último día está dado o el
+          camp terminó) y quedaron días sueltos: cada día es un toque para
+          ir a darlo. Sin ese cierre el alumno no tiene sesión, ni horas de
+          agua, ni encuesta del coach. */}
+      {pendingDaysBlock.length > 0 && (
+        <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3.5">
+          <p className="text-[13px] font-bold text-amber-900">
+            📌 Faltan cerrar {pendingDaysBlock.length === 1 ? 'un día' : `${pendingDaysBlock.length} días`}
+          </p>
+          <p className="text-[11px] text-amber-700 mt-0.5">
+            El camp no se puede finalizar hasta cerrarlos. Sin el cierre del día el alumno se queda sin
+            esa sesión en su bitácora y sin encuesta del coach.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
+            {pendingDaysBlock.map((d) => (
+              <button
+                key={d.camp_session_id}
+                type="button"
+                onClick={() => onSwitchDay?.(d.day_number)}
+                className="rounded-full bg-amber-200 text-amber-900 px-3 py-1.5 text-[11px] font-bold hover:bg-amber-300"
+              >
+                {dayLabel(d)} →
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* M153 — the final evaluation stays reachable until EVERY student is
           evaluated (Stanley case: filled 1, closed the app, lost the rest). */}
       {finalEvalPending && !showFinalEval && (
@@ -719,6 +788,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <FinalCampEvaluation
           token={token}
           campInstanceId={data.camp.id}
+          openDays={openDays}
           savedIds={Array.from(finalSaved)}
           onStudentSaved={(id: string) => setFinalSaved((prev) => new Set(prev).add(id))}
           campName={data.camp.camp_name}
@@ -795,12 +865,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {data.daySummaries.map((d) => {
             const isActive = d.day_number === data.selectedDay.day_number;
-            const stateColor =
-              d.completion_state === 'closed'
-                ? '#10B981'
-                : d.completion_state === 'in_progress'
-                ? '#F59E0B'
-                : '#9CA3AF';
+            // Verde = día DADO (sello de cierre). Ámbar = empezado o con el
+            // plan cerrado a medias — todavía cuenta como pendiente.
+            const stateColor = dayGiven(d)
+              ? '#10B981'
+              : d.completion_state === 'in_progress' || d.completion_state === 'closed'
+              ? '#F59E0B'
+              : '#9CA3AF';
             return (
               <button
                 key={d.camp_session_id}

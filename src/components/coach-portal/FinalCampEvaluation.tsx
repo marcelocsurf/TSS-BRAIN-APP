@@ -61,9 +61,20 @@ export function FinalCampEvaluation({
   savedIds,
   onStudentSaved,
   earlyMode = false,
+  openDays = [],
 }: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
   /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
-  earlyMode?: boolean }) {
+  earlyMode?: boolean;
+  /** Días del camp sin cerrar. Con uno solo el camp NO se puede finalizar
+      (el servidor lo rechaza): acá se muestra cuáles faltan en vez de
+      dejar que el coach llene todo y choque contra el error. */
+  openDays?: Array<{ day_number: number; session_date: string }> }) {
+  const openDaysLabel = openDays
+    .map((d) => {
+      const [, m, dd] = (d.session_date ?? '').split('-');
+      return m && dd ? `Día ${d.day_number} (${dd}/${m})` : `Día ${d.day_number}`;
+    })
+    .join(', ');
   // Recorrido del camp por alumno (qué misión/STP/drill trabajó cada día) —
   // sin esto el coach evaluaba a ciegas: solo veía el día seleccionado.
   const [weekMissions, setWeekMissions] = useState<Record<string, Array<{ day: number; items: string[] }>> | null>(null);
@@ -399,9 +410,14 @@ export function FinalCampEvaluation({
                   <p className="text-[13px] text-gray-500 mt-1">
                     Everyone was closed out early (short camp) with their official evaluation saved. Finalize the camp to wrap it up.
                   </p>
+                  {openDays.length > 0 && (
+                    <p className="mt-3 text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                      Faltan cerrar: <strong>{openDaysLabel}</strong>. El camp no se finaliza hasta cerrarlos.
+                    </p>
+                  )}
                   <button
                     type="button"
-                    disabled={pending}
+                    disabled={pending || openDays.length > 0}
                     onClick={() => startTransition(async () => {
                       try {
                         const res = await closeCampFinal(token, campInstanceId, [], [], [], { finalize: true });
@@ -690,7 +706,14 @@ export function FinalCampEvaluation({
             >
               Later
             </button>
-            {!earlyMode && (
+            {!earlyMode && (openDays.length > 0 ? (
+              <div className="flex-1 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
+                <p className="text-[11px] font-bold text-amber-900">Faltan cerrar: {openDaysLabel}</p>
+                <p className="text-[10px] text-amber-700 leading-snug">
+                  Guardá alumno por alumno, cerrá {openDays.length === 1 ? 'ese día' : 'esos días'} y volvé para finalizar.
+                </p>
+              </div>
+            ) : (
               <button
                 type="button"
                 onClick={() => setConfirming(true)}
@@ -700,7 +723,7 @@ export function FinalCampEvaluation({
               >
                 {pending ? 'Saving…' : 'Finalize camp'}
               </button>
-            )}
+            ))}
           </div>
         )}
       </div>
