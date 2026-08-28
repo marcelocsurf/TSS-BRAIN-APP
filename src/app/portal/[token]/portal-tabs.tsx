@@ -1317,7 +1317,7 @@ function HomeTab({
             <ChevronDown size={16} style={{ color: '#4e6a80' }} />
           </summary>
           <div className="px-3 pb-3 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
-            <SessionsTab data={data} />
+            <SessionsTab data={data} onDark />
           </div>
         </details>
         <details className="group" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
@@ -1332,7 +1332,7 @@ function HomeTab({
             <ChevronDown size={16} style={{ color: '#4e6a80' }} />
           </summary>
           <div className="px-3 pb-3 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
-            <FeedbackTab data={data} />
+            <FeedbackTab data={data} onDark />
           </div>
         </details>
       </div>
@@ -1434,7 +1434,7 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
 // TAB 2: SESSIONS (improved with expanded details)
 // ═══════════════════════════════════════
 
-function SessionsTab({ data }: { data: PortalData }) {
+function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: boolean }) {
   const { sessions, selfTrainingSessions, surveyResultIds, hasSurveyEver } = data;
   const closedMultiBlock = data.closedMultiBlock ?? [];
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1468,7 +1468,7 @@ function SessionsTab({ data }: { data: PortalData }) {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
+      <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
         Session History ({allSessions.length})
       </h2>
       {allSessions.map((session: any) => {
@@ -2219,10 +2219,13 @@ function FeedbackTab({
   data,
   autoExpandFirst = false,
   initialSurveyId = null,
+  onDark = false,
 }: {
   data: PortalData;
   autoExpandFirst?: boolean;
   initialSurveyId?: string | null;
+  /** true = va dentro del bloque de archivo del Home (fondo #0A1628). */
+  onDark?: boolean;
 }) {
   const { pendingSurveys, submittedSurveys, student, token } = data;
   // Priority: ?survey=X URL param wins (deep-link from email).
@@ -2278,7 +2281,7 @@ function FeedbackTab({
       {pendingSurveys.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
+            <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
               Pending Feedback
             </h2>
             <span className="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-bold">
@@ -2339,7 +2342,7 @@ function FeedbackTab({
 
       {/* Past Feedback */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
+        <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
           Past Feedback ({submittedSurveys.length})
         </h2>
         {submittedSurveys.length === 0 ? (

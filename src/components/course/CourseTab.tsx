@@ -493,9 +493,16 @@ export function CourseTab({ data }: { data: CourseData }) {
             <SectionBlock
               key={group.id}
               title={
-                sequencePrefix(group.id, group.order)
-                  ? `Sequence ${sequencePrefix(group.id, group.order)}: ${group.name}`
-                  : group.name
+                // "Sequence #3: Pop-Up" · pero "Foundation: The 17 Elements",
+                // no "Sequence Foundation: …" — la palabra Sequence solo va
+                // delante de un número.
+                (() => {
+                  const p = sequencePrefix(group.id, group.order);
+                  if (!p) return group.name;
+                  return p.startsWith('#')
+                    ? `Sequence ${p}: ${group.name}`
+                    : `${p}: ${group.name}`;
+                })()
               }
               subtitle={group.subtitle}
               Icon={WB_SEQUENCE_ICON[group.id] || BookOpen}
