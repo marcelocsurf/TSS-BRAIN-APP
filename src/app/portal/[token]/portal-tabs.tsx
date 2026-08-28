@@ -48,6 +48,7 @@ let inboxReadFor: string | null = null;
 import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
+import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
@@ -350,6 +351,19 @@ export function PortalTabs({
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
 
+  // "What it takes": la guía de requisitos hacia la próxima cinta. Se abre
+  // desde el camino de cintas del Home y desde el curso; carga sus datos al
+  // abrirse, no al montar el portal.
+  const [roadmapOpen, setRoadmapOpen] = useState(false);
+
+  // Abrir UN paso puntual en Let's Play. El estado del deep-link (?step=) ya
+  // existía; lo que faltaba era usarlo desde adentro — por eso la tarjeta
+  // "Your next move" del Home se veía tocable y no hacía nada.
+  const openStepInPlay = (stepId: string) => {
+    setDeepStepId(stepId);
+    setActiveTab('sequence');
+  };
+
   const handlePracticeDrill = (drillMissionId: string) => {
     setPendingDrillMissionId(drillMissionId);
     // Stay on 'sequence' tab — Let's Play renders LinkedTrainingFlow inline.
@@ -417,10 +431,31 @@ export function PortalTabs({
             data={data}
             belt={belt}
             onGoTo={setActiveTab}
+            onOpenStep={openStepInPlay}
+            onOpenRoadmap={() => setRoadmapOpen(true)}
           />
         )}
         {activeTab === 'course' && data.courseData && (
           <div className="space-y-4">
+            {/* Qué hace falta para la próxima cinta: la evaluación del coach
+                dada vuelta. El alumno tenía las estrellas sueltas pero nunca
+                la lista completa ni la regla. */}
+            <button
+              type="button"
+              onClick={() => setRoadmapOpen(true)}
+              className="block w-full text-left rounded-2xl px-4 py-3.5"
+              style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
+            >
+              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+                What it takes
+              </p>
+              <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
+                Everything you need for your next belt
+              </p>
+              <p className="text-[12px] text-white/60 mt-0.5">
+                The same list your coach fills in — sequences, water, course.
+              </p>
+            </button>
             <CourseTab data={data.courseData} />
             {/* Las presentaciones otorgadas viven en COURSE, no en el Home
                 (pedido de Marcelo 2026-08-25). Es el mismo lugar que ya usa
@@ -540,6 +575,15 @@ export function PortalTabs({
           />
         )}
         {activeTab === 'my-coach' && data.myCoach && <MyCoachTab data={data} />}
+
+        {/* La guía de requisitos vive sobre cualquier pestaña. */}
+        {roadmapOpen && (
+          <BeltRoadmap
+            token={data.token}
+            onClose={() => setRoadmapOpen(false)}
+            onOpenStep={openStepInPlay}
+          />
+        )}
       </div>
 
       {/* Bottom Tab Bar — active tab gets a 2px cyan rule on top so the
@@ -596,12 +640,15 @@ function HomeTab({
   belt,
   onGoTo,
   onOpenStep,
+  onOpenRoadmap,
 }: {
   data: PortalData;
   belt: any;
   onGoTo: (tab: Tab) => void;
   /** Abre un paso puntual en Let's Play. */
   onOpenStep?: (stepId: string) => void;
+  /** Abre la guía de requisitos de la próxima cinta. */
+  onOpenRoadmap?: () => void;
 }) {
   const { student, sessions, totalSessions, streak, selfTrainingCount, totalTrainingMinutes, drillsPracticed, recentDrills } = data;
   // 🔔 Mensajes del coach unificados en la campana (pedido Marcelo 2026-08-25):
@@ -1022,9 +1069,18 @@ function HomeTab({
             <p className="text-[9.5px]" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
           </div>
 
-          {/* Belt journey strip */}
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <p className="text-[9px] font-mono uppercase tracking-wider mb-3" style={{ color: '#8aa0b2' }}>Your belt journey</p>
+          {/* Belt journey strip — es también la puerta a "qué me falta": el
+              alumno mira su camino y ahí mismo pregunta cómo se avanza. */}
+          <button
+            type="button"
+            onClick={() => onOpenRoadmap?.()}
+            className="block w-full text-left rounded-2xl p-4"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>Your belt journey</p>
+              <span className="text-[10.5px] font-semibold" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
+            </div>
             <div className="flex items-center justify-between">
               {BELT_HIERARCHY.map((b, i) => {
                 const d = BELT_DISPLAY[b];
@@ -1052,7 +1108,7 @@ function HomeTab({
                 );
               })}
             </div>
-          </div>
+          </button>
 
           {/* Ficha completa al 100% → acceso de consulta al FONDO del cockpit
               (antes quedaba a mitad del Home — revisión). También es HP. */}

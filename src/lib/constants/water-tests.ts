@@ -25,6 +25,9 @@ export interface WaterTest {
   name: string;
   /** Qué demuestra de verdad — el modo de falla que cubre. */
   proves: string;
+  /** Lo mismo en inglés: lo que ve el ALUMNO en su portal. */
+  nameEn: string;
+  provesEn: string;
   /** Unidad de lo que se mide. */
   unit: 'min' | 'm' | null;
 }
@@ -34,30 +37,40 @@ export const WATER_TESTS: WaterTest[] = [
     key: 'float',
     name: 'Flotar sin tabla',
     proves: 'Que no entra en pánico si pierde la tabla.',
+    nameEn: 'Float without your board',
+    provesEn: "You don't panic when your board is gone.",
     unit: 'min',
   },
   {
     key: 'swim',
     name: 'Nadar sin tabla',
     proves: 'Que vuelve solo si se revienta el leash.',
+    nameEn: 'Swim without your board',
+    provesEn: 'You get yourself back in if the leash snaps.',
     unit: 'm',
   },
   {
     key: 'board_recovery',
     name: 'Recuperar la tabla y subirse donde no toca fondo',
     proves: 'El modo de falla que pasa siempre.',
+    nameEn: 'Get your board back where you cannot stand',
+    provesEn: 'The one that happens to everybody, every session.',
     unit: null,
   },
   {
     key: 'turtle_roll',
     name: 'Turtle roll bajo espuma',
     proves: 'Que puede salir cuando entra serie.',
+    nameEn: 'Turtle roll under whitewater',
+    provesEn: 'You can get out when a set comes through.',
     unit: null,
   },
   {
     key: 'paddle',
     name: 'Remada sostenida',
     proves: 'Que aguanta la corriente y vuelve.',
+    nameEn: 'Sustained paddling',
+    provesEn: 'You can hold against the current and come back.',
     unit: 'min',
   },
 ];
@@ -99,6 +112,22 @@ export const LEVEL_REQUIREMENTS: Partial<Record<OceanLevel, LevelRequirement[]>>
     { test: 'paddle', target: 10 },
   ],
 };
+
+// ═══ LA FLOTADA LARGA ═══
+// Marca de honor, idea de Marcelo (2026-08-28): "poner 15+ flotando como una
+// opción avanzada súper". No la pide NINGÚN nivel — el nivel más alto pide 10.
+// Es lo que se busca cuando ya no queda nada que probar: quince minutos en el
+// agua sin tabla y sin apuro.
+//
+// No necesita tabla nueva: es un resultado de `float` con measured >= 15.
+export const LONG_FLOAT_MINUTES = 15;
+export const LONG_FLOAT_LABEL_EN = 'The long float — 15+ minutes';
+export const LONG_FLOAT_LABEL_ES = 'La flotada larga — 15+ minutos';
+
+/** ¿Este resultado de flote alcanza la marca de honor? */
+export function isLongFloat(testKey: string, measured: number | null | undefined): boolean {
+  return testKey === 'float' && (measured ?? 0) >= LONG_FLOAT_MINUTES;
+}
 
 export function testByKey(key: string): WaterTest | undefined {
   return WATER_TESTS.find((t) => t.key === key);
