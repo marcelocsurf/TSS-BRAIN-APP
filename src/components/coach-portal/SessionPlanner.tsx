@@ -385,6 +385,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           completion_state: 'closed',
           closed_at: new Date().toISOString(),
         }));
+        setClosedNow((prev) => new Set(prev).add(data.selectedDay.camp_session_id));
         flash('🏁 Day finalized');
         // If this was the last day of a BELT camp, surface the final
         // official evaluation (rate every STP per student → graduation).
@@ -436,6 +437,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // 📅 Vista semana (planner tipo Excel) — solo camps multi-día.
   const [showWeek, setShowWeek] = useState(false);
   const router = useRouter();
+  // Días cerrados en esta misma pantalla (el fetch inicial no los conoce).
+  const [closedNow, setClosedNow] = useState<Set<string>>(() => new Set());
   // Short camp: cerrar UN alumno hoy (evaluación oficial + encuestas del día).
   const [earlyPickerOpen, setEarlyPickerOpen] = useState(false);
   const [earlyStudentId, setEarlyStudentId] = useState<string | null>(null);
@@ -451,8 +454,15 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   // (session_status='completed'), el MISMO criterio que exige el servidor —
   // un plan marcado 'closed' sin ese sello no cuenta, y la pantalla no puede
   // decir "listo" para que el servidor después diga que no.
-  const dayGiven = (d: { session_status: string | null }) =>
-    d.session_status === 'completed' || d.session_status === 'cancelled';
+  // `data` se cargó al abrir el planner y NO se vuelve a leer al cerrar un día
+  // (el padre solo refetchea al abrir o al cambiar de día). Sin esto, el día que
+  // el coach ACABA de cerrar seguía contando como abierto: al terminar el último
+  // día se abría la evaluación final y adentro el pie decía "faltan cerrar Día 5"
+  // — el día que acababa de cerrar — y le escondía el botón de finalizar.
+  const dayGiven = (d: { camp_session_id: string; session_status: string | null }) =>
+    d.session_status === 'completed' ||
+    d.session_status === 'cancelled' ||
+    closedNow.has(d.camp_session_id);
   const openDays = data.daySummaries.filter((d) => !dayGiven(d));
   const allDaysClosed = data.daySummaries.length > 0 && openDays.length === 0;
   // Los que faltan aparte del día que el coach tiene abierto ahora: al cerrar
@@ -479,11 +489,15 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       ? openDays
       : [];
   const finalPendingCount = students.filter((s) => !finalSaved.has(s.student_id)).length;
+  // Con los días cerrados y el camp sin finalizar SIEMPRE hay puerta al cierre.
+  // Antes exigía alumnos sin evaluar: el coach que los guardaba uno por uno y
+  // salía se quedaba sin banner y sin botón — el camp no se finalizaba nunca y
+  // las encuestas no salían.
   const finalEvalPending =
     allDaysClosed &&
     (data.camp as any).status !== 'completed' &&
     usesBeltEvaluation(data.camp.service_kind) &&
-    finalPendingCount > 0;
+    students.length > 0;
 
   // M47 — Drill / mission detail modal. Tapping a drill name anywhere in
   // the planner opens this with the full canonical content (description,
@@ -661,9 +675,13 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           className="w-full text-left rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3.5 flex items-center justify-between gap-3"
         >
           <div>
-            <p className="text-[13px] font-bold text-amber-900">🏁 Evaluación final pendiente</p>
+            <p className="text-[13px] font-bold text-amber-900">
+              {finalPendingCount > 0 ? '🏁 Evaluación final pendiente' : '🏁 Falta finalizar el camp'}
+            </p>
             <p className="text-[11px] text-amber-700 mt-0.5">
-              {finalPendingCount} de {students.length} alumno{students.length === 1 ? '' : 's'} sin evaluar — tu avance se guarda alumno por alumno.
+              {finalPendingCount > 0
+                ? `${finalPendingCount} de ${students.length} alumno${students.length === 1 ? '' : 's'} sin evaluar — tu avance se guarda alumno por alumno.`
+                : 'Todos evaluados. Cerrá el camp para que salgan las encuestas y quede el registro oficial.'}
             </p>
           </div>
           <span className="shrink-0 text-[11px] font-bold text-amber-900 bg-amber-200 rounded-full px-3 py-1.5">Continuar →</span>
