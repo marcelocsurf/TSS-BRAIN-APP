@@ -129,6 +129,47 @@ export function isLongFloat(testKey: string, measured: number | null | undefined
   return testKey === 'float' && (measured ?? 0) >= LONG_FLOAT_MINUTES;
 }
 
+// ═══ CUÁNDO UNA PRUEBA CUENTA COMO PASADA ═══
+//
+// Esta regla vivía copiada en la ficha del coach y en earnedOceanLevel, y la
+// guía del alumno nació con una TERCERA versión más floja: miraba solo
+// `passed` sin el nivel ni la marca. Como las marcas crecen (flotar 1 → 3 → 6
+// → 10), la prueba del nivel de abajo daba por cumplida la de arriba: el coach
+// veía el requisito en rojo y el alumno el mismo requisito en verde, en la
+// sección que es de SEGURIDAD. Una sola regla, acá.
+//
+// Se llavea por (prueba, NIVEL) porque la misma prueba se toma en varios
+// niveles con marcas distintas, y el historial no se pisa.
+
+export interface WaterTestResultRow {
+  test_key: string;
+  target_level: string;
+  passed: boolean;
+  measured: number | null;
+}
+
+/** El último resultado de cada (prueba, nivel). Las filas llegan de la más nueva a la más vieja. */
+export function lastByTestAndLevel<T extends WaterTestResultRow>(rows: T[]): Map<string, T> {
+  const last = new Map<string, T>();
+  for (const r of rows ?? []) {
+    const k = `${r.test_key}:${r.target_level}`;
+    if (!last.has(k)) last.set(k, r);
+  }
+  return last;
+}
+
+/** ¿Cumplió este requisito? Pasó la prueba DE ESE NIVEL y llegó a su marca. */
+export function meetsRequirement(
+  last: Map<string, WaterTestResultRow>,
+  level: string,
+  req: LevelRequirement,
+): boolean {
+  const r = last.get(`${req.test}:${level}`);
+  if (!r || !r.passed) return false;
+  if (req.target === null) return true;
+  return r.measured != null && Number(r.measured) >= req.target;
+}
+
 export function testByKey(key: string): WaterTest | undefined {
   return WATER_TESTS.find((t) => t.key === key);
 }

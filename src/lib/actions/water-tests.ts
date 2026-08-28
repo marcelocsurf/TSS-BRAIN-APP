@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import {
   LEVEL_REQUIREMENTS,
+  lastByTestAndLevel,
+  meetsRequirement,
   type LevelRequirement,
 } from '@/lib/constants/water-tests';
 import { OCEAN_LEVELS, type OceanLevel } from '@/lib/constants/ocean-levels';
@@ -85,12 +87,9 @@ export async function earnedOceanLevel(
   const res = await getWaterTests(studentId);
   if (!res.ok) return { earned: null, missing: [] };
 
-  // El último resultado de cada (prueba, nivel).
-  const last = new Map<string, WaterTestRow>();
-  for (const r of res.rows) {
-    const k = `${r.test_key}:${r.target_level}`;
-    if (!last.has(k)) last.set(k, r); // vienen ordenadas desc
-  }
+  // El último resultado de cada (prueba, nivel). Misma regla que la ficha del
+  // coach y que la guía del alumno — una sola, en water-tests.ts.
+  const last = lastByTestAndLevel(res.rows);
 
   const order = OCEAN_LEVELS.filter((l) => LEVEL_REQUIREMENTS[l]);
   let earned: OceanLevel | null = null;
@@ -98,19 +97,11 @@ export async function earnedOceanLevel(
 
   for (const level of order) {
     const reqs = LEVEL_REQUIREMENTS[level] ?? [];
-    const ok = reqs.every((req) => {
-      const r = last.get(`${req.test}:${level}`);
-      if (!r || !r.passed) return false;
-      if (req.target === null) return true;
-      return r.measured != null && Number(r.measured) >= req.target;
-    });
+    const ok = reqs.every((req) => meetsRequirement(last, level, req));
     if (ok && (earned === null || true)) earned = level;
     else {
       for (const req of reqs) {
-        const r = last.get(`${req.test}:${level}`);
-        const done =
-          r && r.passed && (req.target === null || (r.measured != null && Number(r.measured) >= req.target));
-        if (!done) missing.push({ level, requirement: req });
+        if (!meetsRequirement(last, level, req)) missing.push({ level, requirement: req });
       }
       break; // es acumulativo: no se salta un nivel
     }

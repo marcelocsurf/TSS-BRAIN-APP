@@ -19,6 +19,8 @@ import {
   LEVEL_REQUIREMENTS,
   requirementLabel,
   testByKey,
+  lastByTestAndLevel,
+  meetsRequirement,
 } from '@/lib/constants/water-tests';
 import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
 import { getWaterTests, recordWaterTest, type WaterTestRow } from '@/lib/actions/water-tests';
@@ -47,20 +49,11 @@ export function WaterTestsPanel({
     });
   }, [studentId]);
 
-  // El último resultado de cada (prueba, nivel) — una prueba se repite y vale
-  // la última, pero el historial no se pierde.
-  const last = new Map<string, WaterTestRow>();
-  for (const r of rows ?? []) {
-    const k = `${r.test_key}:${r.target_level}`;
-    if (!last.has(k)) last.set(k, r);
-  }
-
-  const meets = (level: OceanLevel, req: { test: string; target: number | null }) => {
-    const r = last.get(`${req.test}:${level}`);
-    if (!r || !r.passed) return false;
-    if (req.target === null) return true;
-    return r.measured != null && Number(r.measured) >= req.target;
-  };
+  // El último resultado de cada (prueba, nivel) y la regla de "cumplido" viven
+  // en water-tests.ts: la guía del alumno lee lo mismo que esta ficha.
+  const last = lastByTestAndLevel(rows ?? []);
+  const meets = (level: OceanLevel, req: { test: string; target: number | null }) =>
+    meetsRequirement(last, level, req as any);
 
   // Hasta dónde llega con pruebas pasadas. Acumulativo: no se salta un nivel.
   let earned: OceanLevel | null = null;

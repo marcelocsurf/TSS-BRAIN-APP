@@ -25,6 +25,9 @@ import {
   WATER_TESTS,
   LONG_FLOAT_MINUTES,
   isLongFloat,
+  lastByTestAndLevel,
+  meetsRequirement,
+  type WaterTestResultRow,
 } from '@/lib/constants/water-tests';
 import {
   OCEAN_LEVELS,
@@ -59,6 +62,22 @@ export interface RoadmapWaterTest {
   testedAt: string | null;
 }
 
+/** Un escalón de la escalera del agua, con lo que pide. */
+export interface RoadmapOceanLevel {
+  key: OceanLevel;
+  tier: number;
+  name: string;
+  /** Dónde puede entrar con ese nivel. */
+  cleared: string;
+  tests: RoadmapWaterTest[];
+  /** Donde está hoy. */
+  isCurrent: boolean;
+  /** El que sigue: el único que cuenta para "cuánto me falta". */
+  isNext: boolean;
+  /** Ya lo pasó (está por debajo de donde está hoy). */
+  isCleared: boolean;
+}
+
 export interface BeltRoadmap {
   studentFirstName: string;
   currentBelt: string;
@@ -81,7 +100,10 @@ export interface BeltRoadmap {
   oceanLevelProvisional: boolean;
   nextOceanLevel: OceanLevel | null;
   nextOceanLevelName: string | null;
+  /** Las pruebas del PRÓXIMO nivel — las que cuentan para "cuánto me falta". */
   waterTests: RoadmapWaterTest[];
+  /** La escalera entera: qué pide cada nivel, de abajo hacia arriba. */
+  oceanLadder: RoadmapOceanLevel[];
   longFloatMinutes: number;
   longFloatDone: boolean;
   // ── Curso ──
@@ -92,6 +114,10 @@ export interface BeltRoadmap {
   autonomyPrinciples: string[];
   // ── Lo último que le dijo su coach ──
   coachFocus: string | null;
+  /** Las cintas con requisitos publicados, para poder mirar cualquiera. */
+  availableBelts: Array<{ key: string; label: string }>;
+  /** La cinta que le toca a ÉL (para marcarla entre las demás). */
+  ownTargetBelt: string;
 }
 
 const BELT_ORDER: BeltLevel[] = [
@@ -124,6 +150,10 @@ function nextOcean(level: OceanLevel | null): OceanLevel | null {
  */
 export async function getBeltRoadmap(
   token: string,
+  /** Mirar los requisitos de OTRA cinta (Marcelo 2026-08-28: "si pongo en
+   *  white que salga ese, si pongo blue que salga ese"). Sin esto, la que le
+   *  toca. */
+  beltOverride?: string,
 ): Promise<{ ok: true; data: BeltRoadmap } | { ok: false; error: string }> {
   if (!token) return { ok: false, error: 'Missing token.' };
   const admin = createAdminClient();
@@ -140,8 +170,12 @@ export async function getBeltRoadmap(
   // Solo White, Yellow y Blue tienen requisitos publicados. Para las de arriba
   // se muestra el estándar de la cinta que ya tiene — decir "no publicado" es
   // más honesto que inventar una regla.
-  const targetBelt =
+  const ownTargetBelt =
     candidate && GRADUATION_RULES[candidate] ? candidate : currentBelt;
+  // La cinta que se está mirando: la pedida si tiene requisitos publicados,
+  // si no la suya. Un valor inventado nunca pasa de acá.
+  const targetBelt =
+    beltOverride && GRADUATION_RULES[beltOverride] ? beltOverride : ownTargetBelt;
   const rule = GRADUATION_RULES[targetBelt] ?? GRADUATION_RULES.white_belt;
 
   // Las secuencias, con el MISMO corte acumulativo que usa la evaluación del
@@ -174,31 +208,60 @@ export async function getBeltRoadmap(
   try {
     const { data } = await admin
       .from('water_tests')
-      .select('test_key, passed, measured, tested_at')
+      .select('test_key, target_level, passed, measured, tested_at')
       .eq('student_id', student.id)
       .order('tested_at', { ascending: false });
     rows = data ?? [];
   } catch {
     rows = [];
   }
-  // Vale la ÚLTIMA prueba de cada tipo (se puede repetir; el historial queda).
-  const lastByKey = new Map<string, any>();
-  for (const r of rows) if (!lastByKey.has(r.test_key)) lastByKey.set(r.test_key, r);
+  // Vale el ÚLTIMO resultado de cada (prueba, NIVEL) — la misma prueba se toma
+  // en varios niveles con marcas distintas y el historial no se pisa.
+  const lastByKey = lastByTestAndLevel(rows as WaterTestResultRow[]);
 
-  const waterTests: RoadmapWaterTest[] = reqs.map((r) => {
+  // Una prueba, con lo que se le pide y lo que ya demostró.
+  // El alumno lee inglés (voz de marca); el coach ve el nombre en español en
+  // la ficha. Misma fuente, dos rótulos.
+  const buildTest = (
+    level: string,
+    r: { test: string; target: number | null },
+  ): RoadmapWaterTest => {
     const t = WATER_TESTS.find((w) => w.key === r.test);
-    const last = lastByKey.get(r.test);
+    const last: any = lastByKey.get(`${r.test}:${level}`);
     return {
       key: r.test,
-      // El alumno lee inglés (voz de marca); el coach ve el nombre en español
-      // en la ficha. Misma fuente, dos rótulos.
       name: t?.nameEn ?? t?.name ?? r.test,
       proves: t?.provesEn ?? '',
       target: r.target,
       unit: t?.unit ?? null,
-      passed: !!last?.passed,
+      // MISMA regla que la ficha del coach: la prueba de ESE nivel, y llegando
+      // a su marca. Sin esto, flotar 1 minuto daba por cumplidos los 3.
+      passed: meetsRequirement(lastByKey, level, r as any),
       measured: last?.measured ?? null,
       testedAt: last?.tested_at ?? null,
+    };
+  };
+
+  const waterTests: RoadmapWaterTest[] = target
+    ? reqs.map((r) => buildTest(target, r))
+    : [];
+
+  // LA ESCALERA COMPLETA (pedido de Marcelo 2026-08-28: "tiene que decir todos
+  // los requisitos, no solo que sepa flotar… también lo que habíamos dicho para
+  // cada nivel"). Antes solo se veía el escalón siguiente, y el alumno no tenía
+  // forma de saber qué le van a pedir más arriba.
+  const currentTier = oceanLevel ? OCEAN_LEVEL_INFO[oceanLevel]?.tier ?? 1 : 0;
+  const oceanLadder: RoadmapOceanLevel[] = OCEAN_LEVELS.map((lv) => {
+    const info = OCEAN_LEVEL_INFO[lv];
+    return {
+      key: lv,
+      tier: info.tier,
+      name: info.name,
+      cleared: info.cleared,
+      tests: (LEVEL_REQUIREMENTS[lv] ?? []).map((r) => buildTest(lv, r)),
+      isCurrent: lv === oceanLevel,
+      isNext: lv === target,
+      isCleared: info.tier < currentTier,
     };
   });
   const longFloatDone = rows.some((r) => r.passed && isLongFloat(r.test_key, r.measured));
@@ -233,7 +296,12 @@ export async function getBeltRoadmap(
       currentBelt,
       targetBelt,
       targetBeltLabel: rule.beltLabel,
-      targetIsCurrent: targetBelt === currentBelt,
+      targetIsCurrent: targetBelt === currentBelt && targetBelt === ownTargetBelt,
+      ownTargetBelt,
+      availableBelts: BELT_ORDER.filter((b) => GRADUATION_RULES[b]).map((b) => ({
+        key: b,
+        label: GRADUATION_RULES[b].beltLabel,
+      })),
       passStars: rule.stpThreshold,
       sequences,
       sequencesOwned: sequences.filter((s) => s.state === 'owned').length,
@@ -247,6 +315,7 @@ export async function getBeltRoadmap(
       nextOceanLevel: target,
       nextOceanLevelName: target ? OCEAN_LEVEL_INFO[target]?.name ?? null : null,
       waterTests,
+      oceanLadder,
       longFloatMinutes: LONG_FLOAT_MINUTES,
       longFloatDone,
       preCourseCompleted,

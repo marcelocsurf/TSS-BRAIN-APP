@@ -110,20 +110,27 @@ export function BeltRoadmap({
 }) {
   const [data, setData] = useState<Roadmap | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Se puede mirar CUALQUIER cinta, no solo la propia (Marcelo 2026-08-28:
+  // "si pongo en white que salga ese, si pongo blue que salga ese"). null =
+  // la que le toca.
+  const [belt, setBelt] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    getBeltRoadmap(token)
+    setLoading(true);
+    getBeltRoadmap(token, belt ?? undefined)
       .then((r) => {
         if (!alive) return;
         if (r.ok) setData(r.data);
         else setError(r.error);
       })
-      .catch(() => alive && setError('Could not load your requirements.'));
+      .catch(() => alive && setError('Could not load your requirements.'))
+      .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [token]);
+  }, [token, belt]);
 
   // El fondo no scrollea mientras la guía está abierta (mismo patrón que el
   // buzón del Home).
@@ -142,19 +149,32 @@ export function BeltRoadmap({
   // La verdad en una línea. Solo cuenta lo que BLOQUEA (secuencias y agua):
   // el curso se ve pero no frena la cinta.
   const blocking = working.length + unseen.length + waterLeft;
+  const isOwnBelt = !!data && data.targetBelt === data.ownTargetBelt;
   const headline = !data
     ? ''
     : blocking === 0
-    ? "You've got everything on the list. Talk to your coach about your evaluation."
-    : `${blocking} ${blocking === 1 ? 'thing' : 'things'} left before your ${data.targetBeltLabel} evaluation.`;
+    ? isOwnBelt
+      ? "You've got everything on the list. Talk to your coach about your evaluation."
+      : `You already meet everything ${data.targetBeltLabel} asks for.`
+    : isOwnBelt
+    ? `${blocking} ${blocking === 1 ? 'thing' : 'things'} left before your ${data.targetBeltLabel} evaluation.`
+    : `${blocking} ${blocking === 1 ? 'thing' : 'things'} left for ${data.targetBeltLabel}.`;
 
   return (
-    <div className="fixed inset-0 z-[130]" style={{ background: 'rgba(6,28,43,.94)' }}>
-      <div className="h-[100dvh] max-w-lg mx-auto flex flex-col">
+    // El fondo va SÓLIDO. Con la capa traslúcida se leía el curso por detrás
+    // de la lista y la pantalla parecía rota (reporte de Marcelo con captura).
+    <div className="fixed inset-0 z-[130]" style={{ background: '#02090F' }}>
+      <div
+        className="h-[100dvh] max-w-lg mx-auto flex flex-col"
+        style={{ background: BRAND.colors.navy }}
+      >
         {/* Cabecera */}
         <div
           className="shrink-0 px-4 py-4 flex items-start justify-between gap-3"
-          style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}
+          style={{
+            borderBottom: '1px solid rgba(255,255,255,.08)',
+            background: BRAND.colors.navy,
+          }}
         >
           <div className="min-w-0">
             <p className="text-[9px] font-mono uppercase tracking-[.18em]" style={{ color: CYAN }}>
@@ -180,8 +200,38 @@ export function BeltRoadmap({
           </button>
         </div>
 
+        {/* Cualquier cinta se puede mirar: la propia viene marcada. */}
+        {data && data.availableBelts.length > 1 && (
+          <div
+            className="shrink-0 px-4 py-2.5 flex gap-1.5 overflow-x-auto no-scrollbar"
+            style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
+          >
+            {data.availableBelts.map((b) => {
+              const active = b.key === data.targetBelt;
+              const mine = b.key === data.ownTargetBelt;
+              return (
+                <button
+                  key={b.key}
+                  type="button"
+                  onClick={() => setBelt(b.key)}
+                  className="shrink-0 rounded-full px-3 py-1.5 text-[11.5px] font-semibold"
+                  style={{
+                    background: active ? CYAN : 'rgba(255,255,255,.06)',
+                    color: active ? BRAND.colors.navy : '#8aa0b2',
+                  }}
+                >
+                  {b.label}
+                  {mine && (
+                    <span className="ml-1 text-[9.5px] font-normal opacity-80">· yours</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          {!data && !error && (
+          {(!data || loading) && !error && (
             <div className="flex items-center gap-2 justify-center py-16" style={{ color: '#6f8698' }}>
               <Loader2 size={16} className="animate-spin" />
               <span className="text-[13px]">Loading your requirements…</span>
@@ -193,7 +243,7 @@ export function BeltRoadmap({
             </p>
           )}
 
-          {data && (
+          {data && !loading && (
             <>
               {data.targetIsCurrent && (
                 <p
@@ -245,48 +295,73 @@ export function BeltRoadmap({
                 )}
               </section>
 
-              {/* 2 · EL AGUA */}
+              {/* 2 · EL AGUA — la escalera entera. Antes se veía solo el escalón
+                  siguiente y el alumno no sabía qué le van a pedir más arriba
+                  (Marcelo: "tiene que decir todos los requisitos"). */}
               <section>
                 <SectionTitle
                   icon={Waves}
-                  rule="No stars here: you pass it or you don't. It's safety, not technique."
+                  rule="No stars here: you pass it or you don't — it's safety, not technique. Every level keeps what the one below asks for."
                 >
-                  In the water{data.nextOceanLevelName ? ` · toward ${data.nextOceanLevelName}` : ''}
+                  In the water
                 </SectionTitle>
-                <div className="rounded-2xl px-3.5 py-3" style={{ background: 'rgba(255,255,255,.05)' }}>
-                  {data.oceanLevelName && (
-                    <div className="pb-2 mb-1" style={{ borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-                      <p className="text-[12px]" style={{ color: '#8aa0b2' }}>
-                        Where you are today:{' '}
-                        <span style={{ color: '#eaf4fa' }}>{data.oceanLevelName}</span>
-                        {data.oceanLevelProvisional && ' (still to be confirmed in the water)'}
-                      </p>
-                      {data.oceanLevelCleared && (
+                <div className="space-y-2">
+                  {data.oceanLadder.map((lv) => {
+                    const accent = lv.isNext ? GOLD : lv.isCurrent ? CYAN : '#33506b';
+                    return (
+                      <div
+                        key={lv.key}
+                        className="rounded-2xl px-3.5 py-3"
+                        style={{
+                          background: lv.isNext || lv.isCurrent ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.03)',
+                          border: `1px solid ${lv.isNext ? 'rgba(255,209,102,.35)' : lv.isCurrent ? 'rgba(0,210,255,.28)' : 'rgba(255,255,255,.06)'}`,
+                        }}
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-[13px] font-semibold" style={{ color: lv.isCleared ? '#8aa0b2' : '#eaf4fa' }}>
+                            L{lv.tier} · {lv.name}
+                          </p>
+                          {(lv.isCurrent || lv.isNext) && (
+                            <span className="text-[9px] font-mono uppercase tracking-[.14em] shrink-0" style={{ color: accent }}>
+                              {lv.isCurrent ? 'you are here' : 'next'}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
-                          {data.oceanLevelCleared}
+                          {lv.cleared}
                         </p>
-                      )}
-                    </div>
-                  )}
-                  {data.waterTests.length === 0 ? (
-                    <p className="text-[12.5px] py-1" style={{ color: '#8aa0b2' }}>
-                      Nothing left to prove in the water at your level.
-                    </p>
-                  ) : (
-                    data.waterTests.map((t) => (
-                      <Row
-                        key={t.key}
-                        done={t.passed}
-                        title={
-                          t.target !== null && t.unit
-                            ? `${t.name} · ${t.target} ${t.unit}`
-                            : t.name
-                        }
-                        detail={t.passed ? null : t.proves}
-                      />
-                    ))
-                  )}
+                        {lv.tests.length > 0 && (
+                          <div className="mt-1.5 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                            {lv.tests.map((t) => (
+                              <Row
+                                key={`${lv.key}:${t.key}`}
+                                done={t.passed}
+                                pending={!lv.isNext}
+                                title={
+                                  t.target !== null && t.unit
+                                    ? `${t.name} · ${t.target} ${t.unit}`
+                                    : t.name
+                                }
+                                detail={
+                                  t.passed
+                                    ? t.measured != null && t.unit
+                                      ? `Done · ${t.measured} ${t.unit}`
+                                      : 'Done'
+                                    : t.proves
+                                }
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                {data.oceanLevelProvisional && (
+                  <p className="text-[11.5px] mt-2 leading-snug" style={{ color: '#6f8698' }}>
+                    Your level is still to be confirmed in the water with your coach.
+                  </p>
+                )}
                 {/* La flotada larga: no la pide ningún nivel. */}
                 <div
                   className="mt-2 rounded-2xl px-3.5 py-3"
