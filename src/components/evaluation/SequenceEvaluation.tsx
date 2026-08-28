@@ -43,6 +43,7 @@ import {
   sequenceVerdict,
   SEQUENCE_PASS_STARS,
   type SequenceGroupable,
+  sequenceLabel,
 } from '@/lib/constants/learning-blocks';
 
 export interface EvalRow extends SequenceGroupable {
@@ -106,8 +107,7 @@ export function SequenceEvaluation({
         const stars = g.rows.map((r) => starsOf(r.step_id));
         const v = sequenceVerdict(stars);
         const isOpen = open[g.id] ?? v.state === 'working';
-        const label =
-          g.order >= 1 && g.order <= 13 ? `#${g.order} · ${g.name}` : g.name;
+        const label = sequenceLabel(g.id, g.order, g.name);
         return (
           <div key={g.id} className="rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-3 py-2.5 bg-gray-50">

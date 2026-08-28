@@ -19,7 +19,7 @@ import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton'
 import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
-import { groupBySequence, sequenceVerdict } from '@/lib/constants/learning-blocks';
+import { groupBySequence, sequenceVerdict, sequenceLabel } from '@/lib/constants/learning-blocks';
 import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
@@ -310,8 +310,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       const stars = g.rows.map((r: any) => r.coach_rating ?? null);
       const v = sequenceVerdict(stars);
       if (v.state === 'owned') continue;
-      const label =
-        g.order >= 1 && g.order <= 13 ? `#${g.order} · ${g.name}` : g.name;
+      const label = sequenceLabel(g.id, g.order, g.name);
       const blocker =
         v.blockerIndex >= 0
           ? `${(g.rows[v.blockerIndex] as any).step_title ?? ''}${v.min != null ? ` · ${v.min}★` : ''}`

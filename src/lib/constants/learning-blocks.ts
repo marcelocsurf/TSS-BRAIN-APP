@@ -773,3 +773,53 @@ export function sequenceVerdict(stars: (number | null)[]): {
           : 'working';
   return { state, min, blockerIndex };
 }
+
+// ═══ QUÉ SECUENCIAS LLEVAN NÚMERO ═══
+//
+// Los escalones numerados del método son del #1 al #13. Tres secuencias NO
+// son escalones y por eso su número quedaba raro: dos se mostraban como "#14"
+// (una de Yellow y otra de Blue — dos cosas distintas con el mismo número) y
+// la base de Blue como "#0".
+//
+//   BB-SEQ-FOUND     los 17 elementos que se tienen ANTES de las maniobras
+//   BB-SEQ-CONCEPTS  los cuatro conceptos + la ola completa, al CERRAR Blue
+//   YB-SEQ-8         la ola completa + la certificación, al CERRAR Yellow
+//
+// La regla "solo del 1 al 13 lleva número" ya vivía copiada en cuatro
+// pantallas y faltaba en la quinta (la guía del alumno), que es donde se vio
+// el problema. Acá, una sola vez.
+
+export type SequenceRole = 'foundation' | 'closing';
+
+export const SEQUENCE_ROLE: Record<string, SequenceRole> = {
+  'BB-SEQ-FOUND': 'foundation',   // los 17 elementos, antes de las maniobras
+  'YB-SEQ-8': 'closing',          // la ola completa + certificación de Yellow
+  'BB-SEQ-CONCEPTS': 'closing',   // los cuatro conceptos + la ola completa
+  'BB-SEQ-EXIT': 'closing',       // auto-evaluación + certificación de Blue
+};
+
+const SEQUENCE_ROLE_LABEL: Record<SequenceRole, string> = {
+  foundation: 'Foundation',
+  closing: 'Closing',
+};
+
+/** El rótulo de la secuencia: "#8", "Foundation", "Closing" — o null. */
+export function sequencePrefix(
+  id: string | null | undefined,
+  order: number | null | undefined,
+): string | null {
+  const role = id ? SEQUENCE_ROLE[id] : undefined;
+  if (role) return SEQUENCE_ROLE_LABEL[role];
+  if (order != null && order >= 1 && order <= 13) return `#${order}`;
+  return null;
+}
+
+/** "#8 · Frontside Pumping" — o solo el nombre cuando no lleva rótulo. */
+export function sequenceLabel(
+  id: string | null | undefined,
+  order: number | null | undefined,
+  name: string,
+): string {
+  const p = sequencePrefix(id, order);
+  return p ? `${p} · ${name}` : name;
+}

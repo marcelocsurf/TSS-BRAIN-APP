@@ -7,6 +7,7 @@ import { StepDetailView } from './StepDetailView';
 import { Dumbbell, Waves, Target } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
+import { sequencePrefix } from '@/lib/constants/learning-blocks';
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
@@ -175,6 +176,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
             <BlockSection
               key={seq.id}
               belt={seq.belt}
+              blockId={seq.id}
               blockNumber={seq.order}
               blockName={seq.name}
               promise={seq.promise}
@@ -217,6 +219,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
 
 function BlockSection({
   belt: blockBelt,
+  blockId = null,
   blockNumber,
   blockName,
   promise = null,
@@ -232,6 +235,8 @@ function BlockSection({
   theme,
 }: {
   belt: string;
+  /** Id de la secuencia — decide si lleva número o rótulo (Foundation/Closing). */
+  blockId?: string | null;
   blockNumber: number;
   blockName: string;
   /** La habilidad que construye la secuencia. */
@@ -260,6 +265,14 @@ function BlockSection({
     ? ratedItems.reduce((sum, i) => sum + (effective(i) || 0), 0) / ratedCount
     : null;
 
+  // "Blue Belt · Sequence #8", o "Blue Belt · Foundation" / "· Closing" para
+  // las dos que no son escalones numerados del método.
+  const beltWord = blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1);
+  const prefix = sequencePrefix(blockId, blockNumber);
+  const seqEyebrow = prefix
+    ? `${beltWord} Belt · ${prefix.startsWith('#') ? `Sequence ${prefix}` : prefix}`
+    : `${beltWord} Belt`;
+
   return (
     <details
       open={defaultOpen}
@@ -269,9 +282,7 @@ function BlockSection({
       <summary className="px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer list-none" style={{ background: theme.tint }}>
         <div>
           <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
-            {asSequence
-              ? `${blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1)} Belt${blockNumber >= 1 && blockNumber <= 13 ? ` · Sequence #${blockNumber}` : ''}`
-              : `${blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1)} Belt · Block ${blockNumber}`}
+            {asSequence ? seqEyebrow : `${beltWord} Belt · Block ${blockNumber}`}
           </div>
           <div className="text-[13px] mt-0.5" style={{ ...F_D, color: INK }}>{blockName}</div>
           {promise && (

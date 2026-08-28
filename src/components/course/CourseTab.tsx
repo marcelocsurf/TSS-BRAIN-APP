@@ -16,6 +16,7 @@ import {
   THREE_CIRCLES_LESSON_ID,
   COURSE_SEQUENCE_ORDER,
   COURSE_SEQUENCE_STAGE,
+  sequencePrefix,
 } from '@/lib/constants/learning-blocks';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import {
@@ -492,8 +493,8 @@ export function CourseTab({ data }: { data: CourseData }) {
             <SectionBlock
               key={group.id}
               title={
-                group.order >= 1 && group.order <= 13
-                  ? `Sequence #${group.order}: ${group.name}`
+                sequencePrefix(group.id, group.order)
+                  ? `Sequence ${sequencePrefix(group.id, group.order)}: ${group.name}`
                   : group.name
               }
               subtitle={group.subtitle}

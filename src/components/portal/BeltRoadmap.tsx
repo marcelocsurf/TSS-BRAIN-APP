@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react';
 import { X, Check, Star, Waves, BookOpen, Compass, Loader2 } from 'lucide-react';
 import { BRAND } from '@/lib/constants/brand';
+import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { getBeltRoadmap, type BeltRoadmap as Roadmap } from '@/lib/actions/belt-roadmap';
 
 const CYAN = BRAND.colors.cyan;
@@ -276,7 +277,7 @@ export function BeltRoadmap({
                       key={s.id}
                       done={s.state === 'owned'}
                       pending={s.state === 'unrated' || s.state === 'partial'}
-                      title={`#${s.order} · ${s.name}`}
+                      title={sequenceLabel(s.id, s.order, s.name)}
                       detail={
                         s.state === 'owned'
                           ? null
