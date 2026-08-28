@@ -632,6 +632,45 @@ export async function logFreeSurf(
   return { ok: true };
 }
 
+// ─── Lo que el coach dejó para trabajar: ¿sigue pendiente? ───
+//
+// Marcelo (2026-08-28): "el alumno trabaja en lo que le dejó el coach, después
+// se va, sigue solo y lo domina… ¿cómo hacemos que al momento que lo entrene y
+// lo lleve a 4 deje de salir ahí?".
+//
+// La nota del coach es TEXTO: no sabe de qué paso habla. Pero cuando la
+// escribió, el coach estaba calificando — y los pasos que dejó por debajo de 4
+// SON lo que hay que trabajar. Entonces la sugerencia vive mientras alguno de
+// esos pasos siga por debajo de 4 en la nota del PROPIO alumno.
+//
+// La asimetría es a propósito: la estrella oficial del coach no se toca ni se
+// pisa — nadie se asciende solo. Lo único que cambia es que la sugerencia deja
+// de perseguirlo, y la pantalla lo dice: lo llevaste a 4, tu coach lo confirma
+// la próxima vez que te vea.
+export async function getCoachFocusState(
+  studentId: string,
+): Promise<{ flagged: number; pending: number; clearedByStudent: boolean }> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from('student_step_ratings')
+      .select('step_id, coach_rating, current_rating')
+      .eq('student_id', studentId)
+      .not('coach_rating', 'is', null)
+      .lt('coach_rating', 4);
+    const rows = data ?? [];
+    const pending = rows.filter((r: any) => (r.current_rating ?? 0) < 4).length;
+    return {
+      flagged: rows.length,
+      pending,
+      clearedByStudent: rows.length > 0 && pending === 0,
+    };
+  } catch {
+    // Es una ayuda, no el contenido: si falla, la nota se muestra como siempre.
+    return { flagged: 0, pending: 0, clearedByStudent: false };
+  }
+}
+
 // ─── Get pending surveys (sessions without survey responses) ───
 
 export async function getPendingSurveys(studentId: string) {

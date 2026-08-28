@@ -50,6 +50,7 @@ import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
+import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
@@ -196,6 +197,8 @@ interface PortalData {
   /** Los drills vienen con el curso: sin curso, no hay Let's Play. */
   hasAnyCourse?: boolean;
   /** La primera secuencia sin lograr y el paso que la frena. */
+  /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
+  coachFocusState?: { flagged: number; pending: number; clearedByStudent: boolean };
   nextMove?: {
     sequenceId?: string;
     sequenceOrder: number;
@@ -384,9 +387,9 @@ export function PortalTabs({
       <div style={{ background: brand.primary }} className="px-4 py-3 relative">
         <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
           <button type="button" onClick={() => setGuideOpen(true)} aria-label="How your portal works"
-            className="rounded-full w-7 h-7 flex items-center justify-center text-[13px]"
+            className="rounded-full w-7 h-7 flex items-center justify-center"
             style={{ background: 'rgba(255,255,255,.12)' }}>
-            📖
+            <BookOpen size={14} strokeWidth={1.75} style={{ color: '#fff' }} />
           </button>
           <LogoutButton portalToken={data.token} />
         </div>
@@ -686,6 +689,16 @@ function HomeTab({
     (data as any).standaloneEvaluation?.focus ||
     (student as any).next_recommended_focus ||
     null;
+  // La sugerencia del coach se apaga sola cuando el alumno entrena esos pasos
+  // y los lleva a 4 por su cuenta.
+  const coachFocusDone = !!(data as any).coachFocusState?.clearedByStudent;
+  // Nivel de agua CONFIRMADO por un coach. El provisional (el del quiz de
+  // ingreso) no se muestra: es lo que el alumno dice de sí mismo.
+  const oceanKey = (student as any).ocean_level as OceanLevel | null;
+  const oceanConfirmed =
+    oceanKey && !(student as any).ocean_level_provisional
+      ? OCEAN_LEVEL_INFO[oceanKey] ?? null
+      : null;
   const latestResult = sessions[0];
   const trainingHours = Math.round((totalTrainingMinutes / 60) * 10) / 10;
   const beltLevel = student.belt_level as BeltLevel;
@@ -922,17 +935,34 @@ function HomeTab({
               className="rounded-2xl overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
             >
-              {coachFocus && (
+              {coachFocus && !coachFocusDone && (
                 <div className="px-4 pt-3.5 pb-3">
                   <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
                     From your coach
                   </p>
-                  <p className="text-[14px] text-white mt-1 leading-snug">🎯 {coachFocus}</p>
+                  <p className="text-[14px] text-white mt-1 leading-snug">{coachFocus}</p>
                   {(data as any).standaloneEvaluation?.note && (
                     <p className="text-[12.5px] text-white/70 mt-1.5 leading-snug">
                       {(data as any).standaloneEvaluation.note}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* Lo entrenó solo y lo llevó a 4: la sugerencia deja de
+                  perseguirlo, pero la estrella oficial sigue siendo del coach.
+                  Se lo decimos, no se lo escondemos. */}
+              {coachFocus && coachFocusDone && (
+                <div className="px-4 pt-3.5 pb-3">
+                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: '#06D6A0' }}>
+                    You cleared it
+                  </p>
+                  <p className="text-[13.5px] text-white mt-1 leading-snug">
+                    You took what your coach left you to 4★ on your own.
+                  </p>
+                  <p className="text-[12px] text-white/60 mt-1 leading-snug">
+                    They confirm it next time they see you in the water.
+                  </p>
                 </div>
               )}
 
@@ -1119,6 +1149,31 @@ function HomeTab({
                 );
               })}
             </div>
+
+            {/* EL NIVEL EN EL AGUA (Marcelo 2026-08-28: "el nivel en el agua en
+                base a lo que el coach va validando, y que solo salga si el
+                coach lo determina").
+                Son dos líneas distintas: la cinta es la técnica, el agua es
+                dónde puede entrar solo. Mientras el nivel siga siendo
+                PROVISIONAL —el del quiz de ingreso, lo que el alumno dice de
+                sí mismo— no se muestra: decirle "sos autónomo" sin que un
+                coach lo haya visto en el agua es lo único que acá no se puede
+                hacer. */}
+            {oceanConfirmed && (
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
+                    In the water
+                  </p>
+                  <p className="text-[12.5px] font-semibold shrink-0" style={{ color: '#eaf4fa' }}>
+                    {oceanConfirmed.name}
+                  </p>
+                </div>
+                <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
+                  {oceanConfirmed.cleared}
+                </p>
+              </div>
+            )}
           </button>
 
           {/* Ficha completa al 100% → acceso de consulta al FONDO del cockpit
@@ -1650,7 +1705,7 @@ function SessionsTab({ data }: { data: PortalData }) {
                       <div className="pt-1">
                         <p className="text-xs text-gray-400 mb-1">Next Focus</p>
                         <div className="text-sm text-blue-800 bg-blue-50 rounded-xl p-2.5">
-                          🎯 {session.whats_next}
+                          {session.whats_next}
                         </div>
                       </div>
                     )}
