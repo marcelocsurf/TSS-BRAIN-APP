@@ -8,6 +8,7 @@
 // student's official The Surf Sequence evaluation for that step in their portal.
 
 import { useEffect, useState, useTransition } from 'react';
+import { X } from 'lucide-react';
 import { BRAND } from '@/lib/constants/brand';
 import { StarRating } from '@/components/sequence/StarRating';
 import { closeCampFinal, getCampWeekMissionsByToken } from '@/lib/actions/service-planner';
@@ -374,7 +375,7 @@ export function FinalCampEvaluation({
               aria-label="Cerrar"
               className="shrink-0 -mt-1 -mr-1 w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10"
             >
-              <span className="text-xl leading-none">×</span>
+              <X size={18} strokeWidth={2.5} />
             </button>
           </div>
           <p className="text-[11px] text-white/70 mt-1">

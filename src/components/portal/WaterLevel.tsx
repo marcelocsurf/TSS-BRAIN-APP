@@ -51,7 +51,7 @@ export function WaterLevel({ token, onClose }: { token: string; onClose: () => v
           style={{ borderBottom: '1px solid rgba(255,255,255,.08)', background: BRAND.colors.navy }}
         >
           <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-[.18em]" style={{ color: CYAN }}>
+            <p className="text-[9px] uppercase tracking-[.16em]" style={{ color: CYAN, fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500 }}>
               In the water
             </p>
             <h2 className="text-[17px] font-bold mt-0.5" style={{ color: '#eaf4fa' }}>
@@ -99,7 +99,7 @@ export function WaterLevel({ token, onClose }: { token: string; onClose: () => v
               )}
 
               {data.ladder.map((lv) => {
-                const accent = lv.isNext ? GOLD : lv.isCurrent ? CYAN : '#33506b';
+                const accent = lv.isNext ? GOLD : lv.isCurrent ? CYAN : 'rgba(255,255,255,.18)';
                 return (
                   <div
                     key={lv.key}
@@ -114,7 +114,7 @@ export function WaterLevel({ token, onClose }: { token: string; onClose: () => v
                         L{lv.tier} · {lv.name}
                       </p>
                       {(lv.isCurrent || lv.isNext) && (
-                        <span className="text-[9px] font-mono uppercase tracking-[.14em] shrink-0" style={{ color: accent }}>
+                        <span className="text-[9px] uppercase tracking-[.16em] shrink-0" style={{ color: accent, fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500 }}>
                           {lv.isCurrent ? 'you are here' : 'next'}
                         </span>
                       )}
@@ -132,7 +132,7 @@ export function WaterLevel({ token, onClose }: { token: string; onClose: () => v
                                 width: 18,
                                 height: 18,
                                 background: t.passed ? 'rgba(6,214,160,.18)' : 'transparent',
-                                border: t.passed ? 'none' : `1px solid ${lv.isNext ? 'rgba(255,209,102,.55)' : '#33506b'}`,
+                                border: t.passed ? 'none' : `1px solid ${lv.isNext ? 'rgba(255,209,102,.55)' : 'rgba(255,255,255,.18)'}`,
                               }}
                             >
                               {t.passed && <Check size={11} style={{ color: '#06D6A0' }} />}

@@ -4,7 +4,7 @@
 //
 // El ARCHIVO permanente: todo lo publicado, ordenado. Lo que viene (lives y
 // seminarios futuros) arriba; el feed abajo. Canal, no foro: sin comentarios;
-// una sola reacción ("Stoked").
+// una sola reacción (la ola — sin palabra: "Stoke" es vocabulario prohibido).
 //
 // El miembro vencido ve los TÍTULOS con candado — la decisión deliberada #5
 // del plan: mostrarle lo que se pierde ES el recordatorio de renovación.
@@ -95,13 +95,13 @@ function PostCard({
       <div className="px-4 pt-3.5 pb-3">
         <div className="flex items-center gap-2">
           <meta.Icon size={13} style={{ color: BRAND.colors.cyan }} className="shrink-0" />
-          <p className="text-[9px] font-mono uppercase tracking-[.16em]" style={{ color: BRAND.colors.cyan }}>
+          <p className="text-[9px] font-mono font-medium uppercase tracking-[.16em]" style={{ color: BRAND.colors.cyan }}>
             {meta.label}
           </p>
           {!post.read && !post.locked && (
             <span
-              className="ml-auto shrink-0 text-[8.5px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-              style={{ background: 'rgba(255,209,102,.15)', color: BRAND.colors.gold }}
+              className="ml-auto shrink-0 text-[8.5px] font-mono font-medium uppercase tracking-[.16em] px-1.5 py-0.5 rounded-full"
+              style={{ background: 'rgba(0,210,255,.15)', color: BRAND.colors.cyan }}
             >
               New
             </span>
@@ -188,14 +188,17 @@ function PostCard({
             type="button"
             onClick={react}
             disabled={busy}
+            aria-label={reacted ? 'Remove reaction' : 'React'}
             className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold rounded-full px-3 py-1.5"
             style={{
               background: reacted ? 'rgba(0,210,255,.14)' : 'rgba(255,255,255,.05)',
               color: reacted ? BRAND.colors.cyan : '#8aa0b2',
             }}
           >
-            <Waves size={13} />
-            Stoked{count > 0 ? ` · ${count}` : ''}
+            {/* Sin palabra: "Stoke" está en el vocabulario PROHIBIDO del
+                manual (brand.ts forbidden). La reacción es la ola. */}
+            <Waves size={14} />
+            {count > 0 ? count : ''}
           </button>
         </div>
       )}

@@ -12,7 +12,8 @@ import { SpecialistGuide } from '@/components/specialist/SpecialistGuide';
 // ═══ PORTAL DEL EQUIPO HP — Brand v10 (ink #061C2B · cyan #00D2FF · gold #FFD166) ═══
 // Staff-facing → español. Cada especialista ve SUS atletas y sus herramientas.
 
-const INK = '#061C2B', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#39D98A';
+// GREEN = Foam #06D6A0, el verde de éxito del canon v10 (#39D98A era ajeno a la paleta).
+const INK = '#061C2B', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
 const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
 const DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' as any, fontWeight: 800, letterSpacing: '-0.01em' };
 
@@ -158,7 +159,7 @@ function AthletePanel({ token, studentId, roleKey }: { token: string; studentId:
   }, [token, studentId]);
   useEffect(() => { load(); }, [load]);
 
-  if (err) return <p className="text-[11px] px-3 py-2" style={{ color: '#ffb4a6' }}>{err}</p>;
+  if (err) return <p className="text-[11px] px-3 py-2" style={{ color: '#FF6B6B' }}>{err}</p>;
   if (!data) return <p className="text-[11px] px-3 py-2" style={{ color: '#7BA2B5' }}>Cargando…</p>;
 
   return (
@@ -391,7 +392,7 @@ function WallTab({ token, studentId, data, onPosted }: { token: string; studentI
           Enviar
         </button>
       </div>
-      {err && <p className="text-[10.5px]" style={{ color: '#ffb4a6' }}>{err}</p>}
+      {err && <p className="text-[10.5px]" style={{ color: '#FF6B6B' }}>{err}</p>}
       <div className="space-y-1.5">
         {data.wall.map((w) => (
           <div key={w.id} className="rounded-xl px-3 py-2" style={{ background: w.mine ? 'rgba(0,210,255,.08)' : 'rgba(255,255,255,.05)', borderLeft: `3px solid ${w.author.includes('(athlete)') ? GOLD : w.mine ? CYAN : 'rgba(255,255,255,.18)'}` }}>
@@ -468,7 +469,7 @@ function TaskCreator({ token, studentId, roleKey, onChanged }: { token: string; 
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GREEN }}>📌 Dejar sesión online / tarea</p>
         <span className="text-[11px]" style={{ color: GREEN }}>{open ? '▴' : '+'}</span>
       </button>
-      {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#ffb4a6' }}>{msg}</p>}
+      {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#FF6B6B' }}>{msg}</p>}
       {open && (
         <div className="mt-2.5 space-y-2">
           <div className="flex gap-1.5 flex-wrap">
@@ -608,7 +609,7 @@ function DietEditor({ token, studentId, data, onChanged }: { token: string; stud
       <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
         placeholder={scope === 'micro' ? 'Base del microciclo: qué come todos los días (desayuno, almuerzo, cena, hidratación…)' : 'Ajuste solo para ese día — el atleta ve la base del micro Y esto (víspera de competencia, día libre, viaje…)'}
         className="w-full mt-2 rounded-lg px-3 py-2 text-[12px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
-      {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#ffb4a6' }}>{msg}</p>}
+      {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#FF6B6B' }}>{msg}</p>}
       <button type="button" disabled={busy || !body.trim()} onClick={save}
         className="w-full mt-2 rounded-full py-2 text-[10px] font-bold uppercase tracking-wider disabled:opacity-40" style={{ ...MONO, background: GOLD, color: INK }}>
         {scope === 'micro' ? 'Guardar base del microciclo' : dayNote(date) ? 'Actualizar el ajuste de ese día' : 'Guardar ajuste de ese día'}
@@ -656,7 +657,7 @@ function CitaCreator({ token, data, onChanged }: { token: string; data: Speciali
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>📅 Agendar cita / evaluación</p>
         <span className="text-[11px]" style={{ color: CYAN }}>{open ? '▴' : '+'}</span>
       </button>
-      {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#ffb4a6' }}>{msg}</p>}
+      {msg && <p className="text-[10.5px] mt-1" style={{ color: msg.startsWith('✓') ? GREEN : '#FF6B6B' }}>{msg}</p>}
       {open && (
         <div className="mt-2.5 space-y-2">
           <div className="flex gap-1.5 flex-wrap">
@@ -780,7 +781,7 @@ function DayByDay({ data, token, onChanged }: { data: SpecialistAthlete; token: 
                     );
                   })}
                   {tasks.map((t) => (
-                    <p key={t.id} className="text-[10.5px]" style={{ color: t.done ? GREEN : GOLD }}>
+                    <p key={t.id} className="text-[10.5px]" style={{ color: t.done ? GREEN : '#dce8f0' }}>
                       {t.done ? '✓' : '📌'} {t.title}{t.mine ? ' · tuya' : ''}
                     </p>
                   ))}
@@ -850,7 +851,7 @@ function InlineCita({ token, studentId, date, onDone }: { token: string; student
       <input value={location} onChange={(e) => setLocation(e.target.value)}
         placeholder={mode === 'online' ? 'Link de Zoom/Meet' : 'Dónde se encuentran'}
         className="w-full mt-1.5 rounded-lg px-2 py-1.5 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
-      {msg && <p className="text-[10px] mt-1" style={{ color: '#ffb4a6' }}>{msg}</p>}
+      {msg && <p className="text-[10px] mt-1" style={{ color: '#FF6B6B' }}>{msg}</p>}
       <button type="button" disabled={busy} onClick={save}
         className="w-full mt-1.5 rounded-full py-1.5 text-[9.5px] font-bold uppercase tracking-wider disabled:opacity-40"
         style={{ ...MONO, background: CYAN, color: INK }}>

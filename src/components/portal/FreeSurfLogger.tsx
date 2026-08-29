@@ -44,7 +44,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
         style={{ background: '#0A1628' }}
       >
         <SurfboardIcon size={16} color="#00D2FF" />
-        <span className="flex-1 min-w-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), DM Mono, monospace', letterSpacing: '.06em', color: '#dbe8f1' }}>
+        <span className="flex-1 min-w-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500, letterSpacing: '0.16em', color: '#dbe8f1' }}>
           LOG FREE SURF
         </span>
         <span className="shrink-0 text-[10.5px] font-semibold" style={{ color: '#00D2FF' }}>

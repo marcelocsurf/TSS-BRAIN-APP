@@ -897,7 +897,7 @@ function HomeTab({
                     Antes dibujaba el progreso de CINTA alrededor de la cifra
                     de horas — por eso parecía un segundo score (Marcelo,
                     2026-08-25). El nivel ya tiene su propia barra al lado. */}
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#39D98A" strokeWidth="10" />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#06D6A0" strokeWidth="10" />
                 <circle
                   cx="60" cy="60" r="52" fill="none" stroke="#00D2FF" strokeWidth="10"
                   strokeDasharray="326.7"
@@ -935,7 +935,7 @@ function HomeTab({
                   Training <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.trainingMinutes)}</b>
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: '#b8cad8' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#39D98A', display: 'inline-block' }} />
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />
                   Free surf <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.freeSurfMinutes)}</b>
                 </span>
               </div>
@@ -983,7 +983,7 @@ function HomeTab({
             >
               {coachFocus && !coachFocusDone && (
                 <div className="px-4 pt-3.5 pb-3">
-                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+                  <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>
                     From your coach
                   </p>
                   <p className="text-[14px] text-white mt-1 leading-snug">{coachFocus}</p>
@@ -1000,7 +1000,7 @@ function HomeTab({
                   Se lo decimos, no se lo escondemos. */}
               {coachFocus && coachFocusDone && (
                 <div className="px-4 pt-3.5 pb-3">
-                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: '#06D6A0' }}>
+                  <p className="text-[9px]" style={{ ...F_LABEL, color: '#06D6A0' }}>
                     You cleared it
                   </p>
                   <p className="text-[13.5px] text-white mt-1 leading-snug">
@@ -1019,7 +1019,7 @@ function HomeTab({
                   className="block w-full text-left px-4 py-3.5"
                   style={coachFocus ? { borderTop: '1px solid rgba(255,255,255,.08)' } : undefined}
                 >
-                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.gold }}>
+                  <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>
                     Work on this
                   </p>
                   <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
@@ -1029,7 +1029,7 @@ function HomeTab({
                     Holding back {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}
                     {data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}
                   </p>
-                  <p className="text-[12px] mt-1.5 font-semibold" style={{ color: BRAND.colors.gold }}>
+                  <p className="text-[12px] mt-1.5 font-semibold" style={{ color: BRAND.colors.cyan }}>
                     Practice it →
                   </p>
                 </button>
@@ -1067,7 +1067,7 @@ function HomeTab({
               className="block w-full text-left rounded-2xl px-4 py-3.5"
               style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
             >
-              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+              <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>
                 New in The Lineup
               </p>
               {(data as any).lineup.posts

@@ -5,7 +5,7 @@
 // Plan cerrado con Marcelo (2026-08-14), construido 2026-08-29.
 //
 // CANAL, no foro: él postea para muchos. Sin comentarios, sin posts de
-// miembros. Una sola reacción ("stoked") — variedad de emojis se lee como
+// miembros. Una sola reacción (la ola) — variedad de emojis se lee como
 // red social a medio hacer; un canal con una reacción se lee limpio.
 //
 // Dos superficies: HOME = buzón (lo no leído, se vacía solo) · THE LINEUP =

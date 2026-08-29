@@ -15,7 +15,7 @@
 //     reserva, no un formulario.
 
 import { useEffect, useState } from 'react';
-import { X, Check, Star, Waves, BookOpen, Compass, Loader2 } from 'lucide-react';
+import { X, Check, Star, Waves, BookOpen, Compass, Loader2, Target } from 'lucide-react';
 import { BRAND } from '@/lib/constants/brand';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { getBeltRoadmap, type BeltRoadmap as Roadmap } from '@/lib/actions/belt-roadmap';
@@ -71,7 +71,7 @@ function Row({
           width: 18,
           height: 18,
           background: done ? 'rgba(6,214,160,.18)' : 'transparent',
-          border: done ? 'none' : `1px solid ${pending ? '#33506b' : 'rgba(255,209,102,.55)'}`,
+          border: done ? 'none' : `1px solid ${pending ? 'rgba(255,255,255,.18)' : 'rgba(255,209,102,.55)'}`,
         }}
       >
         {done && <Check size={11} style={{ color: '#06D6A0' }} />}
@@ -182,7 +182,7 @@ export function BeltRoadmap({
           }}
         >
           <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-[.18em]" style={{ color: CYAN }}>
+            <p className="text-[9px] uppercase tracking-[.16em]" style={{ color: CYAN, fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500 }}>
               What it takes
             </p>
             <h2 className="text-[17px] font-bold mt-0.5" style={{ color: '#eaf4fa' }}>
@@ -355,14 +355,15 @@ export function BeltRoadmap({
                     On your own
                   </SectionTitle>
                   <div className="rounded-2xl px-3.5 py-1" style={{ background: 'rgba(255,255,255,.05)' }}>
-                    {data.autonomyPrinciples.map((p) => (
-                      <Row
-                        key={p}
-                        done={false}
-                        pending
-                        title="You can name which stage of the sequence failed, by yourself — without being told."
-                      />
-                    ))}
+                    {/* El principio vive en español en graduation.ts (doctrina
+                        staff); de cara al alumno va la versión en inglés. Hoy
+                        Blue tiene UNO solo — si algún día hay más, cada uno
+                        necesita su copy en inglés propio, no un map ciego. */}
+                    <Row
+                      done={false}
+                      pending
+                      title="You can name which stage of the sequence failed, by yourself — without being told."
+                    />
                   </div>
                 </section>
               )}
@@ -377,7 +378,8 @@ export function BeltRoadmap({
                     From your coach
                   </p>
                   <p className="text-[13.5px] mt-1 leading-snug" style={{ color: '#eaf4fa' }}>
-                    🎯 {data.coachFocus}
+                    <Target size={13} style={{ color: CYAN }} className="inline -mt-0.5 mr-1.5" />
+                    {data.coachFocus}
                   </p>
                 </div>
               )}

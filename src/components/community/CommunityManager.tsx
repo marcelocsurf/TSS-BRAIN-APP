@@ -236,7 +236,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
                   className={`rounded-full px-3 py-1.5 text-[11px] font-semibold border ${
                     p.published
                       ? 'border-gray-200 text-gray-500'
-                      : 'bg-[#06D6A0]/10 border-[#06D6A0]/40 text-[#067a5c]'
+                      : 'bg-[#06D6A0]/10 border-[#06D6A0]/40 text-[var(--tss-navy)]'
                   }`}
                 >
                   {p.published ? 'Despublicar' : 'Publicar'}
