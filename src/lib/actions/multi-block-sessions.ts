@@ -519,12 +519,20 @@ export async function getDrillsForStep(stepId: string, belt?: string) {
 // Returns the canonical list of STP-XXX ids with title for the picker.
 export async function getStepsForBelt(belt: string) {
   const supabase = await createClient();
-  // Steps live in the `lessons` table for white belt (course_section='white_belt')
+  // La cinta llegaba de parámetro y se IGNORABA: el picker de pasos del plan
+  // individual siempre ofrecía white_belt, aunque el alumno fuera Blue.
+  // Mismo criterio acumulativo que getMySequence: un alumno de Blue entrena
+  // también lo de White y Yellow.
+  const ORDER = ['white', 'yellow', 'blue', 'purple', 'brown', 'black'];
+  const key = (belt || 'white').replace(/_belt$/, '');
+  const upto = ORDER.indexOf(key);
+  const sections = (upto >= 0 ? ORDER.slice(0, upto + 1) : ['white']).map((b) => `${b}_belt`);
   const { data } = await supabase
     .from('lessons')
-    .select('id, title, sequence_step_order, wb_sequence_id, wb_sequence_name')
-    .eq('course_section', 'white_belt')
+    .select('id, title, sequence_step_order, wb_sequence_id, wb_sequence_name, course_section')
+    .in('course_section', sections)
     .eq('active', true)
+    .order('course_section', { ascending: true })
     .order('sequence_step_order', { ascending: true });
   return (data ?? []) as Array<{
     id: string;
