@@ -196,7 +196,7 @@ export default async function ContentAdminPage({
       <Section
         title="Yellow Belt · Sequences + Complete Ride + Exit Test"
         icon={Waves}
-        subtitle="8 STPs · Sequence 6.0 + 7.0 · Module 7 + 8"
+        subtitle="8 STPs · Sequences #6 + #7 · Module 7 + 8"
         items={yellowBelt}
         kind="lesson"
       />
@@ -288,7 +288,7 @@ export default async function ContentAdminPage({
       <Section
         title="Coach · YB Tier 2 — The 8 YB STPs"
         icon={ClipboardList}
-        subtitle="Sequence 6.0 + 7.0 · How to Teach · Correct · Validate per STP"
+        subtitle="Sequences #6 + #7 · How to Teach · Correct · Validate per STP"
         items={ybTierStps}
         kind="lesson"
       />

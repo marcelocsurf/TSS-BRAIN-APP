@@ -13,6 +13,13 @@ export interface CatalogStp {
   title: string;
   pillar: string | null;
   display_order: number;
+  // La secuencia del método: para agrupar el picker por secuencia y rotularla
+  // con la fuente única (sequenceLabel) en vez de una lista plana que
+  // entrevera White con Blue.
+  wb_sequence_id: string | null;
+  wb_sequence_name: string | null;
+  wb_sequence_order: number | null;
+  sequence_step_order: number | null;
   /** Theory body — auto-populates Land Drill "Explain". */
   description_md: string | null;
   /** How-to-practice body — auto-populates Land Drill "Simulate" (fallback when no canonical drill picked). */
@@ -57,7 +64,7 @@ export async function getTemplateCatalog(levelName: string): Promise<TemplateCat
   const [stpRes, drillsRes] = await Promise.all([
     supabase
       .from('lessons')
-      .select('id, title, pillar, display_order, description_md, drill_md, errors_md, video_url')
+      .select('id, title, pillar, display_order, description_md, drill_md, errors_md, video_url, wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order')
       .in('course_section', sections)
       .eq('active', true)
       .order('display_order'),
@@ -71,8 +78,18 @@ export async function getTemplateCatalog(levelName: string): Promise<TemplateCat
   const allDrills = (drillsRes.data ?? []) as CatalogDrill[];
   const allowed = filterDrillsByBelt(allDrills, belt);
 
+  // Orden del MÉTODO, no de la tabla: por secuencia (#1..#13, luego las de
+  // cierre) y adentro por el paso. La lista plana por display_order
+  // entreveraba pasos de White con pasos de Blue.
+  const stps = ((stpRes.data ?? []) as CatalogStp[]).slice().sort((a, b) => {
+    const so = (x: CatalogStp) => x.wb_sequence_order ?? 999;
+    if (so(a) !== so(b)) return so(a) - so(b);
+    const st = (x: CatalogStp) => x.sequence_step_order ?? x.display_order;
+    return st(a) - st(b);
+  });
+
   return {
-    stps: (stpRes.data ?? []) as CatalogStp[],
+    stps,
     drills: allowed.filter((d) => d.type === 'drill'),
     missions: allowed.filter((d) => d.type === 'mission'),
   };

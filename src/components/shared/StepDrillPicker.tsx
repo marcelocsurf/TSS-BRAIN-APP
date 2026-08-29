@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import type { CatalogStp, CatalogDrill } from '@/lib/actions/template-catalog';
+import { sequenceLabel } from '@/lib/constants/learning-blocks';
 
 export interface StepBlockValue {
   step_id: string | null;
@@ -26,6 +27,29 @@ interface Props {
   onChange: (patch: Partial<StepBlockValue>) => void;
   /** Which slots to render below the STP picker. Default 'both'. */
   slots?: 'both' | 'drill_only' | 'mission_only';
+}
+
+
+// Grupos de secuencia para el <select>, en el orden del catálogo (que ya viene
+// ordenado por secuencia). Pasos sin secuencia caen a "Other".
+function groupStps(stps: CatalogStp[]): Array<{ key: string; label: string; items: CatalogStp[] }> {
+  const groups: Array<{ key: string; label: string; items: CatalogStp[] }> = [];
+  for (const stp of stps) {
+    const key = stp.wb_sequence_id ?? '_none';
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.items.push(stp);
+    } else {
+      groups.push({
+        key,
+        label: stp.wb_sequence_id
+          ? sequenceLabel(stp.wb_sequence_id, stp.wb_sequence_order, stp.wb_sequence_name ?? '')
+          : 'Other',
+        items: [stp],
+      });
+    }
+  }
+  return groups;
 }
 
 export function StepDrillPicker({ value, stps, drills, missions, onChange, slots = 'both' }: Props) {
@@ -65,10 +89,16 @@ export function StepDrillPicker({ value, stps, drills, missions, onChange, slots
           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
         >
           <option value="">— pick a step —</option>
-          {stps.map((stp) => (
-            <option key={stp.id} value={stp.id}>
-              {stp.id} · {stp.title}
-            </option>
+          {/* Agrupado por SECUENCIA con el rótulo de la fuente única —
+              #1..#13 con número, Foundation/Closing con palabra. */}
+          {groupStps(stps).map((g) => (
+            <optgroup key={g.key} label={g.label}>
+              {g.items.map((stp) => (
+                <option key={stp.id} value={stp.id}>
+                  {stp.id} · {stp.title}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>

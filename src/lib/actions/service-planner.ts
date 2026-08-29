@@ -94,9 +94,9 @@ export interface ServicePlanData {
     success_criteria: string[] | null;
   }>;
   // Canonical STP catalog (for picking sequence focus)
-  stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number }>;
+  stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number; wb_sequence_id: string | null; wb_sequence_name: string | null; wb_sequence_order: number | null; sequence_step_order: number | null }>;
   // Belt-specific sequence rated in the FINAL evaluation (graduation check).
-  graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number }>;
+  graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number; wb_sequence_id: string | null; wb_sequence_name: string | null; wb_sequence_order: number | null; sequence_step_order: number | null }>;
   /** Progreso del PRE-CURSO por alumno. Es requisito para avanzar de cinta,
    *  pero NO bloquea el cierre: se muestra para que el coach y el alumno sepan
    *  qué falta. */
@@ -630,35 +630,32 @@ export async function getServicePlan(
     (d: any) => (beltRank[d.belt] ?? 1) <= myRank
   );
 
-  // STP catalog for the planner's sequence-focus picker (white belt 25 STPs).
-  const { data: stpRows } = await admin
+  // STP catalog — belt-aware, con las MISMAS secciones que la graduación
+  // (GRADUATION_RULES.sections). Estaba clavado en white_belt: el coach de un
+  // camp de Blue elegía el "sequence focus" del día entre los 25 pasos de
+  // White, sin poder apuntar el bloque a Frontside Pumping ni a nada de su
+  // propia cinta. Ordenado por secuencia del método, no por display_order.
+  const gradRule = tpl?.includes_course_key ? GRADUATION_RULES[tpl.includes_course_key] : undefined;
+  const gradSections = gradRule?.sections ?? ['white_belt'];
+  const { data: stpRowsRaw } = await admin
     .from('lessons')
     .select(
       'id, title, pillar, display_order, course_section, step_number, ' +
         'wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
     )
-    .eq('course_section', 'white_belt')
+    .in('course_section', gradSections)
     .eq('active', true)
     .order('display_order');
+  const stpRows = (stpRowsRaw ?? []).slice().sort((a: any, b: any) => {
+    const so = (x: any) => x.wb_sequence_order ?? 999;
+    if (so(a) !== so(b)) return so(a) - so(b);
+    const st = (x: any) => x.sequence_step_order ?? x.display_order;
+    return st(a) - st(b);
+  });
 
-  // Graduation catalog — belt-aware. The FINAL evaluation rates the full
-  // sequence the belt requires: White Belt = the 25 WB STPs; Yellow Belt =
-  // White + Yellow (33 STPs) so all fundamentals are re-confirmed. Driven
-  // by the belt's GRADUATION_RULES.sections.
-  const gradRule = tpl?.includes_course_key ? GRADUATION_RULES[tpl.includes_course_key] : undefined;
-  const gradSections = gradRule?.sections ?? ['white_belt'];
-  const { data: gradRows } =
-    gradSections.length === 1 && gradSections[0] === 'white_belt'
-      ? { data: stpRows }
-      : await admin
-          .from('lessons')
-          .select(
-            'id, title, pillar, display_order, course_section, step_number, ' +
-              'wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
-          )
-          .in('course_section', gradSections)
-          .eq('active', true)
-          .order('display_order');
+  // Graduation catalog — la evaluación final califica exactamente el mismo
+  // corte, así que reutiliza el catálogo de arriba.
+  const gradRows = stpRows;
 
   // Los Learning Blocks son SOLO para Blue Belt. White y Yellow conservan su
   // organización de siempre.

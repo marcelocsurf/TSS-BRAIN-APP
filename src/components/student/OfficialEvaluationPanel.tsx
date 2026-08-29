@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { StarRating } from '@/components/sequence/StarRating';
 import { setOfficialStepRating } from '@/lib/actions/evaluations';
 import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
 import { closeStudentEvaluation } from '@/lib/actions/student-evaluation';

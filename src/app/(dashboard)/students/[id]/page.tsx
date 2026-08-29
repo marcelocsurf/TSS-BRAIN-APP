@@ -3,7 +3,7 @@ import { getStudentLevelAccess } from '@/lib/actions/access';
 import { getQuizAttempts } from '@/lib/actions/quiz-lead';
 import { getStudentVisitStats } from '@/lib/actions/students';
 import { PriorVisitsEditor } from '@/components/student/PriorVisitsEditor';
-import { getSequenceEvaluationHistory, getOceanLevelHistory } from '@/lib/actions/evaluations';
+import { getOceanLevelHistory } from '@/lib/actions/evaluations';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { isRealPlatformAdmin } from '@/lib/actions/auth';
 import { OpenAsButton } from '@/components/admin/OpenAsButton';
@@ -17,7 +17,6 @@ import { CollapsibleSection } from '@/components/shared/CollapsibleSection';
 import { ProfileTabs } from '@/components/student/ProfileTabs';
 import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton';
 import { PlanSessionButton } from '@/components/student/PlanSessionButton';
-import { SequenceEvaluationPanel } from '@/components/student/SequenceEvaluationPanel';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { groupBySequence, sequenceVerdict, sequenceLabel } from '@/lib/constants/learning-blocks';
 import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
@@ -128,7 +127,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     levelAccess,
     standaloneResult,
     cascadeResult,
-    seqHistory,
     oceanHistory,
     selfTrainingResult,
     stepRatingsResult,
@@ -164,7 +162,6 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('completion_state', 'closed')
       .order('created_at', { ascending: false })
       .limit(50),
-    getSequenceEvaluationHistory(id, 10).catch(() => []),
     getOceanLevelHistory(id, 10).catch(() => []),
     // Portal activity: self-training sessions logged by the student alone
     supabase

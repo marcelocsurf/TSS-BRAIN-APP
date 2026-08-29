@@ -20,11 +20,17 @@ export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
 
   const admin = createAdminClient();
 
-  // Get all lessons grouped by section
+  // Get all lessons grouped by section.
+  // SOLO las secciones que este panel muestra. Sin el filtro, totalCount
+  // contaba TODAS las lecciones activas de la base (198: cursos de coach,
+  // Yellow, Blue…) y un alumno de White que terminaba su curso completo
+  // nunca llegaba al 100% — el porcentaje estaba diluido por cursos que ni
+  // puede ver.
   const { data: lessons } = await admin
     .from('lessons')
     .select('id, title, course_section, display_order')
     .eq('active', true)
+    .in('course_section', ['pre_course_fundamentals', 'pre_course_values', 'white_belt'])
     .order('display_order', { ascending: true });
 
   // Get student's progress
@@ -63,7 +69,10 @@ export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
   const stanceResp = progressMap.get('PC-004')?.form_response;
 
   const totalCount = lessons?.length || 0;
-  const completedCount = (progress || []).filter((p: any) => p.completed).length;
+  // Completadas SOLO dentro de estas secciones — el progreso de otros cursos
+  // (coach, otras cintas) no infla ni diluye este porcentaje.
+  const lessonIds = new Set((lessons || []).map((l: any) => l.id));
+  const completedCount = (progress || []).filter((p: any) => p.completed && lessonIds.has(p.lesson_id)).length;
   const overallPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (

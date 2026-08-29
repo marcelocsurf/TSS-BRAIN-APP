@@ -1,5 +1,6 @@
 'use client';
 
+import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -1728,7 +1729,12 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
   const groups = new Map<string, { name: string; belt: 'white' | 'yellow'; order: number; items: any[] }>();
   for (const s of stps) {
     const key = s.sequence_id ?? `_${s.belt}_unsequenced`;
-    const name = s.sequence_name ?? (s.belt === 'yellow' ? 'Yellow Belt' : 'White Belt');
+    // El MISMO rótulo que la evaluación, el curso y la guía del alumno:
+    // "#6 · Reading & Earning the Wave". Antes esta pantalla mostraba el
+    // nombre pelado y el coach veía rótulos distintos al saltar de una a otra.
+    const name = s.sequence_id
+      ? sequenceLabel(s.sequence_id, s.sequence_order, s.sequence_name ?? '')
+      : (s.belt === 'yellow' ? 'Yellow Belt' : 'White Belt');
     if (!groups.has(key)) {
       groups.set(key, { name, belt: s.belt, order: s.sequence_order ?? 999, items: [] });
     }

@@ -68,6 +68,7 @@ import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
 import { exigeCierreDeDias } from '@/lib/utils/camp-window';
+import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { displayDate } from '@/lib/utils/tz';
 
 // Mental hack quick-picks (curated subset of canonical options). Coach
@@ -2812,10 +2813,15 @@ function BlockEditor({
           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
         >
           <option value="">— pick a step —</option>
-          {stpCatalog.map((stp) => (
-            <option key={stp.id} value={stp.id}>
-              {stp.id} · {stp.title}
-            </option>
+          {/* Agrupado por SECUENCIA con el rótulo de la fuente única. */}
+          {groupCatalogBySequence(stpCatalog).map((g) => (
+            <optgroup key={g.key} label={g.label}>
+              {g.items.map((stp) => (
+                <option key={stp.id} value={stp.id}>
+                  {stp.id} · {stp.title}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
@@ -3483,4 +3489,23 @@ function PlannerSpaces({ token, date, defaultStart, title }: {
       )}
     </div>
   );
+}
+
+// Grupos de secuencia para el select del foco (el catálogo ya viene ordenado
+// por secuencia). Pasos sin secuencia caen a "Other".
+function groupCatalogBySequence(stps: ServicePlanData['stpCatalog']) {
+  const groups: Array<{ key: string; label: string; items: ServicePlanData['stpCatalog'] }> = [];
+  for (const stp of stps) {
+    const key = stp.wb_sequence_id ?? '_none';
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(stp);
+    else groups.push({
+      key,
+      label: stp.wb_sequence_id
+        ? sequenceLabel(stp.wb_sequence_id, stp.wb_sequence_order, stp.wb_sequence_name ?? '')
+        : 'Other',
+      items: [stp],
+    });
+  }
+  return groups;
 }
