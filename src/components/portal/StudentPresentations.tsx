@@ -33,7 +33,13 @@ export function StudentPresentations({ token, initial }: { token: string; initia
           style={{ borderLeft: '4px solid var(--tss-cyan, #5AC3E7)' }}
         >
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(90,195,231,.12)' }}>
-            <Presentation size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            {r.sort_order != null ? (
+              <span className="text-[13px] font-bold font-mono text-[var(--tss-cyan,#5AC3E7)]">
+                {String(r.sort_order).padStart(2, '0')}
+              </span>
+            ) : (
+              <Presentation size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-[var(--tss-navy)] truncate">{r.title}</p>

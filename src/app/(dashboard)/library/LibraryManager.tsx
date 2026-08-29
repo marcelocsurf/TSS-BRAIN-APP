@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   createCoachResource,
   createLinkResource,
@@ -9,6 +10,7 @@ import {
   setCoachResourceGrant,
   setStudentResourceGrant,
   grantResourceToAll,
+  setResourceSortOrder,
   type LibraryOverview,
   type LibraryItem,
 } from '@/lib/actions/coach-resources';
@@ -175,6 +177,7 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
   onLocal: (patch: Partial<LibraryItem>) => void;
   onRemove: () => void;
 }) {
+  const router = useRouter();
   const [showGrants, setShowGrants] = useState(false);
   const [pending, start] = useTransition();
   const meta = KIND_META[item.kind] ?? KIND_META.link;
@@ -187,7 +190,14 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-[var(--tss-navy)]">{item.title}</p>
+            <p className="text-sm font-semibold text-[var(--tss-navy)]">
+              {item.sort_order != null && (
+                <span className="inline-block mr-1.5 text-[10px] font-mono text-[var(--tss-cyan)] align-middle">
+                  {String(item.sort_order).padStart(2, '0')}
+                </span>
+              )}
+              {item.title}
+            </p>
             <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${meta.tint}14`, color: meta.tint }}>{meta.label}</span>
             {item.audience === 'coaches' && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">Coaches only</span>}
             {item.audience === 'students' && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-50 text-sky-600">Students only</span>}
@@ -200,6 +210,25 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {/* Posición en el CURSO ordenado (backlog): el alumno recorre las
+              presentaciones en este orden, no en el de subida. Vacío = sin
+              ordenar (cae al final, ordenado por título). */}
+          <input
+            type="number"
+            min={1}
+            defaultValue={item.sort_order ?? ''}
+            placeholder="#"
+            title="Orden en el curso (vacío = al final)"
+            onBlur={(e) => {
+              const v = e.target.value === '' ? null : parseInt(e.target.value, 10);
+              if ((v ?? null) === (item.sort_order ?? null)) return;
+              setResourceSortOrder(item.id, v).then((r) => {
+                if (!r.ok) alert(r.error || 'No se pudo guardar el orden.');
+                else router.refresh();
+              });
+            }}
+            className="w-12 px-1.5 py-1 border border-gray-200 rounded-lg text-xs text-center"
+          />
           {item.open_url && (
             <a href={item.open_url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg text-gray-400 hover:bg-gray-100" title="Open">
               <ExternalLink size={15} />

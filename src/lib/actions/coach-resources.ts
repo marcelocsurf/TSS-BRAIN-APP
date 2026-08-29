@@ -11,6 +11,18 @@ export interface CoachResource {
   description: string | null;
   file_url: string;
   kind: string;
+  /** Posición en el curso ordenado. null = sin ordenar (va al final). */
+  sort_order?: number | null;
+}
+
+/** El orden del CURSO: sort_order primero (null al final), después título. */
+function byCourseOrder<T extends { sort_order?: number | null; title: string }>(rows: T[]): T[] {
+  return rows.slice().sort((a, b) => {
+    const sa = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const sb = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+    if (sa !== sb) return sa - sb;
+    return (a.title ?? '').localeCompare(b.title ?? '');
+  });
 }
 
 async function assertAdmin() {
@@ -33,12 +45,14 @@ export async function getMyCoachResources(portalToken: string): Promise<CoachRes
 
   const { data } = await admin
     .from('coach_resource_grants')
-    .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, active)')
+    .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, active, sort_order)')
     .eq('coach_id', coach.id);
 
-  const rows = (data ?? [])
-    .map((r: any) => r.coach_resources)
-    .filter((r: any) => r && r.active);
+  const rows = byCourseOrder(
+    (data ?? [])
+      .map((r: any) => r.coach_resources)
+      .filter((r: any) => r && r.active),
+  );
 
   // La URL que ve el cliente es SIEMPRE la del propio app. La signed URL del
   // bucket ya no se emite acá: la mintea /api/materials en el servidor, después
@@ -49,6 +63,7 @@ export async function getMyCoachResources(portalToken: string): Promise<CoachRes
     description: r.description,
     file_url: `/api/materials/${portalToken}/${r.id}`,
     kind: r.kind,
+    sort_order: r.sort_order ?? null,
   }));
 }
 
@@ -132,7 +147,7 @@ export async function getMyStudentResources(portalToken: string): Promise<CoachR
 
     let { data, error } = await admin
       .from('student_resource_grants')
-      .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, audience, active)')
+      .select('coach_resources!inner(id, title, description, file_url, storage_path, kind, audience, active, sort_order)')
       .eq('student_id', student.id);
     if (error) {
       const retry = await admin
@@ -143,9 +158,13 @@ export async function getMyStudentResources(portalToken: string): Promise<CoachR
       data = retry.data as any;
     }
 
-    const rows = (data ?? [])
-      .map((r: any) => r.coach_resources)
-      .filter((r: any) => r && r.active && r.audience !== 'coaches');
+    // CURSO ORDENADO (backlog acordado): el alumno las recorre en el orden
+    // que Marcelo definió en la biblioteca, no en el orden de subida.
+    const rows = byCourseOrder(
+      (data ?? [])
+        .map((r: any) => r.coach_resources)
+        .filter((r: any) => r && r.active && r.audience !== 'coaches'),
+    );
 
     // Igual que en el lado coach: la URL es del app, no del bucket.
     return rows.map((r: any) => ({
@@ -154,6 +173,7 @@ export async function getMyStudentResources(portalToken: string): Promise<CoachR
       description: r.description,
       file_url: `/api/materials/${portalToken}/${r.id}`,
       kind: r.kind,
+      sort_order: r.sort_order ?? null,
     }));
   } catch {
     return [];
@@ -271,6 +291,8 @@ export interface LibraryItem {
   created_at: string;
   coachIds: string[];
   studentIds: string[];
+  /** Posición en el curso ordenado (null = sin ordenar, va al final). */
+  sort_order: number | null;
   /** Short-lived signed URL for stored files (else external file_url). */
   open_url: string | null;
 }
@@ -294,7 +316,8 @@ export async function getLibraryOverview(): Promise<LibraryOverview> {
   let resources: any[] | null = null;
   const first = await admin
     .from('coach_resources')
-    .select('id, title, description, file_url, storage_path, kind, audience, active, created_at')
+    .select('id, title, description, file_url, storage_path, kind, audience, active, created_at, sort_order')
+    .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
   resources = first.data as any[] | null;
   if (first.error) {
@@ -342,6 +365,7 @@ export async function getLibraryOverview(): Promise<LibraryOverview> {
       audience: (r as any).audience ?? 'both',
       coachIds: cByRes.get(r.id) ?? [],
       studentIds: sByRes.get(r.id) ?? [],
+      sort_order: (r as any).sort_order ?? null,
       open_url: openUrl,
     });
   }
@@ -418,6 +442,21 @@ export async function grantResourceToAll(
 }
 
 // Archive / restore without deleting (keeps grants + history).
+/** Fija la posición de una pieza en el curso ordenado. null = sin ordenar. */
+export async function setResourceSortOrder(id: string, sortOrder: number | null): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await assertAdmin();
+    const admin = createAdminClient();
+    const val = sortOrder == null || !Number.isFinite(sortOrder) ? null : Math.max(1, Math.round(sortOrder));
+    const { error } = await admin.from('coach_resources').update({ sort_order: val }).eq('id', id);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath('/library');
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? 'No se pudo guardar el orden.' };
+  }
+}
+
 export async function setResourceActive(id: string, active: boolean): Promise<{ ok: boolean; error?: string }> {
   await assertAdmin();
   const admin = createAdminClient();
