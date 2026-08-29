@@ -14,8 +14,8 @@
 import { useEffect, useState } from 'react';
 import { Video, Radio, GraduationCap, Megaphone, Lock, Waves, CalendarDays } from 'lucide-react';
 import { BRAND } from '@/lib/constants/brand';
-import { displayDate } from '@/lib/utils/tz';
-import { toEmbedUrl } from '@/lib/utils/video-embed';
+import { displayDate, displayTimeSV } from '@/lib/utils/tz';
+import { toEmbedUrl, isEmbeddable } from '@/lib/utils/video-embed';
 import {
   markLineupRead,
   toggleReaction,
@@ -31,11 +31,17 @@ const KIND_META: Record<CommunityKind, { label: string; Icon: typeof Video }> = 
   seminar: { label: 'Seminar', Icon: GraduationCap },
 };
 
-function isUpcoming(p: LineupPost): boolean {
+// El corte usa el reloj del SERVIDOR (loadedAt): SSR y cliente deciden igual
+// y la hidratación no se rompe en el borde. Y un live sigue en "Coming up"
+// hasta TRES HORAS después de arrancar: el que entra tarde también se une —
+// el botón que desaparecía en el minuto exacto del comienzo dejaba afuera
+// justo al que más lo necesita.
+const LIVE_GRACE_MS = 3 * 60 * 60 * 1000;
+function isUpcoming(p: LineupPost, loadedAtMs: number): boolean {
   return (
     (p.kind === 'live' || p.kind === 'seminar') &&
     !!p.event_at &&
-    new Date(p.event_at) > new Date() &&
+    new Date(p.event_at).getTime() + LIVE_GRACE_MS > loadedAtMs &&
     !p.recording_url
   );
 }
@@ -69,9 +75,14 @@ function PostCard({
     setBusy(false);
   };
 
-  // El video del post, o la grabación del live que ya pasó.
+  // El video del post, o la grabación del live que ya pasó. El iframe SOLO
+  // con un embed de host conocido; cualquier otra cosa (un link raro, texto
+  // pegado) se muestra como link — nunca una caja gris muda ni el 404 del
+  // portal adentro de la tarjeta.
   const videoUrl = post.recording_url || post.video_url;
-  const embed = videoUrl ? toEmbedUrl(videoUrl) : null;
+  const embedCandidate = videoUrl ? toEmbedUrl(videoUrl) : null;
+  const embed = isEmbeddable(embedCandidate) ? embedCandidate : null;
+  const videoLink = !embed && videoUrl && /^https?:\/\//i.test(videoUrl) ? videoUrl : null;
 
   return (
     <div
@@ -107,7 +118,7 @@ function PostCard({
             <span className="inline-flex items-center gap-1">
               <CalendarDays size={11} />
               {displayDate(post.event_at)}
-              {upcoming && post.event_at && ` · ${new Date(post.event_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/El_Salvador' })}`}
+              {upcoming && post.event_at && ` · ${displayTimeSV(post.event_at)}`}
             </span>
           ) : (
             post.published_at && displayDate(post.published_at)
@@ -141,6 +152,18 @@ function PostCard({
                   title={post.title}
                 />
               </div>
+            )}
+
+            {videoLink && (
+              <a
+                href={videoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold"
+                style={{ color: BRAND.colors.cyan }}
+              >
+                <Video size={13} /> Watch the video →
+              </a>
             )}
 
             {upcoming && post.event_link && (
@@ -180,16 +203,30 @@ function PostCard({
   );
 }
 
-export function LineupTab({ token, initial }: { token: string; initial: LineupData }) {
-  // Abrir la pestaña vacía el buzón del Home. Best-effort.
+export function LineupTab({
+  token,
+  initial,
+  onSeen,
+}: {
+  token: string;
+  initial: LineupData;
+  /** Avisa al padre que ya se vio: apaga el punto y el buzón SIN recargar. */
+  onSeen?: () => void;
+}) {
+  // Abrir la pestaña vacía el buzón. Solo se marcan los ids que ESTA carga
+  // trajo — lo publicado después no puede quedar "leído" sin verse.
   useEffect(() => {
-    markLineupRead(token).catch(() => {});
+    const unreadIds = initial.posts.filter((p) => !p.read).map((p) => p.id);
+    onSeen?.();
+    if (unreadIds.length) markLineupRead(token, unreadIds).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const upcoming = initial.posts.filter(isUpcoming).sort((a, b) =>
-    (a.event_at ?? '').localeCompare(b.event_at ?? ''),
-  );
-  const feed = initial.posts.filter((p) => !isUpcoming(p));
+  const loadedAtMs = new Date(initial.loadedAt).getTime();
+  const upcoming = initial.posts
+    .filter((p) => isUpcoming(p, loadedAtMs))
+    .sort((a, b) => (a.event_at ?? '').localeCompare(b.event_at ?? ''));
+  const feed = initial.posts.filter((p) => !isUpcoming(p, loadedAtMs));
 
   return (
     <div className="space-y-4">

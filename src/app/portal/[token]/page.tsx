@@ -101,7 +101,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const noHP = Promise.resolve(null);
 
   const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach, pendingExperience,
-    hbProgram, hbSeason, hbCompetitions, hbAppointments, hbScores, hbMessages, hbTeamWall, hbTodayExtras, hbPresentations] = await Promise.all([
+    hbProgram, hbSeason, hbCompetitions, hbAppointments, hbScores, hbMessages, hbTeamWall, hbTodayExtras, hbPresentations,
+    lineupRes, coachFocusState] = await Promise.all([
     getStudentMaterials(student.id, beltLevel),
     getStudentDrillsForSelfTraining(beltLevel),
     getDrillsMissionsForBelt(beltLevel),
@@ -121,6 +122,11 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     hpAccess ? getMyTeamWall(token).catch(() => null) : noHP,
     hpAccess ? getMyTodayExtras(token).catch(() => null) : noHP,
     getMyStudentResources(token).catch(() => [] as any[]),
+    // The Lineup y el estado del foco del coach: EN PARALELO con todo lo
+    // demás — en serie sumaban dos viajes más a cada carga del portal (el
+    // incidente de los 40-60s empezó exactamente así).
+    getLineup(token).then((r) => (r.ok ? r.data : null)).catch(() => null),
+    getCoachFocusState(student.id).catch(() => ({ flagged: 0, pending: 0, clearedByStudent: false })),
   ]);
 
   // Bundle del Home: valores ya desenvueltos, con la MISMA semántica que cada
@@ -215,9 +221,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           nextMove: await getNextMove(student.id, activeCourse?.belt ?? 'white'),
           // ¿Lo que el coach dejó para trabajar sigue pendiente, o el alumno ya
           // lo llevó a 4 por su cuenta?
-          coachFocusState: await getCoachFocusState(student.id),
+          coachFocusState,
           // The Lineup: el canal de la comunidad. Si falla, el portal sigue.
-          lineup: await getLineup(token).then((r) => (r.ok ? r.data : null)).catch(() => null),
+          lineup: lineupRes,
         }}
         initialTab={initialTab}
         initialSurveyId={survey || null}

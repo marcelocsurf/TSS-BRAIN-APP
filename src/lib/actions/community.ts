@@ -176,6 +176,11 @@ export interface LineupData {
   unread: number;
   /** false = membresía vencida (la excepción deliberada: ve títulos). */
   memberActive: boolean;
+  /** Reloj del SERVIDOR al cargar: el corte "ya pasó / viene" se decide con
+   *  este valor en SSR y en el cliente por igual — con new Date() en el
+   *  render, un live en el borde cambiaba de sección entre servidor y
+   *  navegador y rompía la hidratación. */
+  loadedAt: string;
 }
 
 async function studentByToken(admin: any, token: string) {
@@ -217,7 +222,10 @@ export async function getLineup(
         .from('community_posts')
         .select('id, kind, title, body_md, video_url, event_at, event_link, recording_url, published_at, community_reactions(count)')
         .eq('published', true)
-        .order('published_at', { ascending: false }),
+        .order('published_at', { ascending: false })
+        // El archivo crece sin tope; el portal no necesita más que esto por
+        // carga. Cuando haya 200+ piezas, paginar.
+        .limit(100),
       memberIsActive(admin, student.id),
       admin.from('community_reactions').select('post_id').eq('student_id', student.id),
       admin.from('community_reads').select('post_id').eq('student_id', student.id),
@@ -253,24 +261,34 @@ export async function getLineup(
       posts: rows,
       unread: rows.filter((r) => !r.read).length,
       memberActive: active,
+      loadedAt: new Date().toISOString(),
     },
   };
 }
 
-/** Marca TODO lo publicado como leído — se llama al abrir The Lineup. */
-export async function markLineupRead(token: string): Promise<{ ok: boolean; error?: string }> {
+/** Marca como leídos los posts que el alumno REALMENTE tuvo en pantalla.
+ *  Recibe los ids que su carga trajo: lo publicado DESPUÉS de que abrió el
+ *  portal no se marca — un post que nunca vio no puede quedar "leído". */
+export async function markLineupRead(
+  token: string,
+  postIds: string[],
+): Promise<{ ok: boolean; error?: string }> {
   if (!token) return { ok: false, error: 'Missing token.' };
+  const ids = (postIds ?? []).filter((x) => typeof x === 'string').slice(0, 200);
+  if (!ids.length) return { ok: true };
   const admin = createAdminClient();
   const student = await studentByToken(admin, token);
   if (!student) return { ok: false, error: 'Student not found.' };
+  // Solo ids que existen y están publicados — el cliente no dicta filas.
   const { data: posts } = await admin
     .from('community_posts')
     .select('id')
-    .eq('published', true);
-  const ids = (posts ?? []).map((p: any) => p.id);
-  if (!ids.length) return { ok: true };
+    .eq('published', true)
+    .in('id', ids);
+  const valid = (posts ?? []).map((p: any) => p.id);
+  if (!valid.length) return { ok: true };
   const { error } = await admin.from('community_reads').upsert(
-    ids.map((post_id: string) => ({ post_id, student_id: student.id })),
+    valid.map((post_id: string) => ({ post_id, student_id: student.id })),
     { onConflict: 'post_id,student_id', ignoreDuplicates: true },
   );
   if (error) return { ok: false, error: error.message };
@@ -289,6 +307,16 @@ export async function toggleReaction(
   if (!(await memberIsActive(admin, student.id))) {
     return { ok: false, error: 'Renew your membership to join in.' };
   }
+  // Solo a lo PUBLICADO: el id de un post viajó a los portales antes de
+  // despublicarse — sin este gate se podía seguir reaccionando a contenido
+  // retirado e inflar el contador que ve el staff.
+  const { data: target } = await admin
+    .from('community_posts')
+    .select('id')
+    .eq('id', postId)
+    .eq('published', true)
+    .maybeSingle();
+  if (!target) return { ok: false, error: 'This post is no longer available.' };
   const { data: existing } = await admin
     .from('community_reactions')
     .select('post_id')

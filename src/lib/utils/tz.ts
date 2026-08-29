@@ -72,3 +72,21 @@ export function displayDate(ts: string | Date | null | undefined): string {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
+
+/**
+ * "7:30 AM" en hora de El Salvador, calculado a mano (UTC-6 fijo, sin DST).
+ * toLocaleTimeString cambia el separador del AM/PM según la versión de ICU
+ * (U+202F vs espacio) — servidor y navegador podían renderizar distinto y
+ * eso es un error de hidratación. Acá no hay locale: es aritmética.
+ */
+export function displayTimeSV(ts: string | Date | null | undefined): string {
+  if (!ts) return '';
+  const d = typeof ts === 'string' ? new Date(ts) : ts;
+  if (isNaN(d.getTime())) return '';
+  const sv = new Date(d.getTime() - 6 * 3600000);
+  let h = sv.getUTCHours();
+  const m = sv.getUTCMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
+}

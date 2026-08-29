@@ -338,6 +338,11 @@ export function PortalTabs({
   }, []);
   const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_athlete_guide_v1', '1'); } catch {} };
   const lineupPosts = (data as any).lineup?.posts?.length ?? 0;
+  // "Visto" EN ESTA SESIÓN: sin esto, el punto cyan y el buzón del Home
+  // seguían gritando "3 new" después de leer todo, hasta la próxima recarga
+  // — un badge que miente entrena al alumno a ignorarlo.
+  const [lineupSeen, setLineupSeen] = useState(false);
+  const lineupUnread = lineupSeen ? 0 : ((data as any).lineup?.unread ?? 0);
   const TABS = useMemo(
     () => ALL_TABS.filter((t) => {
       if (t.lockedUntilCoachUnlock && !data.coachProfileUnlocked) return false;
@@ -346,6 +351,12 @@ export function PortalTabs({
     }),
     [data.coachProfileUnlocked, lineupPosts]
   );
+  // Deep-link a una pestaña que no existe (?tab=lineup con el canal vacío,
+  // o el canal falló en cargar): caer al Home, no a un panel en blanco.
+  useEffect(() => {
+    if (!TABS.some((t) => t.key === activeTab)) setActiveTab('home');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [TABS, activeTab]);
   // Linked Train flow: when student taps "Practice this drill" from My Sequence
   // OR arrives via deep-link from a Course lesson (?drill=X), we store the drill
   // ID and render LinkedTrainingFlow inline within the unified "Let's Play" tab.
@@ -447,7 +458,7 @@ export function PortalTabs({
       <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-4">
         {activeTab === 'home' && (
           <HomeTab
-            data={data}
+            data={{ ...data, lineupUnreadLive: lineupUnread } as any}
             belt={belt}
             onGoTo={setActiveTab}
             onOpenStep={openStepInPlay}
@@ -585,7 +596,11 @@ export function PortalTabs({
           )
         )}
         {activeTab === 'lineup' && (data as any).lineup && (
-          <LineupTab token={data.token} initial={(data as any).lineup} />
+          <LineupTab
+            token={data.token}
+            initial={(data as any).lineup}
+            onSeen={() => setLineupSeen(true)}
+          />
         )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
         {activeTab === 'glossary' && <GlossaryTab />}
@@ -639,7 +654,7 @@ export function PortalTabs({
                 {tab.key === 'feedback' && (data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
                   <span className="absolute top-1 right-1/4 w-2 h-2 bg-red-500 rounded-full" />
                 )}
-                {tab.key === 'lineup' && ((data as any).lineup?.unread ?? 0) > 0 && (
+                {tab.key === 'lineup' && lineupUnread > 0 && (
                   <span className="absolute top-1 right-1/4 w-2 h-2 rounded-full" style={{ background: 'var(--tss-cyan)' }} />
                 )}
               </button>
@@ -1034,7 +1049,7 @@ function HomeTab({
               tarjeta desaparece. Los títulos se ven aunque la membresía haya
               vencido (decisión #5 del plan: mostrar lo que se pierde ES el
               recordatorio de renovación). */}
-          {((data as any).lineup?.unread ?? 0) > 0 && (
+          {(data as any).lineupUnreadLive > 0 && (
             <button
               type="button"
               onClick={() => onGoTo('lineup')}
@@ -1053,9 +1068,9 @@ function HomeTab({
                   </p>
                 ))}
               <p className="text-[12px] mt-1.5 font-semibold" style={{ color: BRAND.colors.cyan }}>
-                {(data as any).lineup.unread === 1
+                {(data as any).lineupUnreadLive === 1
                   ? 'Open it →'
-                  : `${(data as any).lineup.unread} new — open The Lineup →`}
+                  : `${(data as any).lineupUnreadLive} new — open The Lineup →`}
               </p>
             </button>
           )}
