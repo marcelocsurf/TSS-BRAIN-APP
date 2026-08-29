@@ -74,12 +74,14 @@ export async function getContentInventory() {
     videos: videosByDrillMission.get(d.id) ?? [],
   }));
 
-  // STP-level media: the 25 WB STPs + 8 YB STPs. Pulled from lessons
-  // (the STPs are themselves lessons with id 'STP-XXX').
+  // STP-level media: los STPs de White, Yellow y Blue. Pulled from lessons
+  // (the STPs are themselves lessons with id 'STP-XXX'). El regex admite
+  // sufijo de letra: STP-039B es un paso real de Blue que solo vive en la
+  // base (no en migraciones).
   const steps = (lessonsQ.data ?? [])
     .filter((l: any) =>
-      (l.course_section === 'white_belt' || l.course_section === 'yellow_belt')
-      && /^STP-\d+$/.test(l.id))
+      (l.course_section === 'white_belt' || l.course_section === 'yellow_belt' || l.course_section === 'blue_belt')
+      && /^STP-\d+[A-Z]?$/.test(l.id))
     .map((l: any) => ({
       id: l.id,
       title: l.title,

@@ -27,6 +27,7 @@ type Bucket =
   | 'pre_course'
   | 'white_belt'
   | 'yellow_belt'
+  | 'blue_belt'
   | 'visual_aids'
   | 'coach'
   | 'tools';
@@ -35,6 +36,7 @@ const BUCKETS: { key: Bucket; label: string }[] = [
   { key: 'pre_course',  label: 'Pre-Course' },
   { key: 'white_belt',  label: 'White Belt' },
   { key: 'yellow_belt', label: 'Yellow Belt' },
+  { key: 'blue_belt',   label: 'Blue Belt' },
   { key: 'visual_aids', label: 'Visual Aids' },
   { key: 'coach',       label: 'Coach Curriculum' },
   { key: 'tools',       label: 'Drills + Missions' },
@@ -61,6 +63,8 @@ export default async function ContentAdminPage({
   const whiteBelt = lessons.filter((l: any) => l.course_section === 'white_belt');
   const ybOnboarding = lessons.filter((l: any) => l.course_section === 'yb_onboarding');
   const yellowBelt = lessons.filter((l: any) => l.course_section === 'yellow_belt');
+  const bbOnboarding = lessons.filter((l: any) => l.course_section === 'bb_onboarding');
+  const blueBelt = lessons.filter((l: any) => l.course_section === 'blue_belt');
 
   // ─── Coach courses — mirror the 10-tier grouping the coach sees in
   // his own /coach-portal/[token] Courses tab so Marcelo never has to
@@ -198,6 +202,30 @@ export default async function ContentAdminPage({
         icon={Waves}
         subtitle="8 STPs · Sequences #6 + #7 · Module 7 + 8"
         items={yellowBelt}
+        kind="lesson"
+      />
+        </>
+      )}
+
+      {/* ─── Blue Belt bucket ───
+          El curso de Blue estaba en producción y esta pantalla no lo tenía:
+          no había forma de adjuntarle media desde acá (hallazgo del barrido
+          de superficies, 2026-08-29). Mismo patrón que Yellow. */}
+      {show('blue_belt') && (
+        <>
+      <SectionHeader title="Student · Blue Belt Masterclass" subtitle="course_section = bb_onboarding + blue_belt" />
+      <Section
+        title="Blue Belt · Onboarding"
+        icon={Compass}
+        subtitle="Compromiso Consciente · Foundation mindset"
+        items={bbOnboarding}
+        kind="lesson"
+      />
+      <Section
+        title="Blue Belt · The 17 Elements + Sequences + Closing"
+        icon={Waves}
+        subtitle="20 steps · Sequences #8–#13 · Foundation / Concepts / Exit"
+        items={blueBelt}
         kind="lesson"
       />
         </>
