@@ -31,6 +31,7 @@ import {
   ClipboardList,
   Waves,
   type LucideIcon,
+  Megaphone,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/costs',         label: 'Costs',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
   { href: '/payroll',       label: 'Pagos',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
   { href: '/desk',          label: 'Mostrador',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
+  // Comunidad: The Lineup — el canal donde Marcelo postea para los miembros.
+  { href: '/community',     label: 'The Lineup',   Icon: Megaphone,    roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/sessions/new',    label: 'Session', Icon: Play,   roles: ['admin', 'coach'] },
   // Drafts removed from the admin sidebar (legacy session flow) — coaches

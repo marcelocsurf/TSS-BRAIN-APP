@@ -51,6 +51,7 @@ import { BeltJourney } from '@/components/portal/BeltJourney';
 import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
+import { LineupTab } from '@/components/portal/LineupTab';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
@@ -65,6 +66,7 @@ import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import {
   Home,
   GraduationCap,
+  Megaphone,
   Play,
   ClipboardList,
   MessageCircle,
@@ -199,6 +201,8 @@ interface PortalData {
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
   coachFocusState?: { flagged: number; pending: number; clearedByStudent: boolean };
+  /** The Lineup: el canal de la comunidad (null si falló la carga). */
+  lineup?: import('@/lib/actions/community').LineupData | null;
   nextMove?: {
     sequenceId?: string;
     sequenceOrder: number;
@@ -283,7 +287,7 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
   return SELF_TRAINING_WARMUPS[beltLevel] || SELF_TRAINING_WARMUPS['white_belt'];
 }
 
-type Tab = 'home' | 'course' | 'sequence' | 'sessions' | 'feedback' | 'glossary' | 'my-coach';
+type Tab = 'home' | 'course' | 'sequence' | 'lineup' | 'sessions' | 'feedback' | 'glossary' | 'my-coach';
 
 // ── Brand v10 type + color helpers (M140 student-home redesign) ──
 const F_DISPLAY = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.08 } as const;
@@ -293,6 +297,11 @@ const ALL_TABS: { key: Tab; label: string; icon: LucideIcon; lockedUntilCoachUnl
   { key: 'home', label: 'Home', icon: Home },
   { key: 'course', label: 'Course', icon: GraduationCap },
   { key: 'sequence', label: "Let's Play", icon: Play },
+  // The Lineup: la CUARTA Y ÚLTIMA pestaña (plan 2026-08-14 — con cinco
+  // íconos el alumno se pierde; My Coach es un desbloqueo, no cuenta).
+  // Solo aparece cuando hay algo publicado: lanzarla vacía es el único
+  // riesgo que arruina el proyecto.
+  { key: 'lineup', label: 'The Lineup', icon: Megaphone },
   { key: 'my-coach', label: 'My Coach', icon: User, lockedUntilCoachUnlock: true },
 ];
 
@@ -328,9 +337,14 @@ export function PortalTabs({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const closeGuide = () => { setGuideOpen(false); try { localStorage.setItem('tss_athlete_guide_v1', '1'); } catch {} };
+  const lineupPosts = (data as any).lineup?.posts?.length ?? 0;
   const TABS = useMemo(
-    () => ALL_TABS.filter((t) => !t.lockedUntilCoachUnlock || data.coachProfileUnlocked),
-    [data.coachProfileUnlocked]
+    () => ALL_TABS.filter((t) => {
+      if (t.lockedUntilCoachUnlock && !data.coachProfileUnlocked) return false;
+      if (t.key === 'lineup' && lineupPosts === 0) return false;
+      return true;
+    }),
+    [data.coachProfileUnlocked, lineupPosts]
   );
   // Linked Train flow: when student taps "Practice this drill" from My Sequence
   // OR arrives via deep-link from a Course lesson (?drill=X), we store the drill
@@ -570,6 +584,9 @@ export function PortalTabs({
             </div>
           )
         )}
+        {activeTab === 'lineup' && (data as any).lineup && (
+          <LineupTab token={data.token} initial={(data as any).lineup} />
+        )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
         {activeTab === 'glossary' && <GlossaryTab />}
         {activeTab === 'feedback' && (
@@ -621,6 +638,9 @@ export function PortalTabs({
                 <span className="uppercase">{tab.label}</span>
                 {tab.key === 'feedback' && (data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
                   <span className="absolute top-1 right-1/4 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+                {tab.key === 'lineup' && ((data as any).lineup?.unread ?? 0) > 0 && (
+                  <span className="absolute top-1 right-1/4 w-2 h-2 rounded-full" style={{ background: 'var(--tss-cyan)' }} />
                 )}
               </button>
             );
@@ -1007,6 +1027,37 @@ function HomeTab({
                 </div>
               )}
             </div>
+          )}
+
+          {/* EL BUZÓN de la comunidad: lo publicado que este alumno todavía
+              no vio. Caduca solo — al abrir The Lineup se marca leído y esta
+              tarjeta desaparece. Los títulos se ven aunque la membresía haya
+              vencido (decisión #5 del plan: mostrar lo que se pierde ES el
+              recordatorio de renovación). */}
+          {((data as any).lineup?.unread ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => onGoTo('lineup')}
+              className="block w-full text-left rounded-2xl px-4 py-3.5"
+              style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
+            >
+              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+                New in The Lineup
+              </p>
+              {(data as any).lineup.posts
+                .filter((p: any) => !p.read)
+                .slice(0, 3)
+                .map((p: any) => (
+                  <p key={p.id} className="text-[13.5px] text-white mt-1 leading-snug truncate">
+                    {p.title}
+                  </p>
+                ))}
+              <p className="text-[12px] mt-1.5 font-semibold" style={{ color: BRAND.colors.cyan }}>
+                {(data as any).lineup.unread === 1
+                  ? 'Open it →'
+                  : `${(data as any).lineup.unread} new — open The Lineup →`}
+              </p>
+            </button>
           )}
 
           {data.homeBundle?.hpAccess && (

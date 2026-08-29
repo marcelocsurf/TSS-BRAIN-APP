@@ -86,6 +86,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // Fetch parallel data — materials use admin access control via student_level_access
   const { getPendingExperienceForStudent } = await import('@/lib/actions/experience-survey');
   const { getCoachFocusState } = await import('@/lib/actions/portal');
+  const { getLineup } = await import('@/lib/actions/community');
   // PERF (reporte 2026-08-23: el programa tardaba 40-60s en aparecer): las
   // tarjetas del Home eran autocontenidas y disparaban su server action al
   // montar — Next ejecuta las actions de un cliente EN FILA, así que la cola
@@ -184,7 +185,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   };
 
   // Validate initialTab against allowed tab values
-  const validTabs = ['home', 'course', 'sequence', 'sessions', 'feedback', 'glossary', 'my-coach'];
+  const validTabs = ['home', 'course', 'sequence', 'lineup', 'sessions', 'feedback', 'glossary', 'my-coach'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
 
   return (
@@ -215,6 +216,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // ¿Lo que el coach dejó para trabajar sigue pendiente, o el alumno ya
           // lo llevó a 4 por su cuenta?
           coachFocusState: await getCoachFocusState(student.id),
+          // The Lineup: el canal de la comunidad. Si falla, el portal sigue.
+          lineup: await getLineup(token).then((r) => (r.ok ? r.data : null)).catch(() => null),
         }}
         initialTab={initialTab}
         initialSurveyId={survey || null}
