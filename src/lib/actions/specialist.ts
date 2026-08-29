@@ -145,6 +145,83 @@ export interface SpecialistAthlete {
   wall: Array<{ id: string; author: string; role: string | null; mine: boolean; body: string; created_at: string }>;
   diet: { micro: Array<{ week_number: number; body: string; created_at: string }>; day: Array<{ note_date: string; body: string }> };
   tasks: Array<{ id: string; kind: string; title: string; body: string | null; video_url: string | null; due_date: string | null; done: boolean; mine: boolean }>;
+  /** El programa DÍA POR DÍA (pedido de Marcelo 2026-08-25: "el especialista
+   *  no ve el programa día por día ni puede agregar una actividad parada en
+   *  un día concreto viendo lo que ya existe"). null = sin programa activo. */
+  program: {
+    title: string;
+    start_date: string;
+    weeks: number;
+    /** La semana del día actual del atleta (primer día sin marca). */
+    currentWeek: number | null;
+    days: Array<{
+      id: string;
+      week: number;
+      day_number: number;
+      name: string | null;
+      /** Fecha calendario: start_date + (semana-1)·7 + (día-1). */
+      date: string;
+      done: boolean;
+      items: Array<{ title: string; detail: string | null; duration_minutes: number | null; pillar: string | null; video_url: string | null }>;
+    }>;
+  } | null;
+}
+
+/** El programa activo del atleta, explotado día por día con fechas reales. */
+async function loadProgramDays(admin: any, studentId: string): Promise<SpecialistAthlete['program']> {
+  const { data: asg, error: asgErr } = await admin
+    .from('program_assignments')
+    .select('id, program_id, start_date, status, programs:program_id(title, weeks)')
+    .eq('student_id', studentId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (asgErr) console.error('[specialist] program assignment query failed', asgErr.message);
+  if (!asg) return null;
+  const prog = Array.isArray((asg as any).programs) ? (asg as any).programs[0] : (asg as any).programs;
+
+  const [{ data: days, error: daysErr }, { data: marks }] = await Promise.all([
+    admin
+      .from('program_days')
+      .select('id, week_number, day_number, title, program_items(title, detail, duration_minutes, pillar, video_url, display_order)')
+      .eq('program_id', (asg as any).program_id)
+      .order('week_number')
+      .order('day_number'),
+    admin.from('program_day_marks').select('day_id').eq('assignment_id', (asg as any).id),
+  ]);
+  if (daysErr) console.error('[specialist] program days query failed', daysErr.message);
+  const doneSet = new Set((marks ?? []).map((m: any) => m.day_id));
+  const startMs = Date.parse(`${(asg as any).start_date}T12:00:00Z`);
+  const rows = (days ?? []).map((d: any) => ({
+    id: d.id,
+    week: d.week_number,
+    day_number: d.day_number,
+    name: d.title ?? null,
+    date: new Date(startMs + ((d.week_number - 1) * 7 + (d.day_number - 1)) * 86400000)
+      .toISOString()
+      .slice(0, 10),
+    done: doneSet.has(d.id),
+    items: (d.program_items ?? [])
+      .slice()
+      .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+      .map((i: any) => ({
+        title: i.title,
+        detail: i.detail ?? null,
+        duration_minutes: i.duration_minutes ?? null,
+        pillar: i.pillar ?? null,
+        video_url: i.video_url ?? null,
+      })),
+  }));
+  // El día actual del atleta = el primero sin marca (misma regla que su visor).
+  const current = rows.find((r: any) => !r.done);
+  return {
+    title: prog?.title ?? 'Program',
+    start_date: (asg as any).start_date,
+    weeks: prog?.weeks ?? Math.max(1, ...rows.map((r: any) => r.week)),
+    currentWeek: current?.week ?? null,
+    days: rows,
+  };
 }
 
 export async function getSpecialistAthlete(token: string, studentId: string): Promise<{ ok: boolean; data: SpecialistAthlete | null; error?: string }> {
@@ -155,7 +232,7 @@ export async function getSpecialistAthlete(token: string, studentId: string): Pr
     if (!season) return { ok: false, data: null, error: 'Este atleta no está en tus temporadas.' };
     const { admin, coach } = ctx;
 
-    const [{ data: st }, timeline, { data: evalRows }, { data: appts }, { data: wallRows }, { data: dietRows }, { data: taskRows }] = await Promise.all([
+    const [{ data: st }, timeline, { data: evalRows }, { data: appts }, { data: wallRows }, { data: dietRows }, { data: taskRows }, program] = await Promise.all([
       admin.from('students').select('id, first_name, last_name, nickname, photo_url, belt_level').eq('id', studentId).maybeSingle(),
       buildSeasonTimeline(admin, studentId),
       admin.from('hp_deep_evaluations').select('scores, eval_date, created_at').eq('student_id', studentId).order('eval_date', { ascending: false }).order('created_at', { ascending: false }).limit(6),
@@ -163,6 +240,11 @@ export async function getSpecialistAthlete(token: string, studentId: string): Pr
       admin.from('athlete_team_posts').select('id, body, created_at, author_student_id, author_coach_id, coaches:author_coach_id(display_name, specialist_role, role), students:author_student_id(first_name)').eq('student_id', studentId).order('created_at', { ascending: false }).limit(30),
       admin.from('athlete_diet_notes').select('scope, week_number, note_date, body, created_at').eq('student_id', studentId).order('created_at', { ascending: false }).limit(40),
       admin.from('athlete_staff_tasks').select('id, kind, title, body, video_url, due_date, done, coach_id').eq('student_id', studentId).order('created_at', { ascending: false }).limit(20),
+      loadProgramDays(admin, studentId).catch((e) => {
+        // El día por día es una ayuda: si falla, el panel sigue — pero se loguea.
+        console.error('[specialist] program days failed', e);
+        return null;
+      }),
     ]);
 
     // Pilares (última evaluación CON scores — mismas reglas que el portal).
@@ -214,6 +296,7 @@ export async function getSpecialistAthlete(token: string, studentId: string): Pr
         }),
         diet: { micro: dietMicro, day: dietDay },
         tasks: (taskRows ?? []).map((t: any) => ({ id: t.id, kind: t.kind, title: t.title, body: t.body ?? null, video_url: t.video_url ?? null, due_date: t.due_date ?? null, done: !!t.done, mine: t.coach_id === coach.id })),
+        program,
       },
     };
   } catch (e) {

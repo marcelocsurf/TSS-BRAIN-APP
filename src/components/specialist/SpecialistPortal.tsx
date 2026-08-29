@@ -183,7 +183,7 @@ function AthletePanel({ token, studentId, roleKey }: { token: string; studentId:
         </a>
       </div>
 
-      {tab === 'plan' && <PlanTab data={data} />}
+      {tab === 'plan' && <PlanTab data={data} token={token} onChanged={load} />}
       {tab === 'muro' && <WallTab token={token} studentId={studentId} data={data} onPosted={load} />}
       {tab === 'tools' && <ToolsTab token={token} studentId={studentId} data={data} roleKey={roleKey} onChanged={load} />}
     </div>
@@ -288,12 +288,15 @@ function YearAgenda({ data }: { data: SpecialistAthlete }) {
   );
 }
 
-function PlanTab({ data }: { data: SpecialistAthlete }) {
+function PlanTab({ data, token, onChanged }: { data: SpecialistAthlete; token: string; onChanged: () => void }) {
   const tl = data.timeline;
   return (
     <div className="space-y-3">
       {/* La visión global primero: el año entero antes del detalle semanal. */}
       <YearAgenda data={data} />
+      {/* El detalle: el programa día por día, con lo agendado de cada día y
+          "+ agendar acá" (pedido de Marcelo 2026-08-25). */}
+      <DayByDay data={data} token={token} onChanged={onChanged} />
       {/* Score por pilar */}
       {data.pillars && (
         <div className="rounded-xl p-3" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.2)' }}>
@@ -691,6 +694,168 @@ function CitaCreator({ token, data, onChanged }: { token: string; data: Speciali
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── DÍA POR DÍA del programa (pedido Marcelo 2026-08-25: "el especialista
+// no ve el programa día por día ni puede agregar una actividad parada en un
+// día concreto viendo lo que ya existe"). Semana elegible, y en cada día:
+// los ítems del programa + las citas y tareas de ESA fecha + "+ Agendar acá".
+function DayByDay({ data, token, onChanged }: { data: SpecialistAthlete; token: string; onChanged: () => void }) {
+  const prog = data.program;
+  const [week, setWeek] = useState<number>(prog?.currentWeek ?? 1);
+  const [schedFor, setSchedFor] = useState<string | null>(null); // date del día abierto
+  if (!prog || prog.days.length === 0) return null;
+
+  const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
+  const weeks = Array.from({ length: prog.weeks }, (_, i) => i + 1);
+  const days = prog.days.filter((d) => d.week === week);
+  const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+  return (
+    <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+      <p className="text-[9px] uppercase tracking-wider mb-2" style={{ ...MONO, color: GOLD }}>
+        📋 Día por día · {prog.title}
+      </p>
+
+      {/* Selector de semana — la del día actual del atleta marcada. */}
+      <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
+        {weeks.map((w) => (
+          <button key={w} type="button" onClick={() => { setWeek(w); setSchedFor(null); }}
+            className="shrink-0 rounded-full px-2.5 py-1 text-[9.5px] font-bold"
+            style={{ ...MONO, background: week === w ? GOLD : 'rgba(255,255,255,.06)', color: week === w ? INK : w === prog.currentWeek ? GOLD : '#7BA2B5', border: w === prog.currentWeek ? `1px solid ${GOLD}` : '1px solid transparent' }}>
+            M{w}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2 space-y-2">
+        {days.map((d) => {
+          const appts = data.appointments.filter((a) => a.date === d.date);
+          const tasks = data.tasks.filter((t) => t.due_date === d.date);
+          const isPast = d.date < today;
+          const isToday = d.date === today;
+          return (
+            <div key={d.id} className="rounded-lg p-2.5"
+              style={{ background: isToday ? 'rgba(255,209,102,.08)' : 'rgba(255,255,255,.04)', border: isToday ? '1px solid rgba(255,209,102,.4)' : '1px solid rgba(255,255,255,.08)' }}>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-[11px] font-bold" style={{ color: d.done ? GREEN : '#eaf4fa' }}>
+                  {d.done ? '✓ ' : ''}{d.name || `Día ${d.day_number}`}
+                  <span className="font-normal" style={{ color: '#7BA2B5' }}> · {fmt(d.date)}{isToday ? ' · HOY' : ''}</span>
+                </p>
+                {!isPast && (
+                  <button type="button" onClick={() => setSchedFor(schedFor === d.date ? null : d.date)}
+                    className="shrink-0 text-[9.5px] font-bold" style={{ ...MONO, color: CYAN }}>
+                    {schedFor === d.date ? '▴ cerrar' : '+ Agendar acá'}
+                  </button>
+                )}
+              </div>
+
+              {/* Lo que el programa ya le pide ese día. */}
+              {d.items.length > 0 && (
+                <div className="mt-1.5 space-y-0.5">
+                  {d.items.map((it, i) => (
+                    <p key={i} className="text-[10.5px] leading-snug" style={{ color: '#b8cad8' }}>
+                      • {it.title}
+                      {(it.duration_minutes || it.pillar) && (
+                        <span style={{ color: '#7BA2B5' }}>
+                          {it.duration_minutes ? ` · ⏱ ${it.duration_minutes}min` : ''}{it.pillar ? ` · ${it.pillar}` : ''}
+                        </span>
+                      )}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* Lo ya agendado ese día por el equipo — se ve ANTES de sumar. */}
+              {(appts.length > 0 || tasks.length > 0) && (
+                <div className="mt-1.5 pt-1.5 space-y-0.5" style={{ borderTop: '1px dashed rgba(255,255,255,.12)' }}>
+                  {appts.map((a) => {
+                    const m = KIND_META[a.kind] ?? { icon: '📌', label: a.kind };
+                    return (
+                      <p key={a.id} className="text-[10.5px]" style={{ color: CYAN }}>
+                        {m.icon} {a.title || m.label}{a.time ? ` · ${a.time.slice(0, 5)}` : ''}
+                      </p>
+                    );
+                  })}
+                  {tasks.map((t) => (
+                    <p key={t.id} className="text-[10.5px]" style={{ color: t.done ? GREEN : GOLD }}>
+                      {t.done ? '✓' : '📌'} {t.title}{t.mine ? ' · tuya' : ''}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {schedFor === d.date && (
+                <div className="mt-2">
+                  <InlineCita token={token} studentId={data.student.id} date={d.date}
+                    onDone={() => { setSchedFor(null); onChanged(); }} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {days.length === 0 && (
+          <p className="text-[10.5px]" style={{ color: '#7BA2B5' }}>Esta semana no tiene días cargados.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Mini-form de cita anclado a UNA fecha: el especialista agenda parado en el
+// día, viendo lo que ese día ya tiene. La fecha no se edita — es la del día.
+function InlineCita({ token, studentId, date, onDone }: { token: string; studentId: string; date: string; onDone: () => void }) {
+  const [kind, setKind] = useState('evaluacion');
+  const [time, setTime] = useState('');
+  const [mode, setMode] = useState<'online' | 'presencial'>('presencial');
+  const [location, setLocation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const save = async () => {
+    setMsg(null); setBusy(true);
+    const r = await specialistCreateAppointment(token, studentId, {
+      kind: kind as any, mode, date, time: time || null, title: null,
+      location: location || null, notes: null,
+    });
+    setBusy(false);
+    if (!r.ok) { setMsg(r.error ?? 'Error'); return; }
+    onDone();
+  };
+
+  return (
+    <div className="rounded-lg p-2" style={{ background: 'rgba(0,210,255,.06)', border: '1px solid rgba(0,210,255,.25)' }}>
+      <div className="flex gap-1 flex-wrap">
+        {Object.entries(KIND_META).map(([k, m]) => (
+          <button key={k} type="button" onClick={() => setKind(k)}
+            className="rounded-full px-2 py-0.5 text-[9px] font-bold"
+            style={{ ...MONO, background: kind === k ? CYAN : 'rgba(255,255,255,.06)', color: kind === k ? INK : '#7BA2B5' }}>
+            {m.icon} {m.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-1.5 mt-1.5">
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
+          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
+        {(['presencial', 'online'] as const).map((m) => (
+          <button key={m} type="button" onClick={() => setMode(m)}
+            className="rounded-full px-2.5 py-1 text-[9px] font-bold"
+            style={{ ...MONO, background: mode === m ? CYAN : 'rgba(255,255,255,.06)', color: mode === m ? INK : '#7BA2B5' }}>
+            {m === 'presencial' ? '📍' : '💻'} {m}
+          </button>
+        ))}
+      </div>
+      <input value={location} onChange={(e) => setLocation(e.target.value)}
+        placeholder={mode === 'online' ? 'Link de Zoom/Meet' : 'Dónde se encuentran'}
+        className="w-full mt-1.5 rounded-lg px-2 py-1.5 text-[11px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
+      {msg && <p className="text-[10px] mt-1" style={{ color: '#ffb4a6' }}>{msg}</p>}
+      <button type="button" disabled={busy} onClick={save}
+        className="w-full mt-1.5 rounded-full py-1.5 text-[9.5px] font-bold uppercase tracking-wider disabled:opacity-40"
+        style={{ ...MONO, background: CYAN, color: INK }}>
+        {busy ? 'Agendando…' : `Agendar el ${date.slice(8, 10)}/${date.slice(5, 7)}`}
+      </button>
     </div>
   );
 }
