@@ -167,11 +167,18 @@ export interface AthleteEvaluation {
 async function resolveE1Coach(admin: ReturnType<typeof createAdminClient>, portalToken: string) {
   const { data: coach, error } = await admin
     .from('coaches')
-    .select('id, hp_escalon, course_access_granted')
+    .select('id, hp_escalon, course_access_granted, active_status')
     .eq('portal_token', portalToken)
     .maybeSingle();
   if (error) throw error;
-  if (!coach || !coach.course_access_granted || (coach.hp_escalon ?? 0) < 1) return null;
+  // active_status: un coach dado de baja conservaba su Escalón 1 y seguía
+  // viendo/creando citas HP con su link viejo (deuda anotada 2026-08-23).
+  if (
+    !coach ||
+    !coach.course_access_granted ||
+    (coach.hp_escalon ?? 0) < 1 ||
+    (coach as any).active_status === false
+  ) return null;
   return coach;
 }
 
