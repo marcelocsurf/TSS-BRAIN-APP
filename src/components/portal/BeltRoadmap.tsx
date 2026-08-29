@@ -103,11 +103,14 @@ export function BeltRoadmap({
   token,
   onClose,
   onOpenStep,
+  onOpenWater,
 }: {
   token: string;
   onClose: () => void;
   /** Abre el paso que frena una secuencia, en Let's Play. */
   onOpenStep?: (stepId: string) => void;
+  /** Abre "Your water level" — la línea del agua, aparte de la cinta. */
+  onOpenWater?: () => void;
 }) {
   const [data, setData] = useState<Roadmap | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -145,11 +148,11 @@ export function BeltRoadmap({
 
   const working = data?.sequences.filter((s) => s.state === 'working') ?? [];
   const unseen = data?.sequences.filter((s) => s.state === 'unrated' || s.state === 'partial') ?? [];
-  const waterLeft = data?.waterTests.filter((t) => !t.passed).length ?? 0;
 
-  // La verdad en una línea. Solo cuenta lo que BLOQUEA (secuencias y agua):
-  // el curso se ve pero no frena la cinta.
-  const blocking = working.length + unseen.length + waterLeft;
+  // La verdad en una línea. Solo cuenta lo que la EVALUACIÓN DE CINTA mide:
+  // las secuencias. El agua es otra línea (su vista propia) y el curso se ve
+  // pero no frena — contarlos acá era mentirle el número al alumno.
+  const blocking = working.length + unseen.length;
   const isOwnBelt = !!data && data.fromBelt === data.ownBelt;
   const count = (n: number) => `${n} ${n === 1 ? 'thing' : 'things'}`;
   const headline = !data
@@ -303,90 +306,32 @@ export function BeltRoadmap({
                 )}
               </section>
 
-              {/* 2 · EL AGUA — la escalera entera. Antes se veía solo el escalón
-                  siguiente y el alumno no sabía qué le van a pedir más arriba
-                  (Marcelo: "tiene que decir todos los requisitos"). */}
-              <section>
-                <SectionTitle
-                  icon={Waves}
-                  rule="No stars here: you pass it or you don't — it's safety, not technique. Every level keeps what the one below asks for."
-                >
-                  In the water
-                </SectionTitle>
-                <div className="space-y-2">
-                  {data.oceanLadder.map((lv) => {
-                    const accent = lv.isNext ? GOLD : lv.isCurrent ? CYAN : '#33506b';
-                    return (
-                      <div
-                        key={lv.key}
-                        className="rounded-2xl px-3.5 py-3"
-                        style={{
-                          background: lv.isNext || lv.isCurrent ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.03)',
-                          border: `1px solid ${lv.isNext ? 'rgba(255,209,102,.35)' : lv.isCurrent ? 'rgba(0,210,255,.28)' : 'rgba(255,255,255,.06)'}`,
-                        }}
-                      >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-[13px] font-semibold" style={{ color: lv.isCleared ? '#8aa0b2' : '#eaf4fa' }}>
-                            L{lv.tier} · {lv.name}
-                          </p>
-                          {(lv.isCurrent || lv.isNext) && (
-                            <span className="text-[9px] font-mono uppercase tracking-[.14em] shrink-0" style={{ color: accent }}>
-                              {lv.isCurrent ? 'you are here' : 'next'}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
-                          {lv.cleared}
-                        </p>
-                        {lv.tests.length > 0 && (
-                          <div className="mt-1.5 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                            {lv.tests.map((t) => (
-                              <Row
-                                key={`${lv.key}:${t.key}`}
-                                done={t.passed}
-                                pending={!lv.isNext}
-                                title={
-                                  t.target !== null && t.unit
-                                    ? `${t.name} · ${t.target} ${t.unit}`
-                                    : t.name
-                                }
-                                detail={
-                                  t.passed
-                                    ? t.measured != null && t.unit
-                                      ? `Done · ${t.measured} ${t.unit}`
-                                      : 'Done'
-                                    : t.proves
-                                }
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+              {/* EL AGUA ya no vive acá (Marcelo 2026-08-29: "debería ser una
+                  cosa aparte para saber si eres autónomo, no parte de esta
+                  evaluación"). La cinta es técnica; el agua es seguridad y
+                  tiene su propia vista. Acá queda solo la puerta. */}
+              <button
+                type="button"
+                onClick={() => onOpenWater?.()}
+                className="block w-full text-left rounded-2xl px-4 py-3.5"
+                style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Waves size={16} style={{ color: CYAN }} className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13.5px] font-semibold" style={{ color: '#eaf4fa' }}>
+                      In the water
+                    </p>
+                    <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#8aa0b2' }}>
+                      Where you can paddle out on your own is a separate track — it doesn&apos;t
+                      hold your belt back.
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-semibold" style={{ color: CYAN }}>
+                    Your water level →
+                  </span>
                 </div>
-                {data.oceanLevelProvisional && (
-                  <p className="text-[11.5px] mt-2 leading-snug" style={{ color: '#6f8698' }}>
-                    Your level is still to be confirmed in the water with your coach.
-                  </p>
-                )}
-                {/* La flotada larga: no la pide ningún nivel. */}
-                <div
-                  className="mt-2 rounded-2xl px-3.5 py-3"
-                  style={{
-                    background: data.longFloatDone ? 'rgba(255,209,102,.10)' : 'rgba(255,255,255,.035)',
-                    border: `1px solid ${data.longFloatDone ? 'rgba(255,209,102,.35)' : 'rgba(255,255,255,.06)'}`,
-                  }}
-                >
-                  <p className="text-[12.5px] font-semibold" style={{ color: data.longFloatDone ? GOLD : '#8aa0b2' }}>
-                    {data.longFloatDone ? '★ ' : ''}The long float · {data.longFloatMinutes}+ minutes
-                  </p>
-                  <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
-                    No level asks for this one. It&apos;s for when there&apos;s nothing left to prove:
-                    fifteen minutes in the water, no board, no hurry.
-                  </p>
-                </div>
-              </section>
+              </button>
 
               {/* 3 · EL CURSO */}
               <section>

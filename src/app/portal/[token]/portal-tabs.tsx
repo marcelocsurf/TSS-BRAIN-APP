@@ -52,6 +52,7 @@ import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
 import { LineupTab } from '@/components/portal/LineupTab';
+import { WaterLevel } from '@/components/portal/WaterLevel';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
@@ -385,6 +386,10 @@ export function PortalTabs({
   // desde el camino de cintas del Home y desde el curso; carga sus datos al
   // abrirse, no al montar el portal.
   const [roadmapOpen, setRoadmapOpen] = useState(false);
+  // "Your water level": la línea del agua, APARTE de la cinta (Marcelo
+  // 2026-08-29). Se abre desde la fila del agua del Home y desde la puerta
+  // dentro de What it takes.
+  const [waterOpen, setWaterOpen] = useState(false);
 
   // Abrir UN paso puntual en Let's Play. El estado del deep-link (?step=) ya
   // existía; lo que faltaba era usarlo desde adentro — por eso la tarjeta
@@ -463,6 +468,7 @@ export function PortalTabs({
             onGoTo={setActiveTab}
             onOpenStep={openStepInPlay}
             onOpenRoadmap={() => setRoadmapOpen(true)}
+            onOpenWater={() => setWaterOpen(true)}
           />
         )}
         {activeTab === 'course' && data.courseData && (
@@ -619,8 +625,10 @@ export function PortalTabs({
             token={data.token}
             onClose={() => setRoadmapOpen(false)}
             onOpenStep={openStepInPlay}
+            onOpenWater={() => setWaterOpen(true)}
           />
         )}
+        {waterOpen && <WaterLevel token={data.token} onClose={() => setWaterOpen(false)} />}
       </div>
 
       {/* Bottom Tab Bar — active tab gets a 2px cyan rule on top so the
@@ -681,6 +689,7 @@ function HomeTab({
   onGoTo,
   onOpenStep,
   onOpenRoadmap,
+  onOpenWater,
 }: {
   data: PortalData;
   belt: any;
@@ -689,6 +698,8 @@ function HomeTab({
   onOpenStep?: (stepId: string) => void;
   /** Abre la guía de requisitos de la próxima cinta. */
   onOpenRoadmap?: () => void;
+  /** Abre "Your water level" — la línea del agua, aparte. */
+  onOpenWater?: () => void;
 }) {
   const { student, sessions, totalSessions, streak, selfTrainingCount, totalTrainingMinutes, drillsPracticed, recentDrills } = data;
   // 🔔 Mensajes del coach unificados en la campana (pedido Marcelo 2026-08-25):
@@ -1170,11 +1181,11 @@ function HomeTab({
 
           {/* Belt journey strip — es también la puerta a "qué me falta": el
               alumno mira su camino y ahí mismo pregunta cómo se avanza. */}
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <button
             type="button"
             onClick={() => onOpenRoadmap?.()}
-            className="block w-full text-left rounded-2xl p-4"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
+            className="block w-full text-left p-4"
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
@@ -1225,22 +1236,32 @@ function HomeTab({
                 sí mismo— no se muestra: decirle "sos autónomo" sin que un
                 coach lo haya visto en el agua es lo único que acá no se puede
                 hacer. */}
+          </button>
+          {/* La línea del AGUA: su propio botón, hacia su propia vista
+              (Marcelo 2026-08-29: "una cosa aparte para saber si eres
+              autónomo"). El nivel solo se afirma si el coach lo validó;
+              sin validar, la fila igual lleva a la escalera de requisitos. */}
+          <button
+            type="button"
+            onClick={() => onOpenWater?.()}
+            className="block w-full text-left px-4 pb-3.5 pt-3"
+            style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
+                In the water
+              </p>
+              <p className="text-[12.5px] font-semibold shrink-0" style={{ color: oceanConfirmed ? '#eaf4fa' : '#8aa0b2' }}>
+                {oceanConfirmed ? oceanConfirmed.name : 'Your water level →'}
+              </p>
+            </div>
             {oceanConfirmed && (
-              <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
-                    In the water
-                  </p>
-                  <p className="text-[12.5px] font-semibold shrink-0" style={{ color: '#eaf4fa' }}>
-                    {oceanConfirmed.name}
-                  </p>
-                </div>
-                <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
-                  {oceanConfirmed.cleared}
-                </p>
-              </div>
+              <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
+                {oceanConfirmed.cleared}
+              </p>
             )}
           </button>
+          </div>
 
           {/* Ficha completa al 100% → acceso de consulta al FONDO del cockpit
               (antes quedaba a mitad del Home — revisión). También es HP. */}

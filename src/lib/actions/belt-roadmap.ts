@@ -20,20 +20,6 @@ import { getMySequence } from '@/lib/actions/sequence';
 import { getCourseCatalog } from '@/lib/actions/course';
 import { GRADUATION_RULES } from '@/lib/constants/graduation';
 import { type BeltLevel } from '@/lib/constants/belts';
-import {
-  LEVEL_REQUIREMENTS,
-  WATER_TESTS,
-  LONG_FLOAT_MINUTES,
-  isLongFloat,
-  lastByTestAndLevel,
-  meetsRequirement,
-  type WaterTestResultRow,
-} from '@/lib/constants/water-tests';
-import {
-  OCEAN_LEVELS,
-  OCEAN_LEVEL_INFO,
-  type OceanLevel,
-} from '@/lib/constants/ocean-levels';
 
 export interface RoadmapSequence {
   id: string;
@@ -48,34 +34,6 @@ export interface RoadmapSequence {
   weakestTitle: string | null;
   minRating: number | null;
   totalSteps: number;
-}
-
-export interface RoadmapWaterTest {
-  key: string;
-  /** Lo que se le pide, sin número si la prueba no lleva medida. */
-  name: string;
-  proves: string;
-  target: number | null;
-  unit: 'min' | 'm' | null;
-  passed: boolean;
-  measured: number | null;
-  testedAt: string | null;
-}
-
-/** Un escalón de la escalera del agua, con lo que pide. */
-export interface RoadmapOceanLevel {
-  key: OceanLevel;
-  tier: number;
-  name: string;
-  /** Dónde puede entrar con ese nivel. */
-  cleared: string;
-  tests: RoadmapWaterTest[];
-  /** Donde está hoy. */
-  isCurrent: boolean;
-  /** El que sigue: el único que cuenta para "cuánto me falta". */
-  isNext: boolean;
-  /** Ya lo pasó (está por debajo de donde está hoy). */
-  isCleared: boolean;
 }
 
 export interface BeltRoadmap {
@@ -93,19 +51,8 @@ export interface BeltRoadmap {
   sequencesOwned: number;
   /** Lo que el coach todavía no vio: pendiente, no reprobado. */
   sequencesUnseen: number;
-  // ── Agua ──
-  oceanLevel: OceanLevel | null;
-  oceanLevelName: string | null;
-  oceanLevelCleared: string | null;
-  oceanLevelProvisional: boolean;
-  nextOceanLevel: OceanLevel | null;
-  nextOceanLevelName: string | null;
-  /** Las pruebas del PRÓXIMO nivel — las que cuentan para "cuánto me falta". */
-  waterTests: RoadmapWaterTest[];
-  /** La escalera entera: qué pide cada nivel, de abajo hacia arriba. */
-  oceanLadder: RoadmapOceanLevel[];
-  longFloatMinutes: number;
-  longFloatDone: boolean;
+  // El AGUA ya no vive acá (2026-08-29): es otra línea, con su propia vista
+  // (getWaterLevel). La cinta es técnica; el agua es seguridad.
   // ── Curso ──
   preCourseCompleted: boolean;
   lessonsCompleted: number;
@@ -146,12 +93,6 @@ function nextBelt(belt: string): string | null {
   return BELT_ORDER[i + 1] ?? null;
 }
 
-function nextOcean(level: OceanLevel | null): OceanLevel | null {
-  if (!level) return 'supervised';
-  const i = OCEAN_LEVELS.indexOf(level);
-  return (OCEAN_LEVELS[i + 1] as OceanLevel) ?? null;
-}
-
 /**
  * El camino a la próxima cinta, leído con el token del portal (el token ES el
  * auth, igual que el resto de las acciones del portal).
@@ -170,7 +111,7 @@ export async function getBeltRoadmap(
 
   const { data: student } = await admin
     .from('students')
-    .select('id, first_name, belt_level, ocean_level, ocean_level_provisional, next_recommended_focus')
+    .select('id, first_name, belt_level, next_recommended_focus')
     .eq('portal_token', token)
     .maybeSingle();
   if (!student) return { ok: false, error: 'Student not found.' };
@@ -223,73 +164,6 @@ export async function getBeltRoadmap(
     sequences = [];
   }
 
-  // El agua. La tabla puede no existir en un entorno sin la migración 00171:
-  // la guía no se cae por eso.
-  const oceanLevel = ((student as any).ocean_level || null) as OceanLevel | null;
-  const target = nextOcean(oceanLevel);
-  const reqs = target ? LEVEL_REQUIREMENTS[target] ?? [] : [];
-  let rows: any[] = [];
-  try {
-    const { data } = await admin
-      .from('water_tests')
-      .select('test_key, target_level, passed, measured, tested_at')
-      .eq('student_id', student.id)
-      .order('tested_at', { ascending: false });
-    rows = data ?? [];
-  } catch {
-    rows = [];
-  }
-  // Vale el ÚLTIMO resultado de cada (prueba, NIVEL) — la misma prueba se toma
-  // en varios niveles con marcas distintas y el historial no se pisa.
-  const lastByKey = lastByTestAndLevel(rows as WaterTestResultRow[]);
-
-  // Una prueba, con lo que se le pide y lo que ya demostró.
-  // El alumno lee inglés (voz de marca); el coach ve el nombre en español en
-  // la ficha. Misma fuente, dos rótulos.
-  const buildTest = (
-    level: string,
-    r: { test: string; target: number | null },
-  ): RoadmapWaterTest => {
-    const t = WATER_TESTS.find((w) => w.key === r.test);
-    const last: any = lastByKey.get(`${r.test}:${level}`);
-    return {
-      key: r.test,
-      name: t?.nameEn ?? t?.name ?? r.test,
-      proves: t?.provesEn ?? '',
-      target: r.target,
-      unit: t?.unit ?? null,
-      // MISMA regla que la ficha del coach: la prueba de ESE nivel, y llegando
-      // a su marca. Sin esto, flotar 1 minuto daba por cumplidos los 3.
-      passed: meetsRequirement(lastByKey, level, r as any),
-      measured: last?.measured ?? null,
-      testedAt: last?.tested_at ?? null,
-    };
-  };
-
-  const waterTests: RoadmapWaterTest[] = target
-    ? reqs.map((r) => buildTest(target, r))
-    : [];
-
-  // LA ESCALERA COMPLETA (pedido de Marcelo 2026-08-28: "tiene que decir todos
-  // los requisitos, no solo que sepa flotar… también lo que habíamos dicho para
-  // cada nivel"). Antes solo se veía el escalón siguiente, y el alumno no tenía
-  // forma de saber qué le van a pedir más arriba.
-  const currentTier = oceanLevel ? OCEAN_LEVEL_INFO[oceanLevel]?.tier ?? 1 : 0;
-  const oceanLadder: RoadmapOceanLevel[] = OCEAN_LEVELS.map((lv) => {
-    const info = OCEAN_LEVEL_INFO[lv];
-    return {
-      key: lv,
-      tier: info.tier,
-      name: info.name,
-      cleared: info.cleared,
-      tests: (LEVEL_REQUIREMENTS[lv] ?? []).map((r) => buildTest(lv, r)),
-      isCurrent: lv === oceanLevel,
-      isNext: lv === target,
-      isCleared: info.tier < currentTier,
-    };
-  });
-  const longFloatDone = rows.some((r) => r.passed && isLongFloat(r.test_key, r.measured));
-
   // El curso. No bloquea la cinta (decisión de Marcelo): se ve como requisito
   // visible, no como candado.
   //
@@ -341,16 +215,6 @@ export async function getBeltRoadmap(
       sequencesUnseen: sequences.filter(
         (s) => s.state === 'unrated' || s.state === 'partial',
       ).length,
-      oceanLevel,
-      oceanLevelName: oceanLevel ? OCEAN_LEVEL_INFO[oceanLevel]?.name ?? null : null,
-      oceanLevelCleared: oceanLevel ? OCEAN_LEVEL_INFO[oceanLevel]?.cleared ?? null : null,
-      oceanLevelProvisional: !!(student as any).ocean_level_provisional,
-      nextOceanLevel: target,
-      nextOceanLevelName: target ? OCEAN_LEVEL_INFO[target]?.name ?? null : null,
-      waterTests,
-      oceanLadder,
-      longFloatMinutes: LONG_FLOAT_MINUTES,
-      longFloatDone,
       preCourseCompleted,
       lessonsCompleted,
       lessonsTotal,
