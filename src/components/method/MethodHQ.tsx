@@ -58,6 +58,16 @@ export function MethodHQ({ initial }: { initial: MethodHQData }) {
   const [areaKey, setAreaKey] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // Toda mutación pasa por acá: si la action devuelve {ok:false} o la red
+  // se corta, el dueño LO VE — un refresh silencioso que deja todo igual
+  // se confunde con "guardado".
+  const runMutation = (fn: () => Promise<{ ok: boolean; error?: string } | unknown>) =>
+    startTransition(async () => {
+      const r: any = await fn().catch(() => ({ ok: false, error: 'Sin conexión — reintentá.' }));
+      if (r && r.ok === false) alert(r.error || 'No se pudo guardar.');
+      router.refresh();
+    });
+
   const byArea = useMemo(() => {
     const t = new Map<string, MethodTask[]>();
     const d = new Map<string, MethodDoc[]>();
@@ -96,11 +106,12 @@ export function MethodHQ({ initial }: { initial: MethodHQData }) {
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between text-[11px]">
-                <span className="font-semibold" style={{ color: pct === 100 ? '#0a7c5d' : '#0090B0' }}>
-                  {pct}% desarrollado
+                <span className="font-semibold" style={{ color: pct === 100 && tasks.length > 0 ? '#0a7c5d' : '#0090B0' }}>
+                  {tasks.length === 0 ? 'sin ítems' : `${pct}% desarrollado`}
                 </span>
                 <span className="text-gray-400">
-                  {missing > 0 ? `${missing} por hacer` : 'completo ✓'} · {docs.length} doc{docs.length === 1 ? '' : 's'}
+                  {tasks.length === 0 ? '' : missing > 0 ? `${missing} por hacer · ` : 'completo ✓ · '}
+                  {docs.length} doc{docs.length === 1 ? '' : 's'}
                 </span>
               </div>
               <div className="mt-1.5 w-full rounded-full h-1.5 overflow-hidden bg-gray-100">
@@ -142,7 +153,7 @@ export function MethodHQ({ initial }: { initial: MethodHQData }) {
         tasks={tasks}
         docs={docs}
         busy={pending}
-        run={(fn) => startTransition(async () => { await fn(); router.refresh(); })}
+        run={runMutation}
       />
 
       <DocVault
@@ -150,7 +161,7 @@ export function MethodHQ({ initial }: { initial: MethodHQData }) {
         docs={docs}
         resources={initial.libraryResources}
         busy={pending}
-        run={(fn) => startTransition(async () => { await fn(); router.refresh(); })}
+        run={runMutation}
       />
     </div>
   );
@@ -205,22 +216,14 @@ function TaskList({
                   </p>
                 )}
                 {attaching === t.id && (
-                  <select
-                    autoFocus
-                    className="mt-1.5 w-full max-w-xs px-2 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white"
-                    defaultValue={t.doc_id ?? ''}
-                    onChange={(e) => {
-                      const v = e.target.value || null;
+                  <AttachSelect
+                    docs={docs}
+                    current={t.doc_id}
+                    onCommit={(v) => {
                       setAttaching(null);
-                      run(() => attachDocToTask(t.id, v));
+                      if (v !== (t.doc_id ?? null)) run(() => attachDocToTask(t.id, v));
                     }}
-                    onBlur={() => setAttaching(null)}
-                  >
-                    <option value="">— sin documento —</option>
-                    {docs.map((d) => (
-                      <option key={d.id} value={d.id}>{d.title}</option>
-                    ))}
-                  </select>
+                  />
                 )}
               </div>
               <div className="shrink-0 flex items-center gap-1">
@@ -280,6 +283,37 @@ function TaskList({
   );
 }
 
+// El select de adjuntar COMMITEA al cerrar (blur o Enter), no en cada
+// onChange: con teclado, cada flecha dispara change y adjuntaba el primer
+// doc de la lista sin querer.
+function AttachSelect({
+  docs, current, onCommit,
+}: {
+  docs: MethodDoc[];
+  current: string | null;
+  onCommit: (docId: string | null) => void;
+}) {
+  const [val, setVal] = useState(current ?? '');
+  return (
+    <select
+      autoFocus
+      className="mt-1.5 w-full max-w-xs px-2 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white"
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={() => onCommit(val || null)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLSelectElement).blur();
+        if (e.key === 'Escape') onCommit(current ?? null);
+      }}
+    >
+      <option value="">— sin documento —</option>
+      {docs.map((d) => (
+        <option key={d.id} value={d.id}>{d.title}</option>
+      ))}
+    </select>
+  );
+}
+
 // ── La bóveda: documentos del área ──────────────────────────────
 
 function DocVault({
@@ -308,14 +342,26 @@ function DocVault({
     setError('');
     if (mode === 'file') {
       if (!file || !title.trim()) { setError('Falta el archivo o el título.'); return; }
+      // El límite del server es 25mb (next.config): si lo pasa, Next corta
+      // el body ANTES de que corra la action y el error sería mudo.
+      if (file.size > 24 * 1024 * 1024) {
+        setError('El archivo pasa de 24 MB — comprimilo o partilo.');
+        return;
+      }
       const fd = new FormData();
       fd.set('file', file);
       fd.set('area', area);
       fd.set('title', title.trim());
       if (notes.trim()) fd.set('notes', notes.trim());
+      // Los errores se muestran acá con setError (formulario a la vista);
+      // se devuelve undefined para que el wrapper no duplique con alert.
       run(async () => {
-        const r = await createMethodFileDoc(fd);
-        if (!r.ok) setError(r.error || 'No se pudo subir.'); else reset();
+        try {
+          const r = await createMethodFileDoc(fd);
+          if (!r.ok) setError(r.error || 'No se pudo subir.'); else reset();
+        } catch {
+          setError('No se pudo subir — probá de nuevo (¿conexión? ¿archivo muy grande?).');
+        }
       });
       return;
     }
@@ -334,11 +380,20 @@ function DocVault({
   };
 
   const openDoc = async (d: MethodDoc) => {
+    // La ventana se abre SINCRÓNICAMENTE dentro del click (Safari bloquea
+    // un window.open que llega después de un await) y se le asigna la URL
+    // firmada cuando el server contesta.
+    const w = window.open('', '_blank', 'noopener');
     setOpeningId(d.id);
     const r = await getMethodDocUrl(d.id).catch(() => null);
     setOpeningId(null);
-    if (r && r.ok) window.open(r.url, '_blank', 'noopener');
-    else if (r && !r.ok) alert(r.error);
+    if (r && r.ok) {
+      if (w) w.location.href = r.url;
+      else window.open(r.url, '_blank', 'noopener');
+    } else {
+      w?.close();
+      alert((r && !r.ok && r.error) || 'No se pudo abrir.');
+    }
   };
 
   return (

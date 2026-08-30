@@ -149,7 +149,12 @@ export async function createMethodFileDoc(
     storage_path: path,
     notes,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // Sin fila no hay quién referencie el archivo: limpiarlo para no dejar
+    // huérfanos invisibles en el bucket.
+    await admin.storage.from(BUCKET).remove([path]).catch(() => {});
+    return { ok: false, error: error.message };
+  }
   revalidatePath('/metodo');
   return { ok: true };
 }
@@ -171,7 +176,11 @@ export async function createMethodEntry(input: {
   const title = input.title?.trim();
   if (!title) return { ok: false, error: 'El título es obligatorio.' };
   if (!METHOD_AREA_KEYS.includes(input.area)) return { ok: false, error: 'Área desconocida.' };
-  if (input.kind === 'link' && !/^(https?:\/\/|\/)/.test(input.url?.trim() ?? '')) {
+  // https://… o una ruta del app ('/' seguido de algo que no sea otra
+  // barra: '//evil.com' es protocol-relative y sale del app; '\' también
+  // porque el navegador lo normaliza a '/').
+  const linkUrl = input.url?.trim() ?? '';
+  if (input.kind === 'link' && !(/^https?:\/\//.test(linkUrl) || /^\/(?![/\\])/.test(linkUrl))) {
     return { ok: false, error: 'Un link necesita URL (https://… o /ruta del app).' };
   }
   if (input.kind === 'resource' && !input.resourceId) {
@@ -203,11 +212,13 @@ export async function deleteMethodDoc(id: string): Promise<{ ok: boolean; error?
     .select('storage_path')
     .eq('id', id)
     .maybeSingle();
+  // La FILA primero: si su delete falla, el archivo sigue existiendo y el
+  // doc sigue abriendo. Al revés quedaba una fila rota que no firma.
+  const { error } = await admin.from('method_docs').delete().eq('id', id);
+  if (error) return { ok: false, error: error.message };
   if (d?.storage_path) {
     await admin.storage.from(BUCKET).remove([d.storage_path]).catch(() => {});
   }
-  const { error } = await admin.from('method_docs').delete().eq('id', id);
-  if (error) return { ok: false, error: error.message };
   revalidatePath('/metodo');
   return { ok: true };
 }
@@ -251,9 +262,13 @@ export async function getMethodDocUrl(
   }
 
   if (d.storage_path) {
+    // Un SVG servido inline ejecuta sus <script> en el dominio de Supabase
+    // (XSS almacenado). Los SVG se firman con descarga forzada: el logo se
+    // baja, no se renderiza en el navegador.
+    const isSvg = d.storage_path.toLowerCase().endsWith('.svg');
     const { data: signed, error } = await admin.storage
       .from(BUCKET)
-      .createSignedUrl(d.storage_path, 600);
+      .createSignedUrl(d.storage_path, 600, isSvg ? { download: true } : undefined);
     if (error || !signed) return { ok: false, error: error?.message ?? 'No se pudo firmar.' };
     return { ok: true, url: signed.signedUrl };
   }

@@ -124,7 +124,12 @@ export default async function DashboardLayout({
   const effectiveRole = (isAdmin && actAsId)
     ? 'coordinator'
     : (coach?.role as CoachRole) || 'assistant';
-  const visibleNav = getNavItemsForRole(effectiveRole);
+  // El Método es del DUEÑO (is_platform_admin), no de cualquier role
+  // 'admin': sin este filtro, un admin de academia veía el ítem y se
+  // topaba con "Solo el dueño del método".
+  const visibleNav = getNavItemsForRole(effectiveRole).filter(
+    (i) => i.href !== '/metodo' || (isAdmin && !actAsId),
+  );
   let actAsAcademyName: string | null = null;
   let allAcademies: { id: string; name: string; slug: string }[] = [];
   if (isAdmin) {
