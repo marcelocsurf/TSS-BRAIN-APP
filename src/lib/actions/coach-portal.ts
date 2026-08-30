@@ -247,17 +247,29 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     return r <= myRank;
   });
 
-  // 4b. Enrich upcoming + past with participant counts (one query)
+  // 4b. Enrich upcoming + past with participant counts AND the roster
+  // (one query). El roster viaja con cada servicio para que el coach vea
+  // QUIÉNES van — foto, nombre, cinta, flags — sin abrir el planner, y
+  // salte a la ficha (/students/[id]) con un toque. Campos mínimos a
+  // propósito: lo médico completo vive en la ficha, no en la lista.
   const allCampIds = [
     ...(upcomingResult.data ?? []).map((s: any) => s.id),
     ...(pastResult.data ?? []).map((s: any) => s.id),
   ];
   const participantCounts: Record<string, number> = {};
+  const rosterByCamp: Record<string, Array<{
+    id: string;
+    name: string;
+    photo_url: string | null;
+    belt_level: string | null;
+    waiver_signed: boolean;
+    safety_flag: boolean;
+  }>> = {};
   const myStudentsMap = new Map<string, string>(); // id → display name
   if (allCampIds.length > 0) {
     const { data: pCounts } = await admin
       .from('camp_participants')
-      .select('camp_instance_id, student_id, students:student_id(first_name, last_name)')
+      .select('camp_instance_id, student_id, students:student_id(first_name, last_name, photo_url, belt_level, waiver_signed, allergies, injuries, medical_notes)')
       .in('camp_instance_id', allCampIds)
       .eq('enrollment_status', 'active');
     for (const p of pCounts ?? []) {
@@ -266,10 +278,25 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       const stu: any = Array.isArray((p as any).students) ? (p as any).students[0] : (p as any).students;
       if ((p as any).student_id && stu) {
         myStudentsMap.set((p as any).student_id, `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim());
+        (rosterByCamp[p.camp_instance_id] ??= []).push({
+          id: (p as any).student_id,
+          name: `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim(),
+          photo_url: stu.photo_url ?? null,
+          belt_level: stu.belt_level ?? null,
+          waiver_signed: !!stu.waiver_signed,
+          safety_flag: !!(stu.allergies || stu.injuries || stu.medical_notes),
+        });
       }
     }
+    for (const list of Object.values(rosterByCamp)) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
   }
-  const enrich = (s: any) => ({ ...s, participant_count: participantCounts[s.id] || 0 });
+  const enrich = (s: any) => ({
+    ...s,
+    participant_count: participantCounts[s.id] || 0,
+    roster: rosterByCamp[s.id] ?? [],
+  });
   const upcomingEnriched = (upcomingResult.data ?? []).map(enrich);
   const pastEnriched = (pastResult.data ?? []).map(enrich);
 

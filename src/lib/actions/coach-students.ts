@@ -47,14 +47,26 @@ async function studentIdsForCoach(coachId: string): Promise<Set<string>> {
   // Pull every camp_instance this coach is responsible for, then collect
   // their participants. Mirrors auth.getCoachAccessibleStudentIds() but
   // without depending on a Supabase auth session.
-  const { data: instances } = await admin
-    .from('camp_instances')
-    .select('id')
-    .or(`coach_id.eq.${coachId},head_coach_id.eq.${coachId}`);
+  // Incluye también los servicios donde es STAFF ACEPTADO (asistente/filmer):
+  // el planner ya les muestra la info del alumno en solo-lectura — la ficha
+  // tiene que abrir igual, no dar 404.
+  const [{ data: instances }, { data: staffRows }] = await Promise.all([
+    admin
+      .from('camp_instances')
+      .select('id')
+      .or(`coach_id.eq.${coachId},head_coach_id.eq.${coachId}`),
+    admin
+      .from('service_staff')
+      .select('camp_instance_id')
+      .eq('coach_id', coachId)
+      .eq('status', 'accepted'),
+  ]);
 
-  if (!instances || instances.length === 0) return new Set();
-
-  const ids = instances.map((i) => i.id);
+  const ids = Array.from(new Set([
+    ...(instances ?? []).map((i) => i.id),
+    ...(staffRows ?? []).map((r: any) => r.camp_instance_id),
+  ]));
+  if (ids.length === 0) return new Set();
   const { data: participants } = await admin
     .from('camp_participants')
     .select('student_id')

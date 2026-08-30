@@ -37,6 +37,7 @@ import { BoardInventoryManager } from '@/components/board-inventory/BoardInvento
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import { RoleSwitch } from '@/components/shared/RoleSwitch';
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import {
   Home,
   BookOpen,
@@ -2208,6 +2209,8 @@ function PlanTab({
                                 🚐
                               </button>
                             </div>
+                            {/* Quiénes van — fotos + ficha a un toque */}
+                            <ServiceRoster token={token} roster={s.roster ?? []} />
                             {trOpen === s.id && (
                               <div className="px-[13px] py-[10px]" style={{ borderTop: `1px dashed ${HAIR}`, background: 'rgba(255,209,102,.08)' }}>
                                 {!trInfo ? (
@@ -2313,6 +2316,115 @@ function PlanTab({
           <p className="text-[9px] mt-[5px] text-gray-400" style={F_MONO}>
             Assigned classes appear here
           </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── El roster del servicio: quiénes van, a un toque de su ficha ───
+// Pedido de Marcelo (2026-08-30): al coach le asignaban un camp y para saber
+// QUIÉNES eran tenía que abrir el planner y escarbar. Ahora cada fila de
+// servicio trae la tira de fotos; expandirla lista a cada alumno con su
+// cinta y sus banderas, y cada fila abre la ficha completa (/students/[id])
+// — la de seguridad-primero: alergias, waiver, contacto de emergencia.
+
+type RosterEntry = {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  belt_level: string | null;
+  waiver_signed: boolean;
+  safety_flag: boolean;
+};
+
+function RosterAvatar({ r, size }: { r: RosterEntry; size: number }) {
+  const belt = r.belt_level ? BELT_DISPLAY[r.belt_level as BeltLevel] : null;
+  const initials = r.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0] ?? '')
+    .join('')
+    .toUpperCase();
+  return (
+    <span
+      className="rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: belt?.color || '#8fa3ad',
+        fontSize: Math.max(9, size * 0.36),
+        boxShadow: '0 0 0 2px #fff',
+      }}
+    >
+      {r.photo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
+      ) : (
+        initials
+      )}
+    </span>
+  );
+}
+
+function ServiceRoster({ token, roster }: { token: string; roster: RosterEntry[] }) {
+  const [open, setOpen] = useState(false);
+  const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
+  const HAIRLINE = 'rgba(14,32,41,0.16)';
+  if (!roster || roster.length === 0) return null;
+  return (
+    <div style={{ borderTop: `1px dashed ${HAIRLINE}` }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-[13px] py-[8px] flex items-center gap-[8px] hover:bg-[#E5FAFF]/30 transition-colors"
+      >
+        <span className="flex -space-x-1.5">
+          {roster.slice(0, 6).map((r) => (
+            <RosterAvatar key={r.id} r={r} size={22} />
+          ))}
+        </span>
+        {roster.length > 6 && (
+          <span className="text-[9px] text-gray-400" style={MONO}>+{roster.length - 6}</span>
+        )}
+        <span className="ml-auto shrink-0 text-[8.5px] inline-flex items-center gap-1" style={{ ...MONO, color: '#0090B0' }}>
+          Who&apos;s coming <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+      {open && (
+        <div>
+          {roster.map((r) => {
+            const belt = r.belt_level ? BELT_DISPLAY[r.belt_level as BeltLevel] : null;
+            return (
+              <Link
+                key={r.id}
+                href={`/coach-portal/${token}/students/${r.id}`}
+                className="flex items-center gap-[10px] px-[13px] py-[8px] hover:bg-gray-50 transition-colors"
+                style={{ borderTop: `1px solid ${HAIRLINE}` }}
+              >
+                <RosterAvatar r={r} size={30} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] font-semibold truncate" style={{ color: '#061C2B' }}>
+                    {r.name}
+                  </span>
+                  <span className="block text-[8.5px] text-gray-500" style={MONO}>
+                    {belt?.en ?? '—'}
+                  </span>
+                </span>
+                {r.safety_flag && (
+                  <span title="Medical / safety notes — read the profile" className="shrink-0 inline-flex">
+                    <ShieldAlert size={14} style={{ color: '#b45309' }} />
+                  </span>
+                )}
+                {!r.waiver_signed && (
+                  <span className="shrink-0 text-[8px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(255,107,107,.12)', color: '#c2410c' }}>
+                    NO WAIVER
+                  </span>
+                )}
+                <ChevronRight size={13} className="shrink-0 text-gray-300" />
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

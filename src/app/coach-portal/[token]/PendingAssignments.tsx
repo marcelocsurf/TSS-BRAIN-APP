@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { respondToAssignment, serviceQuickViewByToken } from '@/lib/actions/camps';
 import { CalendarClock, Check, X } from 'lucide-react';
 
@@ -11,6 +12,68 @@ interface Assignment {
   start_date: string;
   end_date: string;
   scheduled_time?: string | null;
+}
+
+// Roster compacto con foto y salto a la ficha (/students/[id]) — se usa
+// antes de aceptar Y en la confirmación. La ficha abre porque el gate de
+// coach-students cubre los camps asignados aunque aún no estén aceptados.
+function QuickRoster({
+  token,
+  roster,
+}: {
+  token: string;
+  roster: Array<{
+    student_id: string;
+    name: string;
+    photo_url?: string | null;
+    belt: string | null;
+    age: number | null;
+    medical: string | null;
+    injuries: string | null;
+    goal: string | null;
+  }>;
+}) {
+  if (roster.length === 0) {
+    return (
+      <p className="text-[11px] text-gray-500">
+        No students enrolled yet — the roster shows up here as they sign up.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+        {roster.length} student{roster.length === 1 ? '' : 's'} · tap for the full profile
+      </p>
+      {roster.map((r) => (
+        <Link
+          key={r.student_id}
+          href={`/coach-portal/${token}/students/${r.student_id}`}
+          className="flex items-center gap-2 py-1 group"
+        >
+          <span className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-[10px] font-bold shrink-0 bg-gray-400">
+            {r.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              r.name.split(/\s+/).slice(0, 2).map((p) => p[0] ?? '').join('').toUpperCase()
+            )}
+          </span>
+          <span className="min-w-0 flex-1 text-[11px] text-gray-700 leading-snug truncate group-hover:underline">
+            <b>{r.name}</b>
+            {r.belt ? ` · ${r.belt.replace(/_/g, ' ')}` : ''}
+            {r.age != null ? ` · ${r.age}y` : ''}
+            {r.medical ? ' · ⚕️' : ''}
+            {r.injuries ? ' · 🤕' : ''}
+          </span>
+          <span className="shrink-0 text-[11px] text-[#0090B0]">→</span>
+        </Link>
+      ))}
+      <p className="text-[10px] text-gray-400 pt-1">
+        ⚕️ medical note · 🤕 injury — the full profile has emergency contact, allergies and waiver.
+      </p>
+    </div>
+  );
 }
 
 export function PendingAssignments({
@@ -37,12 +100,14 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState<null | 'accepted' | 'rejected'>(null);
-  // Quick view al aceptar: qué acepté — fechas, días y quiénes van.
+  // Quick view desde el PRIMER momento: quiénes van se ve ANTES de aceptar
+  // (pedido de Marcelo 2026-08-30 — decidís mejor sabiendo a quién recibís),
+  // y queda a la vista después de aceptar.
   const [quick, setQuick] = useState<Awaited<ReturnType<typeof serviceQuickViewByToken>> | null>(null);
   useEffect(() => {
-    if (done !== 'accepted' || quick) return;
+    if (quick) return;
     serviceQuickViewByToken(token, assignment.id).then(setQuick).catch(() => {});
-  }, [done, quick, token, assignment.id]);
+  }, [quick, token, assignment.id]);
 
   const dateRange =
     assignment.start_date === assignment.end_date
@@ -95,24 +160,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
               📅 {quick.camp.start === quick.camp.end ? quick.camp.start : `${quick.camp.start} → ${quick.camp.end}`}
               {quick.camp.time ? ` · ${quick.camp.time}` : ''} · {quick.camp.days} {quick.camp.days === 1 ? 'day' : 'days'}
             </p>
-            {(quick.roster ?? []).length === 0 ? (
-              <p className="text-[11px] text-gray-500">No students enrolled yet — the roster shows up here as they sign up.</p>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">{quick.roster!.length} student{quick.roster!.length === 1 ? '' : 's'}</p>
-                {quick.roster!.map((r) => (
-                  <div key={r.student_id} className="text-[11px] text-gray-700 leading-snug">
-                    <b>{r.name}</b>
-                    {r.belt ? ` · ${r.belt.replace(/_/g, ' ')}` : ''}
-                    {r.age != null ? ` · ${r.age}y` : ''}
-                    {r.medical ? ' · ⚕️' : ''}
-                    {r.injuries ? ' · 🤕' : ''}
-                    {r.goal ? <span className="text-gray-500"> · “{r.goal.slice(0, 60)}”</span> : null}
-                  </div>
-                ))}
-                <p className="text-[10px] text-gray-400 pt-1">⚕️ medical note · 🤕 injury — full details in each student’s card inside the day plan.</p>
-              </div>
-            )}
+            <QuickRoster token={token} roster={quick.roster ?? []} />
             <p className="text-[11px] font-semibold" style={{ color: '#0090B0' }}>Next: open PLAN → 📅 Vista semana to plan the whole camp.</p>
           </div>
         )}
@@ -140,6 +188,13 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
           )}
         </div>
       </div>
+
+      {/* Quiénes van — visible ANTES de decidir. */}
+      {quick?.ok && (
+        <div className="mb-3 rounded-xl bg-gray-50 border border-gray-100 p-3">
+          <QuickRoster token={token} roster={quick.roster ?? []} />
+        </div>
+      )}
 
       {mode === 'rejecting' ? (
         <div className="space-y-2">

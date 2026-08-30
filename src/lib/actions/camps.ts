@@ -2223,6 +2223,7 @@ export async function serviceQuickViewByToken(
   roster?: Array<{
     student_id: string;
     name: string;
+    photo_url: string | null;
     belt: string | null;
     age: number | null;
     medical: string | null;
@@ -2247,7 +2248,7 @@ export async function serviceQuickViewByToken(
   const [{ count: dayCount }, { data: parts }] = await Promise.all([
     admin.from('camp_sessions').select('id', { count: 'exact', head: true }).eq('camp_instance_id', campInstanceId),
     admin.from('camp_participants')
-      .select('student_id, enrollment_status, students:student_id(first_name, last_name, belt_level, date_of_birth, medical_notes, injuries, primary_goal)')
+      .select('student_id, enrollment_status, students:student_id(first_name, last_name, photo_url, belt_level, date_of_birth, medical_notes, injuries, primary_goal)')
       .eq('camp_instance_id', campInstanceId)
       .eq('enrollment_status', 'active'),
   ]);
@@ -2263,6 +2264,7 @@ export async function serviceQuickViewByToken(
     return {
       student_id: p.student_id,
       name: [st?.first_name, st?.last_name].filter(Boolean).join(' ') || '—',
+      photo_url: st?.photo_url ?? null,
       belt: st?.belt_level ?? null,
       age,
       medical: st?.medical_notes?.trim() || null,
