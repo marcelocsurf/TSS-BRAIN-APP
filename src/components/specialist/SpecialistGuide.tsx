@@ -53,6 +53,11 @@ export function SpecialistGuide({ roleKey, onClose }: { roleKey: string; onClose
           <p>La línea de tiempo completa del atleta: microciclos agrupados por <strong style={{ color: '#eaf4fa' }}>fase del año</strong> (general, específica, precompetitiva, competitiva, transición), competencias 🏆, evaluaciones 📋, viajes ✈️ y el pico ▲, con la semana actual marcada. Ahí ves en qué fase está para ajustar tu trabajo a la carga — el atleta ve este mismo año en su tarjeta &quot;My year&quot;.</p>
         </Sec>
 
+        <Sec icon="📆" title="Día por día — la semana del programa">
+          <Li k="La semana actual">Dentro de cada atleta, la vista <strong style={{ color: '#eaf4fa' }}>Día por día</strong> te muestra su programa desplegado en fechas reales: elegís el microciclo con los chips M1, M2… y ves cada día con sus ítems de entrenamiento, más las citas y tareas que ya caen ese día.</Li>
+          <Li k="+ Agendar acá">Cada día futuro tiene su botón para agendar una cita <strong style={{ color: '#eaf4fa' }}>anclada a esa fecha</strong>, sin salir de la vista — ves la carga del día y agendás encima con criterio. Los días pasados no lo muestran.</Li>
+        </Sec>
+
         <div className="rounded-2xl p-3.5" style={{ background: 'rgba(155,123,255,.09)', border: '1px solid rgba(155,123,255,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: '#B9A5FF' }}>La regla de oro</p>
           <p className="text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
