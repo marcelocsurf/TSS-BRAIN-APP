@@ -32,6 +32,7 @@ import {
   Waves,
   type LucideIcon,
   Megaphone,
+  Compass,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -67,6 +68,9 @@ const NAV_ITEMS: NavItem[] = [
   // keep it until the old flow is fully retired.
   { href: '/sessions/drafts', label: 'Drafts',  Icon: Pencil, roles: ['coach'] },
   // \u2014 Admin only \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
+  // El Método: cuartel general del negocio del dueño (bóveda + guía por
+  // área). El gate fino es is_platform_admin dentro de las actions.
+  { href: '/metodo',        label: 'El Método', Icon: Compass,     roles: ['admin'] },
   { href: '/academies',     label: 'Academies', Icon: Building2,   roles: ['admin'] },
   // Programas de entreno (línea Alto Rendimiento) — solo admin hasta que la
   // escalera del coach (Escalón 2) llegue en el Paso 4.
