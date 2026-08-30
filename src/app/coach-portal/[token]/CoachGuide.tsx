@@ -44,7 +44,7 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
         </p>
 
         <Sec icon="🏠" title="Home — tu día">
-          <Li k="Invitaciones">Cuando te asignan un servicio (como coach o como asistente/filmer) te aparece una tarjeta arriba de todo: <strong>Accept / Decline</strong>. Respondela siempre — hasta que aceptés, coordinación no sabe si contás.</Li>
+          <Li k="Invitaciones">Cuando te asignan un servicio (como coach o como asistente/filmer) te aparece una tarjeta arriba de todo: <strong>Accept / Decline</strong>. La tarjeta te muestra <strong>quiénes van</strong> antes de decidir — tocá un nombre y se abre su ficha. Respondela siempre: hasta que aceptés, coordinación no sabe si contás.</Li>
           <Li k="Tareas">Lo que coordinación te pidió para hoy. Marcalas al terminar.</Li>
           <Li k="Tu progreso">Nivel de certificación, horas coacheadas y rating de tus alumnos.</Li>
           <Li k="Plan anual">Si sos head coach de un atleta de alto rendimiento, ves su temporada con las fases del año y los <strong>días al pico</strong> — el detalle completo vive en tu portal de equipo (/equipo).</Li>
@@ -56,6 +56,7 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
 
         <Sec icon="📋" title="Plan — planear y CERRAR (lo más importante)">
           <Li k="Ver el plan">El manual del día: venue, warm-up, drills por alumno. Leelo antes de la clase.</Li>
+          <Li k="Quiénes van">Cada servicio del Plan trae la tira de fotos — <strong>&quot;Who&apos;s coming&quot;</strong>. Expandila y tocá al alumno: su ficha completa (médico, waiver, contacto de emergencia) queda a un toque, para repasar antes de la clase o ante cualquier emergencia.</Li>
           <Li k="Dar la clase">El modo en vivo: pasás lista, evaluás a cada alumno (enfoque, flow, feedback, próximo paso) y al final tocás <strong>cerrar el día</strong>.</Li>
           <Li k="⚠ Needs closing">Si te quedó un día sin cerrar, aparece en amarillo en el Plan (<strong>&quot;Needs closing · pay on hold&quot;</strong>): tocá ese día y te lleva directo a cerrarlo, aunque la clase haya sido hace días.</Li>
           <Li k="Foco del día">Al planear cada día elegís el paso de la Secuencia que se trabaja, del catálogo <strong>de la cinta del grupo</strong>, agrupado por secuencia. Ese paso es lo que después calificás en la evaluación.</Li>
