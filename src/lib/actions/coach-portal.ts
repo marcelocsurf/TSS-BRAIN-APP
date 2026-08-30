@@ -172,6 +172,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       .from('camp_instances')
       .select('id, camp_name, start_date, end_date, status')
       .or(svcOr)
+      .neq('status', 'cancelled')
       .lt('end_date', today)
       .order('end_date', { ascending: false })
       .limit(10),
@@ -292,13 +293,19 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       list.sort((a, b) => a.name.localeCompare(b.name));
     }
   }
+  // El roster SOLO viaja con upcoming: la lista Past no lo dibuja nunca —
+  // serializarlo ahí era peso muerto con flags médicos/waiver en el payload.
   const enrich = (s: any) => ({
     ...s,
     participant_count: participantCounts[s.id] || 0,
     roster: rosterByCamp[s.id] ?? [],
   });
+  const enrichPast = (s: any) => ({
+    ...s,
+    participant_count: participantCounts[s.id] || 0,
+  });
   const upcomingEnriched = (upcomingResult.data ?? []).map(enrich);
-  const pastEnriched = (pastResult.data ?? []).map(enrich);
+  const pastEnriched = (pastResult.data ?? []).map(enrichPast);
 
   // Course progress map (coach_lesson_progress for this coach).
   // "started" = the coach opened the lesson but hasn't completed it yet.

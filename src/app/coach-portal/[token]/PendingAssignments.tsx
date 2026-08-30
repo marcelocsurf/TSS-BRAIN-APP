@@ -28,9 +28,8 @@ function QuickRoster({
     photo_url?: string | null;
     belt: string | null;
     age: number | null;
-    medical: string | null;
-    injuries: string | null;
-    goal: string | null;
+    has_medical: boolean;
+    has_injuries: boolean;
   }>;
 }) {
   if (roster.length === 0) {
@@ -63,8 +62,8 @@ function QuickRoster({
             <b>{r.name}</b>
             {r.belt ? ` · ${r.belt.replace(/_/g, ' ')}` : ''}
             {r.age != null ? ` · ${r.age}y` : ''}
-            {r.medical ? ' · ⚕️' : ''}
-            {r.injuries ? ' · 🤕' : ''}
+            {r.has_medical ? ' · ⚕️' : ''}
+            {r.has_injuries ? ' · 🤕' : ''}
           </span>
           <span className="shrink-0 text-[11px] text-[#0090B0]">→</span>
         </Link>

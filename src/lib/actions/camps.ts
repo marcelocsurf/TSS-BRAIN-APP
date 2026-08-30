@@ -2226,9 +2226,11 @@ export async function serviceQuickViewByToken(
     photo_url: string | null;
     belt: string | null;
     age: number | null;
-    medical: string | null;
-    injuries: string | null;
-    goal: string | null;
+    /** Solo BANDERAS: el texto médico no viaja en la lista — vive en la
+     *  ficha token-gateada. Minimización: esta respuesta llega al cliente
+     *  aunque el coach termine declinando la invitación. */
+    has_medical: boolean;
+    has_injuries: boolean;
   }>;
 }> {
   const admin = createAdminClient();
@@ -2248,7 +2250,7 @@ export async function serviceQuickViewByToken(
   const [{ count: dayCount }, { data: parts }] = await Promise.all([
     admin.from('camp_sessions').select('id', { count: 'exact', head: true }).eq('camp_instance_id', campInstanceId),
     admin.from('camp_participants')
-      .select('student_id, enrollment_status, students:student_id(first_name, last_name, photo_url, belt_level, date_of_birth, medical_notes, injuries, primary_goal)')
+      .select('student_id, enrollment_status, students:student_id(first_name, last_name, photo_url, belt_level, date_of_birth, medical_notes, injuries)')
       .eq('camp_instance_id', campInstanceId)
       .eq('enrollment_status', 'active'),
   ]);
@@ -2267,9 +2269,8 @@ export async function serviceQuickViewByToken(
       photo_url: st?.photo_url ?? null,
       belt: st?.belt_level ?? null,
       age,
-      medical: st?.medical_notes?.trim() || null,
-      injuries: st?.injuries?.trim() || null,
-      goal: st?.primary_goal?.trim() || null,
+      has_medical: !!st?.medical_notes?.trim(),
+      has_injuries: !!st?.injuries?.trim(),
     };
   });
 

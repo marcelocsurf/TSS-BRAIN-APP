@@ -47,9 +47,11 @@ async function studentIdsForCoach(coachId: string): Promise<Set<string>> {
   // Pull every camp_instance this coach is responsible for, then collect
   // their participants. Mirrors auth.getCoachAccessibleStudentIds() but
   // without depending on a Supabase auth session.
-  // Incluye también los servicios donde es STAFF ACEPTADO (asistente/filmer):
-  // el planner ya les muestra la info del alumno en solo-lectura — la ficha
-  // tiene que abrir igual, no dar 404.
+  // Incluye también los servicios donde es ASISTENTE ACEPTADO — el mismo
+  // criterio exacto de getServicePlan y getAcceptedAssistantCampIds:
+  // role='assistant' + status='accepted'. SOLO ese rol: a un fotógrafo/
+  // filmer aceptado el planner le niega el plan, así que la ficha (con
+  // datos médicos y contacto de emergencia) tampoco le abre.
   const [{ data: instances }, { data: staffRows }] = await Promise.all([
     admin
       .from('camp_instances')
@@ -59,6 +61,7 @@ async function studentIdsForCoach(coachId: string): Promise<Set<string>> {
       .from('service_staff')
       .select('camp_instance_id')
       .eq('coach_id', coachId)
+      .eq('role', 'assistant')
       .eq('status', 'accepted'),
   ]);
 

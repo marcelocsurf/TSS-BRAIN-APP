@@ -44,7 +44,7 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
         </p>
 
         <Sec icon="🏠" title="Home — tu día">
-          <Li k="Invitaciones">Cuando te asignan un servicio (como coach o como asistente/filmer) te aparece una tarjeta arriba de todo: <strong>Accept / Decline</strong>. La tarjeta te muestra <strong>quiénes van</strong> antes de decidir — tocá un nombre y se abre su ficha. Respondela siempre: hasta que aceptés, coordinación no sabe si contás.</Li>
+          <Li k="Invitaciones">Cuando te asignan un servicio (como coach o como asistente/filmer) te aparece una tarjeta arriba de todo: <strong>Accept / Decline</strong>. Si te invitan <strong>como coach</strong>, la tarjeta te muestra <strong>quiénes van</strong> antes de decidir — tocá un nombre y se abre su ficha; como asistente los ves al aceptar, en el Plan. Respondela siempre: hasta que aceptés, coordinación no sabe si contás.</Li>
           <Li k="Tareas">Lo que coordinación te pidió para hoy. Marcalas al terminar.</Li>
           <Li k="Tu progreso">Nivel de certificación, horas coacheadas y rating de tus alumnos.</Li>
           <Li k="Plan anual">Si sos head coach de un atleta de alto rendimiento, ves su temporada con las fases del año y los <strong>días al pico</strong> — el detalle completo vive en tu portal de equipo (/equipo).</Li>
