@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { getMyStudentResources, type CoachResource } from '@/lib/actions/coach-resources';
-import { Presentation, X } from 'lucide-react';
+import { Presentation } from 'lucide-react';
 
-// Shows the presentations an admin has granted to this student. Each opens as a
-// full-screen in-app PDF viewer. Mirrors the coach CoachPresentations, styled
-// for the light student portal. Renders nothing when there are none.
+// Shows the presentations an admin has granted to this student.
+//
+// Cada tile es un LINK directo al PDF (pestaña nueva → visor nativo).
+// Antes abría un modal con <iframe>: en iPhone/iPad Safari un PDF embebido
+// renderiza SOLO LA PRIMERA PÁGINA (sin scroll), y en Android Chrome ni se
+// renderiza — reporte de Marcelo 2026-08-31 ("solo una hoja"). El visor
+// nativo pagina, hace zoom y vuelve con Done/atrás. La URL sigue siendo la
+// del app (/api/materials/token/id) — la signed URL nunca llega al cliente.
 export function StudentPresentations({ token, initial }: { token: string; initial?: CoachResource[] }) {
   const [items, setItems] = useState<CoachResource[]>(initial ?? []);
-  const [open, setOpen] = useState<CoachResource | null>(null);
 
   useEffect(() => {
     if (initial !== undefined) return; // vino del bundle server-side
@@ -25,10 +29,11 @@ export function StudentPresentations({ token, initial }: { token: string; initia
         Presentations ({items.length})
       </p>
       {items.map((r) => (
-        <button
+        <a
           key={r.id}
-          type="button"
-          onClick={() => setOpen(r)}
+          href={r.file_url}
+          target="_blank"
+          rel="noopener noreferrer"
           className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 flex items-center gap-3 transition-colors hover:border-gray-300 shadow-sm"
           style={{ borderLeft: '4px solid var(--tss-cyan, #5AC3E7)' }}
         >
@@ -45,26 +50,8 @@ export function StudentPresentations({ token, initial }: { token: string; initia
             <p className="text-sm font-medium text-[var(--tss-navy)] truncate">{r.title}</p>
             {r.description && <p className="text-[11px] text-gray-500 leading-snug line-clamp-2">{r.description}</p>}
           </div>
-        </button>
+        </a>
       ))}
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[100] bg-black flex flex-col"
-          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-        >
-          <button
-            type="button"
-            onClick={() => setOpen(null)}
-            className="absolute right-3 z-[110] inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur"
-            style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
-            aria-label="Close"
-          >
-            <X size={15} /> Close
-          </button>
-          <iframe src={open.file_url} title={open.title} className="flex-1 w-full h-full border-0" />
-        </div>
-      )}
     </div>
   );
 }
