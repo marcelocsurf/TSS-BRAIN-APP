@@ -12,6 +12,7 @@
 // require a Supabase auth session — the coach portal is token-based.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { waterRuleBlocker } from '@/lib/constants/graduation';
 
 export type CoachStudentSummary = {
   id: string;
@@ -243,7 +244,7 @@ export async function coachConfirmBelt(
 
   const admin = createAdminClient();
   const [{ data: stu }, { data: me }] = await Promise.all([
-    admin.from('students').select('belt_level, belt_provisional').eq('id', studentId).maybeSingle(),
+    admin.from('students').select('belt_level, belt_provisional, ocean_level, ocean_level_provisional').eq('id', studentId).maybeSingle(),
     admin.from('coaches').select('max_belt_permission').eq('id', coach.id).maybeSingle(),
   ]);
   if (!stu) return { ok: false, error: 'Student not found.' };
@@ -262,6 +263,11 @@ export async function coachConfirmBelt(
   if (target >= current && target > cap) {
     return { ok: false, error: 'Your certification level does not cover that belt — ask a coach certified for it.' };
   }
+
+  // LA REGLA DEL AGUA: confirmar Blue+ exige océano semi_autonomous+
+  // confirmado — primero el botón Confirm level del agua, después la cinta.
+  const waterBlock = waterRuleBlocker(belt, stu.ocean_level, stu.ocean_level_provisional);
+  if (waterBlock) return { ok: false, error: waterBlock };
 
   // Update ATÓMICO sobre la condición: si otro coach (u otra vía) ya la
   // confirmó entre el check y este write, 0 filas — no se pisa nada.

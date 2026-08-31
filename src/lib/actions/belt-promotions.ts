@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import { BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
+import { waterRuleBlocker } from '@/lib/constants/graduation';
 import { revalidatePath } from 'next/cache';
 
 export interface PendingPromotion {
@@ -118,9 +119,12 @@ export async function resolvePromotion(
     if (newBelt in BELT_RANK) {
       const { data: stu } = await admin
         .from('students')
-        .select('belt_level')
+        .select('belt_level, ocean_level, ocean_level_provisional')
         .eq('id', rec.student_id)
         .single();
+      // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
+      const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
+      if (waterBlock) return { ok: false, error: waterBlock };
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] > currentRank) {
         await admin.from('students').update({
@@ -234,7 +238,11 @@ export async function resolvePromotionByToken(
   if (confirm) {
     const newBelt = rec.recommended_belt as BeltLevel;
     if (newBelt in BELT_RANK) {
-      const { data: stu } = await admin.from('students').select('belt_level').eq('id', rec.student_id).single();
+      const { data: stu } = await admin.from('students')
+        .select('belt_level, ocean_level, ocean_level_provisional').eq('id', rec.student_id).single();
+      // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
+      const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
+      if (waterBlock) return { ok: false, error: waterBlock };
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] > currentRank) {
         await admin.from('students').update({

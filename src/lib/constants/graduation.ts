@@ -20,6 +20,36 @@ export interface GraduationRule {
   requireAllStps: boolean;
   principles: string[];   // canon principles to check ([] = none for this belt)
   minPrinciples: number;  // minimum principles embodied
+  /** LA REGLA DEL AGUA (doctrina Marcelo 2026-08-31): la cinta exige
+   *  autosuficiencia en el agua, confirmada por un coach. */
+  waterRule?: { minLabel: string; description: string };
+}
+
+// ═══ LA REGLA DEL AGUA — el chequeo único para TODA vía de promoción ═══
+// "Solo entra a Foundation quien es autosuficiente para agarrar olas solo:
+// salir con su tabla, elegir/posicionarse solo, volver solo." Aplica a Blue
+// y superiores. Autosuficiente = ocean semi_autonomous+ (mismo criterio que
+// el quiz, isSelfSufficient) y NO provisional: lo confirmó un coach en el
+// agua. Devuelve null si no bloquea, o el mensaje del bloqueo.
+const WATER_RULE_BELTS = new Set(['blue_belt', 'purple_belt', 'brown_belt', 'black_belt']);
+const SELF_SUFFICIENT_LEVELS = new Set(['semi_autonomous', 'autonomous', 'advanced']);
+
+/** ¿El nivel de océano ya es autosuficiente? (sin mirar si está confirmado) */
+export function isWaterSelfSufficient(oceanLevel: string | null | undefined): boolean {
+  return !!oceanLevel && SELF_SUFFICIENT_LEVELS.has(oceanLevel);
+}
+
+export function waterRuleBlocker(
+  targetBelt: string,
+  oceanLevel: string | null | undefined,
+  oceanProvisional: boolean | null | undefined,
+): string | null {
+  if (!WATER_RULE_BELTS.has(targetBelt)) return null;
+  const selfSufficient = !!oceanLevel && SELF_SUFFICIENT_LEVELS.has(oceanLevel);
+  if (selfSufficient && oceanProvisional === false) return null;
+  return selfSufficient
+    ? 'The water rule: their ocean level shows self-sufficiency but no coach has confirmed it in the water yet — confirm it first.'
+    : 'The water rule blocks this belt: Foundation and above require water self-sufficiency (Semi-Autonomous or higher, coach-confirmed in the water).';
 }
 
 // Keyed by the belt the camp graduates students INTO (template includes_course_key).
@@ -74,6 +104,11 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
       'Sabe decir por sí mismo qué etapa de la secuencia falló cuando la ejecución no llega',
     ],
     minPrinciples: 1,
+    waterRule: {
+      minLabel: 'Semi-Autonomous',
+      description:
+        'Self-sufficient in the water — you get out with your board, choose and position yourself, and get back on your own. Your coach confirms it in the water.',
+    },
   },
 };
 

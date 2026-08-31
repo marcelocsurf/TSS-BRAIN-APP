@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
-import { GRADUATION_RULES } from '@/lib/constants/graduation';
+import { GRADUATION_RULES, waterRuleBlocker } from '@/lib/constants/graduation';
 import { sortByBlocks } from '@/lib/constants/learning-blocks';
 import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
 import { exigeCierreDeDias } from '@/lib/utils/camp-window';
@@ -1643,13 +1643,19 @@ export async function closeCampFinal(
       if (!(newBelt in BELT_RANK)) continue;
       const { data: stu } = await admin
         .from('students')
-        .select('belt_level')
+        .select('belt_level, ocean_level, ocean_level_provisional')
         .eq('id', p.student_id)
         .single();
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] <= currentRank) continue; // never demote / no-op
 
-      const authorized = canAccreditAny || canCoachBelt(coachCap, newBelt);
+      // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
+      // El loop de arriba ya grabó las confirmaciones de océano de ESTE
+      // cierre, así que la lectura las ve. Si bloquea, la promoción no se
+      // pierde: cae a recomendación pendiente (y su confirmación vuelve a
+      // pasar por el mismo chequeo en belt-promotions).
+      const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
+      const authorized = (canAccreditAny || canCoachBelt(coachCap, newBelt)) && !waterBlock;
       if (authorized) {
         await admin
           .from('students')

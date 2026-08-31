@@ -18,7 +18,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getMySequence } from '@/lib/actions/sequence';
 import { getCourseCatalog } from '@/lib/actions/course';
-import { GRADUATION_RULES } from '@/lib/constants/graduation';
+import { GRADUATION_RULES, isWaterSelfSufficient } from '@/lib/constants/graduation';
 import { type BeltLevel } from '@/lib/constants/belts';
 
 export interface RoadmapSequence {
@@ -51,8 +51,18 @@ export interface BeltRoadmap {
   sequencesOwned: number;
   /** Lo que el coach todavía no vio: pendiente, no reprobado. */
   sequencesUnseen: number;
-  // El AGUA ya no vive acá (2026-08-29): es otra línea, con su propia vista
-  // (getWaterLevel). La cinta es técnica; el agua es seguridad.
+  // El AGUA tiene su propia vista (getWaterLevel) — pero desde LA REGLA DEL
+  // AGUA (2026-08-31) también es un REQUISITO de Blue+: autosuficiencia
+  // confirmada por el coach. Cuando la cinta perseguida la exige, va como
+  // línea propia con su estado.
+  waterRule: {
+    minLabel: string;
+    description: string;
+    /** El nivel de océano ya es autosuficiente (semi_autonomous+). */
+    reached: boolean;
+    /** Un coach lo confirmó en el agua (no provisional). */
+    confirmed: boolean;
+  } | null;
   // ── Curso ──
   preCourseCompleted: boolean;
   lessonsCompleted: number;
@@ -111,7 +121,7 @@ export async function getBeltRoadmap(
 
   const { data: student } = await admin
     .from('students')
-    .select('id, first_name, belt_level, next_recommended_focus')
+    .select('id, first_name, belt_level, next_recommended_focus, ocean_level, ocean_level_provisional')
     .eq('portal_token', token)
     .maybeSingle();
   if (!student) return { ok: false, error: 'Student not found.' };
@@ -219,6 +229,16 @@ export async function getBeltRoadmap(
       lessonsCompleted,
       lessonsTotal,
       autonomyPrinciples: rule.principles,
+      waterRule: rule.waterRule
+        ? {
+            minLabel: rule.waterRule.minLabel,
+            description: rule.waterRule.description,
+            reached: isWaterSelfSufficient((student as any).ocean_level),
+            confirmed:
+              isWaterSelfSufficient((student as any).ocean_level) &&
+              (student as any).ocean_level_provisional === false,
+          }
+        : null,
       coachFocus: (student as any).next_recommended_focus || null,
     },
   };

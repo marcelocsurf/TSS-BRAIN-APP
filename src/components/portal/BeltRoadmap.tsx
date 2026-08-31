@@ -306,32 +306,59 @@ export function BeltRoadmap({
                 )}
               </section>
 
-              {/* EL AGUA ya no vive acá (Marcelo 2026-08-29: "debería ser una
-                  cosa aparte para saber si eres autónomo, no parte de esta
-                  evaluación"). La cinta es técnica; el agua es seguridad y
-                  tiene su propia vista. Acá queda solo la puerta. */}
-              <button
-                type="button"
-                onClick={() => onOpenWater?.()}
-                className="block w-full text-left rounded-2xl px-4 py-3.5"
-                style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Waves size={16} style={{ color: CYAN }} className="shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13.5px] font-semibold" style={{ color: '#eaf4fa' }}>
-                      In the water
-                    </p>
-                    <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#8aa0b2' }}>
-                      Where you can paddle out on your own is a separate track — it doesn&apos;t
-                      hold your belt back.
-                    </p>
+              {/* EL AGUA. Para White/Yellow sigue la decisión 2026-08-29: vía
+                  aparte que no frena la cinta — solo la puerta. Para Blue+
+                  rige LA REGLA DEL AGUA (Marcelo 2026-08-31): la cinta exige
+                  autosuficiencia confirmada por el coach, y acá se muestra
+                  como requisito con estado. */}
+              {data.waterRule ? (
+                <section>
+                  <SectionTitle
+                    icon={Waves}
+                    rule="This belt starts at self-sufficiency in the water. Your coach confirms it out there, not on paper."
+                  >
+                    In the water
+                  </SectionTitle>
+                  <div className="rounded-2xl px-3.5 py-1" style={{ background: 'rgba(255,255,255,.05)' }}>
+                    <Row
+                      done={data.waterRule.confirmed}
+                      pending={!data.waterRule.confirmed}
+                      title={`Self-sufficient in the water — ${data.waterRule.minLabel} or higher`}
+                      detail={
+                        data.waterRule.confirmed
+                          ? 'Confirmed by your coach.'
+                          : data.waterRule.reached
+                            ? 'Your level is there — your coach still confirms it with you in the water.'
+                            : 'You get out with your board, choose your wave and position yourself, and get back — all on your own.'
+                      }
+                      onClick={() => onOpenWater?.()}
+                    />
                   </div>
-                  <span className="shrink-0 text-[11px] font-semibold" style={{ color: CYAN }}>
-                    Your water level →
-                  </span>
-                </div>
-              </button>
+                </section>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onOpenWater?.()}
+                  className="block w-full text-left rounded-2xl px-4 py-3.5"
+                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Waves size={16} style={{ color: CYAN }} className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13.5px] font-semibold" style={{ color: '#eaf4fa' }}>
+                        In the water
+                      </p>
+                      <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#8aa0b2' }}>
+                        Where you can paddle out on your own is a separate track — it doesn&apos;t
+                        hold your belt back.
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[11px] font-semibold" style={{ color: CYAN }}>
+                      Your water level →
+                    </span>
+                  </div>
+                </button>
+              )}
 
               {/* 3 · EL CURSO */}
               <section>
