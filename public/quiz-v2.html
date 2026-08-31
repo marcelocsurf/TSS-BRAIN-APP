@@ -37,6 +37,10 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
 .gateopt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px 18px;background:var(--card);border:1.5px solid var(--gb);border-radius:14px;cursor:pointer;color:var(--tl);font-family:inherit;font-size:.9rem;line-height:1.4;transition:border-color .2s}
 .gateopt:hover{border-color:rgba(0,210,255,.35)}
 .gateopt strong{color:var(--tw)}
+.gateopt.sel{border-color:var(--cyan);background:rgba(0,210,255,.06)}
+.gbadge{margin-left:auto;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--cyan);border:1px solid rgba(0,210,255,.4);border-radius:999px;padding:3px 9px}
+.gbadge:empty{display:none}
+.btn:disabled{opacity:.4;cursor:default}
 .opt{display:block;width:100%;text-align:left;padding:14px 16px;background:var(--card);border:1.5px solid var(--gb);border-radius:12px;cursor:pointer;color:var(--tl);font-family:inherit;font-size:.88rem;line-height:1.4;transition:all .2s}
 .opt:hover{border-color:rgba(0,210,255,.3)}
 .opt.sel{background:rgba(0,210,255,.12);border-color:rgba(0,210,255,.45)}
@@ -58,28 +62,14 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
 <body>
 <div class="wrap">
 
-<!-- ═══ INTRO ═══ -->
+<!-- ═══ INTRO — el del quiz actual (v1): prepara expectativas y el resultado ═══ -->
 <div class="scr on" id="s-intro">
   <div class="brand center">
     <img src="/venue-scout/tss-wave.png?v=1" alt="The Surf Sequence">
     <div class="bn">The Surf Sequence</div>
     <div class="proto">Prototype V2 · internal — does not save anything</div>
   </div>
-  <h1 class="disp center" style="font-size:2rem;margin:18px 0 10px">One session.<br><em style="color:var(--cyan);font-style:normal">Your real level.</em></h1>
-  <p class="center" style="color:var(--tl);opacity:.8;line-height:1.55;max-width:400px;margin:0 auto 10px">
-    Surfing follows a sequence — the same one for a longboard glider and a shortboard shredder.
-    This quiz walks you through <strong style="color:var(--tw)">one complete session</strong>, from the sand to your last wave.
-    Pick what honestly happens.
-  </p>
-  <p class="center mono" style="font-size:.6rem;color:var(--tm);margin-bottom:22px">10 scenes · 2 tracks: the ocean & the wave · ~90 seconds</p>
-  <div class="center"><button class="btn" onclick="show('why')">Start the session →</button></div>
-</div>
-
-<!-- ═══ EXPECTATIVAS — prepara el resultado (espejo del quiz actual) ═══ -->
-<div class="scr" id="s-why">
-  <div class="brand center"><img src="/venue-scout/tss-wave.png?v=1" alt=""><div class="bn">The Surf Sequence</div></div>
-  <p class="center mono" style="font-size:.62rem;letter-spacing:.18em;color:var(--cyan);margin:14px 0 8px">BEFORE YOU START</p>
-  <h2 class="disp center" style="font-size:1.6rem;margin:0 0 16px">Why your <em style="color:var(--cyan);font-style:normal">real level</em> matters</h2>
+  <h1 class="disp center" style="font-size:1.8rem;margin:16px 0 16px">Why your <em style="color:var(--cyan);font-style:normal">real level</em> matters</h1>
   <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
     Training above your level doesn't make you progress faster — it creates gaps in your
     foundation that show up later as plateaus, bad habits, and frustration.
@@ -90,33 +80,39 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
     There's no shortcut — but there is an optimal sequence.
   </p>
   <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
-    At the end you'll see your level, your belt, and what you'll be building at that stage.
-    Answer with what <strong style="color:var(--tw)">actually happens</strong> in the water —
-    not what you're aiming for — and the result will be worth keeping.
+    The sequence is the same on a longboard or a shortboard. Answer with what
+    <strong style="color:var(--tw)">actually happens</strong> in the water — not what you're
+    aiming for — and at the end you'll see your level, your belt, and what you'll build at that stage.
   </p>
-  <p class="center" style="color:var(--cyan);font-weight:600;max-width:420px;margin:0 auto 22px;text-wrap:balance">That's what The Surf Sequence is built on.</p>
-  <div class="center"><button class="btn" onclick="show('gate')">Let's go →</button></div>
+  <p class="center" style="color:var(--cyan);font-weight:600;max-width:420px;margin:0 auto 16px;text-wrap:balance">That's what The Surf Sequence is built on.</p>
+  <p class="center mono" style="font-size:.6rem;color:var(--tm);margin-bottom:22px">10 scenes · 2 tracks · ~90 seconds</p>
+  <div class="center"><button class="btn" onclick="show('gate')">Find my level →</button></div>
 </div>
 
-<!-- ═══ GATE — POR NECESIDAD ═══ -->
+<!-- ═══ GATE — POR NECESIDAD (hasta 2, en orden de prioridad) ═══ -->
 <div class="scr" id="s-gate">
   <div class="brand center"><img src="/venue-scout/tss-wave.png?v=1" alt=""><div class="bn">The Surf Sequence</div></div>
   <h2 class="disp center" style="font-size:1.35rem;margin:6px 0 6px">What do you feel you <em style="color:var(--cyan);font-style:normal">need</em> most?</h2>
-  <p class="center" style="color:var(--tm);font-size:.85rem;margin-bottom:18px">Your honest answer — it shapes what we look at.</p>
+  <p class="center" style="color:var(--tm);font-size:.85rem;margin-bottom:18px">Pick one — or two, in order of priority. Your honest answer shapes what we look at.</p>
   <div style="display:flex;flex-direction:column;gap:10px">
-    <button class="gateopt" onclick="gateSelect(0)">
+    <button class="gateopt" id="gopt0" onclick="gateSelect(0)">
       <span><strong>Everything, from zero</strong> — I've never surfed (or barely tried)</span>
+      <span class="gbadge" id="gbadge0"></span>
     </button>
-    <button class="gateopt" onclick="gateSelect(1)">
+    <button class="gateopt" id="gopt1" onclick="gateSelect(1)">
       <span><strong>The ocean</strong> — navigate it better, understand it, and catch more waves</span>
+      <span class="gbadge" id="gbadge1"></span>
     </button>
-    <button class="gateopt" onclick="gateSelect(2)">
+    <button class="gateopt" id="gopt2" onclick="gateSelect(2)">
       <span><strong>The wave</strong> — I catch waves; I need the riding: control, speed, my lines</span>
+      <span class="gbadge" id="gbadge2"></span>
     </button>
-    <button class="gateopt" onclick="gateSelect(3)">
+    <button class="gateopt" id="gopt3" onclick="gateSelect(3)">
       <span><strong>The edge</strong> — precision, power and performance in demanding conditions</span>
+      <span class="gbadge" id="gbadge3"></span>
     </button>
   </div>
+  <div class="center" style="margin-top:16px"><button class="btn" id="gnext" disabled onclick="gateNext()">Continue →</button></div>
 </div>
 
 <!-- ═══ TABLA (contexto, no puntúa) ═══ -->
@@ -277,10 +273,31 @@ const CURRICULUM={
 
 const NEEDS=["everything, from zero","the ocean — navigating it and catching more waves","the wave — control, speed and your lines","the edge — precision in demanding conditions"];
 
-let cur=0, ans=new Array(QS.length).fill(-1), need=-1, board=null;
+let cur=0, ans=new Array(QS.length).fill(-1), need=-1, needs=[], board=null;
 
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');window.scrollTo(0,0)}
-function gateSelect(g){need=g;if(g===0){renderResult(compute());return}show('board')}
+function gateSelect(g){
+  /* Hasta 2 necesidades en ORDEN DE PRIORIDAD (pedido Marcelo 2026-08-31).
+     "From zero" es excluyente: no combina con ninguna otra. */
+  if(g===0){needs=needs.includes(0)?[]:[0]}
+  else{
+    if(needs.includes(0))needs=[];
+    const i=needs.indexOf(g);
+    if(i>=0)needs.splice(i,1);
+    else{if(needs.length>=2)needs.pop();needs.push(g)}
+  }
+  need=needs.length?needs[0]:-1;
+  renderGate();
+}
+function renderGate(){
+  for(let g=0;g<4;g++){
+    const pos=needs.indexOf(g);
+    document.getElementById('gopt'+g).classList.toggle('sel',pos>=0);
+    document.getElementById('gbadge'+g).textContent=pos===0?(needs.length>1?'1st':'\u2713'):pos===1?'2nd':'';
+  }
+  document.getElementById('gnext').disabled=needs.length===0;
+}
+function gateNext(){if(!needs.length)return;if(needs[0]===0){renderResult(compute());return}show('board')}
 function boardSelect(b){board=b;cur=0;ans=new Array(QS.length).fill(-1);show('quiz');render()}
 
 function render(){
@@ -336,7 +353,7 @@ function renderResult(r){
   const needLine=need>0?`
    <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:14px 16px;text-align:left">
      <div class="mono" style="font-size:.6rem;color:var(--cyan)">What you said you need</div>
-     <p style="font-size:.85rem;line-height:1.5;margin-top:6px">You came for <strong style="color:var(--tw)">${NEEDS[need]}</strong>.
+     <p style="font-size:.85rem;line-height:1.5;margin-top:6px">You came ${needs.length>1?'first':''} for <strong style="color:var(--tw)">${NEEDS[needs[0]]}</strong>${needs.length>1?`, then <strong style="color:var(--tw)">${NEEDS[needs[1]]}</strong>`:''}.
      ${r.mar<=r.ola?`Your session map agrees: your ocean track (${r.mar}/50) is where the next jump lives — and it lifts everything on the wave with it.`:`Your ocean track (${r.mar}/50) is ahead of your wave track (${r.ola}/50) — the riding is exactly where your next block of work goes.`}</p>
    </div>`:'';
   const fromZero=need===0;
