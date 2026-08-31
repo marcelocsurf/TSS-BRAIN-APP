@@ -130,6 +130,10 @@ export type CoachStudentDetail = {
   instagram: string | null;
   // Belt / progression
   belt_level: string;
+  /** true = la puso el QUIZ y ningún coach la confirmó todavía. */
+  belt_provisional: boolean;
+  level_quiz_score: number | null;
+  level_quiz_skillmap: { name: string; pct: number }[] | null;
   ocean_level: string | null;
   current_sequence_number: number | null;
   current_step_order: number | null;
@@ -183,7 +187,8 @@ export async function getCoachStudentDetail(
     .from('students')
     .select(
       `id, first_name, last_name, photo_url, age, date_of_birth, gender, nationality, languages, instagram,
-       belt_level, ocean_level, current_sequence_number, current_step_order,
+       belt_level, belt_provisional, level_quiz_score, level_quiz_skillmap,
+       ocean_level, current_sequence_number, current_step_order,
        swim_level, waiver_signed, emergency_contact_name, emergency_contact_phone,
        allergies, injuries, medical_notes, risk_notes, height, weight,
        stance, surf_experience_years, surf_frequency, board_type, other_sports, learning_style,
@@ -196,4 +201,53 @@ export async function getCoachStudentDetail(
 
   if (!data) return null;
   return data as CoachStudentDetail;
+}
+
+// ── Confirmar / ajustar la cinta provisional — EN EL AGUA ────────
+//
+// La pieza que faltaba del circuito (diagnóstico 2026-08-31): el quiz pone
+// una cinta PROVISIONAL y le promete al alumno "your coach confirms it",
+// pero el coach no tenía ningún botón — todos los flujos eran promote-only.
+// Regla: mientras belt_provisional=true, el coach que tiene al alumno puede
+// moverla en AMBAS direcciones y confirmarla (belt_provisional=false).
+// BAJAR: siempre permitido. SUBIR/confirmar por encima de su certificación:
+// no — la acreditación topa la promoción (política 2026-07-11).
+const BELT_ORDER = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
+
+export async function coachConfirmBelt(
+  token: string,
+  studentId: string,
+  belt: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!BELT_ORDER.includes(belt)) return { ok: false, error: 'Unknown belt.' };
+  const coach = await resolveCoachByToken(token);
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+  const accessible = await studentIdsForCoach(coach.id);
+  if (!accessible.has(studentId)) return { ok: false, error: 'Not your student.' };
+
+  const admin = createAdminClient();
+  const [{ data: stu }, { data: me }] = await Promise.all([
+    admin.from('students').select('belt_level, belt_provisional').eq('id', studentId).maybeSingle(),
+    admin.from('coaches').select('max_belt_permission').eq('id', coach.id).maybeSingle(),
+  ]);
+  if (!stu) return { ok: false, error: 'Student not found.' };
+  if (stu.belt_provisional === false) {
+    return { ok: false, error: 'This belt is already confirmed. Promotions go through the normal flow.' };
+  }
+
+  const target = BELT_ORDER.indexOf(belt);
+  const current = BELT_ORDER.indexOf(stu.belt_level);
+  // Sin certificación seteada rige lo MÁS restrictivo (white) — el contenido
+  // se gana por nivel, nunca por omisión (misma regla que el catálogo).
+  const cap = BELT_ORDER.indexOf((me?.max_belt_permission as string) || 'white_belt');
+  if (target > current && target > cap) {
+    return { ok: false, error: 'Your certification level does not cover that belt — ask a coach certified for it.' };
+  }
+
+  const { error } = await admin
+    .from('students')
+    .update({ belt_level: belt, belt_provisional: false })
+    .eq('id', studentId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }

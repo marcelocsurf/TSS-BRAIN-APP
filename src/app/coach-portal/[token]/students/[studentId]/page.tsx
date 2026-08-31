@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getCoachStudentDetail } from '@/lib/actions/coach-students';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
+import { BeltConfirm } from '@/components/coach-portal/BeltConfirm';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +58,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
               style={{ fontFamily: 'DM Mono, monospace' }}
             >
               {belt?.en}
+              {s.belt_provisional ? ' · PROVISIONAL' : ''}
               {s.ocean_level ? ` · ${s.ocean_level} ocean` : ''}
               {s.current_sequence_number != null && s.current_step_order != null
                 ? ` · Seq ${s.current_sequence_number} / Step ${s.current_step_order}`
@@ -67,6 +69,17 @@ export default async function CoachStudentDetailPage({ params }: Props) {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+        {/* Cinta PROVISIONAL del quiz: el coach la confirma o la ajusta acá
+            — el circuito que faltaba (diagnóstico del quiz, 2026-08-31). */}
+        {s.belt_provisional && (
+          <BeltConfirm
+            token={token}
+            studentId={s.id}
+            currentBelt={s.belt_level}
+            quizScore={s.level_quiz_score}
+          />
+        )}
+
         {/* SAFETY-FIRST: emergency + medical at the top */}
         <Section
           title="Safety"
@@ -116,6 +129,28 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <KV label="Other sports" value={s.other_sports} />
           <KV label="Learning style" value={s.learning_style} />
         </Section>
+
+        {/* Level quiz — lo que el alumno declaró, habilidad por habilidad.
+            Acá se ven las contradicciones (Flow alto con Riding bajo = el
+            clic optimista) antes de entrar al agua. */}
+        {s.level_quiz_score != null && Array.isArray(s.level_quiz_skillmap) && s.level_quiz_skillmap.length > 0 && (
+          <Section title={`Level quiz · ${s.level_quiz_score}/70`} Icon={Activity}>
+            <div className="space-y-1.5">
+              {s.level_quiz_skillmap.map((sk) => (
+                <div key={sk.name} className="flex items-center gap-2">
+                  <span className="w-24 text-right text-[10px] text-gray-500 shrink-0">{sk.name}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${sk.pct}%`, background: sk.pct >= 70 ? '#0090B0' : '#C8D0DC' }} />
+                  </div>
+                  <span className="w-8 text-[10px] text-gray-400 font-mono text-right">{sk.pct}%</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2 leading-snug">
+              Self-reported before arriving — compare it with what you see in the water.
+            </p>
+          </Section>
+        )}
 
         {/* Goals + barriers */}
         <Section title="Goals & barriers" Icon={Target}>

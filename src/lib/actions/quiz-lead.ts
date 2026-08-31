@@ -7,6 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { randomUUID } from 'crypto';
 import { sendQuizLeadEmail } from './email';
+import { resolveLevel, levelForScore, LEVELS } from '@/lib/quiz/surf-level';
 
 // Friendly slug aliases → real academy slugs (so marketing links can use a
 // clean slug even if the stored slug has a typo).
@@ -40,9 +41,19 @@ export async function createLeadFromQuiz(input: {
   email?: string | null;
   phone?: string | null;
   academy_slug?: string | null;
-  belt: string;            // resolved from the quiz level
-  score: number;
-  skillmap: { name: string; pct: number }[];
+  /** Camino NATIVO (/quiz): las respuestas crudas — el servidor es la única
+      autoridad: recalcula score, skillmap, ocean y cinta con resolveLevel
+      (incluida LA REGLA DEL AGUA). Lo que calcule el cliente no se usa. */
+  tech_answers?: number[];
+  ocean_answers?: number[];
+  /** Camino EXTERNO (/api/quiz-lead, HTML del sitio): solo llega un score.
+      Se clampa 0–70 y SIN evidencia de autosuficiencia en el agua rige la
+      regla de Marcelo: nada por encima de Novice. La cinta textual que
+      manden se IGNORA siempre. */
+  score?: number;
+  skillmap?: { name: string; pct: number }[];
+  /** @deprecated se ignora — la cinta la calcula el servidor. */
+  belt?: string;
   /** SOLO para /api/quiz-lead (el quiz externo del sitio web manda "nombre"
       en un campo único que no podemos partir con garantías). El quiz nativo
       NUNCA lo pasa: ahí el apellido es obligatorio. */
@@ -135,25 +146,70 @@ export async function createLeadFromQuiz(input: {
     }
   }
 
+  // ── AUTORIDAD SERVER-SIDE (2026-08-31, diagnóstico del quiz) ──
+  // La cinta se calcula ACÁ, siempre. El cliente ya no la dicta.
   const now = new Date().toISOString();
-  const quizFields = {
-    belt_level: input.belt,
+  let belt: string;
+  let score: number;
+  let skillmap: { name: string; pct: number }[];
+  const hasOcean = (input.ocean_answers ?? []).some((a) => typeof a === 'number' && a >= 0);
+  let oceanLevel: string | null = null;
+  let cappedBy: string | null = null;
+
+  if (Array.isArray(input.tech_answers)) {
+    const r = resolveLevel(input.tech_answers, input.ocean_answers ?? []);
+    belt = r.level.belt;
+    score = r.score;
+    skillmap = r.skills;
+    oceanLevel = hasOcean ? r.oceanLevel : null;
+    cappedBy = r.cappedBy;
+  } else {
+    // Externo: score clampeado; sin ocean no hay autosuficiencia probada →
+    // LA REGLA DEL AGUA capea a Novice todo lo que el score diga Foundation+.
+    score = Math.max(0, Math.min(70, Math.round(Number(input.score) || 0)));
+    let lv = levelForScore(score);
+    if (LEVELS.indexOf(lv) >= 2) {
+      lv = LEVELS.find((l) => l.belt === 'yellow_belt')!;
+      cappedBy = 'water';
+    }
+    belt = lv.belt;
+    skillmap = input.skillmap ?? [];
+  }
+
+  const quizFields: Record<string, unknown> = {
+    belt_level: belt,
     belt_provisional: true,
-    level_quiz_score: input.score,
-    level_quiz_skillmap: input.skillmap,
-    level_quiz_completed_at: now,
-    // Mark the ocean quiz done too (provisional) so the intake reliably SKIPS
-    // the level quiz — the student won't re-take what they did on the public
-    // quiz. The coach confirms the ocean level later.
-    ocean_level: 'beginner',
-    ocean_level_provisional: true,
-    ocean_quiz_completed_at: now,
+    level_quiz_score: score,
+    level_quiz_skillmap: skillmap,
   };
+  if (Array.isArray(input.tech_answers) && hasOcean) {
+    // Solo se estampa "completado" con el quiz ENTERO (técnica + océano):
+    // así el intake puede saltarlo con razón. Sin océano, el intake vuelve
+    // a preguntar todo.
+    quizFields.level_quiz_completed_at = now;
+    quizFields.ocean_level = oceanLevel;
+    quizFields.ocean_level_provisional = true;
+    quizFields.ocean_quiz_completed_at = now;
+  }
+  // Camino externo: SIN estampas — el intake vuelve a correr el quiz completo
+  // (antes se estampaba ocean='beginner' + completed_at FALSO y el intake
+  // salteaba todo: el resultado inflado de la web quedaba para siempre).
 
   let studentId = existingId;
   if (existingId) {
-    const { error } = await admin.from('students').update(quizFields).eq('id', existingId);
-    if (error) return { ok: false, error: error.message };
+    // Una retoma del quiz público NUNCA pisa una cinta ya CONFIRMADA por un
+    // coach/admin — solo se registra el intento en el historial.
+    const { data: existing } = await admin
+      .from('students')
+      .select('belt_provisional')
+      .eq('id', existingId)
+      .maybeSingle();
+    if (existing && existing.belt_provisional === false) {
+      // Confirmada: no tocar al alumno; el intento se loguea abajo.
+    } else {
+      const { error } = await admin.from('students').update(quizFields).eq('id', existingId);
+      if (error) return { ok: false, error: error.message };
+    }
   } else {
     const { data: created, error } = await admin.from('students').insert({
       first_name: input.first_name.trim(),
@@ -192,9 +248,9 @@ export async function createLeadFromQuiz(input: {
       student_id: studentId,
       email,
       phone,
-      belt: input.belt,
-      score: input.score,
-      skillmap: input.skillmap,
+      belt,
+      score,
+      skillmap,
       academy_id: academyId,
       source: 'public_quiz',
       attempt_number: attemptNumber,
@@ -210,8 +266,8 @@ export async function createLeadFromQuiz(input: {
       name: `${input.first_name.trim()} ${input.last_name?.trim() || ''}`.trim(),
       email: email,
       phone: phone,
-      belt: input.belt,
-      score: input.score,
+      belt,
+      score,
       academyName,
       academyId,
     });

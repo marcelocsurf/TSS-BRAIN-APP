@@ -125,6 +125,7 @@ export async function resolvePromotion(
       if (BELT_RANK[newBelt] > currentRank) {
         await admin.from('students').update({
           belt_level: newBelt,
+          belt_provisional: false,
           // Sello de promoción — el portal celebra el ascenso 30 días.
           belt_promoted_at: new Date().toISOString(),
           belt_promoted_from: stu?.belt_level ?? null,
@@ -238,6 +239,7 @@ export async function resolvePromotionByToken(
       if (BELT_RANK[newBelt] > currentRank) {
         await admin.from('students').update({
           belt_level: newBelt,
+          belt_provisional: false,
           // Sello de promoción — el portal celebra el ascenso 30 días.
           belt_promoted_at: new Date().toISOString(),
           belt_promoted_from: stu?.belt_level ?? null,

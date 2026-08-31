@@ -382,37 +382,65 @@ const LEVELS=[
     focus:["Ocean comfort and safety — reading the water, getting past the whitewater","Paddle technique — the engine that catches you more waves","A clean, repeatable pop-up and your first directional turns"],
     close:"Built right, these become the platform everything else stands on.",
     line:"White Belt begins with humility: open to learn, willing to fail, ready to grow."},
-  {name:"Novice",belt:"Yellow Belt",value:"Process & Resilience",min:10,max:25,color:"#F5C518",
+  {name:"Novice",belt:"Yellow Belt",value:"Process & Resilience",min:10,max:29,color:"#F5C518",
     open:"You can catch waves now, and you're starting to read the ocean and feel its energy. You'll make plenty of mistakes here — that's how the sea is learned.",
     focusLead:"What refines from here is reading and positioning, not force:",
     focus:["The paddling speeds and positioning that raise your catch rate","Reading the wave's stages and finding the pocket","Beginning to draw lines on the open face"],
     close:"Each is a trainable skill — this stage is about consistency, learned through the process.",
     line:"Resilience isn't enduring — it's accepting the process and giving it everything."},
-  {name:"Foundation",belt:"Blue Belt",value:"Conscious Commitment",min:26,max:40,color:"#1E6FBF",
+  {name:"Foundation",belt:"Blue Belt",value:"Conscious Commitment",min:30,max:44,color:"#1E6FBF",
     open:"You've moved from attempting maneuvers to reliable, repeatable surfing. You read the spot, choose your own waves, and self-correct. Your turns are becoming consistent.",
     focusLead:"What refines from here is technique, not talent:",
     focus:["Generating speed efficiently, instead of relying on the wave","Setting up your maneuvers with an efficient, technical bottom turn","Connecting your maneuvers into one continuous line"],
     close:"Each of these is a trainable, sequenced skill — what the methodology is built to develop.",
     line:"There are no shortcuts. You have to walk the path."},
-  {name:"Emerging",belt:"Purple Belt",value:"Personal Responsibility",min:41,max:53,color:"#7B4FBE",
+  {name:"Emerging",belt:"Purple Belt",value:"Personal Responsibility",min:45,max:56,color:"#7B4FBE",
     open:"You're comfortable in the water and your own style is taking shape. This is where surfing becomes precise and progressive.",
     focusLead:"What refines from here is precision and commitment:",
     focus:["Committed reentries and roundhouse cutbacks — head and eyes leading the direction","Holding speed through the wave's sections and the pocket","Landing your maneuvers consistently, not just attempting them"],
     close:"Progressive moves like airs appear here, but they're a path you can choose — a powerful, technical style takes you just as far.",
     line:""},
-  {name:"Pre-Elite",belt:"Brown Belt",value:"Gratitude",min:54,max:63,color:"#7D4E27",
+  {name:"Pre-Elite",belt:"Brown Belt",value:"Gratitude",min:57,max:65,color:"#7D4E27",
     open:"You command the fundamentals, and your surfing is fluid and efficient. You read the wave's energy and use it in your favor, with a style that's fully your own.",
     focusLead:"What refines from here is mastery, not novelty:",
     focus:["Linking maneuvers continuously, always working from the pocket","Expanding your repertoire and variation across different waves","Holding power and efficiency in heavier, more critical conditions"],
     close:"At this level surfing becomes a craft — and a relationship with the ocean.",
     line:"Gratitude for the journey."},
-  {name:"Elite",belt:"Black Belt",value:"Impact & Sharing",min:64,max:70,color:"#FFFFFF",
+  {name:"Elite",belt:"Black Belt",value:"Impact & Sharing",min:66,max:70,color:"#FFFFFF",
     open:"You've integrated every pillar — physical, technical, tactical and mental. After a long journey, you read and adapt to almost any spot — not by instinct alone, but from years of accumulated experience and good decisions.",
     focusLead:"At this level the work never ends — it deepens:",
     focus:["Refining consistency and performance in the most demanding conditions","Understanding the why deeply enough to explain and teach it","Expressing your own style within the structure"],
     close:"The ocean always overrides the level — mastery includes knowing when not to go.",
     line:"What you received, you now share. Your way of living influences others."}
 ];
+
+
+/* ===== In the water — LA REGLA DEL AGUA (2026-08-31) =====
+   "Foundation starts when you can catch waves on your own." Sin
+   autosuficiencia en el agua, la técnica no pasa de Novice. */
+const OQS=[
+  {phase:"In the Water \u00b7 Currents",scenario:"You paddle out and realize you\u2019re drifting sideways down the beach, away from where you started.",prompt:"What\u2019s going on and what do you do?",
+    opts:[
+      {t:"I wouldn\u2019t notice until I was far away \u2014 I\u2019d feel lost",level:"beginner"},
+      {t:"I notice but I\u2019d panic a bit / need someone to guide me back",level:"supervised"},
+      {t:"It\u2019s a current; I paddle parallel to shore to get out of it, then back in",level:"semi_autonomous"},
+      {t:"I read currents before entering and use them to my advantage",level:"autonomous"}]},
+  {phase:"In the Water \u00b7 Priority",scenario:"A surfer is already up and riding toward you on the same wave you\u2019re about to take.",prompt:"What do you do?",
+    opts:[
+      {t:"I don\u2019t really know the rules yet",level:"beginner"},
+      {t:"I know I shouldn\u2019t drop in but I\u2019m not always sure who has priority",level:"supervised"},
+      {t:"They have priority (closest to the peak) \u2014 I pull back and don\u2019t drop in",level:"semi_autonomous"},
+      {t:"I read the lineup, know the priority order, and communicate clearly",level:"autonomous"}]},
+  {phase:"In the Water \u00b7 Self-Rescue",scenario:"You lose your board, you\u2019re past where you can stand, and you\u2019re a bit tired.",prompt:"What\u2019s your plan?",
+    opts:[
+      {t:"I\u2019d be in trouble \u2014 I rely on having someone close by",level:"beginner"},
+      {t:"I can manage in small/calm conditions only, with supervision",level:"supervised"},
+      {t:"I stay calm, signal if needed, and can swim/float back in known spots",level:"semi_autonomous"},
+      {t:"I\u2019m comfortable self-rescuing in head-high+ conditions alone",level:"autonomous"}]}
+];
+const ALLQ=QS.concat(OQS);
+const OCEAN_ORDER=["beginner","supervised","semi_autonomous","autonomous"];
+const SELF_SUFFICIENT={semi_autonomous:1,autonomous:1};
 
 const DIMS={
   "Beginner":[{label:"Ocean comfort",qs:[0]},{label:"Paddle power",qs:[0,1]},{label:"Pop-up & first turns",qs:[1,2]}],
@@ -429,7 +457,7 @@ const SKILLS=[
   {name:"Speed",qs:[3]},{name:"Power",qs:[4]},{name:"Flow",qs:[5]},{name:"Finishing",qs:[6]}
 ];
 
-let cur=0,ans=new Array(7).fill(-1),quizStart=0,pendingResult=null;
+let cur=0,ans=new Array(10).fill(-1),quizStart=0,pendingResult=null;
 
 let CAP_BTN_ORIG=null;
 function show(id){
@@ -451,32 +479,26 @@ function gateSelect(g){
     show('capture');
     return;
   }
-  if(g===1){
-    quizStart=0;
-  } else if(g===2){
-    ans[0]=7; ans[1]=7;
-    quizStart=2;
-  } else {
-    ans[0]=10; ans[1]=10; ans[2]=7; ans[3]=7;
-    quizStart=4;
-  }
+  /* El gate solo ENRUTA (2026-08-31): el pre-llenado de 7s y 10s regalaba
+     14-34 pts por autocalificacion \u2014 la causa #1 de niveles inflados. */
+  quizStart=0;
   cur=quizStart;
   show('quiz');
   render();
 }
 
 function startFull(){
-  ans=new Array(7).fill(-1);
+  ans=new Array(10).fill(-1);
   cur=0;quizStart=0;pendingResult=null;
   show('quiz');render();
 }
 
 function render(){
-  const q=QS[cur];
-  const totalQs=QS.length-quizStart;
+  const q=ALLQ[cur];
+  const totalQs=ALLQ.length-quizStart;
   const currentIdx=cur-quizStart;
   let dots='';
-  for(let i=quizStart;i<QS.length;i++){dots+=`<div class="d ${i<cur?'done':i===cur?'now':''}"></div>`}
+  for(let i=quizStart;i<ALLQ.length;i++){dots+=`<div class="d ${i<cur?'done':i===cur?'now':''}"></div>`}
   document.getElementById('dots').innerHTML=dots;
   document.getElementById('ct').textContent=`${currentIdx+1}/${totalQs}`;
   document.getElementById('qph').textContent=q.phase;
@@ -486,18 +508,18 @@ function render(){
   document.getElementById('opts').innerHTML=html;
   document.getElementById('bbk').style.display=cur<=quizStart?'none':'block';
   document.getElementById('bnx').disabled=ans[cur]===-1;
-  document.getElementById('bnx').textContent=cur===QS.length-1?'See My Level':'Next';
+  document.getElementById('bnx').textContent=cur===ALLQ.length-1?'See My Level':'Next';
 }
 
 function pick(i){
   ans[cur]=i;
   document.querySelectorAll('.opt').forEach((el,j)=>el.classList.toggle('sel',j===i));
   document.getElementById('bnx').disabled=false;
-  if(cur<QS.length-1)setTimeout(()=>next(),400);
+  if(cur<ALLQ.length-1)setTimeout(()=>next(),400);
 }
 function next(){
   if(ans[cur]===-1)return;
-  if(cur===QS.length-1){
+  if(cur===ALLQ.length-1){
     pendingResult=Object.assign({type:'level'},computeResult());
     show('capture');
     return;
@@ -510,10 +532,24 @@ function computeResult(){
   let score=0;
   for(let i=0;i<QS.length;i++){
     if(typeof ans[i]==='number'&&ans[i]>=0&&ans[i]<=3){score+=QS[i].opts[ans[i]].s}
-    else if(typeof ans[i]==='number'&&ans[i]>3){score+=ans[i]}
   }
+  /* Ocean: el MINIMO de las 3 respuestas (safety-first). */
+  let worst=OCEAN_ORDER.length-1,anyO=false;
+  for(let j=0;j<OQS.length;j++){
+    const a=ans[QS.length+j];
+    if(typeof a==='number'&&a>=0){anyO=true;const idx=OCEAN_ORDER.indexOf(OQS[j].opts[a].level);if(idx>=0&&idx<worst)worst=idx}
+  }
+  const oceanLevel=anyO?OCEAN_ORDER[worst]:"beginner";
   let lv=LEVELS[0];
   for(let i=LEVELS.length-1;i>=0;i--){if(score>=LEVELS[i].min){lv=LEVELS[i];break}}
+  /* Evidencia + LA REGLA DEL AGUA. */
+  const raw=(qi)=>{const a=ans[qi];return (typeof a==='number'&&a>=0&&a<=3)?QS[qi].opts[a].s:0};
+  const uncapped=lv;let cappedBy=null;
+  let ci=LEVELS.indexOf(lv);
+  if(ci>=3&&raw(4)<7){lv=LEVELS[2];cappedBy='evidence'}
+  if(LEVELS.indexOf(lv)>=2&&(raw(1)<7||raw(2)<7)){lv=LEVELS[1];cappedBy='evidence'}
+  if(LEVELS.indexOf(lv)>=2&&!SELF_SUFFICIENT[oceanLevel]){lv=LEVELS[1];cappedBy='water'}
+  if(lv===uncapped)cappedBy=null;
   const skills=SKILLS.map(sk=>{
     let ss=0;
     sk.qs.forEach(qi=>{
@@ -523,7 +559,7 @@ function computeResult(){
     const sm=sk.qs.length*10;
     return {name:sk.name,p:Math.round(ss/sm*100)};
   });
-  return {score,lv,skills};
+  return {score,lv,skills,oceanLevel,cappedBy,uncappedName:cappedBy?uncapped.name:null};
 }
 
 /* ===== Lead capture ===== */
@@ -545,7 +581,7 @@ function submitLead(e){
   if(pendingResult&&pendingResult.type==='beginner'){
     payload={first_name:first,last_name:last,email:email,phone:phone||null,surf_level:'Beginner',score:null,answers:{gate:'never_surfed'},academia:'puro-surf',source:'tss-surf-level-quiz'};
   } else {
-    payload={first_name:first,last_name:last,email:email,phone:phone||null,surf_level:pendingResult.lv.name,score:pendingResult.score,answers:{skills:pendingResult.skills,raw:ans.slice()},academia:'puro-surf',source:'tss-surf-level-quiz'};
+    payload={first_name:first,last_name:last,email:email,phone:phone||null,surf_level:pendingResult.lv.name,score:pendingResult.score,ocean_level:pendingResult.oceanLevel,answers:{skills:pendingResult.skills,raw:ans.slice(0,7),ocean:ans.slice(7)},academia:'puro-surf',source:'tss-surf-level-quiz'};
   }
 
   saveLead(payload).then(()=>{
@@ -600,7 +636,14 @@ function renderResult(r){
       <span class="rnum" style="color:${lv.color}">${score}</span><span class="rlbl">/ ${mx}</span>
     </div>
     <div class="res-name" style="color:${lv.color}">${lv.name}</div>
-    <div class="res-belt">${lv.belt} · ${lv.value}</div>
+    <div class="res-belt">${lv.belt} \u00b7 ${lv.value}</div>
+    ${r.cappedBy?`
+    <div style="max-width:440px;margin:14px auto 0;text-align:left;background:rgba(255,209,102,.08);border:1.5px solid rgba(255,209,102,.35);border-radius:14px;padding:14px 16px">
+      <div style="font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:#FFD166">Why not ${r.uncappedName}?</div>
+      <p style="font-size:.85rem;line-height:1.55;margin:8px 0 0;color:var(--tl)">${r.cappedBy==='water'
+        ?`Your board skills scored ${r.uncappedName}-level \u2014 but that level starts when you can catch waves <strong>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and the level unlocks. It's the fastest upgrade there is.`
+        :`Your total points reached ${r.uncappedName} \u2014 but that level is defined by skills your answers say you're still building. Training at your real level is what unlocks the next one.`}</p>
+    </div>`:''}
     <div class="rmind">
       <div class="bar" style="background:${lv.color}"></div>
       <p>${lv.open}</p>

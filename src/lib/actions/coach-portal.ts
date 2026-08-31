@@ -263,6 +263,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     name: string;
     photo_url: string | null;
     belt_level: string | null;
+    belt_provisional: boolean;
     waiver_signed: boolean;
     safety_flag: boolean;
   }>> = {};
@@ -270,7 +271,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   if (allCampIds.length > 0) {
     const { data: pCounts } = await admin
       .from('camp_participants')
-      .select('camp_instance_id, student_id, students:student_id(first_name, last_name, photo_url, belt_level, waiver_signed, allergies, injuries, medical_notes)')
+      .select('camp_instance_id, student_id, students:student_id(first_name, last_name, photo_url, belt_level, belt_provisional, waiver_signed, allergies, injuries, medical_notes)')
       .in('camp_instance_id', allCampIds)
       .eq('enrollment_status', 'active');
     for (const p of pCounts ?? []) {
@@ -284,6 +285,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           name: `${stu.first_name ?? ''} ${stu.last_name ?? ''}`.trim(),
           photo_url: stu.photo_url ?? null,
           belt_level: stu.belt_level ?? null,
+          belt_provisional: !!stu.belt_provisional,
           waiver_signed: !!stu.waiver_signed,
           safety_flag: !!(stu.allergies || stu.injuries || stu.medical_notes),
         });

@@ -2334,6 +2334,7 @@ type RosterEntry = {
   name: string;
   photo_url: string | null;
   belt_level: string | null;
+  belt_provisional?: boolean;
   waiver_signed: boolean;
   safety_flag: boolean;
 };
@@ -2409,6 +2410,7 @@ function ServiceRoster({ token, roster }: { token: string; roster: RosterEntry[]
                   </span>
                   <span className="block text-[8.5px] text-gray-500" style={MONO}>
                     {belt?.en ?? '—'}
+                    {r.belt_provisional ? ' · PROV' : ''}
                   </span>
                 </span>
                 {r.safety_flag && (

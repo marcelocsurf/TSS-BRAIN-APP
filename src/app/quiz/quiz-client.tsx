@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import {
-  QUESTIONS, LEVELS, MAX_SCORE,
-  scoreFromAnswers, levelForScore, skillMap,
+  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, resolveLevel,
 } from '@/lib/quiz/surf-level';
 import { createLeadFromQuiz } from '@/lib/actions/quiz-lead';
 
@@ -28,7 +27,7 @@ function BrandHeader({ big = false }: { big?: boolean }) {
   );
 }
 
-type Screen = 'intro' | 'prime' | 'gate' | 'quiz' | 'result';
+type Screen = 'intro' | 'prime' | 'gate' | 'quiz' | 'ocean' | 'result';
 
 const GATE = [
   { emoji: '🏖️', txt: "I've never surfed — or only tried once or twice on vacation" },
@@ -40,8 +39,9 @@ const GATE = [
 export function QuizClient({ academySlug }: { academySlug: string | null }) {
   const [screen, setScreen] = useState<Screen>('intro');
   const [answers, setAnswers] = useState<number[]>(new Array(QUESTIONS.length).fill(-1));
-  const [start, setStart] = useState(0);
+  const [oceanAns, setOceanAns] = useState<number[]>(new Array(OCEAN_QUESTIONS.length).fill(-1));
   const [cur, setCur] = useState(0);
+  const [oceanCur, setOceanCur] = useState(0);
 
   // contact capture — nombre y apellido SEPARADOS y ambos obligatorios: el
   // campo único "Your name" partido por espacios dejaba last_name null cuando
@@ -54,24 +54,35 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
-  const score = scoreFromAnswers(answers);
-  const level = levelForScore(score);
-  const skills = skillMap(answers);
+  // La resolución completa: score + evidencia técnica + LA REGLA DEL AGUA
+  // (Foundation exige autosuficiencia para agarrar olas solo). El servidor
+  // recalcula lo mismo — esto es solo para mostrar.
+  const resolved = resolveLevel(answers, oceanAns);
+  const { level, score, skills } = resolved;
 
   const gateSelect = (g: number) => {
     const a = new Array(QUESTIONS.length).fill(-1);
     if (g === 0) { setAnswers(a); setScreen('result'); return; }       // never surfed → Beginner
-    let s = 0;
-    if (g === 2) { a[0] = 7; a[1] = 7; s = 2; }
-    if (g === 3) { a[0] = 10; a[1] = 10; a[2] = 7; a[3] = 7; s = 4; }
-    setAnswers(a); setStart(s); setCur(s); setScreen('quiz');
+    // El gate solo ENRUTA — ya no regala puntos. Antes pre-llenaba 7s y 10s
+    // por autocalificación (+14 a +34 pts sin verificar nada): la causa #1
+    // de los "Foundation" que en el agua eran Novice. Ahora todos responden
+    // los 7 escenarios.
+    setAnswers(a); setCur(0); setScreen('quiz');
   };
 
   const pick = (i: number) => {
     const a = [...answers]; a[cur] = i; setAnswers(a);
     setTimeout(() => {
-      if (cur >= QUESTIONS.length - 1) setScreen('result');
+      if (cur >= QUESTIONS.length - 1) { setOceanCur(0); setScreen('ocean'); }
       else setCur(cur + 1);
+    }, 250);
+  };
+
+  const pickOcean = (i: number) => {
+    const o = [...oceanAns]; o[oceanCur] = i; setOceanAns(o);
+    setTimeout(() => {
+      if (oceanCur >= OCEAN_QUESTIONS.length - 1) setScreen('result');
+      else setOceanCur(oceanCur + 1);
     }, 250);
   };
 
@@ -81,15 +92,16 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
     if (!lastName.trim()) { setErr('Enter your last name.'); return; }
     if (!email.trim() && !phone.trim()) { setErr('Enter email or phone.'); return; }
     setSaving(true);
+    // Van las RESPUESTAS crudas: el servidor recalcula nivel, score y ocean
+    // por su cuenta (autoridad server-side — el cliente no dicta la cinta).
     const res = await createLeadFromQuiz({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       email: email.trim() || null,
       phone: phone.trim() || null,
       academy_slug: academySlug,
-      belt: level.belt,
-      score,
-      skillmap: skills,
+      tech_answers: answers,
+      ocean_answers: oceanAns,
     });
     setSaving(false);
     if (res.ok) setSaved(true);
@@ -155,8 +167,8 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
 
         {screen === 'quiz' && (() => {
           const q = QUESTIONS[cur];
-          const total = QUESTIONS.length - start;
-          const idx = cur - start;
+          const total = QUESTIONS.length;
+          const idx = cur;
           return (
             <div style={{ padding: '24px 0' }}>
               <BrandHeader />
@@ -175,8 +187,39 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
                   </button>
                 ))}
               </div>
-              {cur > start && (
+              {cur > 0 && (
                 <button onClick={() => setCur(cur - 1)} style={{ ...btnGhost, marginTop: 14 }}>Back</button>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Ocean knowledge — el DEFINIDOR: sin autosuficiencia para agarrar
+            olas solo, el nivel no pasa de Novice (regla del método). */}
+        {screen === 'ocean' && (() => {
+          const q = OCEAN_QUESTIONS[oceanCur];
+          return (
+            <div style={{ padding: '24px 0' }}>
+              <BrandHeader />
+              <div style={{ display: 'flex', gap: 4, marginBottom: 18 }}>
+                {Array.from({ length: OCEAN_QUESTIONS.length }).map((_, i) => (
+                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < oceanCur ? ACCENT : i === oceanCur ? 'rgba(90,195,231,.35)' : 'rgba(255,255,255,.08)' }} />
+                ))}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: '.64rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.18em', color: ACCENT, opacity: 0.75, marginBottom: 8 }}>
+                In the water · {q.phase} · {oceanCur + 1}/{OCEAN_QUESTIONS.length}
+              </div>
+              <div style={scenario}><div style={{ fontFamily: BODY, fontWeight: 600, fontSize: '1.15rem', lineHeight: 1.4 }}>{q.scenario}</div></div>
+              <p style={{ color: '#c4d9e8', opacity: 0.6, margin: '14px 0' }}>{q.prompt}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {q.opts.map((o, i) => (
+                  <button key={i} onClick={() => pickOcean(i)} style={{ ...opt, ...(oceanAns[oceanCur] === i ? optSel : {}) }}>
+                    <span style={{ fontSize: '.88rem', color: '#c4d9e8', lineHeight: 1.35, textAlign: 'left' }}>{o.t}</span>
+                  </button>
+                ))}
+              </div>
+              {oceanCur > 0 && (
+                <button onClick={() => setOceanCur(oceanCur - 1)} style={{ ...btnGhost, marginTop: 14 }}>Back</button>
               )}
             </div>
           );
@@ -191,6 +234,21 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
             </div>
             <div style={{ ...DISPLAY, fontSize: '1.8rem', color: level.color }}>{level.name}</div>
             <p style={{ color: '#c4d9e8', opacity: 0.65, fontSize: '.85rem', marginTop: 4 }}>Your entry level (your coach confirms it)</p>
+
+            {/* El nivel bajó respecto del score puro: se dice de frente — es
+                manejo de expectativas, la razón de ser del quiz. */}
+            {resolved.cappedBy && (
+              <div style={{ maxWidth: 400, margin: '16px auto 0', textAlign: 'left', background: 'rgba(255,209,102,.08)', border: '1.5px solid rgba(255,209,102,.35)', borderRadius: 14, padding: '14px 16px' }}>
+                <p style={{ fontFamily: MONO, fontSize: '.6rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.16em', color: '#FFD166', margin: 0 }}>
+                  Why not {resolved.uncappedName}?
+                </p>
+                <p style={{ fontSize: '.85rem', color: '#c4d9e8', lineHeight: 1.55, margin: '8px 0 0' }}>
+                  {resolved.cappedBy === 'water'
+                    ? <>Your board skills scored {resolved.uncappedName}-level — but that level starts when you can catch waves <strong style={{ color: '#f0f7fa' }}>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and the level unlocks. It&apos;s the fastest upgrade there is.</>
+                    : <>Your total points reached {resolved.uncappedName} — but that level is defined by skills your answers say you&apos;re still building. Training at your real level is what unlocks the next one.</>}
+                </p>
+              </div>
+            )}
 
             {/* skill map */}
             <div style={{ maxWidth: 400, margin: '20px auto', display: 'flex', flexDirection: 'column', gap: 10 }}>

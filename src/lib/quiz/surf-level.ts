@@ -62,33 +62,49 @@ export interface QuizLevel {
   q?: string;    // closing quote
 }
 
+// ═══ CALIBRACIÓN 2026-08-31 (diagnóstico del reporte de Bauti) ═══
+//
+// Los cortes se derivan de PROTOTIPOS honestos — el vector de respuestas
+// que daría cada cinta respondiendo sin optimismo — con margen de 2 clics
+// aspiracionales (el libro documenta que >1 de 3 se autoubica arriba):
+//
+//   Beginner  (todo opción 1):        0        → banda 0–9
+//   Novice    (todo opción 2, s=3):   21       → banda 10–29
+//   Foundation típico [7,7,7,7,3,3,3]: 37      → banda 30–44
+//   Emerging  [10,10,7,7,7,7,7]:      55       → banda 45–56
+//   Pre-Elite [10,10,10,10,7,7,7]:    61       → banda 57–65
+//   Elite:                                       banda 66–70
+//
+// Antes Foundation arrancaba en 26: a UN clic del techo Novice (25) — un
+// novice honesto con 2 respuestas aspiracionales salía Foundation. El 57%
+// de los blue históricos del quiz cayeron en 26–33 (apilados en el corte).
 export const LEVELS: QuizLevel[] = [
   { name: 'Beginner', belt: 'white_belt', min: 0, max: 9, color: '#6c63ff',
     rt: 'Why this level matters',
     m1: 'Every advanced surfer started exactly here. This isn’t a label — it’s a starting point. The surfers who progress fastest from Beginner build a rock-solid foundation: ocean comfort, paddle fitness, and a popup that becomes muscle memory.',
     m2: 'Skipping this stage is the #1 reason surfers plateau later. The fundamentals you build now become the invisible platform everything else stands on.',
     q: 'The best time to build the right habits is before the wrong ones take over.' },
-  { name: 'Novice', belt: 'yellow_belt', min: 10, max: 25, color: '#2d9f4e',
+  { name: 'Novice', belt: 'yellow_belt', min: 10, max: 29, color: '#2d9f4e',
     rt: 'Why this level matters',
     m1: 'You can catch waves — that’s a real milestone. But here’s what separates Novices who stay stuck for years from those who level up in months: intentional practice on wave selection and turning mechanics.',
     m2: 'Most surfers stay at this level longer than needed because they keep doing what’s comfortable instead of training what’s weak. Your next unlock isn’t more time in the water — it’s smarter time.',
     q: 'Surfing more doesn’t mean improving more. Training the right thing at the right time does.' },
-  { name: 'Foundation', belt: 'blue_belt', min: 26, max: 40, color: '#e68a00',
+  { name: 'Foundation', belt: 'blue_belt', min: 30, max: 44, color: '#e68a00',
     rt: 'The critical stage',
     m1: 'This is the most important level in surf development. You can ride and turn — but the quality of your bottom turn and speed generation will determine everything that follows.',
     m2: 'Foundation surfers who skip to advanced maneuvers develop compensating habits that are extremely hard to undo. Those who master speed, compression, and rail-to-rail transitions here unlock performance surfing almost effortlessly.',
     q: 'Your bottom turn is your signature. Everything above the lip is just a reflection of what happens below it.' },
-  { name: 'Emerging', belt: 'purple_belt', min: 41, max: 53, color: '#ff6b6b',
+  { name: 'Emerging', belt: 'purple_belt', min: 45, max: 56, color: '#ff6b6b',
     rt: 'Where performance begins',
     m1: 'You’ve earned real skills. You surf with power and intention. But this is where ego becomes the biggest enemy of progress — it feels like you should land everything, and when you don’t, frustration creeps in.',
     m2: 'The gap between Emerging and Pre-Elite isn’t new tricks. It’s consistency, reading critical sections, and committing fully when it matters. The mental game becomes as important as the physical one.',
     q: 'The difference between good and great isn’t what you do on your best wave — it’s what you do on every wave.' },
-  { name: 'Pre-Elite', belt: 'brown_belt', min: 54, max: 63, color: '#00bcd4',
+  { name: 'Pre-Elite', belt: 'brown_belt', min: 57, max: 65, color: '#00bcd4',
     rt: 'The final gap',
     m1: 'You’re in the top 2% of surfers who’ve taken this assessment. At this level, improvement isn’t adding moves — it’s eliminating inconsistency and surfing critical waves with full commitment, every time.',
     m2: 'The athletes who break through here do so by refining timing, wave selection in consequential conditions, and the mental resilience to commit when stakes are highest.',
     q: 'At this level, the wave doesn’t care about your talent. It only rewards your commitment.' },
-  { name: 'Elite', belt: 'black_belt', min: 64, max: 70, color: '#e040fb',
+  { name: 'Elite', belt: 'black_belt', min: 66, max: 70, color: '#e040fb',
     rt: 'The endless pursuit',
     m1: 'You’re surfing at the highest level. But you already know — there’s no finish line. The pursuit is progressive surfing, competition IQ, and performing in the most challenging conditions on the planet.',
     m2: 'Even at this stage, the best in the world work on fundamentals daily. The difference is in details that only become visible at this speed.',
@@ -142,13 +158,17 @@ export function oceanLevelFromAnswers(answers: number[]): string {
   return any ? OCEAN_ORDER[worstIdx] : 'beginner';
 }
 
+// El array de answers guarda SIEMPRE índices de opción (0–3), o -1 sin
+// responder. El gate ya no pre-llena scores crudos (era la causa #1 de la
+// inflación: regalaba 14–34 pts por autocalificación) — la rama `: a` que
+// los sumaba se eliminó junto con su ambigüedad (un 3 crudo se leía como
+// índice 3 = 10 pts).
 export function scoreFromAnswers(answers: number[]): number {
   let score = 0;
   for (let i = 0; i < QUESTIONS.length; i++) {
     const a = answers[i];
-    if (typeof a !== 'number' || a < 0) continue;
-    // a is either an option index (0-3) or a pre-filled raw score (>3, from the gate skip)
-    score += a <= 3 ? (QUESTIONS[i].opts[a]?.s ?? 0) : a;
+    if (typeof a !== 'number' || a < 0 || a > 3) continue;
+    score += QUESTIONS[i].opts[a]?.s ?? 0;
   }
   return score;
 }
@@ -165,7 +185,73 @@ export function levelForScore(score: number): QuizLevel {
 export function skillMap(answers: number[]): { name: string; pct: number }[] {
   return SKILLS.map((name, i) => {
     const a = answers[i];
-    const raw = typeof a === 'number' && a >= 0 ? (a <= 3 ? (QUESTIONS[i].opts[a]?.s ?? 0) : a) : 0;
+    const raw = typeof a === 'number' && a >= 0 && a <= 3 ? (QUESTIONS[i].opts[a]?.s ?? 0) : 0;
     return { name, pct: Math.round((raw / 10) * 100) };
   });
+}
+
+// ═══ RESOLUCIÓN DE NIVEL — score + evidencia + LA REGLA DEL AGUA ═══
+//
+// REGLA DE MARCELO (2026-08-31, doctrinal): "solo puede entrar a Foundation
+// si es autosuficiente para agarrar olas solo. Si no, entra en Novice."
+// El nivel de agua es un DEFINIDOR: sin autosuficiencia en el agua, la
+// técnica no alcanza — es el mayor problema de manejo de expectativas.
+// Autosuficiente = semi_autonomous o mejor (maneja corrientes, prioridad y
+// auto-rescate básico sin supervisión).
+const SELF_SUFFICIENT = new Set(['semi_autonomous', 'autonomous', 'advanced']);
+export function isSelfSufficient(oceanLevel: string | null | undefined): boolean {
+  return !!oceanLevel && SELF_SUFFICIENT.has(oceanLevel);
+}
+
+// Mínimos de EVIDENCIA por nivel: el score es compensatorio (remada fuerte
+// compraba el crédito de giros que el alumno declaró no tener). Cada nivel
+// alto exige además la habilidad que lo define:
+//   Foundation+ → Takeoff ≥ 7 ("catch green waves regularly")
+//                 y Riding ≥ 7 ("ride the open face, turn both directions")
+//   Emerging+   → Power   ≥ 7 ("hit the lip and sometimes land it")
+const Q_TAKEOFF = 1, Q_RIDING = 2, Q_POWER = 4;
+
+export interface ResolvedLevel {
+  level: QuizLevel;
+  score: number;
+  skills: { name: string; pct: number }[];
+  oceanLevel: string;
+  /** Si el nivel bajó respecto del score puro: por qué y desde cuál. */
+  cappedBy: 'water' | 'evidence' | null;
+  uncappedName: string | null;
+}
+
+export function resolveLevel(techAnswers: number[], oceanAnswers: number[]): ResolvedLevel {
+  const score = scoreFromAnswers(techAnswers);
+  const skills = skillMap(techAnswers);
+  const oceanLevel = oceanLevelFromAnswers(oceanAnswers);
+  const raw = (qi: number) => {
+    const a = techAnswers[qi];
+    return typeof a === 'number' && a >= 0 && a <= 3 ? (QUESTIONS[qi].opts[a]?.s ?? 0) : 0;
+  };
+
+  const byBelt = (belt: string) => LEVELS.find((l) => l.belt === belt)!;
+  let level = levelForScore(score);
+  let cappedBy: ResolvedLevel['cappedBy'] = null;
+  const uncapped = level;
+
+  const idx = LEVELS.indexOf(level);
+  // Evidencia técnica: sin ella, el score no compra el nivel.
+  if (idx >= 3 && raw(Q_POWER) < 7) { level = byBelt('blue_belt'); cappedBy = 'evidence'; }
+  if (LEVELS.indexOf(level) >= 2 && (raw(Q_TAKEOFF) < 7 || raw(Q_RIDING) < 7)) {
+    level = byBelt('yellow_belt'); cappedBy = 'evidence';
+  }
+  // LA REGLA DEL AGUA (manda sobre todo): Foundation+ exige autosuficiencia.
+  if (LEVELS.indexOf(level) >= 2 && !isSelfSufficient(oceanLevel)) {
+    level = byBelt('yellow_belt'); cappedBy = 'water';
+  }
+
+  return {
+    level,
+    score,
+    skills,
+    oceanLevel,
+    cappedBy: level === uncapped ? null : cappedBy,
+    uncappedName: level === uncapped ? null : uncapped.name,
+  };
 }

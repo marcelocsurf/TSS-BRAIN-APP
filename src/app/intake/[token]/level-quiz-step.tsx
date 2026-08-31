@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, scoreFromAnswers, levelForScore, skillMap, oceanLevelFromAnswers,
+  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, resolveLevel,
   type QuizLevel,
 } from '@/lib/quiz/surf-level';
 import { submitLevelQuiz } from '@/lib/actions/intake';
@@ -20,6 +20,8 @@ interface ResultData {
   score: number;
   level: QuizLevel;
   skills: { name: string; pct: number }[];
+  cappedBy: 'water' | 'evidence' | null;
+  uncappedName: string | null;
 }
 
 export function LevelQuizStep({
@@ -42,18 +44,16 @@ export function LevelQuizStep({
   const finish = async (techAns: number[], oceanAns: number[]) => {
     setSaving(true);
     setError('');
-    const score = scoreFromAnswers(techAns);
-    const lvl = levelForScore(score);
-    const skills = skillMap(techAns);
+    // El servidor recalcula con las respuestas crudas (autoridad server-side
+    // + regla del agua); acá solo espejamos el mismo cálculo para pintar.
+    const r = resolveLevel(techAns, oceanAns);
     try {
       await submitLevelQuiz(token, {
-        belt: lvl.belt,
-        score,
-        skillmap: skills,
-        ocean_level: oceanLevelFromAnswers(oceanAns),
+        tech_answers: techAns,
+        ocean_answers: oceanAns,
       });
       // Show the result before continuing to goals.
-      setResult({ score, level: lvl, skills });
+      setResult({ score: r.score, level: r.level, skills: r.skills, cappedBy: r.cappedBy, uncappedName: r.uncappedName });
       setPhase('result');
       setSaving(false);
     } catch (e: any) {
@@ -71,11 +71,10 @@ export function LevelQuizStep({
       finish(t, o);
       return;
     }
+    // El gate solo ENRUTA — el pre-llenado de 7s y 10s (+14 a +34 pts por
+    // autocalificación) era la causa #1 de los "Foundation" inflados.
     const t = new Array(QUESTIONS.length).fill(-1);
-    let s = 0;
-    if (g === 2) { t[0] = 7; t[1] = 7; s = 2; }
-    if (g === 3) { t[0] = 10; t[1] = 10; t[2] = 7; t[3] = 7; s = 4; }
-    setTech(t); setTechStart(s); setTechCur(s); setPhase('tech');
+    setTech(t); setTechStart(0); setTechCur(0); setPhase('tech');
   };
 
   const pickTech = (i: number) => {
@@ -186,6 +185,20 @@ export function LevelQuizStep({
             </p>
             <p className="text-xs text-gray-500 mt-0.5">Your provisional level — your coach confirms it.</p>
           </div>
+
+          {/* El nivel bajó respecto del score puro — se explica de frente. */}
+          {result.cappedBy && (
+            <div className="rounded-2xl border p-4" style={{ background: 'rgba(255,209,102,.08)', borderColor: 'rgba(217,164,6,.4)' }}>
+              <p className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#9a7b06' }}>
+                Why not {result.uncappedName}?
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {result.cappedBy === 'water'
+                  ? <>Your board skills scored {result.uncappedName}-level — but that level starts when you can catch waves <strong>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and the level unlocks.</>
+                  : <>Your total points reached {result.uncappedName} — but that level is defined by skills your answers say you&apos;re still building. Training at your real level is what unlocks the next one.</>}
+              </p>
+            </div>
+          )}
 
           {/* Narrative card */}
           {result.level.m1 && (

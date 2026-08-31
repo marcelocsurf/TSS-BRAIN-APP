@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLeadFromQuiz } from '@/lib/actions/quiz-lead';
-import { LEVELS, levelForScore } from '@/lib/quiz/surf-level';
+
 
 // Public endpoint for the external "Find Your Surf Level" quiz (website /
 // Netlify). It accepts the payload the standalone HTML already sends and maps
@@ -21,11 +21,6 @@ export function OPTIONS() {
 }
 
 // Level NAME ("Beginner".."Elite") → TSS belt key, using the shared LEVELS table.
-function beltFromLevelName(name: string | null | undefined): string | null {
-  if (!name) return null;
-  const lv = LEVELS.find((l) => l.name.toLowerCase() === name.trim().toLowerCase());
-  return lv?.belt ?? null;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,11 +60,10 @@ export async function POST(req: NextRequest) {
     const rawScore = body.score;
     const score = typeof rawScore === 'number' ? rawScore : 0;
 
-    // Belt: prefer an explicit belt; else map from surf_level name; else from score.
-    const belt =
-      (typeof body.belt === 'string' ? body.belt : null) ||
-      beltFromLevelName(body.surf_level) ||
-      levelForScore(score).belt;
+    // La cinta la calcula el SERVIDOR en createLeadFromQuiz (clamp del score
+    // + regla del agua). El belt/surf_level textual del body se ignora: este
+    // endpoint es público con CORS abierto — cualquiera podía POSTear
+    // belt='black_belt' con score 0 (auditoría 2026-08-31).
 
     // Skillmap: native {name,pct}[] or external answers.skills {name,p}[].
     let skillmap: { name: string; pct: number }[] = [];
@@ -79,13 +73,31 @@ export async function POST(req: NextRequest) {
       skillmap = body.answers.skills.map((s: any) => ({ name: s.name, pct: s.pct ?? s.p ?? 0 }));
     }
 
+    // Respuestas CRUDAS (el HTML actualizado 2026-08-31 las manda): índices
+    // 0–3 por pregunta. Con ellas el servidor recalcula todo con resolveLevel
+    // — mismo motor que el intake. Las copias viejas del HTML (con el gate
+    // que pre-llenaba 7s/10s) fallan esta validación y caen al camino
+    // conservador del score clampeado.
+    const rawTech = body?.answers?.raw;
+    const rawOcean = body?.answers?.ocean;
+    const isIdx = (x: unknown) => typeof x === 'number' && Number.isInteger(x) && x >= -1 && x <= 3;
+    const tech_answers =
+      Array.isArray(rawTech) && rawTech.length >= 7 && rawTech.slice(0, 7).every(isIdx)
+        ? rawTech.slice(0, 7)
+        : undefined;
+    const ocean_answers =
+      tech_answers && Array.isArray(rawOcean) && rawOcean.every(isIdx)
+        ? rawOcean.slice(0, 3)
+        : undefined;
+
     const res = await createLeadFromQuiz({
       first_name,
       last_name,
       email,
       phone,
       academy_slug,
-      belt,
+      tech_answers,
+      ocean_answers,
       score,
       skillmap,
       // Solo el shape legacy ("nombre" en un campo) puede venir sin apellido —
