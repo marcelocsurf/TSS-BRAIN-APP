@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, resolveLevel,
+  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, LEVELS, resolveLevel,
   type QuizLevel,
 } from '@/lib/quiz/surf-level';
 import { submitLevelQuiz } from '@/lib/actions/intake';
@@ -202,19 +202,26 @@ export function LevelQuizStep({
             <p className="text-xs text-gray-500 mt-1">Your provisional level — your coach confirms it.</p>
           </div>
 
-          {/* El nivel bajó respecto del score puro — se explica de frente. */}
-          {result.cappedBy && (
-            <div className="rounded-2xl border p-4" style={{ background: 'rgba(255,209,102,.08)', borderColor: 'rgba(217,164,6,.4)' }}>
-              <p className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#9a7b06' }}>
-                Why not {result.uncappedName}?
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {result.cappedBy === 'water'
-                  ? <>Your board skills scored {result.uncappedName}-level — but that level starts when you can catch waves <strong>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and the level unlocks.</>
-                  : <>Your total points reached {result.uncappedName} — but that level is defined by skills your answers say you&apos;re still building. Training at your real level is what unlocks the next one.</>}
-              </p>
-            </div>
-          )}
+          {/* El nivel bajó respecto del score puro — se explica de frente,
+              hablando del SIGUIENTE nivel (la puerta que no pasó), nunca de
+              donde llegó el score: a un Novice se le habla de Foundation,
+              no de Emerging (Marcelo, 2026-08-31). */}
+          {result.cappedBy && (() => {
+            const next = LEVELS[LEVELS.indexOf(result.level) + 1];
+            const nextName = next?.name ?? 'the next level';
+            return (
+              <div className="rounded-2xl border p-4" style={{ background: 'rgba(255,209,102,.08)', borderColor: 'rgba(217,164,6,.4)' }}>
+                <p className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: '#9a7b06' }}>
+                  Why not {nextName}?
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {result.cappedBy === 'water'
+                    ? <>Your board answers scored higher than {result.level.name} — but {nextName} starts when you can catch waves <strong>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and {nextName} unlocks.</>
+                    : <>Your total points reached higher — but {nextName} is defined by skills your answers say you&apos;re still building. Training at {result.level.name} is exactly what unlocks it.</>}
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Narrative card */}
           {result.level.m1 && (

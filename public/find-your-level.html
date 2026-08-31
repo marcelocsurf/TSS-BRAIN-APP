@@ -636,13 +636,13 @@ function renderResult(r){
     </div>
     <div class="res-name" style="color:${lv.color}">${lv.name}</div>
     <div class="res-belt">${lv.belt} \u00b7 ${lv.value}</div>
-    ${r.cappedBy?`
+    ${r.cappedBy?(()=>{const nx=LEVELS[LEVELS.indexOf(lv)+1];const nxn=nx?nx.name:'the next level';return `
     <div style="max-width:440px;margin:14px auto 0;text-align:left;background:rgba(255,209,102,.08);border:1.5px solid rgba(255,209,102,.35);border-radius:14px;padding:14px 16px">
-      <div style="font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:#FFD166">Why not ${r.uncappedName}?</div>
+      <div style="font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:#FFD166">Why not ${nxn}?</div>
       <p style="font-size:.85rem;line-height:1.55;margin:8px 0 0;color:var(--tl)">${r.cappedBy==='water'
-        ?`Your board skills scored ${r.uncappedName}-level \u2014 but that level starts when you can catch waves <strong>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and the level unlocks. It's the fastest upgrade there is.`
-        :`Your total points reached ${r.uncappedName} \u2014 but that level is defined by skills your answers say you're still building. Training at your real level is what unlocks the next one.`}</p>
-    </div>`:''}
+        ?`Your board answers scored higher than ${lv.name} \u2014 but ${nxn} starts when you can catch waves <strong>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and ${nxn} unlocks. It's the fastest upgrade there is.`
+        :`Your total points reached higher \u2014 but ${nxn} is defined by skills your answers say you're still building. Training at ${lv.name} is exactly what unlocks it.`}</p>
+    </div>`})():''}
     <div class="rmind">
       <div class="bar" style="background:${lv.color}"></div>
       <p>${lv.open}</p>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, resolveLevel,
+  QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, LEVELS, resolveLevel,
 } from '@/lib/quiz/surf-level';
 import { createLeadFromQuiz } from '@/lib/actions/quiz-lead';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
@@ -240,19 +240,27 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
             <p style={{ color: '#c4d9e8', opacity: 0.65, fontSize: '.85rem', marginTop: 4 }}>Your entry level (your coach confirms it)</p>
 
             {/* El nivel bajó respecto del score puro: se dice de frente — es
-                manejo de expectativas, la razón de ser del quiz. */}
-            {resolved.cappedBy && (
-              <div style={{ maxWidth: 400, margin: '16px auto 0', textAlign: 'left', background: 'rgba(255,209,102,.08)', border: '1.5px solid rgba(255,209,102,.35)', borderRadius: 14, padding: '14px 16px' }}>
-                <p style={{ fontFamily: MONO, fontSize: '.6rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.16em', color: '#FFD166', margin: 0 }}>
-                  Why not {resolved.uncappedName}?
-                </p>
-                <p style={{ fontSize: '.85rem', color: '#c4d9e8', lineHeight: 1.55, margin: '8px 0 0' }}>
-                  {resolved.cappedBy === 'water'
-                    ? <>Your board skills scored {resolved.uncappedName}-level — but that level starts when you can catch waves <strong style={{ color: '#f0f7fa' }}>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and the level unlocks. It&apos;s the fastest upgrade there is.</>
-                    : <>Your total points reached {resolved.uncappedName} — but that level is defined by skills your answers say you&apos;re still building. Training at your real level is what unlocks the next one.</>}
-                </p>
-              </div>
-            )}
+                manejo de expectativas. Se pregunta por el SIGUIENTE nivel
+                (la puerta que no pasó), nunca por donde llegó el score: a un
+                Novice se le habla de Foundation, no de Emerging (Marcelo,
+                2026-08-31). El cap siempre deja justo debajo de la puerta
+                fallada, así que "el siguiente" ES la puerta correcta. */}
+            {resolved.cappedBy && (() => {
+              const next = LEVELS[LEVELS.indexOf(level) + 1];
+              const nextName = next?.name ?? 'the next level';
+              return (
+                <div style={{ maxWidth: 400, margin: '16px auto 0', textAlign: 'left', background: 'rgba(255,209,102,.08)', border: '1.5px solid rgba(255,209,102,.35)', borderRadius: 14, padding: '14px 16px' }}>
+                  <p style={{ fontFamily: MONO, fontSize: '.6rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.16em', color: '#FFD166', margin: 0 }}>
+                    Why not {nextName}?
+                  </p>
+                  <p style={{ fontSize: '.85rem', color: '#c4d9e8', lineHeight: 1.55, margin: '8px 0 0' }}>
+                    {resolved.cappedBy === 'water'
+                      ? <>Your board answers scored higher than {level.name} — but {nextName} starts when you can catch waves <strong style={{ color: '#f0f7fa' }}>on your own</strong>: reading currents, holding your priority, getting yourself back safely. Build that water autonomy and {nextName} unlocks. It&apos;s the fastest upgrade there is.</>
+                      : <>Your total points reached higher — but {nextName} is defined by skills your answers say you&apos;re still building. Training at {level.name} is exactly what unlocks it.</>}
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* skill map */}
             <div style={{ maxWidth: 400, margin: '20px auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
