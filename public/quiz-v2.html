@@ -80,18 +80,14 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
   </div>
   <h1 class="disp center" style="font-size:1.8rem;margin:16px 0 16px">Why your <em style="color:var(--cyan);font-style:normal">real level</em> matters</h1>
   <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
-    Training above your level doesn't make you progress faster — it creates gaps in your
-    foundation that show up later as plateaus, bad habits, and frustration.
+    Training above your level doesn't speed you up — it leaves gaps that come back
+    as plateaus and frustration. The surfers who improve the fastest
+    <strong style="color:var(--tw)">own where they are</strong>.
   </p>
   <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
-    The surfers who improve the fastest are the ones who <strong style="color:var(--tw)">own where
-    they are</strong> and train the specific skills that unlock the next level.
-    There's no shortcut — but there is an optimal sequence.
-  </p>
-  <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
-    The sequence is the same on a longboard or a shortboard. Answer with what
-    <strong style="color:var(--tw)">actually happens</strong> in the water — not what you're
-    aiming for — and at the end you'll see your level, your belt, and what you'll build at that stage.
+    Answer with what <strong style="color:var(--tw)">actually happens</strong> in the water —
+    not what you're aiming for — and you'll get your level, your belt, and what to build next.
+    Same sequence on a longboard or a shortboard.
   </p>
   <p class="center" style="color:var(--cyan);font-weight:600;max-width:420px;margin:0 auto 16px;text-wrap:balance">That's what The Surf Sequence is built on.</p>
   <p class="center mono" style="font-size:.6rem;color:var(--tm);margin-bottom:22px">10 scenes · 2 tracks · ~90 seconds</p>
@@ -272,17 +268,20 @@ const CURRICULUM={
  "Purple Belt":{tag:"precision \u00b7 commitment \u00b7 expression",items:[
    "Projection: using the wave's energy for bigger, sharper turns",
    "Committed maneuvers in the critical part of the wave",
-   "Your expression branch \u2014 radical or stylish, shaped to your board",
-   "This belt's course is being finalized \u2014 your coach leads it in the water"]},
+   "Reentries and roundhouse cutbacks \u2014 landed, not just attempted",
+   "Your expression branch \u2014 radical or stylish, shaped to your board"]},
  "Brown Belt":{tag:"mastery \u00b7 consistency \u00b7 heavier days",items:[
    "Linking everything continuously, always from the pocket",
    "Repertoire and variation across different types of waves",
-   "Performance under pressure and in more demanding conditions"]},
+   "Performance under pressure and in more demanding conditions",
+   "Wave selection and strategy \u2014 making every session count"]},
  "Black Belt":{tag:"the endless pursuit",items:[
    "Refinement across all conditions \u2014 and knowing when not to go",
    "Understanding the why deeply enough to pass it forward",
-   "Your own style, expressed inside the structure"]}};
+   "Your own style, expressed inside the structure",
+   "Sharing it \u2014 what you received, you now pass forward"]}};
 
+const BOARD_LABEL={longboard:"Longboard",mid:"Mid-length",short:"Shortboard",varias:"A bit of everything"};
 const NEEDS=["everything, from zero","the ocean — navigating it and catching more waves","the wave — control, speed and your lines","the edge — precision in demanding conditions"];
 
 const TSS_LOGO="data:image/png;base64,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";
@@ -342,14 +341,20 @@ function compute(){
   let lv=LEVELS[0];
   for(let i=LEVELS.length-1;i>=0;i--){if(score>=LEVELS[i].min){lv=LEVELS[i];break}}
   const uncapped=lv;let cappedBy=null;
-  /* Evidencia técnica: el score no compra el nivel (anti-compensación). */
+  /* Evidencia técnica: el score no compra el nivel (anti-compensación).
+     Recalibrado (Marcelo 2026-08-31): la CONEXIÓN con la tabla parado no
+     define Foundation — es lo que Foundation CONSTRUYE. Foundation entra
+     con autosuficiencia + saber agarrar olas; el riding fino (conexión,
+     líneas) es la puerta de Emerging. */
   if(LEVELS.indexOf(lv)>=4&&raw(9)<7){lv=LEVELS[3];cappedBy='evidence'}            // Pre-Elite+ exige rango de condiciones
-  if(LEVELS.indexOf(lv)>=3&&raw(8)<7){lv=LEVELS[2];cappedBy='evidence'}            // Emerging+ exige dibujar líneas
-  if(LEVELS.indexOf(lv)>=2&&(raw(5)<7||raw(6)<7)){lv=LEVELS[1];cappedBy='evidence'} // Foundation+ exige take-off + conexión
+  if(LEVELS.indexOf(lv)>=3&&(raw(6)<7||raw(8)<7)){lv=LEVELS[2];cappedBy='evidence'} // Emerging+ exige conexión + dibujar líneas
+  if(LEVELS.indexOf(lv)>=2&&raw(5)<7){lv=LEVELS[1];cappedBy='evidence'}            // Foundation+ exige saber AGARRAR la ola (take-off)
   /* LA REGLA DEL AGUA (doctrina Marcelo): Foundation exige autosuficiencia
-     REAL para agarrar olas solo — pasar la rompiente manteniendo la tabla,
-     elegir y posicionarse solo, y volver solo. Si no: Novice. */
-  if(LEVELS.indexOf(lv)>=2&&(raw(1)<7||raw(3)<7||raw(4)<7)){lv=LEVELS[1];cappedBy='water'}
+     REAL — manejar la tabla acostado y pasar la rompiente (duck dive o
+     tortuga), la ETIQUETA del lineup, elegir y posicionarse solo, y volver
+     solo. Las 5 del MAR en 7+. Si no: Novice. Propiedad linda: 5×7 + 7 de
+     take-off = 42 = exactamente el piso de la banda Foundation. */
+  if(LEVELS.indexOf(lv)>=2&&(raw(1)<7||raw(2)<7||raw(3)<7||raw(4)<7)){lv=LEVELS[1];cappedBy='water'}
   return{score,mar,ola,lv,cappedBy,uncapped};
 }
 
@@ -363,7 +368,7 @@ function renderResult(r){
    <div class="capped">
      <div class="mono" style="font-size:.6rem;font-weight:600;color:var(--gold)">Why not ${nxn}?</div>
      <p style="font-size:.85rem;line-height:1.55;margin-top:8px">${r.cappedBy==='water'
-       ?`Your answers scored higher than ${lv.name} — but ${nxn} starts when you can catch waves <strong style="color:var(--tw)">on your own</strong>: getting out with your board, choosing and positioning yourself, and getting back without help. Build that self-sufficiency and ${nxn} unlocks. It's the fastest upgrade there is.`
+       ?`Your answers scored higher than ${lv.name} — but ${nxn} starts when you can catch waves <strong style="color:var(--tw)">on your own</strong>: getting out with your board (duck dive or turtle roll), knowing the lineup rules, choosing and positioning yourself, and getting back without help. Build that self-sufficiency and ${nxn} unlocks. It's the fastest upgrade there is.`
        :`Your total points reached higher — but ${nxn} is defined by skills your answers say you're still building. Training at ${lv.name} is exactly what unlocks it.`}</p>
    </div>`:'';
   const needLine=need>0?`
@@ -382,6 +387,38 @@ function renderResult(r){
      </ul>
      <p style="font-size:.88rem;font-weight:600;font-style:italic;color:var(--tw);margin-top:12px;padding-top:12px;border-top:1px solid var(--gb)">\u201c${lv.quote}\u201d</p>
    </div>`;
+  /* ── LA ESCALA DE PUNTOS (pedido Marcelo 2026-08-31): dónde caíste
+     dentro del mapa 0-100, para ver si estás más cerca del nivel de
+     abajo o del de arriba. Con cap, la aguja muestra la verdad: los
+     puntos alcanzan territorio más alto, pero la puerta no es de puntos. */
+  const BOUNDS=LEVELS.map(L=>L.min).concat(100);
+  const eff=Math.max(1,Math.min(99,r.score));
+  const ui=LEVELS.indexOf(r.uncapped);
+  const into=r.score-BOUNDS[ui];
+  const toNext=BOUNDS[ui+1]-r.score;
+  const nName=LEVELS[ui+1]?LEVELS[ui+1].name:null;
+  const pName=ui>0?LEVELS[ui-1].name:null;
+  let scaleNote;
+  if(r.cappedBy){scaleNote=`Your ${r.score} points land in ${r.uncapped.name} territory — but that level isn't bought with points. What opens the door is below.`}
+  else if(!nName){scaleNote=`${r.score}/100 — the top of the map.`}
+  else if(toNext<into){scaleNote=`You're ${into} points past the ${lv.name} line and only <strong style="color:var(--tw)">${toNext} short of ${nName}</strong> — closer to the next door than to the last one.`}
+  else{scaleNote=`You're ${into} points past the ${lv.name} line, ${toNext} away from ${nName}${pName?` — and well clear of ${pName}`:''}.`}
+  const segs2=LEVELS.map((L,i)=>`<div style="position:absolute;left:${BOUNDS[i]}%;width:${BOUNDS[i+1]-BOUNDS[i]}%;top:0;bottom:0;background:${L.color};opacity:${i===ui?'1':'.28'}"></div>`).join('');
+  const ticks=BOUNDS.slice(1,-1).map(b=>`<div style="position:absolute;left:${b}%;top:0;bottom:0;width:1px;background:rgba(6,15,26,.9)"></div>`).join('');
+  const ticklabels=BOUNDS.slice(1,-1).map(b=>`<div class="mono" style="position:absolute;left:${b}%;transform:translateX(-50%);font-size:.52rem;color:var(--tm)">${b}</div>`).join('');
+  const scale=fromZero?'':`
+   <div style="max-width:440px;margin:22px auto 0;text-align:left">
+     <div class="mono" style="font-size:.6rem;color:var(--tm)">Where your points landed</div>
+     <div style="position:relative;height:26px;margin-top:2px">
+       <div style="position:absolute;left:${eff}%;transform:translateX(-50%);bottom:0;text-align:center">
+         <div class="mono" style="font-size:.66rem;font-weight:700;color:var(--tw)">${r.score}</div>
+         <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--tw);margin:0 auto"></div>
+       </div>
+     </div>
+     <div style="position:relative;height:10px;border-radius:5px;overflow:hidden">${segs2}${ticks}</div>
+     <div style="position:relative;height:12px;margin-top:3px">${ticklabels}</div>
+     <p style="font-size:.82rem;line-height:1.55;color:var(--tl);margin-top:8px">${scaleNote}</p>
+   </div>`;
   document.getElementById('s-result').innerHTML=`
    <div class="center">
      ${fromZero?`
@@ -395,13 +432,15 @@ function renderResult(r){
      </div>`}
      <div class="disp" style="font-size:1.9rem;color:${lv.color};margin-top:10px">${lv.name}</div>
      <div class="mono" style="font-size:.62rem;color:var(--cyan);margin-top:6px">${lv.belt} · ${lv.value}</div>
+     ${board?`<div class="mono" style="display:inline-block;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--tl);border:1px solid var(--gb);border-radius:99px;padding:3px 11px;margin-top:8px">${board==='varias'?'Every board — depends on the day':`On a ${BOARD_LABEL[board]||board}`}</div>`:''}
    </div>
+   ${scale}
    ${capped}
    ${narrative}
    ${(()=>{const c=CURRICULUM[lv.belt];if(!c)return '';return `
    <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:16px 18px;text-align:left">
      <div class="mono" style="font-size:.6rem;font-weight:600;color:${lv.color==='#555'?'var(--tw)':lv.color}">In the course at this level</div>
-     <div class="mono" style="font-size:.55rem;color:var(--tm);margin-top:3px">${c.tag}</div>
+     <div class="mono" style="font-size:.55rem;color:var(--tm);margin-top:3px">${c.tag}${board?(board==='varias'?` · across your boards`:` · on your ${(BOARD_LABEL[board]||board).toLowerCase()}`):''}</div>
      <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:10px">
        ${c.items.map(x=>`<li style="font-size:.85rem;line-height:1.5;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--cyan)">\u2192</span>${x}</li>`).join('')}
      </ul>
