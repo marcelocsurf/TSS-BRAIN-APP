@@ -1655,6 +1655,9 @@ export async function closeCampFinal(
           .from('students')
           .update({
             belt_level: newBelt,
+            // Una cinta OTORGADA por un coach deja de ser provisional —
+            // tercera vía de promoción, mismo one-liner que belt-promotions.
+            belt_provisional: false,
             // Sello de promoción: el portal del alumno celebra el ascenso
             // durante 30 días (banner "You're now a {belt}").
             belt_promoted_at: new Date().toISOString(),

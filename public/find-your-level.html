@@ -450,7 +450,7 @@ const DIMS={
   "Pre-Elite":[{label:"Flow & linking",qs:[5]},{label:"Repertoire · variation",qs:[2,4]},{label:"Power in critical conditions",qs:[4,6]}],
   "Elite":[{label:"Consistency & mastery",qs:[6]},{label:"Reading & adaptation",qs:[0,2]},{label:"Personal expression",qs:[4,5]}]
 };
-function qScore(i){const a=ans[i];if(typeof a==='number'&&a>=0&&a<=3)return QS[i].opts[a].s;if(typeof a==='number'&&a>3)return a;return 0}
+function qScore(i){const a=ans[i];return (typeof a==='number'&&a>=0&&a<=3)?QS[i].opts[a].s:0}
 
 const SKILLS=[
   {name:"Paddle Out",qs:[0]},{name:"Takeoff",qs:[1]},{name:"Wave Riding",qs:[2]},
@@ -554,7 +554,6 @@ function computeResult(){
     let ss=0;
     sk.qs.forEach(qi=>{
       if(typeof ans[qi]==='number'&&ans[qi]>=0&&ans[qi]<=3){ss+=QS[qi].opts[ans[qi]].s}
-      else if(typeof ans[qi]==='number'&&ans[qi]>3){ss+=ans[qi]}
     });
     const sm=sk.qs.length*10;
     return {name:sk.name,p:Math.round(ss/sm*100)};

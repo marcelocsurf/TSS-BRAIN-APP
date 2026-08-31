@@ -197,17 +197,28 @@ export async function createLeadFromQuiz(input: {
 
   let studentId = existingId;
   if (existingId) {
-    // Una retoma del quiz público NUNCA pisa una cinta ya CONFIRMADA por un
-    // coach/admin — solo se registra el intento en el historial.
-    const { data: existing } = await admin
+    // Una retoma del quiz público NUNCA pisa lo CONFIRMADO por un coach o
+    // admin (cinta u océano). El guard falla CERRADO: si no podemos LEER el
+    // estado, no escribimos — el intento igual se loguea abajo.
+    const { data: existing, error: gErr } = await admin
       .from('students')
-      .select('belt_provisional')
+      .select('belt_provisional, ocean_level_provisional')
       .eq('id', existingId)
       .maybeSingle();
-    if (existing && existing.belt_provisional === false) {
-      // Confirmada: no tocar al alumno; el intento se loguea abajo.
+    if (gErr || !existing) {
+      // Estado desconocido → no tocar al alumno; el historial queda igual.
     } else {
-      const { error } = await admin.from('students').update(quizFields).eq('id', existingId);
+      const update: Record<string, unknown> = { ...quizFields };
+      if (existing.belt_provisional === false) {
+        delete update.belt_level;
+        delete update.belt_provisional;
+      }
+      if (existing.ocean_level_provisional === false) {
+        delete update.ocean_level;
+        delete update.ocean_level_provisional;
+        delete update.ocean_quiz_completed_at;
+      }
+      const { error } = await admin.from('students').update(update).eq('id', existingId);
       if (error) return { ok: false, error: error.message };
     }
   } else {

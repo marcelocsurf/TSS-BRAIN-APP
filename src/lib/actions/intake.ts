@@ -195,30 +195,39 @@ export async function submitLevelQuiz(token: string, input: {
   const admin = createAdminClient();
   const { data: student } = await admin
     .from('students')
-    .select('id')
+    .select('id, belt_level, belt_provisional, ocean_level, ocean_level_provisional')
     .eq('portal_token', token)
     .single();
   if (!student) throw new Error('Invalid link. Please contact your coordinator.');
 
   const r = resolveLevel(input.tech_answers ?? [], input.ocean_answers ?? []);
 
-  const { error } = await admin
-    .from('students')
-    .update({
-      belt_level: r.level.belt,
-      belt_provisional: true,
-      level_quiz_score: r.score,
-      level_quiz_skillmap: r.skills,
-      level_quiz_completed_at: new Date().toISOString(),
-      ocean_level: r.oceanLevel,
-      ocean_level_provisional: true,
-      ocean_quiz_completed_at: new Date().toISOString(),
-    })
-    .eq('id', student.id);
+  // EL QUIZ NUNCA PISA LO CONFIRMADO (revisión 2026-08-31): una cinta u
+  // océano con provisional=false los validó un coach/admin — el intento se
+  // guarda (score, skillmap, sellos) pero el nivel confirmado se conserva.
+  const beltConfirmed = student.belt_provisional === false;
+  const oceanConfirmed = student.ocean_level_provisional === false;
+  const update: Record<string, unknown> = {
+    level_quiz_score: r.score,
+    level_quiz_skillmap: r.skills,
+    level_quiz_completed_at: new Date().toISOString(),
+    ocean_quiz_completed_at: new Date().toISOString(),
+  };
+  if (!beltConfirmed) {
+    update.belt_level = r.level.belt;
+    update.belt_provisional = true;
+  }
+  if (!oceanConfirmed) {
+    update.ocean_level = r.oceanLevel;
+    update.ocean_level_provisional = true;
+  }
+
+  const { error } = await admin.from('students').update(update).eq('id', student.id);
   if (error) throw new Error(error.message);
   return {
     success: true,
-    belt: r.level.belt,
+    // La cinta VIGENTE: si estaba confirmada, es esa — no la del quiz.
+    belt: beltConfirmed ? student.belt_level : r.level.belt,
     score: r.score,
     cappedBy: r.cappedBy,
     uncappedName: r.uncappedName,

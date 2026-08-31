@@ -222,8 +222,24 @@ export async function coachConfirmBelt(
   if (!BELT_ORDER.includes(belt)) return { ok: false, error: 'Unknown belt.' };
   const coach = await resolveCoachByToken(token);
   if (!coach) return { ok: false, error: 'Coach not found.' };
-  const accessible = await studentIdsForCoach(coach.id);
-  if (!accessible.has(studentId)) return { ok: false, error: 'Not your student.' };
+  // Confirmar cintas es del coach TITULAR (coach_id/head_coach_id), no del
+  // staff de apoyo: el asistente/filmer LEE fichas (studentIdsForCoach)
+  // pero no acredita niveles.
+  const adminGate = createAdminClient();
+  const { data: owned } = await adminGate
+    .from('camp_instances')
+    .select('id')
+    .or(`coach_id.eq.${coach.id},head_coach_id.eq.${coach.id}`);
+  const ownedIds = (owned ?? []).map((i) => i.id);
+  if (ownedIds.length === 0) return { ok: false, error: 'Only the lead coach can confirm belts.' };
+  const { data: mine } = await adminGate
+    .from('camp_participants')
+    .select('student_id')
+    .in('camp_instance_id', ownedIds)
+    .eq('student_id', studentId)
+    .in('enrollment_status', ['active', 'completed'])
+    .limit(1);
+  if (!mine || mine.length === 0) return { ok: false, error: 'Only the lead coach can confirm belts.' };
 
   const admin = createAdminClient();
   const [{ data: stu }, { data: me }] = await Promise.all([
@@ -239,15 +255,25 @@ export async function coachConfirmBelt(
   const current = BELT_ORDER.indexOf(stu.belt_level);
   // Sin certificación seteada rige lo MÁS restrictivo (white) — el contenido
   // se gana por nivel, nunca por omisión (misma regla que el catálogo).
+  // BAJAR (target < current) es siempre libre; CONFIRMAR al nivel o SUBIR
+  // acredita ese nivel, y acreditar topa con la certificación (política
+  // 2026-07-11) — confirmar un brown del quiz siendo coach white, no.
   const cap = BELT_ORDER.indexOf((me?.max_belt_permission as string) || 'white_belt');
-  if (target > current && target > cap) {
+  if (target >= current && target > cap) {
     return { ok: false, error: 'Your certification level does not cover that belt — ask a coach certified for it.' };
   }
 
-  const { error } = await admin
+  // Update ATÓMICO sobre la condición: si otro coach (u otra vía) ya la
+  // confirmó entre el check y este write, 0 filas — no se pisa nada.
+  const { data: updated, error } = await admin
     .from('students')
     .update({ belt_level: belt, belt_provisional: false })
-    .eq('id', studentId);
+    .eq('id', studentId)
+    .eq('belt_provisional', true)
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!updated || updated.length === 0) {
+    return { ok: false, error: 'This belt was just confirmed by someone else — refresh to see it.' };
+  }
   return { ok: true };
 }

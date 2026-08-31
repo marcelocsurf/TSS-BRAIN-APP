@@ -8,6 +8,7 @@ import {
 import { getCoachStudentDetail } from '@/lib/actions/coach-students';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { BeltConfirm } from '@/components/coach-portal/BeltConfirm';
+import { levelForScore, LEVELS, isSelfSufficient } from '@/lib/quiz/surf-level';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,14 +72,30 @@ export default async function CoachStudentDetailPage({ params }: Props) {
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Cinta PROVISIONAL del quiz: el coach la confirma o la ajusta acá
             — el circuito que faltaba (diagnóstico del quiz, 2026-08-31). */}
-        {s.belt_provisional && (
-          <BeltConfirm
-            token={token}
-            studentId={s.id}
-            currentBelt={s.belt_level}
-            quizScore={s.level_quiz_score}
-          />
-        )}
+        {s.belt_provisional && (() => {
+          // Si el score del quiz da una banda MAYOR que la cinta guardada,
+          // hubo cap — se le explica al coach cuál (agua o evidencia) para
+          // que la "contradicción" no parezca error de bandas.
+          let cappedNote: string | null = null;
+          if (s.level_quiz_score != null) {
+            const scoreBand = levelForScore(s.level_quiz_score);
+            const beltIdx = LEVELS.findIndex((l) => l.belt === s.belt_level);
+            if (beltIdx >= 0 && LEVELS.indexOf(scoreBand) > beltIdx) {
+              cappedNote = !isSelfSufficient(s.ocean_level)
+                ? `Score reached ${scoreBand.name} — capped by water autonomy (not self-sufficient catching waves alone yet).`
+                : `Score reached ${scoreBand.name} — capped by declared skills (see the skill map below).`;
+            }
+          }
+          return (
+            <BeltConfirm
+              token={token}
+              studentId={s.id}
+              currentBelt={s.belt_level}
+              quizScore={s.level_quiz_score}
+              cappedNote={cappedNote}
+            />
+          );
+        })()}
 
         {/* SAFETY-FIRST: emergency + medical at the top */}
         <Section
