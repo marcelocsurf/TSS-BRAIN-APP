@@ -37,7 +37,6 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
 .gateopt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px 18px;background:var(--card);border:1.5px solid var(--gb);border-radius:14px;cursor:pointer;color:var(--tl);font-family:inherit;font-size:.9rem;line-height:1.4;transition:border-color .2s}
 .gateopt:hover{border-color:rgba(0,210,255,.35)}
 .gateopt strong{color:var(--tw)}
-.sig{flex-shrink:0}
 .opt{display:block;width:100%;text-align:left;padding:14px 16px;background:var(--card);border:1.5px solid var(--gb);border-radius:12px;cursor:pointer;color:var(--tl);font-family:inherit;font-size:.88rem;line-height:1.4;transition:all .2s}
 .opt:hover{border-color:rgba(0,210,255,.3)}
 .opt.sel{background:rgba(0,210,255,.12);border-color:rgba(0,210,255,.45)}
@@ -73,29 +72,48 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
     Pick what honestly happens.
   </p>
   <p class="center mono" style="font-size:.6rem;color:var(--tm);margin-bottom:22px">10 scenes · 2 tracks: the ocean & the wave · ~90 seconds</p>
-  <div class="center"><button class="btn" onclick="show('gate')">Start the session →</button></div>
+  <div class="center"><button class="btn" onclick="show('why')">Start the session →</button></div>
 </div>
 
-<!-- ═══ GATE — POR NECESIDAD (señal de teléfono) ═══ -->
+<!-- ═══ EXPECTATIVAS — prepara el resultado (espejo del quiz actual) ═══ -->
+<div class="scr" id="s-why">
+  <div class="brand center"><img src="/venue-scout/tss-wave.png?v=1" alt=""><div class="bn">The Surf Sequence</div></div>
+  <p class="center mono" style="font-size:.62rem;letter-spacing:.18em;color:var(--cyan);margin:14px 0 8px">BEFORE YOU START</p>
+  <h2 class="disp center" style="font-size:1.6rem;margin:0 0 16px">Why your <em style="color:var(--cyan);font-style:normal">real level</em> matters</h2>
+  <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
+    Training above your level doesn't make you progress faster — it creates gaps in your
+    foundation that show up later as plateaus, bad habits, and frustration.
+  </p>
+  <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
+    The surfers who improve the fastest are the ones who <strong style="color:var(--tw)">own where
+    they are</strong> and train the specific skills that unlock the next level.
+    There's no shortcut — but there is an optimal sequence.
+  </p>
+  <p class="center" style="color:var(--tl);opacity:.85;line-height:1.6;max-width:420px;margin:0 auto 14px">
+    At the end you'll see your level, your belt, and what you'll be building at that stage.
+    Answer with what <strong style="color:var(--tw)">actually happens</strong> in the water —
+    not what you're aiming for — and the result will be worth keeping.
+  </p>
+  <p class="center" style="color:var(--cyan);font-weight:600;max-width:420px;margin:0 auto 22px;text-wrap:balance">That's what The Surf Sequence is built on.</p>
+  <div class="center"><button class="btn" onclick="show('gate')">Let's go →</button></div>
+</div>
+
+<!-- ═══ GATE — POR NECESIDAD ═══ -->
 <div class="scr" id="s-gate">
   <div class="brand center"><img src="/venue-scout/tss-wave.png?v=1" alt=""><div class="bn">The Surf Sequence</div></div>
   <h2 class="disp center" style="font-size:1.35rem;margin:6px 0 6px">What do you feel you <em style="color:var(--cyan);font-style:normal">need</em> most?</h2>
   <p class="center" style="color:var(--tm);font-size:.85rem;margin-bottom:18px">Your honest answer — it shapes what we look at.</p>
   <div style="display:flex;flex-direction:column;gap:10px">
     <button class="gateopt" onclick="gateSelect(0)">
-      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="rgba(255,255,255,.12)"/><rect x="14" y="5" width="4" height="17" rx="2" fill="rgba(255,255,255,.12)"/><rect x="21" y="0" width="4" height="22" rx="2" fill="rgba(255,255,255,.12)"/></svg>
       <span><strong>Everything, from zero</strong> — I've never surfed (or barely tried)</span>
     </button>
     <button class="gateopt" onclick="gateSelect(1)">
-      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="#00D2FF"/><rect x="14" y="5" width="4" height="17" rx="2" fill="rgba(255,255,255,.12)"/><rect x="21" y="0" width="4" height="22" rx="2" fill="rgba(255,255,255,.12)"/></svg>
       <span><strong>The ocean</strong> — navigate it better, understand it, and catch more waves</span>
     </button>
     <button class="gateopt" onclick="gateSelect(2)">
-      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="#00D2FF"/><rect x="14" y="5" width="4" height="17" rx="2" fill="#00D2FF"/><rect x="21" y="0" width="4" height="22" rx="2" fill="rgba(255,255,255,.12)"/></svg>
       <span><strong>The wave</strong> — I catch waves; I need the riding: control, speed, my lines</span>
     </button>
     <button class="gateopt" onclick="gateSelect(3)">
-      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="#00D2FF"/><rect x="14" y="5" width="4" height="17" rx="2" fill="#00D2FF"/><rect x="21" y="0" width="4" height="22" rx="2" fill="#00D2FF"/></svg>
       <span><strong>The edge</strong> — precision, power and performance in demanding conditions</span>
     </button>
   </div>
