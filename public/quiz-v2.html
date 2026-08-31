@@ -198,12 +198,30 @@ const QS=[
    Beginner todo-0=0 · Novice todo-3=30 · Foundation típico=54 ·
    Emerging=76 · Pre-Elite=88 · Elite≈100. Margen anti-sesgo: 2 clics. */
 const LEVELS=[
- {name:"Beginner",belt:"White Belt",value:"Humility",min:0,max:14,color:"#C8D0DC"},
- {name:"Novice",belt:"Yellow Belt",value:"Process & Resilience",min:15,max:41,color:"#F5C518"},
- {name:"Foundation",belt:"Blue Belt",value:"Conscious Commitment",min:42,max:63,color:"#1E6FBF"},
- {name:"Emerging",belt:"Purple Belt",value:"Personal Responsibility",min:64,max:85,color:"#7B4FBE"},
- {name:"Pre-Elite",belt:"Brown Belt",value:"Gratitude",min:86,max:96,color:"#7D4E27"},
- {name:"Elite",belt:"Black Belt",value:"Impact & Sharing",min:97,max:100,color:"#555"}];
+ {name:"Beginner",belt:"White Belt",value:"Humility",min:0,max:14,color:"#C8D0DC",
+  open:"You're at the very beginning \u2014 and that's an advantage: nothing to unlearn. Sliding on water is already yours from the very first foam. Right now the whole game is comfort, safety and your first waves.",
+  focus:["Ocean comfort \u2014 getting in, getting out, and feeling safe in the whitewater","Paddle technique \u2014 the engine that catches you waves","A clean, repeatable pop-up and your first glides"],
+  quote:"White Belt begins with humility: open to learn, willing to fall, ready to grow."},
+ {name:"Novice",belt:"Yellow Belt",value:"Process & Resilience",min:15,max:41,color:"#F5C518",
+  open:"You can catch waves \u2014 that's a real milestone. This stage is about the OCEAN as much as the board: reading it, holding your own in the lineup, and becoming self-sufficient wave by wave.",
+  focus:["Getting out on your own \u2014 keeping your board with you through the whitewater","Reading waves and positioning \u2014 raising how many YOU catch, unassisted","Your first real lines across the open face"],
+  quote:"Resilience isn't enduring \u2014 it's accepting the process and giving it everything."},
+ {name:"Foundation",belt:"Blue Belt",value:"Conscious Commitment",min:42,max:63,color:"#1E6FBF",
+  open:"You're self-sufficient in the water and the board answers you. This is the most important level in surf development: the quality of what you build here \u2014 speed, connection, your turns \u2014 decides everything that follows.",
+  focus:["Generating and keeping speed, instead of relying on the wave","Turning where you decide \u2014 both directions, linked, on YOUR board","Drawing complete lines: up and down, section to section"],
+  quote:"There are no shortcuts. You have to walk the path."},
+ {name:"Emerging",belt:"Purple Belt",value:"Personal Responsibility",min:64,max:85,color:"#7B4FBE",
+  open:"You're comfortable in a real range of conditions and your own style is taking shape. This is where surfing becomes precise \u2014 and where the mental game starts to matter as much as the physical one.",
+  focus:["Committing fully to your lines \u2014 drawing them with intention, not by accident","Holding speed and control through critical sections","Consistency: making your good waves your normal waves"],
+  quote:"The difference between good and great is what you do on every wave."},
+ {name:"Pre-Elite",belt:"Brown Belt",value:"Gratitude",min:86,max:96,color:"#7D4E27",
+  open:"You command the fundamentals and your surfing is fluid and efficient \u2014 in almost any ocean. What refines from here is mastery, not novelty.",
+  focus:["Linking everything continuously, always working from the pocket","Expanding your repertoire and variation across different waves","Performing when it matters \u2014 heavier days, higher stakes"],
+  quote:"Gratitude for the journey."},
+ {name:"Elite",belt:"Black Belt",value:"Impact & Sharing",min:97,max:100,color:"#555",
+  open:"You've integrated every pillar \u2014 physical, technical, tactical and mental. You read and adapt to almost any spot, from experience and good decisions.",
+  focus:["Refining consistency in the most demanding conditions","Understanding the why deeply enough to teach it","Expressing your own style within the structure"],
+  quote:"What you received, you now share. Your way of living influences others."}];
 
 const NEEDS=["everything, from zero","the ocean — navigating it and catching more waves","the wave — control, speed and your lines","the edge — precision in demanding conditions"];
 
@@ -269,24 +287,45 @@ function renderResult(r){
      <p style="font-size:.85rem;line-height:1.5;margin-top:6px">You came for <strong style="color:var(--tw)">${NEEDS[need]}</strong>.
      ${r.mar<=r.ola?`Your session map agrees: your ocean track (${r.mar}/50) is where the next jump lives — and it lifts everything on the wave with it.`:`Your ocean track (${r.mar}/50) is ahead of your wave track (${r.ola}/50) — the riding is exactly where your next block of work goes.`}</p>
    </div>`:'';
+  const fromZero=need===0;
+  const narrative=`
+   <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-left:3px solid ${lv.color};border-radius:14px;padding:16px 18px;text-align:left">
+     <p style="font-size:.9rem;line-height:1.6;color:var(--tl)">${lv.open}</p>
+     <div class="mono" style="font-size:.6rem;font-weight:600;color:${lv.color==='#555'?'var(--tw)':lv.color};margin:12px 0 6px">Focus next</div>
+     <ul style="list-style:none;display:flex;flex-direction:column;gap:6px">
+       ${lv.focus.map(f=>`<li style="font-size:.85rem;line-height:1.5;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--cyan)">\u2022</span>${f}</li>`).join('')}
+     </ul>
+     <p style="font-size:.88rem;font-weight:600;font-style:italic;color:var(--tw);margin-top:12px;padding-top:12px;border-top:1px solid var(--gb)">\u201c${lv.quote}\u201d</p>
+   </div>`;
   document.getElementById('s-result').innerHTML=`
    <div class="brand center"><img src="/venue-scout/tss-wave.png?v=1" alt=""><div class="bn">The Surf Sequence</div><div class="proto">Prototype V2</div></div>
    <div class="center">
+     ${fromZero?`
      <div style="width:112px;height:112px;border-radius:50%;border:3px solid ${lv.color};display:inline-flex;flex-direction:column;align-items:center;justify-content:center">
-       <span style="font-size:1.9rem;font-weight:800;color:${lv.color==='#C8D0DC'||lv.color==='#F5C518'?lv.color:lv.color}">${r.score}</span>
+       <span class="mono" style="font-size:.78rem;font-weight:600;color:var(--tw)">DAY 1</span>
+       <span class="mono" style="font-size:.5rem;color:var(--tm)">starts now</span>
+     </div>`:`
+     <div style="width:112px;height:112px;border-radius:50%;border:3px solid ${lv.color};display:inline-flex;flex-direction:column;align-items:center;justify-content:center">
+       <span style="font-size:1.9rem;font-weight:800;color:${lv.color}">${r.score}</span>
        <span class="mono" style="font-size:.5rem;color:var(--tm)">/ 100</span>
-     </div>
+     </div>`}
      <div class="disp" style="font-size:1.9rem;color:${lv.color};margin-top:10px">${lv.name}</div>
      <div class="mono" style="font-size:.62rem;color:var(--cyan);margin-top:6px">${lv.belt} · ${lv.value}</div>
    </div>
    ${capped}
+   ${narrative}
+   ${fromZero?`
+   <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:14px 16px;text-align:left">
+     <div class="mono" style="font-size:.6rem;color:var(--cyan)">Your two tracks</div>
+     <p style="font-size:.85rem;line-height:1.5;margin-top:6px">From day one you'll grow on two tracks at once: <strong style="color:var(--tw)">the ocean</strong> (reading it, moving in it, owning your safety) and <strong style="color:var(--tw)">the wave</strong> (the board, the glide, your first lines). Your first session starts drawing this map.</p>
+   </div>`:`
    <div style="max-width:440px;margin:20px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:16px">
      <div class="mono" style="font-size:.6rem;color:var(--tm);margin-bottom:10px">Your two tracks — they move together</div>
      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px"><span style="color:var(--tw)">THE OCEAN — reading, lineup, autonomy</span><span class="mono" style="font-size:.65rem;color:var(--cyan)">${r.mar}/50</span></div>
      <div class="trackbar"><div style="width:${r.mar*2}%;background:var(--cyan)"></div></div>
      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin:12px 0 4px"><span style="color:var(--tw)">THE WAVE — take-off, connection, speed, lines</span><span class="mono" style="font-size:.65rem;color:var(--gold)">${r.ola}/50</span></div>
      <div class="trackbar"><div style="width:${r.ola*2}%;background:var(--gold)"></div></div>
-   </div>
+   </div>`}
    ${needLine}
    <div style="max-width:440px;margin:18px auto 0">
      <div class="mono center" style="font-size:.6rem;color:var(--tm)">Your TSS journey</div>
