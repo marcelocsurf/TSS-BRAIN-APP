@@ -83,19 +83,19 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
   <p class="center" style="color:var(--tm);font-size:.85rem;margin-bottom:18px">Your honest answer — it shapes what we look at.</p>
   <div style="display:flex;flex-direction:column;gap:10px">
     <button class="gateopt" onclick="gateSelect(0)">
-      <svg class="sig" width="30" height="26" viewBox="0 0 30 26"><rect x="0" y="18" width="5" height="8" rx="1.5" fill="#00D2FF"/><rect x="8" y="12" width="5" height="14" rx="1.5" fill="rgba(255,255,255,.15)"/><rect x="16" y="6" width="5" height="20" rx="1.5" fill="rgba(255,255,255,.15)"/><rect x="24" y="0" width="5" height="26" rx="1.5" fill="rgba(255,255,255,.15)"/></svg>
+      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="rgba(255,255,255,.12)"/><rect x="14" y="5" width="4" height="17" rx="2" fill="rgba(255,255,255,.12)"/><rect x="21" y="0" width="4" height="22" rx="2" fill="rgba(255,255,255,.12)"/></svg>
       <span><strong>Everything, from zero</strong> — I've never surfed (or barely tried)</span>
     </button>
     <button class="gateopt" onclick="gateSelect(1)">
-      <svg class="sig" width="30" height="26" viewBox="0 0 30 26"><rect x="0" y="18" width="5" height="8" rx="1.5" fill="#00D2FF"/><rect x="8" y="12" width="5" height="14" rx="1.5" fill="#00D2FF"/><rect x="16" y="6" width="5" height="20" rx="1.5" fill="rgba(255,255,255,.15)"/><rect x="24" y="0" width="5" height="26" rx="1.5" fill="rgba(255,255,255,.15)"/></svg>
+      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="#00D2FF"/><rect x="14" y="5" width="4" height="17" rx="2" fill="rgba(255,255,255,.12)"/><rect x="21" y="0" width="4" height="22" rx="2" fill="rgba(255,255,255,.12)"/></svg>
       <span><strong>The ocean</strong> — navigate it better, understand it, and catch more waves</span>
     </button>
     <button class="gateopt" onclick="gateSelect(2)">
-      <svg class="sig" width="30" height="26" viewBox="0 0 30 26"><rect x="0" y="18" width="5" height="8" rx="1.5" fill="#00D2FF"/><rect x="8" y="12" width="5" height="14" rx="1.5" fill="#00D2FF"/><rect x="16" y="6" width="5" height="20" rx="1.5" fill="#00D2FF"/><rect x="24" y="0" width="5" height="26" rx="1.5" fill="rgba(255,255,255,.15)"/></svg>
+      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="#00D2FF"/><rect x="14" y="5" width="4" height="17" rx="2" fill="#00D2FF"/><rect x="21" y="0" width="4" height="22" rx="2" fill="rgba(255,255,255,.12)"/></svg>
       <span><strong>The wave</strong> — I catch waves; I need the riding: control, speed, my lines</span>
     </button>
     <button class="gateopt" onclick="gateSelect(3)">
-      <svg class="sig" width="30" height="26" viewBox="0 0 30 26"><rect x="0" y="18" width="5" height="8" rx="1.5" fill="#00D2FF"/><rect x="8" y="12" width="5" height="14" rx="1.5" fill="#00D2FF"/><rect x="16" y="6" width="5" height="20" rx="1.5" fill="#00D2FF"/><rect x="24" y="0" width="5" height="26" rx="1.5" fill="#00D2FF"/></svg>
+      <svg class="sig" width="25" height="22" viewBox="0 0 25 22"><rect x="0" y="15" width="4" height="7" rx="2" fill="#00D2FF"/><rect x="7" y="10" width="4" height="12" rx="2" fill="#00D2FF"/><rect x="14" y="5" width="4" height="17" rx="2" fill="#00D2FF"/><rect x="21" y="0" width="4" height="22" rx="2" fill="#00D2FF"/></svg>
       <span><strong>The edge</strong> — precision, power and performance in demanding conditions</span>
     </button>
   </div>
@@ -223,6 +223,40 @@ const LEVELS=[
   focus:["Refining consistency in the most demanding conditions","Understanding the why deeply enough to teach it","Expressing your own style within the structure"],
   quote:"What you received, you now share. Your way of living influences others."}];
 
+
+/* Lo que se aprende en CADA nivel — del curso REAL del app (auditoría
+   2026-08-31): pasos, secuencias y módulos que existen hoy. El resultado
+   deja de ser diagnóstico y se vuelve programa (idea de Marcelo). */
+const CURRICULUM={
+ "White Belt":{tag:"25 steps \u00b7 5 sequences \u00b7 the base of everything",items:[
+   "Board control & the safety geometry \u2014 you and your board, safe in the whitewater",
+   "Paddle technique with its 4 speeds \u2014 the engine that catches waves",
+   "The pop-up, your stance, and riding your first waves",
+   "Your first directional turns and a clean, safe dismount"]},
+ "Yellow Belt":{tag:"green waves \u00b7 reading \u00b7 self-sufficiency",items:[
+   "Reading waves: the stages of a wave and where to be",
+   "Positioning & catching unbroken green waves by yourself",
+   "Getting out on your own \u2014 turtle roll or duck dive, your board with you",
+   "Foot positions FP1/FP2 and your first real lines across the face"]},
+ "Blue Belt":{tag:"6 sequences \u00b7 the level everything is built on",items:[
+   "The bottom turn \u2014 drawing the U, frontside and backside",
+   "Generating speed: pumping from any foot position",
+   "Rail-to-rail surfing and linking sections",
+   "Your first finishing maneuvers \u2014 snaps and closures, both sides"]},
+ "Purple Belt":{tag:"precision \u00b7 commitment \u00b7 expression",items:[
+   "Projection: using the wave's energy for bigger, sharper turns",
+   "Committed maneuvers in the critical part of the wave",
+   "Your expression branch \u2014 radical or stylish, shaped to your board",
+   "This belt's course is being finalized \u2014 your coach leads it in the water"]},
+ "Brown Belt":{tag:"mastery \u00b7 consistency \u00b7 heavier days",items:[
+   "Linking everything continuously, always from the pocket",
+   "Repertoire and variation across different types of waves",
+   "Performance under pressure and in more demanding conditions"]},
+ "Black Belt":{tag:"the endless pursuit",items:[
+   "Refinement across all conditions \u2014 and knowing when not to go",
+   "Understanding the why deeply enough to pass it forward",
+   "Your own style, expressed inside the structure"]}};
+
 const NEEDS=["everything, from zero","the ocean — navigating it and catching more waves","the wave — control, speed and your lines","the edge — precision in demanding conditions"];
 
 let cur=0, ans=new Array(QS.length).fill(-1), need=-1, board=null;
@@ -314,6 +348,14 @@ function renderResult(r){
    </div>
    ${capped}
    ${narrative}
+   ${(()=>{const c=CURRICULUM[lv.belt];if(!c)return '';return `
+   <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:16px 18px;text-align:left">
+     <div class="mono" style="font-size:.6rem;font-weight:600;color:${lv.color==='#555'?'var(--tw)':lv.color}">In the course at this level</div>
+     <div class="mono" style="font-size:.55rem;color:var(--tm);margin-top:3px">${c.tag}</div>
+     <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:10px">
+       ${c.items.map(x=>`<li style="font-size:.85rem;line-height:1.5;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--cyan)">\u2192</span>${x}</li>`).join('')}
+     </ul>
+   </div>`})()}
    ${fromZero?`
    <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:14px 16px;text-align:left">
      <div class="mono" style="font-size:.6rem;color:var(--cyan)">Your two tracks</div>
