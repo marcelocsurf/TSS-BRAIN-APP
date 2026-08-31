@@ -1394,12 +1394,16 @@ export async function closeCampFinal(
   results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string; next_focus?: string }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
   opts?: { finalize?: boolean },
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; waterPending?: string[] }> {
   // finalize=false → per-student partial save (M153): writes ratings/acta/
   // promotion but does NOT complete the camp nor unlock surveys yet.
   // Invariante #2: estados esperables se DEVUELVEN, no se lanzan (Next enmascara
   // los throw de server actions en producción).
   const finalize = opts?.finalize !== false;
+  // Alumnos cuya promoción cayó a recomendación pendiente por LA REGLA DEL
+  // AGUA. El cierre no falla por esto, pero el coach tiene que enterarse
+  // (revisión 2026-08-31: el desvío era invisible — devolvía ok:true pelado).
+  const waterPending: string[] = [];
 
   // El "qué trabajar después" es OBLIGATORIO en cada evaluación. Estaba
   // bloqueado solo en el navegador, así que el servidor aceptaba un acta sin
@@ -1614,10 +1618,23 @@ export async function closeCampFinal(
       if (!r.ocean_level) continue;
       const { data: stu } = await admin
         .from('students')
-        .select('ocean_level')
+        .select('ocean_level, ocean_level_provisional')
         .eq('id', r.student_id)
         .single();
-      if (stu?.ocean_level === r.ocean_level) continue; // no change
+      if (stu?.ocean_level === r.ocean_level) {
+        // Mismo nivel ≠ no-op cuando venía PROVISIONAL del quiz: que el
+        // coach lo deje tal cual en la evaluación final ES la confirmación
+        // en el agua. Sin esto, el caso más común (el coach de acuerdo con
+        // el quiz) dejaba provisional=true y la regla del agua bloqueaba la
+        // cinta de ese MISMO cierre en silencio.
+        if (stu?.ocean_level_provisional !== false) {
+          await admin
+            .from('students')
+            .update({ ocean_level_provisional: false })
+            .eq('id', r.student_id);
+        }
+        continue; // sin fila de historial: el nivel no cambió
+      }
       await admin.from('ocean_level_evaluations').insert({
         student_id: r.student_id,
         evaluated_by: coach.id,
@@ -1643,7 +1660,7 @@ export async function closeCampFinal(
       if (!(newBelt in BELT_RANK)) continue;
       const { data: stu } = await admin
         .from('students')
-        .select('belt_level, ocean_level, ocean_level_provisional')
+        .select('first_name, belt_level, ocean_level, ocean_level_provisional')
         .eq('id', p.student_id)
         .single();
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
@@ -1655,6 +1672,7 @@ export async function closeCampFinal(
       // pierde: cae a recomendación pendiente (y su confirmación vuelve a
       // pasar por el mismo chequeo en belt-promotions).
       const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
+      if (waterBlock) waterPending.push(stu?.first_name ?? 'A student');
       const authorized = (canAccreditAny || canCoachBelt(coachCap, newBelt)) && !waterBlock;
       if (authorized) {
         await admin
@@ -1725,7 +1743,7 @@ export async function closeCampFinal(
           ' (Dar la clase → Cerrar la clase) y volvé a finalizar: sin el cierre del día el alumno se queda sin sesión en su bitácora y sin encuesta del coach.',
       };
     }
-    return { ok: true };
+    return { ok: true, waterPending: waterPending.length ? waterPending : undefined };
   }
 
   await admin
@@ -1791,7 +1809,7 @@ export async function closeCampFinal(
   } catch {
     /* non-blocking — the camp is closed regardless of email delivery */
   }
-  return { ok: true };
+  return { ok: true, waterPending: waterPending.length ? waterPending : undefined };
 }
 
 // ─── SHORT CAMP: cerrar UN alumno el día que termina (2026-08-21) ───

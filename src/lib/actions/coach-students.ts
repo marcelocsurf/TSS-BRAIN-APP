@@ -136,6 +136,8 @@ export type CoachStudentDetail = {
   level_quiz_score: number | null;
   level_quiz_skillmap: { name: string; pct: number }[] | null;
   ocean_level: string | null;
+  /** true = lo declaró el quiz y ningún coach lo vio en el agua todavía. */
+  ocean_level_provisional: boolean | null;
   current_sequence_number: number | null;
   current_step_order: number | null;
   // Safety
@@ -189,7 +191,7 @@ export async function getCoachStudentDetail(
     .select(
       `id, first_name, last_name, photo_url, age, date_of_birth, gender, nationality, languages, instagram,
        belt_level, belt_provisional, level_quiz_score, level_quiz_skillmap,
-       ocean_level, current_sequence_number, current_step_order,
+       ocean_level, ocean_level_provisional, current_sequence_number, current_step_order,
        swim_level, waiver_signed, emergency_contact_name, emergency_contact_phone,
        allergies, injuries, medical_notes, risk_notes, height, weight,
        stance, surf_experience_years, surf_frequency, board_type, other_sports, learning_style,
@@ -264,10 +266,15 @@ export async function coachConfirmBelt(
     return { ok: false, error: 'Your certification level does not cover that belt — ask a coach certified for it.' };
   }
 
-  // LA REGLA DEL AGUA: confirmar Blue+ exige océano semi_autonomous+
-  // confirmado — primero el botón Confirm level del agua, después la cinta.
-  const waterBlock = waterRuleBlocker(belt, stu.ocean_level, stu.ocean_level_provisional);
-  if (waterBlock) return { ok: false, error: waterBlock };
+  // LA REGLA DEL AGUA: confirmar AL nivel o SUBIR a Blue+ exige océano
+  // semi_autonomous+ confirmado — primero Confirm ocean level, después la
+  // cinta. BAJAR queda libre SIEMPRE (revisión 2026-08-31): corregir un
+  // purple inflado hacia blue es acercarse a la verdad, y bloquearlo lo
+  // dejaba clavado en la cinta MÁS alta — lo contrario de la regla.
+  if (target >= current) {
+    const waterBlock = waterRuleBlocker(belt, stu.ocean_level, stu.ocean_level_provisional);
+    if (waterBlock) return { ok: false, error: waterBlock };
+  }
 
   // Update ATÓMICO sobre la condición: si otro coach (u otra vía) ya la
   // confirmó entre el check y este write, 0 filas — no se pisa nada.
@@ -281,5 +288,64 @@ export async function coachConfirmBelt(
   if (!updated || updated.length === 0) {
     return { ok: false, error: 'This belt was just confirmed by someone else — refresh to see it.' };
   }
+  return { ok: true };
+}
+
+// El botón que la regla del agua le ordena usar al coach TIENE que existir
+// donde el coach trabaja (revisión 2026-08-31: solo estaba en el dashboard
+// staff, y el mensaje "confirm it first" era un callejón sin salida desde el
+// portal). Mismo gate titular que coachConfirmBelt; sin tope de
+// certificación — el océano es seguridad, no acreditación de cinta.
+const OCEAN_LEVELS_ORDER = ['beginner', 'supervised', 'semi_autonomous', 'autonomous', 'advanced'];
+
+export async function coachConfirmOcean(
+  token: string,
+  studentId: string,
+  level: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!OCEAN_LEVELS_ORDER.includes(level)) return { ok: false, error: 'Unknown ocean level.' };
+  const coach = await resolveCoachByToken(token);
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+  const adminGate = createAdminClient();
+  const { data: owned } = await adminGate
+    .from('camp_instances')
+    .select('id')
+    .or(`coach_id.eq.${coach.id},head_coach_id.eq.${coach.id}`);
+  const ownedIds = (owned ?? []).map((i) => i.id);
+  if (ownedIds.length === 0) return { ok: false, error: 'Only the lead coach can confirm the ocean level.' };
+  const { data: mine } = await adminGate
+    .from('camp_participants')
+    .select('student_id')
+    .in('camp_instance_id', ownedIds)
+    .eq('student_id', studentId)
+    .in('enrollment_status', ['active', 'completed'])
+    .limit(1);
+  if (!mine || mine.length === 0) return { ok: false, error: 'Only the lead coach can confirm the ocean level.' };
+
+  const admin = createAdminClient();
+  const { data: stu } = await admin
+    .from('students')
+    .select('ocean_level')
+    .eq('id', studentId)
+    .maybeSingle();
+  if (!stu) return { ok: false, error: 'Student not found.' };
+
+  // Historial primero (misma forma que el cierre de camp y la bitácora) y
+  // recién después el update — si el insert falla, no queda un nivel
+  // confirmado sin rastro de quién lo confirmó.
+  const { error: histError } = await admin.from('ocean_level_evaluations').insert({
+    student_id: studentId,
+    evaluated_by: coach.id,
+    previous_level: stu.ocean_level ?? null,
+    new_level: level,
+    method: 'evaluation',
+    notes: 'Coach portal confirmation',
+  });
+  if (histError) return { ok: false, error: histError.message };
+  const { error } = await admin
+    .from('students')
+    .update({ ocean_level: level, ocean_level_provisional: false })
+    .eq('id', studentId);
+  if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

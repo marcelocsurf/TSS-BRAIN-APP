@@ -49,7 +49,7 @@ export function waterRuleBlocker(
   if (selfSufficient && oceanProvisional === false) return null;
   return selfSufficient
     ? 'The water rule: their ocean level shows self-sufficiency but no coach has confirmed it in the water yet — confirm it first.'
-    : 'The water rule blocks this belt: Foundation and above require water self-sufficiency (Semi-Autonomous or higher, coach-confirmed in the water).';
+    : 'The water rule blocks this belt: Foundation and above require water self-sufficiency (Semi-Autonomous or higher). Assess and confirm their ocean level in the water first.';
 }
 
 // Keyed by the belt the camp graduates students INTO (template includes_course_key).

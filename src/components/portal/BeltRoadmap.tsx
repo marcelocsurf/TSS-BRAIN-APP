@@ -56,12 +56,15 @@ function Row({
   title,
   detail,
   onClick,
+  trailing,
 }: {
   done: boolean;
   pending?: boolean;
   title: string;
   detail?: string | null;
   onClick?: () => void;
+  /** Señal de que la fila ES una puerta (ej. "Your water level →"). */
+  trailing?: string;
 }) {
   const body = (
     <div className="flex items-start gap-2.5 py-2">
@@ -89,6 +92,11 @@ function Row({
           </p>
         )}
       </div>
+      {trailing && (
+        <span className="shrink-0 self-center text-[11px] font-semibold" style={{ color: CYAN }}>
+          {trailing}
+        </span>
+      )}
     </div>
   );
   if (!onClick) return body;
@@ -149,10 +157,12 @@ export function BeltRoadmap({
   const working = data?.sequences.filter((s) => s.state === 'working') ?? [];
   const unseen = data?.sequences.filter((s) => s.state === 'unrated' || s.state === 'partial') ?? [];
 
-  // La verdad en una línea. Solo cuenta lo que la EVALUACIÓN DE CINTA mide:
-  // las secuencias. El agua es otra línea (su vista propia) y el curso se ve
-  // pero no frena — contarlos acá era mentirle el número al alumno.
-  const blocking = working.length + unseen.length;
+  // La verdad en una línea. Cuenta lo que de verdad FRENA la cinta: las
+  // secuencias y — desde LA REGLA DEL AGUA (2026-08-31) — el agua sin
+  // confirmar cuando la cinta perseguida la exige (Blue+). El curso se ve
+  // pero no frena — contarlo acá era mentirle el número al alumno.
+  const waterBlocking = !!data?.waterRule && !data.waterRule.confirmed;
+  const blocking = working.length + unseen.length + (waterBlocking ? 1 : 0);
   const isOwnBelt = !!data && data.fromBelt === data.ownBelt;
   const count = (n: number) => `${n} ${n === 1 ? 'thing' : 'things'}`;
   const headline = !data
@@ -329,9 +339,12 @@ export function BeltRoadmap({
                           ? 'Confirmed by your coach.'
                           : data.waterRule.reached
                             ? 'Your level is there — your coach still confirms it with you in the water.'
-                            : 'You get out with your board, choose your wave and position yourself, and get back — all on your own.'
+                            // Fuente única: la definición canónica del requisito
+                            // (graduation.ts) — no una copia que derive acá.
+                            : data.waterRule.description
                       }
                       onClick={() => onOpenWater?.()}
+                      trailing="Your water level →"
                     />
                   </div>
                 </section>
@@ -350,7 +363,7 @@ export function BeltRoadmap({
                       </p>
                       <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#8aa0b2' }}>
                         Where you can paddle out on your own is a separate track — it doesn&apos;t
-                        hold your belt back.
+                        hold this belt back. Blue Belt is where it becomes a requirement.
                       </p>
                     </div>
                     <span className="shrink-0 text-[11px] font-semibold" style={{ color: CYAN }}>

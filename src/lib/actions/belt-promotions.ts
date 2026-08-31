@@ -122,11 +122,14 @@ export async function resolvePromotion(
         .select('belt_level, ocean_level, ocean_level_provisional')
         .eq('id', rec.student_id)
         .single();
-      // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
-      const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
-      if (waterBlock) return { ok: false, error: waterBlock };
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] > currentRank) {
+        // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
+        // ADENTRO del guard de rango: si el alumno ya está en esa cinta (o
+        // más arriba), el write sería no-op y confirmar solo cierra la
+        // recomendación vieja — el agua no debe impedir esa limpieza.
+        const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
+        if (waterBlock) return { ok: false, error: waterBlock };
         await admin.from('students').update({
           belt_level: newBelt,
           belt_provisional: false,
@@ -240,11 +243,14 @@ export async function resolvePromotionByToken(
     if (newBelt in BELT_RANK) {
       const { data: stu } = await admin.from('students')
         .select('belt_level, ocean_level, ocean_level_provisional').eq('id', rec.student_id).single();
-      // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
-      const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
-      if (waterBlock) return { ok: false, error: waterBlock };
       const currentRank = stu?.belt_level ? BELT_RANK[stu.belt_level as BeltLevel] ?? 0 : 0;
       if (BELT_RANK[newBelt] > currentRank) {
+        // LA REGLA DEL AGUA: Blue+ exige océano semi_autonomous+ confirmado.
+        // ADENTRO del guard de rango: si el alumno ya está en esa cinta (o
+        // más arriba), el write sería no-op y confirmar solo cierra la
+        // recomendación vieja — el agua no debe impedir esa limpieza.
+        const waterBlock = waterRuleBlocker(newBelt, stu?.ocean_level, stu?.ocean_level_provisional);
+        if (waterBlock) return { ok: false, error: waterBlock };
         await admin.from('students').update({
           belt_level: newBelt,
           belt_provisional: false,

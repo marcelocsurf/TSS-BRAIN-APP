@@ -8,6 +8,7 @@ import {
 import { getCoachStudentDetail } from '@/lib/actions/coach-students';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { BeltConfirm } from '@/components/coach-portal/BeltConfirm';
+import { OceanConfirm } from '@/components/coach-portal/OceanConfirm';
 import { levelForScore, LEVELS, isSelfSufficient } from '@/lib/quiz/surf-level';
 
 export const dynamic = 'force-dynamic';
@@ -70,6 +71,11 @@ export default async function CoachStudentDetailPage({ params }: Props) {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+        {/* OCÉANO sin confirmar: va PRIMERO — la regla del agua exige el
+            océano confirmado antes de poder confirmar una cinta Blue+. */}
+        {s.ocean_level_provisional !== false && (
+          <OceanConfirm token={token} studentId={s.id} currentLevel={s.ocean_level} />
+        )}
         {/* Cinta PROVISIONAL del quiz: el coach la confirma o la ajusta acá
             — el circuito que faltaba (diagnóstico del quiz, 2026-08-31). */}
         {s.belt_provisional && (() => {

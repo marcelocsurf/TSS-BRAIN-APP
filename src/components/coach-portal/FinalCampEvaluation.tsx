@@ -280,6 +280,11 @@ export function FinalCampEvaluation({
       try {
         const res = await closeCampFinal(token, campInstanceId, ratingsPayload, [result], promos, { finalize: false });
         if (!res?.ok) { alert(res?.error || 'No se pudo guardar este alumno.'); return; }
+        if (res.waterPending?.length) {
+          alert(
+            `Heads up — the belt was saved as a PENDING recommendation, not granted yet: the water rule needs ${res.waterPending.join(', ')}'s ocean level confirmed (Semi-Autonomous or higher) first. Set their in-water level in this evaluation, or confirm it from their profile.`
+          );
+        }
         setSavedSet((prev) => new Set(prev).add(s.student_id));
         onStudentSaved?.(s.student_id);
         // saltar al siguiente sin guardar
@@ -343,6 +348,11 @@ export function FinalCampEvaluation({
       try {
         const res = await closeCampFinal(token, campInstanceId, payload, resultsPayload, promotionsPayload);
         if (!res?.ok) { alert(res?.error || 'Failed to finalize camp.'); return; }
+        if (res.waterPending?.length) {
+          alert(
+            `Camp closed. Heads up — these belts were saved as PENDING recommendations, not granted yet: ${res.waterPending.join(', ')}. The water rule needs their ocean level confirmed (Semi-Autonomous or higher) first.`
+          );
+        }
         onCompleted();
       } catch (e: any) {
         alert(e.message || 'Failed to finalize camp.');
