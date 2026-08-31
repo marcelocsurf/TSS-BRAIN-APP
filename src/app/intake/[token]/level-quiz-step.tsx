@@ -6,6 +6,17 @@ import {
   type QuizLevel,
 } from '@/lib/quiz/surf-level';
 import { submitLevelQuiz } from '@/lib/actions/intake';
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
+
+// Los colores de LEVELS son los de las CINTAS (calibrados para el quiz
+// público oscuro). Sobre el fondo CLARO del intake, blanco y amarillo no
+// se leen como texto — versión profunda del mismo tono para tipografía;
+// el resto de cintas contrasta bien tal cual.
+const TEXT_ON_LIGHT: Record<string, string> = {
+  white_belt: '#6B7A83',
+  yellow_belt: '#B8860B',
+};
+const textColor = (level: QuizLevel) => TEXT_ON_LIGHT[level.belt] ?? level.color;
 
 const GATE = [
   { txt: "I've never surfed — or only tried once or twice" },
@@ -168,9 +179,9 @@ export function LevelQuizStep({
           <div className="flex flex-col items-center text-center pt-1">
             <div
               className="w-28 h-28 rounded-full flex flex-col items-center justify-center"
-              style={{ border: `4px solid ${result.level.color}` }}
+              style={{ border: `4px solid ${textColor(result.level)}` }}
             >
-              <span className="text-3xl font-bold leading-none" style={{ color: result.level.color }}>
+              <span className="text-3xl font-bold leading-none" style={{ color: textColor(result.level) }}>
                 {result.score}
               </span>
               <span className="text-[10px] uppercase tracking-wider text-gray-400 mt-1">
@@ -179,11 +190,16 @@ export function LevelQuizStep({
             </div>
             <p
               className="mt-3 text-2xl font-bold"
-              style={{ fontFamily: 'var(--font-heading)', color: result.level.color }}
+              style={{ fontFamily: 'var(--font-heading)', color: textColor(result.level) }}
             >
               {result.level.name}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">Your provisional level — your coach confirms it.</p>
+            {/* La pareja cinta+nivel SIEMPRE junta (Blue Belt · Foundation):
+                el sistema de cintas y el nombre del nivel son la misma cosa. */}
+            <p className="text-[11px] font-mono uppercase tracking-wider mt-1" style={{ color: textColor(result.level) }}>
+              {BELT_DISPLAY[result.level.belt as BeltLevel]?.en ?? result.level.belt}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Your provisional level — your coach confirms it.</p>
           </div>
 
           {/* El nivel bajó respecto del score puro — se explica de frente. */}
@@ -204,11 +220,11 @@ export function LevelQuizStep({
           {result.level.m1 && (
             <div
               className="rounded-2xl bg-white border border-gray-100 p-4"
-              style={{ borderLeft: `4px solid ${result.level.color}` }}
+              style={{ borderLeft: `4px solid ${textColor(result.level)}` }}
             >
               <p
                 className="text-[10px] font-mono uppercase tracking-wider mb-2"
-                style={{ color: result.level.color }}
+                style={{ color: textColor(result.level) }}
               >
                 {result.level.rt}
               </p>
@@ -239,7 +255,7 @@ export function LevelQuizStep({
                   <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
-                      style={{ width: `${s.pct}%`, background: result.level.color }}
+                      style={{ width: `${s.pct}%`, background: textColor(result.level) }}
                     />
                   </div>
                 </div>

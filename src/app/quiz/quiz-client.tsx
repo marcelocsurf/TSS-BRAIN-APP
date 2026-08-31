@@ -5,6 +5,7 @@ import {
   QUESTIONS, OCEAN_QUESTIONS, MAX_SCORE, resolveLevel,
 } from '@/lib/quiz/surf-level';
 import { createLeadFromQuiz } from '@/lib/actions/quiz-lead';
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
 // Brand Manual v10: cyan oficial + ink · Archivo Expanded display · Plex Mono
 // labels · Lora itálica RESERVADA al tagline (regla 3.5).
@@ -233,6 +234,9 @@ export function QuizClient({ academySlug }: { academySlug: string | null }) {
               <span style={{ fontSize: '.6rem', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.4 }}>/ {MAX_SCORE}</span>
             </div>
             <div style={{ ...DISPLAY, fontSize: '1.8rem', color: level.color }}>{level.name}</div>
+            <p style={{ fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: '.62rem', color: level.color, marginTop: 4 }}>
+              {BELT_DISPLAY[level.belt as BeltLevel]?.en ?? level.belt}
+            </p>
             <p style={{ color: '#c4d9e8', opacity: 0.65, fontSize: '.85rem', marginTop: 4 }}>Your entry level (your coach confirms it)</p>
 
             {/* El nivel bajó respecto del score puro: se dice de frente — es
