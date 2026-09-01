@@ -83,7 +83,15 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           // hubo cap — se le explica al coach cuál (agua o evidencia) para
           // que la "contradicción" no parezca error de bandas.
           let cappedNote: string | null = null;
-          if (s.level_quiz_score != null) {
+          if (s.level_quiz_v2?.capped_by) {
+            // V2: el cap viene GUARDADO con las escenas exactas — nada que
+            // derivar. Es el plan del día 1 del coach.
+            const gaps = (s.level_quiz_v2.capped_gaps ?? []).join(', ');
+            cappedNote =
+              `Score reached ${s.level_quiz_v2.uncapped_name} — capped by ${
+                s.level_quiz_v2.capped_by === 'water' ? 'water self-sufficiency' : 'declared skills'
+              }${gaps ? ` (held by: ${gaps})` : ''}.`;
+          } else if (s.level_quiz_v2 == null && s.level_quiz_score != null) {
             const scoreBand = levelForScore(s.level_quiz_score);
             const beltIdx = LEVELS.findIndex((l) => l.belt === s.belt_level);
             if (beltIdx >= 0 && LEVELS.indexOf(scoreBand) > beltIdx) {
@@ -157,7 +165,20 @@ export default async function CoachStudentDetailPage({ params }: Props) {
             Acá se ven las contradicciones (Flow alto con Riding bajo = el
             clic optimista) antes de entrar al agua. */}
         {s.level_quiz_score != null && Array.isArray(s.level_quiz_skillmap) && s.level_quiz_skillmap.length > 0 && (
-          <Section title={`Level quiz · ${s.level_quiz_score}/70`} Icon={Activity}>
+          <Section title={`Level quiz · ${s.level_quiz_score}/${s.level_quiz_v2 ? 100 : 70}`} Icon={Activity}>
+            {s.level_quiz_v2 && (
+              <div className="mb-3 space-y-1">
+                <p className="text-[11px] text-gray-600 font-mono">
+                  THE OCEAN {s.level_quiz_v2.mar}/50 · THE WAVE {s.level_quiz_v2.ola}/50
+                  {s.level_quiz_v2.board ? ` · ${s.level_quiz_v2.board.toUpperCase()}` : ''}
+                </p>
+                {s.level_quiz_v2.capped_by && (s.level_quiz_v2.capped_gaps?.length ?? 0) > 0 && (
+                  <p className="text-[11px] font-semibold text-amber-700">
+                    What held it: {s.level_quiz_v2.capped_gaps.join(' · ')} — start day 1 there.
+                  </p>
+                )}
+              </div>
+            )}
             <div className="space-y-1.5">
               {s.level_quiz_skillmap.map((sk) => (
                 <div key={sk.name} className="flex items-center gap-2">

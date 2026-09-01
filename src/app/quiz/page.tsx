@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 
-// #14 — Consolidación de quizzes (decisión 2026-07-29): la ÚNICA puerta
-// pública de nivel es el quiz co-brandeado original (find-your-level.html).
-// El motor React (surf-level.ts) sigue vivo dentro del intake, donde
-// corresponde. Este redirect es reversible en una línea si algún día se
-// necesita la versión por-academia (?a=slug) como página propia.
+// #14 — Consolidación de quizzes (2026-07-29) y RELEVO (2026-09-01, decisión
+// de Marcelo): el quiz V2 — la película de la sesión, co-brandeado Puro Surf,
+// con captura de lead y camino con token — sustituye al v1 como LA puerta
+// pública de nivel. El v1 (find-your-level.html) queda en el repo como
+// archivo histórico; este redirect es reversible en una línea.
 export default function QuizRedirect() {
-  redirect('/find-your-level.html');
+  redirect('/quiz-v2.html');
 }

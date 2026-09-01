@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { randomUUID } from 'crypto';
 import { sendQuizLeadEmail } from './email';
 import { resolveLevel, levelForScore, LEVELS } from '@/lib/quiz/surf-level';
+import { computeV2, isValidV2Answers } from '@/lib/quiz/surf-level-v2';
 
 // Friendly slug aliases → real academy slugs (so marketing links can use a
 // clean slug even if the stored slug has a typo).
@@ -58,6 +59,13 @@ export async function createLeadFromQuiz(input: {
       en un campo único que no podemos partir con garantías). El quiz nativo
       NUNCA lo pasa: ahí el apellido es obligatorio. */
   allow_missing_last_name?: boolean;
+  /** Camino V2 (quiz-v2.html, EL OFICIAL desde 2026-09-01): 10 índices 0-3.
+      El servidor recalcula con computeV2 — misma autoridad que el nativo. */
+  v2?: {
+    answers: number[];
+    board?: string | null;
+    needs?: number[];
+  };
 }): Promise<{ ok: boolean; error?: string }> {
   if (!input.first_name?.trim()) return { ok: false, error: 'First name is required.' };
   // Mandatorio del mostrador (2026-08-18): sin apellido no se puede ni buscar
@@ -156,7 +164,30 @@ export async function createLeadFromQuiz(input: {
   let oceanLevel: string | null = null;
   let cappedBy: string | null = null;
 
-  if (Array.isArray(input.tech_answers)) {
+  let v2Payload: Record<string, unknown> | null = null;
+  if (input.v2 && isValidV2Answers(input.v2.answers)) {
+    // ── V2, el oficial: 10 escenas /100, dos tracks, puertas de doctrina. ──
+    const r = computeV2(input.v2.answers);
+    belt = r.belt;
+    score = r.score;
+    skillmap = r.skillmap;
+    // El océano sale DERIVADO de las 4 escenas del agua — conservador y
+    // provisional; el coach lo confirma con su botón.
+    oceanLevel = r.oceanLevel;
+    cappedBy = r.cappedBy;
+    v2Payload = {
+      score: r.score,
+      mar: r.mar,
+      ola: r.ola,
+      level_name: r.levelName,
+      capped_by: r.cappedBy,
+      capped_gaps: r.cappedGaps,
+      uncapped_name: r.uncappedName,
+      board: input.v2.board ?? null,
+      needs: Array.isArray(input.v2.needs) ? input.v2.needs.slice(0, 2) : [],
+      answers: input.v2.answers,
+    };
+  } else if (Array.isArray(input.tech_answers)) {
     const r = resolveLevel(input.tech_answers, input.ocean_answers ?? []);
     belt = r.level.belt;
     score = r.score;
@@ -182,7 +213,16 @@ export async function createLeadFromQuiz(input: {
     level_quiz_score: score,
     level_quiz_skillmap: skillmap,
   };
-  if (Array.isArray(input.tech_answers) && hasOcean) {
+  if (v2Payload) {
+    // El V2 pregunta el agua ESTRUCTURALMENTE (5 escenas del mar), así que
+    // estampa completo: el intake no vuelve a preguntar. El resultado entero
+    // viaja en level_quiz_v2 para la ficha del coach (tracks + what held it).
+    quizFields.level_quiz_v2 = v2Payload;
+    quizFields.level_quiz_completed_at = now;
+    quizFields.ocean_level = oceanLevel;
+    quizFields.ocean_level_provisional = true;
+    quizFields.ocean_quiz_completed_at = now;
+  } else if (Array.isArray(input.tech_answers) && hasOcean) {
     // Solo se estampa "completado" con el quiz ENTERO (técnica + océano):
     // así el intake puede saltarlo con razón. Sin océano, el intake vuelve
     // a preguntar todo.
@@ -263,7 +303,7 @@ export async function createLeadFromQuiz(input: {
       score,
       skillmap,
       academy_id: academyId,
-      source: 'public_quiz',
+      source: v2Payload ? 'public_quiz_v2' : 'public_quiz',
       attempt_number: attemptNumber,
     });
   } catch (e) {
@@ -286,5 +326,82 @@ export async function createLeadFromQuiz(input: {
     console.error('[createLeadFromQuiz] notification email failed', e);
   }
 
+  return { ok: true };
+}
+
+// ═══ V2 CON TOKEN — el alumno que YA existe (intake / portal) ═══
+//
+// quiz-v2.html?t=<portal_token>: sin pantalla de captura (ya sabemos quién
+// es) y el resultado se ata directo a SU ficha. Mismos guards que la retoma
+// pública: NUNCA pisa cinta ni océano CONFIRMADOS, y el guard falla CERRADO.
+// Las estampas hacen que el intake saltee su paso de quiz solo.
+export async function submitQuizV2ByToken(
+  token: string,
+  input: { answers: number[]; board?: string | null; needs?: number[] },
+): Promise<{ ok: boolean; error?: string }> {
+  if (!token?.trim()) return { ok: false, error: 'Missing token.' };
+  if (!isValidV2Answers(input.answers)) return { ok: false, error: 'Invalid answers.' };
+
+  const admin = createAdminClient();
+  const { data: student } = await admin
+    .from('students')
+    .select('id, belt_provisional, ocean_level_provisional, academy_id')
+    .eq('portal_token', token.trim())
+    .maybeSingle();
+  if (!student) return { ok: false, error: 'Student not found.' };
+
+  const r = computeV2(input.answers);
+  const now = new Date().toISOString();
+  const update: Record<string, unknown> = {
+    belt_level: r.belt,
+    belt_provisional: true,
+    level_quiz_score: r.score,
+    level_quiz_skillmap: r.skillmap,
+    level_quiz_v2: {
+      score: r.score,
+      mar: r.mar,
+      ola: r.ola,
+      level_name: r.levelName,
+      capped_by: r.cappedBy,
+      capped_gaps: r.cappedGaps,
+      uncapped_name: r.uncappedName,
+      board: input.board ?? null,
+      needs: Array.isArray(input.needs) ? input.needs.slice(0, 2) : [],
+      answers: input.answers,
+    },
+    level_quiz_completed_at: now,
+    ocean_level: r.oceanLevel,
+    ocean_level_provisional: true,
+    ocean_quiz_completed_at: now,
+  };
+  if (student.belt_provisional === false) {
+    delete update.belt_level;
+    delete update.belt_provisional;
+  }
+  if (student.ocean_level_provisional === false) {
+    delete update.ocean_level;
+    delete update.ocean_level_provisional;
+    delete update.ocean_quiz_completed_at;
+  }
+  const { error } = await admin.from('students').update(update).eq('id', student.id);
+  if (error) return { ok: false, error: error.message };
+
+  try {
+    const { count } = await admin
+      .from('level_quiz_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('student_id', student.id);
+    await admin.from('level_quiz_attempts').insert({
+      student_id: student.id,
+      belt: r.belt,
+      score: r.score,
+      skillmap: r.skillmap,
+      academy_id: student.academy_id ?? null,
+      source: 'token_quiz_v2',
+      attempt_number: (count ?? 0) + 1,
+    });
+  } catch (e) {
+    console.error('[submitQuizV2ByToken] attempt logging failed', e);
+  }
   return { ok: true };
 }

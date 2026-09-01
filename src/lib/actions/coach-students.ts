@@ -135,6 +135,19 @@ export type CoachStudentDetail = {
   belt_provisional: boolean;
   level_quiz_score: number | null;
   level_quiz_skillmap: { name: string; pct: number }[] | null;
+  /** Resultado del quiz V2 (/100, dos tracks) — presente = el quiz fue el V2. */
+  level_quiz_v2: {
+    score: number;
+    mar: number;
+    ola: number;
+    level_name: string;
+    capped_by: 'water' | 'evidence' | null;
+    capped_gaps: string[];
+    uncapped_name: string;
+    board: string | null;
+    needs: number[];
+    answers: number[];
+  } | null;
   ocean_level: string | null;
   /** true = lo declaró el quiz y ningún coach lo vio en el agua todavía. */
   ocean_level_provisional: boolean | null;
@@ -190,7 +203,7 @@ export async function getCoachStudentDetail(
     .from('students')
     .select(
       `id, first_name, last_name, photo_url, age, date_of_birth, gender, nationality, languages, instagram,
-       belt_level, belt_provisional, level_quiz_score, level_quiz_skillmap,
+       belt_level, belt_provisional, level_quiz_score, level_quiz_skillmap, level_quiz_v2,
        ocean_level, ocean_level_provisional, current_sequence_number, current_step_order,
        swim_level, waiver_signed, emergency_contact_name, emergency_contact_phone,
        allergies, injuries, medical_notes, risk_notes, height, weight,
