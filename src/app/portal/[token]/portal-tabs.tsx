@@ -571,32 +571,25 @@ export function PortalTabs({
                 </p>
               </button>
 
-              {/* Self-analysis: compare your own clip against the TSS model
-                  library (draw lines/angles, frame-by-frame). Local only. */}
+              {/* ── TOOLS — un solo grupo (rediseño Marcelo 2026-09-01) ──
+                  Antes eran tres "secciones" huérfanas con una tarjeta cada
+                  una y la etiqueta repitiendo el título de la tarjeta. Las
+                  tarjetas ya se presentan solas (ícono + título + subtítulo):
+                  un encabezado y la grilla alcanzan. */}
               <div>
                 <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
                   <Video size={14} strokeWidth={1.75} />
-                  Video Analysis
+                  Tools
                 </p>
-                <VideoAnalyzerLauncher
-                  scope={`student:${data.token}`}
-                  title="Analyze your surfing"
-                  subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
-                />
-              </div>
-              <div>
-                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
-                  <MapPin size={14} strokeWidth={1.75} />
-                  Venue Scout
-                </p>
-                <VenueScoutLauncher variant="light" />
-              </div>
-              <div>
-                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
-                  <Wind size={14} strokeWidth={1.75} />
-                  Breathing
-                </p>
-                <BreathingLauncher variant="light" />
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <VideoAnalyzerLauncher
+                    scope={`student:${data.token}`}
+                    title="Analyze your surfing"
+                    subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
+                  />
+                  <VenueScoutLauncher variant="light" />
+                  <BreathingLauncher variant="light" />
+                </div>
               </div>
             </div>
           )

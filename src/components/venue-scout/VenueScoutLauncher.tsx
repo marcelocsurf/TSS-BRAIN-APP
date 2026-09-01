@@ -7,8 +7,11 @@ import { MapPin, X } from 'lucide-react';
 // full-screen in-app overlay. Pure tool — it keeps its own state on the device
 // (localStorage); nothing is saved server-side. Used by coach + athlete.
 export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
-  // null = closed · 'check' = free-session Venue Check · 'scout' = competition
-  const [open, setOpen] = useState<null | 'check' | 'train' | 'comp' | 'game'>(null);
+  // null = closed · 'check' = Venue Check sencillo · 'scout' = análisis
+  // avanzado (entreno O competencia: el tool pregunta el objetivo ADENTRO —
+  // el modo por URL solo distingue 'game', verificado 2026-09-01: tener dos
+  // opciones acá era una duplicidad que confundía) · 'game' = Lineup Game.
+  const [open, setOpen] = useState<null | 'check' | 'scout' | 'game'>(null);
   const [chooser, setChooser] = useState(false);
   const dark = variant === 'dark';
 
@@ -41,28 +44,23 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
       {chooser && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-5" onClick={() => setChooser(false)}>
           <div className="w-full max-w-sm rounded-3xl p-5 space-y-3" style={{ background: '#061C2B' }} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#00D2FF]">¿Qué vas a hacer?</p>
+            <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#00D2FF]">What are you here for?</p>
             <button type="button" onClick={() => { setChooser(false); setOpen('check'); }}
               className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
-              <p className="text-[15px] font-bold text-white">🌊 Venue Check · sencillo</p>
-              <p className="text-[12px] text-white/50 mt-0.5">Para novatos e intermedios — entrada/salida, corrientes, picos y tu zona. Todo se dibuja en el mapa.</p>
+              <p className="text-[15px] font-bold text-white">🌊 Venue Check · simple</p>
+              <p className="text-[12px] text-white/50 mt-0.5">For beginners and intermediates — entry/exit, currents, peaks and your zone. All drawn on the map.</p>
             </button>
-            <button type="button" onClick={() => { setChooser(false); setOpen('train'); }}
+            <button type="button" onClick={() => { setChooser(false); setOpen('scout'); }}
               className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
-              <p className="text-[15px] font-bold text-white">🏄 Sesión de entreno</p>
-              <p className="text-[12px] text-white/50 mt-0.5">Análisis avanzado — conteo de olas buenas, zona ideal, hazards con reporte completo.</p>
-            </button>
-            <button type="button" onClick={() => { setChooser(false); setOpen('comp'); }}
-              className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
-              <p className="text-[15px] font-bold text-white">🏁 Competencia</p>
-              <p className="text-[12px] text-white/50 mt-0.5">Plan táctico del heat — observación, simulación y estrategia por zonas.</p>
+              <p className="text-[15px] font-bold text-white">🏄 Advanced analysis — training or competition</p>
+              <p className="text-[12px] text-white/50 mt-0.5">Wave count, ideal zone, hazards and the tactical plan — the tool asks your goal once you're in.</p>
             </button>
             <button type="button" onClick={() => { setChooser(false); setOpen('game'); }}
               className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#FFD166]/60">
-              <p className="text-[15px] font-bold text-white">🎮 Lineup Game <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFD166] ml-1">código</span></p>
-              <p className="text-[12px] text-white/50 mt-0.5">Juego de posicionamiento: los atletas eligen dónde sentarse, el coach marca las olas reales. Prioridad ISA.</p>
+              <p className="text-[15px] font-bold text-white">🎮 Lineup Game <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFD166] ml-1">code</span></p>
+              <p className="text-[12px] text-white/50 mt-0.5">Positioning game: athletes choose where to sit, the coach marks the real waves. ISA priority.</p>
             </button>
-            <button type="button" onClick={() => setChooser(false)} className="w-full py-2 text-[12px] text-white/40">Cancelar</button>
+            <button type="button" onClick={() => setChooser(false)} className="w-full py-2 text-[12px] text-white/40">Cancel</button>
           </div>
         </div>
       )}
@@ -79,10 +77,10 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
             style={{ top: 'calc(env(safe-area-inset-top) + 4.5rem)' }}
             aria-label="Cerrar"
           >
-            <X size={15} /> Cerrar
+            <X size={15} /> Close
           </button>
           <iframe
-            src={open === 'check' ? `/venue-check/index.html?src=portal&v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'game' ? 'game' : open === 'train' ? 'free' : 'comp'}&src=portal&v=${Date.now()}`}
+            src={open === 'check' ? `/venue-check/index.html?src=portal&v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'game' ? 'game' : 'free'}&src=portal&v=${Date.now()}`}
             title="Venue tool" className="flex-1 w-full h-full border-0" />
         </div>
       )}
