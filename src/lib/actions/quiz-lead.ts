@@ -21,6 +21,8 @@ export type QuizAttempt = {
   belt: string | null;
   score: number | null;
   skillmap: { name: string; pct: number }[] | null;
+  /** 'public_quiz' (v1, /70) · 'public_quiz_v2' / 'token_quiz_v2' (/100). */
+  source: string | null;
   created_at: string;
 };
 
@@ -30,7 +32,7 @@ export async function getQuizAttempts(studentId: string): Promise<QuizAttempt[]>
   const admin = createAdminClient();
   const { data } = await admin
     .from('level_quiz_attempts')
-    .select('attempt_number, belt, score, skillmap, created_at')
+    .select('attempt_number, belt, score, skillmap, source, created_at')
     .eq('student_id', studentId)
     .order('created_at', { ascending: false });
   return (data ?? []) as QuizAttempt[];
@@ -234,6 +236,11 @@ export async function createLeadFromQuiz(input: {
   // Camino externo: SIN estampas — el intake vuelve a correr el quiz completo
   // (antes se estampaba ocean='beginner' + completed_at FALSO y el intake
   // salteaba todo: el resultado inflado de la web quedaba para siempre).
+  //
+  // Una retoma NO-v2 limpia el payload v2 viejo: la ficha del coach muestra
+  // /100 + tracks + "what held it" con la SOLA presencia de level_quiz_v2, y
+  // dejarlo colgado mezclaría dos intentos distintos en pantalla.
+  if (!v2Payload) quizFields.level_quiz_v2 = null;
 
   let studentId = existingId;
   if (existingId) {
@@ -319,6 +326,7 @@ export async function createLeadFromQuiz(input: {
       phone: phone,
       belt,
       score,
+      scoreMax: v2Payload ? 100 : 70,
       academyName,
       academyId,
     });
@@ -352,6 +360,10 @@ export async function submitQuizV2ByToken(
 
   const r = computeV2(input.answers);
   const now = new Date().toISOString();
+  // DISEÑO (revisión 2026-09-01): en un alumno con cinta/océano CONFIRMADOS
+  // el snapshot del quiz (score, skillmap, level_quiz_v2, sellos) SÍ se
+  // actualiza — última retoma gana, con todo el historial preservado en
+  // level_quiz_attempts. Lo confirmado por el coach es lo único intocable.
   const update: Record<string, unknown> = {
     belt_level: r.belt,
     belt_provisional: true,

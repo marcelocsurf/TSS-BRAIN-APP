@@ -655,7 +655,8 @@ interface QuizLeadEmailData {
   email: string | null;
   phone: string | null;
   belt: string;            // e.g. 'white_belt'
-  score: number;           // 0–70
+  score: number;           // v1: 0–70 · v2: 0–100 (scoreMax lo dice)
+  scoreMax?: number;       // 70 por defecto; el quiz V2 manda 100
   academyName: string | null;
   academyId?: string | null;
 }
@@ -723,7 +724,7 @@ function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName:
         <tr><td style="padding:6px 0;color:#6B7280;">Name</td><td style="padding:6px 0;text-align:right;font-weight:600;">${name}</td></tr>
         <tr><td style="padding:6px 0;color:#6B7280;">Email</td><td style="padding:6px 0;text-align:right;">${email}</td></tr>
         <tr><td style="padding:6px 0;color:#6B7280;">Phone</td><td style="padding:6px 0;text-align:right;">${phone}</td></tr>
-        <tr><td style="padding:6px 0;color:#6B7280;">Result</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(beltName)}${levelName ? ` · ${escapeHtml(levelName)}` : ''} (${data.score}/70)</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Result</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(beltName)}${levelName ? ` · ${escapeHtml(levelName)}` : ''} (${data.score}/${data.scoreMax ?? 70})</td></tr>
         <tr><td style="padding:6px 0;color:#6B7280;">Academy</td><td style="padding:6px 0;text-align:right;">${academy}</td></tr>
       </table>
       <p style="margin:18px 0 0;font-size:12px;color:#9CA3AF;line-height:1.6;">

@@ -231,6 +231,8 @@ export interface StudentProfileSnapshot {
   // en la base sin llegar nunca al planificador.
   nationality: string | null;
   level_quiz_score: number | null;
+  /** true = el score es del quiz V2 (/100); false/undefined = v1 (/70). */
+  level_quiz_is_v2?: boolean;
   intake_completed_at?: string | null;
   intake_url?: string | null;
 }
@@ -399,7 +401,7 @@ export async function getServicePlan(
     .select(
       'student_id, finalized_at, departed_on, students:student_id(' +
         'id, first_name, last_name, belt_level, photo_url, age, date_of_birth, weight, height, ocean_level, ' +
-        'nationality, level_quiz_score, ' +
+        'nationality, level_quiz_score, level_quiz_v2, ' +
         'ocean_quiz_score, stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
         'board_type, board_length_feet, board_length_inches, board_volume_liters, ' +
         'favorite_wave_size, progression_status, ' +
@@ -584,6 +586,7 @@ export async function getServicePlan(
         ocean_quiz_score: s?.ocean_quiz_score ?? null,
         nationality: s?.nationality ?? null,
         level_quiz_score: s?.level_quiz_score ?? null,
+        level_quiz_is_v2: s?.level_quiz_v2 != null,
         intake_completed_at: s?.intake_completed_at ?? null,
         intake_url: s?.portal_token ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com'}/intake/${s.portal_token}` : null,
       },

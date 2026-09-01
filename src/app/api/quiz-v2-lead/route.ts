@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLeadFromQuiz, submitQuizV2ByToken } from '@/lib/actions/quiz-lead';
 import { isValidV2Answers } from '@/lib/quiz/surf-level-v2';
+import { rateLimitOk, clientIp } from '@/lib/rate-limit';
 
 // ═══ /api/quiz-v2-lead — el endpoint del quiz OFICIAL (quiz-v2.html) ═══
 //
@@ -16,6 +17,15 @@ import { isValidV2Answers } from '@/lib/quiz/surf-level-v2';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Rate limit (revisión 2026-09-01): endpoint sin auth que inserta leads y
+  // dispara el email de aviso — 8 envíos por IP cada 10 minutos alcanza para
+  // cualquier uso humano y corta el loop barato de spam.
+  if (!rateLimitOk(`qv2:${clientIp(req.headers)}`, 8, 10 * 60 * 1000)) {
+    return NextResponse.json(
+      { ok: false, error: 'Too many attempts — try again in a few minutes.' },
+      { status: 429 },
+    );
+  }
   let body: any;
   try {
     body = await req.json();

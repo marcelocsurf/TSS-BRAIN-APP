@@ -2117,7 +2117,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
     profile.ocean_level && `water comfort: ${String(profile.ocean_level).replace(/_/g, ' ')}`,
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
-    profile.level_quiz_score != null && `level quiz: ${profile.level_quiz_score}/70`,
+    profile.level_quiz_score != null && `level quiz: ${profile.level_quiz_score}/${profile.level_quiz_is_v2 ? 100 : 70}`,
   ].filter(Boolean) as string[];
 
   // Self-assessment summary — ★ the student gave themselves on STPs,

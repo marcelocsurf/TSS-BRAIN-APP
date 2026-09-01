@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLeadFromQuiz } from '@/lib/actions/quiz-lead';
+import { rateLimitOk, clientIp } from '@/lib/rate-limit';
 
 
 // Public endpoint for the external "Find Your Surf Level" quiz (website /
@@ -24,6 +25,14 @@ export function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
+    // Mismo rate limit que /api/quiz-v2-lead (revisión 2026-09-01): este
+    // endpoint legacy comparte el costo real (insert + email de aviso).
+    if (!rateLimitOk(`qv1:${clientIp(req.headers)}`, 8, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { ok: false, error: 'Too many attempts — try again in a few minutes.' },
+        { status: 429, headers: CORS },
+      );
+    }
     const body = await req.json().catch(() => ({}));
 
     // Accept both the external HTML shape (nombre/surf_level/academia) and the

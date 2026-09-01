@@ -209,6 +209,9 @@ export async function submitLevelQuiz(token: string, input: {
   const oceanConfirmed = student.ocean_level_provisional === false;
   const update: Record<string, unknown> = {
     level_quiz_score: r.score,
+    // Retoma v1 desde el intake: limpia el payload V2 viejo — la ficha del
+    // coach muestra /100 + tracks solo con la presencia de level_quiz_v2.
+    level_quiz_v2: null,
     level_quiz_skillmap: r.skills,
     level_quiz_completed_at: new Date().toISOString(),
     ocean_quiz_completed_at: new Date().toISOString(),

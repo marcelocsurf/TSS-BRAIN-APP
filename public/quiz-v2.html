@@ -316,7 +316,7 @@ async function sendResult(payload){
 async function finishQuiz(){
   pendingR=compute();
   if(TOKEN){
-    try{await sendResult({token:TOKEN,answers:ans,board,needs})}
+    try{await sendResult({token:TOKEN,answers:ans.map(a=>a<0?0:a),board,needs})}
     catch(e){console.error(e);pendingR.syncFailed=true}
     renderResult(pendingR);
     return;
@@ -332,7 +332,7 @@ async function capSubmit(){
   if(!email&&!phone){err.textContent='Email or WhatsApp is required.';err.style.display='block';return}
   const b=document.getElementById('cap-btn');b.disabled=true;b.textContent='Unlocking\u2026';
   try{
-    await sendResult({first_name:first,last_name:last,email:email||null,phone:phone||null,academy_slug:'puro-surf',answers:ans,board,needs});
+    await sendResult({first_name:first,last_name:last,email:email||null,phone:phone||null,academy_slug:'puro-surf',answers:ans.map(a=>a<0?0:a),board,needs});
     renderResult(pendingR||compute());
   }catch(e){
     err.textContent=(e&&e.message)||'Could not save \u2014 try again.';err.style.display='block';
@@ -364,7 +364,7 @@ function renderGate(){
   }
   document.getElementById('gnext').disabled=needs.length===0;
 }
-function gateNext(){if(!needs.length)return;if(needs[0]===0){renderResult(compute());return}show('board')}
+function gateNext(){if(!needs.length)return;if(needs[0]===0){finishQuiz();return}show('board')}
 function boardSelect(b){board=b;cur=0;ans=new Array(QS.length).fill(-1);show('quiz');render()}
 
 function render(){

@@ -906,7 +906,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                     <span className="text-[10px] font-mono text-gray-400 shrink-0">#{a.attempt_number ?? quizAttempts.length - i}</span>
                     <span className="w-3 h-3 rounded-full inline-block shrink-0" style={{ backgroundColor: ab?.color || '#999' }} />
                     <span className="text-sm font-medium text-[var(--tss-navy)] truncate">{ab?.en ?? a.belt ?? '—'}</span>
-                    {a.score != null && <span className="text-xs text-gray-500 shrink-0">{a.score}/70</span>}
+                    {a.score != null && <span className="text-xs text-gray-500 shrink-0">{a.score}/{(a.source ?? '').includes('v2') ? 100 : 70}</span>}
                   </div>
                   <span className="text-[11px] text-gray-400 shrink-0">{when}</span>
                 </div>
