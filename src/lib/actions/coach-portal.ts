@@ -427,7 +427,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           'id, camp_name, start_date, end_date, scheduled_time, status, ' +
             'camp_templates:template_id(template_name, service_kind), ' +
             'head_coach:head_coach_id(display_name), ' +
-            'camp_participants(id, enrollment_status)'
+            'camp_participants(id, enrollment_status, students:student_id(first_name, last_name))'
         )
         .eq('academy_id', coach.academy_id)
         .lte('start_date', weekOut)
@@ -447,6 +447,17 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           template_name: tpl?.template_name ?? null,
           coach_name: hc?.display_name ?? null,
           students: (s.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length,
+          // Nombres de los campistas (pedido de Daren 2026-09-01): el staff
+          // de apoyo prepara welcome kits y entrega shots por nombre — el
+          // conteo solo no le servía.
+          student_names: (s.camp_participants ?? [])
+            .filter((p: any) => p.enrollment_status === 'active')
+            .map((p: any) => {
+              const st = Array.isArray(p.students) ? p.students[0] : p.students;
+              return `${st?.first_name ?? ''} ${st?.last_name ?? ''}`.trim();
+            })
+            .filter(Boolean)
+            .sort((a: string, b: string) => a.localeCompare(b)),
         };
       });
 

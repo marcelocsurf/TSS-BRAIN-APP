@@ -388,6 +388,14 @@ function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
                                 : ''}
                             </span>
                           )}
+                          {/* Nombres de los campistas (pedido de Daren): para
+                              welcome kits y shots por nombre. Sin truncate —
+                              un nombre cortado no sirve para un kit. */}
+                          {Array.isArray(s.student_names) && s.student_names.length > 0 && (
+                            <span className="block text-[10px] text-white/60 leading-snug">
+                              👥 {s.student_names.join(' · ')}
+                            </span>
+                          )}
                         </span>
                         <span className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ background: 'rgba(90,195,231,.12)', color: '#5AC3E7' }}>
                           {s.students} student{s.students === 1 ? '' : 's'}
