@@ -346,16 +346,18 @@ function compute(){
      define Foundation — es lo que Foundation CONSTRUYE. Foundation entra
      con autosuficiencia + saber agarrar olas; el riding fino (conexión,
      líneas) es la puerta de Emerging. */
-  if(LEVELS.indexOf(lv)>=4&&raw(9)<7){lv=LEVELS[3];cappedBy='evidence'}            // Pre-Elite+ exige rango de condiciones
-  if(LEVELS.indexOf(lv)>=3&&(raw(6)<7||raw(8)<7)){lv=LEVELS[2];cappedBy='evidence'} // Emerging+ exige conexión + dibujar líneas
-  if(LEVELS.indexOf(lv)>=2&&raw(5)<7){lv=LEVELS[1];cappedBy='evidence'}            // Foundation+ exige saber AGARRAR la ola (take-off)
+  let cappedGaps=[];
+  const gapNames=i=>QS[i].phase;
+  if(LEVELS.indexOf(lv)>=4&&raw(9)<7){lv=LEVELS[3];cappedBy='evidence';cappedGaps=[9].filter(i=>raw(i)<7).map(gapNames)}            // Pre-Elite+ exige rango de condiciones
+  if(LEVELS.indexOf(lv)>=3&&(raw(6)<7||raw(8)<7)){lv=LEVELS[2];cappedBy='evidence';cappedGaps=[6,8].filter(i=>raw(i)<7).map(gapNames)} // Emerging+ exige conexión + dibujar líneas
+  if(LEVELS.indexOf(lv)>=2&&raw(5)<7){lv=LEVELS[1];cappedBy='evidence';cappedGaps=[5].filter(i=>raw(i)<7).map(gapNames)}            // Foundation+ exige saber AGARRAR la ola (take-off)
   /* LA REGLA DEL AGUA (doctrina Marcelo): Foundation exige autosuficiencia
      REAL — manejar la tabla acostado y pasar la rompiente (duck dive o
      tortuga), la ETIQUETA del lineup, elegir y posicionarse solo, y volver
      solo. Las 5 del MAR en 7+. Si no: Novice. Propiedad linda: 5×7 + 7 de
      take-off = 42 = exactamente el piso de la banda Foundation. */
-  if(LEVELS.indexOf(lv)>=2&&(raw(1)<7||raw(2)<7||raw(3)<7||raw(4)<7)){lv=LEVELS[1];cappedBy='water'}
-  return{score,mar,ola,lv,cappedBy,uncapped};
+  if(LEVELS.indexOf(lv)>=2&&(raw(1)<7||raw(2)<7||raw(3)<7||raw(4)<7)){lv=LEVELS[1];cappedBy='water';cappedGaps=[1,2,3,4].filter(i=>raw(i)<7).map(gapNames)}
+  return{score,mar,ola,lv,cappedBy,uncapped,cappedGaps};
 }
 
 function renderResult(r){
@@ -370,6 +372,7 @@ function renderResult(r){
      <p style="font-size:.85rem;line-height:1.55;margin-top:8px">${r.cappedBy==='water'
        ?`Your answers scored higher than ${lv.name} — but ${nxn} starts when you can catch waves <strong style="color:var(--tw)">on your own</strong>: getting out with your board (duck dive or turtle roll), knowing the lineup rules, choosing and positioning yourself, and getting back without help. Build that self-sufficiency and ${nxn} unlocks. It's the fastest upgrade there is.`
        :`Your total points reached higher — but ${nxn} is defined by skills your answers say you're still building. Training at ${lv.name} is exactly what unlocks it.`}</p>
+     ${r.cappedGaps&&r.cappedGaps.length?`<div class="mono" style="font-size:.6rem;color:var(--gold);margin-top:10px;letter-spacing:.08em">WHAT HELD IT: ${r.cappedGaps.join(' \u00b7 ').toUpperCase()}</div>`:''}
    </div>`:'';
   const needLine=need>0?`
    <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-radius:14px;padding:14px 16px;text-align:left">
