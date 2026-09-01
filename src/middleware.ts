@@ -2,6 +2,20 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // ═══ Dominio raíz (thesurfsequence.com / www) — conectado a este mismo
+  // proyecto de Vercel (2026-09-01). Mientras no exista la página web de
+  // marketing, la RAÍZ del dominio manda al quiz oficial (co-brandeado,
+  // captura leads): el dominio deja de ser un 403 y se vuelve embudo.
+  // El resto de las rutas pasan igual (p.ej. /quiz-v2.html, /join).
+  // app.thesurfsequence.com no entra acá.
+  const host = request.headers.get('host') ?? '';
+  if (
+    (host === 'thesurfsequence.com' || host === 'www.thesurfsequence.com') &&
+    request.nextUrl.pathname === '/'
+  ) {
+    return NextResponse.redirect('https://app.thesurfsequence.com/quiz', 308);
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
