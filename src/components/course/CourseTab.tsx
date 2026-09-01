@@ -369,7 +369,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             theme={whiteTheme}
             eyebrow="Carried over · already done if you came up through the belts"
             title="From your previous belts"
-            subtitle="Foundations and values from earlier belts (the 3 Circles of Power, Momentum, and belt values). If you already completed them they're ✓ Completed; if you came in direct you can do them here — they're prerequisites."
+            subtitle="Foundations and values from earlier belts (the 3 Circles of Agency, Momentum, and belt values). If you already completed them they're ✓ Completed; if you came in direct you can do them here — they're prerequisites."
           />
 
           <SectionBlock
