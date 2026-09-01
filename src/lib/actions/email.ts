@@ -703,6 +703,51 @@ export async function sendQuizLeadEmail(
   }
 }
 
+// ═══ Entrega del libro ONE WAVE (compra web → portal) ═══
+export async function sendBookDeliveryEmail(data: {
+  email: string;
+  firstName: string;
+  portalUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    await sendEmail({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.email,
+      subject: 'ONE WAVE — your book is ready',
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
+    <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:28px 24px;text-align:center;">
+      ${EMAIL_LOGO}
+      <p style="margin:10px 0 0;color:${BRAND.colors.cyan};font-size:13px;font-style:italic;">Evolve through play</p>
+    </div>
+    <div style="background:white;padding:28px 24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
+      <p style="margin:0;font-size:16px;color:#111827;">Hi ${escapeHtml(data.firstName)},</p>
+      <p style="margin:14px 0 0;font-size:14.5px;line-height:1.65;color:#374151;">
+        Thank you for getting <strong>ONE WAVE</strong>. Your copy is waiting in your
+        personal portal — it lives there, always, on any device.
+      </p>
+      <img src="https://app.thesurfsequence.com/web/img/one-wave-cover.jpg" alt="ONE WAVE" width="180" style="display:block;margin:22px auto 0;border-radius:4px;box-shadow:0 12px 30px rgba(7,22,36,0.25);" />
+      <div style="text-align:center;margin-top:24px;">
+        <a href="${data.portalUrl}" style="display:inline-block;background:${BRAND.colors.cyan};color:${BRAND.colors.navy};font-weight:700;font-size:14px;padding:14px 30px;border-radius:8px;text-decoration:none;">Read the book &rarr;</a>
+      </div>
+      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6B7280;">
+        When you're ready for the next step: take the 60-second level test inside your
+        portal, and your training will start from your real level.
+      </p>
+      <p style="margin:18px 0 0;font-size:12px;color:#9CA3AF;">Save this email — the button above is your personal access link.</p>
+    </div>
+  </div>
+</body></html>`,
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Book delivery email send failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 function buildQuizLeadHtml(data: QuizLeadEmailData, beltName: string, levelName: string): string {
   const name = escapeHtml(data.name);
   const email = escapeHtml(data.email || '—');

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
 import { LibraryManager } from './LibraryManager';
+import { BookSender } from './BookSender';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -29,6 +30,10 @@ export default async function LibraryPage() {
       </div>
 
       <LibraryManager initial={overview} />
+
+      {/* Venta/regalo del libro (2026-09-01): la palanca manual de Marcelo —
+          mismo motor que el webhook de Wompi. */}
+      <BookSender />
 
       {/* Courses live in their own granting system — link, don't duplicate. */}
       <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-4 flex items-center gap-3">

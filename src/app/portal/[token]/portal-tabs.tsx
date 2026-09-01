@@ -772,6 +772,46 @@ function HomeTab({
 
   return (
     <div className="space-y-4">
+      {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
+          web 2026-09-01). Solo si tiene el grant; abre el PDF inline con el
+          mismo mecanismo de materiales. Las DEMÁS presentaciones siguen en
+          Course (decisión 2026-08-25) — esto es su compra, no la lista. ── */}
+      {(() => {
+        const bk = ((data as any).homeBundle?.presentations ?? []).find(
+          (p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333',
+        );
+        if (!bk) return null;
+        return (
+          <a
+            href={bk.file_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-2xl overflow-hidden"
+            style={{ background: '#0F1E33', border: '1px solid rgba(0,210,255,.25)' }}
+          >
+            <div className="flex items-center gap-4 p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/web/img/one-wave-cover.jpg"
+                alt="ONE WAVE"
+                className="w-16 h-auto rounded shadow-lg shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] tracking-[.18em] uppercase font-mono" style={{ color: '#5AC3E7' }}>
+                  Your book
+                </p>
+                <p className="text-white font-bold text-[15px] mt-0.5 leading-tight">ONE WAVE</p>
+                <p className="text-[11.5px] text-white/55 mt-1 leading-snug">
+                  A practical system to train with intention — your copy, on any device.
+                </p>
+              </div>
+              <span className="shrink-0 text-[11px] font-semibold" style={{ color: '#5AC3E7' }}>
+                Read →
+              </span>
+            </div>
+          </a>
+        );
+      })()}
       {/* ── 🏆 Promoción de cinta — celebración 30 días, SIN candados. El copy
           es por cinta (qué dominó / qué desbloquea) desde promotion-copy.ts. ── */}
       {(() => {
