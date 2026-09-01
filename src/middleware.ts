@@ -3,17 +3,16 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   // ═══ Dominio raíz (thesurfsequence.com / www) — conectado a este mismo
-  // proyecto de Vercel (2026-09-01). Mientras no exista la página web de
-  // marketing, la RAÍZ del dominio manda al quiz oficial (co-brandeado,
-  // captura leads): el dominio deja de ser un 403 y se vuelve embudo.
-  // El resto de las rutas pasan igual (p.ej. /quiz-v2.html, /join).
-  // app.thesurfsequence.com no entra acá.
+  // proyecto de Vercel (2026-09-01). La RAÍZ sirve la página web de
+  // marketing (public/web/index.html — "The Method", recreada del handoff
+  // de diseño). El resto de las rutas pasan igual (p.ej. /quiz funciona
+  // también en este host). app.thesurfsequence.com no entra acá.
   const host = request.headers.get('host') ?? '';
   if (
     (host === 'thesurfsequence.com' || host === 'www.thesurfsequence.com') &&
     request.nextUrl.pathname === '/'
   ) {
-    return NextResponse.redirect('https://app.thesurfsequence.com/quiz', 308);
+    return NextResponse.rewrite(new URL('/web/index.html', request.url));
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -67,6 +66,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/equipo') ||         // token-gated specialist team portal
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
+    pathname.startsWith('/web') ||            // marketing website (thesurfsequence.com)
     pathname === '/api/quiz-lead' ||          // public quiz lead intake (external site)
     pathname === '/find-your-level.html' ||   // public co-branded quiz (static)
     pathname === '/ratio-engine.html' ||      // Safety Canon ratio tool (static)
