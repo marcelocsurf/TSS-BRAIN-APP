@@ -97,7 +97,32 @@ export type SequenceData = {
 
 // ─── Get full sequence catalog for a student ───
 
-export async function getMySequence(studentId: string, belt: string = 'white'): Promise<SequenceData> {
+/**
+ * El token del portal ES la credencial del alumno: viene en la URL y ya lo
+ * validó la página. Las acciones de este módulo usan el admin client (saltan
+ * RLS), así que la puerta es esta — antes recibían el studentId del cliente y
+ * cualquiera con el UUID de otro alumno podía pedir sus datos.
+ */
+async function studentIdFromPortalToken(portalToken: string): Promise<string | null> {
+  if (!portalToken || typeof portalToken !== 'string') return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('students')
+    .select('id')
+    .eq('portal_token', portalToken)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+export async function getMySequence(portalToken: string, belt: string = 'white'): Promise<SequenceData> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) {
+    return { belt, sequences: [], overallRating: null, totalSteps: 0, ratedSteps: 0, coachRatedSteps: 0, selfRatedSteps: 0, blocks: [] };
+  }
+  return mySequenceForStudent(studentId, belt);
+}
+
+async function mySequenceForStudent(studentId: string, belt: string = 'white'): Promise<SequenceData> {
   const admin = createAdminClient();
 
   // Normalize belt: students.belt_level uses 'white_belt'/'yellow_belt'/etc,
@@ -356,7 +381,15 @@ export async function getMySequence(studentId: string, belt: string = 'white'): 
 
 // ─── Get full detail for a single STP ───
 
-export async function getStepDetail(studentId: string, stepId: string) {
+const EMPTY_STEP_DETAIL = {
+  lesson: null as any, drill: null as any, mission: null as any,
+  rating: null as number | null, ratingCount: 0, lastRated: null as string | null,
+  sessionHistory: [] as any[],
+};
+
+export async function getStepDetail(portalToken: string, stepId: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return EMPTY_STEP_DETAIL;
   const admin = createAdminClient();
 
   // Get lesson info
@@ -413,13 +446,15 @@ export async function getStepDetail(studentId: string, stepId: string) {
 // ─── Update self-rating for a step (1-5) ───
 
 export async function updateStepRating(
-  studentId: string,
+  portalToken: string,
   stepId: string,
   rating: number
 ) {
   if (rating < 1 || rating > 5) {
     return { ok: false, error: 'Rating must be 1-5' };
   }
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, error: 'Not authorized' };
 
   const admin = createAdminClient();
 
@@ -440,7 +475,9 @@ export async function updateStepRating(
 
 // ─── Get drill/mission for Train tab pre-fill ───
 
-export async function getDrillMissionForTraining(drillId: string) {
+export async function getDrillMissionForTraining(portalToken: string, drillId: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
   const admin = createAdminClient();
 
   const { data, error } = await admin
@@ -471,7 +508,7 @@ export type CriterionEvaluation = {
 };
 
 export async function saveLinkedTrainingSession(
-  studentId: string,
+  portalToken: string,
   drillMissionId: string,
   data: {
     intention_text?: string;
@@ -516,6 +553,9 @@ export async function saveLinkedTrainingSession(
   if (tooLong(data.intention_text, 500) || tooLong(data.notes, 4000) || tooLong(data.venue_notes, 2000) || tooLong(data.warm_up, 200) || tooLong(data.mental_hack, 100)) {
     return { ok: false as const, error: 'Text too long' };
   }
+
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false as const, error: 'Not authorized' };
 
   const admin = createAdminClient();
 
@@ -610,7 +650,9 @@ export async function saveLinkedTrainingSession(
 }
 
 // Práctica de la semana (para la racha del cierre del Let's Play).
-export async function getWeeklyPracticeCount(studentId: string): Promise<number> {
+export async function getWeeklyPracticeCount(portalToken: string): Promise<number> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return 0;
   const admin = createAdminClient();
   const since = new Date(Date.now() - 6 * 86400000);
   since.setHours(0, 0, 0, 0);
@@ -630,7 +672,7 @@ export async function getWeeklyPracticeCount(studentId: string): Promise<number>
  * notas que el coach ya puso — no hay nada nuevo que llenar.
  */
 export async function getNextMove(
-  studentId: string,
+  portalToken: string,
   belt: string
 ): Promise<{
   sequenceId: string;
@@ -645,7 +687,9 @@ export async function getNextMove(
   detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
 } | null> {
   try {
-    const data = await getMySequence(studentId, belt);
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return null;
+    const data = await mySequenceForStudent(studentId, belt);
     const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
     if (!seq || !seq.weakestStepId) return null;
     let detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null = null;
@@ -693,10 +737,12 @@ export async function getNextMove(
  * círculo (evaluó por detalle → vuelve al detalle).
  */
 export async function getLastPracticeHint(
-  studentId: string,
+  portalToken: string,
   drillMissionId: string
 ): Promise<{ date: string; weakest: { text: string; result: 'partial' | 'not_met' } | null; metAll: boolean } | null> {
   try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return null;
     const admin = createAdminClient();
     const { data } = await admin
       .from('self_training_sessions')

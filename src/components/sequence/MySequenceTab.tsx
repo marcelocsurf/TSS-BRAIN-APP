@@ -15,13 +15,13 @@ const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sa
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em' };
 
 interface Props {
-  studentId: string;
+  portalToken: string;
   belt?: string;
   onPracticeDrill?: (drillMissionId: string) => void;
   initialStepId?: string | null;
 }
 
-export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, initialStepId }: Props) {
+export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, initialStepId }: Props) {
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
@@ -37,17 +37,17 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    getMySequence(studentId, belt).then((res) => {
+    getMySequence(portalToken, belt).then((res) => {
       if (mounted) {
         setData(res);
         setLoading(false);
       }
     });
     return () => { mounted = false; };
-  }, [studentId, belt]);
+  }, [portalToken, belt]);
 
   const refresh = async () => {
-    const res = await getMySequence(studentId, belt);
+    const res = await getMySequence(portalToken, belt);
     setData(res);
   };
 
@@ -67,7 +67,7 @@ export function MySequenceTab({ studentId, belt = 'white', onPracticeDrill, init
     return (
       <StepDetailView
         stepId={openStepId}
-        studentId={studentId}
+        portalToken={portalToken}
         onBack={() => {
           setOpenStepId(null);
           refresh();

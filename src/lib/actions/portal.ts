@@ -516,7 +516,7 @@ export async function getStudentDrillsForSelfTraining(beltLevel: BeltLevel) {
 // ─── Create a self-training session ───
 
 export async function createSelfTrainingSession(
-  studentId: string,
+  portalToken: string,
   data: {
     warm_up: string | null;
     drill_id: string | null;
@@ -535,6 +535,8 @@ export async function createSelfTrainingSession(
     kind?: 'drill' | 'custom';
   }
 ) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) throw new Error('Not authorized');
   const admin = createAdminClient();
 
   const insertData: Record<string, any> = {
@@ -568,13 +570,28 @@ export async function createSelfTrainingSession(
   return session;
 }
 
+/** El token del portal es la credencial: el studentId nunca se cree del cliente. */
+async function studentIdFromPortalToken(portalToken: string): Promise<string | null> {
+  if (!portalToken || typeof portalToken !== 'string') return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('students')
+    .select('id')
+    .eq('portal_token', portalToken)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 // ─── Complete a self-training session ───
 
 export async function completeSelfTrainingSession(
+  portalToken: string,
   sessionId: string,
   notes?: string,
   totalWaterMinutes?: number
 ) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) throw new Error('Not authorized');
   const admin = createAdminClient();
 
   const update: Record<string, any> = { completed: true };
@@ -586,7 +603,8 @@ export async function completeSelfTrainingSession(
   const { error } = await admin
     .from('self_training_sessions')
     .update(update)
-    .eq('id', sessionId);
+    .eq('id', sessionId)
+    .eq('student_id', studentId);
 
   if (error) throw new Error(error.message);
   return { success: true };

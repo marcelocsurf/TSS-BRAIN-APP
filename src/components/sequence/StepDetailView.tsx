@@ -15,33 +15,33 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 
 interface Props {
   stepId: string;
-  studentId: string;
+  portalToken: string;
   onBack: () => void;
   onRatingChange?: () => void;
   onPracticeDrill?: (drillMissionId: string) => void;
 }
 
-export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPracticeDrill }: Props) {
+export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, onPracticeDrill }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savingRating, setSavingRating] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    getStepDetail(studentId, stepId).then((res) => {
+    getStepDetail(portalToken, stepId).then((res) => {
       if (mounted) {
         setData(res);
         setLoading(false);
       }
     });
     return () => { mounted = false; };
-  }, [stepId, studentId]);
+  }, [stepId, portalToken]);
 
   const handleRate = async (rating: number) => {
     setSavingRating(true);
-    await updateStepRating(studentId, stepId, rating);
+    await updateStepRating(portalToken, stepId, rating);
     // Re-fetch
-    const fresh = await getStepDetail(studentId, stepId);
+    const fresh = await getStepDetail(portalToken, stepId);
     setData(fresh);
     setSavingRating(false);
     onRatingChange?.();

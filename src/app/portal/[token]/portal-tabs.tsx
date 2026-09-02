@@ -523,7 +523,7 @@ export function PortalTabs({
             <LinkedTrainingFlow
               key={pendingDrillMissionId}
               drillMissionId={pendingDrillMissionId}
-              studentId={student.id}
+              portalToken={data.token}
               studentBelt={student.belt_level || 'white_belt'}
               onClearIncoming={() => setPendingDrillMissionId(null)}
               onReturnToSequence={() => setPendingDrillMissionId(null)}
@@ -531,7 +531,7 @@ export function PortalTabs({
           ) : showCustomSession ? (
             // 2) Custom Session escape hatch — free-form, doesn't count toward step mastery
             <CustomSessionFlow
-              studentId={student.id}
+              portalToken={data.token}
               onCancel={() => setShowCustomSession(false)}
               onDone={() => { setShowCustomSession(false); portalRouter.refresh(); }}
             />
@@ -554,7 +554,7 @@ export function PortalTabs({
             // 3) Default: pick a drill or mission from your sequence
             <div className="space-y-4">
               <MySequenceTab
-                studentId={student.id}
+                portalToken={data.token}
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
                 initialStepId={deepStepId}

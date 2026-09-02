@@ -157,7 +157,7 @@ export async function getBeltRoadmap(
   // coach: getMySequence(belt) trae White→…→belt.
   let sequences: RoadmapSequence[] = [];
   try {
-    const seq = await getMySequence(student.id, targetBelt);
+    const seq = await getMySequence(token, targetBelt);
     sequences = seq.sequences.map((s) => ({
       id: s.id,
       order: s.order,

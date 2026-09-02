@@ -15,11 +15,11 @@ import { Clock, CircleDot, Waves, ThumbsUp, Frown, Meh, Smile } from 'lucide-rea
 const DURATION_CHIPS = [10, 20, 30, 45, 60, 90, 120];
 
 export function CustomSessionFlow({
-  studentId,
+  portalToken,
   onCancel,
   onDone,
 }: {
-  studentId: string;
+  portalToken: string;
   onCancel: () => void;
   onDone: () => void;
 }) {
@@ -103,7 +103,7 @@ export function CustomSessionFlow({
           onClick={() => {
             startTransition(async () => {
               try {
-                const session = await createSelfTrainingSession(studentId, {
+                const session = await createSelfTrainingSession(portalToken, {
                   warm_up: null,
                   drill_id: null,
                   drill_name: focus.trim(),
@@ -265,6 +265,7 @@ export function CustomSessionFlow({
             startTransition(async () => {
               try {
                 await completeSelfTrainingSession(
+                  portalToken,
                   sessionId,
                   fullNotes || undefined,
                   Math.max(duration, waterMinutes)

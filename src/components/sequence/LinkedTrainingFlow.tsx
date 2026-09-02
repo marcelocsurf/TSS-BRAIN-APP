@@ -39,7 +39,7 @@ type Phase = 'loading' | 'plan' | 'ready' | 'evaluation' | 'done' | 'error';
 
 interface Props {
   drillMissionId: string;
-  studentId: string;
+  portalToken: string;
   studentBelt?: string;
   onClearIncoming: () => void;
   onReturnToSequence: () => void;
@@ -62,7 +62,7 @@ type SafetyKey = (typeof SAFETY_CHECKS)[number]['key'];
 
 export function LinkedTrainingFlow({
   drillMissionId,
-  studentId,
+  portalToken,
   studentBelt = 'white_belt',
   onClearIncoming,
   onReturnToSequence,
@@ -107,12 +107,12 @@ export function LinkedTrainingFlow({
   useEffect(() => {
     let mounted = true;
     setPhase('loading');
-    getDrillMissionForTraining(drillMissionId)
+    getDrillMissionForTraining(portalToken, drillMissionId)
       .then((d) => {
         if (!mounted) return;
         if (!d) { setErrorMsg('Drill / mission not found'); setPhase('error'); return; }
         setDrill(d);
-        getLastPracticeHint(studentId, drillMissionId).then((h) => {
+        getLastPracticeHint(portalToken, drillMissionId).then((h) => {
           if (!mounted) return;
           setLastHint(h);
           // Lo que quedó flojo la última vez YA es el objetivo de hoy (el DONE
@@ -399,7 +399,7 @@ export function LinkedTrainingFlow({
 
       let res: Awaited<ReturnType<typeof saveLinkedTrainingSession>>;
       try {
-        res = await saveLinkedTrainingSession(studentId, drill.id, {
+        res = await saveLinkedTrainingSession(portalToken, drill.id, {
         intention_text: intention || undefined,
         planned_duration_minutes: plannedDuration,
         planned_reps: plannedReps,
@@ -431,7 +431,7 @@ export function LinkedTrainingFlow({
 
       setSaving(false);
       if (res.ok) {
-        getWeeklyPracticeCount(studentId).then(setWeekCount).catch(() => {});
+        getWeeklyPracticeCount(portalToken).then(setWeekCount).catch(() => {});
         setPhase('done');
         router.refresh();
       } else {
