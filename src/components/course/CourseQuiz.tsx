@@ -13,7 +13,7 @@ interface QuizQuestion {
 
 interface QuizProps {
   lessonId: string;
-  studentId: string;
+  portalToken: string;
   quizzes: QuizQuestion[];
   existingScore?: number;
   existingAttempts?: number;
@@ -23,7 +23,7 @@ interface QuizProps {
 
 export function CourseQuiz({
   lessonId,
-  studentId,
+  portalToken,
   quizzes,
   existingScore,
   existingAttempts = 0,
@@ -45,7 +45,7 @@ export function CourseQuiz({
       quizId,
       selectedIndex,
     }));
-    const res = await submitQuiz(studentId, lessonId, answerArr);
+    const res = await submitQuiz(portalToken, lessonId, answerArr);
     setResult(res);
     setSubmitting(false);
     if (res.passed) {

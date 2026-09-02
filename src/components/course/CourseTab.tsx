@@ -157,7 +157,7 @@ export function CourseTab({ data }: { data: CourseData }) {
     return (
       <LessonViewer
         lessonId={openLessonId}
-        studentId={data.studentId}
+        portalToken={data.portalToken}
         onBack={() => setOpenLessonId(null)}
         onOpenLesson={(id) => setOpenLessonId(id)}
       />
@@ -536,7 +536,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           belt content — before this exam unlocks. Owners bypass for review. */}
       <CourseFinalQuiz
         courseKey={data.activeCourseKey}
-        studentId={data.studentId}
+        portalToken={data.portalToken}
         label={beltLabelShort}
         locked={
           !data.isOwner &&

@@ -2450,7 +2450,6 @@ function FeedbackTab({
               {expandedSurveyId === result.id && (
                 <SurveyForm
                   resultId={result.id}
-                  studentId={student.id}
                   token={token}
                   serviceKind={(() => {
                     const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;

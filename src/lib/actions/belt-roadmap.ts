@@ -186,7 +186,7 @@ export async function getBeltRoadmap(
   let lessonsCompleted = 0;
   let lessonsTotal = 0;
   try {
-    const cat = await getCourseCatalog(student.id);
+    const cat = await getCourseCatalog(token);
     preCourseCompleted = !!cat.preCourseCompleted;
     const mine = (cat.lessons ?? []).filter((l: any) =>
       rule.sections.includes(l.course_section),

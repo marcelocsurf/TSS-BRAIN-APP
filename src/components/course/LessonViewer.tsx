@@ -31,7 +31,7 @@ type IconType = typeof BookOpen;
 
 interface LessonViewerProps {
   lessonId: string;
-  studentId: string;
+  portalToken: string;
   onBack: () => void;
   // Lets a lesson jump to another lesson (e.g. a sequence step pointing to
   // its canonical Pre-Course version). Optional — falls back to no banner.
@@ -48,13 +48,13 @@ const SEQUENCE_TO_INTRO: Record<string, { id: string; label: string }> = {
 
 type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'form';
 
-export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: LessonViewerProps) {
+export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    getLessonDetail(lessonId, studentId).then((res) => {
+    getLessonDetail(lessonId, portalToken).then((res) => {
       if (mounted) {
         setData(res);
         setLoading(false);
@@ -63,7 +63,7 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
     return () => {
       mounted = false;
     };
-  }, [lessonId, studentId]);
+  }, [lessonId, portalToken]);
 
   if (loading) {
     return (
@@ -74,6 +74,18 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
           className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]"
         />
         <p className="text-gray-500 text-sm">Loading lesson...</p>
+      </div>
+    );
+  }
+
+  // Sin lección (o sin permiso para leerla): se avisa, no se rompe.
+  if (!data || !data.lesson) {
+    return (
+      <div className="text-center py-20 space-y-3">
+        <p className="text-gray-500 text-sm">This lesson is not available.</p>
+        <button type="button" onClick={onBack} className="text-xs font-semibold text-[var(--tss-cyan,#5AC3E7)]">
+          ← Back to the course
+        </button>
       </div>
     );
   }
@@ -156,7 +168,7 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
   }
 
   const refreshProgress = async () => {
-    const fresh = await getLessonDetail(lessonId, studentId);
+    const fresh = await getLessonDetail(lessonId, portalToken);
     setData(fresh);
   };
 
@@ -228,7 +240,7 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
           <div className={cardCls}>
             <FormSection
               lesson={lesson}
-              studentId={studentId}
+              portalToken={portalToken}
               existingResponse={progress?.form_response}
               isCompleted={progress?.completed}
               onComplete={refreshProgress}
@@ -238,7 +250,7 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
             <div className={cardCls}>
               <CourseQuiz
                 lessonId={lesson.id}
-                studentId={studentId}
+                portalToken={portalToken}
                 quizzes={quizzes}
                 existingScore={progress?.quiz_score}
                 existingAttempts={progress?.quiz_attempts}
@@ -285,7 +297,7 @@ export function LessonViewer({ lessonId, studentId, onBack, onOpenLesson }: Less
               <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.errors_md} /></div>
             </div>
           )}
-          <MarkDoneButton studentId={studentId} lessonId={lesson.id} completed={!!progress?.completed} onDone={refreshProgress} />
+          <MarkDoneButton portalToken={portalToken} lessonId={lesson.id} completed={!!progress?.completed} onDone={refreshProgress} />
         </>
       )}
     </div>
@@ -304,14 +316,14 @@ function SectionLabel({ icon: Icon, text }: { icon: IconType; text: string }) {
 }
 
 function MarkDoneButton({
-  studentId, lessonId, completed, onDone,
+  portalToken, lessonId, completed, onDone,
 }: {
-  studentId: string; lessonId: string; completed: boolean; onDone: () => void;
+  portalToken: string; lessonId: string; completed: boolean; onDone: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const handle = async () => {
     setSaving(true);
-    await markLessonComplete(studentId, lessonId);
+    await markLessonComplete(portalToken, lessonId);
     await onDone();
     setSaving(false);
   };
@@ -334,13 +346,13 @@ function VideoSection({
   lesson,
   videos,
   progress,
-  studentId,
+  portalToken,
   onWatched,
 }: {
   lesson: any;
   videos: { id?: string; url: string; label: string | null }[];
   progress: any;
-  studentId: string;
+  portalToken: string;
   onWatched: () => void;
 }) {
   const [marking, setMarking] = useState(false);
@@ -348,7 +360,7 @@ function VideoSection({
 
   const handleMarkWatched = async () => {
     setMarking(true);
-    await markVideoWatched(studentId, lesson.id);
+    await markVideoWatched(portalToken, lesson.id);
     await onWatched();
     setMarking(false);
   };
@@ -438,14 +450,14 @@ function VideoSection({
 
 function ContentSection({
   content,
-  studentId,
+  portalToken,
   lessonId,
   alreadyRead,
   onRead,
   hideMarkRead,
 }: {
   content: string | null;
-  studentId: string;
+  portalToken: string;
   lessonId: string;
   alreadyRead: boolean;
   onRead: () => void;
@@ -455,7 +467,7 @@ function ContentSection({
 
   const handleMarkRead = async () => {
     setMarking(true);
-    await markContentRead(studentId, lessonId);
+    await markContentRead(portalToken, lessonId);
     await onRead();
     setMarking(false);
   };
@@ -502,13 +514,13 @@ function ContentSection({
 
 function FormSection({
   lesson,
-  studentId,
+  portalToken,
   existingResponse,
   isCompleted,
   onComplete,
 }: {
   lesson: any;
-  studentId: string;
+  portalToken: string;
   existingResponse: any;
   isCompleted: boolean;
   onComplete: () => void;
@@ -519,7 +531,7 @@ function FormSection({
     return (
       <SetGoalForm
         lesson={lesson}
-        studentId={studentId}
+        portalToken={portalToken}
         existingGoal={existingResponse?.goal}
         isCompleted={isCompleted}
         onComplete={onComplete}
@@ -532,7 +544,7 @@ function FormSection({
     return (
       <GoofyOrRegularForm
         lesson={lesson}
-        studentId={studentId}
+        portalToken={portalToken}
         existingStance={existingResponse?.stance}
         isCompleted={isCompleted}
         onComplete={onComplete}
@@ -541,18 +553,18 @@ function FormSection({
   }
 
   // Default: just show content
-  return <ContentSection content={lesson.description_md} studentId={studentId} lessonId={lesson.id} alreadyRead={isCompleted} onRead={onComplete} />;
+  return <ContentSection content={lesson.description_md} portalToken={portalToken} lessonId={lesson.id} alreadyRead={isCompleted} onRead={onComplete} />;
 }
 
 function SetGoalForm({
   lesson,
-  studentId,
+  portalToken,
   existingGoal,
   isCompleted,
   onComplete,
 }: {
   lesson: any;
-  studentId: string;
+  portalToken: string;
   existingGoal?: string;
   isCompleted: boolean;
   onComplete: () => void;
@@ -566,7 +578,7 @@ function SetGoalForm({
       return;
     }
     setSaving(true);
-    await saveLessonForm(studentId, lesson.id, { goal });
+    await saveLessonForm(portalToken, lesson.id, { goal });
     await onComplete();
     setSaving(false);
   };
@@ -615,13 +627,13 @@ function SetGoalForm({
 
 function GoofyOrRegularForm({
   lesson,
-  studentId,
+  portalToken,
   existingStance,
   isCompleted,
   onComplete,
 }: {
   lesson: any;
-  studentId: string;
+  portalToken: string;
   existingStance?: string;
   isCompleted: boolean;
   onComplete: () => void;
@@ -632,7 +644,7 @@ function GoofyOrRegularForm({
   const handleSave = async () => {
     if (!stance) return;
     setSaving(true);
-    await saveLessonForm(studentId, lesson.id, { stance });
+    await saveLessonForm(portalToken, lesson.id, { stance });
     await onComplete();
     setSaving(false);
   };

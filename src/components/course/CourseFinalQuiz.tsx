@@ -6,7 +6,7 @@ import { Brain, Trophy, Lock } from 'lucide-react';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
-export function CourseFinalQuiz({ courseKey, studentId, label, locked = false }: { courseKey: string; studentId: string; label: string; locked?: boolean }) {
+export function CourseFinalQuiz({ courseKey, portalToken, label, locked = false }: { courseKey: string; portalToken: string; label: string; locked?: boolean }) {
   const [questions, setQuestions] = useState<FinalQuizQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<{ score: number; total: number; passed: boolean; correct?: Record<string, number> } | null>(null);
@@ -16,12 +16,12 @@ export function CourseFinalQuiz({ courseKey, studentId, label, locked = false }:
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    Promise.all([getFinalQuiz(courseKey), getFinalQuizResult(studentId, courseKey)]).then(([q, r]) => {
+    Promise.all([getFinalQuiz(courseKey), getFinalQuizResult(portalToken, courseKey)]).then(([q, r]) => {
       setQuestions(q.questions);
       setLastResult(r as any);
       setLoaded(true);
     }).catch(() => setLoaded(true));
-  }, [courseKey, studentId]);
+  }, [courseKey, portalToken]);
 
   if (!loaded || questions.length === 0) return null;
 
@@ -43,7 +43,7 @@ export function CourseFinalQuiz({ courseKey, studentId, label, locked = false }:
 
   const submit = async () => {
     setSubmitting(true);
-    const res = await submitFinalQuiz(studentId, courseKey, answers);
+    const res = await submitFinalQuiz(portalToken, courseKey, answers);
     setResult(res);
     setLastResult({ score: res.score, total: res.total, passed: res.passed });
     setSubmitting(false);

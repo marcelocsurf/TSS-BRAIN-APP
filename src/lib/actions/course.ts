@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { revalidatePath } from 'next/cache';
 
@@ -72,7 +73,16 @@ const COURSE_OWNER_IDS = new Set<string>([
 
 // ─── Get all lessons for a section ───
 
-export async function getCourseCatalog(studentId: string) {
+const EMPTY_CATALOG = {
+  lessons: [] as any[],
+  preCourseCompleted: false,
+  totalCompleted: 0,
+  totalLessons: 0,
+};
+
+export async function getCourseCatalog(portalToken: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return EMPTY_CATALOG;
   const admin = createAdminClient();
 
   const isOwner = COURSE_OWNER_IDS.has(studentId);
@@ -157,7 +167,9 @@ export async function getCourseCatalog(studentId: string) {
 
 // ─── Get a single lesson with quizzes ───
 
-export async function getLessonDetail(lessonId: string, studentId: string) {
+export async function getLessonDetail(lessonId: string, portalToken: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
   const admin = createAdminClient();
 
   const { data: lesson, error: lessonErr } = await admin
@@ -233,7 +245,9 @@ export async function getLessonDetail(lessonId: string, studentId: string) {
 
 // ─── Mark video as watched ───
 
-export async function markVideoWatched(studentId: string, lessonId: string) {
+export async function markVideoWatched(portalToken: string, lessonId: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, error: 'Not authorized' };
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -250,7 +264,9 @@ export async function markVideoWatched(studentId: string, lessonId: string) {
 
 // ─── Mark content as read ───
 
-export async function markContentRead(studentId: string, lessonId: string) {
+export async function markContentRead(portalToken: string, lessonId: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, error: 'Not authorized' };
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -273,7 +289,9 @@ const BELT_COMPLETION_COLUMN: Record<string, string> = {
   blue_belt: 'blue_belt_completed_at',
 };
 
-export async function markLessonComplete(studentId: string, lessonId: string) {
+export async function markLessonComplete(portalToken: string, lessonId: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, error: 'Not authorized' };
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -324,10 +342,12 @@ export async function markLessonComplete(studentId: string, lessonId: string) {
 // ─── Submit quiz answers ───
 
 export async function submitQuiz(
-  studentId: string,
+  portalToken: string,
   lessonId: string,
   answers: { quizId: string; selectedIndex: number }[]
 ) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, error: 'Not authorized' };
   const admin = createAdminClient();
 
   // Get all quiz questions for this lesson
@@ -450,10 +470,12 @@ export async function submitQuiz(
 // ─── Save form response (Set Goal, Goofy/Regular) ───
 
 export async function saveLessonForm(
-  studentId: string,
+  portalToken: string,
   lessonId: string,
   formData: any
 ) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, error: 'Not authorized' };
   const admin = createAdminClient();
 
   // For form-type lessons, save the response and mark as completed

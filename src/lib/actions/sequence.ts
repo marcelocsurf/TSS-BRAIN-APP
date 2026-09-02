@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { pickWeakestCriterion, type CriterionEvaluationItem } from '@/lib/utils/criteria';
+import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import {
   COURSE_SEQUENCE_ORDER,
   stepKey,
@@ -96,23 +97,6 @@ export type SequenceData = {
 };
 
 // ─── Get full sequence catalog for a student ───
-
-/**
- * El token del portal ES la credencial del alumno: viene en la URL y ya lo
- * validó la página. Las acciones de este módulo usan el admin client (saltan
- * RLS), así que la puerta es esta — antes recibían el studentId del cliente y
- * cualquiera con el UUID de otro alumno podía pedir sus datos.
- */
-async function studentIdFromPortalToken(portalToken: string): Promise<string | null> {
-  if (!portalToken || typeof portalToken !== 'string') return null;
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from('students')
-    .select('id')
-    .eq('portal_token', portalToken)
-    .maybeSingle();
-  return data?.id ?? null;
-}
 
 export async function getMySequence(portalToken: string, belt: string = 'white'): Promise<SequenceData> {
   const studentId = await studentIdFromPortalToken(portalToken);

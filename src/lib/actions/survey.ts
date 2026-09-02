@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 
 // 3-question post-class survey. Student rates the coach right after class
 // from the email deep-link or from their portal feed.
@@ -14,7 +15,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // dashboards keep producing sensible numbers without a schema migration.
 interface SurveyInput {
   session_result_id: string;
-  student_id: string;
+  /** La credencial del alumno. El student_id se resuelve en el servidor. */
+  portal_token: string;
   coach_rating: number;      // 1. Overall coach
   feedback_clarity: number;  // 2. Clarity of instructions/explanations
   safety_rating: number;     // 3. Felt safe & looked after in the water
@@ -29,6 +31,19 @@ interface SurveyInput {
 
 export async function submitSurvey(input: SurveyInput) {
   const admin = createAdminClient();
+
+  // El alumno sale del token, nunca del cliente — y la sesión que califica
+  // tiene que ser SUYA: si no, cualquiera podría calificarle el coach a otro.
+  const studentId = await studentIdFromPortalToken(input.portal_token);
+  if (!studentId) throw new Error('Not authorized.');
+  const { data: sessionRow } = await admin
+    .from('student_session_results')
+    .select('student_id')
+    .eq('id', input.session_result_id)
+    .maybeSingle();
+  if (!sessionRow || sessionRow.student_id !== studentId) {
+    throw new Error('That session does not belong to you.');
+  }
 
   // Check if survey already exists
   const { data: existing } = await admin
@@ -47,7 +62,7 @@ export async function submitSurvey(input: SurveyInput) {
   const { data: studentRow } = await admin
     .from('students')
     .select('coach_profile_unlocked_at')
-    .eq('id', input.student_id)
+    .eq('id', studentId)
     .single();
 
   const isFirstUnlock = !studentRow?.coach_profile_unlocked_at;
@@ -58,7 +73,7 @@ export async function submitSurvey(input: SurveyInput) {
     .from('survey_responses')
     .insert({
       session_result_id: input.session_result_id,
-      student_id: input.student_id,
+      student_id: studentId,
       coach_rating: input.coach_rating,             // 1. Overall coach
       q1_clarity: input.feedback_clarity,           // 2. Clarity
       q2_feedback: input.feedback_clarity,          // 2. (mirror)
@@ -87,7 +102,7 @@ export async function submitSurvey(input: SurveyInput) {
     const { error: unlockErr } = await admin
       .from('students')
       .update({ coach_profile_unlocked_at: new Date().toISOString() })
-      .eq('id', input.student_id);
+      .eq('id', studentId);
 
     if (unlockErr) {
       console.error('Failed to set coach_profile_unlocked_at:', unlockErr.message);
@@ -99,7 +114,7 @@ export async function submitSurvey(input: SurveyInput) {
     session_result_id: input.session_result_id,
     actor_type: 'student',
     actor_id: null,
-    actor_name: input.student_id,
+    actor_name: studentId,
     event_type: 'survey_submitted',
     status_before: 'closed',
     status_after: 'closed',

@@ -9,7 +9,6 @@ import { ThumbsUp, Lock, MessageSquare } from 'lucide-react';
 
 interface Props {
   resultId: string;
-  studentId: string;
   token: string;
 }
 
@@ -19,7 +18,7 @@ interface Props {
 // la pregunta de instalaciones/lugar donde tiene sentido; el "flow channel"
 // solo se muestra en surf. La server action sigue backfilleando las columnas
 // legacy sin migración.
-export function SurveyForm({ resultId, studentId, token: _token, serviceKind, serviceName }: Props & { serviceKind?: string | null; serviceName?: string | null }) {
+export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props & { serviceKind?: string | null; serviceName?: string | null }) {
   const key = resolveSurveyKey(serviceKind, serviceName);
   const surveySet = surveyForService(serviceKind, serviceName);
   const labels = surveySet.questions.map((q) => q.label);
@@ -62,7 +61,7 @@ export function SurveyForm({ resultId, studentId, token: _token, serviceKind, se
     try {
       const result = await submitSurvey({
         session_result_id: resultId,
-        student_id: studentId,
+        portal_token: token,
         coach_rating: form.coach_rating,
         feedback_clarity: form.feedback_clarity,
         safety_rating: form.safety_rating,

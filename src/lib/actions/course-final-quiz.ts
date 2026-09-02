@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 
 const PASS_PCT = 0.8;
 
@@ -23,7 +24,9 @@ export async function getFinalQuiz(courseKey: string): Promise<{ questions: Fina
   return { questions, total: questions.length };
 }
 
-export async function getFinalQuizResult(studentId: string, courseKey: string) {
+export async function getFinalQuizResult(portalToken: string, courseKey: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
   const admin = createAdminClient();
   const { data } = await admin
     .from('course_final_quiz_attempts')
@@ -35,10 +38,12 @@ export async function getFinalQuizResult(studentId: string, courseKey: string) {
 }
 
 export async function submitFinalQuiz(
-  studentId: string,
+  portalToken: string,
   courseKey: string,
   answers: Record<string, number>,
 ): Promise<{ ok: boolean; score: number; total: number; passed: boolean; correct: Record<string, number> }> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { ok: false, score: 0, total: 0, passed: false, correct: {} };
   const admin = createAdminClient();
   const { data } = await admin
     .from('course_final_quiz')

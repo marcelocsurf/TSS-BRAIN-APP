@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
@@ -412,7 +413,9 @@ export async function getStudentPortalData(token: string) {
 // 1. The student's current belt_level (always accessible)
 // 2. Any admin-granted levels in student_level_access table
 
-export async function getStudentMaterials(studentId: string, beltLevel: BeltLevel) {
+export async function getStudentMaterials(portalToken: string, beltLevel: BeltLevel) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return { unlocked: [], locked: [] };
   const admin = createAdminClient();
 
   // Query admin-granted level access
@@ -570,17 +573,7 @@ export async function createSelfTrainingSession(
   return session;
 }
 
-/** El token del portal es la credencial: el studentId nunca se cree del cliente. */
-async function studentIdFromPortalToken(portalToken: string): Promise<string | null> {
-  if (!portalToken || typeof portalToken !== 'string') return null;
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from('students')
-    .select('id')
-    .eq('portal_token', portalToken)
-    .maybeSingle();
-  return data?.id ?? null;
-}
+
 
 // ─── Complete a self-training session ───
 
@@ -666,9 +659,11 @@ export async function logFreeSurf(
 // de perseguirlo, y la pantalla lo dice: lo llevaste a 4, tu coach lo confirma
 // la próxima vez que te vea.
 export async function getCoachFocusState(
-  studentId: string,
+  portalToken: string,
 ): Promise<{ flagged: number; pending: number; clearedByStudent: boolean }> {
   try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { flagged: 0, pending: 0, clearedByStudent: false };
     const admin = createAdminClient();
     const { data } = await admin
       .from('student_step_ratings')
@@ -691,7 +686,9 @@ export async function getCoachFocusState(
 
 // ─── Get pending surveys (sessions without survey responses) ───
 
-export async function getPendingSurveys(studentId: string) {
+export async function getPendingSurveys(portalToken: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return [];
   const admin = createAdminClient();
 
   // Get all session results that have survey_unlocked=true
@@ -718,7 +715,9 @@ export async function getPendingSurveys(studentId: string) {
 
 // ─── Get past submitted surveys ───
 
-export async function getSubmittedSurveys(studentId: string) {
+export async function getSubmittedSurveys(portalToken: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return [];
   const admin = createAdminClient();
 
   const { data: surveys } = await admin
@@ -738,7 +737,9 @@ export async function getSubmittedSurveys(studentId: string) {
 // date). Used by the portal "My Coach" tab, which only renders if the
 // student's coach_profile_unlocked_at is set.
 
-export async function getMyCoachData(studentId: string) {
+export async function getMyCoachData(portalToken: string) {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
   const admin = createAdminClient();
 
   // Find the coach of the student's most recent closed session

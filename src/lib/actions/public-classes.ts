@@ -149,7 +149,9 @@ export async function lookupPublicStudent(
     .select('id, first_name, last_name, waiver_signed, date_of_birth')
     .eq('academy_id', academy.id)
     .eq('status', 'active')
-    .ilike('email', norm(email))
+    // Igualdad exacta, no ILIKE: el email ya viene normalizado y un '%' en el
+    // texto convertía esto en un buscador de alumnos ajenos.
+    .eq('email', norm(email))
     .order('date_of_birth', { ascending: true, nullsFirst: false }) // adultos primero
     .limit(10);
   if (!data || data.length === 0) return { found: false };
