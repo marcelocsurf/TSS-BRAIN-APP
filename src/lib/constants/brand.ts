@@ -446,7 +446,7 @@ export const COACH_FEEDBACK_QUICK = [
 export const HOMEWORK_CUES = [
   'Look forward',
   'Weight on front foot',
-  'Knee in',
+  'Back knee to the nose',
   'Bend knees',
   'Foot centered',
   'Shoulders aligned with board nose',

@@ -82,7 +82,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
     checkpoints: [
       'Pecho apunta en dirección de la nariz de la tabla',
       'Get low',
-      'Knee in (foot on the tip)',
+      'Front foot centered, toes across the board · back knee to the nose (no weight on the back foot)',
       'Weight front foot',
       'Scapula active',
       'Front hand reach and cross',

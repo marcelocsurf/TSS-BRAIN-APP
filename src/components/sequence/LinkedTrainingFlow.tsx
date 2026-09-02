@@ -243,7 +243,7 @@ export function LinkedTrainingFlow({
             </summary>
             <div className="px-3.5 pb-3">
               <textarea value={intention} onChange={(e) => setIntention(e.target.value)} rows={2}
-                placeholder="e.g. posture, knee in, chest forward, scapula…"
+                placeholder="e.g. posture, back knee forward, chest forward, scapula…"
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
             </div>
           </details>
