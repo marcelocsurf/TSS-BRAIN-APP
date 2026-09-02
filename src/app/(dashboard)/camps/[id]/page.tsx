@@ -15,6 +15,7 @@ import { FinalizeParticipantControl } from '@/components/camp/FinalizeParticipan
 import { CancelCampButton } from '@/components/camp/CancelCampButton';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
+import { CampDayManager } from '@/components/camp/CampDayManager';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -60,6 +61,18 @@ export default async function CampDetailPage({ params }: Props) {
   const evaluatedCount = evaluations.length;
   const totalStudents = participants.length;
   const totalDays = sessions.length;
+
+  // Fecha que tomaría el día siguiente, y si el último se puede deshacer
+  // (agregado a mano, planificado y sin resultados todavía).
+  const lastSession: any = sessions.length ? sessions[sessions.length - 1] : null;
+  const nextDayDate = (() => {
+    const base = lastSession?.session_date ?? instance?.end_date ?? instance?.start_date ?? null;
+    if (!base) return null;
+    const [y, m, d] = String(base).split('-').map(Number);
+    return new Date(Date.UTC(y, (m || 1) - 1, d || 1) + 86400000).toISOString().slice(0, 10);
+  })();
+  const canUndoLastDay =
+    sessions.length > 1 && !lastSession?.template_day_id && lastSession?.session_status === 'planned';
 
   // Check if all final evaluations are submitted for all students
   const allFinalEvalsDone = totalStudents > 0 && evaluatedCount >= totalStudents;
@@ -221,6 +234,7 @@ export default async function CampDetailPage({ params }: Props) {
       {planForRead.templatePlan.length > 0 && (
         <CampPlanReader
           instanceId={instance.id}
+          instanceDays={totalDays || null}
           templatePlan={planForRead.templatePlan}
           templateMeta={planForRead.templateMeta}
         />
@@ -349,6 +363,15 @@ export default async function CampDetailPage({ params }: Props) {
             );
           })}
         </div>
+        {/* Un día más: el servicio se creó con los confirmados de entonces. */}
+        {instance.status !== 'cancelled' && instance.status !== 'completed' && (
+          <CampDayManager
+            campId={id}
+            nextDayNumber={sessions.length + 1}
+            nextDate={nextDayDate}
+            canUndoLast={canUndoLastDay}
+          />
+        )}
       </div>
     </div>
   );

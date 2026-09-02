@@ -43,6 +43,9 @@ interface Props {
   /** Already-resolved plan (drill + mission detail included). */
   templatePlan: ServicePlanData['templatePlan'];
   templateMeta: ServicePlanData['templateMeta'];
+  /** Días reales de ESTA instancia. La plantilla es compartida: si al servicio
+   *  se le agregó un día, el encabezado tiene que decir la verdad. */
+  instanceDays?: number | null;
 }
 
 type Mode = 'summary' | 'detail';
@@ -67,6 +70,7 @@ function momentOf(b: Block): (typeof MOMENTS)[number] {
 export function CampPlanReader({
   instanceId,
   coachToken,
+  instanceDays,
   templatePlan,
   templateMeta,
 }: Props) {
@@ -109,9 +113,9 @@ export function CampPlanReader({
           style={{ fontFamily: 'var(--font-heading)', fontWeight: 600 }}
         >
           {templateMeta.name}
-          {templateMeta.duration_days && (
+          {(instanceDays ?? templateMeta.duration_days) && (
             <span className="text-white/55 font-normal text-base ml-2">
-              · {templateMeta.duration_days} days
+              · {instanceDays ?? templateMeta.duration_days} days
             </span>
           )}
         </h2>

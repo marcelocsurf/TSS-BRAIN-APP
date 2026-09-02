@@ -35,6 +35,192 @@ async function guardParticipantAcademy(
   return null;
 }
 
+// Mismo criterio, pero por CAMP: quien administra el servicio tiene que ser
+// de la academia dueña (o admin de plataforma).
+async function guardCampAcademy(
+  campInstanceId: string,
+): Promise<{ error: string } | null> {
+  const me = await getCurrentCoach();
+  if (!me) return { error: 'Not authenticated.' };
+  if (me.is_platform_admin) return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_instances')
+    .select('academy_id')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  const acId = (data as any)?.academy_id ?? null;
+  if (!acId || acId !== me.academy_id) return { error: 'Not authorized for this academy.' };
+  return null;
+}
+
+// ═══════════════════════════════════════
+// AGREGAR / QUITAR UN DÍA A UN CAMP YA CREADO
+// ═══════════════════════════════════════
+// Pedido real (Marcelo, sep-2026): un camp se crea con los días confirmados
+// hasta ese momento y después se confirma uno más. Antes había que rehacer el
+// servicio.
+//
+// El día extra cuelga de la INSTANCIA, no de la plantilla: template_day_id
+// queda en NULL. La plantilla la comparten otros servicios — tocarla les
+// cambiaría la duración a todos.
+//
+// Se hacen las dos cosas o ninguna sirve:
+//   1. la fila en camp_sessions — de ahí sale todo lo operativo (correr y
+//      cerrar el día, el candado de finalización, el costo y la nómina), y
+//   2. extender end_date — si no, el día que toca el camp se cae del portal
+//      del coach, del calendario y del portal del alumno, porque medio sistema
+//      filtra por end_date >= hoy.
+// Extender end_date NO reabre inscripciones: esa regla mira start_date.
+
+export async function addCampDay(campInstanceId: string) {
+  const guard = await guardCampAcademy(campInstanceId);
+  if (guard) return { ok: false as const, error: guard.error };
+
+  const supabase = await createClient();
+
+  const { data: instance } = await supabase
+    .from('camp_instances')
+    .select('id, start_date, end_date, status')
+    .eq('id', campInstanceId)
+    .maybeSingle();
+  if (!instance) return { ok: false as const, error: 'Camp not found.' };
+  if (instance.status === 'cancelled') {
+    return { ok: false as const, error: 'This service is cancelled.' };
+  }
+
+  const { data: sessions } = await supabase
+    .from('camp_sessions')
+    .select('id, day_number, session_date')
+    .eq('camp_instance_id', campInstanceId)
+    .order('day_number');
+  const existing = sessions ?? [];
+
+  const lastDayNumber = existing.reduce((m, s) => Math.max(m, s.day_number ?? 0), 0);
+  const nextDayNumber = lastDayNumber + 1;
+
+  // La fecha sale del último día REAL (no de start + n): si algún día hubo un
+  // salto, el día nuevo sigue al último y no a un cálculo teórico.
+  const lastDate =
+    [...existing].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)).at(-1)?.session_date ??
+    instance.end_date ??
+    instance.start_date;
+  if (!lastDate) return { ok: false as const, error: 'This service has no dates yet.' };
+  const [ly, lm, ld] = String(lastDate).split('-').map(Number);
+  const nextDate = new Date(Date.UTC(ly, (lm || 1) - 1, ld || 1) + 86400000)
+    .toISOString()
+    .slice(0, 10);
+
+  const { data: created, error: sessErr } = await supabase
+    .from('camp_sessions')
+    .insert({
+      camp_instance_id: campInstanceId,
+      template_day_id: null,
+      day_number: nextDayNumber,
+      session_date: nextDate,
+      session_status: 'planned' as const,
+    })
+    .select('id')
+    .single();
+  if (sessErr || !created) {
+    return { ok: false as const, error: sessErr?.message ?? 'Could not add the day.' };
+  }
+
+  if (!instance.end_date || nextDate > instance.end_date) {
+    const { error: endErr } = await supabase
+      .from('camp_instances')
+      .update({ end_date: nextDate })
+      .eq('id', campInstanceId);
+    if (endErr) return { ok: false as const, error: endErr.message };
+  }
+
+  // El día nace con estructura: un plan y un bloque vacío por alumno activo.
+  // Un día sin bloques se puede cerrar con la bitácora vacía y libera nómina.
+  await supabase.from('service_plans').insert({
+    camp_instance_id: campInstanceId,
+    camp_session_id: created.id,
+    completion_state: 'planned' as const,
+  });
+
+  const { data: parts } = await supabase
+    .from('camp_participants')
+    .select('student_id')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('enrollment_status', 'active');
+  const blockRows = (parts ?? [])
+    .map((p: any) => p.student_id)
+    .filter(Boolean)
+    .map((studentId: string) => ({
+      camp_instance_id: campInstanceId,
+      camp_session_id: created.id,
+      student_id: studentId,
+      order_index: 0,
+    }));
+  if (blockRows.length > 0) {
+    await supabase.from('service_plan_blocks').insert(blockRows);
+  }
+
+  revalidatePath(`/camps/${campInstanceId}`);
+  revalidatePath('/camps');
+  return { ok: true as const, dayNumber: nextDayNumber, date: nextDate };
+}
+
+/**
+ * Deshacer: quita el ÚLTIMO día, y solo si se agregó así (sin plantilla),
+ * sigue planificado y todavía no tiene nada del alumno. Un día con historia
+ * no se borra nunca.
+ */
+export async function removeLastCampDay(campInstanceId: string) {
+  const guard = await guardCampAcademy(campInstanceId);
+  if (guard) return { ok: false as const, error: guard.error };
+
+  const supabase = await createClient();
+  const { data: sessions } = await supabase
+    .from('camp_sessions')
+    .select('id, day_number, session_date, session_status, template_day_id')
+    .eq('camp_instance_id', campInstanceId)
+    .order('day_number');
+  const all = sessions ?? [];
+  if (all.length <= 1) return { ok: false as const, error: 'A service needs at least one day.' };
+
+  const last = all[all.length - 1];
+  if (last.template_day_id) {
+    return { ok: false as const, error: 'That day comes from the template — it cannot be removed here.' };
+  }
+  if (last.session_status !== 'planned') {
+    return { ok: false as const, error: 'That day already started.' };
+  }
+
+  const { count: resultCount } = await supabase
+    .from('student_session_results')
+    .select('id', { count: 'exact', head: true })
+    .eq('camp_session_id', last.id);
+  if ((resultCount ?? 0) > 0) {
+    return { ok: false as const, error: 'That day already has student results.' };
+  }
+  const { data: plans } = await supabase
+    .from('service_plans')
+    .select('completion_state')
+    .eq('camp_session_id', last.id);
+  if ((plans ?? []).some((p: any) => p.completion_state && p.completion_state !== 'planned')) {
+    return { ok: false as const, error: 'That day was already started by the coach.' };
+  }
+
+  await supabase.from('service_plan_blocks').delete().eq('camp_session_id', last.id);
+  await supabase.from('service_plans').delete().eq('camp_session_id', last.id);
+  const { error: delErr } = await supabase.from('camp_sessions').delete().eq('id', last.id);
+  if (delErr) return { ok: false as const, error: delErr.message };
+
+  const newLastDate = all[all.length - 2]?.session_date ?? null;
+  if (newLastDate) {
+    await supabase.from('camp_instances').update({ end_date: newLastDate }).eq('id', campInstanceId);
+  }
+
+  revalidatePath(`/camps/${campInstanceId}`);
+  revalidatePath('/camps');
+  return { ok: true as const };
+}
+
 // Only the platform admin may edit/deactivate GLOBAL templates (academy_id
 // NULL = the shared TSS doctrine catalog). A coordinator may only touch
 // templates that belong to their own academy.
@@ -2042,7 +2228,9 @@ export async function getCustomizedPlan(
     .eq('day_number', dayNumber)
     .single();
 
-  if (!templateDay) throw new Error('Template day not found');
+  // Un día agregado a la instancia (addCampDay) no tiene día de plantilla:
+  // no es un error, simplemente no hay bloques que copiar.
+  if (!templateDay) return { blocks: [], customizations: [] as any[] };
 
   // Get blocks
   const { data: blocks } = await supabase
