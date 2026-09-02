@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { pickWeakestCriterion, type CriterionEvaluationItem } from '@/lib/utils/criteria';
 import {
   COURSE_SEQUENCE_ORDER,
   stepKey,
@@ -370,7 +371,11 @@ export async function getStepDetail(studentId: string, stepId: string) {
     .from('drills_missions')
     .select('*')
     .eq('step_id', stepId)
-    .eq('active', true);
+    .eq('active', true)
+    // Solo lo que el alumno puede ver: el catálogo coach (student_visible=false)
+    // no entra a la ficha del paso (bug 2026-09-02: STP-001 mostraba "Group
+    // Venue Read", una misión solo-coach, como SU misión).
+    .eq('student_visible', true);
 
   const drill =
     (drillsAndMissions || []).find((d: any) => d.type === 'drill') || null;
@@ -388,7 +393,7 @@ export async function getStepDetail(studentId: string, stepId: string) {
   // Get session history for this step
   const { data: sessions } = await admin
     .from('self_training_sessions')
-    .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes, linked_drill_mission_id')
+    .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes, linked_drill_mission_id, criteria_evaluation')
     .eq('student_id', studentId)
     .eq('linked_step_id', stepId)
     .order('created_at', { ascending: false })
@@ -487,19 +492,65 @@ export async function saveLinkedTrainingSession(
     execution_rating?: number;    // 1-5
     flow_channel?: number;        // 1-5 (1 Bored · 3 Flow · 5 Frustrating)
     criteria_evaluation?: CriterionEvaluation[];
+    warm_up?: string;             // chip elegido en READY (antes se perdía)
+    mental_hack?: string;         // ancla mental elegida en READY (antes se perdía)
   }
 ) {
+  // Validación en la acción: token + admin client saltan RLS, así que la
+  // puerta es esta. Rangos = los CHECK de la tabla, más la forma del jsonb.
+  const inRange = (v: number | undefined, lo: number, hi: number) =>
+    v === undefined || (Number.isInteger(v) && v >= lo && v <= hi);
+  if (!inRange(data.focus_rating, 0, 3)) return { ok: false as const, error: 'Focus rating out of range' };
+  if (!inRange(data.execution_rating, 1, 5)) return { ok: false as const, error: 'Execution rating out of range' };
+  if (!inRange(data.flow_channel, 1, 5)) return { ok: false as const, error: 'Flow channel out of range' };
+  if (data.mission_completion !== undefined && !['yes', 'partial', 'no'].includes(data.mission_completion)) {
+    return { ok: false as const, error: 'Invalid completion value' };
+  }
+  if (data.criteria_evaluation !== undefined) {
+    const valid = Array.isArray(data.criteria_evaluation) && data.criteria_evaluation.length <= 20 && data.criteria_evaluation.every(
+      (c) => c && Number.isInteger(c.criterion_index) && ['met', 'partial', 'not_met'].includes(c.result)
+    );
+    if (!valid) return { ok: false as const, error: 'Invalid criteria evaluation' };
+  }
+  const tooLong = (v: string | undefined, max: number) => typeof v === 'string' && v.length > max;
+  if (tooLong(data.intention_text, 500) || tooLong(data.notes, 4000) || tooLong(data.venue_notes, 2000) || tooLong(data.warm_up, 200) || tooLong(data.mental_hack, 100)) {
+    return { ok: false as const, error: 'Text too long' };
+  }
+
   const admin = createAdminClient();
 
-  // Get drill_mission to extract step_id
+  // Get drill_mission to extract step_id (+ the card's real criteria: el
+  // texto de cada criterio se toma de la tarjeta, nunca del cliente).
   const { data: drillMission } = await admin
     .from('drills_missions')
-    .select('step_id, title')
+    .select('step_id, title, success_criteria')
     .eq('id', drillMissionId)
     .single();
 
   if (!drillMission) {
     return { ok: false, error: 'Drill/mission not found' };
+  }
+
+  // criteria_evaluation se reconstruye desde la tarjeta: índice válido,
+  // texto de la tarjeta, un resultado por índice. Y mission_completion se
+  // deriva acá (misma regla que el cliente) para que nunca se contradigan.
+  const cardCriteria: string[] = Array.isArray(drillMission.success_criteria) ? drillMission.success_criteria : [];
+  let criteriaClean: CriterionEvaluation[] | null = null;
+  let completion = data.mission_completion;
+  if (data.criteria_evaluation !== undefined) {
+    const byIndex = new Map<number, CriterionResult>();
+    for (const c of data.criteria_evaluation) {
+      if (c.criterion_index < 0 || c.criterion_index >= cardCriteria.length) return { ok: false as const, error: 'Criterion index out of range' };
+      byIndex.set(c.criterion_index, c.result);
+    }
+    criteriaClean = Array.from(byIndex.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([i, result]) => ({ criterion_index: i, criterion_text: cardCriteria[i], result }));
+    if (criteriaClean.length > 0) {
+      const met = criteriaClean.filter((c) => c.result === 'met').length;
+      const partial = criteriaClean.filter((c) => c.result === 'partial').length;
+      completion = met === cardCriteria.length ? 'yes' : met + partial > 0 ? 'partial' : 'no';
+    }
   }
 
   // Insert training session
@@ -530,10 +581,12 @@ export async function saveLinkedTrainingSession(
       venue_notes: data.venue_notes,
       notes: data.notes,
       focus_rating: data.focus_rating,
-      mission_completion: data.mission_completion,
+      mission_completion: completion,
       execution_rating: data.execution_rating,
       flow_channel: data.flow_channel ?? null,
-      criteria_evaluation: data.criteria_evaluation ?? null,
+      criteria_evaluation: criteriaClean,
+      warm_up: data.warm_up ?? null,
+      mental_hack: data.mental_hack ?? null,
       completed: true,
     })
     .select()
@@ -587,11 +640,36 @@ export async function getNextMove(
   stepTitle: string;
   stars: number | null;
   official: boolean;
+  /** El detalle más flojo de la última práctica de ese paso (evaluación por
+   *  criterio): el "Work on this" baja del paso al detalle concreto. */
+  detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
 } | null> {
   try {
     const data = await getMySequence(studentId, belt);
     const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
     if (!seq || !seq.weakestStepId) return null;
+    let detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null = null;
+    try {
+      const admin = createAdminClient();
+      const { data: last } = await admin
+        .from('self_training_sessions')
+        .select('created_at, drill_name, criteria_evaluation, linked_drill_mission_id')
+        .eq('student_id', studentId)
+        .eq('linked_step_id', seq.weakestStepId)
+        .eq('kind', 'drill')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const weak = pickWeakestCriterion((last?.criteria_evaluation ?? null) as CriterionEvaluationItem[] | null);
+      if (last && weak && weak.result !== 'met') {
+        // El texto sale de la tarjeta ACTUAL (por índice): si el admin editó
+        // el criterio, el alumno ve la versión vigente, no la foto vieja.
+        const text = await currentCriterionText(admin, last.linked_drill_mission_id, weak.criterion_index, weak.criterion_text);
+        if (text) detail = { text, result: weak.result, drillTitle: last.drill_name ?? null, date: last.created_at };
+      }
+    } catch {
+      detail = null;
+    }
     return {
       sequenceId: seq.id,
       sequenceOrder: seq.order,
@@ -600,9 +678,57 @@ export async function getNextMove(
       stepTitle: seq.weakestTitle ?? seq.weakestStepId,
       stars: seq.minRating,
       official: seq.weakestIsOfficial,
+      detail,
     };
   } catch {
     // El Home no se cae por esto: es una ayuda, no el contenido.
     return null;
   }
+}
+
+
+/**
+ * Lo que quedó flojo la última vez que practicó ESTA pieza. La pantalla de
+ * plan lo ofrece como objetivo de hoy con un toque: el alumno solo cierra el
+ * círculo (evaluó por detalle → vuelve al detalle).
+ */
+export async function getLastPracticeHint(
+  studentId: string,
+  drillMissionId: string
+): Promise<{ date: string; weakest: { text: string; result: 'partial' | 'not_met' } | null; metAll: boolean } | null> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from('self_training_sessions')
+      .select('created_at, criteria_evaluation, mission_completion')
+      .eq('student_id', studentId)
+      .eq('linked_drill_mission_id', drillMissionId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+    const weak = pickWeakestCriterion((data.criteria_evaluation ?? null) as CriterionEvaluationItem[] | null);
+    const text = weak && weak.result !== 'met' ? await currentCriterionText(admin, drillMissionId, weak.criterion_index, weak.criterion_text) : null;
+    return {
+      date: data.created_at,
+      weakest: weak && weak.result !== 'met' && text ? { text, result: weak.result } : null,
+      metAll: data.mission_completion === 'yes',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Texto vigente del criterio N de la tarjeta; null si la tarjeta ya no tiene ese índice. */
+async function currentCriterionText(
+  admin: ReturnType<typeof createAdminClient>,
+  drillMissionId: string | null,
+  index: number,
+  fallback: string
+): Promise<string | null> {
+  if (!drillMissionId) return fallback || null;
+  const { data } = await admin.from('drills_missions').select('success_criteria').eq('id', drillMissionId).maybeSingle();
+  const list: string[] = Array.isArray(data?.success_criteria) ? data!.success_criteria : [];
+  if (list.length === 0) return fallback || null;
+  return index >= 0 && index < list.length ? list[index] : null;
 }

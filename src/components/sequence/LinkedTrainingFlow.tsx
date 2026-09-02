@@ -17,6 +17,7 @@ import {
   getDrillMissionForTraining,
   saveLinkedTrainingSession,
   getWeeklyPracticeCount,
+  getLastPracticeHint,
   type DrillMissionRow,
   type CriterionResult,
   type CriterionEvaluation,
@@ -28,6 +29,7 @@ import {
   CROWD_OPTIONS,
 } from '@/lib/constants/training';
 import { SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
+import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import {
   Target, Dumbbell, Waves, Clock, Repeat, Check, CircleDot, X, Star,
   Lightbulb, Save, Brain, Play, ChevronDown, Moon, Smile, Flame, AlertTriangle,
@@ -98,6 +100,9 @@ export function LinkedTrainingFlow({
   const [flowChannel, setFlowChannel] = useState<number | null>(null);
   const [notesText, setNotesText] = useState('');
   const [weekCount, setWeekCount] = useState<number | null>(null);
+  // Lo que quedó flojo la última vez con esta pieza → objetivo de hoy en un toque.
+  const [lastHint, setLastHint] = useState<Awaited<ReturnType<typeof getLastPracticeHint>>>(null);
+  const [objectiveOpen, setObjectiveOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -107,6 +112,13 @@ export function LinkedTrainingFlow({
         if (!mounted) return;
         if (!d) { setErrorMsg('Drill / mission not found'); setPhase('error'); return; }
         setDrill(d);
+        getLastPracticeHint(studentId, drillMissionId).then((h) => {
+          if (!mounted) return;
+          setLastHint(h);
+          // Lo que quedó flojo la última vez YA es el objetivo de hoy (el DONE
+          // lo promete). El alumno lo puede cambiar en el campo de objetivo.
+          if (h?.weakest) { setIntention((cur) => cur || h.weakest!.text); setObjectiveOpen(true); }
+        }).catch(() => {});
         if (d.reps_recommended) {
           const match = d.reps_recommended.match(/(\d+)/);
           if (match) setPlannedReps(parseInt(match[1], 10));
@@ -237,7 +249,28 @@ export function LinkedTrainingFlow({
                 className="text-sm outline-none bg-transparent" />
             </label>
           </div>
-          <details className="rounded-xl border border-gray-200 bg-white">
+          {lastHint?.weakest && (
+            <div className="rounded-xl p-3 border" style={lastHint.weakest.result === 'not_met'
+              ? { background: 'rgba(255,107,107,.12)', borderColor: '#FF6B6B99' }
+              : { background: 'rgba(255,209,102,.16)', borderColor: `${GOLD}99` }}>
+              <p className="text-[9px]" style={{ ...F_M, color: lastHint.weakest.result === 'not_met' ? '#B4232C' : '#7a5c00' }}>
+                Your last practice · {lastHint.weakest.result === 'not_met' ? 'not met' : 'partial'}
+              </p>
+              <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{lastHint.weakest.text}</p>
+              {intention.trim() === lastHint.weakest.text ? (
+                <p className="mt-2 text-[11px] font-bold" style={{ color: '#7a5c00' }}>
+                  <Check size={11} className="inline mr-1 -mt-0.5" />Today’s objective — edit it below if you want another.
+                </p>
+              ) : (
+                <button type="button" onClick={() => { setIntention(lastHint.weakest!.text); setObjectiveOpen(true); }}
+                  className="mt-2 text-[11px] font-bold active:scale-[0.98]" style={{ color: '#7a5c00' }}>
+                  Make it today’s objective →
+                </button>
+              )}
+            </div>
+          )}
+          <details className="rounded-xl border border-gray-200 bg-white" open={objectiveOpen}
+            onToggle={(e) => setObjectiveOpen((e.currentTarget as HTMLDetailsElement).open)}>
             <summary className="px-3.5 py-2.5 cursor-pointer text-[11px] text-gray-500 select-none" style={F_M}>
               <Target size={12} className="inline mr-1.5 -mt-0.5" />Specific objective (optional)
             </summary>
@@ -364,7 +397,9 @@ export function LinkedTrainingFlow({
       const mission_completion: 'yes' | 'partial' | 'no' =
         metCount === successCriteria.length ? 'yes' : metCount + partialCount > 0 ? 'partial' : 'no';
 
-      const res = await saveLinkedTrainingSession(studentId, drill.id, {
+      let res: Awaited<ReturnType<typeof saveLinkedTrainingSession>>;
+      try {
+        res = await saveLinkedTrainingSession(studentId, drill.id, {
         intention_text: intention || undefined,
         planned_duration_minutes: plannedDuration,
         planned_reps: plannedReps,
@@ -383,7 +418,16 @@ export function LinkedTrainingFlow({
         flow_channel: flowChannel ?? undefined,
         criteria_evaluation,
         notes: notesText || undefined,
-      });
+        // Antes se elegían en READY y se perdían (bug): ahora viajan con la sesión.
+        // 'skip' ("Already warm") es un centinela de UI, no un warm-up: no se guarda.
+        warm_up: warmUp === 'custom' ? (warmUpCustom.trim() || undefined) : (warmUp && warmUp !== 'skip' ? warmUp : undefined),
+        mental_hack: mentalHack && mentalHack !== 'none' ? mentalHack : undefined,
+        });
+      } catch {
+        setSaving(false);
+        setErrorMsg('Could not save — check your connection and try again.');
+        return;
+      }
 
       setSaving(false);
       if (res.ok) {
@@ -455,7 +499,7 @@ export function LinkedTrainingFlow({
           <p className="text-[11px] text-gray-500 mb-2">This updates your self-rating in My Sequence.</p>
           <div className="grid grid-cols-5 gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => {
-              const labels = ["Can't yet", 'Trying', 'Sometimes', 'Consistent', 'Mastery'];
+              const labels = ['Can’t yet', 'Trying', 'Sometimes', 'Consistent', 'Mastery'];
               const sel = executionRating === n;
               return (
                 <button key={n} onClick={() => setExecutionRating(n)}
@@ -522,6 +566,9 @@ export function LinkedTrainingFlow({
 
   // ─── CIERRE + racha ───
   if (phase === 'done') {
+    const doneEvals = successCriteria.map((text, i) => ({ criterion_index: i, criterion_text: text, result: criteriaResults[i] }));
+    const doneWeakest = pickWeakestCriterion(doneEvals);
+    const metN = doneEvals.filter((c) => c.result === 'met').length;
     return (
       <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
         <div className="bg-white rounded-2xl p-7 text-center shadow-sm space-y-4">
@@ -556,12 +603,32 @@ export function LinkedTrainingFlow({
               <span className="font-bold">{focusRating}/3</span>
             </div>
             {successCriteria.length > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Criteria met</span>
-                <span className="font-bold">{Object.values(criteriaResults).filter((r) => r === 'met').length} / {successCriteria.length}</span>
+              <div className="pt-1 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Criteria met</span>
+                  <span className="font-bold">{metN} / {successCriteria.length}</span>
+                </div>
+                {doneEvals.map((c) => {
+                  const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X;
+                  const color = c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#7a5c00' : '#B4232C';
+                  return (
+                    <div key={c.criterion_index} className="flex items-start gap-2 text-[11.5px] leading-snug">
+                      <Icon size={12} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color }} aria-label={c.result === 'met' ? 'Met' : c.result === 'partial' ? 'Partial' : 'Not met'} />
+                      <span className="text-gray-700">{c.criterion_text}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
+
+          {doneWeakest && (
+            <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
+              <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Work on this next</p>
+              <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{doneWeakest.criterion_text}</p>
+              <p className="text-[11px] text-gray-500 mt-1">Next time you open this {isMission ? 'mission' : 'drill'}, it will already be today’s objective.</p>
+            </div>
+          )}
 
           <div className="flex items-center justify-center gap-1.5 rounded-xl p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
             <Check size={13} strokeWidth={2} className="shrink-0" />

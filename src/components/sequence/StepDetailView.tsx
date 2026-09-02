@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { getStepDetail, updateStepRating } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
-import { Dumbbell, Waves, Target, BookOpen, Check, PenLine } from 'lucide-react';
+import { Dumbbell, Waves, Target, BookOpen, Check, PenLine, CircleDot, X } from 'lucide-react';
 import { displayDate } from '@/lib/utils/tz';
+import { COMPLETION_LABEL_EN } from '@/lib/utils/criteria';
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
@@ -163,8 +164,22 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
                 <div className="text-sm">
                   {s.duration_minutes ? `${s.duration_minutes} min` : 'Duration not set'}
                   {s.execution_rating && ` · Rated ${s.execution_rating}/5`}
-                  {s.mission_completion && ` · ${s.mission_completion}`}
+                  {s.mission_completion && ` · ${COMPLETION_LABEL_EN[s.mission_completion] ?? s.mission_completion}`}
                 </div>
+                {Array.isArray(s.criteria_evaluation) && s.criteria_evaluation.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {[...s.criteria_evaluation].sort((a: any, b: any) => a.criterion_index - b.criterion_index).map((c: any) => {
+                      const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X;
+                      const color = c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#7a5c00' : '#B4232C';
+                      return (
+                        <div key={c.criterion_index} className="flex items-start gap-1.5 text-[11px] leading-snug text-gray-600">
+                          <Icon size={11} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color }} aria-label={c.result === 'met' ? 'Met' : c.result === 'partial' ? 'Partial' : 'Not met'} />
+                          <span>{c.criterion_text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>

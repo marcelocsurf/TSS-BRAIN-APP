@@ -212,6 +212,8 @@ interface PortalData {
     stepTitle: string;
     stars: number | null;
     official: boolean;
+    /** El detalle más flojo de la última práctica de ese paso. */
+    detail?: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
   } | null;
 }
 
@@ -1065,6 +1067,11 @@ function HomeTab({
                     Holding back {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}
                     {data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}
                   </p>
+                  {data.nextMove.detail && (
+                    <p className="text-[12px] mt-1.5 leading-snug" style={{ color: data.nextMove.detail.result === 'not_met' ? '#FF8A8F' : '#FFD166' }}>
+                      Your last practice · {data.nextMove.detail.result === 'not_met' ? 'not met' : 'partial'}: {data.nextMove.detail.text}
+                    </p>
+                  )}
                   <p className="text-[12px] mt-1.5 font-semibold" style={{ color: BRAND.colors.cyan }}>
                     Practice it →
                   </p>

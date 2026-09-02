@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { checkCoachAccessToStudent } from '@/lib/actions/students';
 import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
@@ -104,6 +105,7 @@ export async function getStudentActivitySummary(
                 ? `misión ${({ yes: 'lograda', partial: 'a medias', no: 'no lograda' } as Record<string, string>)[s.mission_completion] ?? s.mission_completion}`
                 : null,
               s.execution_rating ? `${s.execution_rating}★` : null,
+              (() => { const w = pickWeakestCriterion(s.criteria_evaluation); return w && w.result !== 'met' ? `trabajar: ${w.criterion_text}` : null; })(),
             ].filter(Boolean).join(' · ') || null,
         minutes: s.kind === 'free_surf' ? (s.total_water_minutes || s.duration_minutes || 0) : (s.duration_minutes || 0),
         completed: !!s.completed,

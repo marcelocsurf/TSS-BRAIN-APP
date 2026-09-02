@@ -1,5 +1,7 @@
 'use client';
 
+import { Check, CircleDot, X } from 'lucide-react';
+
 interface SelfTraining {
   id: string;
   date: string;
@@ -11,6 +13,8 @@ interface SelfTraining {
   completed: boolean;
   linked_step_id: string | null;
   kind?: 'drill' | 'custom';
+  /** Evaluación por detalle del alumno: un resultado por criterio de la tarjeta. */
+  criteria_evaluation?: { criterion_index: number; criterion_text: string; result: 'met' | 'partial' | 'not_met' }[] | null;
 }
 
 interface StepRating {
@@ -217,13 +221,25 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                         day: 'numeric',
                       })}
                       {s.duration_minutes ? ` · ${s.duration_minutes}min` : ''}
-                      {s.mission_completion ? ` · ${s.mission_completion}` : ''}
+                      {s.mission_completion ? ` · ${({ yes: 'done', partial: 'almost', no: 'not yet' } as Record<string, string>)[s.mission_completion] ?? s.mission_completion}` : ''}
                       {isCustom ? ' · does not count toward step mastery' : ''}
                     </p>
                     {s.intention_text && (
                       <p className="text-[10px] text-gray-500 italic mt-0.5 truncate">
                         &ldquo;{s.intention_text}&rdquo;
                       </p>
+                    )}
+                    {Array.isArray(s.criteria_evaluation) && s.criteria_evaluation.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {[...s.criteria_evaluation].sort((a, b) => a.criterion_index - b.criterion_index).map((c) => (
+                          <p key={c.criterion_index} className="text-[10px] leading-snug flex items-start gap-1.5">
+                            {(() => { const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X; return (
+                              <Icon size={10} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color: c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#8a6a00' : '#b4232c' }} aria-label={c.result} />
+                            ); })()}
+                            <span className="text-gray-600">{c.criterion_text}</span>
+                          </p>
+                        ))}
+                      </div>
                     )}
                   </div>
                   {s.execution_rating != null && !isCustom && (
