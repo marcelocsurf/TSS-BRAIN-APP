@@ -123,9 +123,9 @@ export function StepDetailView({ stepId, studentId, onBack, onRatingChange, onPr
         <div className="rounded-2xl p-3.5 text-[11.5px] leading-relaxed" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)', color: 'rgba(247,249,250,.85)' }}>
           <strong>THINK</strong> — the lesson: understand what the movement does and how it works.
           <br />
-          <strong>FEEL</strong> — the drill: visualize it and simulate it out of the water (sand, calm water, pool, skateboard).
+          <strong>FEEL</strong> — the drill: visualize it and simulate it in a controlled setting (sand, calm water, pool, skateboard).
           <br />
-          <strong>DO</strong> — the mission: execute it in the water, in real time.
+          <strong>DO</strong> — the mission: execute it in real conditions, in real time.
           <br />
           Choose the practice that fits today&apos;s session.
         </div>
@@ -196,7 +196,7 @@ function DrillOrMissionCard({
 }) {
   const isDrill = item.type === 'drill';
   const TypeIcon = isDrill ? Dumbbell : Waves;
-  const typeLabel = isDrill ? 'FEEL — visualize and simulate it, out of the water' : 'DO — execute it in the water, in real time';
+  const typeLabel = isDrill ? 'FEEL — visualize and simulate it, in a controlled setting' : 'DO — execute it in real conditions, in real time';
   const accentHex = isDrill ? GOLD : CYAN;
   const accentText = isDrill ? '#7a5c00' : '#0090B0';
 
