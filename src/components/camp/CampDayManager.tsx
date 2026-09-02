@@ -21,17 +21,28 @@ export function CampDayManager({ campId, nextDayNumber, nextDate, canUndoLast }:
   const router = useRouter();
   const [busy, setBusy] = useState<'add' | 'undo' | null>(null);
   const [error, setError] = useState('');
+  const [done, setDone] = useState('');
   const [confirming, setConfirming] = useState(false);
 
   const run = async (kind: 'add' | 'undo') => {
     setBusy(kind);
     setError('');
+    setDone('');
     const res = kind === 'add' ? await addCampDay(campId) : await removeLastCampDay(campId);
     setBusy(null);
     setConfirming(false);
     if (!res.ok) {
       setError(res.error);
       return;
+    }
+    const r = res.repriced;
+    if (r && r.seats > 0) {
+      const sign = r.deltaCents >= 0 ? '+' : '−';
+      setDone(
+        `${r.seats} seat${r.seats === 1 ? '' : 's'} repriced (${sign}$${Math.abs(r.deltaCents / 100).toFixed(2)} total).`,
+      );
+    } else if (kind === 'add') {
+      setDone('No seat had a price set, so nothing was charged.');
     }
     router.refresh();
   };
@@ -42,8 +53,8 @@ export function CampDayManager({ campId, nextDayNumber, nextDate, canUndoLast }:
         <div className="space-y-2">
           <p className="text-xs text-gray-600">
             Add <strong>Day {nextDayNumber}</strong>
-            {nextDate ? <> on <strong>{nextDate}</strong></> : null}. The service end date moves with it.
-            Enrollment stays closed.
+            {nextDate ? <> on <strong>{nextDate}</strong></> : null}. The service end date moves with it and
+            each seat&apos;s price goes up by one day. Enrollment stays closed.
           </p>
           <div className="flex gap-2">
             <button
@@ -88,6 +99,7 @@ export function CampDayManager({ campId, nextDayNumber, nextDate, canUndoLast }:
         </div>
       )}
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {done && <p className="mt-2 text-xs text-emerald-700">{done}</p>}
     </div>
   );
 }

@@ -160,9 +160,64 @@ export async function addCampDay(campInstanceId: string) {
     await supabase.from('service_plan_blocks').insert(blockRows);
   }
 
+  // El cobro se ajusta con el día (Marcelo, sep-2026): el precio del asiento
+  // es por SERVICIO, así que se reparte por día y se le suma el día nuevo.
+  // Solo los asientos que ya tienen monto — si nunca se le puso precio, no se
+  // inventa uno. Queda la huella en la nota del asiento.
+  const priced = await repriceSeatsForDayCount(
+    supabase,
+    campInstanceId,
+    lastDayNumber,
+    nextDayNumber,
+    `Día ${nextDayNumber} agregado`,
+  );
+
   revalidatePath(`/camps/${campInstanceId}`);
   revalidatePath('/camps');
-  return { ok: true as const, dayNumber: nextDayNumber, date: nextDate };
+  return { ok: true as const, dayNumber: nextDayNumber, date: nextDate, repriced: priced };
+}
+
+/**
+ * Reparte el precio del asiento por día y lo lleva al número de días nuevo.
+ * Un asiento sin monto se deja intacto: no se inventa un precio.
+ */
+async function repriceSeatsForDayCount(
+  supabase: any,
+  campInstanceId: string,
+  fromDays: number,
+  toDays: number,
+  reason: string,
+): Promise<{ seats: number; deltaCents: number }> {
+  if (fromDays <= 0 || toDays <= 0 || fromDays === toDays) return { seats: 0, deltaCents: 0 };
+  const { data: seats } = await supabase
+    .from('camp_participants')
+    .select('id, amount_cents, list_price_cents, notes')
+    .eq('camp_instance_id', campInstanceId)
+    .eq('enrollment_status', 'active');
+  let touched = 0;
+  let delta = 0;
+  for (const seat of seats ?? []) {
+    const amount = seat.amount_cents as number | null;
+    if (amount == null || amount === 0) continue;
+    const next = Math.round((amount / fromDays) * toDays);
+    if (next === amount) continue;
+    const list = seat.list_price_cents as number | null;
+    const nextList = list != null && list > 0 ? Math.round((list / fromDays) * toDays) : list;
+    const note = `${reason} — cobro ${(amount / 100).toFixed(2)} → ${(next / 100).toFixed(2)}`;
+    const { error } = await supabase
+      .from('camp_participants')
+      .update({
+        amount_cents: next,
+        ...(nextList !== list ? { list_price_cents: nextList } : {}),
+        notes: [seat.notes as string | null, note].filter(Boolean).join(' · '),
+      })
+      .eq('id', seat.id);
+    if (!error) {
+      touched += 1;
+      delta += next - amount;
+    }
+  }
+  return { seats: touched, deltaCents: delta };
 }
 
 /**
@@ -216,9 +271,18 @@ export async function removeLastCampDay(campInstanceId: string) {
     await supabase.from('camp_instances').update({ end_date: newLastDate }).eq('id', campInstanceId);
   }
 
+  // Se deshace también el cobro: vuelve al precio de los días que quedan.
+  const priced = await repriceSeatsForDayCount(
+    supabase,
+    campInstanceId,
+    all.length,
+    all.length - 1,
+    `Día ${last.day_number} quitado`,
+  );
+
   revalidatePath(`/camps/${campInstanceId}`);
   revalidatePath('/camps');
-  return { ok: true as const };
+  return { ok: true as const, repriced: priced };
 }
 
 // Only the platform admin may edit/deactivate GLOBAL templates (academy_id
