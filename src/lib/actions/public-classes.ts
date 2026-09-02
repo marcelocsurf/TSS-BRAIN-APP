@@ -256,7 +256,7 @@ export async function publicEnroll(input: {
       .select('id, first_name, waiver_signed, date_of_birth')
       .eq('academy_id', academy.id)
       .eq('status', 'active')
-      .ilike('email', email);
+      .eq('email', email);
     if (input.studentId) existingQ = existingQ.eq('id', input.studentId);
     const { data } = await existingQ
       .order('date_of_birth', { ascending: true, nullsFirst: false })
@@ -453,7 +453,7 @@ export async function publicAddCompanion(input: {
     .from('students')
     .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by, date_of_birth, languages')
     .eq('academy_id', academy.id)
-    .ilike('email', norm(input.bookerEmail))
+    .eq('email', norm(input.bookerEmail))
     .limit(1)
     .maybeSingle();
   if (!booker) return { ok: false, error: 'Start by booking your own spot first.' };

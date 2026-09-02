@@ -14,6 +14,7 @@ export function CourseFinalQuiz({ courseKey, portalToken, label, locked = false 
   const [started, setStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([getFinalQuiz(courseKey), getFinalQuizResult(portalToken, courseKey)]).then(([q, r]) => {
@@ -44,6 +45,13 @@ export function CourseFinalQuiz({ courseKey, portalToken, label, locked = false 
   const submit = async () => {
     setSubmitting(true);
     const res = await submitFinalQuiz(portalToken, courseKey, answers);
+    // ok:false o total 0 NO es un examen reprobado: es que no se pudo leer o
+    // la sesión dejó de resolver. Nunca se pinta como nota.
+    if (!res || !res.ok || !res.total) {
+      setSubmitting(false);
+      setLoadError('Could not submit right now. Check your connection and try again.');
+      return;
+    }
     setResult(res);
     setLastResult({ score: res.score, total: res.total, passed: res.passed });
     setSubmitting(false);
@@ -124,6 +132,7 @@ export function CourseFinalQuiz({ courseKey, portalToken, label, locked = false 
       >
         {submitting ? 'Grading…' : allAnswered ? 'Submit final quiz' : `Answer all ${questions.length} to submit`}
       </button>
+      {loadError && <p className="mt-2 text-xs text-center text-red-300">{loadError}</p>}
     </div>
   );
 }

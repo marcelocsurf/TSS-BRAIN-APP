@@ -135,7 +135,7 @@ export async function createLeadFromQuiz(input: {
         .eq('status', 'active')
         .limit(50);
       // ilike sin comodines = igualdad sin distinguir mayúsculas.
-      q = col === 'email' ? q.ilike('email', value) : q.eq('phone', value);
+      q = col === 'email' ? q.eq('email', value) : q.eq('phone', value);
       if (academyId) q = q.eq('academy_id', academyId);
       const { data } = await q;
       candidates.push(...((data ?? []) as typeof candidates));

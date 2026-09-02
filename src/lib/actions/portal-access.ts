@@ -27,7 +27,7 @@ export async function requestPortalLink(rawEmail: string): Promise<{ ok: true }>
     const { data: students } = await admin
       .from('students')
       .select('id, first_name, portal_token, status, email')
-      .ilike('email', email)
+      .eq('email', email)
       .limit(10);
 
     const active = (students ?? []).filter(

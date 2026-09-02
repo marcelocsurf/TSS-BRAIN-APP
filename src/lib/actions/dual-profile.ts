@@ -1,4 +1,7 @@
-'use server';
+// Sin 'use server' a propósito: solo lo usan dos server components, y como
+// action era un endpoint público que devolvía un token de portal (credencial)
+// a cualquiera que mandara un id.
+import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 

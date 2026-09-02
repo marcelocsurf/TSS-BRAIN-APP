@@ -107,12 +107,12 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   } else {
     const first = input.firstName?.trim();
     if (!first) return { ok: false, error: 'Add the client name.' };
-    const email = input.email?.trim() || null;
+    const email = input.email?.trim().toLowerCase() || null;
     const phone = input.phone?.trim() || null;
     if (!email && !phone) return { ok: false, error: 'Add an email or phone to reach the client.' };
     // Reuse an existing record with the same email instead of duplicating.
     if (email) {
-      const { data: dup } = await admin.from('students').select('id, first_name, last_name').eq('academy_id', coach.academy_id).ilike('email', email).maybeSingle();
+      const { data: dup } = await admin.from('students').select('id, first_name, last_name').eq('academy_id', coach.academy_id).eq('email', email).maybeSingle();
       if (dup) { studentId = dup.id; studentName = [dup.first_name, dup.last_name].filter(Boolean).join(' '); }
     }
     if (!studentId) {

@@ -91,7 +91,11 @@ async function canManage(academyId: string, portalToken?: string | null): Promis
   return { ok: true, id: me?.id ?? null };
 }
 
-export async function listBoards(academyId: string): Promise<Board[]> {
+export async function listBoards(academyId: string, portalToken?: string | null): Promise<Board[]> {
+  // Era el único export del archivo sin guardia: devolvía el inventario
+  // completo de cualquier academia a quien mandara su id.
+  const g = await canManage(academyId, portalToken);
+  if (!g.ok) return [];
   const admin = createAdminClient();
   const { data } = await admin
     .from('boards')

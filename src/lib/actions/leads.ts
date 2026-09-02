@@ -117,7 +117,7 @@ export async function createLead(input: CreateLeadInput): Promise<CreateLeadResu
       first_name: input.first_name.trim(),
       last_name: input.last_name.trim(),
       phone: input.phone?.trim() || null,
-      email: input.email?.trim() || null,
+      email: input.email?.trim().toLowerCase() || null,
       academy_id: academyId,
       portal_token: portalToken,
       lifecycle_status: 'lead',

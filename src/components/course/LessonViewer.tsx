@@ -54,12 +54,20 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
 
   useEffect(() => {
     let mounted = true;
-    getLessonDetail(lessonId, portalToken).then((res) => {
-      if (mounted) {
-        setData(res);
-        setLoading(false);
-      }
-    });
+    getLessonDetail(lessonId, portalToken)
+      .then((res) => {
+        if (mounted) {
+          setData(res);
+          setLoading(false);
+        }
+      })
+      // Si la lectura falla, se muestra el aviso — no se queda girando.
+      .catch(() => {
+        if (mounted) {
+          setData(null);
+          setLoading(false);
+        }
+      });
     return () => {
       mounted = false;
     };
@@ -85,17 +93,6 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
         <p className="text-gray-500 text-sm">This lesson is not available.</p>
         <button type="button" onClick={onBack} className="text-xs font-semibold text-[var(--tss-cyan,#5AC3E7)]">
           ← Back to the course
-        </button>
-      </div>
-    );
-  }
-
-  if (!data || !data.lesson) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600">Lesson not found</p>
-        <button onClick={onBack} className="mt-4 text-sm underline">
-          ← Back to course
         </button>
       </div>
     );

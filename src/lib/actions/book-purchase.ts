@@ -43,7 +43,7 @@ export async function grantBookAccess(input: {
   const { data: candidates } = await admin
     .from('students')
     .select('id, portal_token, first_name, status')
-    .ilike('email', email)
+    .eq('email', email)
     .order('created_at', { ascending: false })
     .limit(5);
   let student = (candidates ?? []).find((s: any) => s.status === 'active') ?? (candidates ?? [])[0] ?? null;

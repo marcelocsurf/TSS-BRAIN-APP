@@ -1,6 +1,8 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentCoach } from '@/lib/actions/auth';
+import { checkCoachAccessToStudent } from '@/lib/actions/students';
 import { revalidatePath } from 'next/cache';
 import {
   LEVEL_REQUIREMENTS,
@@ -27,9 +29,18 @@ export interface WaterTestRow {
   tested_at: string;
 }
 
+/** Solo el equipo con acceso a ese alumno. Antes no verificaba nada. */
+async function guardStudent(studentId: string): Promise<boolean> {
+  const me = await getCurrentCoach().catch(() => null);
+  if (!me) return false;
+  const access = await checkCoachAccessToStudent(studentId).catch(() => null);
+  return access === 'allowed';
+}
+
 export async function getWaterTests(
   studentId: string
 ): Promise<{ ok: true; rows: WaterTestRow[] } | { ok: false; error: string }> {
+  if (!(await guardStudent(studentId))) return { ok: false, error: 'No autorizado.' };
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('water_tests')
@@ -52,6 +63,7 @@ export async function recordWaterTest(input: {
   notes?: string | null;
   coachId?: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!(await guardStudent(input.studentId))) return { ok: false, error: 'No autorizado.' };
   const admin = createAdminClient();
   const { error } = await admin.from('water_tests').insert({
     student_id: input.studentId,

@@ -60,7 +60,7 @@ export function BoardInventoryManager({ academyId, portalToken }: { academyId: s
 
   const reload = async () => {
     try {
-      const [b, r] = await Promise.all([listBoards(academyId), listRentals(academyId, portalToken)]);
+      const [b, r] = await Promise.all([listBoards(academyId, portalToken), listRentals(academyId, portalToken)]);
       setBoards(b);
       setRentals(r);
     } catch (e: any) {

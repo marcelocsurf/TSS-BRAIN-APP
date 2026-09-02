@@ -265,7 +265,7 @@ export async function createStudent(input: CreateStudentInput) {
       date_of_birth: input.date_of_birth,
 
       // Contact
-      email: input.email?.trim() || null,
+      email: input.email?.trim().toLowerCase() || null,
       phone: input.phone?.trim() || null,
       age: input.age || null,
       gender: input.gender || null,

@@ -15,7 +15,8 @@
 //
 // Uses Node crypto scrypt — no external bcrypt dep.
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { rateLimitOk, clientIp } from '@/lib/rate-limit';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -92,6 +93,12 @@ export async function setStudentPin(portalToken: string, pin: string): Promise<v
 export async function loginStudentByPin(pin: string): Promise<{ portalToken: string }> {
   if (!/^\d{4,6}$/.test(pin)) {
     throw new Error('PIN must be 4 to 6 digits.');
+  }
+  // Un PIN de 4 dígitos contra TODOS los alumnos se agota en 10.000 intentos y
+  // devuelve un token de portal. El freno por IP no lo vuelve seguro, pero
+  // convierte segundos en semanas mientras se decide el segundo identificador.
+  if (!rateLimitOk(`pin:${clientIp(await headers())}`, 5, 15 * 60 * 1000)) {
+    throw new Error('Too many attempts. Try again in a few minutes.');
   }
   const admin = createAdminClient();
 
