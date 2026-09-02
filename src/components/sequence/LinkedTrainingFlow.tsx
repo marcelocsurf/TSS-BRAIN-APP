@@ -12,6 +12,7 @@
 // profundidad pedagógica (criterios → coach valida → My Sequence).
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   getDrillMissionForTraining,
   saveLinkedTrainingSession,
@@ -64,6 +65,9 @@ export function LinkedTrainingFlow({
   onClearIncoming,
   onReturnToSequence,
 }: Props) {
+  // Home/Course leen datos del servidor: sin refresh, las horas y los
+  // drills practicados quedaban viejos hasta recargar (bug 2026-09-01).
+  const router = useRouter();
   const [drill, setDrill] = useState<DrillMissionRow | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -385,6 +389,7 @@ export function LinkedTrainingFlow({
       if (res.ok) {
         getWeeklyPracticeCount(studentId).then(setWeekCount).catch(() => {});
         setPhase('done');
+        router.refresh();
       } else {
         setErrorMsg(res.error || 'Failed to save session');
       }

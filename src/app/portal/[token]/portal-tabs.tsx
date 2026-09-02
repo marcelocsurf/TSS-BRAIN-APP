@@ -321,6 +321,9 @@ export function PortalTabs({
   initialDrillId?: string | null;
   initialStepId?: string | null;
 }) {
+  // Al terminar una Custom Session el Home debe re-leer del servidor
+  // (horas, sesiones) — sin esto quedaba viejo hasta recargar.
+  const portalRouter = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
   // El paso que hay que abrir en Let's Play. Arranca con el del deep-link y
   // también lo setea el Home al tocar "tu próximo movimiento": mandar al
@@ -528,7 +531,7 @@ export function PortalTabs({
             <CustomSessionFlow
               studentId={student.id}
               onCancel={() => setShowCustomSession(false)}
-              onDone={() => setShowCustomSession(false)}
+              onDone={() => { setShowCustomSession(false); portalRouter.refresh(); }}
             />
           ) : !data.hasAnyCourse ? (
             // Los drills vienen EN EL PAQUETE con el curso. Inscribirse a un

@@ -494,7 +494,7 @@ export async function saveLinkedTrainingSession(
   // Get drill_mission to extract step_id
   const { data: drillMission } = await admin
     .from('drills_missions')
-    .select('step_id')
+    .select('step_id, title')
     .eq('id', drillMissionId)
     .single();
 
@@ -509,6 +509,13 @@ export async function saveLinkedTrainingSession(
       student_id: studentId,
       linked_drill_mission_id: drillMissionId,
       linked_step_id: drillMission.step_id,
+      // El NOMBRE del drill viaja con la sesión (bug 2026-09-01: se guardaba
+      // solo el id → Home "drills practiced", bitácora y planner del coach
+      // mostraban "Misión" genérica o nada). kind explícito por si el
+      // default de la tabla cambia.
+      drill_name: drillMission.title ?? null,
+      kind: 'drill',
+      session_date: new Date().toISOString().slice(0, 10),
       intention_text: data.intention_text,
       planned_duration_minutes: data.planned_duration_minutes,
       planned_reps: data.planned_reps,

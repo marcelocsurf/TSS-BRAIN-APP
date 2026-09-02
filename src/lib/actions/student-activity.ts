@@ -96,7 +96,7 @@ export async function getStudentActivitySummary(
       ...selfVisible.map((s: any) => ({
         kind: (s.kind === 'free_surf' ? 'free_surf' : 'mission') as 'free_surf' | 'mission',
         date: s.created_at,
-        title: s.kind === 'free_surf' ? 'Free surf' : (s.drill_name || 'Misión'),
+        title: s.kind === 'free_surf' ? 'Free surf' : (s.drill_name || s.intention_text || 'Misión'),
         detail: s.kind === 'free_surf'
           ? `${s.total_water_minutes || s.duration_minutes || 0} min de agua`
           : [
