@@ -323,7 +323,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           </span>
         </div>
         <p className="text-xs text-white/70 mb-3">
-          Welcome, {data.studentName}. Your structured path to mastery starts here.
+          Welcome, {data.studentName}. THINK it here, in the lessons. FEEL it in the drills. DO it in the missions.
         </p>
         <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
           <div
