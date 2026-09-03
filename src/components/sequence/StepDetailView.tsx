@@ -165,7 +165,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                   {s.duration_minutes ? `${s.duration_minutes} min` : 'Duration not set'}
                   {s.execution_rating && ` · Rated ${s.execution_rating}/5`}
                   {s.mission_completion && ` · ${COMPLETION_LABEL_EN[s.mission_completion] ?? s.mission_completion}`}
-                  {s.automaticity && ` · ${({ yes: 'Ran it without thinking', almost: 'Almost automatic', not_yet: 'Still thinking it through' } as Record<string, string>)[s.automaticity] ?? s.automaticity}`}
+                  {s.automaticity && ` · ${({ yes: 'Ready for the water', almost: 'Almost ready', not_yet: 'Stayed in the drill' } as Record<string, string>)[s.automaticity] ?? s.automaticity}`}
                 </div>
                 {Array.isArray(s.criteria_evaluation) && s.criteria_evaluation.length > 0 && (
                   <div className="mt-1 space-y-0.5">

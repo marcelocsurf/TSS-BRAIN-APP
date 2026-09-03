@@ -106,7 +106,7 @@ export async function getStudentActivitySummary(
                 : null,
               s.execution_rating ? `${s.execution_rating}★` : null,
               s.automaticity
-                ? ({ yes: 'drill: lo corre sin pensar', almost: 'drill: casi automático', not_yet: 'drill: todavía lo piensa' } as Record<string, string>)[s.automaticity] ?? null
+                ? ({ yes: 'drill: listo para la misión', almost: 'drill: casi listo', not_yet: 'drill: sigue practicando' } as Record<string, string>)[s.automaticity] ?? null
                 : null,
               (() => { const w = pickWeakestCriterion(s.criteria_evaluation); return w && w.result !== 'met' ? `trabajar: ${w.criterion_text}` : null; })(),
             ].filter(Boolean).join(' · ') || null,

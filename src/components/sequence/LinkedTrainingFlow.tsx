@@ -457,20 +457,21 @@ export function LinkedTrainingFlow({
       <Shell drill={drill} onCancel={onClearIncoming} step={3}>
         <div>
           <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
-          <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Does it run on its own yet?'}</h3>
+          <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'Did you do what you planned?' : 'Ready to take it to the water?'}</h3>
           <p className="text-[12.5px] text-gray-500 mt-1">
             {isMission
               ? 'Honesty here is what makes you progress.'
-              : 'A drill is practice, not a test. One honest answer: could you run it without thinking?'}
+              : 'A drill is practice, not a test. One honest answer.'}
           </p>
         </div>
 
         {!isMission && (
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
+            {/* Marcelo (2026-09-03): el drill existe para llevarte a la misión.
+                La única pregunta es esa. Sin "casi": o vas al agua o seguís. */}
             {([
-              { key: 'yes', label: 'Without thinking', sub: 'Ready for the mission', bg: GREEN, fg: INK },
-              { key: 'almost', label: 'Almost', sub: 'A couple more rounds', bg: GOLD, fg: '#5b4300' },
-              { key: 'not_yet', label: 'Still thinking', sub: 'Stay in the drill', bg: '#FF6B6B', fg: '#fff' },
+              { key: 'yes', label: 'Yes, ready', sub: 'Take it to the mission', bg: GREEN, fg: INK },
+              { key: 'not_yet', label: 'Not yet', sub: 'Stay in the drill', bg: '#FF6B6B', fg: '#fff' },
             ] as const).map((o) => {
               const sel = automaticity === o.key;
               return (
@@ -488,7 +489,7 @@ export function LinkedTrainingFlow({
         {isMission && (
           <div className="grid grid-cols-3 gap-1.5">
             {([
-              { key: 'yes', label: 'It worked', sub: 'The whole move', bg: GREEN, fg: INK },
+              { key: 'yes', label: 'Done', sub: 'What you planned', bg: GREEN, fg: INK },
               { key: 'partial', label: 'Partly', sub: 'Some of it', bg: GOLD, fg: '#5b4300' },
               { key: 'no', label: 'Not yet', sub: 'Keep at it', bg: '#FF6B6B', fg: '#fff' },
             ] as const).map((o) => {
@@ -507,7 +508,7 @@ export function LinkedTrainingFlow({
 
         {isMission && successCriteria.length > 0 && (
           <div>
-            <p className="text-[9px] text-gray-400 mb-0.5" style={F_M}>Which part? (optional)</p>
+            <p className="text-[9px] text-gray-400 mb-0.5" style={F_M}>Technique · which detail? (optional)</p>
             <p className="text-[11px] text-gray-500 mb-2">Mark only what you want. A weak one becomes your next objective; mark nothing and you keep working the whole move.</p>
             <div className="space-y-2">
               {successCriteria.map((text, i) => (
@@ -635,10 +636,8 @@ export function LinkedTrainingFlow({
     const doneWeakest = isMission ? pickWeakestCriterion(doneEvals) : null;
     const metN = doneEvals.filter((c) => c.result === 'met').length;
     const autoCopy = automaticity === 'yes'
-      ? { t: 'Runs without thinking', s: 'You are ready to take it to the mission.' }
-      : automaticity === 'almost'
-        ? { t: 'Almost there', s: 'A couple more rounds and it will run on its own.' }
-        : { t: 'Stay in the drill', s: 'That is the plan. Build it on land until it runs without thinking.' };
+      ? { t: 'Ready for the water', s: 'Open the mission from this step when you go.' }
+      : { t: 'Stay in the drill', s: 'Practice counts. Take it to the water when it feels ready.' };
     return (
       <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
         <div className="bg-white rounded-2xl p-7 text-center shadow-sm space-y-4">
@@ -664,7 +663,7 @@ export function LinkedTrainingFlow({
           )}
 
           {!isMission && (
-            <div className="rounded-xl p-4 text-left" style={{ background: automaticity === 'yes' ? 'rgba(6,214,160,.12)' : automaticity === 'almost' ? 'rgba(255,209,102,.16)' : 'rgba(255,107,107,.12)' }}>
+            <div className="rounded-xl p-4 text-left" style={{ background: automaticity === 'yes' ? 'rgba(6,214,160,.12)' : 'rgba(255,107,107,.12)' }}>
               <p className="text-[14px] font-bold" style={{ color: INK }}>{autoCopy.t}</p>
               <p className="text-[12px] text-gray-600 mt-0.5">{autoCopy.s}</p>
             </div>
@@ -681,8 +680,8 @@ export function LinkedTrainingFlow({
               <span className="font-bold">{focusRating}/3</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Did it work</span>
-              <span className="font-bold" style={{ color: INK }}>{outcome === 'yes' ? 'It worked' : outcome === 'partial' ? 'Partly' : 'Not yet'}</span>
+              <span className="text-gray-500">What you planned</span>
+              <span className="font-bold" style={{ color: INK }}>{outcome === 'yes' ? 'Done' : outcome === 'partial' ? 'Partly' : 'Not yet'}</span>
             </div>
             {doneEvals.length > 0 && (
               <div className="pt-1 space-y-1">
