@@ -105,6 +105,9 @@ export async function getStudentActivitySummary(
                 ? `misión ${({ yes: 'lograda', partial: 'a medias', no: 'no lograda' } as Record<string, string>)[s.mission_completion] ?? s.mission_completion}`
                 : null,
               s.execution_rating ? `${s.execution_rating}★` : null,
+              s.automaticity
+                ? ({ yes: 'drill: lo corre sin pensar', almost: 'drill: casi automático', not_yet: 'drill: todavía lo piensa' } as Record<string, string>)[s.automaticity] ?? null
+                : null,
               (() => { const w = pickWeakestCriterion(s.criteria_evaluation); return w && w.result !== 'met' ? `trabajar: ${w.criterion_text}` : null; })(),
             ].filter(Boolean).join(' · ') || null,
         minutes: s.kind === 'free_surf' ? (s.total_water_minutes || s.duration_minutes || 0) : (s.duration_minutes || 0),

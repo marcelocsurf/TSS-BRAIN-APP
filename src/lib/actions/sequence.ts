@@ -410,7 +410,7 @@ export async function getStepDetail(portalToken: string, stepId: string) {
   // Get session history for this step
   const { data: sessions } = await admin
     .from('self_training_sessions')
-    .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes, linked_drill_mission_id, criteria_evaluation')
+    .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes, linked_drill_mission_id, criteria_evaluation, automaticity')
     .eq('student_id', studentId)
     .eq('linked_step_id', stepId)
     .order('created_at', { ascending: false })
@@ -515,6 +515,8 @@ export async function saveLinkedTrainingSession(
     criteria_evaluation?: CriterionEvaluation[];
     warm_up?: string;             // chip elegido en READY (antes se perdía)
     mental_hack?: string;         // ancla mental elegida en READY (antes se perdía)
+    /** Solo DRILLS: ¿lo corriste sin pensar? La compuerta de la lección. */
+    automaticity?: 'yes' | 'almost' | 'not_yet';
   }
 ) {
   // Validación en la acción: token + admin client saltan RLS, así que la
@@ -526,6 +528,9 @@ export async function saveLinkedTrainingSession(
   if (!inRange(data.flow_channel, 1, 5)) return { ok: false as const, error: 'Flow channel out of range' };
   if (data.mission_completion !== undefined && !['yes', 'partial', 'no'].includes(data.mission_completion)) {
     return { ok: false as const, error: 'Invalid completion value' };
+  }
+  if (data.automaticity !== undefined && !['yes', 'almost', 'not_yet'].includes(data.automaticity)) {
+    return { ok: false as const, error: 'Invalid automaticity value' };
   }
   if (data.criteria_evaluation !== undefined) {
     const valid = Array.isArray(data.criteria_evaluation) && data.criteria_evaluation.length <= 20 && data.criteria_evaluation.every(
@@ -547,7 +552,7 @@ export async function saveLinkedTrainingSession(
   // texto de cada criterio se toma de la tarjeta, nunca del cliente).
   const { data: drillMission } = await admin
     .from('drills_missions')
-    .select('step_id, title, success_criteria')
+    .select('step_id, title, type, success_criteria')
     .eq('id', drillMissionId)
     .single();
 
@@ -555,13 +560,22 @@ export async function saveLinkedTrainingSession(
     return { ok: false, error: 'Drill/mission not found' };
   }
 
+  // Decisión 2026-09-02: el examen es la MISIÓN. El drill no lleva criterios,
+  // estrella ni flow; la misión no lleva la pregunta del drill. La compuerta
+  // es acá, no en el cliente (un bundle viejo sigue mandando la forma anterior).
+  const isMission = (drillMission as any).type === 'mission';
+  const executionRating = isMission ? data.execution_rating : undefined;
+  const flowChannel = isMission ? data.flow_channel : undefined;
+  const automaticity = isMission ? undefined : data.automaticity;
+  const focusRating = isMission ? data.focus_rating : undefined;
+
   // criteria_evaluation se reconstruye desde la tarjeta: índice válido,
   // texto de la tarjeta, un resultado por índice. Y mission_completion se
   // deriva acá (misma regla que el cliente) para que nunca se contradigan.
   const cardCriteria: string[] = Array.isArray(drillMission.success_criteria) ? drillMission.success_criteria : [];
   let criteriaClean: CriterionEvaluation[] | null = null;
-  let completion = data.mission_completion;
-  if (data.criteria_evaluation !== undefined) {
+  let completion = isMission ? data.mission_completion : undefined;
+  if (isMission && data.criteria_evaluation !== undefined) {
     const byIndex = new Map<number, CriterionResult>();
     for (const c of data.criteria_evaluation) {
       if (c.criterion_index < 0 || c.criterion_index >= cardCriteria.length) return { ok: false as const, error: 'Criterion index out of range' };
@@ -570,7 +584,9 @@ export async function saveLinkedTrainingSession(
     criteriaClean = Array.from(byIndex.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([i, result]) => ({ criterion_index: i, criterion_text: cardCriteria[i], result }));
-    if (criteriaClean.length > 0) {
+    // El veredicto general lo da el alumno ("¿salió?"). Los criterios son el
+    // detalle OPCIONAL: solo derivan el resultado cuando no dio el general.
+    if (!completion && criteriaClean.length > 0) {
       const met = criteriaClean.filter((c) => c.result === 'met').length;
       const partial = criteriaClean.filter((c) => c.result === 'partial').length;
       completion = met === cardCriteria.length ? 'yes' : met + partial > 0 ? 'partial' : 'no';
@@ -604,13 +620,14 @@ export async function saveLinkedTrainingSession(
       safety_check: data.safety_check,
       venue_notes: data.venue_notes,
       notes: data.notes,
-      focus_rating: data.focus_rating,
+      focus_rating: focusRating,
       mission_completion: completion,
-      execution_rating: data.execution_rating,
-      flow_channel: data.flow_channel ?? null,
+      execution_rating: executionRating,
+      flow_channel: flowChannel ?? null,
       criteria_evaluation: criteriaClean,
       warm_up: data.warm_up ?? null,
       mental_hack: data.mental_hack ?? null,
+      automaticity: automaticity ?? null,
       completed: true,
     })
     .select()
@@ -618,14 +635,15 @@ export async function saveLinkedTrainingSession(
 
   if (error) return { ok: false, error: error.message };
 
-  // If execution_rating provided, update student_step_ratings
-  if (data.execution_rating) {
+  // Solo la MISIÓN mueve la estrella del paso: practicar en la arena no es
+  // evidencia de que lo ejecutás en la ola.
+  if (isMission && executionRating) {
     await admin
       .from('student_step_ratings')
       .upsert({
         student_id: studentId,
         step_id: drillMission.step_id,
-        current_rating: data.execution_rating,
+        current_rating: executionRating,
         last_updated: new Date().toISOString(),
       }, { onConflict: 'student_id,step_id' });
   }
@@ -685,6 +703,9 @@ export async function getNextMove(
         .eq('student_id', studentId)
         .eq('linked_step_id', seq.weakestStepId)
         .eq('kind', 'drill')
+        // La última sesión que EVALUÓ criterios (la misión): un drill posterior
+        // no borra el detalle flojo del Home.
+        .not('criteria_evaluation', 'is', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -728,17 +749,38 @@ export async function getLastPracticeHint(
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return null;
     const admin = createAdminClient();
-    const { data } = await admin
-      .from('self_training_sessions')
-      .select('created_at, criteria_evaluation, mission_completion')
-      .eq('student_id', studentId)
-      .eq('linked_drill_mission_id', drillMissionId)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    // El examen es la misión. Si esta pieza es un DRILL, lo que quedó flojo
+    // viene de la última MISIÓN del mismo paso: la misión revela el detalle,
+    // el drill lo trabaja en tierra, la misión lo vuelve a probar.
+    const { data: piece } = await admin
+      .from('drills_missions')
+      .select('type, step_id')
+      .eq('id', drillMissionId)
       .maybeSingle();
+    let q = admin
+      .from('self_training_sessions')
+      .select('created_at, criteria_evaluation, mission_completion, linked_drill_mission_id')
+      .eq('student_id', studentId)
+      .not('criteria_evaluation', 'is', null);
+    if (piece?.type === 'drill' && piece.step_id) {
+      // Solo las MISIONES del paso: una sesión vieja de drill con criterios
+      // no es examen y no puede dictar el objetivo.
+      const { data: missions } = await admin
+        .from('drills_missions')
+        .select('id')
+        .eq('step_id', piece.step_id)
+        .eq('type', 'mission');
+      const ids = (missions ?? []).map((m: any) => m.id as string);
+      if (ids.length === 0) return null;
+      q = q.in('linked_drill_mission_id', ids);
+    } else {
+      q = q.eq('linked_drill_mission_id', drillMissionId);
+    }
+    const { data } = await q.order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (!data) return null;
     const weak = pickWeakestCriterion((data.criteria_evaluation ?? null) as CriterionEvaluationItem[] | null);
-    const text = weak && weak.result !== 'met' ? await currentCriterionText(admin, drillMissionId, weak.criterion_index, weak.criterion_text) : null;
+    const sourcePiece = (data as any).linked_drill_mission_id ?? drillMissionId;
+    const text = weak && weak.result !== 'met' ? await currentCriterionText(admin, sourcePiece, weak.criterion_index, weak.criterion_text) : null;
     return {
       date: data.created_at,
       weakest: weak && weak.result !== 'met' && text ? { text, result: weak.result } : null,

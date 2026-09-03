@@ -38,6 +38,7 @@
 
 import { useRef, useState } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
+import { StepDetailToggle } from '@/components/evaluation/StepDetailToggle';
 import {
   groupBySequence,
   sequenceVerdict,
@@ -56,6 +57,10 @@ export function SequenceEvaluation({
   ratings,
   onRate,
   compact = false,
+  studentId = null,
+  portalToken = null,
+  campInstanceId = null,
+  onFocusSaved,
 }: {
   rows: EvalRow[];
   /** step_id → estrellas oficiales (null = sin evaluar). */
@@ -63,6 +68,12 @@ export function SequenceEvaluation({
   /** Guarda una o varias notas de una sola vez. */
   onRate: (changes: { stepId: string; stars: number | null }[]) => void;
   compact?: boolean;
+  /** Con studentId, cada paso ofrece "Ver detalles": la evaluación por
+   *  criterio OPCIONAL del coach. Sin studentId, solo estrellas. */
+  studentId?: string | null;
+  portalToken?: string | null;
+  campInstanceId?: string | null;
+  onFocusSaved?: (stepId: string, focus: string | null) => void;
 }) {
   const { groups, orphans } = groupBySequence(rows);
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -172,7 +183,7 @@ export function SequenceEvaluation({
                   return (
                     <div
                       key={`${g.id}:${r.step_id}`}
-                      className="px-3 py-2 flex items-center justify-between gap-3"
+                      className="px-3 py-2 flex items-center justify-between gap-3 flex-wrap"
                       style={blocks ? { background: '#FFFBF0', boxShadow: 'inset 3px 0 0 #E0A62B' } : undefined}
                     >
                       <div className="min-w-0 flex-1">
@@ -208,6 +219,18 @@ export function SequenceEvaluation({
                         </button>
                       )}
                       </div>
+                      {/* Detalle opcional, ancho completo debajo de la estrella. */}
+                      {studentId && (
+                        <div className="basis-full">
+                          <StepDetailToggle
+                            studentId={studentId}
+                            stepId={r.step_id}
+                            portalToken={portalToken}
+                            campInstanceId={campInstanceId}
+                            onFocusSaved={(f) => onFocusSaved?.(r.step_id, f)}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}

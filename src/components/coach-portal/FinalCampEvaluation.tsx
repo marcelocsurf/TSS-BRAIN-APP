@@ -584,6 +584,9 @@ export function FinalCampEvaluation({
                         un camp es solo uno de los momentos en que se corre. */}
                     <SequenceEvaluation
                       rows={catalogRows}
+                      studentId={s.student_id}
+                      portalToken={token}
+                      campInstanceId={campInstanceId}
                       ratings={ratings[s.student_id] ?? {}}
                       onRate={(changes) =>
                         setRatings((prev) => {

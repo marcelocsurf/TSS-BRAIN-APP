@@ -100,6 +100,12 @@ export function LinkedTrainingFlow({
   const [flowChannel, setFlowChannel] = useState<number | null>(null);
   const [notesText, setNotesText] = useState('');
   const [weekCount, setWeekCount] = useState<number | null>(null);
+  // Drill: la única pregunta al cerrar. Es la compuerta de la lección:
+  // "quedate en el drill hasta que lo corras sin pensar".
+  const [automaticity, setAutomaticity] = useState<'yes' | 'almost' | 'not_yet' | null>(null);
+  // Misión: primero el veredicto general ("¿salió?"); el detalle por criterio
+  // es OPCIONAL. Marcelo: si no elige un detalle, sigue con el movimiento general.
+  const [outcome, setOutcome] = useState<'yes' | 'partial' | 'no' | null>(null);
   // Lo que quedó flojo la última vez con esta pieza → objetivo de hoy en un toque.
   const [lastHint, setLastHint] = useState<Awaited<ReturnType<typeof getLastPracticeHint>>>(null);
   const [objectiveOpen, setObjectiveOpen] = useState(false);
@@ -339,6 +345,9 @@ export function LinkedTrainingFlow({
                 </li>
               ))}
             </ul>
+            {isMission && (
+              <p className="text-[10.5px] text-gray-400 mt-2">Your coach confirms it when you train together.</p>
+            )}
             {drill.key_words && drill.key_words.length > 0 && (
               <p className="text-[10.5px] text-gray-400 mt-2 pt-2 border-t border-gray-100">
                 Keys: {drill.key_words.join(' · ')}
@@ -364,6 +373,7 @@ export function LinkedTrainingFlow({
 
         {/* El mantra vivo: tocá y respira con vos. Momento de marca, cero obligación. */}
         <BreathCard
+          kindLabel={isMission ? 'Mission' : 'Drill'}
           keyWords={drill.key_words && drill.key_words.length > 0 ? drill.key_words.join(' · ') : null}
           selected={mentalHack}
           onSelect={setMentalHack}
@@ -381,21 +391,22 @@ export function LinkedTrainingFlow({
 
   // ─── EVALUACIÓN (profundidad intacta, diseño v10) ───
   if (phase === 'evaluation') {
-    const allCriteriaEvaluated =
-      successCriteria.length === 0 || successCriteria.every((_, i) => criteriaResults[i] !== undefined);
-    const canSave = allCriteriaEvaluated && executionRating > 0 && flowChannel !== null && !saving;
+    // El examen es la misión: primero "¿salió?", el detalle es opcional.
+    // El drill solo responde si ya sale sin pensar.
+    const canSave = isMission
+      ? outcome !== null && executionRating > 0 && flowChannel !== null && !saving
+      : automaticity !== null && !saving;
 
     const handleSave = async () => {
       if (!canSave || !drill) return;
       setSaving(true);
       setErrorMsg('');
-      const criteria_evaluation: CriterionEvaluation[] = successCriteria.map((text, i) => ({
-        criterion_index: i, criterion_text: text, result: criteriaResults[i],
-      }));
-      const metCount = criteria_evaluation.filter((c) => c.result === 'met').length;
-      const partialCount = criteria_evaluation.filter((c) => c.result === 'partial').length;
-      const mission_completion: 'yes' | 'partial' | 'no' =
-        metCount === successCriteria.length ? 'yes' : metCount + partialCount > 0 ? 'partial' : 'no';
+      // Solo los criterios que el alumno decidió marcar. Ninguno también vale.
+      const marked: CriterionEvaluation[] = successCriteria
+        .map((text, i) => ({ criterion_index: i, criterion_text: text, result: criteriaResults[i] }))
+        .filter((c) => c.result !== undefined);
+      const criteria_evaluation: CriterionEvaluation[] | undefined = isMission && marked.length > 0 ? marked : undefined;
+      const mission_completion: 'yes' | 'partial' | 'no' | undefined = isMission ? (outcome ?? undefined) : undefined;
 
       let res: Awaited<ReturnType<typeof saveLinkedTrainingSession>>;
       try {
@@ -412,11 +423,14 @@ export function LinkedTrainingFlow({
         crowd_level: isMission ? crowdLevel || undefined : undefined,
         safety_check: allSafe,
         venue_notes: venueNotes || undefined,
-        focus_rating: focusRating,
+        focus_rating: isMission ? focusRating : undefined,
         mission_completion,
-        execution_rating: executionRating,
-        flow_channel: flowChannel ?? undefined,
+        // Solo la misión mueve la estrella del paso: practicar en la arena
+        // no es evidencia de que lo ejecutás en la ola.
+        execution_rating: isMission ? executionRating : undefined,
+        flow_channel: isMission ? (flowChannel ?? undefined) : undefined,
         criteria_evaluation,
+        automaticity: isMission ? undefined : (automaticity ?? undefined),
         notes: notesText || undefined,
         // Antes se elegían en READY y se perdían (bug): ahora viajan con la sesión.
         // 'skip' ("Already warm") es un centinela de UI, no un warm-up: no se guarda.
@@ -442,14 +456,59 @@ export function LinkedTrainingFlow({
     return (
       <Shell drill={drill} onCancel={onClearIncoming} step={3}>
         <div>
-          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation</p>
-          <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
-          <p className="text-[12.5px] text-gray-500 mt-1">Honesty here is what makes you progress. Your coach validates in person.</p>
+          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
+          <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Does it run on its own yet?'}</h3>
+          <p className="text-[12.5px] text-gray-500 mt-1">
+            {isMission
+              ? 'Honesty here is what makes you progress.'
+              : 'A drill is practice, not a test. One honest answer: could you run it without thinking?'}
+          </p>
         </div>
 
-        {successCriteria.length > 0 && (
+        {!isMission && (
+          <div className="grid grid-cols-3 gap-1.5">
+            {([
+              { key: 'yes', label: 'Without thinking', sub: 'Ready for the mission', bg: GREEN, fg: INK },
+              { key: 'almost', label: 'Almost', sub: 'A couple more rounds', bg: GOLD, fg: '#5b4300' },
+              { key: 'not_yet', label: 'Still thinking', sub: 'Stay in the drill', bg: '#FF6B6B', fg: '#fff' },
+            ] as const).map((o) => {
+              const sel = automaticity === o.key;
+              return (
+                <button key={o.key} onClick={() => setAutomaticity(o.key)}
+                  className="py-3 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 px-1"
+                  style={sel ? { background: o.bg, borderColor: o.bg, color: o.fg } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                  <span className="text-[12px] font-bold leading-tight text-center">{o.label}</span>
+                  <span className="text-[9px] leading-tight text-center opacity-80">{o.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {isMission && (
+          <div className="grid grid-cols-3 gap-1.5">
+            {([
+              { key: 'yes', label: 'It worked', sub: 'The whole move', bg: GREEN, fg: INK },
+              { key: 'partial', label: 'Partly', sub: 'Some of it', bg: GOLD, fg: '#5b4300' },
+              { key: 'no', label: 'Not yet', sub: 'Keep at it', bg: '#FF6B6B', fg: '#fff' },
+            ] as const).map((o) => {
+              const sel = outcome === o.key;
+              return (
+                <button key={o.key} onClick={() => setOutcome(o.key)}
+                  className="py-3 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 px-1"
+                  style={sel ? { background: o.bg, borderColor: o.bg, color: o.fg } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                  <span className="text-[12px] font-bold leading-tight text-center">{o.label}</span>
+                  <span className="text-[9px] leading-tight text-center opacity-80">{o.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {isMission && successCriteria.length > 0 && (
           <div>
-            <p className="text-[9px] text-gray-400 mb-2" style={F_M}>Success criteria — evaluate each one</p>
+            <p className="text-[9px] text-gray-400 mb-0.5" style={F_M}>Which part? (optional)</p>
+            <p className="text-[11px] text-gray-500 mb-2">Mark only what you want. A weak one becomes your next objective; mark nothing and you keep working the whole move.</p>
             <div className="space-y-2">
               {successCriteria.map((text, i) => (
                 <div key={i} className="border border-gray-200 rounded-xl p-3 bg-white">
@@ -476,7 +535,8 @@ export function LinkedTrainingFlow({
           </div>
         )}
 
-        <div>
+        {/* El foco solo se pregunta en la misión: el drill cierra con UNA pregunta. */}
+        {isMission && (<div>
           <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
           <div className="grid grid-cols-4 gap-1.5">
             {[0, 1, 2, 3].map((n) => {
@@ -492,8 +552,9 @@ export function LinkedTrainingFlow({
               );
             })}
           </div>
-        </div>
+        </div>)}
 
+        {isMission && (<>
         <div>
           <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Star size={11} className="inline mr-1 -mt-0.5" />Overall execution today</p>
           <p className="text-[11px] text-gray-500 mb-2">This updates your self-rating in My Sequence.</p>
@@ -538,6 +599,7 @@ export function LinkedTrainingFlow({
             })}
           </div>
         </div>
+        </>)}
 
         <div>
           <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Lightbulb size={11} className="inline mr-1 -mt-0.5" />What you learned (optional)</p>
@@ -551,11 +613,12 @@ export function LinkedTrainingFlow({
         <button onClick={handleSave} disabled={!canSave}
           className="w-full py-3.5 rounded-full text-[11px] transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 disabled:opacity-40"
           style={{ ...F_M, background: canSave ? CYAN : '#e5e7eb', color: INK, fontWeight: 700 }}>
-          {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> Save & update My Sequence</>}
+          {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> {isMission ? 'Save & update My Sequence' : 'Save practice'}</>}
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-gray-400 text-center">
-            {!allCriteriaEvaluated ? 'Evaluate every success criterion to continue'
+            {!isMission ? 'Answer the one question to save'
+              : outcome === null ? 'Say whether it worked to continue'
               : executionRating === 0 ? 'Pick an overall execution rating to continue'
               : flowChannel === null ? 'Rate how the challenge felt to continue' : ''}
           </p>
@@ -566,9 +629,16 @@ export function LinkedTrainingFlow({
 
   // ─── CIERRE + racha ───
   if (phase === 'done') {
-    const doneEvals = successCriteria.map((text, i) => ({ criterion_index: i, criterion_text: text, result: criteriaResults[i] }));
-    const doneWeakest = pickWeakestCriterion(doneEvals);
+    const doneEvals = isMission
+      ? successCriteria.map((text, i) => ({ criterion_index: i, criterion_text: text, result: criteriaResults[i] })).filter((c) => c.result !== undefined)
+      : [];
+    const doneWeakest = isMission ? pickWeakestCriterion(doneEvals) : null;
     const metN = doneEvals.filter((c) => c.result === 'met').length;
+    const autoCopy = automaticity === 'yes'
+      ? { t: 'Runs without thinking', s: 'You are ready to take it to the mission.' }
+      : automaticity === 'almost'
+        ? { t: 'Almost there', s: 'A couple more rounds and it will run on its own.' }
+        : { t: 'Stay in the drill', s: 'That is the plan. Build it on land until it runs without thinking.' };
     return (
       <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
         <div className="bg-white rounded-2xl p-7 text-center shadow-sm space-y-4">
@@ -593,6 +663,14 @@ export function LinkedTrainingFlow({
             </p>
           )}
 
+          {!isMission && (
+            <div className="rounded-xl p-4 text-left" style={{ background: automaticity === 'yes' ? 'rgba(6,214,160,.12)' : automaticity === 'almost' ? 'rgba(255,209,102,.16)' : 'rgba(255,107,107,.12)' }}>
+              <p className="text-[14px] font-bold" style={{ color: INK }}>{autoCopy.t}</p>
+              <p className="text-[12px] text-gray-600 mt-0.5">{autoCopy.s}</p>
+            </div>
+          )}
+
+          {isMission && (<>
           <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Execution rating</span>
@@ -602,11 +680,15 @@ export function LinkedTrainingFlow({
               <span className="text-gray-500">Focus level</span>
               <span className="font-bold">{focusRating}/3</span>
             </div>
-            {successCriteria.length > 0 && (
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Did it work</span>
+              <span className="font-bold" style={{ color: INK }}>{outcome === 'yes' ? 'It worked' : outcome === 'partial' ? 'Partly' : 'Not yet'}</span>
+            </div>
+            {doneEvals.length > 0 && (
               <div className="pt-1 space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Criteria met</span>
-                  <span className="font-bold">{metN} / {successCriteria.length}</span>
+                  <span className="text-gray-500">Parts you marked</span>
+                  <span className="font-bold">{metN} met / {doneEvals.length}</span>
                 </div>
                 {doneEvals.map((c) => {
                   const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X;
@@ -622,18 +704,24 @@ export function LinkedTrainingFlow({
             )}
           </div>
 
-          {doneWeakest && (
+          {doneWeakest ? (
             <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Work on this next</p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{doneWeakest.criterion_text}</p>
-              <p className="text-[11px] text-gray-500 mt-1">Next time you open this {isMission ? 'mission' : 'drill'}, it will already be today’s objective.</p>
+              <p className="text-[11px] text-gray-500 mt-1">Next time you open this step, it will already be today’s objective.</p>
             </div>
-          )}
+          ) : isMission && outcome !== 'yes' ? (
+            <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
+              <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Next time</p>
+              <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>Keep working the whole move. If one part stands out, mark it next time and it becomes your objective.</p>
+            </div>
+          ) : null}
 
           <div className="flex items-center justify-center gap-1.5 rounded-xl p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
             <Check size={13} strokeWidth={2} className="shrink-0" />
             <span>Your self-rating in <strong>My Sequence</strong> is now {executionRating}/5.</span>
           </div>
+          </>)}
 
           <div className="space-y-2 pt-1">
             <button onClick={onReturnToSequence} className="w-full py-3 rounded-full text-[11px]" style={{ ...F_M, background: INK, color: PAPER, fontWeight: 700 }}>
@@ -652,8 +740,10 @@ export function LinkedTrainingFlow({
 // ─── El mantra vivo: Breathe · Focus · Play ───
 // Tocás la tarjeta y el círculo respira con vos 15s (box breath 4·4·4 ×1 ciclo
 // visible + libre). No es un paso: es un momento. El que no quiere, no lo toca.
-function BreathCard({ keyWords, selected, onSelect }: {
+function BreathCard({ keyWords, selected, onSelect, kindLabel }: {
   keyWords: string | null;
+  /** 'Mission' o 'Drill': de qué son las key words. */
+  kindLabel: string;
   selected: string;
   onSelect: (v: string) => void;
 }) {
@@ -704,7 +794,7 @@ function BreathCard({ keyWords, selected, onSelect }: {
           style={selected === 'key_words'
             ? { background: INK, color: CYAN }
             : { background: '#fff', border: '1px solid #e5e7eb', color: '#6b7280' }}>
-          <Target size={12} className="shrink-0" /> {selected === 'key_words' ? '✓ ' : ''}Mission key words: {keyWords}
+          <Target size={12} className="shrink-0" /> {selected === 'key_words' ? '✓ ' : ''}{kindLabel} key words: {keyWords}
         </button>
       )}
     </div>

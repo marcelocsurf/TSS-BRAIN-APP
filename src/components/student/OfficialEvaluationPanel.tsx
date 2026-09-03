@@ -109,6 +109,8 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows }: Props) {
         }))}
         ratings={Object.fromEntries(local.map((r) => [r.step_id, r.coach_rating]))}
         onRate={(changes) => changes.forEach((c) => rate(c.stepId, c.stars))}
+        studentId={studentId}
+        onFocusSaved={(_stepId, f) => { if (f) setFocus(f); }}
       />
 
       {/* Cerrar la evaluación. Lo mismo que se pide al cerrar un camp: un

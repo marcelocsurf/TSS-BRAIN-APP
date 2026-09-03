@@ -115,7 +115,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
         )}
 
         <div className="mt-4 p-3 rounded-xl text-[11px] leading-snug" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
-          <strong>Be honest.</strong> Your rating reflects your real execution today. As you practice and improve, update it. When you train with your coach, they confirm it.
+          <strong>Be honest.</strong> Your rating reflects your real execution today. As you practice and improve, update it.
         </div>
       </div>
 
@@ -165,6 +165,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                   {s.duration_minutes ? `${s.duration_minutes} min` : 'Duration not set'}
                   {s.execution_rating && ` · Rated ${s.execution_rating}/5`}
                   {s.mission_completion && ` · ${COMPLETION_LABEL_EN[s.mission_completion] ?? s.mission_completion}`}
+                  {s.automaticity && ` · ${({ yes: 'Ran it without thinking', almost: 'Almost automatic', not_yet: 'Still thinking it through' } as Record<string, string>)[s.automaticity] ?? s.automaticity}`}
                 </div>
                 {Array.isArray(s.criteria_evaluation) && s.criteria_evaluation.length > 0 && (
                   <div className="mt-1 space-y-0.5">
@@ -286,6 +287,13 @@ function DrillOrMissionCard({
               </li>
             ))}
           </ul>
+          {/* Una sola vez, fija, y solo en la misión: la confirmación del coach
+              no es un criterio, y el drill no lo confirma nadie en el app. */}
+          {!isDrill && (
+            <p className="mt-2 text-[10.5px]" style={{ color: '#0a7c5d', opacity: .8 }}>
+              Your coach confirms it when you train together.
+            </p>
+          )}
         </div>
       )}
 
