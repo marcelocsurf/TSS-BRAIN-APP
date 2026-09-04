@@ -206,10 +206,13 @@ export type SaveSequenceSessionInput = {
   step_ratings?: Record<string, number>;
   /** Run: detalle opcional por paso marcado (criterios de la MISIÓN de ese paso). */
   step_criteria?: Record<string, { criterion_index: number; result: CriterionResultValue }[]>;
-  /** Foco: veredicto contra el plan, estrella del paso, detalle opcional. */
+  /** Foco: estrella del paso (obligatoria) + detalle opcional. El veredicto
+   *  ya no se pregunta: se deriva de la estrella. */
   mission_completion?: 'yes' | 'partial' | 'no';
   execution_rating?: number;
   criteria?: { criterion_index: number; result: CriterionResultValue }[];
+  /** "Go deeper · how it felt" (opcional, ambos modos). */
+  focus_rating?: number | null;
 };
 
 export type NextFocus = { stepId: string; stepTitle: string; criterionText: string | null } | null;
@@ -287,10 +290,13 @@ export async function saveSequenceSession(
       if (input.execution_rating != null && !isRating(input.execution_rating)) return { ok: false, error: 'Invalid rating.' };
       execution = input.execution_rating ?? null;
       focusCriteria = cleanCriteria(focus.mission, input.criteria);
-      if (!completion || !execution) return { ok: false, error: 'Say how it went and rate the step to save.' };
+      if (!execution) return { ok: false, error: 'Rate the step to save.' };
+      // El veredicto sale de la estrella: 4-5 logrado · 3 a medias · 1-2 no.
+      if (!completion) completion = execution >= 4 ? 'yes' : execution === 3 ? 'partial' : 'no';
     }
 
     const flow = input.flow_channel == null ? null : inRange(input.flow_channel, 1, 5) ? input.flow_channel : null;
+    const focusRating = input.focus_rating == null ? null : inRange(input.focus_rating, 0, 3) ? input.focus_rating : null;
     const clip = (s: string | undefined | null, n: number) => (typeof s === 'string' ? s.slice(0, n) : null);
 
     // ── Próximo foco: el eslabón más flojo, en orden de cadena ──
@@ -344,6 +350,7 @@ export async function saveSequenceSession(
         mission_completion: completion,
         execution_rating: execution,
         criteria_evaluation: focusCriteria,
+        focus_rating: focusRating,
         completed: true,
       })
       .select('id')

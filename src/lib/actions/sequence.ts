@@ -618,8 +618,8 @@ export async function saveLinkedTrainingSession(
   const focusRating = isMission ? data.focus_rating : undefined;
 
   // criteria_evaluation se reconstruye desde la tarjeta: índice válido,
-  // texto de la tarjeta, un resultado por índice. Y mission_completion se
-  // deriva acá (misma regla que el cliente) para que nunca se contradigan.
+  // texto de la tarjeta, un resultado por índice. Los criterios son el
+  // detalle OPCIONAL: no tocan el veredicto (ese sale de la estrella, abajo).
   const cardCriteria: string[] = Array.isArray(drillMission.success_criteria) ? drillMission.success_criteria : [];
   let criteriaClean: CriterionEvaluation[] | null = null;
   let completion = isMission ? data.mission_completion : undefined;
@@ -632,13 +632,14 @@ export async function saveLinkedTrainingSession(
     criteriaClean = Array.from(byIndex.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([i, result]) => ({ criterion_index: i, criterion_text: cardCriteria[i], result }));
-    // El veredicto general lo da el alumno ("¿salió?"). Los criterios son el
-    // detalle OPCIONAL: solo derivan el resultado cuando no dio el general.
-    if (!completion && criteriaClean.length > 0) {
-      const met = criteriaClean.filter((c) => c.result === 'met').length;
-      const partial = criteriaClean.filter((c) => c.result === 'partial').length;
-      completion = met === cardCriteria.length ? 'yes' : met + partial > 0 ? 'partial' : 'no';
-    }
+  }
+
+  // Marcelo (2026-09-04): el veredicto ya no se pregunta. Sale de la estrella
+  // (4-5 logrado · 3 a medias · 1-2 todavía no) para que la bitácora y el
+  // historial sigan leyendo mission_completion como antes.
+  if (isMission && !executionRating) return { ok: false as const, error: 'Rate the step to save.' };
+  if (isMission && !completion && executionRating) {
+    completion = executionRating >= 4 ? 'yes' : executionRating === 3 ? 'partial' : 'no';
   }
 
   // Insert training session
@@ -740,6 +741,9 @@ export async function getNextMove(
   /** El detalle más flojo de la última práctica de ese paso (evaluación por
    *  criterio): el "Work on this" baja del paso al detalle concreto. */
   detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
+  /** Lo que dejaste a medias hace poco y NO es el paso de arriba: para que
+   *  trabajar otra cosa no se pierda del Home. */
+  unfinished: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null;
 } | null> {
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
@@ -815,6 +819,43 @@ export async function getNextMove(
     } catch {
       detail = null;
     }
+    // Lo que quedó a medias hace poco (últimos 14 días, < 4★) y no es el
+    // paso de arriba. Orden del método primero; esto es la tercera línea.
+    let unfinished: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null = null;
+    try {
+      const admin = createAdminClient();
+      const since = new Date(Date.now() - 14 * 86400000).toISOString();
+      const { data: recent } = await admin
+        .from('self_training_sessions')
+        .select('created_at, linked_step_id, execution_rating')
+        .eq('student_id', studentId)
+        .eq('kind', 'drill')
+        .not('linked_step_id', 'is', null)
+        .not('execution_rating', 'is', null)
+        .neq('linked_step_id', stepId)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      // Solo la ÚLTIMA sesión de cada paso cuenta, y el paso tiene que seguir
+      // por debajo de la barra HOY (la del coach manda, si no la propia): un
+      // run de secuencia o el coach pueden haberlo subido sin dejar fila acá.
+      const byStep = new Map<string, { seq: (typeof data.sequences)[number]; item: SequenceItem }>();
+      for (const q of data.sequences) for (const i of q.items) if (!byStep.has(i.step_id)) byStep.set(i.step_id, { seq: q, item: i });
+      const seen = new Set<string>();
+      for (const r of (recent ?? []) as any[]) {
+        const sid = r.linked_step_id as string;
+        if (seen.has(sid)) continue;
+        seen.add(sid);
+        const hit = byStep.get(sid);
+        if (!hit) continue;
+        const current = hit.item.coach_rating ?? hit.item.rating ?? r.execution_rating;
+        if (current == null || current >= SEQUENCE_PASS_STARS) continue;
+        unfinished = { stepId: hit.item.step_id, stepTitle: hit.item.step_title, sequenceId: hit.seq.id, sequenceOrder: hit.seq.order, sequenceName: hit.seq.name, stars: current, date: r.created_at };
+        break;
+      }
+    } catch {
+      unfinished = null;
+    }
     return {
       sequenceId: seq.id,
       sequenceOrder: seq.order,
@@ -826,6 +867,7 @@ export async function getNextMove(
       source: useHeld ? 'held_back' : 'weakest',
       selfSequenceRating: seq.selfSequenceRating,
       detail,
+      unfinished,
     };
   } catch {
     // El Home no se cae por esto: es una ayuda, no el contenido.

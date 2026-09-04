@@ -20,7 +20,7 @@ import {
 } from '@/lib/actions/lets-play';
 import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } from '@/lib/actions/sequence';
 import { SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
-import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat } from 'lucide-react';
+import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
@@ -131,6 +131,44 @@ function FlowPicker({ flow, onChange }: { flow: number | null; onChange: (n: num
   );
 }
 
+// "Go deeper": cada nivel se abre solo si el alumno quiere. Cerrado = nada
+// que llenar. Marcelo (2026-09-04): una sola cosa obligatoria, las estrellas.
+function DeeperToggle({ open, onToggle, label, hint }: { open: boolean; onToggle: () => void; label: string; hint: string }) {
+  return (
+    <button type="button" aria-expanded={open} onClick={onToggle}
+      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left"
+      style={open ? { borderColor: INK, background: '#f7f9fa' } : { borderColor: '#d1d5db', borderStyle: 'dashed', background: '#fff' }}>
+      <span className="min-w-0">
+        <span className="block text-[12px] font-bold" style={{ color: INK }}>{label}</span>
+        <span className="block text-[10.5px] text-gray-500">{hint}</span>
+      </span>
+      {open ? <ChevronUp size={16} className="shrink-0 text-gray-500" /> : <ChevronDown size={16} className="shrink-0 text-gray-500" />}
+    </button>
+  );
+}
+
+function FocusPicker({ value, onChange }: { value: number | null; onChange: (n: number | null) => void }) {
+  const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
+  return (
+    <div>
+      <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice (optional)</p>
+      <div className="grid grid-cols-4 gap-1.5">
+        {[0, 1, 2, 3].map((n) => {
+          const sel = value === n;
+          return (
+            <button key={n} type="button" aria-pressed={sel} onClick={() => onChange(sel ? null : n)}
+              className="py-2.5 rounded-xl border-[1.5px] flex flex-col items-center gap-0.5"
+              style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+              <span className="text-base font-bold leading-none">{n}</span>
+              <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   portalToken: string;
   sequenceId: string;
@@ -166,8 +204,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [stepStars, setStepStars] = useState<Record<string, number>>({});
   const [stepCrit, setStepCrit] = useState<Record<string, Record<number, CriterionResult>>>({});
   // Evaluate · focus
-  const [outcome, setOutcome] = useState<'yes' | 'partial' | 'no' | null>(null);
   const [execStars, setExecStars] = useState<number | null>(null);
+  // "Go deeper": niveles cerrados por defecto.
+  const [deeper, setDeeper] = useState(false);
+  const [deepStep, setDeepStep] = useState<Record<string, boolean>>({});
+  const [deeperFeel, setDeeperFeel] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [focusRating, setFocusRating] = useState<number | null>(null);
   const [focusCrit, setFocusCrit] = useState<Record<number, CriterionResult>>({});
   const [seqStarsOptional, setSeqStarsOptional] = useState<number | null>(null);
   // Común
@@ -430,7 +473,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
   // ─── EVALUATE ───
   if (phase === 'evaluation') {
-    const canSave = isRun ? seqStars !== null && !saving : outcome !== null && execStars !== null && !saving;
+    // UNA sola cosa obligatoria: las estrellas. Todo lo demás es "go deeper".
+    const canSave = isRun ? seqStars !== null && !saving : execStars !== null && !saving;
 
     const handleSave = async () => {
       setSaving(true);
@@ -463,7 +507,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           held_back_step_ids: isRun ? heldIds : undefined,
           step_ratings: isRun ? stepRatings : undefined,
           step_criteria: isRun ? stepCriteria : undefined,
-          mission_completion: !isRun ? outcome ?? undefined : undefined,
+          focus_rating: focusRating ?? undefined,
           execution_rating: !isRun ? execStars ?? undefined : undefined,
           criteria: !isRun ? Object.entries(focusCrit).map(([i, r]) => ({ criterion_index: Number(i), result: r })) : undefined,
         });
@@ -484,14 +528,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           <>
             <div>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation</p>
-              <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did the sequence run?</h3>
-              <p className="text-[12.5px] text-gray-500 mt-1">One star for the whole chain. Honesty here is what makes you progress.</p>
+              <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
+              <p className="text-[12.5px] text-gray-500 mt-1">One star rating for the whole chain. That is all you need to save.</p>
               <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
             </div>
 
+            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Go deeper" hint="Which step held it back? Tap it — the earliest one in the chain becomes your next focus." />
+            {deeper && (
             <div>
-              <p className="text-[9px] text-gray-400 mb-1" style={F_M}>Which step held it back? (optional)</p>
-              <p className="text-[11px] text-gray-500 mb-2">Tap the step. Rate it or mark a detail only if you want — the earliest one in the chain becomes your next focus.</p>
               <div className="space-y-1.5">
                 {steps.map((s, i) => {
                   const on = !!held[s.step_id];
@@ -507,6 +551,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                             // viejo viaja escondido en el guardado.
                             setStepStars((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
                             setStepCrit((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
+                            setDeepStep((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
                           }
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left">
@@ -524,10 +569,12 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                             <StarRating value={stepStars[s.step_id] ?? null} onChange={(n) => setStepStars((p) => ({ ...p, [s.step_id]: n }))} size="sm" />
                           </div>
                           {crit.length > 0 && (
-                            <div>
-                              <p className="text-[9px] text-gray-400 mb-1" style={F_M}>Technique · which detail? (optional)</p>
-                              <CriteriaGrid list={crit} value={stepCrit[s.step_id] ?? {}} onPick={(ci, r) => setStepCrit((p) => ({ ...p, [s.step_id]: { ...(p[s.step_id] ?? {}), [ci]: r } }))} />
-                            </div>
+                            <>
+                              <DeeperToggle open={!!deepStep[s.step_id]} onToggle={() => setDeepStep((p) => ({ ...p, [s.step_id]: !p[s.step_id] }))} label="Go deeper" hint="Technique · which detail? A weak one becomes your next objective." />
+                              {deepStep[s.step_id] && (
+                                <CriteriaGrid list={crit} value={stepCrit[s.step_id] ?? {}} onPick={(ci, r) => setStepCrit((p) => ({ ...p, [s.step_id]: { ...(p[s.step_id] ?? {}), [ci]: r } }))} />
+                              )}
+                            </>
                           )}
                         </div>
                       )}
@@ -536,64 +583,51 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                 })}
               </div>
             </div>
+            )}
           </>
         ) : focus ? (
           <>
             <div>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation · {focus.title}</p>
-              <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>Did you do what you planned?</h3>
-              <p className="text-[12.5px] text-gray-500 mt-1">{plannedReps} runs · {plannedDuration} min was the plan.</p>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {([
-                { key: 'yes', label: 'Done', sub: 'What you planned', bg: GREEN, fg: INK },
-                { key: 'partial', label: 'Partly', sub: 'Some of it', bg: GOLD, fg: '#5b4300' },
-                { key: 'no', label: 'Not yet', sub: 'Keep at it', bg: '#FF6B6B', fg: '#fff' },
-              ] as const).map((o) => {
-                const sel = outcome === o.key;
-                return (
-                  <button key={o.key} type="button" aria-pressed={sel} onClick={() => setOutcome(o.key)}
-                    className="py-3 rounded-xl border-[1.5px] flex flex-col items-center gap-0.5 px-1 active:scale-[0.98]"
-                    style={sel ? { background: o.bg, borderColor: o.bg, color: o.fg } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                    <span className="text-[12px] font-bold leading-tight text-center">{o.label}</span>
-                    <span className="text-[9px] leading-tight text-center opacity-80">{o.sub}</span>
-                  </button>
-                );
-              })}
+              <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
+              <p className="text-[12.5px] text-gray-500 mt-1">One star rating for {focus.title} today. It updates your self-rating in My Sequence.</p>
+              <div className="mt-2"><StarRating value={execStars} onChange={setExecStars} size="lg" showLabel /></div>
             </div>
 
-            <div>
-              <p className="text-[9px] text-gray-400 mb-1" style={F_M}>{focus.title} today</p>
-              <p className="text-[11px] text-gray-500 mb-1.5">This updates your self-rating for this step in My Sequence.</p>
-              <StarRating value={execStars} onChange={setExecStars} size="lg" showLabel />
-            </div>
-
-            {focus.mission && focus.mission.success_criteria?.length > 0 && (
-              <div>
-                <p className="text-[9px] text-gray-400 mb-1" style={F_M}>Technique · which detail? (optional)</p>
-                <p className="text-[11px] text-gray-500 mb-2">Mark only what you want. A weak one becomes your next objective; mark nothing and you keep working the whole step.</p>
-                <CriteriaGrid list={focus.mission.success_criteria} value={focusCrit} onPick={(i, r) => setFocusCrit((p) => ({ ...p, [i]: r }))} />
+            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Go deeper" hint="Technique · which detail? A weak one becomes your next objective; mark nothing and you keep working the whole step." />
+            {deeper && (
+              <div className="space-y-4">
+                {focus.mission && focus.mission.success_criteria?.length > 0 ? (
+                  <CriteriaGrid list={focus.mission.success_criteria} value={focusCrit} onPick={(i, r) => setFocusCrit((p) => ({ ...p, [i]: r }))} />
+                ) : (
+                  <p className="text-[11px] text-gray-500">This step has no criteria card yet — the star is the whole story for now.</p>
+                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] text-gray-400" style={F_M}>And the whole sequence? (optional)</p>
+                    <p className="text-[11px] text-gray-500">How the chain ran around your focus.</p>
+                  </div>
+                  <StarRating value={seqStarsOptional} onChange={setSeqStarsOptional} size="md" />
+                </div>
               </div>
             )}
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[9px] text-gray-400" style={F_M}>And the whole sequence? (optional)</p>
-                <p className="text-[11px] text-gray-500">How the chain ran around your focus.</p>
-              </div>
-              <StarRating value={seqStarsOptional} onChange={setSeqStarsOptional} size="md" />
-            </div>
           </>
         ) : null}
 
-        <FlowPicker flow={flow} onChange={setFlow} />
+        <DeeperToggle open={deeperFeel} onToggle={() => setDeeperFeel((d) => !d)} label="Go deeper · how it felt" hint="Focus and flow. Flow feeds your Flow Channel on the Home." />
+        {deeperFeel && (
+          <div className="space-y-4">
+            <FocusPicker value={focusRating} onChange={setFocusRating} />
+            <FlowPicker flow={flow} onChange={setFlow} />
+          </div>
+        )}
 
-        <div>
-          <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>What you learned (optional)</p>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} aria-label="What you learned (optional)"
+        <DeeperToggle open={noteOpen} onToggle={() => setNoteOpen((d) => !d)} label="Add a note" hint="One thing you noticed, felt, or want to remember." />
+        {noteOpen && (
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} aria-label="What you learned (optional)" autoFocus
             placeholder="One thing you noticed, felt, or want to remember…"
             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-[13px]" />
-        </div>
+        )}
 
         {errorMsg && <p className="text-[12px] text-red-600 bg-red-50 rounded-lg px-3 py-2">{errorMsg}</p>}
 
@@ -604,7 +638,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-gray-400 text-center -mt-2">
-            {isRun ? 'Rate the sequence to save' : 'Say whether you did what you planned and rate the step'}
+            {isRun ? 'Rate the sequence to save' : 'Rate the step to save'}
           </p>
         )}
       </Shell>
@@ -645,10 +679,6 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             </>
           ) : (
             <>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">What you planned</span>
-                <span className="font-bold" style={{ color: INK }}>{outcome === 'yes' ? 'Done' : outcome === 'partial' ? 'Partly' : 'Not yet'}</span>
-              </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">{focus?.title} today</span>
                 <span className="font-bold" style={{ color: INK }}>{'★'.repeat(execStars ?? 0)}{'☆'.repeat(5 - (execStars ?? 0))} {execStars ?? 0}/5</span>

@@ -216,6 +216,8 @@ interface PortalData {
     /** held_back = el paso que detuvo tu último run de la secuencia. */
     source?: 'held_back' | 'weakest';
     selfSequenceRating?: number | null;
+    /** Lo que dejaste a medias hace poco y no es el paso de arriba. */
+    unfinished?: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null;
     /** El detalle más flojo de la última práctica de ese paso. */
     detail?: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
   } | null;
@@ -1087,14 +1089,18 @@ function HomeTab({
                 </div>
               )}
 
+              {/* YOUR NEXT MOVES (Marcelo 2026-09-04): que quede CLARO qué es,
+                  de dónde sale y en qué orden. Coach primero; después el paso
+                  más temprano del método que sigue flojo; al final lo que
+                  dejaste a medias, para que trabajar otra cosa no se pierda.
+                  Cada línea abre el modo foco de ese paso en su secuencia. */}
               {data.nextMove && (
                 <button
                   type="button"
                   onClick={() => {
                     const nm = data.nextMove!;
-                    // El paso que detuvo tu último run se trabaja DENTRO de la
-                    // secuencia: abre el modo foco, no la ficha del paso.
-                    if (nm.source === 'held_back' && nm.sequenceId && onTrainSequence) {
+                    // El paso se trabaja DENTRO de su secuencia: modo foco.
+                    if (nm.sequenceId && onTrainSequence) {
                       onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
                     } else {
                       onOpenStep?.(nm.stepId);
@@ -1104,7 +1110,7 @@ function HomeTab({
                   style={coachFocus ? { borderTop: '1px solid rgba(255,255,255,.08)' } : undefined}
                 >
                   <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>
-                    Work on this
+                    {coachFocus && !coachFocusDone ? 'Then · your sequence' : 'Your sequence · work on this'}
                   </p>
                   <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
                     {data.nextMove.stepTitle}
@@ -1112,7 +1118,7 @@ function HomeTab({
                   <p className="text-[12px] text-white/60 mt-0.5">
                     {data.nextMove.source === 'held_back'
                       ? <>Held your last run of {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)} back{data.nextMove.selfSequenceRating != null && ` · your run ${data.nextMove.selfSequenceRating}★`}</>
-                      : <>Holding back {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}{data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}</>}
+                      : <>First step below 4★ in {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}{data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}{data.nextMove.official ? ' · rated by your coach' : ''}</>}
                   </p>
                   {data.nextMove.detail && (
                     <p className="text-[12px] mt-1.5 leading-snug" style={{ color: data.nextMove.detail.result === 'not_met' ? '#FF8A8F' : '#FFD166' }}>
@@ -1123,6 +1129,38 @@ function HomeTab({
                     Practice it →
                   </p>
                 </button>
+              )}
+
+              {data.nextMove?.unfinished && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const u = data.nextMove!.unfinished!;
+                    if (onTrainSequence) onTrainSequence({ sequenceId: u.sequenceId, mode: 'step_focus', focusStepId: u.stepId });
+                    else onOpenStep?.(u.stepId);
+                  }}
+                  className="block w-full text-left px-4 py-3.5"
+                  style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}
+                >
+                  <p className="text-[9px]" style={{ ...F_LABEL, color: '#FFD166' }}>
+                    Unfinished
+                  </p>
+                  <p className="text-[14px] font-semibold text-white mt-1 leading-snug">
+                    {data.nextMove.unfinished.stepTitle}
+                  </p>
+                  <p className="text-[12px] text-white/60 mt-0.5">
+                    Now at {data.nextMove.unfinished.stars}★ · {sequenceLabel(data.nextMove.unfinished.sequenceId, data.nextMove.unfinished.sequenceOrder, data.nextMove.unfinished.sequenceName)} · from the last two weeks
+                  </p>
+                  <p className="text-[12px] mt-1.5 font-semibold" style={{ color: '#FFD166' }}>
+                    Pick it up →
+                  </p>
+                </button>
+              )}
+
+              {(data.nextMove || (coachFocus && !coachFocusDone)) && (
+                <p className="px-4 py-2.5 text-[10.5px] leading-snug" style={{ color: '#6f8698', borderTop: '1px solid rgba(255,255,255,.08)' }}>
+                  How this is ordered: your coach first. Then your sequence — the step that held your last run back, or else the earliest step not yet at 4★. Then anything you left below 4★ in the last two weeks.
+                </p>
               )}
 
               {sessionCue.cue && (

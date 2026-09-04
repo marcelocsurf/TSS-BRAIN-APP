@@ -31,8 +31,8 @@ import {
 import { SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
 import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import {
-  Target, Dumbbell, Waves, Clock, Repeat, Check, CircleDot, X, Star,
-  Lightbulb, Save, Brain, Play, ChevronDown, Moon, Smile, Flame, AlertTriangle,
+  Target, Dumbbell, Waves, Clock, Repeat, Check, CircleDot, X,
+  Save, Brain, Play, ChevronDown, ChevronUp, Moon, Smile, Flame, AlertTriangle,
 } from 'lucide-react';
 
 type Phase = 'loading' | 'plan' | 'ready' | 'evaluation' | 'done' | 'error';
@@ -95,7 +95,7 @@ export function LinkedTrainingFlow({
 
   // Evaluación (intacta)
   const [criteriaResults, setCriteriaResults] = useState<Record<number, CriterionResult>>({});
-  const [focusRating, setFocusRating] = useState<number>(2);
+  const [focusRating, setFocusRating] = useState<number | null>(null);
   const [executionRating, setExecutionRating] = useState<number>(0);
   const [flowChannel, setFlowChannel] = useState<number | null>(null);
   const [notesText, setNotesText] = useState('');
@@ -105,7 +105,11 @@ export function LinkedTrainingFlow({
   const [automaticity, setAutomaticity] = useState<'yes' | 'almost' | 'not_yet' | null>(null);
   // Misión: primero el veredicto general ("¿salió?"); el detalle por criterio
   // es OPCIONAL. Marcelo: si no elige un detalle, sigue con el movimiento general.
-  const [outcome, setOutcome] = useState<'yes' | 'partial' | 'no' | null>(null);
+  // "Go deeper" (Marcelo 2026-09-04): las estrellas son lo único obligatorio;
+  // criterios, foco/flow y nota viven en niveles cerrados por defecto.
+  const [deeper, setDeeper] = useState(false);
+  const [deeperFeel, setDeeperFeel] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
   // Lo que quedó flojo la última vez con esta pieza → objetivo de hoy en un toque.
   const [lastHint, setLastHint] = useState<Awaited<ReturnType<typeof getLastPracticeHint>>>(null);
   const [objectiveOpen, setObjectiveOpen] = useState(false);
@@ -393,8 +397,9 @@ export function LinkedTrainingFlow({
   if (phase === 'evaluation') {
     // El examen es la misión: primero "¿salió?", el detalle es opcional.
     // El drill solo responde si ya sale sin pensar.
+    // UNA sola cosa obligatoria: la estrella (misión) o la pregunta (drill).
     const canSave = isMission
-      ? outcome !== null && executionRating > 0 && flowChannel !== null && !saving
+      ? executionRating > 0 && !saving
       : automaticity !== null && !saving;
 
     const handleSave = async () => {
@@ -406,7 +411,6 @@ export function LinkedTrainingFlow({
         .map((text, i) => ({ criterion_index: i, criterion_text: text, result: criteriaResults[i] }))
         .filter((c) => c.result !== undefined);
       const criteria_evaluation: CriterionEvaluation[] | undefined = isMission && marked.length > 0 ? marked : undefined;
-      const mission_completion: 'yes' | 'partial' | 'no' | undefined = isMission ? (outcome ?? undefined) : undefined;
 
       let res: Awaited<ReturnType<typeof saveLinkedTrainingSession>>;
       try {
@@ -423,8 +427,7 @@ export function LinkedTrainingFlow({
         crowd_level: isMission ? crowdLevel || undefined : undefined,
         safety_check: allSafe,
         venue_notes: venueNotes || undefined,
-        focus_rating: isMission ? focusRating : undefined,
-        mission_completion,
+        focus_rating: isMission && focusRating !== null ? focusRating : undefined,
         // Solo la misión mueve la estrella del paso: practicar en la arena
         // no es evidencia de que lo ejecutás en la ola.
         execution_rating: isMission ? executionRating : undefined,
@@ -457,10 +460,10 @@ export function LinkedTrainingFlow({
       <Shell drill={drill} onCancel={onClearIncoming} step={3}>
         <div>
           <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
-          <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'Did you do what you planned?' : 'Ready to take it to the water?'}</h3>
+          <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Ready to take it to the water?'}</h3>
           <p className="text-[12.5px] text-gray-500 mt-1">
             {isMission
-              ? 'Honesty here is what makes you progress.'
+              ? 'One star rating. It updates your self-rating in My Sequence. Go deeper only if you want to.'
               : 'A drill is practice, not a test. One honest answer.'}
           </p>
         </div>
@@ -487,29 +490,29 @@ export function LinkedTrainingFlow({
         )}
 
         {isMission && (
-          <div className="grid grid-cols-3 gap-1.5">
-            {([
-              { key: 'yes', label: 'Done', sub: 'What you planned', bg: GREEN, fg: INK },
-              { key: 'partial', label: 'Partly', sub: 'Some of it', bg: GOLD, fg: '#5b4300' },
-              { key: 'no', label: 'Not yet', sub: 'Keep at it', bg: '#FF6B6B', fg: '#fff' },
-            ] as const).map((o) => {
-              const sel = outcome === o.key;
+          <div className="grid grid-cols-5 gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => {
+              const labels = ['Can’t yet', 'Trying', 'Sometimes', 'Consistent', 'Mastery'];
+              const sel = executionRating === n;
               return (
-                <button key={o.key} onClick={() => setOutcome(o.key)}
-                  className="py-3 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 px-1"
-                  style={sel ? { background: o.bg, borderColor: o.bg, color: o.fg } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                  <span className="text-[12px] font-bold leading-tight text-center">{o.label}</span>
-                  <span className="text-[9px] leading-tight text-center opacity-80">{o.sub}</span>
+                <button key={n} aria-pressed={sel} onClick={() => setExecutionRating(n)}
+                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
+                  style={sel ? { background: GOLD, borderColor: GOLD, color: INK } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                  <span className="text-[12px] leading-none">{'★'.repeat(n)}</span>
+                  <span className="text-[8px] leading-tight">{labels[n - 1]}</span>
                 </button>
               );
             })}
           </div>
         )}
 
-        {isMission && successCriteria.length > 0 && (
-          <div>
-            <p className="text-[9px] text-gray-400 mb-0.5" style={F_M}>Technique · which detail? (optional)</p>
-            <p className="text-[11px] text-gray-500 mb-2">Mark only what you want. A weak one becomes your next objective; mark nothing and you keep working the whole move.</p>
+        {isMission && (<>
+          {/* Sin tarjeta de criterios no hay nivel que abrir: el toggle no se muestra. */}
+          {successCriteria.length > 0 && (
+            <Deeper open={deeper} onToggle={() => setDeeper((d) => !d)} label="Go deeper"
+              hint="Technique · which detail? A weak one becomes your next objective; mark nothing and you keep working the whole move." />
+          )}
+          {deeper && successCriteria.length > 0 && (
             <div className="space-y-2">
               {successCriteria.map((text, i) => (
                 <div key={i} className="border border-gray-200 rounded-xl p-3 bg-white">
@@ -522,7 +525,7 @@ export function LinkedTrainingFlow({
                     ] as const).map((opt) => {
                       const selected = criteriaResults[i] === opt.key;
                       return (
-                        <button key={opt.key} onClick={() => setCriteriaResults((prev) => ({ ...prev, [i]: opt.key }))}
+                        <button key={opt.key} aria-pressed={selected} onClick={() => setCriteriaResults((prev) => ({ ...prev, [i]: opt.key }))}
                           className="inline-flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-bold transition-colors"
                           style={selected ? { background: opt.bg, color: opt.fg } : { background: '#f3f4f6', color: '#6b7280' }}>
                           <opt.Icon size={12} strokeWidth={2} />{opt.label}
@@ -533,81 +536,61 @@ export function LinkedTrainingFlow({
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* El foco solo se pregunta en la misión: el drill cierra con UNA pregunta. */}
-        {isMission && (<div>
-          <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
-          <div className="grid grid-cols-4 gap-1.5">
-            {[0, 1, 2, 3].map((n) => {
-              const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
-              const sel = focusRating === n;
-              return (
-                <button key={n} onClick={() => setFocusRating(n)}
-                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
-                  style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                  <span className="text-base font-bold leading-none">{n}</span>
-                  <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>)}
-
-        {isMission && (<>
-        <div>
-          <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Star size={11} className="inline mr-1 -mt-0.5" />Overall execution today</p>
-          <p className="text-[11px] text-gray-500 mb-2">This updates your self-rating in My Sequence.</p>
-          <div className="grid grid-cols-5 gap-1.5">
-            {[1, 2, 3, 4, 5].map((n) => {
-              const labels = ['Can’t yet', 'Trying', 'Sometimes', 'Consistent', 'Mastery'];
-              const sel = executionRating === n;
-              return (
-                <button key={n} onClick={() => setExecutionRating(n)}
-                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
-                  style={sel ? { background: GOLD, borderColor: GOLD, color: INK } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                  <span className="text-[12px] leading-none">{'★'.repeat(n)}</span>
-                  <span className="text-[8px] leading-tight">{labels[n - 1]}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
-          <p className="text-[11px] text-gray-500 mb-2">Flow lives between boredom and frustration. This feeds your Flow Channel.</p>
-          <div className="grid grid-cols-5 gap-1.5">
-            {([
-              { n: 1, label: 'Bored', Icon: Moon },
-              { n: 2, label: 'Easy', Icon: Smile },
-              { n: 3, label: 'Flow', Icon: Waves },
-              { n: 4, label: 'Hard', Icon: Flame },
-              { n: 5, label: 'Too much', Icon: AlertTriangle },
-            ] as const).map((o) => {
-              const sel = flowChannel === o.n;
-              return (
-                <button key={o.n} onClick={() => setFlowChannel(o.n)}
-                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
-                  style={sel
-                    ? o.n === 3 ? { background: CYAN, borderColor: CYAN, color: INK } : { background: INK, borderColor: INK, color: PAPER }
-                    : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                  <o.Icon size={16} strokeWidth={1.75} />
-                  <span className="text-[8.5px] leading-tight">{o.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          <Deeper open={deeperFeel} onToggle={() => setDeeperFeel((d) => !d)} label="Go deeper · how it felt" hint="Focus and flow. Flow feeds your Flow Channel on the Home." />
+          {deeperFeel && (<>
+            <div>
+              <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[0, 1, 2, 3].map((n) => {
+                  const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
+                  const sel = focusRating === n;
+                  return (
+                    <button key={n} aria-pressed={sel} onClick={() => setFocusRating(sel ? null : n)}
+                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
+                      style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                      <span className="text-base font-bold leading-none">{n}</span>
+                      <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
+              <p className="text-[11px] text-gray-500 mb-2">Flow lives between boredom and frustration.</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {([
+                  { n: 1, label: 'Bored', Icon: Moon },
+                  { n: 2, label: 'Easy', Icon: Smile },
+                  { n: 3, label: 'Flow', Icon: Waves },
+                  { n: 4, label: 'Hard', Icon: Flame },
+                  { n: 5, label: 'Too much', Icon: AlertTriangle },
+                ] as const).map((o) => {
+                  const sel = flowChannel === o.n;
+                  return (
+                    <button key={o.n} aria-pressed={sel} onClick={() => setFlowChannel(sel ? null : o.n)}
+                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
+                      style={sel
+                        ? o.n === 3 ? { background: CYAN, borderColor: CYAN, color: INK } : { background: INK, borderColor: INK, color: PAPER }
+                        : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                      <o.Icon size={16} strokeWidth={1.75} />
+                      <span className="text-[8.5px] leading-tight">{o.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>)}
         </>)}
 
-        <div>
-          <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Lightbulb size={11} className="inline mr-1 -mt-0.5" />What you learned (optional)</p>
-          <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} rows={3}
+        <Deeper open={noteOpen} onToggle={() => setNoteOpen((d) => !d)} label="Add a note" hint="One thing you noticed, felt, or want to remember." />
+        {noteOpen && (
+          <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} rows={3} autoFocus aria-label="What you learned (optional)"
             placeholder="One thing you noticed, felt, or want to remember…"
             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
-        </div>
+        )}
 
         {errorMsg && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{errorMsg}</p>}
 
@@ -618,10 +601,7 @@ export function LinkedTrainingFlow({
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-gray-400 text-center">
-            {!isMission ? 'Answer the one question to save'
-              : outcome === null ? 'Say whether it worked to continue'
-              : executionRating === 0 ? 'Pick an overall execution rating to continue'
-              : flowChannel === null ? 'Rate how the challenge felt to continue' : ''}
+            {!isMission ? 'Answer the one question to save' : 'Pick a star rating to save'}
           </p>
         )}
       </Shell>
@@ -675,14 +655,12 @@ export function LinkedTrainingFlow({
               <span className="text-gray-500">Execution rating</span>
               <span className="font-bold" style={{ color: INK }}>{'★'.repeat(executionRating)}{'☆'.repeat(5 - executionRating)} {executionRating}/5</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Focus level</span>
-              <span className="font-bold">{focusRating}/3</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">What you planned</span>
-              <span className="font-bold" style={{ color: INK }}>{outcome === 'yes' ? 'Done' : outcome === 'partial' ? 'Partly' : 'Not yet'}</span>
-            </div>
+            {focusRating !== null && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Focus level</span>
+                <span className="font-bold">{focusRating}/3</span>
+              </div>
+            )}
             {doneEvals.length > 0 && (
               <div className="pt-1 space-y-1">
                 <div className="flex justify-between text-xs">
@@ -709,7 +687,7 @@ export function LinkedTrainingFlow({
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{doneWeakest.criterion_text}</p>
               <p className="text-[11px] text-gray-500 mt-1">Next time you open this step, it will already be today’s objective.</p>
             </div>
-          ) : isMission && outcome !== 'yes' ? (
+          ) : isMission && executionRating < 4 ? (
             <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Next time</p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>Keep working the whole move. If one part stands out, mark it next time and it becomes your objective.</p>
@@ -933,4 +911,19 @@ function toEmbedUrlLocal(url: string): string | null {
   const gdOpen = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
   if (gdOpen) return `https://drive.google.com/file/d/${gdOpen[1]}/preview`;
   return url;
+}
+
+// "Go deeper": cada nivel se abre solo si el alumno quiere (Marcelo 2026-09-04).
+function Deeper({ open, onToggle, label, hint }: { open: boolean; onToggle: () => void; label: string; hint: string }) {
+  return (
+    <button type="button" aria-expanded={open} onClick={onToggle}
+      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left"
+      style={open ? { borderColor: INK, background: '#f7f9fa' } : { borderColor: '#d1d5db', borderStyle: 'dashed', background: '#fff' }}>
+      <span className="min-w-0">
+        <span className="block text-[12px] font-bold" style={{ color: INK }}>{label}</span>
+        <span className="block text-[10.5px] text-gray-500">{hint}</span>
+      </span>
+      {open ? <ChevronUp size={16} className="shrink-0 text-gray-500" /> : <ChevronDown size={16} className="shrink-0 text-gray-500" />}
+    </button>
+  );
 }
