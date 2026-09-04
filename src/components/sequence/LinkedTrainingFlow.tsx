@@ -108,7 +108,6 @@ export function LinkedTrainingFlow({
   // "Go deeper" (Marcelo 2026-09-04): las estrellas son lo único obligatorio;
   // criterios, foco/flow y nota viven en niveles cerrados por defecto.
   const [deeper, setDeeper] = useState(false);
-  const [deeperFeel, setDeeperFeel] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   // Lo que quedó flojo la última vez con esta pieza → objetivo de hoy en un toque.
   const [lastHint, setLastHint] = useState<Awaited<ReturnType<typeof getLastPracticeHint>>>(null);
@@ -398,8 +397,10 @@ export function LinkedTrainingFlow({
     // El examen es la misión: primero "¿salió?", el detalle es opcional.
     // El drill solo responde si ya sale sin pensar.
     // UNA sola cosa obligatoria: la estrella (misión) o la pregunta (drill).
+    // Marcelo (2026-09-04): estrella + foco + flow obligatorios (tres toques,
+    // sin texto). El detalle del paso y la nota se abren solo si quiere.
     const canSave = isMission
-      ? executionRating > 0 && !saving
+      ? executionRating > 0 && focusRating !== null && flowChannel !== null && !saving
       : automaticity !== null && !saving;
 
     const handleSave = async () => {
@@ -463,7 +464,7 @@ export function LinkedTrainingFlow({
           <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Ready to take it to the water?'}</h3>
           <p className="text-[12.5px] text-gray-500 mt-1">
             {isMission
-              ? 'One star rating. It updates your self-rating in My Sequence. Go deeper only if you want to.'
+              ? 'Three taps: your star, your focus, how it felt. Check the details only if you want to.'
               : 'A drill is practice, not a test. One honest answer.'}
           </p>
         </div>
@@ -507,10 +508,53 @@ export function LinkedTrainingFlow({
         )}
 
         {isMission && (<>
+            <div>
+              <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[0, 1, 2, 3].map((n) => {
+                  const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
+                  const sel = focusRating === n;
+                  return (
+                    <button key={n} aria-pressed={sel} onClick={() => setFocusRating(sel ? null : n)}
+                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
+                      style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                      <span className="text-base font-bold leading-none">{n}</span>
+                      <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
+              <p className="text-[11px] text-gray-500 mb-2">Flow lives between boredom and frustration. This feeds your Flow Channel.</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {([
+                  { n: 1, label: 'Bored', Icon: Moon },
+                  { n: 2, label: 'Easy', Icon: Smile },
+                  { n: 3, label: 'Flow', Icon: Waves },
+                  { n: 4, label: 'Hard', Icon: Flame },
+                  { n: 5, label: 'Too much', Icon: AlertTriangle },
+                ] as const).map((o) => {
+                  const sel = flowChannel === o.n;
+                  return (
+                    <button key={o.n} aria-pressed={sel} onClick={() => setFlowChannel(sel ? null : o.n)}
+                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
+                      style={sel
+                        ? o.n === 3 ? { background: CYAN, borderColor: CYAN, color: INK } : { background: INK, borderColor: INK, color: PAPER }
+                        : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                      <o.Icon size={16} strokeWidth={1.75} />
+                      <span className="text-[8.5px] leading-tight">{o.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
           {/* Sin tarjeta de criterios no hay nivel que abrir: el toggle no se muestra. */}
           {successCriteria.length > 0 && (
-            <Deeper open={deeper} onToggle={() => setDeeper((d) => !d)} label="Go deeper"
-              hint="Technique · which detail? A weak one becomes your next objective; mark nothing and you keep working the whole move." />
+            <Deeper open={deeper} onToggle={() => setDeeper((d) => !d)} label="Check the details of this step"
+              hint="Mark what was met and what was not. A weak one becomes your next objective; mark nothing and you keep working the whole move." />
           )}
           {deeper && successCriteria.length > 0 && (
             <div className="space-y-2">
@@ -538,51 +582,6 @@ export function LinkedTrainingFlow({
             </div>
           )}
 
-          <Deeper open={deeperFeel} onToggle={() => setDeeperFeel((d) => !d)} label="Go deeper · how it felt" hint="Focus and flow. Flow feeds your Flow Channel on the Home." />
-          {deeperFeel && (<>
-            <div>
-              <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[0, 1, 2, 3].map((n) => {
-                  const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
-                  const sel = focusRating === n;
-                  return (
-                    <button key={n} aria-pressed={sel} onClick={() => setFocusRating(sel ? null : n)}
-                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
-                      style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                      <span className="text-base font-bold leading-none">{n}</span>
-                      <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
-              <p className="text-[11px] text-gray-500 mb-2">Flow lives between boredom and frustration.</p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {([
-                  { n: 1, label: 'Bored', Icon: Moon },
-                  { n: 2, label: 'Easy', Icon: Smile },
-                  { n: 3, label: 'Flow', Icon: Waves },
-                  { n: 4, label: 'Hard', Icon: Flame },
-                  { n: 5, label: 'Too much', Icon: AlertTriangle },
-                ] as const).map((o) => {
-                  const sel = flowChannel === o.n;
-                  return (
-                    <button key={o.n} aria-pressed={sel} onClick={() => setFlowChannel(sel ? null : o.n)}
-                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
-                      style={sel
-                        ? o.n === 3 ? { background: CYAN, borderColor: CYAN, color: INK } : { background: INK, borderColor: INK, color: PAPER }
-                        : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
-                      <o.Icon size={16} strokeWidth={1.75} />
-                      <span className="text-[8.5px] leading-tight">{o.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </>)}
         </>)}
 
         <Deeper open={noteOpen} onToggle={() => setNoteOpen((d) => !d)} label="Add a note" hint="One thing you noticed, felt, or want to remember." />
@@ -601,7 +600,10 @@ export function LinkedTrainingFlow({
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-gray-400 text-center">
-            {!isMission ? 'Answer the one question to save' : 'Pick a star rating to save'}
+            {!isMission ? 'Answer the one question to save'
+              : executionRating === 0 ? 'Pick a star rating to save'
+              : focusRating === null ? 'Pick your focus level to save'
+              : 'Pick how the challenge felt to save'}
           </p>
         )}
       </Shell>

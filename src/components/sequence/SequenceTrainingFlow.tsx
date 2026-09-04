@@ -116,7 +116,7 @@ function CriteriaGrid({ list, value, onPick }: { list: string[]; value: Record<n
 function FlowPicker({ flow, onChange }: { flow: number | null; onChange: (n: number | null) => void }) {
   return (
     <div>
-      <p className="text-[9px] text-gray-400 mb-1" style={F_M}>How did the challenge feel? (optional)</p>
+      <p className="text-[9px] text-gray-400 mb-1" style={F_M}>How did the challenge feel? Flow lives between boredom and frustration.</p>
       <div className="grid grid-cols-5 gap-1">
         {(['Bored', 'Easy', 'Flow', 'Hard', 'Too much'] as const).map((l, i) => {
           const n = i + 1; const sel = flow === n;
@@ -151,7 +151,7 @@ function FocusPicker({ value, onChange }: { value: number | null; onChange: (n: 
   const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
   return (
     <div>
-      <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice (optional)</p>
+      <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
       <div className="grid grid-cols-4 gap-1.5">
         {[0, 1, 2, 3].map((n) => {
           const sel = value === n;
@@ -208,7 +208,6 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // "Go deeper": niveles cerrados por defecto.
   const [deeper, setDeeper] = useState(false);
   const [deepStep, setDeepStep] = useState<Record<string, boolean>>({});
-  const [deeperFeel, setDeeperFeel] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [focusRating, setFocusRating] = useState<number | null>(null);
   const [focusCrit, setFocusCrit] = useState<Record<number, CriterionResult>>({});
@@ -473,8 +472,10 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
   // ─── EVALUATE ───
   if (phase === 'evaluation') {
-    // UNA sola cosa obligatoria: las estrellas. Todo lo demás es "go deeper".
-    const canSave = isRun ? seqStars !== null && !saving : execStars !== null && !saving;
+    // Marcelo (2026-09-04): estrella + foco + flow obligatorios (tres toques).
+    // Los pasos/criterios y la nota se abren solo si quiere.
+    const feelDone = focusRating !== null && flow !== null;
+    const canSave = isRun ? seqStars !== null && feelDone && !saving : execStars !== null && feelDone && !saving;
 
     const handleSave = async () => {
       setSaving(true);
@@ -529,11 +530,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <div>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
-              <p className="text-[12.5px] text-gray-500 mt-1">One star rating for the whole chain. That is all you need to save.</p>
+              <p className="text-[12.5px] text-gray-500 mt-1">Three taps: your star for the whole chain, your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
             </div>
 
-            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Go deeper" hint="Which step held it back? Tap it — the earliest one in the chain becomes your next focus." />
+            <FocusPicker value={focusRating} onChange={setFocusRating} />
+            <FlowPicker flow={flow} onChange={setFlow} />
+
+            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Check each step of this sequence" hint="Tap the step that held it back — the earliest one in the chain becomes your next focus. Open a step to check its details." />
             {deeper && (
             <div>
               <div className="space-y-1.5">
@@ -570,7 +574,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                           </div>
                           {crit.length > 0 && (
                             <>
-                              <DeeperToggle open={!!deepStep[s.step_id]} onToggle={() => setDeepStep((p) => ({ ...p, [s.step_id]: !p[s.step_id] }))} label="Go deeper" hint="Technique · which detail? A weak one becomes your next objective." />
+                              <DeeperToggle open={!!deepStep[s.step_id]} onToggle={() => setDeepStep((p) => ({ ...p, [s.step_id]: !p[s.step_id] }))} label="Check the details of this step" hint="Mark what was met and what was not. A weak one becomes your next objective." />
                               {deepStep[s.step_id] && (
                                 <CriteriaGrid list={crit} value={stepCrit[s.step_id] ?? {}} onPick={(ci, r) => setStepCrit((p) => ({ ...p, [s.step_id]: { ...(p[s.step_id] ?? {}), [ci]: r } }))} />
                               )}
@@ -590,11 +594,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <div>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation · {focus.title}</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
-              <p className="text-[12.5px] text-gray-500 mt-1">One star rating for {focus.title} today. It updates your self-rating in My Sequence.</p>
+              <p className="text-[12.5px] text-gray-500 mt-1">Three taps: your star for {focus.title} today (it updates your self-rating in My Sequence), your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={execStars} onChange={setExecStars} size="lg" showLabel /></div>
             </div>
 
-            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Go deeper" hint="Technique · which detail? A weak one becomes your next objective; mark nothing and you keep working the whole step." />
+            <FocusPicker value={focusRating} onChange={setFocusRating} />
+            <FlowPicker flow={flow} onChange={setFlow} />
+
+            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Check the details of this step" hint="Mark what was met and what was not. A weak one becomes your next objective; mark nothing and you keep working the whole step." />
             {deeper && (
               <div className="space-y-4">
                 {focus.mission && focus.mission.success_criteria?.length > 0 ? (
@@ -614,14 +621,6 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           </>
         ) : null}
 
-        <DeeperToggle open={deeperFeel} onToggle={() => setDeeperFeel((d) => !d)} label="Go deeper · how it felt" hint="Focus and flow. Flow feeds your Flow Channel on the Home." />
-        {deeperFeel && (
-          <div className="space-y-4">
-            <FocusPicker value={focusRating} onChange={setFocusRating} />
-            <FlowPicker flow={flow} onChange={setFlow} />
-          </div>
-        )}
-
         <DeeperToggle open={noteOpen} onToggle={() => setNoteOpen((d) => !d)} label="Add a note" hint="One thing you noticed, felt, or want to remember." />
         {noteOpen && (
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} aria-label="What you learned (optional)" autoFocus
@@ -638,7 +637,9 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-gray-400 text-center -mt-2">
-            {isRun ? 'Rate the sequence to save' : 'Rate the step to save'}
+            {(isRun ? seqStars === null : execStars === null) ? (isRun ? 'Rate the sequence to save' : 'Rate the step to save')
+              : focusRating === null ? 'Pick your focus level to save'
+              : 'Pick how the challenge felt to save'}
           </p>
         )}
       </Shell>
