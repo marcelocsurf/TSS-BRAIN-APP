@@ -61,6 +61,7 @@ export function SequenceEvaluation({
   portalToken = null,
   campInstanceId = null,
   onFocusSaved,
+  studentSequenceRatings,
 }: {
   rows: EvalRow[];
   /** step_id → estrellas oficiales (null = sin evaluar). */
@@ -74,6 +75,10 @@ export function SequenceEvaluation({
   portalToken?: string | null;
   campInstanceId?: string | null;
   onFocusSaved?: (stepId: string, focus: string | null) => void;
+  /** Lo que el ALUMNO dijo de cada cadena en su último run de Let's Play:
+   *  su estrella y el paso que la detuvo. Misma forma que esta evaluación,
+   *  así la comparación es directa. */
+  studentSequenceRatings?: Record<string, { rating: number | null; heldBackStepId: string | null; at: string }>;
 }) {
   const { groups, orphans } = groupBySequence(rows);
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -119,11 +124,18 @@ export function SequenceEvaluation({
         const v = sequenceVerdict(stars);
         const isOpen = open[g.id] ?? v.state === 'working';
         const label = sequenceLabel(g.id, g.order, g.name);
+        const self = studentSequenceRatings?.[g.id];
+        const selfHeld = self?.heldBackStepId ? g.rows.find((r) => r.step_id === self.heldBackStepId) : null;
         return (
           <div key={g.id} className="rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-3 py-2.5 bg-gray-50">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <p className="text-[13px] font-semibold text-gray-900">{label}</p>
+                {self && (self.rating != null || selfHeld) && (
+                  <span className="text-[10px] text-amber-700">
+                    alumno{self.rating != null ? ` ${self.rating}★` : ''}{selfHeld ? ` · lo frena ${selfHeld.step_title ?? selfHeld.step_id}` : ''}
+                  </span>
+                )}
                 <span className="ml-auto text-[10px] font-mono shrink-0">
                   {v.state === 'owned' ? (
                     <span className="text-emerald-600 font-bold">✓ la tiene</span>

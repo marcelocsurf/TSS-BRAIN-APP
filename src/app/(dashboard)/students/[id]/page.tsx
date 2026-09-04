@@ -218,6 +218,18 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .limit(30),
   ]);
 
+  // Let's Play por secuencia (2026-09-04): la nota del ALUMNO para cada
+  // cadena y el paso que la detuvo en su último run. El coach la ve al lado
+  // de la suya en la misma evaluación por secuencia.
+  const { data: studentSeqRows } = await supabase
+    .from('student_sequence_ratings')
+    .select('sequence_id, current_rating, held_back_step_id, last_updated')
+    .eq('student_id', id);
+  const studentSequenceRatings: Record<string, { rating: number | null; heldBackStepId: string | null; at: string }> = {};
+  for (const r of (studentSeqRows ?? []) as any[]) {
+    studentSequenceRatings[r.sequence_id] = { rating: r.current_rating ?? null, heldBackStepId: r.held_back_step_id ?? null, at: r.last_updated };
+  }
+
   // Merge and sort all sessions for the unified history
   const standaloneEntries = (standaloneResult.data ?? []).map((r: any) => ({
     id: r.id,
@@ -777,6 +789,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               studentId={id}
               coachId={coach.id}
               rows={officialEvalRows}
+              studentSequenceRatings={studentSequenceRatings}
             />
           </CollapsibleSection>
         );

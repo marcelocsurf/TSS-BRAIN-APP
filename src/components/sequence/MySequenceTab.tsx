@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getMySequence, type SequenceData, type SequenceItem } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
-import { Dumbbell, Waves, Target } from 'lucide-react';
+import { Dumbbell, Waves, Target, Play, Crosshair } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
@@ -14,14 +14,23 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.05 };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em' };
 
+export type TrainSequenceArgs = {
+  sequenceId: string;
+  mode: 'sequence_run' | 'step_focus';
+  focusStepId?: string | null;
+};
+
 interface Props {
   portalToken: string;
   belt?: string;
   onPracticeDrill?: (drillMissionId: string) => void;
+  /** Let's Play por secuencia (Marcelo 2026-09-04): correrla completa o
+   *  trabajar un paso como foco. Sin esto, solo se abre el detalle del paso. */
+  onTrainSequence?: (args: TrainSequenceArgs) => void;
   initialStepId?: string | null;
 }
 
-export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, initialStepId }: Props) {
+export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId }: Props) {
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
@@ -140,7 +149,9 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, in
       <div className="rounded-2xl p-3.5" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
         <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
         <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
-          Pick the sequence you are working on → tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.
+          {onTrainSequence
+            ? 'Pick a sequence → run it whole, or work on one step inside it → rate yourself honestly. Your coach validates in the water.'
+            : 'Pick the sequence you are working on → tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.'}
         </p>
       </div>
 
@@ -186,9 +197,13 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, in
               weakestStepId={seq.weakestStepId}
               weakestTitle={seq.weakestTitle}
               weakestIsOfficial={seq.weakestIsOfficial}
+              selfSequenceRating={seq.selfSequenceRating}
+              heldBackStepId={seq.heldBackStepId}
+              heldBackTitle={seq.heldBackTitle}
               defaultOpen={seq.id === focusSequenceId}
               items={seq.items}
               onOpenStep={(id) => setOpenStepId(id)}
+              onTrain={onTrainSequence}
               theme={theme}
             />
           ))}
@@ -230,8 +245,12 @@ function BlockSection({
   weakestStepId = null,
   weakestTitle = null,
   weakestIsOfficial = false,
+  selfSequenceRating = null,
+  heldBackStepId = null,
+  heldBackTitle = null,
   items,
   onOpenStep,
+  onTrain,
   theme,
 }: {
   belt: string;
@@ -251,10 +270,20 @@ function BlockSection({
   weakestStepId?: string | null;
   weakestTitle?: string | null;
   weakestIsOfficial?: boolean;
+  /** La nota del alumno para la cadena y el paso que la detuvo (Let's Play). */
+  selfSequenceRating?: number | null;
+  heldBackStepId?: string | null;
+  heldBackTitle?: string | null;
   items: SequenceItem[];
   onOpenStep: (id: string) => void;
+  /** Entrenar la secuencia (solo en la vista por secuencia). */
+  onTrain?: (args: TrainSequenceArgs) => void;
   theme: BeltTheme;
 }) {
+  // "Work on one step": la lista pasa a modo elegir. Tocar un paso arranca el
+  // entreno con ese foco en vez de abrir su ficha.
+  const [picking, setPicking] = useState(false);
+  const canTrain = asSequence && !!blockId && !!onTrain;
   // La nota que cuenta es la EFECTIVA: la del coach si existe, si no la
   // auto-evaluación. Contando solo el auto-rating, un alumno con toda su
   // secuencia validada por el coach leía "0/6 rated".
@@ -309,6 +338,9 @@ function BlockSection({
           ) : (
             <div className="text-gray-400 text-[10px]">Not rated</div>
           )}
+          {asSequence && selfSequenceRating !== null && (
+            <div className="text-[10px] text-gray-500 mt-0.5">your last run: {selfSequenceRating}★</div>
+          )}
           <div className="text-[10px] text-gray-400 mt-0.5">
             {items.length} steps <span className="group-open:hidden">▾</span>
             <span className="hidden group-open:inline">▴</span>
@@ -316,9 +348,60 @@ function BlockSection({
         </div>
       </summary>
 
+      {/* Let's Play por secuencia: correrla completa, o elegir un paso como
+          foco. Es la unidad de entreno, y la misma forma en que evalúa el
+          coach (secuencia → paso → detalle). */}
+      {canTrain && (
+        <div className="px-3 py-2.5 border-b border-gray-100 space-y-2" style={{ background: '#F7F9FA' }}>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'sequence_run' }); }}
+              className="h-11 rounded-xl text-[12px] font-bold inline-flex items-center justify-center gap-1.5 active:scale-[0.98]"
+              style={{ background: INK, color: PAPER }}
+            >
+              <Play size={13} strokeWidth={2.25} /> Run the whole sequence
+            </button>
+            <button
+              type="button"
+              onClick={() => setPicking((p) => !p)}
+              className="h-11 rounded-xl text-[12px] font-bold inline-flex items-center justify-center gap-1.5 border-[1.5px] active:scale-[0.98]"
+              style={picking ? { background: '#FFF8E7', borderColor: '#E0A62B', color: '#9A6A12' } : { background: '#fff', borderColor: '#d1d5db', color: INK }}
+            >
+              <Crosshair size={13} strokeWidth={2.25} /> {picking ? 'Cancel' : 'Work on one step'}
+            </button>
+          </div>
+          {picking && (
+            <div className="rounded-xl px-3 py-2.5" style={{ background: '#FFF8E7' }}>
+              <p className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>Pick your focus</p>
+              <p className="text-[12px] text-gray-800 leading-snug mt-0.5">
+                Tap the step you want to work on. You still run the whole sequence — that step is your objective.
+              </p>
+              {/* Primero el paso que la detuvo en tu último run; si no, el
+                  que está por debajo de la barra. */}
+              {(() => {
+                const sid = heldBackStepId ?? (state !== 'owned' ? weakestStepId : null);
+                const title = heldBackStepId ? heldBackTitle : weakestTitle;
+                if (!sid || !title) return null;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'step_focus', focusStepId: sid }); }}
+                    className="mt-2 w-full h-10 rounded-lg text-[12px] font-bold"
+                    style={{ background: '#E0A62B', color: INK }}
+                  >
+                    Start with {title} → {heldBackStepId ? '(held your last run back)' : ''}
+                  </button>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* La dirección: por dónde empezar. Sin esto la secuencia dice cómo va
           pero no qué hacer. */}
-      {asSequence && weakestStepId && state !== 'owned' && (
+      {asSequence && weakestStepId && state !== 'owned' && !picking && (
         <button
           type="button"
           onClick={() => onOpenStep(weakestStepId)}
@@ -342,7 +425,15 @@ function BlockSection({
             key={item.step_id}
             item={item}
             highlight={asSequence && item.step_id === weakestStepId && state !== 'owned'}
-            onOpen={() => onOpenStep(item.step_id)}
+            picking={picking}
+            onOpen={() => {
+              if (picking && canTrain) {
+                setPicking(false);
+                onTrain!({ sequenceId: blockId!, mode: 'step_focus', focusStepId: item.step_id });
+              } else {
+                onOpenStep(item.step_id);
+              }
+            }}
           />
         ))}
       </div>
@@ -354,11 +445,14 @@ function StepRow({
   item,
   onOpen,
   highlight = false,
+  picking = false,
 }: {
   item: SequenceItem;
   onOpen: () => void;
   /** El paso que frena la secuencia: se marca para que no haya que buscarlo. */
   highlight?: boolean;
+  /** Modo elegir foco: tocar arranca el entreno con este paso. */
+  picking?: boolean;
 }) {
   const hasDrill = !!item.drill;
   const hasMission = !!item.mission;
@@ -368,7 +462,8 @@ function StepRow({
     <button
       onClick={onOpen}
       className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-      style={highlight ? { background: '#FFFBF0', boxShadow: 'inset 3px 0 0 #E0A62B' } : undefined}
+      style={highlight ? { background: '#FFFBF0', boxShadow: 'inset 3px 0 0 #E0A62B' } : picking ? { boxShadow: 'inset 3px 0 0 #E0A62B55' } : undefined}
+      aria-label={picking ? `Focus on ${item.step_title}` : undefined}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">

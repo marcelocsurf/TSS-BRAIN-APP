@@ -29,9 +29,11 @@ interface Props {
   studentId: string;
   coachId: string;
   rows: StepRow[];
+  /** La nota del alumno por secuencia (su último run en Let's Play). */
+  studentSequenceRatings?: Record<string, { rating: number | null; heldBackStepId: string | null; at: string }>;
 }
 
-export function OfficialEvaluationPanel({ studentId, coachId, rows }: Props) {
+export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSequenceRatings }: Props) {
   const router = useRouter();
   const [local, setLocal] = useState<StepRow[]>(rows);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -110,6 +112,7 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows }: Props) {
         ratings={Object.fromEntries(local.map((r) => [r.step_id, r.coach_rating]))}
         onRate={(changes) => changes.forEach((c) => rate(c.stepId, c.stars))}
         studentId={studentId}
+        studentSequenceRatings={studentSequenceRatings}
         onFocusSaved={(_stepId, f) => { if (f) setFocus(f); }}
       />
 

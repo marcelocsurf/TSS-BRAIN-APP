@@ -93,6 +93,11 @@ export type SequenceData = {
     weakestTitle: string | null;
     /** true = ese freno lo puso el coach, no la auto-evaluación. */
     weakestIsOfficial: boolean;
+    /** Let's Play por secuencia: la nota del alumno para la CADENA (aparte
+     *  de los pasos) y el paso que la detuvo la última vez. */
+    selfSequenceRating: number | null;
+    heldBackStepId: string | null;
+    heldBackTitle: string | null;
   }[];
 };
 
@@ -149,6 +154,13 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
     .from('student_step_ratings')
     .select('*')
     .eq('student_id', studentId);
+  // 3b. La nota del alumno por SECUENCIA (Let's Play por secuencia) y el
+  // paso que la detuvo la última vez: preselecciona el foco.
+  const { data: seqRatings } = await admin
+    .from('student_sequence_ratings')
+    .select('sequence_id, current_rating, held_back_step_id')
+    .eq('student_id', studentId);
+  const seqRatingMap = new Map((seqRatings ?? []).map((r: any) => [r.sequence_id as string, r]));
 
   // 4. Get last practiced per STP from self_training_sessions
   const { data: sessions } = await admin
@@ -334,6 +346,8 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
             : minRating! >= SEQUENCE_PASS_STARS
               ? 'owned'
               : 'working';
+      const sr = seqRatingMap.get(seqId);
+      const heldBack = sr?.held_back_step_id ? seqItems.find((i) => i.step_id === sr.held_back_step_id) ?? null : null;
       return {
         id: seqId,
         order: meta.wb_sequence_order ?? 99,
@@ -346,6 +360,9 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
         weakestStepId: weakest?.step_id ?? null,
         weakestTitle: weakest?.step_title ?? null,
         weakestIsOfficial: weakest?.coach_rating != null,
+        selfSequenceRating: sr?.current_rating ?? null,
+        heldBackStepId: heldBack?.step_id ?? null,
+        heldBackTitle: heldBack?.step_title ?? null,
       };
     })
     .filter((s) => s.items.length > 0)
@@ -415,6 +432,37 @@ export async function getStepDetail(portalToken: string, stepId: string) {
     .eq('linked_step_id', stepId)
     .order('created_at', { ascending: false })
     .limit(10);
+  // Los RUNS de secuencia que marcaron este paso (Let's Play por secuencia)
+  // también son historia del paso: la estrella que movieron tiene que verse.
+  // postgrest: el valor de contains DEBE ir como string JSON.
+  const { data: runs } = await admin
+    .from('self_training_sessions')
+    .select('id, created_at, duration_minutes, notes, drill_name, step_marks')
+    .eq('student_id', studentId)
+    .eq('training_mode', 'sequence_run')
+    .contains('step_marks', JSON.stringify([{ step_id: stepId }]))
+    .order('created_at', { ascending: false })
+    .limit(10);
+  const runRows = (runs ?? []).flatMap((r: any) => {
+    const m = (r.step_marks ?? []).find((x: any) => x?.step_id === stepId);
+    if (!m) return [];
+    return [{
+      id: r.id,
+      created_at: r.created_at,
+      duration_minutes: r.duration_minutes,
+      focus_rating: null,
+      mission_completion: null,
+      execution_rating: m.rating ?? null,
+      notes: r.notes,
+      linked_drill_mission_id: null,
+      criteria_evaluation: m.criteria_evaluation ?? null,
+      automaticity: null,
+      from_run: r.drill_name ?? 'Sequence run',
+    }];
+  });
+  const sessionHistory = [...(sessions ?? []), ...runRows]
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 10);
 
   return {
     lesson: lesson || null,
@@ -423,7 +471,7 @@ export async function getStepDetail(portalToken: string, stepId: string) {
     rating: rating?.current_rating || null,
     ratingCount: rating?.rating_count || 0,
     lastRated: rating?.last_updated || null,
-    sessionHistory: sessions || [],
+    sessionHistory,
   };
 }
 
@@ -684,6 +732,11 @@ export async function getNextMove(
   stepTitle: string;
   stars: number | null;
   official: boolean;
+  /** 'held_back' = el paso que detuvo tu último run de la secuencia (Let's
+   *  Play por secuencia); 'weakest' = el primero por debajo de la barra. */
+  source: 'held_back' | 'weakest';
+  /** Tu última nota para la cadena entera, si corriste la secuencia. */
+  selfSequenceRating: number | null;
   /** El detalle más flojo de la última práctica de ese paso (evaluación por
    *  criterio): el "Work on this" baja del paso al detalle concreto. */
   detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
@@ -694,6 +747,13 @@ export async function getNextMove(
     const data = await mySequenceForStudent(studentId, belt);
     const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
     if (!seq || !seq.weakestStepId) return null;
+    // El embudo: secuencia → paso → detalle. El paso que VOS marcaste como el
+    // que detuvo tu último run manda sobre el primero por debajo de la barra:
+    // es más reciente y es tuyo.
+    const useHeld = !!seq.heldBackStepId && !!seq.heldBackTitle;
+    const stepId = useHeld ? seq.heldBackStepId! : seq.weakestStepId;
+    const stepTitle = useHeld ? seq.heldBackTitle! : (seq.weakestTitle ?? seq.weakestStepId);
+    const heldItem = useHeld ? seq.items.find((i) => i.step_id === stepId) ?? null : null;
     let detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null = null;
     try {
       const admin = createAdminClient();
@@ -701,7 +761,7 @@ export async function getNextMove(
         .from('self_training_sessions')
         .select('created_at, drill_name, criteria_evaluation, linked_drill_mission_id')
         .eq('student_id', studentId)
-        .eq('linked_step_id', seq.weakestStepId)
+        .eq('linked_step_id', stepId)
         .eq('kind', 'drill')
         // La última sesión que EVALUÓ criterios (la misión): un drill posterior
         // no borra el detalle flojo del Home.
@@ -709,12 +769,48 @@ export async function getNextMove(
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      const weak = pickWeakestCriterion((last?.criteria_evaluation ?? null) as CriterionEvaluationItem[] | null);
-      if (last && weak && weak.result !== 'met') {
+      // Dos fuentes del detalle: la última misión/foco de ese paso
+      // (criteria_evaluation) y el último RUN de la secuencia que lo marcó
+      // (step_marks). Vale la MÁS RECIENTE de las dos, aunque diga "todo
+      // logrado": un run viejo no puede resucitar un detalle que ya cerraste.
+      type Cand = { date: string; weak: CriterionEvaluationItem | null; missionId: string | null; drillName: string | null };
+      const cands: Cand[] = [];
+      if (last) {
+        cands.push({
+          date: last.created_at,
+          weak: pickWeakestCriterion((last.criteria_evaluation ?? null) as CriterionEvaluationItem[] | null),
+          missionId: last.linked_drill_mission_id ?? null,
+          drillName: last.drill_name ?? null,
+        });
+      }
+      if (useHeld) {
+        const { data: runs } = await admin
+          .from('self_training_sessions')
+          .select('created_at, drill_name, step_marks')
+          .eq('student_id', studentId)
+          .eq('linked_sequence_id', seq.id)
+          .not('step_marks', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        for (const r of runs ?? []) {
+          const m = ((r as any).step_marks ?? []).find((x: any) => x?.step_id === stepId && Array.isArray(x?.criteria_evaluation));
+          if (!m) continue;
+          cands.push({
+            date: r.created_at,
+            weak: pickWeakestCriterion(m.criteria_evaluation as CriterionEvaluationItem[]),
+            missionId: heldItem?.mission?.id ?? null,
+            drillName: (r as any).drill_name ?? null,
+          });
+          break;
+        }
+      }
+      cands.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const newest = cands[0];
+      if (newest?.weak && newest.weak.result !== 'met') {
         // El texto sale de la tarjeta ACTUAL (por índice): si el admin editó
         // el criterio, el alumno ve la versión vigente, no la foto vieja.
-        const text = await currentCriterionText(admin, last.linked_drill_mission_id, weak.criterion_index, weak.criterion_text);
-        if (text) detail = { text, result: weak.result, drillTitle: last.drill_name ?? null, date: last.created_at };
+        const text = await currentCriterionText(admin, newest.missionId, newest.weak.criterion_index, newest.weak.criterion_text);
+        if (text) detail = { text, result: newest.weak.result, drillTitle: newest.drillName, date: newest.date };
       }
     } catch {
       detail = null;
@@ -723,10 +819,12 @@ export async function getNextMove(
       sequenceId: seq.id,
       sequenceOrder: seq.order,
       sequenceName: seq.name,
-      stepId: seq.weakestStepId,
-      stepTitle: seq.weakestTitle ?? seq.weakestStepId,
-      stars: seq.minRating,
-      official: seq.weakestIsOfficial,
+      stepId,
+      stepTitle,
+      stars: useHeld ? (heldItem?.coach_rating ?? heldItem?.rating ?? seq.minRating) : seq.minRating,
+      official: useHeld ? heldItem?.coach_rating != null : seq.weakestIsOfficial,
+      source: useHeld ? 'held_back' : 'weakest',
+      selfSequenceRating: seq.selfSequenceRating,
       detail,
     };
   } catch {

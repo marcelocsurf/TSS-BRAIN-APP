@@ -28,8 +28,9 @@ function surveyDateLabel(sessionDate: string | null | undefined, createdAt: stri
   const iso = d.length <= 10 ? `${d}T00:00:00Z` : d;
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
-import { MySequenceTab } from '@/components/sequence/MySequenceTab';
+import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MySequenceTab';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
+import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
@@ -212,6 +213,9 @@ interface PortalData {
     stepTitle: string;
     stars: number | null;
     official: boolean;
+    /** held_back = el paso que detuvo tu último run de la secuencia. */
+    source?: 'held_back' | 'weakest';
+    selfSequenceRating?: number | null;
     /** El detalle más flojo de la última práctica de ese paso. */
     detail?: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
   } | null;
@@ -370,6 +374,9 @@ export function PortalTabs({
     initialDrillId || null
   );
   const [showCustomSession, setShowCustomSession] = useState(false);
+  // Let's Play por SECUENCIA (Marcelo 2026-09-04): correr la secuencia
+  // completa o trabajar un paso como foco. Se renderiza inline en el tab.
+  const [pendingSequence, setPendingSequence] = useState<TrainSequenceArgs | null>(null);
 
   // Los parámetros de deep-link (?tab=, ?lesson=, ?drill=, ?step=, ?survey=)
   // ya quedaron capturados en estado arriba, así que se limpian de la barra de
@@ -400,6 +407,9 @@ export function PortalTabs({
   // existía; lo que faltaba era usarlo desde adentro — por eso la tarjeta
   // "Your next move" del Home se veía tocable y no hacía nada.
   const openStepInPlay = (stepId: string) => {
+    // Un flujo abandonado (secuencia o pieza) no puede secuestrar el salto.
+    setPendingSequence(null);
+    setPendingDrillMissionId(null);
     setDeepStepId(stepId);
     setActiveTab('sequence');
   };
@@ -472,6 +482,7 @@ export function PortalTabs({
             belt={belt}
             onGoTo={setActiveTab}
             onOpenStep={openStepInPlay}
+            onTrainSequence={(a) => { setDeepStepId(null); setPendingDrillMissionId(null); setPendingSequence(a); setActiveTab('sequence'); }}
             onOpenRoadmap={() => setRoadmapOpen(true)}
             onOpenWater={() => setWaterOpen(true)}
           />
@@ -517,18 +528,40 @@ export function PortalTabs({
             </details>
           </div>
         )}
-        {activeTab === 'sequence' && (
-          pendingDrillMissionId ? (
-            // 1) Drill picked from MySequenceTab → run the linked flow inline
+        {activeTab === 'sequence' && (<>
+          {/* 0) Secuencia elegida → correrla completa o con un paso como foco.
+              Se queda MONTADA (oculta) mientras el alumno ensaya el drill del
+              paso: al volver, su plan (seguridad, tiempo, runs, objetivo)
+              sigue ahí. */}
+          {pendingSequence && (
+            <div hidden={!!pendingDrillMissionId}>
+              <SequenceTrainingFlow
+                key={`${pendingSequence.sequenceId}:${pendingSequence.mode}:${pendingSequence.focusStepId ?? ''}`}
+                portalToken={data.token}
+                sequenceId={pendingSequence.sequenceId}
+                belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
+                mode={pendingSequence.mode}
+                focusStepId={pendingSequence.focusStepId ?? null}
+                studentBelt={student.belt_level || 'white_belt'}
+                onCancel={() => setPendingSequence(null)}
+                onRehearse={(drillId) => handlePracticeDrill(drillId)}
+                onDone={() => { setPendingSequence(null); portalRouter.refresh(); }}
+              />
+            </div>
+          )}
+          {pendingDrillMissionId ? (
+            // 1) Drill picked from MySequenceTab (or "rehearse it on land first")
+            //    → run the linked flow inline. "Back to My Sequence" is truthful:
+            //    it drops the sequence flow too; "Stay in Train tab" returns to it.
             <LinkedTrainingFlow
               key={pendingDrillMissionId}
               drillMissionId={pendingDrillMissionId}
               portalToken={data.token}
               studentBelt={student.belt_level || 'white_belt'}
               onClearIncoming={() => setPendingDrillMissionId(null)}
-              onReturnToSequence={() => setPendingDrillMissionId(null)}
+              onReturnToSequence={() => { setPendingDrillMissionId(null); setPendingSequence(null); }}
             />
-          ) : showCustomSession ? (
+          ) : pendingSequence ? null : showCustomSession ? (
             // 2) Custom Session escape hatch — free-form, doesn't count toward step mastery
             <CustomSessionFlow
               portalToken={data.token}
@@ -557,6 +590,7 @@ export function PortalTabs({
                 portalToken={data.token}
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
+                onTrainSequence={(args) => { setDeepStepId(null); setPendingSequence(args); }}
                 initialStepId={deepStepId}
               />
               <button
@@ -597,8 +631,8 @@ export function PortalTabs({
                 </div>
               </div>
             </div>
-          )
-        )}
+          )}
+        </>)}
         {activeTab === 'lineup' && (data as any).lineup && (
           <LineupTab
             token={data.token}
@@ -686,6 +720,7 @@ function HomeTab({
   belt,
   onGoTo,
   onOpenStep,
+  onTrainSequence,
   onOpenRoadmap,
   onOpenWater,
 }: {
@@ -694,6 +729,8 @@ function HomeTab({
   onGoTo: (tab: Tab) => void;
   /** Abre un paso puntual en Let's Play. */
   onOpenStep?: (stepId: string) => void;
+  /** Arranca el entreno por secuencia con un paso como foco (Let's Play). */
+  onTrainSequence?: (args: TrainSequenceArgs) => void;
   /** Abre la guía de requisitos de la próxima cinta. */
   onOpenRoadmap?: () => void;
   /** Abre "Your water level" — la línea del agua, aparte. */
@@ -1053,7 +1090,16 @@ function HomeTab({
               {data.nextMove && (
                 <button
                   type="button"
-                  onClick={() => onOpenStep?.(data.nextMove!.stepId)}
+                  onClick={() => {
+                    const nm = data.nextMove!;
+                    // El paso que detuvo tu último run se trabaja DENTRO de la
+                    // secuencia: abre el modo foco, no la ficha del paso.
+                    if (nm.source === 'held_back' && nm.sequenceId && onTrainSequence) {
+                      onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
+                    } else {
+                      onOpenStep?.(nm.stepId);
+                    }
+                  }}
                   className="block w-full text-left px-4 py-3.5"
                   style={coachFocus ? { borderTop: '1px solid rgba(255,255,255,.08)' } : undefined}
                 >
@@ -1064,8 +1110,9 @@ function HomeTab({
                     {data.nextMove.stepTitle}
                   </p>
                   <p className="text-[12px] text-white/60 mt-0.5">
-                    Holding back {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}
-                    {data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}
+                    {data.nextMove.source === 'held_back'
+                      ? <>Held your last run of {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)} back{data.nextMove.selfSequenceRating != null && ` · your run ${data.nextMove.selfSequenceRating}★`}</>
+                      : <>Holding back {sequenceLabel(data.nextMove.sequenceId ?? null, data.nextMove.sequenceOrder, data.nextMove.sequenceName)}{data.nextMove.stars !== null && ` · ${data.nextMove.stars}★`}</>}
                   </p>
                   {data.nextMove.detail && (
                     <p className="text-[12px] mt-1.5 leading-snug" style={{ color: data.nextMove.detail.result === 'not_met' ? '#FF8A8F' : '#FFD166' }}>

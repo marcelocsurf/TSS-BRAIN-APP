@@ -77,6 +77,18 @@ export async function getStudentActivitySummary(
 
     const hours = computeSurfSplit(coachSessions, selfSessions);
 
+    // Let's Play por secuencia: los runs marcan qué pasos detuvieron la cadena
+    // (step_marks). Títulos para la bitácora, en una sola consulta.
+    const heldIds = new Set<string>();
+    for (const s of selfVisible as any[]) {
+      for (const m of (s.step_marks ?? []) as any[]) if (m?.held_back && m?.step_id) heldIds.add(m.step_id);
+    }
+    const stepTitle = new Map<string, string>();
+    if (heldIds.size > 0) {
+      const { data: ls } = await admin.from('lessons').select('id, title').in('id', Array.from(heldIds));
+      for (const l of (ls ?? []) as any[]) stepTitle.set(l.id, l.title);
+    }
+
     // Prácticas propias completadas esta semana (lunes SV, no la del portal
     // que es días consecutivos — por eso el copy dice "por su cuenta").
     const thisWeek = weekKey(new Date());
@@ -101,6 +113,14 @@ export async function getStudentActivitySummary(
         detail: s.kind === 'free_surf'
           ? `${s.total_water_minutes || s.duration_minutes || 0} min de agua`
           : [
+              s.training_mode === 'sequence_run' && s.sequence_rating ? `secuencia ${s.sequence_rating}★` : null,
+              (() => {
+                const held = ((s.step_marks ?? []) as any[]).filter((m) => m?.held_back);
+                if (!held.length) return null;
+                const names = held.map((m) => stepTitle.get(m.step_id) ?? m.step_id).join(', ');
+                const w = pickWeakestCriterion(held[0].criteria_evaluation ?? null);
+                return `freno: ${names}` + (w && w.result !== 'met' ? ` · trabajar: ${w.criterion_text}` : '');
+              })(),
               s.mission_completion
                 ? `misión ${({ yes: 'lograda', partial: 'a medias', no: 'no lograda' } as Record<string, string>)[s.mission_completion] ?? s.mission_completion}`
                 : null,
