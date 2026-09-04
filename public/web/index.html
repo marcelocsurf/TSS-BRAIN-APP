@@ -6,390 +6,608 @@
 <title>The Method — The Surf Sequence</title>
 <meta name="description" content="Everything The Surf Sequence Method is, on one page: the system, the belts, the book ONE WAVE, and how to find your level.">
 <meta property="og:title" content="The Method — The Surf Sequence">
-<meta property="og:description" content="A structured system to learn, train and progress in surfing — with a level you can verify, a plan for every session, and the joy intact.">
+<meta property="og:description" content="Everything The Surf Sequence Method is, on one page: the system, the belts, the book ONE WAVE, and how to find your level.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.thesurfsequence.com/">
+<meta property="og:image" content="https://www.thesurfsequence.com/web/img/brand/lockup-wave.png">
+<meta property="og:image:width" content="1312">
+<meta property="og:image:height" content="654">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="/web/img/brand/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Lora:ital,wght@1,400;1,500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&amp;family=Lora:ital,wght@1,400;1,500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
-  /* ═══ Recreación de producción del handoff "The Method.dc.html" ═══
-     Los estilos inline del diseño son la fuente de verdad (README del
-     handoff); acá solo vive lo que inline no puede: hovers, responsive
-     y base. Sin border-radius: las esquinas rectas son intencionales. */
+  /* ═══ Recreación de producción del handoff "The Method.dc.html" (paquete 2, 2026-09-04) ═══
+     Los estilos inline del diseño son la fuente de verdad (README del handoff);
+     acá solo vive lo que inline no puede: base, hovers (style-hover del diseño)
+     y responsive. Sin border-radius: las esquinas rectas son intencionales. */
   *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Figtree', system-ui, sans-serif; color: #2A2E33; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
   html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: 'Archivo', system-ui, sans-serif; color: #3E4A50; background: #FFFFFF; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   img { display: block; max-width: 100%; }
-  a { color: #0093B8; text-decoration: none; }
-  h1, h2, h3, h4 { margin: 0; font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; }
+  a { color: #005F79; text-decoration: none; }
+  a:hover { color: #00D2FF; }
+  h1, h2 { margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 120%; font-weight: 800; letter-spacing: -0.02em; line-height: 1.02; text-transform: uppercase; }
+  h3, h4 { margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
   p { margin: 0; }
   ul { margin: 0; padding: 0; list-style: none; }
-  ::selection { background: #00D2FF; color: #071624; }
-  @media (max-width: 780px) {
-    [data-collapse] { grid-template-columns: 1fr !important; }
-  }
-  .nav-active { color: #071624; }
-  .nav-active:hover { color: #00A9D4; }
-  .nav-a { color: #6D6E71; }
-  .nav-a:hover { color: #071624; }
-  .btn-navy { background: #071624; color: #FFFFFF; }
-  .btn-navy:hover { background: #00D2FF; color: #071624; }
-  .btn-cyan { background: #00D2FF; color: #071624; }
-  .btn-cyan:hover { background: #FFFFFF; color: #071624; }
+  ::selection { background: #00D2FF; color: #061C2B; }
+
+  /* ── hovers (style-hover= del diseño) ── */
+  .nav-active { color: #061C2B; }
+  .nav-active:hover { color: #005F79; }
+  .nav-a { color: #55666E; }
+  .nav-a:hover { color: #061C2B; }
+  .login-mobile { display: none; margin-left: auto; font-size: 13px; font-weight: 500; }
+  .btn-ink { background: #061C2B; color: #FFFFFF; }
+  .btn-ink:hover { background: #00D2FF; color: #061C2B; }
+  .btn-cyan { background: #00D2FF; color: #061C2B; }
+  .btn-cyan:hover { background: #FFFFFF; color: #061C2B; }
   .btn-outline { border: 1px solid rgba(255,255,255,0.3); color: #FFFFFF; }
+  .btn-outline.b35 { border-color: rgba(255,255,255,0.35); }
   .btn-outline:hover { border-color: #00D2FF; color: #00D2FF; }
-  .btn-donate { background: #071624; color: #FFFFFF; }
-  .btn-donate:hover { background: #00A9D4; color: #FFFFFF; }
   .link-cyan { color: #00D2FF; }
   .link-cyan:hover { color: #FFFFFF; }
   .foot-a { color: rgba(255,255,255,0.6); }
   .foot-a:hover { color: #00D2FF; }
-  .card-link { color: #0093B8; }
-  .card-link:hover { color: #00D2FF; }
+
+  /* ── responsive (README) ── */
+  @media (max-width: 780px) {
+    [data-collapse] { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 1240px) {
+    [data-quotes] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  }
+  @media (max-width: 560px) {
+    [data-quotes] { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 1040px) {
+    header { flex-wrap: wrap !important; padding: 12px 16px !important; row-gap: 10px !important; }
+    header nav { gap: 12px !important; font-size: 13px !important; width: 100%; justify-content: flex-start !important; }
+    header img { width: 148px !important; }
+    .login-mobile { display: block; }
+    .login-desk { display: none; }
+    section { padding-left: 20px !important; padding-right: 20px !important; }
+  }
+  @media (max-width: 520px) {
+    .loop-row { grid-template-columns: 30px 1fr !important; }
+    .loop-row .loop-text { grid-column: 2; }
+  }
+  @media (max-width: 400px) {
+    [data-belts] { grid-template-columns: 1fr !important; }
+  }
 </style>
 </head>
-<body>
+<body id="top">
 
-<header style="position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px clamp(20px, 6vw, 72px); background: rgba(255,255,255,0.92); backdrop-filter: blur(14px); border-bottom: 1px solid #E9ECEF;">
-  <a href="/" style="display: block; flex-shrink: 0;"><img src="/web/img/brand/lockup-wave.png" alt="The Surf Sequence" style="width: clamp(168px, 16vw, 232px); height: auto;"></a>
-  <nav style="display: flex; align-items: center; gap: clamp(12px, 1.9vw, 30px); font-size: 14.5px; font-weight: 500; white-space: nowrap; flex-wrap: wrap; justify-content: flex-end; min-width: 0; row-gap: 10px;">
-    <a href="#sistema" class="nav-active">The system</a>
-    <a href="#niveles" class="nav-a">Levels</a>
+<header style="position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px clamp(20px, 6vw, 72px); background: rgba(255,255,255,0.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid #E9ECEF;">
+  <a href="#top" style="display: block; flex-shrink: 0;"><img src="/web/img/brand/lockup-wave.png" alt="The Surf Sequence" style="width: clamp(168px, 16vw, 232px); height: auto;"></a>
+  <a href="https://app.thesurfsequence.com/login" class="nav-a login-mobile">Log in</a>
+  <nav style="display: flex; align-items: center; gap: clamp(10px, 1.3vw, 20px); font-size: 13.5px; font-weight: 500; white-space: nowrap; flex-wrap: wrap; justify-content: flex-end; min-width: 0; row-gap: 10px;">
+    <a href="#sistema" class="nav-active">The method</a>
+    <a href="#como-funciona" class="nav-a">How it works</a>
+    <a href="#niveles" class="nav-a">The 6 belts</a>
     <a href="#libro" class="nav-a">The book</a>
-    <a href="#cursos" class="nav-a">Courses</a>
-    <a href="#para-quien" class="nav-a">Who it&rsquo;s for</a>
-    <a href="https://app.thesurfsequence.com/quiz" class="btn-navy" style="padding: 11px 20px; font-weight: 600;">Find your level</a>
+    <a href="#cursos" class="nav-a">Courses &amp; plans</a>
+    <a href="#para-quien" class="nav-a">Who it’s for</a>
+    <a href="https://app.thesurfsequence.com/login" class="nav-a login-desk">Log in</a>
+    <a href="https://app.thesurfsequence.com/quiz" class="btn-ink" style="padding: 11px 20px; font-weight: 600;">Find your level</a>
   </nav>
 </header>
 
-<section style="background: #071624; color: #FFFFFF; padding: clamp(72px, 10vw, 136px) clamp(20px, 6vw, 72px) clamp(56px, 7vw, 96px);">
+<!-- ═══ HERO ═══ -->
+<section style="background: #061C2B; color: #FFFFFF; padding: clamp(72px, 10vw, 136px) clamp(20px, 6vw, 72px) clamp(56px, 7vw, 96px);">
   <div data-collapse style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); align-items: center;">
     <div>
-      <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: #00D2FF;">The Surf Sequence&reg; Method</div>
-      <h1 style="margin-top: 26px; font-size: clamp(38px, 5.6vw, 84px); font-weight: 800; line-height: 0.98; letter-spacing: -0.04em;">The system that turns surfing into a <span style="color: #00D2FF;">learnable skill.</span></h1>
-      <p style="margin-top: 28px; max-width: 52ch; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.7; color: rgba(255,255,255,0.72);">A structured system to learn, train and progress in surfing — with a level you can verify, a plan for every session, and the joy intact. This page is the whole method, condensed: for students, coaches, academies and institutions.</p>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: #00D2FF;">The Surf Sequence® Method</div>
+      <h1 style="margin-top: 26px; font-size: clamp(34px, 5.6vw, 89px); font-weight: 800; line-height: 0.98; letter-spacing: -0.04em;">The method that turns surfing into a <span style="color: #00D2FF;">learnable skill.</span></h1>
+      <p style="margin-top: 28px; max-width: 52ch; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.7; color: rgba(255,255,255,0.72);">Most surfers stay at the same level for years — not from lack of waves, but because nobody told them what to work on today. Same waves, real progress.</p>
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 38px;">
-        <a href="https://app.thesurfsequence.com/quiz" class="btn-cyan" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Find your level — 60 seconds &rarr;</a>
+        <a href="https://app.thesurfsequence.com/quiz" class="btn-cyan" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Find your level →</a>
         <a href="#libro" class="btn-outline" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Get the book</a>
       </div>
-      <p style="margin-top: 34px; font-family: 'Lora', serif; font-style: italic; font-size: clamp(18px, 1.7vw, 23px); color: #00D2FF;">Evolve through play</p>
     </div>
     <figure style="margin: 0; display: grid; justify-items: center;">
-      <img src="/web/img/brand/lockup-vertical-white.png" alt="The Surf Sequence — Evolve through play" style="width: min(290px, 70%); height: auto;">
+      <img src="/web/img/brand/lockup-vertical-white.png" alt="The Surf Sequence — Evolve through play" style="width: min(400px, 92%); height: auto;">
     </figure>
   </div>
 </section>
 
+<!-- ═══ ISA STRIP ═══ -->
+<section style="padding: clamp(36px, 4vw, 56px) clamp(20px, 6vw, 72px); background: #FFFFFF; border-bottom: 1px solid rgba(14,32,41,0.12);">
+  <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(16px, 3vw, 40px); text-align: center;">
+    <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #061C2B;">Aligned with International Surfing Association coach education standards</p>
+    <img src="/web/img/isa-logo.png" alt="ISA — International Surfing Association" style="height: 52px; width: auto;">
+  </div>
+</section>
+
+<!-- ═══ 01 — WHAT THE METHOD IS ═══ -->
 <section id="sistema" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #FFFFFF;">
   <div style="max-width: 1240px; margin: 0 auto;">
-    <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00A9D4; margin-bottom: 22px;">01 — What the method is</div>
-    <h2 style="font-size: clamp(30px, 4.2vw, 54px); font-weight: 800; color: #071624; max-width: 24ch; letter-spacing: -0.03em;">Surfing, organised so it can be learned.</h2>
-    <p style="margin-top: 24px; max-width: 62ch; color: #6D6E71; font-size: 17px; line-height: 1.75;">Most surfers train on intuition: they paddle out hoping for a good session, without knowing their real level or what today&rsquo;s work is. The Surf Sequence replaces hope with structure — the same way martial arts did — without losing what surfing is: play.</p>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">01 — What the method is</div>
+    <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; color: #061C2B; max-width: 24ch; letter-spacing: -0.03em;">Surfing, organised so it can be learned.</h2>
+    <p style="margin-top: 24px; max-width: 62ch; color: #55666E; font-size: 17px; line-height: 1.75;">Most surfers train on intuition: they paddle out hoping for a good session, without knowing their real level or what today’s work is. The Surf Sequence replaces hope with structure — the same way martial arts did — without losing what surfing is: play.</p>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; margin-top: 56px;">
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #00A9D4;">Belts</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">6 verifiable levels</h3>
-        <p style="margin-top: 10px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">From White to Black. You advance by verified competence, never by sessions attended.</p>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Your level</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">An honest starting point</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">The level test tells you where you actually are — and what the next belt asks of you.</p>
       </div>
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #00A9D4;">Sequences</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">23 sequences</h3>
-        <p style="margin-top: 10px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">Skill broken into ordered pieces: what to learn, in what order, and what unlocks next.</p>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Sequences</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Skill in order</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Every skill broken into ordered pieces: what to learn, in what order, and what unlocks next.</p>
       </div>
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #00A9D4;">Pillars</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">4 pillars</h3>
-        <p style="margin-top: 10px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">Physical &middot; Technical &middot; Tactical &middot; Mental. The bottom turn that fails is not always a bottom turn problem.</p>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Pillars</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">4 pillars</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Physical · Technical · Tactical · Mental — assessed at every belt. The bottom turn that fails is not always a bottom turn problem.</p>
       </div>
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #00A9D4;">Missions</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">One intention per session</h3>
-        <p style="margin-top: 10px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">Every session has a mission, a dose and a review. The prize is executing it — not the perfect wave.</p>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Missions</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">One intention per session</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Every session has a mission, a dose and a review. The prize is executing it — not the perfect wave.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #071624; color: #FFFFFF;">
+<!-- ═══ 02 — THE FOUR QUESTIONS ═══ -->
+<section id="preguntas" style="position: relative; overflow: hidden; padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #E9E2D2;">
+  <div style="position: relative; max-width: 1240px; margin: 0 auto;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">02 — The four questions</div>
+    <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; color: #061C2B; max-width: 26ch; letter-spacing: -0.03em;">Four questions every surfer should be able to answer.</h2>
+    <p style="margin-top: 22px; max-width: 58ch; color: #55666E; font-size: 16.5px; line-height: 1.7;">If you cannot answer them, you are not training — you are just surfing and hoping. The method exists to keep these four answered, session after session.</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; margin-top: 56px;">
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">01</div>
+        <h3 style="font-size: 21px; margin-top: 16px; color: #061C2B;">Where am I?</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">A verified level and an honest score across the four pillars.</p>
+      </div>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">02</div>
+        <h3 style="font-size: 21px; margin-top: 16px; color: #061C2B;">What needs work?</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Your gaps, in priority order — not a hundred corrections at once.</p>
+      </div>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">03</div>
+        <h3 style="font-size: 21px; margin-top: 16px; color: #061C2B;">How do I train it?</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">The drill for the sand, the mission for the water, the dose for today.</p>
+      </div>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">04</div>
+        <h3 style="font-size: 21px; margin-top: 16px; color: #061C2B;">Am I progressing?</h3>
+        <p style="margin-top: 10px; color: #55666E; font-size: 14.5px; line-height: 1.65;">A record of what you did and how it changed — proof, not a feeling.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 — HOW IT WORKS ═══ -->
+<section id="como-funciona" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #061C2B; color: #FFFFFF;">
   <div style="max-width: 1240px; margin: 0 auto;">
-    <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00D2FF; margin-bottom: 22px;">02 — How it works</div>
-    <h2 style="font-size: clamp(30px, 4.2vw, 54px); font-weight: 800; max-width: 24ch; letter-spacing: -0.03em;">A map for the journey. A loop for every session.</h2>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF; margin-bottom: 22px;">03 — How it works</div>
+    <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; max-width: 24ch; letter-spacing: -0.03em;">A map for the journey. A loop for every session.</h2>
     <div data-collapse style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); gap: clamp(32px, 5vw, 72px); margin-top: 56px; align-items: start;">
       <div style="display: grid; gap: 18px;">
         <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 16px;">
-          <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF;">The map</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">The map</div>
           <p style="margin-top: 10px; font-size: 15.5px; line-height: 1.65; color: rgba(255,255,255,0.78);">Where am I, where am I going, what do I need, how do I train it. You revisit it every few months.</p>
         </div>
         <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 16px;">
-          <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF;">The loop</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">The loop</div>
           <p style="margin-top: 10px; font-size: 15.5px; line-height: 1.65; color: rgba(255,255,255,0.78);">Seven steps you run every time you paddle out. Without the map, the loop is activity without direction. Without the loop, the map is a wish.</p>
         </div>
         <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 16px;">
-          <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF;">Two valid paths</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Two valid paths</div>
           <p style="margin-top: 10px; font-size: 15.5px; line-height: 1.65; color: rgba(255,255,255,0.78);">Competitor and personal progression. Same belts, same method — only what you are building toward changes.</p>
         </div>
       </div>
       <div style="display: grid; gap: 1px; background: rgba(255,255,255,0.1);">
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">01</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">01</span>
           <span style="font-size: 15.5px; font-weight: 700;">Mission</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">One intention for the session — a detail, a manoeuvre, or a score-building mission.</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">One intention for the session — a detail, a manoeuvre, or a score-building mission.</span>
         </div>
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">02</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">02</span>
           <span style="font-size: 15.5px; font-weight: 700;">Reality</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">Look before you enter: conditions, crowd, energy, your own state.</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">Look before you enter: conditions, crowd, energy, your own state.</span>
         </div>
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">03</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">03</span>
           <span style="font-size: 15.5px; font-weight: 700;">Calibrate</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">Match the task and your expectations to your level and the day.</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">Match the task and your expectations to your level and the day.</span>
         </div>
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">04</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">04</span>
           <span style="font-size: 15.5px; font-weight: 700;">Presence</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">The breath, the ritual — leave on the beach whatever you carried from the day.</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">The breath, the ritual — leave on the beach whatever you carried from the day.</span>
         </div>
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">05</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">05</span>
           <span style="font-size: 15.5px; font-weight: 700;">Practice</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">A concrete dose: this many waves, this many attempts, this much time.</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">A concrete dose: this many waves, this many attempts, this much time.</span>
         </div>
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">06</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">06</span>
           <span style="font-size: 15.5px; font-weight: 700;">Review</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">Did the thing you came to do happen? Rate your focus. If something failed — which pillar?</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">Did the thing you came to do happen? Rate your focus. If something failed — which pillar?</span>
         </div>
-        <div style="background: #0A2032; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
-          <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #00D2FF;">07</span>
+        <div class="loop-row" style="background: #0A2A3A; padding: 16px 20px; display: grid; grid-template-columns: 30px 130px 1fr; gap: 14px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #00D2FF;">07</span>
           <span style="font-size: 15.5px; font-weight: 700;">Adapt</span>
-          <span style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">One decision for next time: repeat, progress, simplify, adjust, change, reassess — or advance.</span>
+          <span class="loop-text" style="font-size: 14px; line-height: 1.55; color: rgba(255,255,255,0.65);">One decision for next time: repeat, progress, simplify, adjust, change, reassess — or advance.</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section id="niveles" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #F3EDE2;">
-  <div style="max-width: 1240px; margin: 0 auto;">
+<!-- ═══ 04 — THE LEVELS ═══ -->
+<section id="niveles" style="position: relative; overflow: hidden; padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #E9E2D2;">
+  <div style="position: relative; max-width: 1240px; margin: 0 auto;">
     <div style="display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 24px;">
       <div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00A9D4; margin-bottom: 22px;">03 — The levels</div>
-        <h2 style="font-size: clamp(30px, 4.2vw, 54px); font-weight: 800; color: #071624; letter-spacing: -0.03em;">Six belts. One honest address.</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">04 — The levels</div>
+        <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; color: #061C2B; letter-spacing: -0.03em;">Six belts. One honest address.</h2>
       </div>
-      <p style="max-width: 44ch; color: #6D6E71; font-size: 15.5px; line-height: 1.65;">More than one in three surfers place themselves at least one level above their real performance — internal data, 3,000+ surfers assessed. Honesty here is the foundation of everything after.</p>
+      <p style="max-width: 44ch; color: #55666E; font-size: 15.5px; line-height: 1.65;">More than one in three surfers place themselves at least one level above their real performance — internal data, 3,000+ surfers assessed. Honesty here is the foundation of everything after.</p>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1px; margin-top: 56px;">
-      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; display: flex; flex-direction: column; padding-bottom: 30px;">
+    <div data-belts style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1px; margin-top: 56px;">
+      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); display: flex; flex-direction: column; padding-bottom: 30px;">
         <div style="height: 5px; background: #E8ECEF;"></div>
         <div style="padding: 26px 28px 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
-          <h3 style="font-size: 23px; font-weight: 800; color: #071624;">White</h3>
-          <span style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">Beginner</span>
+          <h3 style="font-size: 21px; font-weight: 800; color: #061C2B;">White</h3>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">Beginner</span>
         </div>
-        <div style="padding: 10px 28px 0; font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #00A9D4;">Humility</div>
-        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #55585C;">You are learning that the ocean is alive and the board is not. Everything is new — and that is exactly right.</p>
-        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #A79C8A;">SEQ 1–5 &middot; Mission Series</div>
+        <div style="padding: 12px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Humility</div>
+        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #3E4A50;">You are learning that the ocean is alive and the board is not. Everything is new — and that is exactly right.</p>
+        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">SEQ 1–5 · Mission Series</div>
       </article>
-      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; display: flex; flex-direction: column; padding-bottom: 30px;">
+      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); display: flex; flex-direction: column; padding-bottom: 30px;">
         <div style="height: 5px; background: #F5C518;"></div>
         <div style="padding: 26px 28px 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
-          <h3 style="font-size: 23px; font-weight: 800; color: #071624;">Yellow</h3>
-          <span style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">Novice</span>
+          <h3 style="font-size: 21px; font-weight: 800; color: #061C2B;">Yellow</h3>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">Novice</span>
         </div>
-        <div style="padding: 10px 28px 0; font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #00A9D4;">Process &amp; Resilience</div>
-        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #55585C;">You can stand up. Now you learn what to do once you are standing — and to catch your own waves.</p>
-        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #A79C8A;">SEQ 6–7 &middot; Paddling &amp; Entry</div>
+        <div style="padding: 12px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Process &amp; Resilience</div>
+        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #3E4A50;">You can stand up. Now you learn what to do once you are standing — and to catch your own waves.</p>
+        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">SEQ 6–7 · Paddling &amp; Entry</div>
       </article>
-      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; display: flex; flex-direction: column; padding-bottom: 30px;">
+      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); display: flex; flex-direction: column; padding-bottom: 30px;">
         <div style="height: 5px; background: #1E9BE0;"></div>
         <div style="padding: 26px 28px 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
-          <h3 style="font-size: 23px; font-weight: 800; color: #071624;">Blue</h3>
-          <span style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">Foundation</span>
+          <h3 style="font-size: 21px; font-weight: 800; color: #061C2B;">Blue</h3>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">Foundation</span>
         </div>
-        <div style="padding: 10px 28px 0; font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #00A9D4;">Conscious Commitment</div>
-        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #55585C;">You have real skills; now the gaps become visible. The work moves onto the wave: speed and line.</p>
-        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #A79C8A;">SEQ 8–13 &middot; Rail Changes</div>
+        <div style="padding: 12px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Conscious Commitment</div>
+        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #3E4A50;">You have real skills; now the gaps become visible. The work moves onto the wave: speed and line.</p>
+        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">SEQ 8–13 · Rail Changes</div>
       </article>
-      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; display: flex; flex-direction: column; padding-bottom: 30px;">
+      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); display: flex; flex-direction: column; padding-bottom: 30px;">
         <div style="height: 5px; background: #7B4FBE;"></div>
         <div style="padding: 26px 28px 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
-          <h3 style="font-size: 23px; font-weight: 800; color: #071624;">Purple</h3>
-          <span style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">Emerging</span>
+          <h3 style="font-size: 21px; font-weight: 800; color: #061C2B;">Purple</h3>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">Emerging</span>
         </div>
-        <div style="padding: 10px 28px 0; font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #00A9D4;">Personal Responsibility</div>
-        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #55585C;">You are building a real game — and dismantling it at the same time. Progressive surfing, style forming.</p>
-        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #A79C8A;">SEQ 14–17</div>
+        <div style="padding: 12px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Personal Responsibility</div>
+        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #3E4A50;">You are building a real game — and dismantling it at the same time. Progressive surfing, style forming.</p>
+        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">SEQ 14–17</div>
       </article>
-      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; display: flex; flex-direction: column; padding-bottom: 30px;">
+      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); display: flex; flex-direction: column; padding-bottom: 30px;">
         <div style="height: 5px; background: #7D4E27;"></div>
         <div style="padding: 26px 28px 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
-          <h3 style="font-size: 23px; font-weight: 800; color: #071624;">Brown</h3>
-          <span style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">Pre-Elite</span>
+          <h3 style="font-size: 21px; font-weight: 800; color: #061C2B;">Brown</h3>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">Pre-Elite</span>
         </div>
-        <div style="padding: 10px 28px 0; font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #00A9D4;">Gratitude</div>
-        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #55585C;">The technique is there. The mental game is the frontier: performing when it matters.</p>
-        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #A79C8A;">SEQ 18–20</div>
+        <div style="padding: 12px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Gratitude</div>
+        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #3E4A50;">The technique is there. The mental game is the frontier: performing when it matters.</p>
+        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">SEQ 18–20</div>
       </article>
-      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; display: flex; flex-direction: column; padding-bottom: 30px;">
+      <article style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); display: flex; flex-direction: column; padding-bottom: 30px;">
         <div style="height: 5px; background: #0F1A22;"></div>
         <div style="padding: 26px 28px 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
-          <h3 style="font-size: 23px; font-weight: 800; color: #071624;">Black</h3>
-          <span style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">Elite</span>
+          <h3 style="font-size: 21px; font-weight: 800; color: #061C2B;">Black</h3>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">Elite</span>
         </div>
-        <div style="padding: 10px 28px 0; font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #00A9D4;">Impact &amp; Sharing</div>
-        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #55585C;">You are not chasing the next level — you are refining this one. And you can now pass the system on.</p>
-        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #A79C8A;">SEQ 21+</div>
+        <div style="padding: 12px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Impact &amp; Sharing</div>
+        <p style="padding: 16px 28px 0; font-size: 15.5px; line-height: 1.6; color: #3E4A50;">You are not chasing the next level — you are refining this one. And you can now pass the system on.</p>
+        <div style="margin-top: auto; padding: 22px 28px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">SEQ 21+</div>
       </article>
     </div>
-    <div style="margin-top: clamp(40px, 5vw, 56px); background: #071624; color: #FFFFFF; padding: clamp(32px, 4vw, 48px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px;">
+    <div style="margin-top: clamp(40px, 5vw, 56px); background: #061C2B; color: #FFFFFF; padding: clamp(32px, 4vw, 48px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px;">
       <div>
-        <h3 style="font-size: clamp(20px, 2.2vw, 28px);">Not sure where you are?</h3>
-        <p style="margin-top: 10px; color: rgba(255,255,255,0.7); font-size: 15.5px; line-height: 1.6; max-width: 52ch;">The 60-second test places you — and gives you the address your training starts from.</p>
+        <h3 style="font-size: clamp(21px, 2.2vw, 34px);">Not sure where you are?</h3>
+        <p style="margin-top: 10px; color: rgba(255,255,255,0.7); font-size: 15.5px; line-height: 1.6; max-width: 52ch;">A short test places you — and gives you the address your training starts from.</p>
       </div>
-      <a href="https://app.thesurfsequence.com/quiz" class="btn-cyan" style="padding: 16px 30px; font-size: 14px; font-weight: 600; flex-shrink: 0;">Take the level test &rarr;</a>
+      <a href="https://app.thesurfsequence.com/quiz" class="btn-cyan" style="padding: 16px 30px; font-size: 14px; font-weight: 600; flex-shrink: 0;">Take the level test →</a>
     </div>
   </div>
 </section>
 
+<!-- ═══ 05 — THE BOOK ═══ -->
 <section id="libro" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #FFFFFF;">
   <div data-collapse style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); gap: clamp(36px, 6vw, 88px); align-items: center;">
     <img src="/web/img/one-wave-cover.jpg" alt="ONE WAVE — a practical system to train with intention, by Marcelo Castellanos" style="width: 100%; max-width: 360px; justify-self: center; box-shadow: 0 24px 60px rgba(7,22,36,0.35);">
     <div>
       <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 22px;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00A9D4;">04 — The book</div>
-        <span style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #071624; background: #00D2FF; padding: 6px 10px;">On sale now</span>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79;">05 — The book</div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #061C2B; background: #00D2FF; padding: 6px 10px;">On sale now</span>
       </div>
-      <h2 style="font-size: clamp(30px, 4vw, 52px); font-weight: 800; color: #071624; letter-spacing: -0.03em;">ONE WAVE is the door into the method.</h2>
-      <p style="margin-top: 22px; color: #6D6E71; font-size: 16.5px; line-height: 1.75; max-width: 58ch;">Not a technique manual, not a collection of drills: the system&rsquo;s foundation. How to train with intention, set expectations from your real level, work with fear, find the right size of challenge, and turn every session into one mission with one review. It is the thinking that everything else — belts, courses, the portal — is built on.</p>
-      <ul style="display: grid; gap: 10px; margin-top: 24px; font-size: 15px; color: #55585C; line-height: 1.6;">
-        <li style="display: grid; grid-template-columns: 14px 1fr; gap: 12px;"><span style="color: #00A9D4;">&rsaquo;</span><span>The session loop: Mission &rarr; Reality &rarr; Calibrate &rarr; Presence &rarr; Practice &rarr; Review &rarr; Adapt</span></li>
-        <li style="display: grid; grid-template-columns: 14px 1fr; gap: 12px;"><span style="color: #00A9D4;">&rsaquo;</span><span>The six levels described honestly — what is normal and what progress looks like at each</span></li>
-        <li style="display: grid; grid-template-columns: 14px 1fr; gap: 12px;"><span style="color: #00A9D4;">&rsaquo;</span><span>The formula: less equals more — one clear intention over a hundred corrections</span></li>
+      <h2 style="font-size: clamp(34px, 4vw, 55px); font-weight: 800; color: #061C2B; letter-spacing: -0.03em;">ONE WAVE is the door into the method.</h2>
+      <p style="margin-top: 22px; color: #55666E; font-size: 16.5px; line-height: 1.75; max-width: 58ch;">Not a technique manual, not a collection of drills: the system’s foundation. How to train with intention, set expectations from your real level, work with fear, find the right size of challenge, and turn every session into one mission with one review. It is the thinking that everything else — belts, courses, the portal — is built on.</p>
+      <ul style="display: grid; gap: 10px; margin-top: 24px; font-size: 15px; color: #3E4A50; line-height: 1.6;">
+        <li style="display: grid; grid-template-columns: 14px 1fr; gap: 12px;"><span style="color: #00A8CC;">›</span><span>The session loop: Mission → Reality → Calibrate → Presence → Practice → Review → Adapt</span></li>
+        <li style="display: grid; grid-template-columns: 14px 1fr; gap: 12px;"><span style="color: #00A8CC;">›</span><span>The six levels described honestly — what is normal and what progress looks like at each</span></li>
+        <li style="display: grid; grid-template-columns: 14px 1fr; gap: 12px;"><span style="color: #00A8CC;">›</span><span>The formula: less equals more — one clear intention over a hundred corrections</span></li>
       </ul>
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px;">
-        <a href="mailto:info@thesurfsequence.com?subject=ONE%20WAVE" class="btn-navy" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Get ONE WAVE &rarr;</a>
+        <a href="mailto:info@thesurfsequence.com?subject=ONE%20WAVE" class="btn-ink" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Get ONE WAVE →</a>
       </div>
-      <p style="margin-top: 18px; font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A;">By Marcelo Castellanos &middot; Olympic surf coach &middot; creator of the method</p>
+      <p style="margin-top: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #55666E;">By Marcelo Castellanos · Olympic surf coach · creator of the method</p>
     </div>
   </div>
 </section>
 
-<section id="cursos" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #071624; color: #FFFFFF;">
-  <div style="max-width: 1240px; margin: 0 auto;">
-    <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00D2FF; margin-bottom: 22px;">05 — The courses</div>
-    <h2 style="font-size: clamp(30px, 4.2vw, 54px); font-weight: 800; max-width: 26ch; letter-spacing: -0.03em;">The method, running as an app.</h2>
+<!-- ═══ 06 — THE COURSES ═══ -->
+<section id="cursos" style="position: relative; overflow: hidden; padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #061C2B; color: #FFFFFF;">
+  <div style="position: relative; max-width: 1240px; margin: 0 auto;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF; margin-bottom: 22px;">06 — The courses</div>
+    <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; max-width: 26ch; letter-spacing: -0.03em;">The method, running as an app.</h2>
     <p style="margin-top: 22px; max-width: 60ch; color: rgba(255,255,255,0.72); font-size: 16.5px; line-height: 1.7;">The remarkable thing is not the app — it is the method. Each course lives in an app that puts it into practice systematically: it knows where you are on the map, runs the session loop with you — mission, dose, review — and verifies your progress belt by belt. What the book teaches you to think, the app helps you do, every session.</p>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; margin-top: 48px; background: rgba(255,255,255,0.1);">
-      <div style="background: #0A2032; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
+      <div style="background: #0A2A3A; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
         <div style="height: 4px; width: 44px; background: #E8ECEF;"></div>
         <div style="font-size: 18px; font-weight: 700;">White</div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5);">Coming soon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.85);">Coming soon</div>
       </div>
-      <div style="background: #0A2032; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
+      <div style="background: #0A2A3A; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
         <div style="height: 4px; width: 44px; background: #F5C518;"></div>
         <div style="font-size: 18px; font-weight: 700;">Yellow</div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5);">Coming soon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.85);">Coming soon</div>
       </div>
-      <div style="background: #0A2032; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
+      <div style="background: #0A2A3A; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
         <div style="height: 4px; width: 44px; background: #1E9BE0;"></div>
         <div style="font-size: 18px; font-weight: 700;">Blue</div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5);">Coming soon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.85);">Coming soon</div>
       </div>
-      <div style="background: #0A2032; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
+      <div style="background: #0A2A3A; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
         <div style="height: 4px; width: 44px; background: #7B4FBE;"></div>
         <div style="font-size: 18px; font-weight: 700;">Purple</div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5);">Coming soon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.85);">Coming soon</div>
       </div>
-      <div style="background: #0A2032; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
+      <div style="background: #0A2A3A; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
         <div style="height: 4px; width: 44px; background: #7D4E27;"></div>
         <div style="font-size: 18px; font-weight: 700;">Brown</div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5);">Coming soon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.85);">Coming soon</div>
       </div>
-      <div style="background: #0A2032; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
+      <div style="background: #0A2A3A; padding: 26px 22px; display: grid; gap: 12px; align-content: start;">
         <div style="height: 4px; width: 44px; background: #0F1A22; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);"></div>
         <div style="font-size: 18px; font-weight: 700;">Black</div>
-        <div style="font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.5);">Coming soon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.85);">Coming soon</div>
       </div>
     </div>
     <div style="margin-top: 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
-      <a href="mailto:info@thesurfsequence.com?subject=Founding%20list" class="btn-cyan" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Join the founding list &rarr;</a>
+      <a href="mailto:info@thesurfsequence.com?subject=Founding%20list" class="btn-cyan" style="padding: 16px 30px; font-size: 14px; font-weight: 600;">Join the founding list →</a>
       <p style="color: rgba(255,255,255,0.6); font-size: 14.5px;">Launch price and first-cohort access, in order of signup.</p>
     </div>
+    <div data-collapse style="margin-top: clamp(40px, 5vw, 56px); border: 1px solid rgba(255,255,255,0.18); padding: clamp(28px, 3.5vw, 44px); display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center;">
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Or train it in person, today</div>
+        <img src="/web/img/purosurf-logo-white.png" alt="Puro Surf — Hotel + Performance Academy" style="margin-top: 20px; width: min(260px, 70%); height: auto;">
+        <h3 style="margin-top: 20px; font-size: clamp(21px, 2.2vw, 34px);">The first academy officially running the method.</h3>
+        <p style="margin-top: 14px; color: rgba(255,255,255,0.72); font-size: 15.5px; line-height: 1.7; max-width: 56ch;">Join a surf camp in El Salvador and train the methodology in the water — the full Puro Surf experience, taught on The Surf Sequence. Every student gets a certified assessment on arrival and twelve months inside the system, so the camp lasts a week and the development lasts a year.</p>
+      </div>
+      <a href="https://www.purosurf.com/surfcamp" target="_blank" rel="noopener" class="btn-outline b35" style="padding: 16px 30px; font-size: 14px; font-weight: 600; text-align: center;">Book a camp at Puro Surf →</a>
+    </div>
   </div>
 </section>
 
+<!-- ═══ 07 — WHAT YOU CAN GET ═══ -->
+<section id="que-obtienes" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #E9E2D2;">
+  <div style="max-width: 1240px; margin: 0 auto;">
+    <div style="display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 24px;">
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">07 — What you can get</div>
+        <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; color: #061C2B; letter-spacing: -0.03em;">Four ways to use the method.</h2>
+      </div>
+      <p style="max-width: 42ch; color: #55666E; font-size: 15.5px; line-height: 1.65;">Each one stands on its own. Together they compound — everything you do feeds one development record.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1px; margin-top: 56px;">
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Course</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Learn it</h3>
+        <p style="margin-top: 12px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Think it, feel it, do it. The full curriculum of one belt — yours permanently.</p>
+        <div style="margin-top: auto; padding-top: 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">One-time · per belt</div>
+      </div>
+      <div style="background: #061C2B; box-shadow: 0 0 0 1px #061C2B; padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Membership</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #FFFFFF;">Train &amp; track it</h3>
+        <p style="margin-top: 12px; color: rgba(255,255,255,0.7); font-size: 14.5px; line-height: 1.65;">Your development system: train any skill freely, log every session, and watch your scores move.</p>
+        <div style="margin-top: auto; padding-top: 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.62);">Yearly</div>
+      </div>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Program</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Follow the plan</h3>
+        <p style="margin-top: 12px; color: #55666E; font-size: 14.5px; line-height: 1.65;">No decisions to make. Open Today and the plan tells you exactly what to do — start to finish.</p>
+        <div style="margin-top: auto; padding-top: 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">One-time · per program</div>
+      </div>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Assessment</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Validate it</h3>
+        <p style="margin-top: 12px; color: #55666E; font-size: 14.5px; line-height: 1.65;">A certified coach scores you, names your gaps and confirms your belt. External, professional, on the record.</p>
+        <div style="margin-top: auto; padding-top: 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #55666E;">Per assessment</div>
+      </div>
+    </div>
+    <p style="margin-top: 30px; font-size: 16px; line-height: 1.7; color: #061C2B; max-width: 70ch;">The course teaches you what to do. Membership remembers what you did, tracks how you are developing and tells you what to work on next. Creating your account is free — everything you buy stays in it.</p>
+  </div>
+</section>
+
+<!-- ═══ 08 — WHO IT'S FOR ═══ -->
 <section id="para-quien" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #FFFFFF;">
   <div style="max-width: 1240px; margin: 0 auto;">
-    <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00A9D4; margin-bottom: 22px;">06 — Who it&rsquo;s for</div>
-    <h2 style="font-size: clamp(30px, 4.2vw, 54px); font-weight: 800; color: #071624; max-width: 22ch; letter-spacing: -0.03em;">Same method, four doors in.</h2>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">08 — Who it’s for</div>
+    <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; color: #061C2B; max-width: 22ch; letter-spacing: -0.03em;">Same method, four doors in.</h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1px; margin-top: 56px;">
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px; display: flex; flex-direction: column;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00A9D4;">Surfer</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">Train on your own, with structure</h3>
-        <p style="margin-top: 12px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">Read the book, find your level, and start when your belt course opens.</p>
-        <a href="https://app.thesurfsequence.com/quiz" class="card-link" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Find your level &rarr;</a>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Surfer</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Train on your own, with structure</h3>
+        <p style="margin-top: 12px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Read the book, find your level, and start when your belt course opens.</p>
+        <a href="https://app.thesurfsequence.com/quiz" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Find your level →</a>
       </div>
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px; display: flex; flex-direction: column;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00A9D4;">Coach</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">Teach with a shared standard</h3>
-        <p style="margin-top: 12px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">Certification per level: one language, one assessment scale, one progression.</p>
-        <a href="mailto:info@thesurfsequence.com?subject=Coach%20certification" class="card-link" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Ask about certification &rarr;</a>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Coach</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Teach with a shared standard</h3>
+        <p style="margin-top: 12px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Certification per level: one language, one assessment scale, one progression.</p>
+        <a href="mailto:info@thesurfsequence.com?subject=Coach%20certification" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Ask about certification →</a>
       </div>
-      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px #DFD4C1; padding: 36px 30px; display: flex; flex-direction: column;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00A9D4;">Academy</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #071624;">Run your school on the system</h3>
-        <p style="margin-top: 12px; color: #6D6E71; font-size: 14.5px; line-height: 1.65;">Certified academies teach the sequences and assess belts officially.</p>
-        <a href="mailto:info@thesurfsequence.com?subject=Certified%20academy" class="card-link" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Become certified &rarr;</a>
+      <div style="background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Academy</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #061C2B;">Run your school on the method</h3>
+        <p style="margin-top: 12px; color: #55666E; font-size: 14.5px; line-height: 1.65;">Certified academies teach the sequences and assess belts officially.</p>
+        <a href="mailto:info@thesurfsequence.com?subject=Certified%20academy" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Become certified →</a>
       </div>
-      <div style="background: #071624; box-shadow: 0 0 0 1px #071624; padding: 36px 30px; display: flex; flex-direction: column;">
-        <div style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF;">Federation / institution</div>
-        <h3 style="font-size: 20px; margin-top: 14px; color: #FFFFFF;">High performance for your squad</h3>
+      <div style="background: #061C2B; box-shadow: 0 0 0 1px #061C2B; padding: 36px 30px; display: flex; flex-direction: column;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Federation / institution</div>
+        <h3 style="font-size: 21px; margin-top: 14px; color: #FFFFFF;">High performance for your squad</h3>
         <p style="margin-top: 12px; color: rgba(255,255,255,0.7); font-size: 14.5px; line-height: 1.65;">The platform that organises, assesses and develops your team — in use by a national team today.</p>
-        <a href="mailto:info@thesurfsequence.com?subject=High%20Performance" class="link-cyan" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Ask about High Performance &rarr;</a>
+        <a href="mailto:info@thesurfsequence.com?subject=High%20Performance%20-%20federation%20enquiry" class="link-cyan" style="margin-top: auto; padding-top: 26px; font-size: 14px; font-weight: 600;">Request the programme →</a>
       </div>
     </div>
   </div>
 </section>
 
-<section style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #F3EDE2;">
-  <div data-collapse style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); align-items: center;">
-    <div>
-      <div style="font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #00A9D4; margin-bottom: 22px;">07 — Beyond the water</div>
-      <h2 style="font-family: 'Lora', serif; font-style: italic; font-weight: 500; font-size: clamp(30px, 4vw, 52px); color: #071624; letter-spacing: -0.01em;">Compartiendo Olas</h2>
-      <p style="margin-top: 22px; color: #55585C; font-size: 16.5px; line-height: 1.75; max-width: 58ch;">A single drop falls into still water and its circles keep expanding. Compartiendo Olas is our inclusive program with one mission: sharing the message of awareness through surfing. Athlete development scholarships, camps that introduce kids to the ocean for the first time, and the experience of surfing carried with a message of empowerment and opportunity.</p>
-      <p style="margin-top: 16px; color: #071624; font-size: 16.5px; line-height: 1.75; max-width: 58ch; font-weight: 600;">A percentage of everything The Surf Sequence earns goes directly to the program.</p>
+<!-- ═══ 09 — RESULTS ACROSS ALL LEVELS ═══ -->
+<section id="resultados" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #E9E2D2;">
+  <div style="max-width: 1240px; margin: 0 auto;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">09 — Results across all levels</div>
+    <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; color: #061C2B; max-width: 24ch; letter-spacing: -0.03em;">It works at every level — that is the point.</h2>
+    <p style="margin-top: 22px; max-width: 58ch; color: #55666E; font-size: 16.5px; line-height: 1.7;">First-timer, weekend surfer, twenty-year veteran or Olympic competitor. Same method, different sequence.</p>
+    <div data-quotes style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 56px;">
+      <figure style="margin: 0; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <blockquote style="margin: 0; font-size: 16.5px; line-height: 1.65; color: #061C2B;">“Breaking the surf foundations into small, clear daily goals made all the difference. I only wish I had experienced it sooner.”</blockquote>
+        <figcaption style="margin-top: auto; padding-top: 26px;">
+          <div style="font-size: 15.5px; font-weight: 700; color: #061C2B;">Melanie</div>
+          <div style="margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #005F79;">Novice surfer</div>
+        </figcaption>
+      </figure>
+      <figure style="margin: 0; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <blockquote style="margin: 0; font-size: 16.5px; line-height: 1.65; color: #061C2B;">“The way it simplifies complex ideas and makes them accessible is impressive. This approach deepened my relationship with surfing and helped me truly enjoy the process.”</blockquote>
+        <figcaption style="margin-top: auto; padding-top: 26px;">
+          <div style="font-size: 15.5px; font-weight: 700; color: #061C2B;">Alex Weber</div>
+          <div style="margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #005F79;">Foundation surfer</div>
+        </figcaption>
+      </figure>
+      <figure style="margin: 0; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(14,32,41,0.12); padding: 36px 30px; display: flex; flex-direction: column;">
+        <blockquote style="margin: 0; font-size: 16.5px; line-height: 1.65; color: #061C2B;">“Every drill has a reason. Nothing is rushed, nothing is generic, and nothing is taught without context. You don’t just improve — you understand why you’re improving, and that knowledge stays with you long after you leave the water.”</blockquote>
+        <figcaption style="margin-top: auto; padding-top: 26px;">
+          <div style="font-size: 15.5px; font-weight: 700; color: #061C2B;">Penny Lane</div>
+          <div style="margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #005F79;">20+ years surfing</div>
+        </figcaption>
+      </figure>
+      <figure style="margin: 0; background: #061C2B; box-shadow: 0 0 0 1px #061C2B; padding: 36px 30px; display: flex; flex-direction: column;">
+        <blockquote style="margin: 0; font-size: 16.5px; line-height: 1.65; color: #FFFFFF;">“This method played a key role in my development as a surfer. Working with The Surf Sequence helped me stay focused, improve consistently, and reach major milestones in my career — including becoming Latin American Champion and qualifying for the Olympic Games.”</blockquote>
+        <figcaption style="margin-top: auto; padding-top: 26px;">
+          <div style="font-size: 15.5px; font-weight: 700; color: #FFFFFF;">Bryan Pérez</div>
+          <div style="margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #00D2FF;">Professional &amp; Olympic surfer</div>
+        </figcaption>
+      </figure>
     </div>
-    <div style="display: grid; gap: 14px;">
-      <a href="mailto:info@thesurfsequence.com?subject=Donation%20-%20Compartiendo%20Olas" class="btn-donate" style="padding: 17px 30px; font-size: 14px; font-weight: 600; text-align: center;">Donate to Compartiendo Olas &rarr;</a>
-      <p style="font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A79C8A; text-align: center;">100% of donations reach the water</p>
+    <div data-collapse style="margin-top: 40px; border-top: 2px solid #061C2B; padding-top: 26px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); gap: clamp(20px, 4vw, 56px);">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #005F79;">Featured in WavePool Magazine</div>
+      <p style="margin: 0; font-size: clamp(18px, 2vw, 26px); line-height: 1.45; color: #061C2B; font-weight: 600; letter-spacing: -0.01em;">“Possibly the fastest advancing adult learner on the planet.”</p>
     </div>
   </div>
 </section>
 
+<!-- ═══ 10 — WHO CREATED IT ═══ -->
+<section id="fundador" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #061C2B; color: #FFFFFF;">
+  <div style="max-width: 1240px; margin: 0 auto;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #00D2FF; margin-bottom: 22px;">10 — Who created it</div>
+    <div data-collapse style="display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); align-items: start;">
+      <div>
+        <h2 style="font-size: clamp(34px, 4.2vw, 55px); font-weight: 800; letter-spacing: -0.03em;">Created by an Olympic surf coach.</h2>
+        <p style="margin-top: 24px; color: rgba(255,255,255,0.75); font-size: 16.5px; line-height: 1.75; max-width: 60ch;">Marcelo Castellanos is a surf coach and educator with over 30 years of surfing experience and 15+ years of real-world coaching. He has worked with surfers from complete beginners to elite-level competitors, educated and certified coaches through International Surfing Association programs, led seminars and long-term training processes, and founded Puro Surf, a performance-based surf training academy.</p>
+        <p style="margin-top: 18px; color: rgba(255,255,255,0.75); font-size: 16.5px; line-height: 1.75; max-width: 60ch;">The Surf Sequence® is the result of years spent coaching, testing and refining learning systems — in the ocean and beyond — to understand how surfers actually learn, progress and sustain long-term improvement.</p>
+        <p style="margin-top: 32px; font-size: clamp(21px, 2.4vw, 34px); font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase; font-stretch: 120%;">This is not theory.<br><span style="color: #00D2FF;">It’s experience turned into a system.</span></p>
+      </div>
+      <div style="display: grid; gap: 16px;">
+        <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 14px;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Olympic coach</div>
+          <p style="margin-top: 8px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.82);">Coached Bryan Pérez at Paris 2024.</p>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 14px;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">30+ / 15+ years</div>
+          <p style="margin-top: 8px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.82);">Surfing, and coaching in the water.</p>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 14px;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Founder</div>
+          <p style="margin-top: 8px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.82);">Puro Surf performance academy.</p>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.25); padding-top: 14px;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #00D2FF;">Author</div>
+          <p style="margin-top: 8px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.82);">ONE WAVE · creator of The Surf Sequence®</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 — BEYOND THE WATER ═══ -->
+<section id="compartiendo-olas" style="padding: clamp(72px, 9vw, 120px) clamp(20px, 6vw, 72px); background: #E9E2D2;">
+  <div style="max-width: 1240px; margin: 0 auto;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #005F79; margin-bottom: 22px;">11 — Beyond the water</div>
+    <div data-collapse style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); gap: clamp(32px, 5vw, 72px); align-items: center;">
+      <div style="background: #061C2B; padding: clamp(32px, 4vw, 56px) clamp(24px, 3vw, 40px); display: grid; justify-items: center; gap: 26px;">
+        <img src="/web/img/compartiendo-olas-logo.png" alt="Compartiendo Olas" style="width: min(300px, 90%); height: auto;">
+        <a href="mailto:info@thesurfsequence.com?subject=Donation%20-%20Compartiendo%20Olas" class="btn-cyan" style="width: 100%; padding: 16px 24px; font-size: 14px; font-weight: 600; text-align: center;">Donate →</a>
+        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.72); text-align: center;">100% reaches the water</p>
+        <div style="width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 18px; text-align: center;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247,249,250,0.6);">In partnership with</div>
+          <img src="/web/img/lared-logo-white.png" alt="Fundación La Red — para el desarrollo transformador" style="margin: 12px auto 0; height: 58px; width: auto;">
+        </div>
+      </div>
+      <div>
+        <h2 style="font-size: clamp(28px, 3.4vw, 44px); color: #061C2B;">Progress that gives back.</h2>
+        <p style="margin-top: 22px; color: #3E4A50; font-size: 16.5px; line-height: 1.75; max-width: 58ch;">A single drop falls into still water and its circles keep expanding. Compartiendo Olas is our inclusive program with one mission: sharing the message of awareness through surfing. Athlete development scholarships, camps that introduce kids to the ocean for the first time, and the experience of surfing carried with a message of empowerment and opportunity.</p>
+        <p style="margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(14,32,41,0.16); color: #061C2B; font-size: 16.5px; line-height: 1.75; max-width: 58ch; font-weight: 600;">A percentage of everything The Surf Sequence earns goes directly to the program.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CLOSING CTA ═══ -->
 <section style="position: relative; overflow: hidden; padding: clamp(80px, 11vw, 148px) clamp(20px, 6vw, 72px); background: linear-gradient(155deg, #061420 0%, #0B2437 60%, #103349 100%); color: #FFFFFF; text-align: center;">
-  <img src="/web/img/brand/wave-mark-cyan.png" alt="" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(680px, 82%); opacity: 0.12; pointer-events: none;">
   <div style="position: relative; max-width: 900px; margin: 0 auto;">
-    <h2 style="font-size: clamp(32px, 5vw, 68px); font-weight: 800; letter-spacing: -0.035em;">Stop guessing. Start progressing.</h2>
-    <p style="margin-top: 20px; font-size: clamp(16px, 1.5vw, 20px); color: rgba(255,255,255,0.75); line-height: 1.6;">Sixty seconds to know your level. The rest of the system is waiting.</p>
+    <div style="display: grid; gap: 6px; margin-bottom: 44px; font-size: clamp(18px, 2vw, 26px); font-weight: 800; letter-spacing: -0.01em; text-transform: uppercase; font-stretch: 120%;">
+      <div>Train with <span style="color: #00D2FF;">intention.</span></div>
+      <div>Learn with <span style="color: #00D2FF;">structure.</span></div>
+      <div style="font-family: 'Lora', serif; font-style: italic; font-weight: 500; text-transform: none; letter-spacing: 0.01em;">Evolve through <span style="color: #00D2FF;">play</span></div>
+    </div>
+    <h2 style="font-size: clamp(34px, 5vw, 89px); font-weight: 800; letter-spacing: -0.035em;">Clarity changes everything.</h2>
+    <p style="margin-top: 20px; font-size: clamp(16px, 1.5vw, 20px); color: rgba(255,255,255,0.75); line-height: 1.6;">Stop guessing. Start progressing — find your level and the system takes it from there.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 36px;">
-      <a href="https://app.thesurfsequence.com/quiz" class="btn-cyan" style="padding: 17px 34px; font-size: 14px; font-weight: 600;">Find your level &rarr;</a>
-      <a href="#libro" class="btn-outline" style="padding: 17px 34px; font-size: 14px; font-weight: 600;">Get the book</a>
+      <a href="https://app.thesurfsequence.com/quiz" class="btn-cyan" style="padding: 17px 34px; font-size: 14px; font-weight: 600;">Find your level →</a>
+      <a href="#libro" class="btn-outline b35" style="padding: 17px 34px; font-size: 14px; font-weight: 600;">Get the book</a>
     </div>
   </div>
 </section>
 
-<footer style="background: #040D16; color: rgba(255,255,255,0.6); padding: clamp(48px, 6vw, 72px) clamp(20px, 6vw, 72px) 32px;">
+<!-- ═══ FOOTER ═══ -->
+<footer style="background: #04141F; color: rgba(255,255,255,0.6); padding: clamp(48px, 6vw, 72px) clamp(20px, 6vw, 72px) 32px;">
   <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: center;">
     <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" style="height: 84px; width: auto;">
     <nav style="display: flex; flex-wrap: wrap; gap: 22px; font-size: 14.5px;">
+      <a href="#sistema" class="foot-a">The method</a>
       <a href="https://app.thesurfsequence.com/quiz" class="foot-a">Find your level</a>
+      <a href="https://app.thesurfsequence.com/login" class="foot-a">Log in</a>
       <a href="mailto:info@thesurfsequence.com" class="foot-a">info@thesurfsequence.com</a>
     </nav>
   </div>
-  <div style="max-width: 1240px; margin: 36px auto 0; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;">
-    <span>&copy; 2026 Enkrateia SA de CV &middot; The Surf Sequence&reg;</span>
+  <div style="max-width: 1240px; margin: 36px auto 0; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;">
+    <span>© 2026 Enkrateia SA de CV · The Surf Sequence®</span>
     <span style="font-family: 'Lora', serif; font-style: italic; text-transform: none; letter-spacing: 0.01em; font-size: 14px; color: #00D2FF;">Evolve through play</span>
   </div>
 </footer>
