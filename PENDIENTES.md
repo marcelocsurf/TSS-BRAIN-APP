@@ -58,6 +58,10 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Links de video de cada servicio (Marcelo) y video de Discover Surfing.
 
 ## 7. OPERACIÓN Y ADMIN
+- [ ] **Backup semanal (construido 2026-09-05, falta encenderlo)**: pegar en GitHub → Settings → Secrets and variables → Actions los secretos `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` (los mismos de Vercel); opcional `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base) para tener además un pg_dump restaurable, y `BACKUP_PASSPHRASE` para cifrar. Luego Actions → "Backup semanal" → Run workflow y ver que salga en verde. Restauración: `RECUPERACION.md`.
+- [ ] Verificación en dos pasos en Google, GitHub, Vercel y Supabase + correo de recuperación distinto (todo cuelga del Gmail de Marcelo).
+- [ ] Guardar los 9 secretos de `.env.local` en un gestor de contraseñas.
+- [ ] Confirmar el plan de Supabase (Free no tiene backups propios; Pro guarda 7 días) y que la tarjeta no venza.
 - [ ] Planificación de capacidad y ocupación de ventas agregada en Services.
 - [ ] Editor E2 del método una generación atrás.
 - [ ] Precios de asientos del camp de Stanley.
