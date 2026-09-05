@@ -302,6 +302,137 @@ type Tab = 'home' | 'course' | 'sequence' | 'lineup' | 'sessions' | 'feedback' |
 const F_DISPLAY = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.08 } as const;
 const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' } as const;
 
+// ═══ YOUR NEXT MOVES ═══ (Marcelo 2026-09-04/05)
+// Una sola fuente para las dos puertas: en el HOME sale SOLO la primera (lo
+// más importante) con "N more waiting in Let's Play"; en LET'S PLAY sale la
+// lista completa numerada, con origen, razón y la regla del orden.
+// Orden: 1 lo que dejó el coach · 2 el método (el paso que detuvo tu último
+// run, o el primero < 4★) · 3 lo que dejaste < 4★ en dos semanas.
+type NextMoveRow = { key: string; label: string; title: string; reason: string; detail?: string | null; action: string | null; accent: string; onClick?: () => void };
+
+function nextMoveRows(
+  data: PortalData,
+  onTrainSequence?: (args: TrainSequenceArgs) => void,
+  onOpenStep?: (stepId: string) => void,
+): { rows: NextMoveRow[]; coachCleared: boolean } {
+  const student = data.student as any;
+  const coachFocus: string | null = (data as any).standaloneEvaluation?.focus || student?.next_recommended_focus || null;
+  const coachCleared = !!coachFocus && !!(data as any).coachFocusState?.clearedByStudent;
+  const rows: NextMoveRow[] = [];
+  if (coachFocus && !coachCleared) {
+    rows.push({
+      key: 'coach', label: 'From your coach', title: coachFocus, accent: BRAND.colors.cyan,
+      reason: (data as any).standaloneEvaluation?.note || 'Stays here until you take it to 4★ on your own.',
+      action: null,
+    });
+  }
+  const nm = data.nextMove ?? null;
+  if (nm) {
+    const seq = sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName);
+    rows.push({
+      key: 'sequence', label: 'Your sequence', title: nm.stepTitle, accent: BRAND.colors.cyan,
+      reason: nm.source === 'held_back'
+        ? `Held your last run of ${seq} back${nm.selfSequenceRating != null ? ` · your run ${nm.selfSequenceRating}★` : ''}`
+        : `First step below 4★ in ${seq}${nm.stars !== null ? ` · ${nm.stars}★` : ''}${nm.official ? ' · rated by your coach' : ''}`,
+      detail: nm.detail ? `Last practice · ${nm.detail.result === 'not_met' ? 'not met' : 'partial'}: ${nm.detail.text}` : null,
+      action: 'Practice it →',
+      onClick: () => {
+        if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
+        else onOpenStep?.(nm.stepId);
+      },
+    });
+    if (nm.unfinished) {
+      const u = nm.unfinished;
+      rows.push({
+        key: 'unfinished', label: 'Unfinished', title: u.stepTitle, accent: '#FFD166',
+        reason: `Now at ${u.stars}★ · ${sequenceLabel(u.sequenceId, u.sequenceOrder, u.sequenceName)} · from the last two weeks`,
+        action: 'Pick it up →',
+        onClick: () => {
+          if (onTrainSequence) onTrainSequence({ sequenceId: u.sequenceId, mode: 'step_focus', focusStepId: u.stepId });
+          else onOpenStep?.(u.stepId);
+        },
+      });
+    }
+  }
+  return { rows, coachCleared };
+}
+
+function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
+  data: PortalData;
+  /** top = solo la primera (Home) · full = la lista numerada (Let's Play). */
+  mode: 'top' | 'full';
+  onTrainSequence?: (args: TrainSequenceArgs) => void;
+  onOpenStep?: (stepId: string) => void;
+  onGoTo?: (tab: Tab) => void;
+}) {
+  const { rows, coachCleared } = nextMoveRows(data, onTrainSequence, onOpenStep);
+  if (rows.length === 0 && !coachCleared) return null;
+  const rowStyle = { borderTop: '1px solid rgba(255,255,255,.08)' };
+  const renderRow = (r: NextMoveRow, idx: number, numbered: boolean) => {
+    const inner = (
+      <div className="flex items-start gap-3">
+        {numbered && (
+          <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: r.accent, color: '#061C2B' }} aria-label={`Priority ${idx + 1}`}>
+            {idx + 1}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px]" style={{ ...F_LABEL, color: r.accent }}>{numbered ? r.label : `Work on this · ${r.label.toLowerCase()}`}</p>
+          <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{r.title}</p>
+          <p className="text-[12px] text-white/60 mt-0.5 leading-snug">{r.reason}</p>
+          {r.detail && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>{r.detail}</p>}
+          {r.action && <p className="text-[12px] mt-1.5 font-semibold" style={{ color: r.accent }}>{r.action}</p>}
+        </div>
+      </div>
+    );
+    return r.onClick ? (
+      <button key={r.key} type="button" onClick={r.onClick} className="block w-full text-left px-4 py-3.5" style={numbered || idx > 0 ? rowStyle : undefined}>{inner}</button>
+    ) : (
+      <div key={r.key} className="px-4 py-3.5" style={numbered || idx > 0 ? rowStyle : undefined}>{inner}</div>
+    );
+  };
+  const cleared = coachCleared && (
+    <div className="px-4 py-3" style={rowStyle}>
+      <p className="text-[9px]" style={{ ...F_LABEL, color: '#06D6A0' }}>You cleared it</p>
+      <p className="text-[13.5px] text-white mt-1 leading-snug">You took what your coach left you to 4★ on your own.</p>
+      <p className="text-[12px] text-white/60 mt-1 leading-snug">They confirm it next time they see you in the water.</p>
+    </div>
+  );
+
+  if (mode === 'top') {
+    // HOME: una sola cosa. El resto vive en Let's Play.
+    const first = rows[0];
+    return (
+      <>
+        {first ? renderRow(first, 0, false) : cleared}
+        {first && cleared}
+        {rows.length > 1 && (
+          <button type="button" onClick={() => onGoTo?.('sequence')} className="block w-full text-left px-4 py-2.5 text-[11.5px]" style={{ ...rowStyle, color: '#8aa0b0' }}>
+            {rows.length - 1} more waiting in Let&apos;s Play →
+          </button>
+        )}
+      </>
+    );
+  }
+
+  // LET'S PLAY: la lista completa, numerada, con la regla.
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
+      <div className="px-4 pt-3.5 pb-2">
+        <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>Your next moves</p>
+        <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,.55)' }}>{rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
+      </div>
+      {cleared}
+      {rows.map((r, idx) => renderRow(r, idx, true))}
+      {rows.length > 0 && (
+        <p className="px-4 py-2.5 text-[10.5px] leading-snug" style={{ color: '#8aa0b0', ...rowStyle }}>
+          The order: 1 your coach · 2 the method (the step that held your last run back, or the earliest one below 4★) · 3 what you left below 4★ in the last two weeks. Training something else does not change 1 and 2.
+        </p>
+      )}
+    </div>
+  );
+}
+
 const ALL_TABS: { key: Tab; label: string; icon: LucideIcon; lockedUntilCoachUnlock?: boolean }[] = [
   { key: 'home', label: 'Home', icon: Home },
   { key: 'course', label: 'Course', icon: GraduationCap },
@@ -588,6 +719,13 @@ export function PortalTabs({
           ) : (
             // 3) Default: pick a drill or mission from your sequence
             <div className="space-y-4">
+              <NextMovesBlock
+                data={data}
+                mode="full"
+                onTrainSequence={(args) => { setDeepStepId(null); setPendingSequence(args); }}
+                onOpenStep={openStepInPlay}
+                onGoTo={setActiveTab}
+              />
               <MySequenceTab
                 portalToken={data.token}
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
@@ -1058,103 +1196,8 @@ function HomeTab({
               className="rounded-2xl overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
             >
-              {/* YOUR NEXT MOVES (Marcelo 2026-09-04): que sea CLARO y no
-                  confunda. Un título, filas numeradas en orden de prioridad,
-                  cada una con de dónde sale y por qué, y una sola línea que
-                  explica la regla. Coach → método → lo que dejaste a medias. */}
-              {(() => {
-                const nm = data.nextMove ?? null;
-                const rows: { key: string; label: string; title: string; reason: string; detail?: string | null; action: string | null; accent: string; onClick?: () => void }[] = [];
-                if (coachFocus && !coachFocusDone) {
-                  rows.push({
-                    key: 'coach', label: 'From your coach', title: coachFocus, accent: BRAND.colors.cyan,
-                    reason: (data as any).standaloneEvaluation?.note || 'Stays here until you take it to 4★ on your own.',
-                    action: null,
-                  });
-                }
-                if (nm) {
-                  const seq = sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName);
-                  rows.push({
-                    key: 'sequence', label: 'Your sequence', title: nm.stepTitle, accent: BRAND.colors.cyan,
-                    reason: nm.source === 'held_back'
-                      ? `Held your last run of ${seq} back${nm.selfSequenceRating != null ? ` · your run ${nm.selfSequenceRating}★` : ''}`
-                      : `First step below 4★ in ${seq}${nm.stars !== null ? ` · ${nm.stars}★` : ''}${nm.official ? ' · rated by your coach' : ''}`,
-                    detail: nm.detail ? `Last practice · ${nm.detail.result === 'not_met' ? 'not met' : 'partial'}: ${nm.detail.text}` : null,
-                    action: 'Practice it →',
-                    onClick: () => {
-                      if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
-                      else onOpenStep?.(nm.stepId);
-                    },
-                  });
-                  if (nm.unfinished) {
-                    const u = nm.unfinished;
-                    rows.push({
-                      key: 'unfinished', label: 'Unfinished', title: u.stepTitle, accent: '#FFD166',
-                      reason: `Now at ${u.stars}★ · ${sequenceLabel(u.sequenceId, u.sequenceOrder, u.sequenceName)} · from the last two weeks`,
-                      action: 'Pick it up →',
-                      onClick: () => {
-                        if (onTrainSequence) onTrainSequence({ sequenceId: u.sequenceId, mode: 'step_focus', focusStepId: u.stepId });
-                        else onOpenStep?.(u.stepId);
-                      },
-                    });
-                  }
-                }
-                if (rows.length === 0 && !(coachFocus && coachFocusDone)) return null;
-                return (
-                  <>
-                    <div className="px-4 pt-3.5 pb-2">
-                      <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>Your next moves</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,.55)' }}>
-                        {rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}
-                      </p>
-                    </div>
-                    {coachFocus && coachFocusDone && (
-                      <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                        <p className="text-[9px]" style={{ ...F_LABEL, color: '#06D6A0' }}>You cleared it</p>
-                        <p className="text-[13.5px] text-white mt-1 leading-snug">You took what your coach left you to 4★ on your own.</p>
-                        <p className="text-[12px] text-white/60 mt-1 leading-snug">They confirm it next time they see you in the water.</p>
-                      </div>
-                    )}
-                    {rows.map((r, idx) => {
-                      const inner = (
-                        <div className="flex items-start gap-3">
-                          <span
-                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
-                            style={{ background: r.accent, color: '#061C2B' }}
-                            aria-label={`Priority ${idx + 1}`}
-                          >
-                            {idx + 1}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[9px]" style={{ ...F_LABEL, color: r.accent }}>{r.label}</p>
-                            <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{r.title}</p>
-                            <p className="text-[12px] text-white/60 mt-0.5 leading-snug">{r.reason}</p>
-                            {r.detail && (
-                              <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>{r.detail}</p>
-                            )}
-                            {r.action && (
-                              <p className="text-[12px] mt-1.5 font-semibold" style={{ color: r.accent }}>{r.action}</p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                      const rowStyle = { borderTop: '1px solid rgba(255,255,255,.08)' };
-                      return r.onClick ? (
-                        <button key={r.key} type="button" onClick={r.onClick} className="block w-full text-left px-4 py-3.5" style={rowStyle}>
-                          {inner}
-                        </button>
-                      ) : (
-                        <div key={r.key} className="px-4 py-3.5" style={rowStyle}>{inner}</div>
-                      );
-                    })}
-                    {rows.length > 0 && (
-                      <p className="px-4 py-2.5 text-[10.5px] leading-snug" style={{ color: '#8aa0b0', borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                        The order: 1 your coach · 2 the method (the step that held your last run back, or the earliest one below 4★) · 3 what you left below 4★ in the last two weeks. Training something else does not change 1 and 2.
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
+              {/* Una sola cosa en el Home; la lista completa vive en Let's Play. */}
+              <NextMovesBlock data={data} mode="top" onTrainSequence={onTrainSequence} onOpenStep={onOpenStep} onGoTo={onGoTo} />
 
               {sessionCue.cue && (
                 <div
