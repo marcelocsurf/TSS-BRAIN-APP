@@ -28,7 +28,7 @@ export async function grantBookAccess(input: {
   phone?: string | null;
   /** De dónde vino (para el registro): 'wompi' | 'manual'. */
   source?: string;
-}): Promise<{ ok: boolean; error?: string; portal_url?: string }> {
+}): Promise<{ ok: boolean; error?: string; portal_url?: string; student_id?: string }> {
   const email = input.email?.trim().toLowerCase();
   if (!email || !email.includes('@')) return { ok: false, error: 'Valid email required.' };
 
@@ -102,5 +102,5 @@ export async function grantBookAccess(input: {
   }
 
   console.log(`[book-purchase] granted · ${email} · source=${input.source ?? '?'}`);
-  return { ok: true, portal_url: portalUrl };
+  return { ok: true, portal_url: portalUrl, student_id: student.id };
 }

@@ -67,6 +67,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/respond') ||        // token-gated staff accept/reject
     pathname.startsWith('/quiz') ||           // public surf-level lead magnet
     pathname.startsWith('/web') ||            // marketing website (thesurfsequence.com)
+    pathname.startsWith('/gift') ||           // link de regalo del libro ONE WAVE (código de un solo uso)
     pathname === '/api/quiz-lead' ||          // public quiz lead intake (external site)
     pathname === '/find-your-level.html' ||   // public co-branded quiz (static)
     pathname === '/ratio-engine.html' ||      // Safety Canon ratio tool (static)

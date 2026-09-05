@@ -38,7 +38,16 @@ const PRODUCT_TYPES: { value: string; label: string }[] = [
   { value: 'white_belt', label: 'White Belt' },
   { value: 'yellow_belt', label: 'Yellow Belt' },
   { value: 'blue_belt', label: 'Blue Belt' },
+  // Libro ONE WAVE (2026-09-05): el código es un LINK de regalo. La persona
+  // lo abre, pone nombre + email y entra a su portal con el libro.
+  { value: 'one_wave', label: 'ONE WAVE (libro · link de regalo)' },
 ];
+
+const APP_BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+/** Lo que se comparte: para el libro es el link; para los cursos, el código. */
+function shareText(code: string, productType: string) {
+  return productType === 'one_wave' ? `${APP_BASE}/gift/${code}` : code;
+}
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).catch(() => {});
@@ -254,15 +263,15 @@ export function CourseCodesClient({
                 ✓ {generatedBatch.length} codes generated
               </p>
               <CopyButton
-                text={generatedBatch.join('\n')}
+                text={generatedBatch.map((c) => shareText(c, productType)).join('\n')}
                 label="Copy All"
               />
             </div>
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {generatedBatch.map((code) => (
                 <div key={code} className="flex items-center gap-2 bg-white border border-green-200 rounded px-3 py-1.5">
-                  <code className="flex-1 font-mono text-sm font-bold tracking-wider">{code}</code>
-                  <CopyButton text={code} />
+                  <code className="flex-1 font-mono text-sm font-bold tracking-wider break-all">{shareText(code, productType)}</code>
+                  <CopyButton text={shareText(code, productType)} label={productType === 'one_wave' ? 'Copy link' : 'Copy'} />
                 </div>
               ))}
             </div>
@@ -378,7 +387,7 @@ export function CourseCodesClient({
                         {displayDate(c.created_at)}
                       </td>
                       <td className="px-4 py-2.5">
-                        {!isRedeemed && <CopyButton text={c.code} />}
+                        {!isRedeemed && <CopyButton text={shareText(c.code, c.product_type)} label={c.product_type === 'one_wave' ? 'Copy link' : 'Copy'} />}
                       </td>
                     </tr>
                   );
