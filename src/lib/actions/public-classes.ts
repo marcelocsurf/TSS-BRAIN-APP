@@ -6,6 +6,8 @@
 // in the same flow. Payment is NEVER settled here — front desk does that.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { consentMeta } from '@/lib/legal/consent-meta';
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal/versions';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { createNotification } from '@/lib/actions/notifications';
 import { campGuestIncludedIn } from '@/lib/utils/camp-guest';
@@ -199,6 +201,11 @@ export async function publicEnroll(input: {
   } | null;
   accept_waiver: boolean;
   signed_name?: string | null;
+  // Consentimientos legales (2026-09-05). Obligatorios cuando se firma el
+  // waiver (perfil nuevo o ficha sin waiver); imagen es opt-in.
+  health_consent?: boolean;
+  accept_terms?: boolean;
+  media_consent?: boolean;
 }): Promise<{ ok: boolean; error?: string; summary?: { class_name: string; date: string; time: string | null; amount_cents: number | null; sale_type: string; coupon_applied: string | null; first_name: string; booking_id?: string | null } }> {
   const academy = await academyBySlug(input.slug);
   if (!academy) return { ok: false, error: 'Academy not found.' };
@@ -279,12 +286,23 @@ export async function publicEnroll(input: {
       if (exIsMinor && !guardian) {
         return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
       }
+      if (!input.health_consent) return { ok: false, error: 'We need consent to store health and safety information.' };
+      if (!input.accept_terms) return { ok: false, error: 'Please accept the Terms and the Privacy Policy.' };
+      const cm = await consentMeta();
+      const nowIso = new Date().toISOString();
       await admin.from('students').update({
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
         waiver_signed_by: exIsMinor
           ? `${guardian} (parent/guardian)`
           : (input.signed_name?.trim() || existing.first_name),
+        health_data_consent_at: nowIso,
+        terms_accepted_at: nowIso,
+        terms_version: `${TERMS_VERSION}+${PRIVACY_VERSION}`,
+        media_release_consent: !!input.media_consent,
+        media_release_consent_at: input.media_consent ? nowIso : null,
+        ...cm,
+        ...(exIsMinor ? { guardian_name: guardian, guardian_relationship: 'parent/guardian' } : {}),
       }).eq('id', existing.id);
     }
     if (active.some((p: any) => p.student_id === existing.id)) {
@@ -310,6 +328,10 @@ export async function publicEnroll(input: {
     if (isMinor && !p.guardian_name?.trim()) {
       return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
     }
+    if (!input.health_consent) return { ok: false, error: 'We need consent to store health and safety information.' };
+    if (!input.accept_terms) return { ok: false, error: 'Please accept the Terms and the Privacy Policy.' };
+    const cm = await consentMeta();
+    const nowIso = new Date().toISOString();
     const { data: created, error: createErr } = await admin
       .from('students')
       .insert({
@@ -333,6 +355,13 @@ export async function publicEnroll(input: {
         waiver_signed_by: isMinor
           ? `${p.guardian_name!.trim()} (parent/guardian)`
           : (input.signed_name?.trim() || p.first_name.trim()),
+        health_data_consent_at: nowIso,
+        terms_accepted_at: nowIso,
+        terms_version: `${TERMS_VERSION}+${PRIVACY_VERSION}`,
+        media_release_consent: !!input.media_consent,
+        media_release_consent_at: input.media_consent ? nowIso : null,
+        ...cm,
+        ...(isMinor ? { guardian_name: p.guardian_name!.trim(), guardian_relationship: 'parent/guardian' } : {}),
         ...(isMinor && p.guardian_phone?.trim() ? { emergency_contact_phone: p.emergency_contact_phone?.trim() || p.guardian_phone.trim() } : {}),
       })
       .select('id, first_name')
@@ -451,7 +480,7 @@ export async function publicAddCompanion(input: {
 
   const { data: booker } = await admin
     .from('students')
-    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by, date_of_birth, languages')
+    .select('id, first_name, last_name, phone, emergency_contact_name, emergency_contact_phone, waiver_signed_by, date_of_birth, languages, health_data_consent_at, terms_accepted_at, terms_version, consent_ip, consent_user_agent')
     .eq('academy_id', academy.id)
     .eq('email', norm(input.bookerEmail))
     .limit(1)
@@ -558,6 +587,14 @@ export async function publicAddCompanion(input: {
         waiver_signed: true,
         waiver_signed_at: new Date().toISOString(),
         waiver_signed_by: `${responsibleAdult} (${age != null && age < ADULT ? 'parent/guardian' : 'booked together'})`,
+        // El adulto que reserva ya consintió salud + términos por su grupo.
+        health_data_consent_at: (booker as any).health_data_consent_at ?? null,
+        terms_accepted_at: (booker as any).terms_accepted_at ?? null,
+        terms_version: (booker as any).terms_version ?? null,
+        consent_ip: (booker as any).consent_ip ?? null,
+        consent_user_agent: (booker as any).consent_user_agent ?? null,
+        media_release_consent: false,
+        ...(age != null && age < ADULT ? { guardian_name: responsibleAdult, guardian_relationship: 'parent/guardian' } : {}),
         coach_notes_general: `Booked by ${responsibleAdult}${bookerIsMinor ? ` (via ${bookerName})` : ''} (${norm(input.bookerEmail)}) — family booking from the public QR.`,
       })
       .select('id, first_name')

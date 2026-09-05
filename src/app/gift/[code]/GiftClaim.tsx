@@ -119,6 +119,9 @@ export function GiftClaim({ code, state }: { code: string; state: GiftState }) {
         </div>
 
         <p className="text-[10px] mt-5 text-center" style={{ ...F_M, color: 'rgba(247,249,250,.35)' }}>The Surf Sequence · Evolve through play</p>
+        <p className="text-[11px] mt-2 text-center" style={{ color: 'rgba(247,249,250,.45)' }}>
+          By opening your book you accept our <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.
+        </p>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { BeltLevel } from '@/lib/constants/belts';
+import { getCurrentCoach } from '@/lib/actions/auth';
 
 // ═══════════════════════════════════════
 // VISITS / RELATIONSHIP TRACKING
@@ -644,4 +645,83 @@ export async function getStudentNames(ids: string[]): Promise<Record<string, str
   const out: Record<string, string> = {};
   for (const s of data ?? []) out[s.id] = [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Student';
   return out;
+}
+
+
+// ═══════════════════════════════════════
+// ANONYMIZE STUDENT — derecho de supresión (auditoría legal 2026-09-05)
+// ═══════════════════════════════════════
+// El titular pide borrar sus datos. NO borramos la fila (waiver firmado, pagos e
+// historial agregado deben conservarse), pero sí todo lo que identifica o es
+// sensible: nombre, contacto, foto, salud, miedos, notas libres, quizzes.
+// El link del portal se regenera (el viejo muere) y el PIN se anula.
+// Queda un rastro en audit_log con quién lo hizo y por qué.
+export async function anonymizeStudent(id: string, reason: string): Promise<{ ok: boolean; error?: string }> {
+  const coach = await getCurrentCoach();
+  if (!coach) return { ok: false, error: 'No autorizado.' };
+  const admin = createAdminClient();
+  const { data: st } = await admin
+    .from('students')
+    .select('id, academy_id, anonymized_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (!st) return { ok: false, error: 'Alumno no encontrado.' };
+  if (st.anonymized_at) return { ok: false, error: 'Esta ficha ya fue anonimizada.' };
+  const allowed =
+    !!coach.is_platform_admin ||
+    ((coach.role === 'admin' || coach.role === 'coordinator') && !!coach.academy_id && coach.academy_id === st.academy_id);
+  if (!allowed) return { ok: false, error: 'Solo admin o coordinador de la academia del alumno.' };
+  if (!reason || reason.trim().length < 5) return { ok: false, error: 'Anotá el motivo (mín. 5 caracteres): quién lo pidió y cuándo.' };
+  const r = await anonymizeStudentRecord(id, { id: coach.id, name: coach.display_name }, reason);
+  if (r.ok) { revalidatePath(`/students/${id}`); revalidatePath('/students'); }
+  return r;
+}
+
+// Núcleo sin compuerta (la compuerta vive en anonymizeStudent). Separado para
+// poder probarlo y para reusarlo desde un job de retención en el futuro.
+export async function anonymizeStudentRecord(
+  id: string,
+  actor: { id: string | null; name: string },
+  reason: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { data: st } = await admin.from('students').select('id, first_name, email, photo_url').eq('id', id).maybeSingle();
+  if (!st) return { ok: false, error: 'Alumno no encontrado.' };
+  const now = new Date().toISOString();
+  const tag = st.id.slice(0, 8);
+  const updates: Record<string, unknown> = {
+    first_name: 'Deleted', last_name: `user ${tag}`, nickname: null,
+    email: null, phone: null, instagram: null, photo_url: null,
+    date_of_birth: null, age: null, gender: null, nationality: null, languages: null,
+    emergency_contact_name: null, emergency_contact_phone: null,
+    allergies: null, injuries: null, medical_notes: null, surf_injuries: null, risk_notes: null,
+    height: null, weight: null, shirt_size: null,
+    fears_phobias: null, biggest_barrier: null, personal_goal: null,
+    goal_short_term: null, goal_mid_term: null, goal_long_term: null,
+    coach_notes_general: null, how_did_you_hear: null,
+    ocean_quiz_answers: null, level_quiz_skillmap: null, level_quiz_v2: null, learning_profile_scores: null,
+    guardian_name: null, guardian_relationship: null,
+    consent_ip: null, consent_user_agent: null,
+    // El waiver firmado se conserva como registro mínimo: fecha + versión.
+    waiver_signed_by: st.first_name ? '[anonymized]' : null,
+    portal_token: crypto.randomUUID(),
+    pin_hash: null, pin_set_at: null, current_session_id: null,
+    status: 'archived', lifecycle_status: 'churned',
+    anonymized_at: now,
+  };
+  const { error } = await admin.from('students').update(updates).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  if (st.photo_url && st.photo_url.includes('/avatars/')) {
+    const path = st.photo_url.split('/avatars/')[1]?.split('?')[0];
+    if (path) { try { await admin.storage.from('avatars').remove([decodeURIComponent(path)]); } catch { /* sin bloqueo */ } }
+  }
+
+  await admin.from('audit_log').insert({
+    actor_type: 'coach', actor_id: actor.id, actor_name: actor.name,
+    event_type: 'student_anonymized',
+    status_before: 'identified', status_after: 'anonymized',
+    note: `student ${st.id} (${st.email ? 'email on file' : 'no email'}) — ${reason.trim()}`,
+  });
+  return { ok: true };
 }

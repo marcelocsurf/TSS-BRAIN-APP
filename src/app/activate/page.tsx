@@ -163,6 +163,9 @@ export default function ActivatePage() {
           >
             {loading ? 'Checking...' : 'Activate'}
           </button>
+          <p className="text-[11px] text-center text-gray-400">
+            By activating you accept our <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.
+          </p>
         </div>
       )}
 

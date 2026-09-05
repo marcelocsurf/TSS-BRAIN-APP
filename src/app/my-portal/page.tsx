@@ -91,6 +91,9 @@ export default function MyPortalPage() {
           </form>
         )}
 
+        <p className="text-center text-[11px] mt-4" style={{ color: '#54677a' }}>
+          <a href="/legal/privacy" className="underline" style={{ color: '#8aa0b2' }}>Privacy</a> · <a href="/legal/terms" className="underline" style={{ color: '#8aa0b2' }}>Terms</a>
+        </p>
         <p className="text-center text-[11px] mt-5" style={{ color: '#54677a' }}>
           Coaches sign in at{' '}
           <a href="/login" className="underline" style={{ color: '#8aa0b2' }}>

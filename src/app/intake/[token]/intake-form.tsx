@@ -6,6 +6,7 @@ import { BRAND } from '@/lib/constants/brand';
 import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
 import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
+import { ConsentBoxes } from '@/components/legal/ConsentBoxes';
 import { signWaiverOnly } from '@/lib/actions/intake';
 import { dobError, dobMaxAttr } from '@/lib/utils/dob';
 
@@ -89,8 +90,14 @@ export function IntakeForm({ token, student }: Props) {
   // Solo-waiver (fichas importadas): firma + guardián si es menor
   const [woName, setWoName] = useState('');
   const [woGuardian, setWoGuardian] = useState('');
-  const [woMedia, setWoMedia] = useState(true);
+  const [woMedia, setWoMedia] = useState(false);   // imagen: opt-in, nunca pre-marcada
   const [woAccept, setWoAccept] = useState(false);
+  const [woHealth, setWoHealth] = useState(false);
+  const [woTerms, setWoTerms] = useState(false);
+  // Etapa básica: consentimientos + guardián si es menor
+  const [basicHealth, setBasicHealth] = useState(false);
+  const [basicTerms, setBasicTerms] = useState(false);
+  const [basicGuardian, setBasicGuardian] = useState('');
   const woMinor = (() => {
     if (!student.date_of_birth) return false;
     const d = new Date(student.date_of_birth + 'T00:00:00'), n = new Date();
@@ -124,7 +131,7 @@ export function IntakeForm({ token, student }: Props) {
     injuries: student.injuries || '',
     medical_notes: student.medical_notes || '',
     waiver_signed: student.waiver_signed || false,
-    media_release_consent: (student as any).media_release_consent ?? true,
+    media_release_consent: (student as any).media_release_consent ?? false,
     waiver_version: WAIVER_VERSION,
   });
 
@@ -165,6 +172,14 @@ export function IntakeForm({ token, student }: Props) {
     setExtForm((prev) => ({ ...prev, [field]: value }));
 
   // ── Submit Part 1 (Profile & Safety / "ficha") ──
+  const basicMinor = (() => {
+    const dob = basicForm.date_of_birth?.trim();
+    if (!dob || dobError(dob)) return false;
+    const d = new Date(dob + 'T00:00:00'), n = new Date();
+    let a = n.getFullYear() - d.getFullYear();
+    if (n.getMonth() - d.getMonth() < 0 || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+    return a < 18;
+  })();
   const handleBasicSubmit = async () => {
     if (!basicForm.date_of_birth?.trim()) {
       setError('Date of birth is required.');
@@ -195,11 +210,28 @@ export function IntakeForm({ token, student }: Props) {
       setError('Please acknowledge the waiver to continue.');
       return;
     }
+    if (basicMinor && basicGuardian.trim().length < 5) {
+      setError('A parent or legal guardian must sign for a minor — type their full name.');
+      return;
+    }
+    if (!basicHealth) {
+      setError('We need your consent to store your health and safety information.');
+      return;
+    }
+    if (!basicTerms) {
+      setError('Please accept the Terms and the Privacy Policy to continue.');
+      return;
+    }
 
     setLoading(true);
     setError('');
     try {
-      await submitBasicIntake(token, basicForm);
+      await submitBasicIntake(token, {
+        ...basicForm,
+        health_data_consent: basicHealth,
+        terms_accepted: basicTerms,
+        guardian_name: basicMinor ? basicGuardian.trim() : null,
+      });
 
       // Drop-in: single service, no level/goals — finish here.
       // Member: go to the level quiz — UNLESS they already did it (e.g. via the
@@ -268,10 +300,12 @@ export function IntakeForm({ token, student }: Props) {
             <span>I have read and I AGREE to this release of liability. / He leído y ACEPTO este acuerdo de exención de responsabilidad. *</span>
           </label>
 
-          <label className="flex items-start gap-2 text-[12px] text-gray-600 cursor-pointer rounded-lg bg-gray-50 p-3">
-            <input type="checkbox" checked={woMedia} onChange={(e) => setWoMedia(e.target.checked)} className="mt-0.5 h-4 w-4" />
-            <span>I authorize photos & videos for educational and promotional purposes (optional). / Autorizo el uso de fotos y videos con fines educativos y promocionales (opcional).</span>
-          </label>
+          <ConsentBoxes
+            health={woHealth} onHealth={setWoHealth}
+            terms={woTerms} onTerms={setWoTerms}
+            media={woMedia} onMedia={setWoMedia}
+            minor={woMinor} forName={(student as any).first_name}
+          />
 
           <input value={woName} onChange={(e) => setWoName(e.target.value)}
             placeholder={woMinor ? 'Guardian: type your full legal name to sign *' : 'Type your full legal name to sign *'}
@@ -279,12 +313,13 @@ export function IntakeForm({ token, student }: Props) {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button type="button" disabled={loading || !woAccept || woName.trim().length < 5 || (woMinor && !woGuardian.trim())}
+          <button type="button" disabled={loading || !woAccept || !woHealth || !woTerms || woName.trim().length < 5 || (woMinor && !woGuardian.trim())}
             onClick={async () => {
               setLoading(true); setError('');
               const r = await signWaiverOnly(token, {
                 signed_name: woName, guardian_name: woMinor ? (woGuardian || woName) : null,
                 media_release_consent: woMedia, waiver_version: WAIVER_VERSION,
+                health_data_consent: woHealth, terms_accepted: woTerms,
               });
               setLoading(false);
               if (!r.ok) { setError(r.error || 'Could not save the signature.'); return; }
@@ -527,14 +562,22 @@ export function IntakeForm({ token, student }: Props) {
                 required
               />
 
-              <div className="rounded-lg bg-gray-50 p-3">
-                <Checkbox
-                  label="I authorize the use of my photos and videos for educational and promotional purposes (Section 10). / Autorizo el uso de mis fotos y videos con fines educativos y promocionales (Sección 10)."
-                  checked={!!basicForm.media_release_consent}
-                  onChange={(v) => setBasic('media_release_consent', v)}
-                />
-                <p className="mt-1 text-[11px] text-gray-400">Optional — you may uncheck it. / Opcional — podés desmarcarlo.</p>
-              </div>
+              {basicMinor && (
+                <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,210,255,.07)', border: '1px solid rgba(0,210,255,.35)' }}>
+                  <p className="text-[12px] font-bold" style={{ color: '#0090B0' }}>
+                    {(student as any).first_name || 'This surfer'} is under 18 — a parent or legal guardian signs and consents.
+                  </p>
+                  <input value={basicGuardian} onChange={(e) => setBasicGuardian(e.target.value)} placeholder="Parent / guardian full legal name *"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
+                </div>
+              )}
+
+              <ConsentBoxes
+                health={basicHealth} onHealth={setBasicHealth}
+                terms={basicTerms} onTerms={setBasicTerms}
+                media={!!basicForm.media_release_consent} onMedia={(v) => setBasic('media_release_consent', v)}
+                minor={basicMinor} forName={(student as any).first_name}
+              />
             </div>
           </div>
         </div>

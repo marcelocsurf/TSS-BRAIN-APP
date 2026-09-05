@@ -34,6 +34,7 @@ import { getMembershipInfo } from '@/lib/actions/memberships';
 import { LearningProfileCard } from '@/components/student/LearningProfileCard';
 import { OfficialEvaluationPanel } from '@/components/student/OfficialEvaluationPanel';
 import { ArchiveSessionButton } from '@/components/session/ArchiveSessionButton';
+import { DataRightsCard } from './DataRightsCard';
 import type { LearningChannel } from '@/lib/constants/learning-profiles';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -904,6 +905,24 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* Level Access */}
       <LevelAccessCard studentId={id} unlockedKeys={unlockedKeys} />
+
+      {/* Privacidad: consentimientos + derecho de supresión (admin/coordinador) */}
+      {canManageCourses && (
+        <DataRightsCard
+          studentId={id}
+          canAnonymize={canManageCourses}
+          consents={{
+            waiver_signed_at: (student as any).waiver_signed_at ?? null,
+            waiver_version: (student as any).waiver_version ?? null,
+            health_data_consent_at: (student as any).health_data_consent_at ?? null,
+            terms_accepted_at: (student as any).terms_accepted_at ?? null,
+            terms_version: (student as any).terms_version ?? null,
+            media_release_consent: (student as any).media_release_consent ?? null,
+            guardian_name: (student as any).guardian_name ?? null,
+            anonymized_at: (student as any).anonymized_at ?? null,
+          }}
+        />
+      )}
         </div>
       </div>
 

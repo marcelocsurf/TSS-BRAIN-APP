@@ -1,6 +1,8 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { consentMeta } from '@/lib/legal/consent-meta';
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal/versions';
 import {
   scoreOceanQuiz,
   isOceanQuizComplete,
@@ -36,6 +38,11 @@ export interface BasicIntakeInput {
   waiver_signed: boolean;
   media_release_consent?: boolean;
   waiver_version?: string;
+  // Consentimientos legales (auditoría 2026-09-05): salud es EXPRESO y
+  // obligatorio; términos + privacidad obligatorios; imagen es opt-in.
+  health_data_consent?: boolean;
+  terms_accepted?: boolean;
+  guardian_name?: string | null;
 }
 
 export interface IntakeFormInput {
@@ -122,8 +129,16 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
   if (!input.waiver_signed) {
     throw new Error('Please acknowledge the waiver to continue.');
   }
+  if (!input.health_data_consent) {
+    throw new Error('We need your consent to store your health and safety information.');
+  }
+  if (!input.terms_accepted) {
+    throw new Error('Please accept the Terms and the Privacy Policy to continue.');
+  }
 
   const isFirstSubmission = !student.intake_completed_at;
+  const meta = await consentMeta();
+  const now = new Date().toISOString();
 
   const updates: Record<string, unknown> = {
     date_of_birth: input.date_of_birth?.trim() || null,
@@ -143,9 +158,15 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
     injuries: input.injuries?.trim() || null,
     medical_notes: input.medical_notes?.trim() || null,
     waiver_signed: true,
-    waiver_signed_at: new Date().toISOString(),
-    media_release_consent: input.media_release_consent ?? null,
+    waiver_signed_at: now,
+    media_release_consent: !!input.media_release_consent,
+    media_release_consent_at: input.media_release_consent ? now : null,
     waiver_version: input.waiver_version ?? null,
+    health_data_consent_at: now,
+    terms_accepted_at: now,
+    terms_version: `${TERMS_VERSION}+${PRIVACY_VERSION}`,
+    ...meta,
+    ...(input.guardian_name?.trim() ? { guardian_name: input.guardian_name.trim(), guardian_relationship: 'parent/guardian', waiver_signed_by: `${input.guardian_name.trim()} (parent/guardian)` } : {}),
   };
 
   // Mark tier as 'basic' but never downgrade a member who already reached 'extended'.
@@ -350,6 +371,8 @@ export async function signWaiverOnly(token: string, input: {
   guardian_name?: string | null;
   media_release_consent?: boolean;
   waiver_version: string;
+  health_data_consent?: boolean;
+  terms_accepted?: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
   const admin = createAdminClient();
   const { data: st } = await admin
@@ -373,12 +396,22 @@ export async function signWaiverOnly(token: string, input: {
   if (minor && !input.guardian_name?.trim()) {
     return { ok: false, error: 'A parent or legal guardian must sign for a minor.' };
   }
+  if (!input.health_data_consent) return { ok: false, error: 'We need your consent to store health and safety information.' };
+  if (!input.terms_accepted) return { ok: false, error: 'Please accept the Terms and the Privacy Policy.' };
+  const now = new Date().toISOString();
+  const meta = await consentMeta();
   const { error } = await admin.from('students').update({
     waiver_signed: true,
-    waiver_signed_at: new Date().toISOString(),
+    waiver_signed_at: now,
     waiver_signed_by: minor ? `${input.guardian_name!.trim()} (parent/guardian)` : input.signed_name.trim(),
     waiver_version: input.waiver_version,
-    ...(input.media_release_consent != null ? { media_release_consent: input.media_release_consent } : {}),
+    media_release_consent: !!input.media_release_consent,
+    media_release_consent_at: input.media_release_consent ? now : null,
+    health_data_consent_at: now,
+    terms_accepted_at: now,
+    terms_version: `${TERMS_VERSION}+${PRIVACY_VERSION}`,
+    ...meta,
+    ...(minor ? { guardian_name: input.guardian_name!.trim(), guardian_relationship: 'parent/guardian' } : {}),
   }).eq('id', st.id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };

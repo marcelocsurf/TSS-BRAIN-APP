@@ -18,6 +18,8 @@ import { PortalTabs } from './portal-tabs';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
 import { getNextMove } from '@/lib/actions/sequence';
 import { RenewalGate } from './RenewalGate';
+import { TermsGate } from './TermsGate';
+import { needsTermsAcceptance } from '@/lib/actions/legal';
 import { getMembershipInfo } from '@/lib/actions/memberships';
 import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMyMessages, getMyTeamWall, getMyTodayExtras } from '@/lib/actions/programs';
 import { getMyCompetitions } from '@/lib/actions/competitions';
@@ -129,6 +131,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     getCoachFocusState(token).catch(() => ({ flagged: 0, pending: 0, clearedByStudent: false })),
   ]);
 
+  const termsPending = isImpersonatingThisStudent ? false : await needsTermsAcceptance(student.id);
+
   // Bundle del Home: valores ya desenvueltos, con la MISMA semántica que cada
   // tarjeta usaba al hacer su propio fetch (ok:false → conservar null/[]).
   const homeBundle = {
@@ -198,6 +202,11 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     <>
       {isImpersonatingThisStudent && impersonation && (
         <ImpersonateBanner kind="student" name={impersonation.name} />
+      )}
+      {/* Términos + Privacidad: una vez por versión. No se muestra al admin
+          que mira "como" el alumno — la aceptación es personal. */}
+      {!isImpersonatingThisStudent && termsPending && (
+        <TermsGate token={token} firstName={student.first_name || 'surfer'} isUpdate={!!(student as any).terms_accepted_at} />
       )}
       <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       <PortalTabs

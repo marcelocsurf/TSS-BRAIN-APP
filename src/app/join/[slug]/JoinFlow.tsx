@@ -4,6 +4,7 @@
 // confirm / new: profile + waiver) → optional coupon → done. Payment is
 // always settled at front desk; a courtesy coupon just skips the charge.
 
+import { ConsentBoxes } from '@/components/legal/ConsentBoxes';
 import { useState, useEffect, useTransition } from 'react';
 import { lookupPublicStudent, publicEnroll, publicAddCompanion, type PublicPerson } from '@/lib/actions/public-classes';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
@@ -111,6 +112,10 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
   const [err, setErr] = useState<string | null>(null);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [signedName, setSignedName] = useState('');
+  // Consentimientos legales (2026-09-05): salud + términos obligatorios, imagen opt-in.
+  const [acceptHealth, setAcceptHealth] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [mediaOk, setMediaOk] = useState(false);
   const [form, setForm] = useState({ first_name: '', last_name: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '', medical_notes: '', date_of_birth: '', guardian_name: '', guardian_phone: '', shirt_size: '', languages: '' });
   // Familia: acompañantes agregados después de reservar
   const [companion, setCompanion] = useState({ first_name: '', last_name: '', date_of_birth: '', medical_notes: '', shirt_size: '' });
@@ -164,6 +169,9 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         profile: profile ? form : null,
         accept_waiver: acceptWaiver || !!known?.waiver_signed,
         signed_name: signedName || form.first_name || known?.first_name || null,
+        health_consent: acceptHealth,
+        accept_terms: acceptTerms,
+        media_consent: mediaOk,
       });
       if (!r.ok) { setErr(r.error ?? 'Something went wrong.'); return; }
       setSummary({ ...r.summary, camp_id: sel!.id });
@@ -561,12 +569,16 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
                 <input value={signedName} onChange={(e) => setSignedName(e.target.value)} placeholder="Type your full name to sign"
                   className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
               )}
+              <div className="mt-3">
+                <ConsentBoxes health={acceptHealth} onHealth={setAcceptHealth} terms={acceptTerms} onTerms={setAcceptTerms}
+                  media={mediaOk} onMedia={setMediaOk} minor={needsGuardian} forName={known.first_name} />
+              </div>
             </div>
           )}
           {CouponField}
           {err && <p className="text-[11px] text-red-600">{err}</p>}
           <button type="button"
-            disabled={pending || (!known.waiver_signed && (!acceptWaiver || !(needsGuardian ? guardianName : signedName).trim()))}
+            disabled={pending || (!known.waiver_signed && (!acceptWaiver || !acceptHealth || !acceptTerms || !(needsGuardian ? guardianName : signedName).trim()))}
             onClick={() => enroll(false)}
             className="w-full rounded-full py-3 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#06D6A0', color: '#061C2B' }}>
             {pending ? 'Saving…' : 'Confirm my spot'}
@@ -657,13 +669,15 @@ export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) 
         <input value={signedName} onChange={(e) => setSignedName(e.target.value)}
           placeholder={isMinor && !tooYoung ? 'Guardian: type your full name to sign' : 'Type your full name to sign'}
           className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+        <ConsentBoxes health={acceptHealth} onHealth={setAcceptHealth} terms={acceptTerms} onTerms={setAcceptTerms}
+          media={mediaOk} onMedia={setMediaOk} minor={isMinor && !tooYoung} forName={[form.first_name, form.last_name].filter(Boolean).join(' ') || null} />
       </div>
 
       <div className="mt-3 space-y-3">
         {CouponField}
         {err && <p className="text-[11px] text-red-600">{err}</p>}
         <button type="button"
-          disabled={pending || tooYoung || !!dobMsg || !form.first_name.trim() || !form.last_name.trim() || !form.shirt_size || !form.languages || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !signedName.trim()}
+          disabled={pending || tooYoung || !!dobMsg || !form.first_name.trim() || !form.last_name.trim() || !form.shirt_size || !form.languages || !form.date_of_birth || (isMinor && !form.guardian_name.trim()) || !form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim() || !form.medical_notes.trim() || !acceptWaiver || !acceptHealth || !acceptTerms || !signedName.trim()}
           onClick={() => enroll(true)}
           className="w-full rounded-full py-3.5 text-[10px] disabled:opacity-40" style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}>
           {pending ? 'Saving…' : 'Sign & save my spot'}

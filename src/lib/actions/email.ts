@@ -20,6 +20,9 @@ async function sendEmail(payload: Parameters<typeof resend.emails.send>[0]) {
 // Absolute production URL for the logo — email clients can't load relative
 // paths, so this must point at the live domain (white horizontal mark for the
 // dark header). alt text keeps the brand name for image-blocking clients.
+// Pie legal de todo correo (auditoría 2026-09-05): quién lo manda y dónde
+// están la privacidad y los términos. Transaccional: no hay "unsubscribe".
+const LEGAL_FOOTER_HTML = `<p style="text-align:center;font-size:10px;color:#9CA3AF;margin:8px 0 0;line-height:1.6;">Sent by Enkrateia, S.A. de C.V. · The Surf Sequence® · <a href="https://app.thesurfsequence.com/legal/privacy" style="color:#9CA3AF;">Privacy</a> · <a href="https://app.thesurfsequence.com/legal/terms" style="color:#9CA3AF;">Terms</a> · info@thesurfsequence.com</p>`;
 const EMAIL_LOGO = `<img src="https://app.thesurfsequence.com/tss-logo-white-h.png" alt="${BRAND.name}" width="210" style="display:block;margin:0 auto;max-width:72%;height:auto;" />`;
 
 interface SessionEmailData {
@@ -166,6 +169,7 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
       ${cta ? `<a href="${cta.url}" style="display:block;background:${BRAND.colors.cyan};color:${BRAND.colors.navy};text-align:center;padding:14px;border-radius:999px;text-decoration:none;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-top:20px;">${cta.label}</a>` : ''}
     </div>
     <p style="text-align:center;font-size:9px;color:#9CA3AF;margin:16px 0 0;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:2px;">${BRAND.name}® · ${BRAND.tagline}</p>
+    ${LEGAL_FOOTER_HTML}
   </div>
 </body></html>`;
 }
@@ -643,6 +647,7 @@ function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUr
     <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">
       The Surf Sequence® · Evolve through play
     </p>
+    ${LEGAL_FOOTER_HTML}
   </div>
 </body>
 </html>`;
@@ -738,6 +743,7 @@ export async function sendBookDeliveryEmail(data: {
       </p>
       <p style="margin:18px 0 0;font-size:12px;color:#9CA3AF;">Save this email — the button above is your personal access link.</p>
     </div>
+    ${LEGAL_FOOTER_HTML}
   </div>
 </body></html>`,
     });
