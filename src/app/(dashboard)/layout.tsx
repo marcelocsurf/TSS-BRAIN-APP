@@ -51,9 +51,9 @@ const NAV_ITEMS: NavItem[] = [
   // Other roles keep their entries.
   { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['coordinator', 'coach', 'assistant'] },
   { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['coach'] },
-  // Course Codes (vouchers del curso online): funcionalidad dormida hasta que
-  // el curso se venda suelto / se cobren las herramientas — la ruta sigue viva.
-  // { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['coordinator'] },
+  // Course Codes: despierta 2026-09-05 — ahí se generan los LINKS DE REGALO
+  // del libro ONE WAVE (y los códigos de curso). Marcelo no la encontraba.
+  { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
   { href: '/reports',       label: 'Reportes',     Icon: BarChart3,    roles: ['admin', 'coordinator'] },
