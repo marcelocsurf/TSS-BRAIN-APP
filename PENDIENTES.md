@@ -1,6 +1,31 @@
 # PENDIENTES — TSS BRAIN / The Surf Sequence
 **Lista general del app y del proyecto.** Una sola lista, por bloques, para ir tachando.
-Actualizada: 2026-09-05. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico en `INFO_DECRETO722.md`.
+Actualizada: 2026-09-05. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico en `INFO_DECRETO722.md`; restauración en `RECUPERACION.md`.
+
+---
+
+## 0. LO QUE SOLO PUEDE HACER MARCELO — esta semana
+
+**Seguridad y respaldo (30 minutos en total)**
+- [ ] **Token de GitHub con permiso `workflow`**: GitHub → Settings → Developer settings → Personal access tokens → tu token → Edit → marcar **workflow** → Update. Sin esto el archivo `.github/workflows/backup.yml` no se puede subir (hoy está en la Mac, sin subir). Avisar a Claude y lo sube.
+- [ ] **Dos secretos en GitHub** (repo TSS-BRAIN-APP → Settings → Secrets and variables → Actions → New repository secret), mismos valores que en Vercel: `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
+- [ ] Opcionales del backup: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base → agrega un pg_dump completo con logins de coaches) y `BACKUP_PASSPHRASE` (frase larga guardada en el gestor de contraseñas → cifra el paquete).
+- [ ] **Primer backup a mano**: GitHub → Actions → "Backup semanal" → Run workflow → verlo en verde y bajar el artifact una vez para saber dónde queda.
+- [ ] **Plan de Supabase**: Settings → Billing. Free no tiene backups propios; Pro guarda 7 días. Decidir si se sube a Pro (~$25/mes) y confirmar que la tarjeta no vence.
+- [ ] **Verificación en dos pasos** en Google (el Gmail que sostiene todo), GitHub, Vercel y Supabase + correo de recuperación distinto en Google.
+- [ ] **Gestor de contraseñas**: guardar los 9 secretos de `.env.local` (lista en `RECUPERACION.md` §2), la contraseña de la base de Supabase, el token de GitHub y la `BACKUP_PASSPHRASE`.
+- [ ] Vercel → marcar las llaves como *Sensitive*; Supabase → Auth → activar *leaked password protection*.
+
+**Legal (con abogado)**
+- [ ] Mandar a revisar con abogado salvadoreño: `/legal/privacy`, `/legal/terms` y los dos waivers (alumno y coach). Confirmar razón social y domicilio de Enkrateia, S.A. de C.V.
+- [ ] Aceptar los DPA en los paneles de Supabase, Vercel y Resend y guardar copia.
+
+**Trámite**
+- [ ] Revisar `INFO_DECRETO722.md` (sección 6, autoría) y enviarlo.
+
+**Producto (decisiones)**
+- [ ] Revisar paso a paso los 49 criterios White→Blue (artefacto `belts-criterios`) y dar el "dale" para aplicarlos a la base.
+- [ ] Decidir qué hacer con las 1,610 fichas con datos de salud sin consentimiento expreso (pedirlo por email o esperar a su próxima firma).
 
 ---
 
@@ -58,14 +83,12 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Links de video de cada servicio (Marcelo) y video de Discover Surfing.
 
 ## 7. OPERACIÓN Y ADMIN
-- [ ] **Backup semanal (construido 2026-09-05, falta encenderlo)**: pegar en GitHub → Settings → Secrets and variables → Actions los secretos `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` (los mismos de Vercel); opcional `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base) para tener además un pg_dump restaurable, y `BACKUP_PASSPHRASE` para cifrar. Luego Actions → "Backup semanal" → Run workflow y ver que salga en verde. Restauración: `RECUPERACION.md`.
-- [ ] Verificación en dos pasos en Google, GitHub, Vercel y Supabase + correo de recuperación distinto (todo cuelga del Gmail de Marcelo).
-- [ ] Guardar los 9 secretos de `.env.local` en un gestor de contraseñas.
-- [ ] Confirmar el plan de Supabase (Free no tiene backups propios; Pro guarda 7 días) y que la tarjeta no venza.
+- [ ] Backup semanal: construido y probado (125 tablas, 70 archivos, 0 errores); encenderlo = sección 0. Después de Claude: subir el workflow, correrlo y confirmar el primer artifact; escribir `scripts/restore-json.mjs` (restauración desde los JSON en orden de dependencias) el día que se quiera ensayar una restauración completa.
+- [ ] Ensayo de restauración: una vez al trimestre, bajar el artifact y restaurarlo en un proyecto Supabase de prueba (`RECUPERACION.md` §3) para comprobar que el backup sirve.
+- [ ] Alerta de vencimiento de tarjeta (Supabase y Vercel) en el calendario.
 - [ ] Planificación de capacidad y ocupación de ventas agregada en Services.
 - [ ] Editor E2 del método una generación atrás.
 - [ ] Precios de asientos del camp de Stanley.
-- [ ] Infra: Vercel sensitive keys + leaked-password protection en Supabase (Marcelo).
 - [ ] Host de prueba (`marcelocsurf+host@gmail.com`) sigue activo en prod: borrar o asignar persona real.
 - [ ] Kevin Castillo: completar perfil + waiver de staff.
 - [ ] Alumno de prueba "Test Experimentado": hoy tiene términos aceptados por el E2E de 2026-09-05; no toca a nadie real.
