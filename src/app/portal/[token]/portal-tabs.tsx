@@ -309,6 +309,9 @@ const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight
 // Orden: 1 lo que dejó el coach · 2 el método (el paso que detuvo tu último
 // run, o el primero < 4★) · 3 lo que dejaste < 4★ en dos semanas.
 type NextMoveRow = { key: string; label: string; title: string; reason: string; detail?: string | null; action: string | null; accent: string; onClick?: () => void };
+// "Sequence #1 · Board Control": con la palabra, porque la secuencia se llama
+// casi igual que un paso ("Control Your Board") y sin ella parece repetido.
+const seqWord = (label: string) => (label.startsWith('#') ? `Sequence ${label}` : label);
 
 function nextMoveRows(
   data: PortalData,
@@ -328,7 +331,7 @@ function nextMoveRows(
   }
   const nm = data.nextMove ?? null;
   if (nm) {
-    const seq = sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName);
+    const seq = seqWord(sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName));
     rows.push({
       key: 'sequence', label: 'Your sequence', title: nm.stepTitle, accent: BRAND.colors.cyan,
       reason: nm.source === 'held_back'
@@ -345,7 +348,7 @@ function nextMoveRows(
       const u = nm.unfinished;
       rows.push({
         key: 'unfinished', label: 'Unfinished', title: u.stepTitle, accent: '#FFD166',
-        reason: `Now at ${u.stars}★ · ${sequenceLabel(u.sequenceId, u.sequenceOrder, u.sequenceName)} · from the last two weeks`,
+        reason: `Now at ${u.stars}★ · ${seqWord(sequenceLabel(u.sequenceId, u.sequenceOrder, u.sequenceName))} · from the last two weeks`,
         action: 'Pick it up →',
         onClick: () => {
           if (onTrainSequence) onTrainSequence({ sequenceId: u.sequenceId, mode: 'step_focus', focusStepId: u.stepId });
