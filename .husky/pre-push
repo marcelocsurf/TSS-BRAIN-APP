@@ -12,3 +12,12 @@ npx tsc --noEmit || {
   exit 1
 }
 echo "✓ Types clean"
+
+# Pruebas de compuertas y lógica pura (src/test). Rápidas, sin base real.
+echo "→ Running vitest…"
+npx vitest run --reporter=dot || {
+  echo ""
+  echo "✗ Tests failed. Fix them before pushing."
+  exit 1
+}
+echo "✓ Tests green"

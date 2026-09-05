@@ -95,13 +95,15 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 
 ## 8. CALIDAD — cabos sueltos (2026-09-05), en orden de daño
 - [x] Snapshot del esquema en el repo: `supabase/schema_snapshot_2026-09-05.sql` (123 tablas, 24 funciones, 508 constraints, 149 índices, 18 triggers, 158 políticas, 5 buckets, 2 cron jobs). Se valida en el primer ensayo de restauración. (2026-09-05)
-- [ ] **Pruebas de compuertas** (~30): libro/materials, gift, anonymize, token del portal, lets-play, checkCoachAccessToStudent. (Claude, 2-3 sesiones)
+- [x] Pruebas de compuertas (2026-09-05): 38 pruebas con vitest (`npm test`, también corren en el pre-push): materials/libro, gift, términos, anonimización, consentimientos del intake y del QR, regla del agua del quiz, ventana del camp, fecha de nacimiento, emails mal tipeados. Supabase de mentira en `src/test/fake-supabase.ts`.
+- [ ] Pruebas que faltan: lets-play (saveSequenceSession), checkCoachAccessToStudent, promoción de cinta con certificación, cascada de sesión. (Claude, 1-2 sesiones)
 - [ ] **Staging separado de producción**: hoy dev y prod usan la misma base. Rama de Supabase o proyecto copia cuando se pase a plan Pro. (Marcelo decide, Claude configura)
 - [x] Limpieza de prueba en prod (2026-09-05): Host Prueba borrado; columna `students.is_test` (migración 00185) marcada en los 5 alumnos de prueba (no se pueden borrar: tienen camps y sesiones colgando).
 - [ ] **Excluir `is_test` de reportes, embudo y correos** (hoy la marca existe pero nadie la filtra). (Claude, 1 sesión)
 - [ ] **Coaches de prueba que quedan** — decidir Marcelo: "Coach prueba oso perezoso" (marcelo@purosurf.com, ¿es tu cuenta real?), "Gerente Prueba", "Seller Prueba" (academia Sandbox), "Psicóloga de Prueba" (¿la usa el portal de especialistas?).
 - [ ] **Duplicados de alumnos — DECISIÓN DE MARCELO**: 480 grupos con mismo nombre + apellido + fecha de nacimiento (1,049 fichas) y 551 emails repetidos (1,240 fichas). Parte es por diseño (familias comparten email en el QR) y parte son fichas dobles reales (importación HP + QR + intake). Hace falta una pantalla de "unir fichas" que conserve historial; no se hace automático.
 - [ ] **Unificar numeraciones** de bloques (3 numeraciones), pares viejo/nuevo de drills, STP-039B: junto con la revisión de los 49 criterios. (después del "dale" de Marcelo)
-- [ ] **Limpieza de código sin cambiar comportamiento**: quitar `as any` declarando tipos, borrar `.bak`, `/sessions/old`, scripts de importación viejos, unificar errores a `{ok,error}`. Hacerla con las pruebas ya escritas. (Claude, 2 sesiones)
+- [x] Borrados `.bak` y la ruta `/sessions/old` (sin enlaces desde el 2026-06). (2026-09-05)
+- [ ] **Limpieza que queda**: quitar `as any` declarando tipos (`students/[id]/page.tsx` sobre todo), decidir qué scripts de `scripts/` se archivan, y unificar las 288 acciones viejas que lanzan error hacia `{ok,error}` (esto SÍ cambia comportamiento: hacerlo módulo por módulo con pruebas). (Claude, 2-3 sesiones)
 - [ ] **ARQUITECTURA.md** (2 páginas para un programador nuevo): cómo entra un alumno, cómo se guarda una sesión, dónde están las compuertas, qué tabla es la fuente de cada cosa. (Claude, 1 sesión)
 - [ ] **Revisión de seguridad externa** (tercero, ~1 semana, US$2-5k en LatAm) antes de vender licencias a academias.
