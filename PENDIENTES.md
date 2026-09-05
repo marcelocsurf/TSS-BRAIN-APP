@@ -93,6 +93,12 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Kevin Castillo: completar perfil + waiver de staff.
 - [ ] Alumno de prueba "Test Experimentado": hoy tiene términos aceptados por el E2E de 2026-09-05; no toca a nadie real.
 
-## 8. CALIDAD
-- [ ] Pruebas automatizadas: hoy 0. Mínimo sugerido: acciones de compuerta (gift, materials, anonymize, lets-play) con datos de prueba.
-- [ ] Definir plazo de limpieza de la carpeta `scripts/` (importadores viejos).
+## 8. CALIDAD — cabos sueltos (2026-09-05), en orden de daño
+- [ ] **Snapshot del esquema en el repo**: 45 de las 123 tablas no están en migraciones (se crearon directo en Supabase). Generar `00000_schema_snapshot.sql` con el esquema completo actual. (Claude, 1 sesión)
+- [ ] **Pruebas de compuertas** (~30): libro/materials, gift, anonymize, token del portal, lets-play, checkCoachAccessToStudent. (Claude, 2-3 sesiones)
+- [ ] **Staging separado de producción**: hoy dev y prod usan la misma base. Rama de Supabase o proyecto copia cuando se pase a plan Pro. (Marcelo decide, Claude configura)
+- [ ] **Limpiar datos de prueba en prod**: borrar host de prueba, marcar "Test Experimentado" como interno, correr detector de duplicados. (Claude, 1 sesión)
+- [ ] **Unificar numeraciones** de bloques (3 numeraciones), pares viejo/nuevo de drills, STP-039B: junto con la revisión de los 49 criterios. (después del "dale" de Marcelo)
+- [ ] **Limpieza de código sin cambiar comportamiento**: quitar `as any` declarando tipos, borrar `.bak`, `/sessions/old`, scripts de importación viejos, unificar errores a `{ok,error}`. Hacerla con las pruebas ya escritas. (Claude, 2 sesiones)
+- [ ] **ARQUITECTURA.md** (2 páginas para un programador nuevo): cómo entra un alumno, cómo se guarda una sesión, dónde están las compuertas, qué tabla es la fuente de cada cosa. (Claude, 1 sesión)
+- [ ] **Revisión de seguridad externa** (tercero, ~1 semana, US$2-5k en LatAm) antes de vender licencias a academias.
