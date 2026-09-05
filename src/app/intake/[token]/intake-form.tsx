@@ -117,6 +117,11 @@ export function IntakeForm({ token, student }: Props) {
 
   // ── Basic intake form state (the "ficha" — identity + safety) ──
   const [basicForm, setBasicForm] = useState<BasicIntakeInput>({
+    // Pedido del equipo (2026-09-05): apellido, talla y alergias OBLIGATORIOS.
+    // Llegaban fichas con solo el nombre, sin talla para el welcome kit y sin
+    // alergias (alimentarias sobre todo) para prevenir en el camp.
+    last_name: (student as any).last_name || '',
+    shirt_size: (student as any).shirt_size || '',
     date_of_birth: student.date_of_birth || '',
     phone: (student as any).phone || '',
     nationality: student.nationality || '',
@@ -189,6 +194,18 @@ export function IntakeForm({ token, student }: Props) {
     // y dispararía el flujo de tutor. Se corta acá.
     const dobMsg = dobError(basicForm.date_of_birth);
     if (dobMsg) { setError(dobMsg); return; }
+    if ((basicForm.last_name || '').trim().length < 2) {
+      setError('Last name is required.');
+      return;
+    }
+    if (!basicForm.shirt_size) {
+      setError('Pick your t-shirt size — it is for your welcome kit.');
+      return;
+    }
+    if (!(basicForm.allergies || '').trim()) {
+      setError("Allergies are required — write 'none' if you have none.");
+      return;
+    }
     if (!basicForm.swim_level) {
       setError('Please select your swim level.');
       return;
@@ -435,6 +452,13 @@ export function IntakeForm({ token, student }: Props) {
           </div>
           <div className="p-4 space-y-4">
             <Field
+              label="Last name"
+              value={basicForm.last_name || ''}
+              onChange={(v) => setBasic('last_name', v)}
+              placeholder="As it appears on your ID"
+              required
+            />
+            <Field
               label="Date of Birth"
               type="date"
               max={dobMaxAttr()}
@@ -495,6 +519,12 @@ export function IntakeForm({ token, student }: Props) {
             <p className="text-[11px] text-gray-500 -mt-1">
               Your coach picks your board from your height and weight — it is the difference between a board that works for you and one that fights you.
             </p>
+            <Select
+              label="T-shirt size (for your welcome kit) *"
+              value={basicForm.shirt_size || ''}
+              onChange={(v) => setBasic('shirt_size', v)}
+              options={['', 'Kids 6', 'Kids 8', 'Kids 10', 'Kids 12', 'XS', 'S', 'M', 'L', 'XL', 'XXL']}
+            />
           </div>
         </div>
 
@@ -513,10 +543,12 @@ export function IntakeForm({ token, student }: Props) {
               options={['None', 'Basic', 'Intermediate', 'Strong']}
             />
             <Field
-              label="Allergies / Medical Conditions"
+              label="Allergies (food, medication, other)"
               value={basicForm.allergies || ''}
               onChange={(v) => setBasic('allergies', v)}
-              placeholder="e.g. Penicillin, shellfish, asthma, none"
+              placeholder="e.g. shellfish, peanuts, penicillin — or write 'none'"
+              required
+              hint="We cook and plan around this. If you have none, write 'none'."
             />
             <Field
               label="Injuries / chronic conditions"
@@ -851,12 +883,6 @@ export function IntakeForm({ token, student }: Props) {
                 value={(extForm.instagram as string) || ''}
                 onChange={(v) => setExt('instagram', v)}
                 placeholder="@yourusername"
-              />
-              <Select
-                label="Shirt Size"
-                value={(extForm.shirt_size as string) || ''}
-                onChange={(v) => setExt('shirt_size', v)}
-                options={['', 'XS', 'S', 'M', 'L', 'XL', 'XXL']}
               />
               <Select
                 label="How did you hear about us?"

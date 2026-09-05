@@ -188,7 +188,15 @@ describe('anonymizeStudent — solo admin/coordinador de la academia, y borra lo
 
 // ── Consentimientos en el intake ──
 describe('submitBasicIntake — sin consentimiento de salud o términos no guarda', () => {
-  const base = { emergency_contact_name: 'Mamá', emergency_contact_phone: '7000', swim_level: 'strong', waiver_signed: true, date_of_birth: '1990-01-01' } as any;
+  const base = { last_name: 'Prueba', shirt_size: 'M', allergies: 'none', emergency_contact_name: 'Mamá', emergency_contact_phone: '7000', swim_level: 'strong', waiver_signed: true, date_of_birth: '1990-01-01' } as any;
+  it('apellido, talla y alergias son obligatorios (pedido del equipo 2026-09-05)', async () => {
+    const { submitBasicIntake } = await import('@/lib/actions/intake');
+    const ok = { health_data_consent: true, terms_accepted: true };
+    await expect(submitBasicIntake(TOKEN, { ...base, ...ok, last_name: '' })).rejects.toThrow(/Last name/);
+    await expect(submitBasicIntake(TOKEN, { ...base, ...ok, shirt_size: '' })).rejects.toThrow(/size/);
+    await expect(submitBasicIntake(TOKEN, { ...base, ...ok, allergies: '  ' })).rejects.toThrow(/Allergies/);
+    expect(fake.writes().length).toBe(0);
+  });
   it('falta consentimiento de salud', async () => {
     const { submitBasicIntake } = await import('@/lib/actions/intake');
     await expect(submitBasicIntake(TOKEN, { ...base, terms_accepted: true })).rejects.toThrow(/health/);

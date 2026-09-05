@@ -15,6 +15,9 @@ import { activatePendingCoursesForStudent } from './course-grants';
 // ═══════════════════════════════════════
 
 export interface BasicIntakeInput {
+  // Obligatorios desde 2026-09-05 (pedido del equipo): apellido, talla, alergias.
+  last_name?: string;
+  shirt_size?: string;
   // Identity (the "ficha" — required to close a usable profile)
   date_of_birth?: string;
   /** Teléfono/WhatsApp del PROPIO alumno (students.phone) — el equipo lo usa
@@ -123,6 +126,15 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
   if (!input.emergency_contact_phone?.trim()) {
     throw new Error('Emergency contact phone is required.');
   }
+  if ((input.last_name ?? '').trim().length < 2) {
+    throw new Error('Last name is required.');
+  }
+  if (!input.shirt_size?.trim()) {
+    throw new Error('T-shirt size is required.');
+  }
+  if (!input.allergies?.trim()) {
+    throw new Error("Allergies are required — write 'none' if you have none.");
+  }
   if (!input.swim_level) {
     throw new Error('Swim level is required.');
   }
@@ -141,6 +153,8 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
   const now = new Date().toISOString();
 
   const updates: Record<string, unknown> = {
+    last_name: input.last_name!.trim(),
+    shirt_size: input.shirt_size!.trim(),
     date_of_birth: input.date_of_birth?.trim() || null,
     // Solo pisar el teléfono si el alumno escribió algo — no borrar el que
     // el equipo ya haya cargado a mano.
