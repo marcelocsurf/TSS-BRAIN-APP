@@ -74,7 +74,7 @@ Distribución por carpeta principal:
 |---|---:|---|
 | **Tablas en producción (schema `public`)** | **123** | `information_schema.tables` |
 | Vistas | 2 | `information_schema.views` |
-| Funciones almacenadas (PL/pgSQL / SQL) | 212 | `pg_proc` |
+| Funciones almacenadas propias (PL/pgSQL / SQL) | 24 (+188 que instala la extensión btree_gist) | `pg_proc` sin `pg_depend` de extensión |
 | Políticas de seguridad a nivel de fila (RLS) | 158 | `pg_policies` |
 | Triggers | 18 | `pg_trigger` |
 | Buckets de almacenamiento | 5 | `storage.buckets` |
@@ -235,7 +235,7 @@ Permisos del menú del panel interno, tomados de `src/app/(dashboard)/layout.tsx
 **Actividades que realiza la empresa sobre este software:**
 
 - **Programación:** desarrollo continuo de la aplicación web (≈185,000 líneas en TypeScript, SQL, HTML, JS y Python), interfaz PWA, lógica de servidor, integraciones (pagos, correo, storage, cron).
-- **Análisis y diseño de sistemas:** modelado de datos (123 tablas, 212 funciones, 158 políticas de seguridad), diseño de flujos de negocio (cascada de sesión, ciclo de vida del camp, evaluación por secuencia, programas de alto rendimiento), arquitectura multi-tenant y de portales por token.
+- **Análisis y diseño de sistemas:** modelado de datos (123 tablas, 24 funciones propias, 158 políticas de seguridad), diseño de flujos de negocio (cascada de sesión, ciclo de vida del camp, evaluación por secuencia, programas de alto rendimiento), arquitectura multi-tenant y de portales por token.
 - **Gestión:** planificación por fases y sprints, control de versiones, gestión de despliegues, backlog y auditorías internas de seguridad y coherencia del contenido.
 - **Mantenimiento:** corrección de errores, migraciones de esquema, actualizaciones de dependencias, monitoreo de despliegues, restauración de datos de prueba, auditorías de seguridad (por ejemplo, la del 2026-08-08 con 28 hallazgos corregidos).
 - **Consultoría:** el sistema se ofrece a academias afiliadas (modelo multi-academia con coordinador propio, plantillas, precios y facturación por academia) e incluye asesoría de implementación del método.

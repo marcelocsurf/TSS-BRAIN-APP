@@ -13,7 +13,7 @@
 | Funciones de servidor (Server Actions) | 602 en 98 módulos |
 | Endpoints HTTP (webhooks, cron, archivos) | 11 |
 | Tablas en producción | 123 |
-| Funciones en la base / políticas de seguridad / triggers | 212 / 158 / 18 |
+| Funciones propias en la base / políticas de seguridad / triggers | 24 / 158 / 18 |
 | Migraciones de esquema | 184 |
 | Integraciones | Supabase (auth, base, storage), Vercel (hosting, cron), Resend (email), Wompi (pagos), PWA, canvas de video (Konva), exportación Excel |
 | Módulos funcionales | 19 (alumnos, camps, sesiones en cascada, curso y método, portal del alumno con Let's Play, evaluación por criterios, alto rendimiento, staff, academias multi-tenant, comercial, operaciones, finanzas, 9 reportes, captación con quiz, clases por QR, encuestas, comunidad, herramientas técnicas, auditoría, automatizaciones) |
@@ -34,7 +34,7 @@ Se calcula el esfuerzo por pieza y se multiplica por tarifas de mercado 2026. Su
 |---|---|---:|
 | Descubrimiento y diseño de producto (flujos, 19 módulos, 12 tipos de usuario) | 6-8 semanas de PM + diseñador | 500 – 700 |
 | Diseño UX/UI (90 pantallas + portal móvil + website) | 5-8 h por pantalla + sistema de diseño | 600 – 900 |
-| Modelo de datos y seguridad (123 tablas, 158 políticas RLS, 212 funciones, multi-tenant, portales por token) | 3-4 h por tabla + políticas + funciones | 550 – 750 |
+| Modelo de datos y seguridad (123 tablas, 158 políticas RLS, 24 funciones, multi-tenant, portales por token) | 3-4 h por tabla + políticas + funciones | 550 – 750 |
 | Lógica de negocio (602 funciones de servidor: cascada de sesión, evaluación, Let's Play, camps, programas HP, reportes, códigos, regalos) | 4-6 h por función promedio | 2,400 – 3,600 |
 | Interfaz (198 componentes, 90 pantallas, PWA) | 8-12 h por componente | 1,600 – 2,400 |
 | Integraciones (pagos, email, storage seguro, cron, analizador de video, exportaciones, quiz público, website) | por integración | 350 – 500 |

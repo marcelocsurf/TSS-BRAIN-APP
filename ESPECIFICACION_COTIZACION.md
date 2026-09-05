@@ -76,7 +76,7 @@ Next.js 14 (App Router, Server Actions) + TypeScript estricto + Tailwind; Postgr
 
 ## 8. Tamaño de referencia de lo construido
 
-90 pantallas · 198 componentes de interfaz · 602 funciones de servidor · 11 endpoints · 123 tablas · 212 funciones de base · 158 políticas · 184 migraciones · ≈ 185,000 líneas de código.
+90 pantallas · 198 componentes de interfaz · 602 funciones de servidor · 11 endpoints · 123 tablas · 24 funciones de base · 158 políticas · 184 migraciones · ≈ 185,000 líneas de código.
 
 ## 9. Qué aporta el cliente
 
