@@ -90,16 +90,14 @@ export async function grantBookAccess(input: {
   const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
   const portalUrl = `${base}/portal/${student.portal_token}`;
 
-  // Email de entrega — nunca bloquea el grant.
-  try {
-    await sendBookDeliveryEmail({
-      email,
-      firstName: student.first_name || firstName,
-      portalUrl,
-    });
-  } catch (e) {
-    console.error('[grantBookAccess] delivery email failed', e);
-  }
+  // Email de entrega — nunca bloquea el grant, y tampoco la respuesta: la
+  // persona ya tiene el libro en su portal; el correo es la forma de volver.
+  // (2026-09-07: esperar a Resend sumaba ~1 s antes del redirect.)
+  void sendBookDeliveryEmail({
+    email,
+    firstName: student.first_name || firstName,
+    portalUrl,
+  }).catch((e) => console.error('[grantBookAccess] delivery email failed', e));
 
   console.log(`[book-purchase] granted · ${email} · source=${input.source ?? '?'}`);
   return { ok: true, portal_url: portalUrl, student_id: student.id };

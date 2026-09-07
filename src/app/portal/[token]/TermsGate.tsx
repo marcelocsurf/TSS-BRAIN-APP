@@ -3,14 +3,12 @@
 // Puerta de Términos + Privacidad: se muestra una vez (y otra vez cuando cambia
 // la versión). Bloquea el portal hasta aceptar; el resto sigue montado atrás.
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { acceptTerms } from '@/lib/actions/legal';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal/versions';
 
 const INK = '#061C2B', CYAN = '#00D2FF', PAPER = '#F7F9FA';
 
 export function TermsGate({ token, firstName, isUpdate }: { token: string; firstName: string; isUpdate: boolean }) {
-  const router = useRouter();
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -41,8 +39,10 @@ export function TermsGate({ token, firstName, isUpdate }: { token: string; first
             setBusy(true); setErr('');
             const r = await acceptTerms(token);
             if (!r.ok) { setErr(r.error || 'Could not save.'); setBusy(false); return; }
+            // Cerrar la puerta acá mismo: volver a renderizar el portal entero
+            // (20 lecturas) solo para que desaparezca era lo que hacía sentir
+            // lento el "Accept". La aceptación ya quedó guardada.
             setDone(true);
-            router.refresh();
           }}
           className="w-full h-12 rounded-xl text-[12px] font-bold uppercase tracking-[0.14em] disabled:opacity-40"
           style={{ background: CYAN, color: INK }}>
