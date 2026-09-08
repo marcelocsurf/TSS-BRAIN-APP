@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { LessonViewer } from './LessonViewer';
+import { sequencePageFor } from '@/lib/sequence-pages';
 import { CourseFinalQuiz } from './CourseFinalQuiz';
 import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intros';
 import { toEmbedUrl } from '@/lib/utils/video-embed';
@@ -514,6 +515,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               lessons={group.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
               theme={beltTheme}
+              onePageHref={sequencePageFor(group.id) ? `/portal/${data.portalToken}/seq/${group.id}` : null}
             />
           ))}
         </div>
@@ -695,6 +697,7 @@ function SectionBlock({
   lessons,
   onOpenLesson,
   theme,
+  onePageHref,
 }: {
   title: string;
   subtitle: string | null;
@@ -703,6 +706,8 @@ function SectionBlock({
   lessons: LessonRow[];
   onOpenLesson: (id: string) => void;
   theme?: BeltTheme;
+  /** Piloto 2026-09-09: la secuencia como UNA página (Think · Feel · Do · Review). */
+  onePageHref?: string | null;
 }) {
   // Only count PRODUCTIZED items toward progress (PROPOSED can't be completed)
   const productized = lessons.filter((l) => l.status_v1 !== 'PROPOSED');
@@ -745,6 +750,15 @@ function SectionBlock({
         </div>
       </summary>
       <div className="divide-y divide-white/5 border-t border-white/10">
+        {onePageHref && (
+          <a href={onePageHref} className="flex items-center justify-between px-4 py-3" style={{ background: 'rgba(0,210,255,.08)' }}>
+            <span>
+              <span className="block text-[13px] font-semibold text-white">Open the whole sequence</span>
+              <span className="block text-[11px] text-white/50">Think it · Feel it · Do it · Review — one page, the steps inside.</span>
+            </span>
+            <span className="text-[12px] font-bold" style={{ color: 'var(--tss-cyan)' }}>→</span>
+          </a>
+        )}
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
