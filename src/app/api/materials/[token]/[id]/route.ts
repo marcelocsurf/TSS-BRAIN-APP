@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { verifyMaterialTicket } from '@/lib/materials/ticket';
 
 // Sirve un material (PDF) SIN exponer nunca la URL de Supabase.
 //
@@ -65,6 +66,13 @@ export async function GET(
       .eq('resource_id', id)
       .maybeSingle();
     granted = !!grant;
+    // Ticket de 10 minutos (2026-09-08): el link con el token del portal ya
+    // no alcanza por sí solo — copiarlo y pasarlo muere en minutos. El lector
+    // del portal lo pide justo antes de abrir (openMaterial).
+    if (granted) {
+      const t = new URL(_req.url).searchParams.get('t');
+      if (!verifyMaterialTicket(t, student.id, id)) return denied();
+    }
   } else {
     const { data: coach } = await admin
       .from('coaches')

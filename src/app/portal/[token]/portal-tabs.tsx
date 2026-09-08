@@ -32,6 +32,7 @@ import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MyS
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
+import { MaterialReader } from '@/components/portal/MaterialReader';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
@@ -955,6 +956,8 @@ function HomeTab({
   const beltMirror = BELT_MIRROR[beltLevel] ?? BELT_MIRROR.white_belt;
   const sessionCue = cueForSession(beltLevel, totalSessions);
 
+  // Lector del libro dentro del portal (2026-09-08).
+  const [reader, setReader] = useState<{ id: string; title: string } | null>(null);
   return (
     <div className="space-y-4">
       {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
@@ -967,11 +970,10 @@ function HomeTab({
         );
         if (!bk) return null;
         return (
-          <a
-            href={bk.file_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block rounded-2xl overflow-hidden"
+          <button
+            type="button"
+            onClick={() => setReader({ id: bk.id, title: 'ONE WAVE' })}
+            className="block w-full text-left rounded-2xl overflow-hidden"
             style={{ background: '#0F1E33', border: '1px solid rgba(0,210,255,.25)' }}
           >
             <div className="flex items-center gap-4 p-4">
@@ -994,9 +996,12 @@ function HomeTab({
                 Read →
               </span>
             </div>
-          </a>
+          </button>
         );
       })()}
+      {reader && (
+        <MaterialReader token={data.token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />
+      )}
       {/* ── 🏆 Promoción de cinta — celebración 30 días, SIN candados. El copy
           es por cinta (qué dominó / qué desbloquea) desde promotion-copy.ts. ── */}
       {(() => {

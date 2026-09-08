@@ -54,11 +54,35 @@ describe('materials route — el PDF solo sale con token válido + grant', () =>
   it('alumno sin grant → 404', async () => {
     expect((await call(TOKEN, BOOK)).status).toBe(404);
   });
-  it('alumno con grant → 200 y sin caché compartida', async () => {
+  it('alumno con grant PERO sin ticket → 404 (el link solo ya no sirve)', async () => {
     fake.tables.student_resource_grants.push({ student_id: STUDENT, resource_id: BOOK });
-    const r = await call(TOKEN, BOOK);
+    expect((await call(TOKEN, BOOK)).status).toBe(404);
+  });
+  it('alumno con grant + ticket vigente → 200 y sin caché compartida', async () => {
+    const { signMaterialTicket } = await import('@/lib/materials/ticket');
+    fake.tables.student_resource_grants.push({ student_id: STUDENT, resource_id: BOOK });
+    const { GET } = await load();
+    const r = await GET(new Request(`http://x/api/materials?t=${signMaterialTicket(STUDENT, BOOK)}`), { params: { token: TOKEN, id: BOOK } });
     expect(r.status).toBe(200);
     expect(r.headers.get('cache-control')).toContain('no-store');
+  });
+  it('ticket vencido, de otro alumno o de otro material → 404', async () => {
+    const { signMaterialTicket } = await import('@/lib/materials/ticket');
+    fake.tables.student_resource_grants.push({ student_id: STUDENT, resource_id: BOOK });
+    const { GET } = await load();
+    const hit = async (t: string) => (await GET(new Request(`http://x/api/materials?t=${t}`), { params: { token: TOKEN, id: BOOK } })).status;
+    expect(await hit(signMaterialTicket(STUDENT, BOOK, Date.now() - 11 * 60 * 1000))).toBe(404);
+    expect(await hit(signMaterialTicket('otro-alumno', BOOK))).toBe(404);
+    expect(await hit(signMaterialTicket(STUDENT, 'otro-material'))).toBe(404);
+    expect(await hit('basura')).toBe(404);
+  });
+  it('openMaterial: sin grant no da ticket; con grant da URL con ticket', async () => {
+    const { openMaterial } = await import('@/lib/actions/materials');
+    expect((await openMaterial(TOKEN, BOOK)).ok).toBe(false);
+    fake.tables.student_resource_grants.push({ student_id: STUDENT, resource_id: BOOK });
+    const r = await openMaterial(TOKEN, BOOK);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.url).toMatch(new RegExp(`^/api/materials/${TOKEN}/${BOOK}\\?t=\\d+\\.[0-9a-f]{64}$`));
   });
   it('material solo para coaches nunca sale a un alumno, aunque tenga grant', async () => {
     fake.tables.coach_resources[0].audience = 'coaches';
