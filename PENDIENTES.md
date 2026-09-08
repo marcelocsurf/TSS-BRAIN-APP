@@ -63,7 +63,9 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 
 ## 4. BLUEPRINT DEL ECOSISTEMA (cuenta ≠ membresía)
 - [x] Compuerta de registro (2026-09-08): sin curso ni membresía no se registran sesiones ni horas; Home "Start here"; sin glosario sin curso.
-- [ ] Decidir: hoy el CURSO abre Let's Play (curso incluye drills, 2026-08-27). Si Let's Play debe ser SOLO membresía (tensión 1 del blueprint), cambiar la compuerta a membershipActive. (Marcelo)
+- [x] DECIDIDO y construido (2026-09-08): Let's Play y registro = membresía; el curso incluye 3 meses de membresía; al vencer, renovación desde Let's Play sin bloquear el portal.
+- [ ] Cobro online de la renovación de membresía (hoy: el alumno pide, el mostrador cobra y confirma).
+- [ ] Aviso por email a los 7 días del vencimiento de la membresía incluida con el curso (existe expiry_reminder_sent_at; revisar que el cron lo cubra).
 - [ ] Membresía como dato visible en la cuenta del alumno (hoy vive en la tabla memberships; el portal ya la lee).
 - [ ] Alta de curso "encender + mandar link" en un clic (hoy: códigos que exigen intake + waiver).
 - [ ] Cobro online: Wompi tiene webhook para el libro; falta cuenta activa + checkout para curso, membresía y Student License.
