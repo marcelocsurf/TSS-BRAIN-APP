@@ -37,7 +37,10 @@ export function MaterialReader({ token, resourceId, title, onClose }: { token: s
         if (!res.ok) throw new Error('Could not load the file.');
         const data = await res.arrayBuffer();
         const pdfjs = await import('pdfjs-dist');
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+        // El worker se sirve como archivo estático (public/pdf.worker.min.mjs,
+        // copiado de pdfjs-dist): importarlo vía new URL() rompía el build de
+        // webpack en Next 14 (2026-09-08).
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
         const doc = await pdfjs.getDocument({ data }).promise;
         if (dead) return;
         docRef.current = doc;
