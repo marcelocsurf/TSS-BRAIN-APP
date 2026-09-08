@@ -33,6 +33,7 @@ import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { MaterialReader } from '@/components/portal/MaterialReader';
+import { RenewalGate } from './RenewalGate';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
@@ -205,6 +206,8 @@ interface PortalData {
   canTrack?: boolean;
   /** Tiene el libro ONE WAVE otorgado. */
   hasBook?: boolean;
+  /** Membresía: Let's Play + registro. El curso trae 3 meses incluidos. */
+  membership?: { active: boolean; ends_at: string | null; pending_request: boolean };
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
   coachFocusState?: { flagged: number; pending: number; clearedByStudent: boolean };
@@ -728,6 +731,41 @@ export function PortalTabs({
                 If you are booked on a camp, your course activates when you enrol.
               </p>
             </div>
+          ) : data.canTrack === false ? (
+            // Curso sí, membresía no (2026-09-08): el curso trae 3 meses de
+            // Let's Play; al vencer, acá se renueva. Los drills se siguen
+            // VIENDO (son parte del curso) — lo que se cierra es entrenarlos
+            // con el sistema y registrar.
+            <div className="space-y-4">
+              <RenewalGate
+                token={data.token}
+                firstName={student.first_name || 'surfer'}
+                beltLabel={String(student.belt_level || 'surf').replace(/_/g, ' ')}
+                endedAt={data.membership?.ends_at ?? null}
+                alreadyRequested={!!data.membership?.pending_request}
+                inline
+              />
+              {(data.drillsMissions ?? []).length > 0 && (
+                <div className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
+                  <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                    <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Your drills and missions</p>
+                    <p className="text-[12px] text-white/60 mt-0.5">Part of your course — read them anytime. Train them with the system when your membership is active.</p>
+                  </div>
+                  <ul className="divide-y" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
+                    {(data.drillsMissions ?? []).map((d: any) => (
+                      <li key={d.id} className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-mono uppercase" style={{ background: d.type === 'mission' ? 'rgba(6,214,160,.15)' : 'rgba(0,210,255,.12)', color: d.type === 'mission' ? '#06D6A0' : '#00D2FF' }}>{d.type}</span>
+                          <span className="text-[13px] font-semibold text-white">{d.title}</span>
+                          <Lock size={12} className="ml-auto text-white/30" />
+                        </div>
+                        {d.key_words && <p className="text-[11px] text-white/50 mt-1">{Array.isArray(d.key_words) ? d.key_words.join(' · ') : String(d.key_words)}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           ) : (
             // 3) Default: pick a drill or mission from your sequence
             <div className="space-y-4">
@@ -1071,17 +1109,33 @@ function HomeTab({
           Marcelo 2026-09-08). ── */}
       {data.canTrack === false && (
         <div className="rounded-3xl overflow-hidden p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.2)' }}>
-          <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Start here</p>
-          <p className="text-white font-bold text-[17px] mt-1 leading-tight">
-            {data.hasBook ? 'Read the book, then train with us.' : 'Your training starts with your course.'}
-          </p>
-          <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
-            Drills, missions, session logging and your progress come with a course or a membership. When you get one, everything opens right here — same portal, same login.
-          </p>
-          <a href="https://www.thesurfsequence.com" target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
-            See courses and memberships →
-          </a>
+          {data.hasAnyCourse ? (
+            <>
+              <p className="text-[9px]" style={{ ...F_LABEL, color: '#FFD166' }}>Membership ended</p>
+              <p className="text-white font-bold text-[17px] mt-1 leading-tight">Your course is yours. Let&apos;s Play is waiting.</p>
+              <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
+                Lessons and drills stay open. Training sessions, your surf hours and your progress come back the moment you renew your membership.
+              </p>
+              <button type="button" onClick={() => onGoTo('sequence')}
+                className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
+                Renew my membership →
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Start here</p>
+              <p className="text-white font-bold text-[17px] mt-1 leading-tight">
+                {data.hasBook ? 'Read the book, then train with us.' : 'Your training starts with your course.'}
+              </p>
+              <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
+                Every course includes 3 months of membership: drills, missions, session logging and your progress. When you get one, everything opens right here — same portal, same login.
+              </p>
+              <a href="https://www.thesurfsequence.com" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
+                See courses and memberships →
+              </a>
+            </>
+          )}
         </div>
       )}
       {/* ── Dark "cockpit" hero — TSS Ocean Navy, Garmin-style telemetry ── */}

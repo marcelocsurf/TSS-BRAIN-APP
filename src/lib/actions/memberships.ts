@@ -40,7 +40,7 @@ export interface MembershipInfo {
 export async function extendMembership(
   studentId: string,
   months: number,
-  source: 'camp_enrollment' | 'renewal' | 'launch_gift',
+  source: 'camp_enrollment' | 'renewal' | 'launch_gift' | 'course_included',
   opts?: { amountCents?: number | null; paymentMethod?: string | null; createdBy?: string | null; note?: string | null }
 ): Promise<void> {
   const admin = createAdminClient();

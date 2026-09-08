@@ -12,7 +12,8 @@ import { COURSES } from '@/lib/constants/courses';
 export type StudentAccess = {
   hasCourse: boolean;
   membershipActive: boolean;
-  /** Puede registrar sesiones, horas y progreso. */
+  membershipEndsAt: string | null;
+  /** Puede registrar sesiones, horas y progreso (= membresía vigente). */
   canTrack: boolean;
 };
 
@@ -25,14 +26,14 @@ export async function getStudentAccess(studentId: string): Promise<StudentAccess
   ]);
   const hasCourse = !!st && COURSES.some((c) => !!(st as any)[c.accessColumn]);
   const membershipActive = !!mem?.ends_at && new Date(mem.ends_at) > new Date();
-  // Un curso incluye sus drills (decisión 2026-08-27) y entrenar con drills
-  // ya es registrar: el curso también abre el registro. Lo que NO lo abre es
-  // el libro solo, ni una ficha creada por un lead o un regalo.
-  return { hasCourse, membershipActive, canTrack: hasCourse || membershipActive };
+  // Marcelo (2026-09-08): el curso es para siempre (lecciones + drills para
+  // ver), pero Let's Play, el registro y el progreso son MEMBRESÍA. El curso
+  // trae 3 meses incluidos (grantCourseToStudent); después se renueva.
+  return { hasCourse, membershipActive, membershipEndsAt: mem?.ends_at ?? null, canTrack: membershipActive };
 }
 
 export async function studentCanTrack(studentId: string): Promise<boolean> {
   return (await getStudentAccess(studentId)).canTrack;
 }
 
-export const TRACKING_LOCKED_MESSAGE = 'Training and progress tracking come with your course or membership.';
+export const TRACKING_LOCKED_MESSAGE = "Let's Play and progress tracking come with your membership. Renew to keep training.";

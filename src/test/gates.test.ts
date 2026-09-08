@@ -282,12 +282,15 @@ describe('acceso del alumno — el que solo tiene el libro no registra', () => {
     const { getStudentAccess } = await import('@/lib/portal/access');
     fake.tables.memberships = [];
     const a = await getStudentAccess(STUDENT);
-    expect(a).toEqual({ hasCourse: false, membershipActive: false, canTrack: false });
+    expect(a).toEqual({ hasCourse: false, membershipActive: false, membershipEndsAt: null, canTrack: false });
   });
-  it('con curso white → canTrack', async () => {
+  it('con curso pero sin membresía → hasCourse sí, canTrack NO (el curso trae 3 meses aparte)', async () => {
     const { getStudentAccess } = await import('@/lib/portal/access');
     fake.tables.students[0].course_access_white = true;
-    expect((await getStudentAccess(STUDENT)).canTrack).toBe(true);
+    fake.tables.memberships = [];
+    const a = await getStudentAccess(STUDENT);
+    expect(a.hasCourse).toBe(true);
+    expect(a.canTrack).toBe(false);
   });
   it('con membresía activa → canTrack; vencida → no', async () => {
     const { getStudentAccess } = await import('@/lib/portal/access');
@@ -301,9 +304,9 @@ describe('acceso del alumno — el que solo tiene el libro no registra', () => {
     const { saveSequenceSession } = await import('@/lib/actions/lets-play');
     const r = await saveSequenceSession(TOKEN, { mode: 'sequence_run', sequence_id: 'x', planned_duration_minutes: 30, planned_reps: 5, safety_check: true } as any);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/course or membership/);
+    if (!r.ok) expect(r.error).toMatch(/membership/);
     const { logFreeSurf } = await import('@/lib/actions/portal');
-    await expect(logFreeSurf(TOKEN, 60)).rejects.toThrow(/course or membership/);
+    await expect(logFreeSurf(TOKEN, 60)).rejects.toThrow(/membership/);
     expect(fake.writes().length).toBe(0);
   });
 });

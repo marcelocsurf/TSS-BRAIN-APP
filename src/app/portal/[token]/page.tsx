@@ -64,26 +64,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   const { student } = portalData;
   const beltLevel = student.belt_level as BeltLevel;
 
-  // M156 — membresía: solo gatea a MIEMBROS (leads/drop-ins pasan; el waiver,
-  // el intake y las encuestas viven fuera de esta puerta o dentro de camps
-  // activos, que extienden membresía al inscribirse).
-  if ((student as any).lifecycle_status === 'member') {
-    const membership = await getMembershipInfo(student.id);
-    if (!membership.active) {
-      return (
-        <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
-          <RenewalGate
-            token={token}
-            firstName={student.first_name || 'surfer'}
-            beltLabel={String(student.belt_level || 'surf').replace(/_/g, ' ')}
-            endedAt={membership.ends_at}
-            alreadyRequested={membership.pending_request}
-          />
-        </div>
-      );
-    }
-  }
-
+  // Membresía vencida (2026-09-08): YA NO bloquea el portal entero. El curso,
+  // el libro y la comunidad siguen; lo que se cierra es Let's Play y el
+  // registro (ver getStudentAccess). La renovación se pide desde Let's Play.
   const coachUnlocked = !!(student as any).coach_profile_unlocked_at;
 
   // Fetch parallel data — materials use admin access control via student_level_access
@@ -229,6 +212,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           coachSide: await getCoachSideForStudent(student.id),
           hasAnyCourse,
           canTrack: isOwner || access.canTrack,
+          membership: { active: access.membershipActive, ends_at: access.membershipEndsAt, pending_request: (await getMembershipInfo(student.id)).pending_request },
           hasBook: (hbPresentations ?? []).some((p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333'),
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.

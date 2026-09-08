@@ -34,6 +34,9 @@ export type GrantSource =
 
 // ─── Grant a course to a student ───
 
+/** Meses de membresía que trae cada curso (Let's Play + registro). */
+const COURSE_INCLUDED_MEMBERSHIP_MONTHS = 3;
+
 export async function grantCourseToStudent(
   studentId: string,
   courseKey: string,
@@ -186,6 +189,21 @@ export async function grantCourseToStudent(
       },
       { onConflict: 'student_id,access_type,level_key' },
     );
+
+  // El curso INCLUYE 3 meses de membresía (Marcelo 2026-09-08): el curso y
+  // sus drills quedan para siempre; Let's Play, el registro y el progreso
+  // viven 3 meses y después se renuevan. Solo la primera vez por curso.
+  if (!alreadyGranted) {
+    try {
+      const { extendMembership } = await import('./memberships');
+      await extendMembership(studentId, COURSE_INCLUDED_MEMBERSHIP_MONTHS, 'course_included', {
+        paymentMethod: 'included', createdBy: grantedBy ?? null,
+        note: `${COURSE_INCLUDED_MEMBERSHIP_MONTHS} meses incluidos con el curso ${courseKey}`,
+      });
+    } catch (e) {
+      console.error('[grantCourseToStudent] membresía incluida no se pudo crear', e);
+    }
+  }
 
   revalidatePath('/students/' + studentId);
 

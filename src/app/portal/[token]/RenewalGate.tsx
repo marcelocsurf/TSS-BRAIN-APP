@@ -17,12 +17,14 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GR
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
 
-export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyRequested }: {
+export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyRequested, inline = false }: {
   token: string;
   firstName: string;
   beltLabel: string;
   endedAt: string | null;
   alreadyRequested: boolean;
+  /** Dentro de la pestaña Let's Play (2026-09-08): sin pantalla completa ni logo. */
+  inline?: boolean;
 }) {
   const [months, setMonths] = useState<number>(6);
   const [sent, setSent] = useState(alreadyRequested);
@@ -37,12 +39,14 @@ export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyReque
   });
 
   return (
-    <div style={{ background: INK, minHeight: '100vh' }} className="flex items-center justify-center px-5 py-10">
+    <div style={{ background: INK, minHeight: inline ? undefined : '100vh', borderRadius: inline ? 24 : undefined }} className={`flex items-center justify-center px-5 ${inline ? 'py-8' : 'py-10'}`}>
       <div className="w-full max-w-md text-center">
+        {!inline && (
         <img src="/venue-scout/tss-wave.png" alt="The Surf Sequence" className="h-16 mx-auto" style={{ filter: 'drop-shadow(0 0 22px rgba(0,210,255,.35))' }} />
+        )}
         <p style={{ ...F_M, color: CYAN }} className="text-[9px] mt-5">The Surf Sequence · Membership</p>
-        <h1 style={{ ...F_D, color: PAPER }} className="text-[30px] mt-2 leading-tight">
-          {sent ? 'Request sent' : `Welcome back, ${firstName}`}
+        <h1 style={{ ...F_D, color: PAPER }} className={`${inline ? 'text-[24px]' : 'text-[30px]'} mt-2 leading-tight`}>
+          {sent ? 'Request sent' : inline ? `Keep training, ${firstName}` : `Welcome back, ${firstName}`}
         </h1>
 
         {sent ? (
@@ -58,7 +62,7 @@ export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyReque
         ) : (
           <>
             <p className="text-[14.5px] mt-3" style={{ color: 'rgba(247,249,250,.75)' }}>
-              Your membership {endedAt ? `ended on ${new Date(endedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'has ended'}.
+              {inline ? "Let's Play, your session log and your progress come with your membership. " : ''}Your membership {endedAt ? `ended on ${new Date(endedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'has ended'}.
               Your <strong style={{ color: GOLD }}>{beltLabel}</strong> journey, courses and logbook are saved and waiting for you.
             </p>
             <div className="grid gap-2.5 mt-7">
