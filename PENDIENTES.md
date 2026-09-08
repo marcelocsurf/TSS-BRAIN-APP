@@ -62,7 +62,9 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Bloques: 8 superficies sin migrar a la numeración del documento; STP-039B solo vive en la base.
 
 ## 4. BLUEPRINT DEL ECOSISTEMA (cuenta ≠ membresía)
-- [ ] Membresía como dato en la cuenta + gate de Let's Play por membresía (curso solo ve curso + drills).
+- [x] Compuerta de registro (2026-09-08): sin curso ni membresía no se registran sesiones ni horas; Home "Start here"; sin glosario sin curso.
+- [ ] Decidir: hoy el CURSO abre Let's Play (curso incluye drills, 2026-08-27). Si Let's Play debe ser SOLO membresía (tensión 1 del blueprint), cambiar la compuerta a membershipActive. (Marcelo)
+- [ ] Membresía como dato visible en la cuenta del alumno (hoy vive en la tabla memberships; el portal ya la lee).
 - [ ] Alta de curso "encender + mandar link" en un clic (hoy: códigos que exigen intake + waiver).
 - [ ] Cobro online: Wompi tiene webhook para el libro; falta cuenta activa + checkout para curso, membresía y Student License.
 - [ ] Assessment $99 con snapshots guardados.
