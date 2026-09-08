@@ -96,6 +96,10 @@ const BELT_ORDER: BeltLevel[] = [
   'black_belt',
 ];
 
+/** Las cintas que se pueden mirar en la guía: los tres niveles con curso y
+ *  examen publicados. Cada una muestra lo que hay que aprobar en ESA cinta. */
+const ROADMAP_BELTS: BeltLevel[] = ['white_belt', 'yellow_belt', 'blue_belt'];
+
 /** La cinta siguiente a la que ya tiene. null si ya está en la última. */
 function nextBelt(belt: string): string | null {
   const i = BELT_ORDER.indexOf(belt as BeltLevel);
@@ -134,31 +138,30 @@ export async function getBeltRoadmap(
     fromBeltOverride && BELT_ORDER.includes(fromBeltOverride as BeltLevel)
       ? fromBeltOverride
       : ownBelt;
+  // Marcelo (2026-09-09): "los requerimientos de White son los de Yellow en
+  // realidad". Antes la guía usaba la regla de la cinta DESTINO (White →
+  // regla de Yellow = White + Yellow, 35 pasos). Ahora usa la regla de la
+  // cinta QUE SE TIENE: lo que hay que aprobar en ESA cinta para pasar a la
+  // siguiente (White → 5 secuencias / 25 pasos → Yellow). El título sigue
+  // diciendo a dónde lleva.
+  const rule = GRADUATION_RULES[fromBelt] ?? GRADUATION_RULES.white_belt;
   const candidate = nextBelt(fromBelt);
-  // Solo White, Yellow y Blue tienen requisitos publicados. Desde Blue en
-  // adelante se muestra el estándar de la cinta que ya tiene — decir "todavía
-  // no está publicado" es más honesto que inventar una regla.
-  const targetBelt =
-    candidate && GRADUATION_RULES[candidate] ? candidate : fromBelt;
-  const rule = GRADUATION_RULES[targetBelt] ?? GRADUATION_RULES.blue_belt;
-  // Desde dónde se puede mirar: las cintas cuyo siguiente escalón tiene
-  // requisitos publicados (White→Yellow, Yellow→Blue, Blue→Purple desde
-  // 2026-09-09), más la propia (para que siempre encuentre la suya).
+  const entryRule = candidate ? GRADUATION_RULES[candidate] : undefined;
+  const targetBelt = candidate ?? fromBelt;
+  const targetBeltLabel = candidate
+    ? (GRADUATION_RULES[candidate]?.beltLabel ?? BELT_LABEL[candidate] ?? candidate)
+    : rule.beltLabel;
+  // Desde dónde se puede mirar: los tres niveles con curso y examen
+  // publicados (Marcelo: "son 3 niveles"), más la propia.
   const fromOptions = Array.from(
-    new Set([
-      ...BELT_ORDER.filter((b) => {
-        const nx = nextBelt(b);
-        return !!(nx && GRADUATION_RULES[nx]);
-      }),
-      ownBelt,
-    ]),
+    new Set([...ROADMAP_BELTS, ownBelt]),
   ).sort((a, b) => BELT_ORDER.indexOf(a as BeltLevel) - BELT_ORDER.indexOf(b as BeltLevel));
 
   // Las secuencias, con el MISMO corte acumulativo que usa la evaluación del
   // coach: getMySequence(belt) trae White→…→belt.
   let sequences: RoadmapSequence[] = [];
   try {
-    const seq = await getMySequence(token, targetBelt);
+    const seq = await getMySequence(token, fromBelt);
     sequences = seq.sequences.map((s) => ({
       id: s.id,
       order: s.order,
@@ -204,8 +207,8 @@ export async function getBeltRoadmap(
       studentFirstName: (student as any).first_name ?? 'there',
       currentBelt: ownBelt,
       targetBelt,
-      targetBeltLabel: rule.beltLabel,
-      // true = desde esta cinta no hay camino publicado hacia arriba.
+      targetBeltLabel,
+      // true = ya está en la última cinta: no hay a dónde ir.
       targetIsCurrent: targetBelt === fromBelt,
       fromBelt,
       ownBelt,
@@ -214,10 +217,7 @@ export async function getBeltRoadmap(
         return {
           key: b,
           label: GRADUATION_RULES[b]?.beltLabel ?? BELT_LABEL[b] ?? b,
-          leadsTo:
-            nx && GRADUATION_RULES[nx]
-              ? GRADUATION_RULES[nx].beltLabel
-              : (GRADUATION_RULES[b]?.beltLabel ?? BELT_LABEL[b] ?? b),
+          leadsTo: nx ? (GRADUATION_RULES[nx]?.beltLabel ?? BELT_LABEL[nx] ?? nx) : (GRADUATION_RULES[b]?.beltLabel ?? b),
         };
       }),
       passStars: rule.stpThreshold,
@@ -230,10 +230,13 @@ export async function getBeltRoadmap(
       lessonsCompleted,
       lessonsTotal,
       autonomyPrinciples: rule.principles,
-      waterRule: rule.waterRule
+      // La regla del agua es requisito de ENTRADA a la cinta destino (Blue y
+      // superiores): se lee de la regla de la cinta a la que se va, no de la
+      // que se tiene. Así el camino Yellow → Blue la muestra.
+      waterRule: entryRule?.waterRule
         ? {
-            minLabel: rule.waterRule.minLabel,
-            description: rule.waterRule.description,
+            minLabel: entryRule.waterRule.minLabel,
+            description: entryRule.waterRule.description,
             reached: isWaterSelfSufficient((student as any).ocean_level),
             confirmed:
               isWaterSelfSufficient((student as any).ocean_level) &&
