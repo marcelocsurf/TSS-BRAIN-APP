@@ -201,6 +201,10 @@ interface PortalData {
   coachSide?: { href: string; name: string } | null;
   /** Los drills vienen con el curso: sin curso, no hay Let's Play. */
   hasAnyCourse?: boolean;
+  /** Registro de sesiones, horas y progreso: curso o membresía. El libro solo, no. */
+  canTrack?: boolean;
+  /** Tiene el libro ONE WAVE otorgado. */
+  hasBook?: boolean;
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
   coachFocusState?: { flagged: number; pending: number; clearedByStudent: boolean };
@@ -629,6 +633,7 @@ export function PortalTabs({
             {/* Qué hace falta para la próxima cinta: la evaluación del coach
                 dada vuelta. El alumno tenía las estrellas sueltas pero nunca
                 la lista completa ni la regla. */}
+            {data.hasAnyCourse && (
             <button
               type="button"
               onClick={() => setRoadmapOpen(true)}
@@ -645,12 +650,14 @@ export function PortalTabs({
                 The same list your coach fills in — sequences, water, course.
               </p>
             </button>
+            )}
             <CourseTab data={data.courseData} />
             {/* Las presentaciones otorgadas viven en COURSE, no en el Home
                 (pedido de Marcelo 2026-08-25). Es el mismo lugar que ya usa
                 el coach en su pestaña Cursos. No dibuja nada si no hay. */}
             <StudentPresentations token={data.token} initial={data.homeBundle?.presentations} />
             {/* Glossary — collapsible at the bottom of Course (moved out of the nav) */}
+            {data.hasAnyCourse && (
             <details className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
               <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
@@ -663,6 +670,7 @@ export function PortalTabs({
                 <GlossaryTab />
               </div>
             </details>
+            )}
           </div>
         )}
         {activeTab === 'sequence' && (<>
@@ -1058,7 +1066,26 @@ function HomeTab({
         );
       })()}
 
+      {/* ── Solo libro / lead sin curso ni membresía: nada de horas ni progreso.
+          El Home le dice qué tiene y qué abre lo demás (blueprint 2026-09-04,
+          Marcelo 2026-09-08). ── */}
+      {data.canTrack === false && (
+        <div className="rounded-3xl overflow-hidden p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.2)' }}>
+          <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Start here</p>
+          <p className="text-white font-bold text-[17px] mt-1 leading-tight">
+            {data.hasBook ? 'Read the book, then train with us.' : 'Your training starts with your course.'}
+          </p>
+          <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
+            Drills, missions, session logging and your progress come with a course or a membership. When you get one, everything opens right here — same portal, same login.
+          </p>
+          <a href="https://www.thesurfsequence.com" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
+            See courses and memberships →
+          </a>
+        </div>
+      )}
       {/* ── Dark "cockpit" hero — TSS Ocean Navy, Garmin-style telemetry ── */}
+      {data.canTrack !== false && (
       <div className="rounded-3xl overflow-hidden" style={{ background: '#061C2B' }}>
         {/* Notifications row (TSS wordmark now lives in the shared header on
             every screen, so it isn't repeated here). */}
@@ -1440,6 +1467,7 @@ function HomeTab({
           {data.homeBundle?.hpAccess && <AthleteProfileCard token={data.token} placement="bottom" />}
         </div>
       </div>
+      )}
 
       {/* Provisional belt notice — set your expectations: the belt from the
           quiz is a starting point your coach confirms in the water. */}
@@ -1453,7 +1481,7 @@ function HomeTab({
       )}
 
       {/* Free Surf quick-logger */}
-      <FreeSurfLogger token={data.token} />
+      {data.canTrack !== false && <FreeSurfLogger token={data.token} />}
 
       {/* Latest Session — dark, matches the hero. OJO: fondo oscuro → textos
           CLAROS (antes quedaron en tinta #061C2B y la tarjeta era ilegible). */}
@@ -1565,7 +1593,9 @@ function HomeTab({
       {/* ARCHIVO — lo de atrás. Eran dos tarjetas blancas del mismo tamaño que
           lo accionable, y partían la pantalla en dos mundos (reporte de
           Marcelo 2026-08-28: "se ve cargada"). Son filas: se abren cuando se
-          las busca y mientras tanto no compiten con nada. */}
+          las busca y mientras tanto no compiten con nada.
+          Solo para quien puede registrar (curso o membresía). */}
+      {data.canTrack !== false && (
       <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
         <details className="group">
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
@@ -1595,6 +1625,7 @@ function HomeTab({
           </div>
         </details>
       </div>
+      )}
     </div>
   );
 }

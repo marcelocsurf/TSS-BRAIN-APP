@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { pickWeakestCriterion, type CriterionEvaluationItem } from '@/lib/utils/criteria';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
+import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import {
   COURSE_SEQUENCE_ORDER,
   stepKey,
@@ -593,6 +594,7 @@ export async function saveLinkedTrainingSession(
 
   const studentId = await studentIdFromPortalToken(portalToken);
   if (!studentId) return { ok: false as const, error: 'Not authorized' };
+  if (!(await studentCanTrack(studentId))) return { ok: false as const, error: TRACKING_LOCKED_MESSAGE };
 
   const admin = createAdminClient();
 

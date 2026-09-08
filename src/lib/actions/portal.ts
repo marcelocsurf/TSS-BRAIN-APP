@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
+import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
@@ -540,6 +541,8 @@ export async function createSelfTrainingSession(
 ) {
   const studentId = await studentIdFromPortalToken(portalToken);
   if (!studentId) throw new Error('Not authorized');
+  // Registrar sesiones = membresía o curso (blueprint). El libro solo, no.
+  if (!(await studentCanTrack(studentId))) throw new Error(TRACKING_LOCKED_MESSAGE);
   const admin = createAdminClient();
 
   const insertData: Record<string, any> = {
@@ -620,6 +623,8 @@ export async function logFreeSurf(
     .single();
 
   if (studentErr || !student) throw new Error('Student not found');
+  // Horas de surf = registro: curso o membresía (blueprint). El libro solo, no.
+  if (!(await studentCanTrack(student.id))) throw new Error(TRACKING_LOCKED_MESSAGE);
 
   const mins = Math.round(minutes);
   if (!mins || mins <= 0) throw new Error('Invalid duration');

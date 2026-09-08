@@ -22,6 +22,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
+import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { pickWeakestCriterion, type CriterionEvaluationItem, type CriterionResultValue } from '@/lib/utils/criteria';
 import { SEQUENCE_PASS_STARS, sequenceLabel } from '@/lib/constants/learning-blocks';
 import { getMySequence, type DrillMissionRow, type SequenceData } from './sequence';
@@ -244,6 +245,7 @@ export async function saveSequenceSession(
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return { ok: false, error: 'Not authenticated.' };
+    if (!(await studentCanTrack(studentId))) return { ok: false, error: TRACKING_LOCKED_MESSAGE };
     if (input.mode !== 'sequence_run' && input.mode !== 'step_focus') return { ok: false, error: 'Invalid mode.' };
     if (!inRange(input.planned_duration_minutes, 1, 600)) return { ok: false, error: 'Invalid duration.' };
     if (!inRange(input.planned_reps, 1, 500)) return { ok: false, error: 'Invalid runs target.' };

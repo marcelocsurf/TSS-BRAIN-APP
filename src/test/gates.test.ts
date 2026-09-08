@@ -275,3 +275,35 @@ describe('publicEnroll — perfil nuevo exige waiver + salud + términos', () =>
     expect(r.error).toMatch(/guardian/);
   });
 });
+
+// ── Registro y progreso: curso o membresía. El libro solo, no. ──
+describe('acceso del alumno — el que solo tiene el libro no registra', () => {
+  it('sin curso ni membresía → canTrack false', async () => {
+    const { getStudentAccess } = await import('@/lib/portal/access');
+    fake.tables.memberships = [];
+    const a = await getStudentAccess(STUDENT);
+    expect(a).toEqual({ hasCourse: false, membershipActive: false, canTrack: false });
+  });
+  it('con curso white → canTrack', async () => {
+    const { getStudentAccess } = await import('@/lib/portal/access');
+    fake.tables.students[0].course_access_white = true;
+    expect((await getStudentAccess(STUDENT)).canTrack).toBe(true);
+  });
+  it('con membresía activa → canTrack; vencida → no', async () => {
+    const { getStudentAccess } = await import('@/lib/portal/access');
+    fake.tables.memberships = [{ student_id: STUDENT, status: 'active', ends_at: '2099-01-01' }];
+    expect((await getStudentAccess(STUDENT)).canTrack).toBe(true);
+    fake.tables.memberships = [{ student_id: STUDENT, status: 'active', ends_at: '2020-01-01' }];
+    expect((await getStudentAccess(STUDENT)).canTrack).toBe(false);
+  });
+  it('saveSequenceSession y logFreeSurf rechazan sin escribir', async () => {
+    fake.tables.memberships = [];
+    const { saveSequenceSession } = await import('@/lib/actions/lets-play');
+    const r = await saveSequenceSession(TOKEN, { mode: 'sequence_run', sequence_id: 'x', planned_duration_minutes: 30, planned_reps: 5, safety_check: true } as any);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/course or membership/);
+    const { logFreeSurf } = await import('@/lib/actions/portal');
+    await expect(logFreeSurf(TOKEN, 60)).rejects.toThrow(/course or membership/);
+    expect(fake.writes().length).toBe(0);
+  });
+});

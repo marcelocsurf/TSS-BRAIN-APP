@@ -20,6 +20,7 @@ import { getNextMove } from '@/lib/actions/sequence';
 import { RenewalGate } from './RenewalGate';
 import { TermsGate } from './TermsGate';
 import { needsTermsAcceptance } from '@/lib/actions/legal';
+import { getStudentAccess } from '@/lib/portal/access';
 import { getMembershipInfo } from '@/lib/actions/memberships';
 import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMyMessages, getMyTeamWall, getMyTodayExtras } from '@/lib/actions/programs';
 import { getMyCompetitions } from '@/lib/actions/competitions';
@@ -132,6 +133,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   ]);
 
   const termsPending = isImpersonatingThisStudent ? false : await needsTermsAcceptance(student.id);
+  // Registro y progreso = curso o membresía (blueprint). El libro solo, no.
+  const access = await getStudentAccess(student.id);
 
   // Bundle del Home: valores ya desenvueltos, con la MISMA semántica que cada
   // tarjeta usaba al hacer su propio fetch (ok:false → conservar null/[]).
@@ -225,6 +228,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           coachProfileUnlocked: coachUnlocked,
           coachSide: await getCoachSideForStudent(student.id),
           hasAnyCourse,
+          canTrack: isOwner || access.canTrack,
+          hasBook: (hbPresentations ?? []).some((p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333'),
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
           nextMove: await getNextMove(token, activeCourse?.belt ?? 'white'),
