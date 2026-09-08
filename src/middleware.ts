@@ -75,6 +75,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/forgot-password' ||        // password recovery (unauthenticated)
     pathname === '/my-portal' ||              // public "email me my portal link" for students
     pathname === '/manifest.webmanifest' ||
+    pathname === '/pdf.worker.min.mjs' ||     // worker de pdf.js del lector del libro (estático)
     pathname === '/sw.js';
 
   if (isPublic) {
