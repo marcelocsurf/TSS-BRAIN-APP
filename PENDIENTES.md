@@ -54,6 +54,7 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Decidir si se declara "0 pruebas automatizadas" o se agrega una base mínima de tests antes.
 
 ## 3. CURRÍCULO Y EVALUACIÓN
+- [x] What it takes con tres caminos (White→Yellow, Yellow→Blue, Blue→Purple), regla de Purple agregada (2026-09-09). DECISIÓN: Blue se queda sin quizzes por lección; solo el quiz final de 10 preguntas.
 - [ ] **Revisión paso a paso de los 49 criterios White→Blue** (artefacto `belts-criterios`). Después: aplicar a la base (lecciones → criterios → títulos → drills; tipo "juego" después).
 - [ ] Decisiones abiertas de contenido: STP-027 cinco palabras · STP-033 Stage 4 en la misión · STP-031 doctrina del peso en el pump · STP-044 mano en Tapaloco · key_words vs lección en STP-039/048/049 · nombre de la Secuencia #12.
 - [ ] 4 lecciones nuevas + 3 decisiones de Marcelo pendientes de la coherencia del curso (2026-08-31).
