@@ -64,7 +64,7 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 ## 4. BLUEPRINT DEL ECOSISTEMA (cuenta ≠ membresía)
 - [x] Compuerta de registro (2026-09-08): sin curso ni membresía no se registran sesiones ni horas; Home "Start here"; sin glosario sin curso.
 - [x] DECIDIDO y construido (2026-09-09): Let's Play y registro = la herramienta de entrenamiento (membresía única, transversal); cada curso incluye 12 meses y se apilan; al vencer, renovación desde Let's Play sin bloquear el portal.
-- [ ] Planes de renovación: hoy 1/6/12 meses ($9.99/$49.99/$99.90). Decidir si queda un solo plan anual de $99 para que coincida con el discurso de venta. (Marcelo)
+- [x] Un solo plan de la herramienta: 1 año · $99 en portal, mostrador, ficha y email de vencimiento (2026-09-09).
 - [ ] Página de venta del curso con la regla de empaque: precio del curso + "1 año de la herramienta (valor $99) incluido". (website, cuando haya checkout)
 - [ ] Cobro online de la renovación de membresía (hoy: el alumno pide, el mostrador cobra y confirma).
 - [ ] Aviso por email a los 7 días del vencimiento de la membresía incluida con el curso (existe expiry_reminder_sent_at; revisar que el cron lo cubra).
