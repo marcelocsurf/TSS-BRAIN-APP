@@ -54,6 +54,11 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Decidir si se declara "0 pruebas automatizadas" o se agrega una base mínima de tests antes.
 
 ## 3. CURRÍCULO Y EVALUACIÓN
+- [x] Piloto "secuencia en 4 pestañas" construido para Blue #8 Frontside Pumping (2026-09-09). Marcelo la usa una semana y decide.
+- [ ] Si el piloto convence: configurar #9 y #10 (los criterios propuestos y las correcciones de doctrina de hoy ya están en memoria), y después el resto de Blue; mover a la base lo que hoy es config (resultado de la misión, criterios con Fix/Go deeper, tablero).
+- [ ] Corregir en la base las lecciones tocadas por la doctrina de hoy: STP-037 (la M es el cuerpo, la mano de atrás palma arriba, el codazo cambia el riel), STP-039..042 (snap = U + cambio de riel, sin "labio"; cadena del BT: Weight front · Elbow and forearm to the water · Palm down · Oblique · Hold), cutback cierra apuntando a la cara (8 acostado).
+- [ ] Unificar las key_words de las tarjetas con las de la lección (STP-037/038 hoy difieren).
+- [ ] El juego (imagen + regla) como tercera pieza de Do it — después, decisión de Marcelo.
 - [x] What it takes con tres caminos (White→Yellow, Yellow→Blue, Blue→Purple), regla de Purple agregada (2026-09-09). DECISIÓN: Blue se queda sin quizzes por lección; solo el quiz final de 10 preguntas.
 - [ ] **Revisión paso a paso de los 49 criterios White→Blue** (artefacto `belts-criterios`). Después: aplicar a la base (lecciones → criterios → títulos → drills; tipo "juego" después).
 - [ ] Decisiones abiertas de contenido: STP-027 cinco palabras · STP-033 Stage 4 en la misión · STP-031 doctrina del peso en el pump · STP-044 mano en Tapaloco · key_words vs lección en STP-039/048/049 · nombre de la Secuencia #12.
