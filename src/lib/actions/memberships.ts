@@ -22,11 +22,7 @@ async function assertStudentInMyAcademy(studentId: string): Promise<{ me: any } 
 // intactos y el portal muestra la pantalla de renovación. El alumno SOLICITA;
 // el coordinador confirma el pago (mismo patrón de confianza que el seller).
 
-const MEMBERSHIP_PLANS = [
-  { months: 1, cents: 999, label: '1 month' },
-  { months: 6, cents: 4999, label: '6 months' },
-  { months: 12, cents: 9990, label: '12 months' },
-] as const;
+import { MEMBERSHIP_PLANS, isValidMembershipMonths } from '@/lib/constants/membership';
 
 export interface MembershipInfo {
   active: boolean;
@@ -153,7 +149,7 @@ export async function grantMembership(studentId: string, months: number, gift = 
   const scope = await assertStudentInMyAcademy(studentId);
   if ('error' in scope) return { ok: false, error: scope.error };
   const me = scope.me;
-  if (![1, 6, 12].includes(months)) return { ok: false, error: 'Plan inválido.' };
+  if (!isValidMembershipMonths(months)) return { ok: false, error: 'Plan inválido.' };
   await extendMembership(studentId, months, gift ? 'launch_gift' : 'renewal', {
     paymentMethod: gift ? 'gift' : 'manual', createdBy: (me as any).id ?? null,
     note: gift ? 'Otorgada manualmente (regalo/lanzamiento)' : 'Otorgada manualmente desde el perfil',

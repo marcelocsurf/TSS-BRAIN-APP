@@ -5,6 +5,7 @@
 // NO asigna coaches, NO ve costos/márgenes, NO evalúa ni promueve cintas.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { MEMBERSHIP_PLANS, isValidMembershipMonths } from '@/lib/constants/membership';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { ageFromDob } from '@/lib/utils/age';
@@ -879,7 +880,7 @@ export async function hostTransportNotices(
 }
 
 // Precios de membresía del mostrador — mismos planes del portal (RenewalGate).
-const DESK_MEMBERSHIP_PLANS: Record<number, number> = { 1: 999, 6: 4999, 12: 9990 };
+const DESK_MEMBERSHIP_PLANS: Record<number, number> = Object.fromEntries(MEMBERSHIP_PLANS.map((p) => [p.months, p.cents]));
 
 // Confirmar una renovación PEDIDA por el alumno desde su portal (fila
 // 'requested'). Mismo flujo que confirmMembershipRenewal del dashboard, pero
@@ -922,7 +923,7 @@ export async function hostGrantRenewal(
 ): Promise<{ ok: boolean; error?: string }> {
   const who = await resolveHost(token);
   if (!who?.academy_id || !(await hostCanCoordinate(who as any))) return { ok: false, error: 'No autorizado.' };
-  if (![1, 6, 12].includes(months)) return { ok: false, error: 'Plan inválido (1, 6 o 12 meses).' };
+  if (!isValidMembershipMonths(months)) return { ok: false, error: 'Plan inválido (solo 12 meses).' };
   const admin = createAdminClient();
 
   const { data: stu } = await admin.from('students').select('id, academy_id').eq('id', studentId).maybeSingle();

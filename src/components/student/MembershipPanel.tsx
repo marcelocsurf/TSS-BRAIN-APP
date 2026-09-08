@@ -1,5 +1,7 @@
 'use client';
 
+import { MEMBERSHIP_PLANS } from '@/lib/constants/membership';
+
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmMembershipRenewal, grantMembership, type MembershipInfo } from '@/lib/actions/memberships';
@@ -58,13 +60,13 @@ export function MembershipPanel({ studentId, info }: { studentId: string; info: 
       {/* Otorgar acceso al portal: membresía manual + link listo para enviar */}
       <div className="mt-3 pt-3 border-t border-gray-50">
         <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
-          {info.active ? 'Extender membresía' : '🔑 Otorgar acceso al portal'}
+          {info.active ? 'Extender la herramienta (+1 año)' : '🔑 Otorgar la herramienta de entrenamiento (1 año)'}
         </p>
         <div className="flex items-center gap-1.5 flex-wrap">
-          {[1, 6, 12].map((m) => (
+          {MEMBERSHIP_PLANS.map(({ months: m }) => (
             <button key={m} onClick={() => grant(m)} disabled={pending}
               className="text-[11px] font-bold px-3 py-1.5 rounded-full border border-gray-200 hover:border-gray-400 disabled:opacity-50 text-gray-700">
-              +{m} {m === 1 ? 'mes' : 'meses'}
+              +12 meses · $99
             </button>
           ))}
           <label className="inline-flex items-center gap-1 text-[10.5px] text-gray-500 ml-1 cursor-pointer">

@@ -1,5 +1,7 @@
 'use client';
 
+import { MEMBERSHIP_PLANS } from '@/lib/constants/membership';
+
 import { useEffect, useState } from 'react';
 import { DeskBoard } from '@/app/front-desk/[token]/DeskBoard';
 import { PortalSpaces } from '@/components/coach-portal/PortalSpaces';
@@ -189,15 +191,15 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
               )}
               {canCoordinate && detail.membership && !detail.membership.active && !detail.membership.pending_request && (
                 <div className="rounded-xl p-2.5" style={{ background: '#F7F9FA' }}>
-                  <p className="text-[8px] mb-1.5" style={{ ...F_M, color: '#8a6d1c' }}>Renovar membresía en mostrador</p>
+                  <p className="text-[8px] mb-1.5" style={{ ...F_M, color: '#8a6d1c' }}>Renovar herramienta de entrenamiento (1 año · $99)</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {([[1, '9.99'], [6, '49.99'], [12, '99.90']] as const).map(([m, p]) => (
+                    {MEMBERSHIP_PLANS.map(({ months: m, price: p }) => (
                       <button key={m} type="button" disabled={renewBusy} onClick={() => setRenewMonths(renewMonths === m ? null : m)}
                         className="px-3 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50"
                         style={renewMonths === m
                           ? { background: '#061C2B', color: '#fff', borderColor: '#061C2B' }
                           : { background: '#fff', color: '#061C2B', borderColor: '#e5e7eb' }}>
-                        {m}m · ${p}
+                        1 año · ${p}
                       </button>
                     ))}
                   </div>

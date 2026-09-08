@@ -174,11 +174,11 @@ async function handle(req: NextRequest) {
       const { error: sendErr } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
         to: st.email,
-        subject: 'Your Surf Sequence membership ends soon 🌊',
+        subject: 'Your Surf Sequence training tool ends soon 🌊',
         html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#061C2B;">
-          <h2>Hey ${st.first_name || 'surfer'} — your membership ends ${endDate}</h2>
-          <p>Your belt journey, courses and logbook stay saved — but your portal access pauses unless you renew.</p>
-          <p><strong>$9.99/month · $49.99/6 months · $99.90/year</strong></p>
+          <h2>Hey ${st.first_name || 'surfer'} — your training tool ends ${endDate}</h2>
+          <p>Your courses, your book and your logbook stay yours. What pauses is Let's Play: training sessions, surf hours and progress — unless you renew.</p>
+          <p><strong>Training tool · $99/year</strong></p>
           <p><a href="${appUrl}/portal/${st.portal_token}" style="display:inline-block;background:#00D2FF;color:#061C2B;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none;">Renew from your portal →</a></p>
           <p style="color:#55666E;font-size:13px;">Or just pay at the academy — we&#39;ll extend it on the spot.</p>
         </div>`,

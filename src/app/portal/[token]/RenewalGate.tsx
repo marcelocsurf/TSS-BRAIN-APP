@@ -7,11 +7,7 @@ import { requestMembershipRenewal } from '@/lib/actions/memberships';
 // renew. Student-facing copy in ENGLISH (brand rule). The student REQUESTS;
 // the academy confirms the payment (Phase 1 — no online payments yet).
 
-const PLANS = [
-  { months: 1, price: '9.99', label: '1 month', tag: null },
-  { months: 6, price: '49.99', label: '6 months', tag: 'MOST POPULAR' },
-  { months: 12, price: '99.90', label: '12 months', tag: 'BEST VALUE' },
-] as const;
+import { MEMBERSHIP_MONTHS, MEMBERSHIP_PLANS } from '@/lib/constants/membership';
 
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
@@ -26,7 +22,7 @@ export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyReque
   /** Dentro de la pestaña Let's Play (2026-09-08): sin pantalla completa ni logo. */
   inline?: boolean;
 }) {
-  const [months, setMonths] = useState<number>(6);
+  const months = MEMBERSHIP_MONTHS;
   const [sent, setSent] = useState(alreadyRequested);
   const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -65,26 +61,18 @@ export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyReque
               {inline ? "Let's Play, your session log and your progress are your training tool. Every course includes a year of it; after that it renews. " : ''}Your training tool {endedAt ? `ended on ${new Date(endedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'has ended'}.
               Your <strong style={{ color: GOLD }}>{beltLabel}</strong> journey, courses and logbook are saved and waiting for you.
             </p>
-            <div className="grid gap-2.5 mt-7">
-              {PLANS.map((p) => (
-                <button key={p.months} onClick={() => setMonths(p.months)}
-                  className="rounded-2xl px-4 py-3.5 flex items-center justify-between"
-                  style={months === p.months
-                    ? { background: 'rgba(0,210,255,.12)', border: `2px solid ${CYAN}` }
-                    : { background: '#0A2438', border: '1px solid rgba(247,249,250,.12)' }}>
-                  <span className="text-left">
-                    <span className="block text-[15px] font-bold" style={{ color: PAPER }}>{p.label}</span>
-                    {p.tag && <span style={{ ...F_M, color: GOLD }} className="text-[8px]">{p.tag}</span>}
-                  </span>
-                  <span style={{ ...F_D, color: months === p.months ? CYAN : PAPER }} className="text-[22px]">${p.price}</span>
-                </button>
-              ))}
+            <div className="rounded-2xl px-4 py-4 mt-7 flex items-center justify-between" style={{ background: 'rgba(0,210,255,.12)', border: `2px solid ${CYAN}` }}>
+              <span className="text-left">
+                <span className="block text-[15px] font-bold" style={{ color: PAPER }}>Training tool · {MEMBERSHIP_PLANS[0].label}</span>
+                <span style={{ ...F_M, color: GOLD }} className="text-[8px]">Let&apos;s Play · sessions · hours · progress</span>
+              </span>
+              <span style={{ ...F_D, color: CYAN }} className="text-[22px]">${MEMBERSHIP_PLANS[0].price}</span>
             </div>
             {err && <p className="text-[12px] mt-3" style={{ color: '#FF6B6B' }}>{err}</p>}
             <button onClick={submit} disabled={pending}
               className="w-full mt-5 py-4 rounded-full text-[12px] font-bold disabled:opacity-50"
               style={{ background: GREEN, color: INK, ...F_M }}>
-              {pending ? 'Sending…' : 'Renew my membership →'}
+              {pending ? 'Sending…' : 'Renew for a year →'}
             </button>
             <p className="text-[11.5px] mt-4" style={{ color: 'rgba(247,249,250,.45)' }}>
               Pay at the academy (cash or card) — your access unlocks the moment they confirm.
