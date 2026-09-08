@@ -1,7 +1,5 @@
 'use client';
 
-import { MEMBERSHIP_PLANS } from '@/lib/constants/membership';
-
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmMembershipRenewal, grantMembership, type MembershipInfo } from '@/lib/actions/memberships';
@@ -14,6 +12,8 @@ export function MembershipPanel({ studentId, info }: { studentId: string; info: 
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [gift, setGift] = useState(false);
+  // Meses libres (Marcelo 2026-09-09: "que se pueda agregar por meses, es más versátil").
+  const [custom, setCustom] = useState('');
 
   // Otorgar acceso = darle membresía. Con el link del portal listo para enviar.
   const grant = (months: number) => start(async () => {
@@ -60,15 +60,23 @@ export function MembershipPanel({ studentId, info }: { studentId: string; info: 
       {/* Otorgar acceso al portal: membresía manual + link listo para enviar */}
       <div className="mt-3 pt-3 border-t border-gray-50">
         <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
-          {info.active ? 'Extender la herramienta (+1 año)' : '🔑 Otorgar la herramienta de entrenamiento (1 año)'}
+          {info.active ? 'Extender la herramienta de entrenamiento' : '🔑 Otorgar la herramienta de entrenamiento'}
         </p>
         <div className="flex items-center gap-1.5 flex-wrap">
-          {MEMBERSHIP_PLANS.map(({ months: m }) => (
+          {[1, 3, 6, 12].map((m) => (
             <button key={m} onClick={() => grant(m)} disabled={pending}
               className="text-[11px] font-bold px-3 py-1.5 rounded-full border border-gray-200 hover:border-gray-400 disabled:opacity-50 text-gray-700">
-              +12 meses · $99
+              +{m} {m === 1 ? 'mes' : 'meses'}
             </button>
           ))}
+          <span className="inline-flex items-center gap-1">
+            <input type="number" min={1} max={36} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="N"
+              className="w-12 text-[11px] px-2 py-1.5 rounded-full border border-gray-200 text-center" />
+            <button type="button" disabled={pending || !(Number(custom) >= 1)} onClick={() => grant(Number(custom))}
+              className="text-[11px] font-bold px-2.5 py-1.5 rounded-full border border-gray-200 hover:border-gray-400 disabled:opacity-40 text-gray-700">
+              + meses
+            </button>
+          </span>
           <label className="inline-flex items-center gap-1 text-[10.5px] text-gray-500 ml-1 cursor-pointer">
             <input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} className="h-3 w-3" />
             🎁 regalo (sin cobro)

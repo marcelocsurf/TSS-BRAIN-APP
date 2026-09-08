@@ -22,7 +22,7 @@ async function assertStudentInMyAcademy(studentId: string): Promise<{ me: any } 
 // intactos y el portal muestra la pantalla de renovación. El alumno SOLICITA;
 // el coordinador confirma el pago (mismo patrón de confianza que el seller).
 
-import { MEMBERSHIP_PLANS, isValidMembershipMonths } from '@/lib/constants/membership';
+import { MEMBERSHIP_PLANS } from '@/lib/constants/membership';
 
 export interface MembershipInfo {
   active: boolean;
@@ -149,7 +149,9 @@ export async function grantMembership(studentId: string, months: number, gift = 
   const scope = await assertStudentInMyAcademy(studentId);
   if ('error' in scope) return { ok: false, error: scope.error };
   const me = scope.me;
-  if (!isValidMembershipMonths(months)) return { ok: false, error: 'Plan inválido.' };
+  // Staff: meses libres (1-36). El plan de VENTA al alumno sigue siendo 1 año · $99;
+  // acá se resuelven regalos, ajustes, camps largos, cortesías.
+  if (!Number.isInteger(months) || months < 1 || months > 36) return { ok: false, error: 'Meses inválidos (1 a 36).' };
   await extendMembership(studentId, months, gift ? 'launch_gift' : 'renewal', {
     paymentMethod: gift ? 'gift' : 'manual', createdBy: (me as any).id ?? null,
     note: gift ? 'Otorgada manualmente (regalo/lanzamiento)' : 'Otorgada manualmente desde el perfil',
