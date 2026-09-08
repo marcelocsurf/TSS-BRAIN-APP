@@ -142,14 +142,13 @@ export async function getBeltRoadmap(
     candidate && GRADUATION_RULES[candidate] ? candidate : fromBelt;
   const rule = GRADUATION_RULES[targetBelt] ?? GRADUATION_RULES.blue_belt;
   // Desde dónde se puede mirar: las cintas cuyo siguiente escalón tiene
-  // requisitos, las que tienen requisitos publicados propios (Blue: su camino
-  // a Purple no está publicado, pero su estándar sí — Marcelo 2026-09-09:
-  // "no aparece blue"), más la propia (para que siempre encuentre la suya).
+  // requisitos publicados (White→Yellow, Yellow→Blue, Blue→Purple desde
+  // 2026-09-09), más la propia (para que siempre encuentre la suya).
   const fromOptions = Array.from(
     new Set([
       ...BELT_ORDER.filter((b) => {
         const nx = nextBelt(b);
-        return !!(nx && GRADUATION_RULES[nx]) || !!GRADUATION_RULES[b];
+        return !!(nx && GRADUATION_RULES[nx]);
       }),
       ownBelt,
     ]),

@@ -110,6 +110,26 @@ export const GRADUATION_RULES: Record<string, GraduationRule> = {
         'Self-sufficient in the water — you get out with your board, choose and position yourself, and get back on your own. Your coach confirms it in the water.',
     },
   },
+  // Purple Belt — full White->Yellow->Blue->Purple sequence (Marcelo
+  // 2026-09-09: "son 3 niveles: los requerimientos de blue para pasar a
+  // purple"). Misma regla estructural que Blue: 4★ en CADA parte + regla del
+  // agua. Sin principios propios todavía (no se inventan; se agregan cuando
+  // Marcelo los publique). minStps se verifica contra producción: 25 + 10 +
+  // 20 + 17 = 72 pasos activos.
+  purple_belt: {
+    beltLabel: 'Purple Belt',
+    sections: ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'],
+    stpThreshold: 4,
+    minStps: 72,
+    requireAllStps: true,
+    principles: [],
+    minPrinciples: 0,
+    waterRule: {
+      minLabel: 'Semi-Autonomous',
+      description:
+        'Self-sufficient in the water, confirmed by your coach — the same rule that opened Blue, held at a higher level of wave.',
+    },
+  },
 };
 
 /**
