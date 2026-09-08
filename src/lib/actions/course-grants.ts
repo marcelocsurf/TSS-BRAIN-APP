@@ -34,8 +34,11 @@ export type GrantSource =
 
 // ─── Grant a course to a student ───
 
-/** Meses de membresía que trae cada curso (Let's Play + registro). */
-const COURSE_INCLUDED_MEMBERSHIP_MONTHS = 3;
+/** Meses de la herramienta de entrenamiento (membresía) que trae CADA curso.
+ *  Regla de empaque (Marcelo 2026-09-09): el curso se vende con su precio y
+ *  "+ 1 año de la herramienta (valor $99) incluido". Cada nivel suma otro año
+ *  (se apila sobre la membresía vigente): un nivel puede llevar años. */
+const COURSE_INCLUDED_MEMBERSHIP_MONTHS = 12;
 
 export async function grantCourseToStudent(
   studentId: string,
@@ -190,9 +193,9 @@ export async function grantCourseToStudent(
       { onConflict: 'student_id,access_type,level_key' },
     );
 
-  // El curso INCLUYE 3 meses de membresía (Marcelo 2026-09-08): el curso y
-  // sus drills quedan para siempre; Let's Play, el registro y el progreso
-  // viven 3 meses y después se renuevan. Solo la primera vez por curso.
+  // El curso INCLUYE 12 meses de membresía: el curso y sus drills quedan para
+  // siempre; Let's Play, el registro y el progreso viven un año y después se
+  // renuevan a $99/año. Solo la primera vez por curso (no al re-otorgar).
   if (!alreadyGranted) {
     try {
       const { extendMembership } = await import('./memberships');

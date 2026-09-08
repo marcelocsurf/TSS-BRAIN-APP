@@ -62,7 +62,7 @@ export function RenewalGate({ token, firstName, beltLabel, endedAt, alreadyReque
         ) : (
           <>
             <p className="text-[14.5px] mt-3" style={{ color: 'rgba(247,249,250,.75)' }}>
-              {inline ? "Let's Play, your session log and your progress come with your membership. " : ''}Your membership {endedAt ? `ended on ${new Date(endedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'has ended'}.
+              {inline ? "Let's Play, your session log and your progress are your training tool. Every course includes a year of it; after that it renews. " : ''}Your training tool {endedAt ? `ended on ${new Date(endedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'has ended'}.
               Your <strong style={{ color: GOLD }}>{beltLabel}</strong> journey, courses and logbook are saved and waiting for you.
             </p>
             <div className="grid gap-2.5 mt-7">

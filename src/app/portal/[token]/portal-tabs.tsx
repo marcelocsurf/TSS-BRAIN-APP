@@ -206,7 +206,7 @@ interface PortalData {
   canTrack?: boolean;
   /** Tiene el libro ONE WAVE otorgado. */
   hasBook?: boolean;
-  /** Membresía: Let's Play + registro. El curso trae 3 meses incluidos. */
+  /** Membresía = la herramienta de entrenamiento. Cada curso trae 12 meses. */
   membership?: { active: boolean; ends_at: string | null; pending_request: boolean };
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
@@ -749,7 +749,7 @@ export function PortalTabs({
                 <div className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
                   <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
                     <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Your drills and missions</p>
-                    <p className="text-[12px] text-white/60 mt-0.5">Part of your course — read them anytime. Train them with the system when your membership is active.</p>
+                    <p className="text-[12px] text-white/60 mt-0.5">Part of your course — read them anytime. Train them with the system while your training tool is active.</p>
                   </div>
                   <ul className="divide-y" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
                     {(data.drillsMissions ?? []).map((d: any) => (
@@ -1114,7 +1114,7 @@ function HomeTab({
               <p className="text-[9px]" style={{ ...F_LABEL, color: '#FFD166' }}>Membership ended</p>
               <p className="text-white font-bold text-[17px] mt-1 leading-tight">Your course is yours. Let&apos;s Play is waiting.</p>
               <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
-                Lessons and drills stay open. Training sessions, your surf hours and your progress come back the moment you renew your membership.
+                Lessons and drills stay open. Training sessions, your surf hours and your progress come back the moment you renew the training tool ($99/year).
               </p>
               <button type="button" onClick={() => onGoTo('sequence')}
                 className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
@@ -1128,7 +1128,7 @@ function HomeTab({
                 {data.hasBook ? 'Read the book, then train with us.' : 'Your training starts with your course.'}
               </p>
               <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
-                Every course includes 3 months of membership: drills, missions, session logging and your progress. When you get one, everything opens right here — same portal, same login.
+                Every course includes 1 year of the training tool (a $99 value): drills, missions, session logging and your progress. When you get one, everything opens right here — same portal, same login.
               </p>
               <a href="https://www.thesurfsequence.com" target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>

@@ -28,7 +28,7 @@ export async function getStudentAccess(studentId: string): Promise<StudentAccess
   const membershipActive = !!mem?.ends_at && new Date(mem.ends_at) > new Date();
   // Marcelo (2026-09-08): el curso es para siempre (lecciones + drills para
   // ver), pero Let's Play, el registro y el progreso son MEMBRESÍA. El curso
-  // trae 3 meses incluidos (grantCourseToStudent); después se renueva.
+  // trae 12 meses incluidos (grantCourseToStudent); después se renueva a $99/año.
   return { hasCourse, membershipActive, membershipEndsAt: mem?.ends_at ?? null, canTrack: membershipActive };
 }
 
@@ -36,4 +36,4 @@ export async function studentCanTrack(studentId: string): Promise<boolean> {
   return (await getStudentAccess(studentId)).canTrack;
 }
 
-export const TRACKING_LOCKED_MESSAGE = "Let's Play and progress tracking come with your membership. Renew to keep training.";
+export const TRACKING_LOCKED_MESSAGE = "Let's Play and progress tracking come with your training membership. Renew it to keep training.";
