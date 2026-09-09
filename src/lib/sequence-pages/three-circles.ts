@@ -61,6 +61,16 @@ export const CIRCLES_INTRO = {
   three: 'There are three: your body, your board and the wave. Each one holds a piece you cannot do without. Where the three overlap, you get flow — and when you put them together you are painting, flowing, in control, drawing on the face understanding the energies. At that point you are already playing.',
   when: 'The Three Circles switch on after the pop-up. Everything before that — paddling, prone, entry, passing waves — is diagnosed with the Block System, not with the circles.',
   language: 'This is also the language. The four movements of the body carry the colours you will see in every sequence: posture red, rotation on the rail green, compression and extension yellow (the engine of the projection), hold as a light-blue ring. Learn the colours here; the Infinite Circle adds the rest.',
+  // Marcelo (2026-09-09): "muchos de los problemas vienen de aquí, no del
+  // bottom turn ni del snap". Regla "Where the errors are born" en doctrine_rules.
+  born: [
+    { circle: 'board' as const, title: 'Back foot in the wrong position', note: 'You try to draw a line that does not correspond to where the foot is.' },
+    { circle: 'board' as const, title: 'Front foot not centred, too close to a rail', note: 'When you press forward to generate speed the rail sinks; you compensate with the hands to one side and the whole posture breaks. It looks like posture. It is the front foot, done without awareness.' },
+    { circle: 'body' as const, title: 'Weight on the back foot', note: 'When it must be on the front. A posture-base problem.' },
+    { circle: 'wave' as const, title: 'Not using the wave’s energy, or the wrong line', note: 'Going to the flat and losing speed; getting too far from the pocket without understanding that the speed is back there.' },
+    { circle: 'wave' as const, title: 'A bottom turn that goes too far out to the flat', note: 'You arrive at the top without speed, and when speed is lost the rails sink.' },
+    { circle: 'body' as const, title: 'Not changing the rail first', note: 'Or not keeping the weight forward when the rail changes — and going straight to the projection without having changed the rail.' },
+  ],
   diagnose: [
     { circle: 'Body', q: 'My posture broke, I did not rotate, I compressed but never extended, I let the turn go.' },
     { circle: 'Board', q: 'I was in the wrong foot position for what I was asking of the board.' },

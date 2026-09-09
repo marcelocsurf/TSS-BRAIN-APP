@@ -191,6 +191,18 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             </>
           )}
 
+          <Card eyebrow="Where the errors are born · not in the maneuver" color="#FF6B6B">
+            <p className="text-[14px] leading-relaxed" style={{ color: TEXT }}>Most errors do not come from the bottom turn or the snap. They come from one of the three circles. Diagnose here before correcting the maneuver.</p>
+            <div className="mt-2">
+              {CIRCLES_INTRO.born.map((b) => (
+                <div key={b.title} className="py-2" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                  <p className="text-[14px] font-semibold flex items-center gap-2" style={{ color: PAPER }}><i className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: CIRCLE_COLOR[b.circle] }} />{b.title}</p>
+                  <p className="text-[13px] leading-snug mt-0.5 pl-4" style={{ color: TEXT }}>{b.note}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
           <Card eyebrow="Where the three overlap · which circle failed?" color={VIOLET}>
             <p className="text-[14px] leading-relaxed" style={{ color: TEXT }}>You have this framework when, after a wave that did not work, you can say which circle failed — not just “it went badly”. Try it on your next three waves; answer with one word.</p>
             <div className="mt-2 space-y-1.5">
