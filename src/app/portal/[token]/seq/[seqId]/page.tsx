@@ -45,10 +45,14 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
   const owns = COURSE_OWNER_IDS.has((student as any).id) || !!(course && (student as any)[course.accessColumn]);
   if (!owns) notFound();
 
-  const [{ data: lessonRows }, { data: pieceRows }, access] = await Promise.all([
+  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRow }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
     admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('step_id', cfg.stepIds),
     getStudentAccess((student as any).id),
+    // Convención (2026-09-09): el video de la secuencia se sube en Library
+    // (Admin → kind "video") con un título que empieza por el id, p. ej.
+    // "BB-SEQ-08 · Frontside Pumping". No necesita grant: el curso ya gatea.
+    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const lessons: Record<string, LessonBits> = {};
@@ -71,7 +75,7 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} />
+      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} />
     </div>
   );
 }

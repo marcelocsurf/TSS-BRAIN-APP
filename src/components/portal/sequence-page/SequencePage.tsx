@@ -29,12 +29,15 @@ const TABS: { key: Tab; label: string; sub: string; Icon: typeof Brain }[] = [
   { key: 'review', label: 'Review', sub: 'Check', Icon: CheckCircle2 },
 ];
 
-export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
+export function SequencePage({
+  video, cfg, lessons, pieces, token, canTrack }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
   token: string;
   canTrack: boolean;
+  /** Video de la ejecución (Library → kind video, título que empieza con el id de la secuencia). */
+  video?: { url: string; title: string } | null;
 }) {
   const [tab, setTab] = useState<Tab>('think');
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
@@ -52,7 +55,21 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
         <a href={`${portal}?tab=course`} className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: CYAN }}><ArrowLeft size={14} /> Course</a>
         <p className="mt-3" style={{ ...F_M, color: CYAN }}>Sequence #{cfg.number} · {cfg.belt.replace('_belt', ' belt')}</p>
         <h1 className="text-[26px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' }}>{cfg.title}</h1>
-        <p className="text-[12px] mt-1" style={{ color: MUTED }}>{cfg.stepIds.map((id) => lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id).join(' → ')}</p>
+        <p className="text-[13px] mt-2" style={{ color: TEXT }}>{cfg.think.whatIs.headline}</p>
+
+        {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
+        <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
+          {video ? <SequenceVideo url={video.url} title={video.title} /> : <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} /></div>}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3 text-[12px]">
+          <span style={{ ...F_M, color: MUTED }}>The steps that build it</span>
+          {cfg.stepIds.map((id, i) => (
+            <span key={id}>
+              {i > 0 && <span style={{ color: MUTED }}>→ </span>}
+              <a href={`${portal}?tab=course&lesson=${id}`} className="font-semibold underline decoration-dotted underline-offset-2" style={{ color: CYAN }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id}</a>
+            </span>
+          ))}
+        </div>
 
         {/* Pestañas */}
         <div className="grid grid-cols-4 gap-1 rounded-2xl p-1.5 mt-4 sticky top-2 z-10" style={{ background: PANEL }} role="tablist">
@@ -71,7 +88,7 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
           <div className="space-y-3 mt-4">
             <Card eyebrow="01 · What it is">
               <h2 className="text-[16px] font-bold">{cfg.think.whatIs.headline}</h2>
-              <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} />
+              {video && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} />}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
               <Row k="Where">{cfg.think.whatIs.where}</Row>
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>
@@ -252,6 +269,15 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
       </div>
     </div>
   );
+}
+
+/** YouTube / Vimeo → iframe; archivo directo → <video>. */
+function SequenceVideo({ url, title }: { url: string; title: string }) {
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{6,})/);
+  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const src = yt ? `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&modestbranding=1` : vm ? `https://player.vimeo.com/video/${vm[1]}` : null;
+  if (src) return <div className="relative w-full" style={{ paddingTop: '56.25%' }}><iframe src={src} title={title} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>;
+  return <video src={url} controls playsInline preload="metadata" className="w-full block" title={title} />;
 }
 
 function Card({ eyebrow, color = CYAN, children }: { eyebrow: string; color?: string; children: React.ReactNode }) {

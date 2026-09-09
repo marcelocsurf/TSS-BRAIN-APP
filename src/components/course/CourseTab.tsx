@@ -716,6 +716,36 @@ function SectionBlock({
     productized.length > 0 ? Math.round((completed / productized.length) * 100) : 0;
   const proposedCount = lessons.length - productized.length;
 
+  // Piloto 2026-09-09 (Marcelo): si la secuencia tiene su página de cuatro
+  // pestañas, el clic la abre directo. Las lecciones viven adentro (Think it).
+  if (onePageHref) {
+    return (
+      <a
+        href={onePageHref}
+        className="block rounded-xl overflow-hidden border border-white/10"
+        style={{ background: '#0F1E33', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
+      >
+        <div className="px-4 py-3 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-sm flex items-center gap-2 text-white">
+              <Icon size={16} strokeWidth={1.75} className="flex-shrink-0" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }} />
+              <span className="truncate">{title}</span>
+            </h3>
+            {subtitle && <p className="text-[11px] text-white/40 mt-0.5 italic">"{subtitle}"</p>}
+            <p className="text-[11px] mt-1" style={{ color: 'var(--tss-cyan)' }}>Think it · Feel it · Do it · Review</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-right">
+              <div className="text-xs font-bold" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }}>{sectionPercent}%</div>
+              <div className="text-[10px] text-white/40">{completed}/{productized.length}</div>
+            </div>
+            <span className="text-[16px] font-bold text-white/60">→</span>
+          </div>
+        </div>
+      </a>
+    );
+  }
+
   return (
     <details
       className="group rounded-xl overflow-hidden border border-white/10"
@@ -750,15 +780,6 @@ function SectionBlock({
         </div>
       </summary>
       <div className="divide-y divide-white/5 border-t border-white/10">
-        {onePageHref && (
-          <a href={onePageHref} className="flex items-center justify-between px-4 py-3" style={{ background: 'rgba(0,210,255,.08)' }}>
-            <span>
-              <span className="block text-[13px] font-semibold text-white">Open the whole sequence</span>
-              <span className="block text-[11px] text-white/50">Think it · Feel it · Do it · Review — one page, the steps inside.</span>
-            </span>
-            <span className="text-[12px] font-bold" style={{ color: 'var(--tss-cyan)' }}>→</span>
-          </a>
-        )}
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
