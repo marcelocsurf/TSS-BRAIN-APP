@@ -542,12 +542,13 @@ export function CourseTab({ data }: { data: CourseData }) {
           />
           <SectionBlock
             title={loopGroup.name}
-            subtitle={null}
+            subtitle="Frontside and backside, step by step, with the colour of every action."
             Icon={PC_SECTION_ICON['BB-INF'] || Compass}
             badge={null}
             lessons={loopGroup.lessons}
             onOpenLesson={(id) => setOpenLessonId(id)}
             theme={beltTheme}
+            onePageHref={`/portal/${data.portalToken}/loop`}
           />
         </div>
       )}
@@ -806,7 +807,7 @@ function SectionBlock({
               <span className="truncate">{title}</span>
             </h3>
             {subtitle && <p className="text-[11px] text-white/40 mt-0.5 italic">"{subtitle}"</p>}
-            <p className="text-[11px] mt-1" style={{ color: 'var(--tss-cyan)' }}>Think it · Feel it · Do it · Review</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--tss-cyan)' }}>{onePageHref.endsWith('/loop') ? 'Open the course' : 'Think it · Feel it · Do it · Review'}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="text-right">
