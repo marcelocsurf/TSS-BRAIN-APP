@@ -164,15 +164,15 @@ export const LOOP_SIDES: LoopSide[] = [
     steps: [
       {
         key: 'posture', command: 'posture', name: 'Posture', commandLabel: 'Posture', known: 'three-circles',
-        whatIs: 'Same base as frontside, with the backside orientation: chest open toward the wave, eyes over the back shoulder.',
+        whatIs: 'Your stable base with your back to the wave: chest open toward the wave, eyes over the back shoulder.',
         body: ['Chest to the nose, low, weight on the front foot.', 'Chest rotates open toward the wave face, not toward the shore.', 'Eyes lead over the back shoulder toward where you are going.', 'Oblique engaged on the back side of the body.'],
         keyWords: ['Chest open', 'Eyes over the shoulder', 'Low', 'Front foot'],
         lessonId: 'STP-038', lessonLabel: 'BS Body Mechanics',
       },
       {
         key: 'bt', command: 'rail', hold: true, name: 'Rail rotation + hold · the bottom turn backside', commandLabel: 'Rotation / rail', known: 'three-circles',
-        whatIs: 'The same U — as deep, as long or as tight as what comes next asks for — with a different arm shape. It ends when the Choke begins. It is the entry to the whole backside expression: the Choke, the Tapaloco and the elbow strike live on the speed and the angle this turn creates.',
-        body: ['Weight front.', 'Front arm at shoulder height, aimed where you are going.', 'Fingertips skimming the water (frontside the whole forearm drops; backside the arm stays high and only the fingertips graze).', 'Oblique, and hold: fight the centrifugal force with rail, fins and body position, keep the energy for the Choke. The bottom turn ends when the Choke begins.'],
+        whatIs: 'The bottom turn with your back to the wave: a U — as deep, as long or as tight as what comes next asks for — drawn with the front arm high. It ends when the Choke begins. It is the entry to the whole backside expression: the Choke, the Tapaloco and the elbow strike live on the speed and the angle this turn creates.',
+        body: ['Weight front.', 'Front arm at shoulder height, aimed where you are going.', 'Fingertips skimming the water: the arm stays high at the shoulder and only the fingertips graze.', 'Oblique, and hold: fight the centrifugal force with rail, fins and body position, keep the energy for the Choke. The bottom turn ends when the Choke begins.'],
         keyWords: ['Weight front', 'Front arm', 'Fingertips', 'Oblique', 'Hold'],
         lessonId: 'STP-039B', lessonLabel: 'Bottom Turn Medium — Backside',
       },
@@ -185,7 +185,7 @@ export const LOOP_SIDES: LoopSide[] = [
       },
       {
         key: 'tapaloco', command: 'maneuver', name: 'Tapaloco · the rail change', commandLabel: 'Maneuver', known: 'new',
-        whatIs: 'The action that changes the rail on the backside. It can be done with the arm, the elbow or the shoulder, but the ideal is the hand: palm up, over the head, covering the opposite ear. Same line as the frontside snap, in the mirror: U through the middle of the face, then the rail change pointing down, as radical as you want.',
+        whatIs: 'The action that changes the rail on the backside. It can be done with the arm, the elbow or the shoulder, but the ideal is the hand: palm up, over the head, covering the opposite ear. The line: a long U through the middle of the face, then the rail change pointing down, as radical as you want.',
         body: ['Look over the shoulder.', 'Throw the hand (goofy right, regular left) over the head, palm up, covering the opposite ear.', 'Eyes over the shoulder toward where you want to go; the oblique changes and the rail engages.', 'Weight always forward — never behind the hip, or you get stuck on the wave.'],
         keyWords: ['Hand', 'Palm up', 'Over', 'Ear', 'Forward'],
         lessonId: 'STP-044', lessonLabel: 'Tapaloco Snap',

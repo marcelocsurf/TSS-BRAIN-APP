@@ -17,8 +17,8 @@ export const BB_SEQ_09: SequencePageConfig = {
   stepIds: ['STP-035', 'STP-018', 'STP-038', 'STP-037'],
   think: {
     whatIs: {
-      headline: 'Backside pumping is the same engine as frontside, with your chest open to the wave and your eyes over the back shoulder.',
-      line: 'The same line as frontside: arcs from the top of the face down through the middle and up again. One arc per pump.',
+      headline: 'Backside pumping generates speed with your body on a wave that breaks behind you: chest open to the wave, eyes over the back shoulder.',
+      line: 'Arcs from the top of the face down through the middle and up again. One arc per pump.',
       where: 'Z2 to Z4 — the open face, wherever there is wall in front of you. It does not need to touch the lip.',
       whatFor: 'Speed you can spend on your backside: to make a section, to reach the pocket, to set up the bottom turn. The closer to the pocket, the more energy the wave gives you.',
     },
@@ -29,7 +29,6 @@ export const BB_SEQ_09: SequencePageConfig = {
       // Marcelo 2026-09-09: en backside la maniobra es el codazo, la M (no la Cruz).
       { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the elbow strike · the M)', 'Back to posture'] },
     ],
-    // La línea es la misma que frontside.
     board: BB_SEQ_08.think.board,
   },
   feel: {

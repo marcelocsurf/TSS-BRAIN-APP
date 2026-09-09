@@ -3,11 +3,11 @@ import { BB_SEQ_08 } from './bb-seq-08';
 import { BB_SEQ_10 } from './bb-seq-10';
 
 // Blue Belt · Sequence #11 · Backside Snap.
-// Espejo de la #10 con el lenguaje backside de Marcelo (2026-09-09):
+// Con el molde de la #10 y el lenguaje backside de Marcelo (2026-09-09), explicada por sí misma (nunca como espejo):
 // Posture · Rail rotation + hold (bottom turn backside) · Projection (Choke)
 // · Tapaloco (el cambio de riel, la maniobra) · Elbow strike, the M (cierre)
 // · Back to posture. Doctrina: la M es el cuerpo; el codazo lleva la
-// energía al riel; la línea es la misma que frontside en espejo (U + cambio
+// energía al riel; la línea: U prolongada + cambio
 // de riel hacia abajo, tan radical como se quiera, sin labio); BT siempre
 // una U; hold; pies P1/P2, nunca P3.
 export const BB_SEQ_11: SequencePageConfig = {
@@ -19,7 +19,7 @@ export const BB_SEQ_11: SequencePageConfig = {
   stepIds: ['STP-035', 'STP-018', 'STP-039B', 'STP-043', 'STP-044', 'STP-045'],
   think: {
     whatIs: {
-      headline: 'The backside snap is the frontside snap in the mirror: a long U on the face, then an aggressive rail change — made with the Choke, the Tapaloco and the elbow strike.',
+      headline: 'The backside snap is a change of direction with your back to the wave: a long U on the face, then an aggressive rail change — made with the Choke, the Tapaloco and the elbow strike.',
       line: 'From the top of the face, a long U through the middle, then an aggressive rail change pointing down — as radical as you want, it can point to the flat. One U, one change, and you keep running the face.',
       where: 'Anywhere on the face where there is wall in front of you. It does not need the lip. The bottom turn is medium — mid-face — because that is the depth this maneuver asks for.',
       whatFor: 'To change direction on your backside without losing the wave: you load in the bottom turn, project with the Choke, change the rail with the Tapaloco, close with the elbow strike and come back to posture with speed for the next cycle.',
@@ -52,7 +52,7 @@ It starts and ends in posture. The U sets up the change; the Tapaloco makes it; 
       { label: 'Body', words: ['Posture', 'Fingertips to the water', 'Choke', 'Tapaloco', 'Elbow', 'Posture'] },
       { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the Tapaloco)', 'Back to posture'] },
     ],
-    // Misma línea que la #10 (Z2 la U, Z3 el cambio, salida por Z2).
+    // La línea: U en Z2, cambio de riel en Z3, salida corriendo por Z2.
     board: BB_SEQ_10.think.board,
   },
   feel: {
