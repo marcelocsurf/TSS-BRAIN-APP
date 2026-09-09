@@ -122,7 +122,9 @@ export function SequencePage({
               {cfg.think.keyWords.map((k) => (
                 <p key={k.label} className="text-[14px] mb-1"><span style={{ color: MUTED }}>{k.label} · </span>
                   {k.label === 'Method'
-                    ? k.words.map((w, i) => { const cs = [COMMAND_COLORS.posture, COMMAND_COLORS.rail, COMMAND_COLORS.projection, COMMAND_COLORS.maneuver, COMMAND_COLORS.posture]; return <span key={w} className="font-mono" style={{ color: cs[i] ?? CYAN }}>{i ? ' · ' : ''}{w}</span>; })
+                    // Marcelo 2026-09-09: palabra en Paper con un punto de color bien
+                    // marcado delante — sólido, no arcoíris.
+                    ? k.words.map((w, i) => { const cs = [COMMAND_COLORS.posture, COMMAND_COLORS.rail, COMMAND_COLORS.projection, COMMAND_COLORS.maneuver, COMMAND_COLORS.posture]; return <span key={w} className="inline-flex items-center gap-1.5 font-mono mr-3" style={{ color: PAPER }}><i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cs[i] ?? CYAN, boxShadow: '0 0 0 2px rgba(255,255,255,.15)' }} />{w}</span>; })
                     : <span className="font-mono" style={{ color: CYAN }}>{k.words.join(' · ')}</span>}
                 </p>
               ))}
@@ -267,7 +269,12 @@ export function SequencePage({
             Next: {TABS.find((t) => t.key === next)?.label} <ArrowRight size={13} />
           </button>
         )}
-        <p className="text-[10px] mt-8" style={{ color: 'rgba(255,255,255,.3)' }}>Colours on the wave: <span style={{ color: COMMAND_COLORS.posture }}>posture</span> · <span style={{ color: COMMAND_COLORS.rail }}>rail</span> · <span style={{ color: COMMAND_COLORS.projection }}>projection</span> · <span style={{ color: COMMAND_COLORS.maneuver }}>maneuver</span> · <span style={{ color: COMMAND_COLORS.closure }}>closure</span></p>
+        <p className="text-[11px] mt-8 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: MUTED }}>
+          <span>Colours on the wave</span>
+          {(['posture', 'rail', 'projection', 'maneuver', 'closure'] as const).map((c) => (
+            <span key={c} className="inline-flex items-center gap-1.5"><i className="inline-block w-2 h-2 rounded-full" style={{ background: COMMAND_COLORS[c] }} />{c}</span>
+          ))}
+        </p>
       </div>
     </div>
   );
