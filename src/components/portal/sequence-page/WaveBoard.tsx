@@ -34,7 +34,7 @@ export function WaveBoard({ data, title }: { data: WaveBoardData; title: string 
             <path d="M0,0 L10,5 L0,10 z" fill="#F0F7FA" />
           </marker>
         </defs>
-        <g fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace" fontSize="11" fill="#8AA0B2">
+        <g fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace" fontSize="12" fill="rgba(247,249,250,.72)">
           {zones.map((z, i) => (
             <g key={z}>
               <rect x="60" y={30 + i * 55} width="600" height="55" fill={i % 2 === 0 ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.04)'} />
@@ -63,7 +63,7 @@ export function WaveBoard({ data, title }: { data: WaveBoardData; title: string 
           ))}
         </g>
       </svg>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px]" style={{ color: '#8AA0B2' }}>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[12px]" style={{ color: 'rgba(247,249,250,.72)' }}>
         {used.map((c) => (
           <span key={c} className="inline-flex items-center gap-1.5">
             <i className="inline-block w-5 h-1.5 rounded" style={{ background: COMMAND_COLORS[c] }} />{COMMAND_LABELS[c]}

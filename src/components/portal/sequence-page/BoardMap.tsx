@@ -50,7 +50,7 @@ export function BoardMap({ active, compact = false }: { active?: BackFoot[]; com
         ))}
       </g>
       {!compact && (
-        <g fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace" fontSize="11" fill="#8AA0B2">
+        <g fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace" fontSize="12" fill="rgba(247,249,250,.72)">
           <text x="262" y="590">P3 · speed</text>
           <text x="262" y="632">P2 · neutral</text>
           <text x="262" y="684">P1 · maneuver</text>
