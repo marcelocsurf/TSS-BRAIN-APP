@@ -642,15 +642,24 @@ export const COURSE_SEQUENCE_ORDER: Record<string, string[]> = {
   'BB-SEQ-12': ['blue_belt:35', 'white_belt:18', 'blue_belt:39', 'blue_belt:40', 'blue_belt:46', 'blue_belt:47'],
   'BB-SEQ-13': ['blue_belt:35', 'white_belt:18', 'blue_belt:396', 'blue_belt:43', 'blue_belt:48', 'blue_belt:49', 'blue_belt:45'],
 
+  // Marcelo (2026-09-09): la 6 es agarrar la ola por tu cuenta — termina en
+  // "Paddle with the Correct Angle", cuando la agarrás. Cobra + Pick Line y
+  // Out from the Shoulder no entran acá: abren y cierran la 7.
   'YB-SEQ-6.0': [
     'white_belt:10',  // Get on Your Board / Find Sweet Spot   ← prestado de White
     'white_belt:24',  // Turtle Roll                           ← prestado de White
     'yellow_belt:27', // Paddling Speeds 1-2-3-4
     'yellow_belt:33', // Reading Wave Stages 1-4 in the Lineup
     'yellow_belt:28', // Chase the Pocket
-    'yellow_belt:29', // Paddle with the Correct Angle
+    'yellow_belt:29', // Paddle with the Correct Angle  ← la agarrás
+  ],
+  // La 7 = dibujar en la cara: elegir la línea desde la cobra, pararse,
+  // arriba y abajo, y salir por el hombro.
+  'YB-SEQ-7.0': [
     'yellow_belt:34', // Cobra + Pick Line
-    'yellow_belt:32', // Out from the Shoulder  ← el cierre: desmontar al costado
+    'yellow_belt:30', // Pop Up + Foot Position 1 or 2
+    'yellow_belt:31', // Go Up and Down
+    'yellow_belt:32', // Out from the Shoulder
   ],
 };
 

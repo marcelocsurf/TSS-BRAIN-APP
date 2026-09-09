@@ -23,8 +23,8 @@ export const YB_SEQ_6: SequencePageConfig = {
   think: {
     ...BB_CATCH.think,
     whatIs: {
-      headline: 'Going out and catching a wave on your own: reading the ocean, earning the wave, and coming out of it by choice.',
-      line: 'Out the back → read the stage → chase the pocket → paddle with the right angle → catch → cobra and pick the line → ride → out from the shoulder.',
+      headline: 'Going out and catching a wave on your own: reading the ocean and earning the wave. Self-sufficiency.',
+      line: 'Out the back → read the stage → chase the pocket → paddle with the right angle → catch. The sequence ends the moment the wave is yours.',
       where: 'In the lineup, on green moving waves. This is where you stop needing someone to put you on a wave.',
       whatFor: 'Self-sufficiency. Everything after this — the lines, the turns, the maneuvers — starts with a wave you caught yourself, in the right place, with speed.',
     },
@@ -32,7 +32,7 @@ export const YB_SEQ_6: SequencePageConfig = {
   do: {
     ...BB_CATCH.do,
     missionId: 'MIS-YB-SEQ6-RUN',
-    result: 'Three green waves caught on your own at stage 2–3, chasing the pocket, with the right angle, the line picked from the cobra, and an exit through the shoulder by choice. Nobody put you on the wave.',
+    result: 'Three green waves caught on your own at stage 2–3, chasing the pocket, with the right angle. Nobody put you on the wave.',
   },
   review: { howItFeels: 'It feels like the wave was yours before you caught it: you saw it coming, you knew where the energy was, you arrived with time. Nobody pushed you in. That is the moment you stop being taken by waves and start taking them.' },
 };
@@ -43,7 +43,7 @@ export const YB_SEQ_7: SequencePageConfig = {
   courseKey: 'yellow_belt',
   number: 7,
   title: 'Drawing on the Wave',
-  stepIds: ['STP-030', 'STP-031', 'STP-032'],
+  stepIds: ['STP-034', 'STP-030', 'STP-031', 'STP-032'],
   think: {
     whatIs: {
       headline: 'Drawing on the face of the wave: with awareness, following the dynamic of surfing — up, down, up, down — rail to rail, and starting to navigate the wave.',
@@ -64,13 +64,14 @@ export const YB_SEQ_7: SequencePageConfig = {
     bodyFromLesson: 'STP-031',
     bodyMarkdown: `**The up-and-down pattern**
 
-1. **Start in posture,** standing on the line you chose, back foot in FP2.
-2. **Going down:** stay compressed, stable posture, eyes on where you are going. Do not go to the flat.
-3. **Before the flat, change the rail:** rotate up — eyes, shoulders, hips — and **extend the legs**. That extension is what moves the board from one rail to the other and sends you back up the face.
-4. **Going up:** rotation and leg extension. Use the top of the face without touching the lip.
-5. **Before the top, change the rail again:** flex the legs, back into posture, rotate down. The board comes down the face on the other rail.
-6. **Repeat** — as many cycles as the wave gives you.
-7. **Out from the shoulder** when the wave is about to close: see the exit, decide, and go out with control.
+1. **Cobra and pick the line.** Chest up, hands at the ribs, redirect the nose down the line you chose — you are surfing before you stand. Cobra + correct line = time.
+2. **Stand in posture** on that line, back foot in FP2.
+3. **Going down:** stay compressed, stable posture, eyes on where you are going. Do not go to the flat.
+4. **Before the flat, change the rail:** rotate up — eyes, shoulders, hips — and **extend the legs**. That extension is what moves the board from one rail to the other and sends you back up the face.
+5. **Going up:** rotation and leg extension. Use the top of the face without touching the lip.
+6. **Before the top, change the rail again:** flex the legs, back into posture, rotate down. The board comes down the face on the other rail.
+7. **Repeat** — as many cycles as the wave gives you.
+8. **Out from the shoulder** when the wave is about to close: see the exit, decide, and go out with control.
 
 It is the simplest version of the dynamic you will use in every maneuver later: down, up, rail to rail — always where the energy is.`,
     rulesMarkdown: `- Never to the flat: down there the energy ends and the board dies.
@@ -79,7 +80,7 @@ It is the simplest version of the dynamic you will use in every maneuver later: 
 - Stay close to the pocket: the closer you ride to the energy, the more speed you keep.
 - See the exit before the wave closes. Going out through the shoulder is a decision, not an accident.`,
     keyWords: [
-      { label: 'Body', words: ['Posture', 'Down · compress', 'Extend · rail', 'Up', 'Flex · rail', 'Shoulder'] },
+      { label: 'Body', words: ['Cobra · line', 'Posture', 'Down · compress', 'Extend · rail', 'Up', 'Flex · rail', 'Shoulder'] },
       { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Back to posture'] },
     ],
     // Zonas: Z4 30-85 · Z3 85-140 · Z2 140-195 · Z1 195-250. Arriba y abajo por
@@ -107,18 +108,24 @@ It is the simplest version of the dynamic you will use in every maneuver later: 
   },
   feel: {
     visualize: 'Eyes closed, on the sand. Picture two invisible lines on the wave: the lip on top, the flat at the bottom. Your board bounces between them like a ping-pong ball, never crossing either: down, extend, up, flex, down. Feel the legs do the rail change. Then see the shoulder and go out. Ten waves in your head.',
-    land: ['DRL-YB-031', 'DRL-YB-031-06', 'DRL-YB-031-04', 'DRL-YB-032-02'],
+    land: ['DRL-YB-034', 'DRL-YB-031', 'DRL-YB-031-06', 'DRL-YB-031-04', 'DRL-YB-032-02'],
     skate: ['DRL-YB-031-05'],
   },
   do: {
-    result: 'One wave surfed up and down, rail to rail, as many cycles as it gives you, without going to the flat — and an exit through the shoulder by choice before it closes.',
+    result: 'One wave where you pick the line from the cobra, stand on it, surf it up and down, rail to rail, as many cycles as it gives you, without going to the flat — and get out through the shoulder by choice before it closes.',
     missionId: 'MIS-YB-SEQ7-RUN',
     timing: 'Start the first descent as soon as you are standing on your line. Change the rail before the flat, not at it; change again before the lip. When the section ahead is closing, that is your exit — see it two cycles early.',
     competence: 'Five waves with a sustained up-and-down line that never touches the flat, and an exit through the shoulder you decided. If you can execute it and you feel comfortable, it is yours.',
   },
   details: [
     {
-      key: 'posture', command: 'posture', title: 'Start with posture · on your line',
+      key: 'cobra', title: 'Cobra + pick the line',
+      symptom: 'You stand up first and decide later; the board goes straight and the wave leaves you.',
+      indicators: [{ ok: 'In the cobra the nose already points down the line you chose; you are surfing before you stand.', no: 'The board goes straight to the beach; the decision comes after the pop-up.', fix: 'Cobra, redirect the nose, then stand.' }],
+      deeper: { label: 'Cobra + Pick Line', lessonId: 'STP-034', drillId: 'DRL-YB-034', missionId: 'MIS-YB-034' },
+    },
+    {
+      key: 'posture', command: 'posture', title: 'Stand in posture · on your line',
       symptom: 'You stand tall, weight back, looking at the board; the first descent goes straight.',
       indicators: [{ ok: 'You are standing in posture on the line you chose, back foot in FP2, eyes on where you are going.', no: 'Standing tall or with the weight back; the board goes straight to the beach.', fix: 'Posture first, eyes down the line.' }],
       deeper: { label: 'Pop Up + Foot Position 1 or 2', lessonId: 'STP-030', drillId: 'DRL-YB-030-03', missionId: 'MIS-YB-030' },

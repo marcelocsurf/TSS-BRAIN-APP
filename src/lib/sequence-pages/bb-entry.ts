@@ -67,11 +67,11 @@ export const BB_CATCH: SequencePageConfig = {
   courseKey: 'blue_belt',
   number: 0,
   title: 'Catch Waves',
-  stepIds: ['STP-010', 'STP-024', 'STP-027', 'STP-033', 'STP-028', 'STP-029', 'STP-034', 'STP-032'],
+  stepIds: ['STP-010', 'STP-024', 'STP-027', 'STP-033', 'STP-028', 'STP-029'],
   think: {
     whatIs: {
-      headline: 'Reading the ocean and earning the wave: stage, pocket, angle, catch, line — and out through the shoulder when it is over.',
-      line: 'Out the back → read the stage → chase the pocket → paddle with the right angle → catch → cobra and pick the line → ride → out from the shoulder.',
+      headline: 'Reading the ocean and earning the wave: stage, pocket, angle — and you catch it, on your own.',
+      line: 'Out the back → read the stage → chase the pocket → paddle with the right angle → catch. The sequence ends the moment the wave is yours.',
       where: 'In the lineup, on green moving waves. This is Yellow Belt sequence 6, complete, as Blue uses it every wave.',
       whatFor: 'Every maneuver of Blue starts with a wave caught in the right place with speed. Catch late or off the pocket and there is no circle to run.',
     },
@@ -82,36 +82,32 @@ export const BB_CATCH: SequencePageConfig = {
 2. **Read the stage.** Waves break because they travel and hit a bottom. Stage 1 is not catchable; stage 2–3 is where you want to be; stage 4 is too late.
 3. **Chase the pocket.** The point of maximum energy, where it is about to break. Eyes on it the whole paddle-in.
 4. **Paddle with the correct angle.** Far from the pocket: aggressive angle toward it. Near it: a moderate adjustment. In front of it: use its energy directly.
-5. **Catch, cobra and pick the line.** Chest up, hands at the ribs, redirect the nose down the line you chose — you are surfing before you stand.
-6. **Out from the shoulder** when the wave is done, by choice, with control.
+5. **Catch it.** The wave takes you: the sequence is complete. What you do standing up is the next sequence.
 
 The speeds and the pocket are one system: the speed exists to reach the pocket on time.`,
     rulesMarkdown: `- Stage before commitment: do not waste energy on stage 1.
 - Eyes on the pocket from the first stroke to the take-off.
 - The angle depends on where the pocket is — pocket awareness is the prerequisite.
-- Cobra + correct line = time. Pick the line before you stand.
-- Exit through the shoulder by choice: avoid the lip, avoid going straight, avoid people or hazards.`,
-    keyWords: [{ label: 'Steps', words: ['Stage', 'Pocket', 'Angle', 'Cobra + line', 'Shoulder'] }],
+- Self-sufficiency is the goal: nobody puts you on the wave.`,
+    keyWords: [{ label: 'Steps', words: ['Stage', 'Pocket', 'Angle', 'Catch'] }],
   },
   feel: {
-    visualize: 'From the beach, track twenty waves: name the stage of each one as it moves, point at the pocket as it forms, say the angle you would take. Then close your eyes and catch one in your head, cobra to the line, out through the shoulder.',
-    land: ['DRL-YB-033', 'DRL-YB-028', 'DRL-YB-029', 'DRL-YB-034', 'DRL-YB-032'],
+    visualize: 'From the beach, track twenty waves: name the stage of each one as it moves, point at the pocket as it forms, say the angle you would take. Then close your eyes and catch one in your head.',
+    land: ['DRL-YB-033', 'DRL-YB-028', 'DRL-YB-029'],
     skate: [],
   },
   do: {
-    result: 'Three green waves caught on your own at stage 2–3, chasing the pocket, with the right angle, the line picked from the cobra, and an exit through the shoulder by choice.',
+    result: 'Three green waves caught on your own at stage 2–3, chasing the pocket, with the right angle. Nobody put you on the wave.',
     missionId: 'MIS-BB-CATCH',
-    timing: 'Commit at stage 2, catch at stage 3. The angle is chosen before the last five strokes; the line is chosen in the cobra, before the pop-up.',
-    competence: 'Three waves in a row where you can say, for each one, the stage you caught it at, where the pocket was, the angle you took and the line you picked. If you can execute it and you feel comfortable, it is yours.',
+    timing: 'Commit at stage 2, catch at stage 3. The angle is chosen before the last five strokes.',
+    competence: 'Three waves in a row where you can say, for each one, the stage you caught it at, where the pocket was and the angle you took. If you can execute it and you feel comfortable, it is yours.',
   },
   details: [
     { key: 'stage', title: 'Read the stage', symptom: 'You paddle for waves that are not there yet, or too late for the ones that are.', indicators: [{ ok: 'You name the stage of each wave as it moves and commit at stage 2–3.', no: 'You chase stage 1 and arrive empty for the real one.', fix: 'Watch, name the stage, then move.' }], deeper: { label: 'Reading Wave Stages 1–4', lessonId: 'STP-033', drillId: 'DRL-YB-033', missionId: 'MIS-YB-033' } },
     { key: 'pocket', title: 'Chase the pocket', symptom: 'You catch the wave far from the energy, on the shoulder, with no speed.', indicators: [{ ok: 'Your eyes stay on the pocket the whole paddle-in and you position yourself to reach it.', no: 'You look at the beach or at your board; the pocket passes you.', fix: 'Eyes on the pocket. Paddle to it.' }], deeper: { label: 'Chase the Pocket', lessonId: 'STP-028', drillId: 'DRL-YB-028', missionId: 'MIS-YB-028' } },
     { key: 'angle', title: 'Paddle with the correct angle', symptom: 'You paddle straight to the beach and the wave passes under you, or you angle without knowing why.', indicators: [{ ok: 'The angle matches where the pocket is: aggressive when far, moderate when near, direct when in front.', no: 'Same angle for every wave.', fix: 'Call your angle before the last strokes.' }], deeper: { label: 'Paddle with the Correct Angle', lessonId: 'STP-029', drillId: 'DRL-YB-029', missionId: 'MIS-YB-029' } },
-    { key: 'cobra', title: 'Cobra + pick the line', symptom: 'You stand up first and decide later; the board goes straight and the wave leaves you.', indicators: [{ ok: 'In the cobra the nose already points down the line you chose; you are surfing before you stand.', no: 'The board goes straight to the beach; the decision comes after the pop-up.', fix: 'Cobra, redirect the nose, then stand.' }], deeper: { label: 'Cobra + Pick Line', lessonId: 'STP-034', drillId: 'DRL-YB-034', missionId: 'MIS-YB-034' } },
-    { key: 'shoulder', title: 'Out from the shoulder', symptom: 'You ride into the foam or the closeout; every wave ends in a fall.', indicators: [{ ok: 'You exit through the shoulder by choice, with control, when the wave is done or the line is wrong.', no: 'The wave decides how the ride ends.', fix: 'See the shoulder early; exit on purpose.' }], deeper: { label: 'Out from the Shoulder', lessonId: 'STP-032', drillId: 'DRL-YB-032', missionId: 'MIS-YB-032' } },
   ],
-  review: { howItFeels: 'It feels like the wave was yours before you caught it: you saw it coming, you knew where the energy was, you arrived with time. Standing up is not a surprise — it is the next step of a line you already chose.' },
+  review: { howItFeels: 'It feels like the wave was yours before you caught it: you saw it coming, you knew where the energy was, you arrived with time. Nobody pushed you in.' },
 };
 
 export const BB_LINE: SequencePageConfig = {
