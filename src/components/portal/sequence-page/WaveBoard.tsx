@@ -21,7 +21,7 @@ export const COMMAND_LABELS: Record<Command, string> = {
   posture: 'Posture',
   rail: 'Rotation / rail',
   projection: 'Projection',
-  maneuver: 'Maneuver (the Cruz)',
+  maneuver: 'Maneuver',
   closure: 'Closure',
 };
 

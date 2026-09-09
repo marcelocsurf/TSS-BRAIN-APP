@@ -26,7 +26,8 @@ export const BB_SEQ_09: SequencePageConfig = {
     bodyFromLesson: 'STP-037',
     keyWords: [
       { label: 'Body', words: ['Posture', 'Palm up', 'Extend', 'Elbow (the M)', 'Low', 'Posture'] },
-      { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the Cruz)', 'Back to posture'] },
+      // Marcelo 2026-09-09: en backside la maniobra es el codazo, la M (no la Cruz).
+      { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the elbow strike · the M)', 'Back to posture'] },
     ],
     // La línea es la misma que frontside.
     board: BB_SEQ_08.think.board,
