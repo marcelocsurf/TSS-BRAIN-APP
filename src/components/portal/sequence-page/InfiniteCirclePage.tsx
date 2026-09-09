@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { WaveBoard, COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { InfinityCircle } from './InfinityCircle';
 import { LOOP_INTRO, LOOP_SIDES, type LoopSide, type LoopStep } from '@/lib/sequence-pages/infinite-circle';
 
 const INK = '#061C2B', PANEL = '#0A2438', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', VIOLET = '#B388FF';
@@ -45,13 +46,16 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
         <h1 className="text-[26px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' }}>{LOOP_INTRO.title}</h1>
         <p className="text-[14px] mt-2" style={{ color: TEXT }}>{LOOP_INTRO.headline}</p>
 
+        {/* Arriba: el video si existe; si no, la imagen del círculo (Marcelo 2026-09-09). */}
         <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
-          {video ? <LoopVideo url={video.url} title={video.title} /> : <div className="p-3"><WaveBoard data={cur.board} title="One turn of the circle on the wave face" /></div>}
+          {video ? <LoopVideo url={video.url} title={video.title} /> : <div className="p-2"><InfinityCircle side={side} /></div>}
         </div>
 
         <div className="space-y-3 mt-4">
           <Card eyebrow="01 · What it is">
             <p className="text-[14px] leading-relaxed" style={{ color: TEXT }}>{LOOP_INTRO.what}</p>
+            {video && <div className="mt-3"><InfinityCircle side={side} /></div>}
+            <div className="mt-3"><WaveBoard data={cur.board} title="One turn of the circle on the wave face" /></div>
             <p className="text-[13.5px] mt-2 leading-relaxed" style={{ color: MUTED }}>{LOOP_INTRO.before}</p>
             <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}>{LOOP_INTRO.why}</p>
           </Card>
