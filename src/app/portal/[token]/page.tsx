@@ -229,7 +229,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
         initialStepId={step || null}
         // Desde la página de la secuencia (Do it): la línea completa o el foco
         // elegido, con su palabra como objetivo de la sesión.
-        initialTrain={seq && /^[A-Z0-9-]{3,40}$/.test(seq) ? {
+        initialTrain={seq && /^[A-Z0-9.-]{3,40}$/.test(seq) ? {
           sequenceId: seq,
           mode: mode === 'step_focus' && focus ? 'step_focus' : 'sequence_run',
           focusStepId: mode === 'step_focus' && focus && /^[A-Z0-9-]{3,20}$/.test(focus) ? focus : null,

@@ -6,6 +6,7 @@ import { BB_SEQ_11 } from './bb-seq-11';
 import { BB_SEQ_12 } from './bb-seq-12';
 import { BB_SEQ_13 } from './bb-seq-13';
 import { BB_NAV, BB_CATCH, BB_LINE } from './bb-entry';
+import { YB_SEQ_6, YB_SEQ_7 } from './yb-seq';
 
 /** Secuencias que ya tienen la página de 4 pestañas. Se agregan de a una. */
 export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
@@ -18,6 +19,8 @@ export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
   [BB_NAV.id]: BB_NAV,
   [BB_CATCH.id]: BB_CATCH,
   [BB_LINE.id]: BB_LINE,
+  [YB_SEQ_6.id]: YB_SEQ_6,
+  [YB_SEQ_7.id]: YB_SEQ_7,
 };
 
 export function sequencePageFor(sequenceId: string | null | undefined): SequencePageConfig | null {

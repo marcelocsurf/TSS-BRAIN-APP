@@ -175,9 +175,13 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
   // Build lookup maps — split drills and missions
   const drillMap = new Map<string, DrillMissionRow>();
   const missionMap = new Map<string, DrillMissionRow>();
+  // Una pieza canónica por paso: la PRIMERA por display_order. Las piezas de
+  // cadena de las páginas de secuencia (DRL-BB-SEQ10-RUN, MIS-BB-CATCH…) se
+  // cuelgan de un paso real y llegan después (sin display_order): no pueden
+  // desplazar al drill o la misión del paso en Let's Play.
   (drills || []).forEach((d: any) => {
-    if (d.type === 'drill') drillMap.set(d.step_id, d as DrillMissionRow);
-    else if (d.type === 'mission') missionMap.set(d.step_id, d as DrillMissionRow);
+    if (d.type === 'drill') { if (!drillMap.has(d.step_id)) drillMap.set(d.step_id, d as DrillMissionRow); }
+    else if (d.type === 'mission') { if (!missionMap.has(d.step_id)) missionMap.set(d.step_id, d as DrillMissionRow); }
   });
 
   const lessonMap = new Map<string, any>();
