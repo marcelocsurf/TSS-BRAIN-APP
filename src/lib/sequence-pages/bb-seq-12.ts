@@ -17,7 +17,7 @@ export const BB_SEQ_12: SequencePageConfig = {
   think: {
     whatIs: {
       headline: 'The cutback is moving away from the pocket and coming back: a long U to create space, then a wide arc — the Cruz, held — that closes pointing at the face.',
-      line: 'A long bottom turn away from the pocket, the climb, then one wide arc that turns back and closes with the board pointing at the face of the wave — not at the foam. The drawing is a lying figure 8.',
+      line: 'A long bottom turn away from the pocket, the climb, then one wide arc that turns back and closes with the board pointing at the face of the wave. The drawing is a lying figure 8, and it uses all the zones of the wave: down to the flat, up to the lip, down again and back up to the face. A cutback can also be simpler: just coming back to the foam and out to the face again.',
       where: 'Farther from the pocket than the snap. You move away along the face to create the space you need to come back. If the board never turns back, it was a snap, not a cutback.',
       whatFor: 'To go back to where the energy is. You ran away from the pocket; the cutback brings you back to it with speed, ready for the next cycle.',
     },
@@ -55,25 +55,27 @@ It starts and ends in posture. The long U makes the space; the held Cruz draws t
       { label: 'Body', words: ['Posture', 'Long U', 'Extend', 'Cruz · hold', 'Grenade', 'Posture'] },
       { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the Cruz)', 'Back to posture'] },
     ],
-    // Zonas: Z4 30-85 · Z3 85-140 · Z2 140-195 · Z1 195-250. La U larga en Z2
-    // alejándose del pocket, la subida, el arco sostenido en Z3 que vuelve y
-    // cierra apuntando a la cara (hacia el pocket), postura de nuevo.
+    // Marcelo (2026-09-09, dibujo): el 8 acostado usa TODAS las zonas. Zonas:
+    // Z4 30-85 (labio) · Z3 85-140 · Z2 140-195 · Z1 195-250 (flat). La U larga
+    // baja hasta Z1 alejándose del pocket, la proyección sube hasta Z4, el arco
+    // sostenido baja por el lado de afuera hasta Z1, el cierre apunta a la cara,
+    // y la línea cruza la anterior subiendo otra vez a la cara.
     board: {
       pocket: { x: 110, y: 70 },
       segments: [
-        { d: 'M140,110 C156,112 170,120 182,132', command: 'posture' },
-        { d: 'M182,132 C210,164 260,186 330,186 C372,186 400,172 420,152', command: 'rail', hold: true },
-        { d: 'M420,152 C440,130 462,110 486,98', command: 'projection' },
-        { d: 'M486,98 C520,84 566,90 580,112 C592,132 574,148 546,152', command: 'maneuver', hold: true },
-        { d: 'M546,152 C520,156 492,150 470,140', command: 'closure' },
-        { d: 'M470,140 C456,134 446,130 436,128', command: 'posture' },
-        { d: 'M436,128 C410,124 380,130 350,146', command: 'rail' },
+        { d: 'M150,112 C166,114 180,124 192,140', command: 'posture' },
+        { d: 'M192,140 C220,186 270,226 340,226 C380,226 404,208 420,184', command: 'rail', hold: true },
+        { d: 'M420,184 C440,150 460,100 488,64', command: 'projection' },
+        { d: 'M488,64 C520,44 590,52 610,96 C626,132 604,178 566,206', command: 'maneuver', hold: true },
+        { d: 'M566,206 C540,224 500,232 462,228', command: 'closure' },
+        { d: 'M462,228 C446,226 434,222 424,216', command: 'posture' },
+        { d: 'M424,216 C400,200 380,170 372,140', command: 'rail' },
       ],
       markers: [
-        { x: 140, y: 110, label: 'I' },
-        { x: 330, y: 186, label: 'B' },
-        { x: 580, y: 112, label: 'M' },
-        { x: 350, y: 146, label: 'S' },
+        { x: 150, y: 112, label: 'I' },
+        { x: 340, y: 226, label: 'B' },
+        { x: 610, y: 96, label: 'M' },
+        { x: 372, y: 140, label: 'S' },
       ],
     },
   },
