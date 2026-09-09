@@ -100,6 +100,10 @@ export const BB_SEQ_08: SequencePageConfig = {
       indicators: [
         { ok: 'At full extension the chest is still over the front foot, never behind it.', no: 'The chest drops behind the front foot; the board loses speed.', fix: 'Chest over the front foot.' },
         { ok: 'The back foot only follows the rails; the front foot sinks the rail toward where you want to go.', no: 'The weight drifts to the back foot; the board stalls.', fix: 'Weight forward, front foot sinks the rail.' },
+        // Marcelo 2026-09-09: solo el brazo de adelante proyecta; el de atrás
+        // (izquierdo regular / derecho goofy) se queda en postura: escápula
+        // activa hacia atrás y codo pegado a las costillas.
+        { ok: 'Only the leading arm projects. The back arm stays in posture: scapula active and pulled back, elbow glued to the ribs.', no: 'Both arms swing forward; the back elbow leaves the ribs and the posture opens.', fix: 'One arm projects. The other holds: scapula back, elbow on the ribs.' },
       ],
       deeper: { label: 'Pump Frontside', lessonId: 'STP-036' },
     },
@@ -125,6 +129,6 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
   ],
   review: {
-    howItFeels: 'The board pushes back into your front foot on the way down. The rhythm is yours, not the wave’s. When it works, you stop hearing the words.',
+    howItFeels: 'You feel you can generate speed forward using the face of the wave. You feel in control of your board and you are drawing your lines. You have the ability to make sections and to gain speed using the wave and your line. The rhythm is yours, not the wave’s.',
   },
 };
