@@ -61,12 +61,14 @@ export function SequencePage({
         <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
           {video ? <SequenceVideo url={video.url} title={video.title} /> : <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} /></div>}
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3 text-[12px]">
+        {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-3 text-[13px]">
           <span style={{ ...F_M, color: MUTED }}>The steps that build it</span>
-          {cfg.stepIds.map((id, i) => (
-            <span key={id}>
-              {i > 0 && <span style={{ color: MUTED }}>→ </span>}
-              <a href={`${portal}?tab=course&lesson=${id}`} className="font-semibold underline decoration-dotted underline-offset-2" style={{ color: CYAN }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id}</a>
+          {cfg.details.map((d, i) => (
+            <span key={d.key} className="inline-flex items-center gap-1.5 font-semibold" style={{ color: PAPER }}>
+              {i > 0 && <span style={{ color: MUTED }}>→</span>}
+              {d.command && <i className="inline-block w-2 h-2 rounded-full" style={{ background: COMMAND_COLORS[d.command] }} />}
+              {d.title.replace(/^\d+ · /, '').replace(/ · .*$/, '')}
             </span>
           ))}
         </div>
@@ -134,6 +136,16 @@ export function SequencePage({
                   ))}
                 </div>
               </details>
+            </Card>
+            <Card eyebrow="Lessons behind this sequence">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+                {cfg.stepIds.map((id, i) => (
+                  <span key={id}>
+                    {i > 0 && <span style={{ color: MUTED }}>→ </span>}
+                    <a href={`${portal}?tab=course&lesson=${id}`} className="font-semibold underline decoration-dotted underline-offset-2" style={{ color: CYAN }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id}</a>
+                  </span>
+                ))}
+              </div>
             </Card>
           </div>
         )}
@@ -237,9 +249,9 @@ export function SequencePage({
                 </details>
               ))}
             </Card>
-            {cfg.stepIds.some((id) => lessons[id]?.mistakes) && (
+            {lessons[cfg.think.bodyFromLesson]?.mistakes && (
               <Card eyebrow="Common mistakes" color={RED}>
-                {cfg.stepIds.map((id) => lessons[id]?.mistakes ? (
+                {[cfg.think.bodyFromLesson].map((id) => lessons[id]?.mistakes ? (
                   <details key={id} className="group" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
                     <summary className="cursor-pointer list-none flex items-center gap-2 py-3">
                       <span className="text-[15px] font-semibold flex-1" style={{ color: PAPER }}>{lessons[id].title.replace(/ Operationalized at Blue Belt/, '')}</span>
