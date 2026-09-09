@@ -54,7 +54,7 @@ export const LOOP_INTRO = {
     { word: 'Posture', note: 'Your stable base. Every action starts and ends here. Chest to the nose, low, weight on the front foot, scapula active.' },
     { word: 'Rotation', note: 'Eyes → head → shoulders → hips → feet. It always starts with the eyes. It is how you engage and change a rail.' },
     { word: 'Compression · extension', note: 'One movement, two halves: compress to absorb and load, extend to release and project.' },
-    { word: 'Hold', note: 'The tool that keeps a position: to navigate, to manage the energy and use it at the right moment. In a bottom turn you feel the centrifugal force pulling you to the flat; the rail and the fins fight it, and your body position holds the energy so you can redirect it toward the line you want to draw. Starting a turn is not doing a turn.' },
+    { word: 'Hold', note: 'The tool that keeps a position: to navigate, to manage the energy and use it at the right moment. In a bottom turn you feel the centrifugal force pulling you to the flat; the rail and the fins fight it, and your body position holds the energy so you can redirect it toward the line you want to draw. Hold is also knowing how far: up to what point you can keep leaning or rotating — and there you hold; you do not keep leaning if you are going to fall. Understand until when, and at that point you wait. Starting a turn is not doing a turn.' },
   ],
   newWords: [
     { word: 'Projection', note: 'The moment the energy loaded in the bottom turn becomes forward and upward speed toward the maneuver.' },
