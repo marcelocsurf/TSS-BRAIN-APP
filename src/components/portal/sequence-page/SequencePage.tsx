@@ -150,7 +150,7 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
               )}
             </Card>
             <Card eyebrow="Choose a focus · optional">
-              <p className="text-[13px] mb-2" style={{ color: '#cfdbe4' }}>The mission is always the whole line. If one part of it is breaking, pick it: it rides along as your word for the session. Pick nothing and just surf the line.</p>
+              <p className="text-[13px] mb-2" style={{ color: '#cfdbe4' }}>The mission is always the whole line. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
               <div className="flex flex-wrap gap-2">
                 {cfg.details.map((d) => (
                   <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)}
