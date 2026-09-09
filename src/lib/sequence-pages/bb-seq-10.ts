@@ -7,7 +7,7 @@ import { BB_SEQ_08 } from './bb-seq-08';
 // Doctrina (doctrine_rules): BT = Weight front · Elbow and forearm to the
 // water · Palm down · Oblique · Hold, siempre una U cuya profundidad depende
 // de lo que viene; la línea del snap = U prolongada en la mitad de la cara +
-// cambio de riel agresivo hacia abajo y al lado (no al flat, sin labio); un
+// cambio de riel agresivo hacia abajo (puede apuntar al flat, sin límite, sin labio); un
 // solo brazo proyecta; la Cruz = de la proyección volver a postura y cambiar
 // de riel con el oblicuo (avión); el oblicuo trabaja a los dos lados; la
 // corrida completa en la arena es el drill de cierre.
@@ -21,7 +21,7 @@ export const BB_SEQ_10: SequencePageConfig = {
   think: {
     whatIs: {
       headline: 'The snap is a change of direction: a long U on the face, then an aggressive rail change to keep running the wave.',
-      line: 'From the top of the face, a long U through the middle, then the rail change pointing down but not straight to the flat — to the side, to end perpendicular and keep running the face. One U, one change.',
+      line: 'From the top of the face, a long U through the middle, then an aggressive rail change pointing down — as radical as you want: it can point to the flat, there is no limit. The concept is the line: one U, one change, and you keep running the face.',
       where: 'Anywhere on the face where there is wall in front of you. It does not need the lip: the snap can be done in different parts of the wave. The bottom turn is medium — mid-face — because that is the depth this maneuver asks for.',
       whatFor: 'To change direction without losing the wave: you load in the bottom turn, project, change the rail and come back to posture with speed for the next cycle.',
     },
@@ -41,7 +41,7 @@ export const BB_SEQ_10: SequencePageConfig = {
 1. **Start with posture.**
 2. **Bottom turn:** weight front · elbow and forearm to the water · palm down · oblique · hold. A long U through the middle of the face.
 3. **Projection:** extend the legs, weight forward; only the leading arm projects, the back arm stays in posture.
-4. **The Cruz:** back to posture, eyes over the shoulder to where you want to go, the oblique the other way, the front leg extends with the body forward over the front foot — head leading like the nose of a plane, hands as the wings — and the rail changes, down and to the side.
+4. **The Cruz:** back to posture, eyes over the shoulder to where you want to go, the oblique the other way, the front leg extends with the body forward over the front foot — head leading like the nose of a plane, hands as the wings — and the rail changes, pointing down — as radical as you want.
 5. **Back to posture:** throw, extend, low finish — the Grenade — and you are in posture again, running the face.
 
 It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
@@ -50,7 +50,7 @@ It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
 - Hold in the bottom turn: rail, fins and body position hold the centrifugal force so you can project it toward the line you want.
 - Projection: one arm projects; the other holds posture — scapula back, elbow on the ribs.
 - The Cruz is the transition from the projection to the rail change: the oblique works the other way now.
-- The rail change points down and to the side — not to the flat, not at the lip. Then you keep running the face.
+- The rail change points down; it can point to the flat, more or less radical, no limit. It does not need the lip. Then you keep running the face.
 - Critical: weight stays forward through the whole line.`,
     keyWords: [
       { label: 'Body', words: ['Posture', 'Forearm to the water', 'Extend', 'Cruz', 'Low', 'Posture'] },
@@ -84,7 +84,7 @@ It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
     skate: ['DRL-BB-039-02'],
   },
   do: {
-    result: 'One clean change of direction: a long U through the middle of the face, the projection, the rail change at the top pointing down and to the side, and you come back to posture still running the wave with speed.',
+    result: 'One clean change of direction: a long U through the middle of the face, the projection, the rail change at the top pointing down — as radical as you want — and you come back to posture still running the wave with speed.',
     missionId: 'MIS-BB-042',
     timing: 'Start the bottom turn as soon as you have wall in front of you. The U lands mid-face; the projection fires the moment the U ends; the Cruz changes the rail wherever the face gives you wall — it does not wait for the lip.',
     competence: 'Five frontside waves with a complete snap line — U, projection, Cruz, back to posture — eyes on where you want to go, body running the sequence on its own. If you can execute it and you feel comfortable, it is yours.',
@@ -131,7 +131,7 @@ It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
       indicators: [
         { ok: 'Coming from the projection you are back in posture: weight on the front foot, eyes over the shoulder to where you want to go.', no: 'You go straight from the projection into a swing; nothing to change the rail from.', fix: 'Posture first, eyes over the shoulder.' },
         { ok: 'The oblique works the other way and the rail changes; the front leg extends with the body forward over the front foot — head leading like the nose of a plane, hands as the wings.', no: 'The hand crosses but the rail does not change, or the body drops behind the front foot.', fix: 'Oblique, front leg, body forward. Airplane.' },
-        { ok: 'The rail change points down and to the side, and you keep running the face.', no: 'The change points straight to the flat, or you wait for the lip that never comes.', fix: 'Down and to the side. Not the flat, not the lip.' },
+        { ok: 'The rail change points down — as radical as you chose — and you keep running the face.', no: 'The change never really happens, or you wait for a lip that never comes.', fix: 'Change the rail, pointing down. It does not need the lip.' },
       ],
       deeper: { label: 'Cruz Snap', lessonId: 'STP-041', drillId: 'DRL-BB-041', missionId: 'MIS-BB-041' },
     },

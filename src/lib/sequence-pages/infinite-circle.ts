@@ -134,7 +134,7 @@ export const LOOP_SIDES: LoopSide[] = [
       },
       {
         key: 'cruz', command: 'maneuver', name: 'The Cruz', commandLabel: 'Maneuver', known: 'new',
-        whatIs: 'The frontside maneuver: the transition from the projection to an aggressive rail change. Coming from the projection you enter the Cruz, which is basically returning to posture, and from there you change the rail with the oblique. The line: a long U through the middle of the face, then the rail change pointing down but not straight to the flat — to the side, to keep running the face. It does not need the lip.',
+        whatIs: 'The frontside maneuver: the transition from the projection to an aggressive rail change. Coming from the projection you enter the Cruz, which is basically returning to posture, and from there you change the rail with the oblique. The line: a long U through the middle of the face, then an aggressive rail change pointing down — as radical as you want, it can point to the flat, there is no limit. It does not need the lip.',
         body: ['Back to posture first: weight stays on the front foot.', 'Eyes over the shoulder to where you want to go.', 'The oblique works the other way now — the same muscle that took you into the bottom turn changes the rail here (rotation and its rules).', 'The front leg extends while the body stays forward over the front foot — like an airplane: the head is the nose leading, the hands are the wings.', 'The hand crosses (goofy left, regular right); the rail tilts and changes. The Cruz without a rail change is not a maneuver.'],
         keyWords: ['Posture', 'Eyes over the shoulder', 'Oblique', 'Front leg', 'Airplane', 'Rail change'],
         lessonId: 'STP-041', lessonLabel: 'Cruz Snap',
@@ -185,7 +185,7 @@ export const LOOP_SIDES: LoopSide[] = [
       },
       {
         key: 'tapaloco', command: 'maneuver', name: 'Tapaloco · the rail change', commandLabel: 'Maneuver', known: 'new',
-        whatIs: 'The action that changes the rail on the backside. It can be done with the arm, the elbow or the shoulder, but the ideal is the hand: palm up, over the head, covering the opposite ear. Same line as the frontside snap, in the mirror: U through the middle of the face, then the rail change down and to the side.',
+        whatIs: 'The action that changes the rail on the backside. It can be done with the arm, the elbow or the shoulder, but the ideal is the hand: palm up, over the head, covering the opposite ear. Same line as the frontside snap, in the mirror: U through the middle of the face, then the rail change pointing down, as radical as you want.',
         body: ['Look over the shoulder.', 'Throw the hand (goofy right, regular left) over the head, palm up, covering the opposite ear.', 'Eyes over the shoulder toward where you want to go; the oblique changes and the rail engages.', 'Weight always forward — never behind the hip, or you get stuck on the wave.'],
         keyWords: ['Hand', 'Palm up', 'Over', 'Ear', 'Forward'],
         lessonId: 'STP-044', lessonLabel: 'Tapaloco Snap',
