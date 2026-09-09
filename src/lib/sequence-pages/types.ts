@@ -37,6 +37,16 @@ export interface Indicator {
   step?: { label: string; lessonId: string };
 }
 
+export interface SequenceDetail {
+  key: string;
+  title: string;
+  /** Cómo se ve cuando se rompe ahí (para elegirlo como foco). */
+  symptom: string;
+  indicators: Indicator[];
+  /** Ir más adentro: la lección del paso y, si existe, su drill / misión general. */
+  deeper?: { label: string; lessonId: string; drillId?: string; missionId?: string };
+}
+
 export interface SequencePageConfig {
   id: string;
   belt: 'white_belt' | 'yellow_belt' | 'blue_belt' | 'purple_belt';
@@ -46,7 +56,7 @@ export interface SequencePageConfig {
   stepIds: string[];
   think: {
     whatIs: { headline: string; line: string; where: string; whatFor: string };
-    feet: { text: string; phases: { phase: string; back: BackFoot; note?: string }[] };
+    feet: { text: string; options: { back: BackFoot; label: string; tradeoff: string }[]; rule: string };
     /** Lección de la que se lee "How your body does it" y "The rules". */
     bodyFromLesson: string;
     keyWords: { label: string; words: string[] }[];
@@ -63,10 +73,9 @@ export interface SequencePageConfig {
     missionId: string;
     timing: string;
     competence: string;
-    whenNot: { symptom: string; label: string; lessonId: string; stepId?: string }[];
   };
-  review: {
-    groups: { title: string; indicators: Indicator[] }[];
-    howItFeels: string;
-  };
+  /** Los detalles de la secuencia: donde se puede romper. Cada uno es un foco
+   *  opcional dentro de la misión, con sus indicadores y a dónde profundizar. */
+  details: SequenceDetail[];
+  review: { howItFeels: string };
 }

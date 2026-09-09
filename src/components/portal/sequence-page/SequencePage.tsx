@@ -35,6 +35,9 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
   canTrack: boolean;
 }) {
   const [tab, setTab] = useState<Tab>('think');
+  // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
+  // siempre la línea completa; el detalle se elige, o no.
+  const [focus, setFocus] = useState<string | null>(null);
   const portal = `/portal/${token}`;
   const body = lessons[cfg.think.bodyFromLesson];
   const order: Tab[] = ['think', 'feel', 'do', 'review'];
@@ -71,21 +74,22 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
               <Row k="Where">{cfg.think.whatIs.where}</Row>
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>
             </Card>
-            <Card eyebrow="02 · Feet">
+            <Card eyebrow="02 · Feet · what changes with the back foot">
               <div className="flex gap-4 items-start">
-                <BoardMap compact active={cfg.think.feet.phases.map((p) => p.back)} />
+                <BoardMap compact />
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] leading-snug" style={{ color: '#cfdbe4' }}>{cfg.think.feet.text}</p>
-                  <div className="mt-2 divide-y" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
-                    {cfg.think.feet.phases.map((p) => (
-                      <div key={p.phase} className="flex items-center justify-between py-1.5 text-[12px]">
-                        <span style={{ color: MUTED }}>{p.phase}</span>
-                        <span className="font-mono font-bold" style={{ color: '#F0F7FA' }}>{p.back}{p.note ? <span className="font-normal ml-1" style={{ color: MUTED }}>· {p.note}</span> : null}</span>
+                  <div className="mt-2">
+                    {cfg.think.feet.options.map((o) => (
+                      <div key={o.back} className="py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                        <span className="font-mono font-bold text-[12px]" style={{ color: '#F0F7FA' }}>{o.label}</span>
+                        <p className="text-[12px] leading-snug" style={{ color: MUTED }}>{o.tradeoff}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
+              <p className="text-[13px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: '#F0F7FA' }}>{cfg.think.feet.rule}</p>
             </Card>
             <Card eyebrow="03 · The sequence · how your body does it">
               {body?.body ? <MarkdownContent markdown={body.body} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
@@ -145,17 +149,39 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
                 )
               )}
             </Card>
+            <Card eyebrow="Choose a focus · optional">
+              <p className="text-[13px] mb-2" style={{ color: '#cfdbe4' }}>The mission is always the whole line. If one part of it is breaking, pick it: it rides along as your word for the session. Pick nothing and just surf the line.</p>
+              <div className="flex flex-wrap gap-2">
+                {cfg.details.map((d) => (
+                  <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)}
+                    className="text-[12px] px-3 py-1.5 rounded-full"
+                    style={focus === d.key ? { background: CYAN, color: INK, fontWeight: 700 } : { background: 'rgba(255,255,255,.06)', color: '#F0F7FA' }}>
+                    {d.title}
+                  </button>
+                ))}
+              </div>
+              {cfg.details.filter((d) => d.key === focus).map((d) => (
+                <div key={d.key} className="mt-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,.04)' }}>
+                  <p className="text-[12px] mb-2" style={{ color: MUTED }}>Where it breaks: {d.symptom}</p>
+                  {d.indicators.map((ind, i) => (
+                    <div key={i} className="py-2" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                      <p className="text-[13px]"><span style={{ color: GREEN }}>✓</span> {ind.ok}</p>
+                      <p className="text-[12.5px] mt-0.5" style={{ color: '#cfdbe4' }}><span style={{ color: RED }}>✗</span> {ind.no}</p>
+                      <p className="text-[12.5px] mt-0.5"><span className="font-bold" style={{ color: GOLD }}>Fix:</span> {ind.fix}</p>
+                    </div>
+                  ))}
+                  {d.deeper && (
+                    <div className="mt-2 flex flex-wrap gap-2 text-[12px]">
+                      <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: CYAN }}>Go deeper → {d.deeper.label}</a>
+                      {canTrack && d.deeper.drillId && pieces[d.deeper.drillId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.drillId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title}</a>}
+                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.missionId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </Card>
             <Card eyebrow="Competence · is it yours yet?" color={GREEN}>
               <p className="text-[13.5px]" style={{ color: '#cfdbe4' }}>{cfg.do.competence}</p>
-            </Card>
-            <Card eyebrow="When it does not come out">
-              <p className="text-[13px] mb-2" style={{ color: '#cfdbe4' }}>Two things can fail: the wave (no wall, wrong timing) or a step of the body. If it is the body, find the step and open its detail — one step, one detail, one session.</p>
-              {cfg.do.whenNot.map((w) => (
-                <a key={w.label + w.symptom} href={`${portal}?tab=course&lesson=${w.lessonId}`} className="block rounded-xl px-3 py-2.5 mb-1.5" style={{ background: 'rgba(255,255,255,.05)' }}>
-                  <span className="block text-[12px]" style={{ color: MUTED }}>{w.symptom}</span>
-                  <span className="text-[13px] font-semibold" style={{ color: '#F0F7FA' }}>→ open {w.label}</span>
-                </a>
-              ))}
             </Card>
           </div>
         )}
@@ -163,14 +189,14 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
         {/* ── REVIEW ── */}
         {tab === 'review' && (
           <div className="space-y-3 mt-4">
-            {cfg.review.groups.map((g) => (
-              <Card key={g.title} eyebrow={`How you know you have it · ${g.title}`} color={GREEN}>
-                {g.indicators.map((ind, i) => (
+            {cfg.details.map((d) => (
+              <Card key={d.key} eyebrow={`How you know you have it · ${d.title}`} color={GREEN}>
+                {d.indicators.map((ind, i) => (
                   <div key={i} className="py-2.5" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
                     <p className="text-[13px]"><span style={{ color: GREEN }}>✓</span> {ind.ok}</p>
                     <p className="text-[12.5px] mt-1" style={{ color: '#cfdbe4' }}><span style={{ color: RED }}>✗</span> {ind.no}</p>
                     <p className="text-[12.5px] mt-1"><span className="font-bold" style={{ color: GOLD }}>Fix:</span> {ind.fix}
-                      {ind.step && <a href={`${portal}?tab=course&lesson=${ind.step.lessonId}`} className="ml-2 text-[12px]" style={{ color: CYAN }}>Go deeper → {ind.step.label}</a>}
+                      {d.deeper && <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="ml-2 text-[12px]" style={{ color: CYAN }}>Go deeper → {d.deeper.label}</a>}
                     </p>
                   </div>
                 ))}
