@@ -520,12 +520,13 @@ export function CourseTab({ data }: { data: CourseData }) {
           />
           <SectionBlock
             title="The Three Circles of Power"
-            subtitle={threeCirclesLesson.subtitle}
+            subtitle="Body · board · wave — understand it and feel it on land. The language starts here."
             Icon={Compass}
             badge={null}
             lessons={[threeCirclesLesson]}
             onOpenLesson={(id) => setOpenLessonId(id)}
             theme={beltTheme}
+            onePageHref={`/portal/${data.portalToken}/circles`}
           />
         </div>
       )}
@@ -807,7 +808,7 @@ function SectionBlock({
               <span className="truncate">{title}</span>
             </h3>
             {subtitle && <p className="text-[11px] text-white/40 mt-0.5 italic">"{subtitle}"</p>}
-            <p className="text-[11px] mt-1" style={{ color: 'var(--tss-cyan)' }}>{onePageHref.endsWith('/loop') ? 'Open the course' : 'Think it · Feel it · Do it · Review'}</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--tss-cyan)' }}>{onePageHref.endsWith('/loop') || onePageHref.endsWith('/circles') ? 'Open the course' : 'Think it · Feel it · Do it · Review'}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="text-right">
