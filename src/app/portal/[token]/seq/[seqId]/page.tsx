@@ -11,6 +11,7 @@ import { getStudentAccess } from '@/lib/portal/access';
 import { SequencePage, type LessonBits, type PieceRow } from '@/components/portal/sequence-page/SequencePage';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });

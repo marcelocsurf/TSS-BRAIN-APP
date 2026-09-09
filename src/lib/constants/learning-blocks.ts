@@ -654,6 +654,36 @@ export const COURSE_SEQUENCE_ORDER: Record<string, string[]> = {
   ],
 };
 
+/**
+ * Prólogo del curso Blue Belt (Marcelo 2026-09-09): antes de los tres
+ * círculos y de las secuencias #8-#13, el alumno repasa el camino del agua
+ * con pasos PRESTADOS de White y Yellow. Nada se toca en la base: son las
+ * mismas lecciones, agrupadas de otra forma solo en la pantalla de Blue.
+ * Llaves: `course_section:step_number`, o `id:<lesson_id>` para lecciones
+ * sin número de paso (Duck Dive vive en yb_onboarding).
+ */
+export const BLUE_COURSE_PRELUDE: { id: string; name: string; promise: string; steps: string[] }[] = [
+  {
+    id: 'BB-NAV',
+    name: 'Navigate the Ocean',
+    promise: 'You get out the back on your own: sweet spot, paddle technique, turtle roll or duck dive.',
+    steps: ['white_belt:10', 'yellow_belt:27', 'white_belt:24', 'id:YB-FND-03'],
+  },
+  {
+    id: 'BB-CATCH',
+    name: 'Catch Waves',
+    promise: 'Sequence 6 of Yellow Belt, complete: you read the ocean and earn the wave.',
+    steps: [], // se llena con COURSE_SEQUENCE_ORDER['YB-SEQ-6.0'] abajo
+  },
+  {
+    id: 'BB-LINE',
+    name: 'Pick Your Line + Pop-Up',
+    promise: 'You choose the line from the cobra and land standing in the right foot position.',
+    steps: ['yellow_belt:34', 'white_belt:16', 'yellow_belt:30'],
+  },
+];
+BLUE_COURSE_PRELUDE[1].steps = COURSE_SEQUENCE_ORDER['YB-SEQ-6.0'];
+
 /** La etapa que juega cada paso dentro de una secuencia del curso, para
  *  rotularla en la lista: "Foot position", "Bottom turn", "Closure"… */
 export const COURSE_SEQUENCE_STAGE: Record<string, Record<string, string>> = (() => {

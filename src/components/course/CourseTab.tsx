@@ -17,6 +17,7 @@ import {
   THREE_CIRCLES_LESSON_ID,
   COURSE_SEQUENCE_ORDER,
   COURSE_SEQUENCE_STAGE,
+  BLUE_COURSE_PRELUDE,
   sequencePrefix,
 } from '@/lib/constants/learning-blocks';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
@@ -206,6 +207,10 @@ export function CourseTab({ data }: { data: CourseData }) {
     onboardingLessons.length > 0 && onboardingLessons.every((l) => l.pc_section_id)
       ? groupByPcSection(onboardingLessons)
       : null;
+  // Blue (Marcelo 2026-09-09): The Infinite Circle (the LOOP) va después de
+  // los tres círculos y antes de las secuencias, no dentro de "Start Here".
+  const loopGroup = activeCourse.key === 'blue_belt' ? onboardingGroups?.find((g) => g.id === 'BB-INF') ?? null : null;
+  const startHereGroups = loopGroup ? onboardingGroups!.filter((g) => g.id !== 'BB-INF') : onboardingGroups;
 
   // Learning Blocks — la estructura del método, la misma que ve el coach al
   // evaluar. Antes esto se agrupaba por wb_sequence_id, que era un tercer
@@ -230,6 +235,28 @@ export function CourseTab({ data }: { data: CourseData }) {
   // prestados de otra cinta.
   const lessonByKey = new Map<string, LessonRow>();
   for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
+  const lessonById = new Map<string, LessonRow>();
+  for (const l of data.lessons) lessonById.set(l.id, l);
+
+  // Un paso prestado de una cinta anterior se abre igual: es parte de este
+  // curso, y para eso se trajo. El progreso se guarda por lección, así que
+  // si ya lo estudió en su cinta viene marcado. La etiqueta dice de dónde viene.
+  const resolveSteps = (keys: string[]): LessonRow[] =>
+    keys
+      .map((k) => (k.startsWith('id:') ? lessonById.get(k.slice(3)) : lessonByKey.get(k)))
+      .filter((l): l is LessonRow => Boolean(l))
+      .map((l) => {
+        const borrowed = !openableSections.has(l.course_section);
+        if (!borrowed) return l;
+        return { ...l, locked: false, lockReason: null, borrowedFrom: BELT_OF_SECTION[l.course_section] ?? null };
+      });
+
+  // Prólogo de Blue (Marcelo 2026-09-09): el camino del agua antes de los
+  // tres círculos — Navigate the Ocean · Catch Waves · Pick Your Line + Pop-Up.
+  const bluePrelude =
+    activeCourse.key === 'blue_belt'
+      ? BLUE_COURSE_PRELUDE.map((g) => ({ ...g, lessons: resolveSteps(g.steps) })).filter((g) => g.lessons.length > 0)
+      : [];
 
   // Blue muestra arriba el mapa de bloques y la clase de los tres círculos,
   // pero sus secuencias van en el MISMO formato que White y Yellow: un
@@ -398,8 +425,8 @@ export function CourseTab({ data }: { data: CourseData }) {
             videoUrl={onboardingSection ? intros[onboardingSection]?.video_url : undefined}
           />
 
-          {onboardingGroups ? (
-            onboardingGroups.map((section) => (
+          {startHereGroups ? (
+            startHereGroups.map((section) => (
               <SectionBlock
                 key={section.id}
                 title={section.name}
@@ -424,6 +451,31 @@ export function CourseTab({ data }: { data: CourseData }) {
               theme={beltTheme}
             />
           )}
+        </div>
+      )}
+
+      {/* PRÓLOGO DE BLUE — el camino del agua, con pasos de White y Yellow. */}
+      {bluePrelude.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <GroupHeader
+            theme={beltTheme}
+            eyebrow={`${bluePrelude.length} groups · from the water up`}
+            title="Getting to the wave"
+            subtitle="Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them."
+            videoUrl={null}
+          />
+          {bluePrelude.map((g) => (
+            <SectionBlock
+              key={g.id}
+              title={g.name}
+              subtitle={g.promise}
+              Icon={WB_SEQUENCE_ICON[g.id] || BookOpen}
+              badge={null}
+              lessons={g.lessons}
+              onOpenLesson={(id) => setOpenLessonId(id)}
+              theme={beltTheme}
+            />
+          ))}
         </div>
       )}
 
@@ -472,6 +524,28 @@ export function CourseTab({ data }: { data: CourseData }) {
             Icon={Compass}
             badge={null}
             lessons={[threeCirclesLesson]}
+            onOpenLesson={(id) => setOpenLessonId(id)}
+            theme={beltTheme}
+          />
+        </div>
+      )}
+
+      {/* The Infinite Circle (the LOOP) — después de los tres círculos. */}
+      {loopGroup && (
+        <div className="space-y-3 pt-2">
+          <GroupHeader
+            theme={beltTheme}
+            eyebrow="The loop · every sequence starts and ends in posture"
+            title="The Infinite Circle"
+            subtitle="The language of the sequences that follow: posture → rail → projection → maneuver → back to posture."
+            videoUrl={null}
+          />
+          <SectionBlock
+            title={loopGroup.name}
+            subtitle={null}
+            Icon={PC_SECTION_ICON['BB-INF'] || Compass}
+            badge={null}
+            lessons={loopGroup.lessons}
             onOpenLesson={(id) => setOpenLessonId(id)}
             theme={beltTheme}
           />

@@ -137,16 +137,6 @@ export function SequencePage({
                 </div>
               </details>
             </Card>
-            <Card eyebrow="Lessons behind this sequence">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
-                {cfg.stepIds.map((id, i) => (
-                  <span key={id}>
-                    {i > 0 && <span style={{ color: MUTED }}>→ </span>}
-                    <a href={`${portal}?tab=course&lesson=${id}`} className="font-semibold underline decoration-dotted underline-offset-2" style={{ color: CYAN }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id}</a>
-                  </span>
-                ))}
-              </div>
-            </Card>
           </div>
         )}
 
