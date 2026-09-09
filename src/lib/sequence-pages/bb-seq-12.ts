@@ -23,11 +23,12 @@ export const BB_SEQ_12: SequencePageConfig = {
     },
     // Pies: P1 o P2 (la cola viva para sostener la Cruz en todo el arco). Por confirmar con Marcelo.
     feet: {
-      text: 'For the cutback the back foot goes back: P1 to hold the tightest arc, P2 for a longer, softer one. Never P3.',
+      // Marcelo (2026-09-09): "se puede en P2, pero si querés hacer la figura del 8 el pie tiene que estar en P1".
+      text: 'The cutback can be done from P2 — but if you want to draw the figure 8, the back foot has to be in P1. Never P3.',
       recommended: ['P1', 'P2'],
       options: [
-        { back: 'P1', label: 'FP1 · tail', tradeoff: 'The tightest arc: the tail stays live to hold the Cruz all the way round.' },
-        { back: 'P2', label: 'FP2 · neutral', tradeoff: 'A longer, softer arc. Less radical, more speed through the turn.' },
+        { back: 'P1', label: 'FP1 · tail', tradeoff: 'The figure 8 lives here: the tail stays live to hold the Cruz all the way round and close at the face.' },
+        { back: 'P2', label: 'FP2 · neutral', tradeoff: 'Possible: a longer, softer arc with more speed — but the full figure 8 does not come out of P2.' },
         { back: 'P3', label: 'FP3 · forward', tradeoff: 'Not for the cutback. From here the board does not want to turn back.' },
       ],
       rule: BB_SEQ_08.think.feet.rule,
