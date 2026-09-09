@@ -150,6 +150,6 @@ It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
     },
   ],
   review: {
-    howItFeels: 'You feel the U load under your front foot and the moment it lets go into the projection. At the top the rail changes because you turned it, not because the wave did. You come back down in posture, still running, with speed for the next one. The rhythm is yours, not the wave’s.',
+    howItFeels: 'It feels like a dynamic from the top down, with intention: you go up and come down on purpose, and at the change of direction you add a little more rotation and a little more energy than the wave gave you. Not a bottom turn — a change of direction you decided, and you come out of it still running.',
   },
 };
