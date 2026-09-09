@@ -4,6 +4,27 @@ Critical context to resume work on this codebase from scratch on any machine. Re
 
 ---
 
+## 0. FUENTES DE VERDAD (leer antes de tocar contenido) — 2026-09-09
+
+Marcelo: "quiero que tengamos nuestras fuentes de donde sale la info y vive la verdad… que se actualice en la fuente, no por separado ni por memoria".
+
+**Jerarquía documental** (todo está en El Método → `/metodo`, bóveda por área):
+1. **Doctrina viva** — tabla `doctrine_rules` (+ `doctrine_material_reviews`). Las reglas técnicas que Marcelo dicta en sesión. Manda sobre TODO lo demás porque es lo más reciente.
+2. **TSS Core Canon v8.1** (abril 2026) — documento supremo escrito.
+3. **Master Manuals por cinta** (WB v1, YB v1 · mayo 2026) → mandan sobre Student/Coach Manuals de esa cinta.
+4. **Manual de marca v10** (julio 2026) → `BRAND_V10` en `src/lib/constants/brand.ts` y `--tss-ink/paper/…` en globals.css. Fuente única de colores y tipografías.
+5. Base de datos: `lessons` (alumno y coach), `drills_missions`, `quiz_questions`; configs en código: `src/lib/sequence-pages/*`, `src/lib/constants/learning-blocks.ts`.
+
+**Protocolo cuando Marcelo dicta una regla nueva o corrige una:**
+1. Escribirla PRIMERO en `doctrine_rules` (paso, secuencia, cinta, `applies_to`). Nunca solo en la memoria de sesión.
+2. Corregir los materiales que toca (lección, drill, misión, ficha coach, página, quiz) y marcar cada uno en `doctrine_material_reviews` (o desde /metodo → Doctrina viva).
+3. Lo que no se corrige en el momento queda visible como "revisar" en El Método — no se pierde.
+4. `lessons.updated_at` y `drills_missions.updated_at` se actualizan solos (trigger 00186).
+
+**Cargar fuentes maestras nuevas:** `node scripts/seed-method-vault.mjs` (idempotente por título) o desde /metodo (hasta 24 MB).
+
+---
+
 ## 1. What this app is
 
 **TSS BRAIN** = the operating system for **The Surf Sequence** (TSS), Marcelo Castellanos's methodology + certification system for surf coaching. The platform serves four roles:

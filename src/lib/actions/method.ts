@@ -30,7 +30,7 @@ export interface MethodDoc {
   id: string;
   area: string;
   title: string;
-  kind: 'pdf' | 'image' | 'link' | 'note' | 'resource';
+  kind: 'pdf' | 'image' | 'file' | 'link' | 'note' | 'resource';
   url: string | null;
   notes: string | null;
   resource_id: string | null;
@@ -124,10 +124,16 @@ export async function createMethodFileDoc(
 
   const isPdf = file.type === 'application/pdf';
   const isImage = /^image\/(png|jpe?g|webp|svg\+xml)$/.test(file.type);
-  if (!isPdf && !isImage) return { ok: false, error: 'Solo PDF o imagen (PNG/JPG/WebP/SVG).' };
+  // Documentos de trabajo del método (md, docx, xlsx, pptx, txt, json, html):
+  // se guardan y se descargan; no se renderizan en el navegador.
+  const fileExt = (file.name.split('.').pop() ?? '').toLowerCase();
+  const isDoc = !isPdf && !isImage && /^(md|txt|docx?|xlsx?|pptx?|json|html?|csv)$/.test(fileExt);
+  if (!isPdf && !isImage && !isDoc) return { ok: false, error: 'Solo PDF, imagen (PNG/JPG/WebP/SVG) o documento (md, docx, xlsx, pptx, txt, json, html).' };
 
   const ext = isPdf
     ? 'pdf'
+    : isDoc
+      ? fileExt
     : file.type === 'image/svg+xml'
       ? 'svg'
       : (file.type.split('/')[1] ?? 'png').replace('jpeg', 'jpg');
@@ -139,13 +145,13 @@ export async function createMethodFileDoc(
   const admin = createAdminClient();
   const { error: upErr } = await admin.storage
     .from(BUCKET)
-    .upload(path, bytes, { contentType: file.type, upsert: false });
+    .upload(path, bytes, { contentType: file.type || 'application/octet-stream', upsert: false });
   if (upErr) return { ok: false, error: upErr.message };
 
   const { error } = await admin.from('method_docs').insert({
     area,
     title,
-    kind: isPdf ? 'pdf' : 'image',
+    kind: isPdf ? 'pdf' : isDoc ? 'file' : 'image',
     storage_path: path,
     notes,
   });
@@ -266,9 +272,10 @@ export async function getMethodDocUrl(
     // (XSS almacenado). Los SVG se firman con descarga forzada: el logo se
     // baja, no se renderiza en el navegador.
     const isSvg = d.storage_path.toLowerCase().endsWith('.svg');
+    const forceDownload = isSvg || d.kind === 'file';
     const { data: signed, error } = await admin.storage
       .from(BUCKET)
-      .createSignedUrl(d.storage_path, 600, isSvg ? { download: true } : undefined);
+      .createSignedUrl(d.storage_path, 600, forceDownload ? { download: true } : undefined);
     if (error || !signed) return { ok: false, error: error?.message ?? 'No se pudo firmar.' };
     return { ok: true, url: signed.signedUrl };
   }

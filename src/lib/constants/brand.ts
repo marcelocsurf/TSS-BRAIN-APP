@@ -29,6 +29,38 @@ export const BRAND = {
   ] as const,
 } as const;
 
+
+// ═══ BRAND MANUAL v10 (julio 2026) — FUENTE ÚNICA de marca ═══
+// Verificado contra el PDF "manual de marca the surf sequence v10", pp. 35-38
+// (El Método → Marca guarda el PDF). Un color oficial, cuatro soportes, pops
+// funcionales y tres tipografías. Proporción de uso: Paper 60 · Ink 25 ·
+// Cyan 10 · pops 5. Neutros fríos en digital, cálidos en lo físico.
+export const BRAND_V10 = {
+  version: '10.0',
+  colors: {
+    cyan: '#00D2FF',        // OFICIAL · Signature Cyan (Pantone 306 C)
+    ink: '#061C2B',         // soporte · profundidad, autoridad · fondo
+    paper: '#F7F9FA',       // soporte · luz, aire · texto sobre Ink
+    neutral: '#55666E',     // neutro de trabajo (el gris del wordmark se retiró al arte del logo)
+    cyanOnLight: '#00A8CC', // cyan para texto chico sobre fondo claro
+    warmPaper: '#E9E2D2',   // SOLO mundo físico (merch, packaging)
+    inkSoft: '#0A2438',     // tarjetas sobre Ink (derivado de uso en el app)
+  },
+  pops: {
+    alert: '#FF6B6B',       // alertas y errores (Coral)
+    warning: '#FF8C42',     // warnings (Sunset)
+    success: '#FFD166',     // logro y éxito (Gold)
+    confirm: '#06D6A0',     // confirmación (Foam)
+  },
+  type: {
+    display: { family: 'Archivo Expanded', weights: '700–900', case: 'uppercase', tracking: '-2%', leading: 'tight' },
+    body: { family: 'Archivo', weights: '400–700', case: 'sentence', leading: '1.6–1.7' },
+    label: { family: 'IBM Plex Mono', weights: '400–500', case: 'uppercase', tracking: '+18–22%' },
+    tagline: { family: 'Lora Italic', use: 'SOLO el tagline "Evolve through play"' },
+  },
+  ratio: { paper: 60, ink: 25, cyan: 10, pops: 5 },
+} as const;
+
 // ═══════════════════════════════════════
 // PILARS
 // ═══════════════════════════════════════

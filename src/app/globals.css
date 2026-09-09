@@ -5,6 +5,12 @@
   /* Core palette */
   --tss-navy: #0A1628;            /* Ocean Navy — fondo primario / autoridad */
   --tss-navy-light: #0D2D5E;      /* Brand Blue — secundario / estructura */
+  /* Brand Manual v10 (fuente única, ver BRAND_V10 en src/lib/constants/brand.ts) */
+  --tss-ink: #061C2B;             /* Ink v10 — fondo de doctrina / portal oscuro */
+  --tss-ink-soft: #0A2438;        /* tarjetas sobre Ink */
+  --tss-paper: #F7F9FA;           /* Paper v10 — texto sobre Ink */
+  --tss-neutral: #55666E;         /* neutro de trabajo v10 */
+  --tss-cyan-on-light: #00A8CC;   /* cyan para texto chico sobre claro */
   --tss-cyan: #00D2FF;            /* Signature Cyan v10 — acento / identidad */
   --tss-cyan-light: #B3F1FF;      /* Cyan Light v10 — highlights / hover */
   --tss-grey-structural: #4E4D4D; /* Structural Grey — texto neutral / wordmark */

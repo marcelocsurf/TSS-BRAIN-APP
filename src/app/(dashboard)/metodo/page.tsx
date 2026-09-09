@@ -1,4 +1,5 @@
 import { getMethodHQ } from '@/lib/actions/method';
+import { getDoctrine } from '@/lib/actions/doctrine';
 import { MethodHQ } from '@/components/method/MethodHQ';
 
 // ═══ EL MÉTODO — el cuartel general del negocio ═══
@@ -11,7 +12,7 @@ import { MethodHQ } from '@/components/method/MethodHQ';
 export const dynamic = 'force-dynamic';
 
 export default async function MetodoPage() {
-  const res = await getMethodHQ();
+  const [res, doc] = await Promise.all([getMethodHQ(), getDoctrine()]);
   return (
     <div className="p-4 md:p-6 max-w-5xl">
       <h1 className="text-xl font-bold text-[var(--tss-navy)]">El Método · Cuartel general</h1>
@@ -22,7 +23,7 @@ export default async function MetodoPage() {
         para eso está la biblioteca.
       </p>
       {res.ok ? (
-        <MethodHQ initial={res.data} />
+        <MethodHQ initial={res.data} doctrine={doc.ok ? doc.data : null} />
       ) : (
         <p className="mt-6 text-sm text-red-600">{res.error}</p>
       )}

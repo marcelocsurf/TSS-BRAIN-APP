@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { METHOD_AREAS, type MethodArea } from '@/lib/constants/method';
+import { DoctrineLive } from '@/components/method/DoctrineLive';
+import type { DoctrineData } from '@/lib/actions/doctrine';
 import {
   createMethodFileDoc,
   createMethodEntry,
@@ -36,6 +38,7 @@ const AREA_ICONS: Record<MethodArea['icon'], LucideIcon> = {
 const KIND_META: Record<MethodDoc['kind'], { label: string; Icon: LucideIcon }> = {
   pdf: { label: 'PDF', Icon: FileText },
   image: { label: 'Imagen', Icon: ImageIcon },
+  file: { label: 'Archivo', Icon: FileText },
   link: { label: 'Link', Icon: Link2 },
   note: { label: 'Nota', Icon: StickyNote },
   resource: { label: 'Biblioteca', Icon: BookOpen },
@@ -53,7 +56,7 @@ const NEXT_STATUS: Record<MethodTask['status'], MethodTask['status']> = {
   done: 'pending',
 };
 
-export function MethodHQ({ initial }: { initial: MethodHQData }) {
+export function MethodHQ({ initial, doctrine }: { initial: MethodHQData; doctrine?: DoctrineData | null }) {
   const router = useRouter();
   const [areaKey, setAreaKey] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -147,6 +150,8 @@ export function MethodHQ({ initial }: { initial: MethodHQData }) {
           <p className="text-[12px] text-gray-500">{area.blurb}</p>
         </div>
       </div>
+
+      {area.key === 'doctrina' && doctrine && <DoctrineLive data={doctrine} />}
 
       <TaskList
         area={area.key}
@@ -345,7 +350,7 @@ function DocVault({
       // El límite del server es 25mb (next.config): si lo pasa, Next corta
       // el body ANTES de que corra la action y el error sería mudo.
       if (file.size > 24 * 1024 * 1024) {
-        setError('El archivo pasa de 24 MB — comprimilo o partilo.');
+        setError('El archivo pasa de 24 MB — comprimilo o partilo (o subilo con scripts/seed-method-vault.mjs).');
         return;
       }
       const fd = new FormData();
@@ -515,7 +520,7 @@ function DocVault({
                   type="button"
                   aria-label="Borrar"
                   onClick={() => {
-                    if (confirm(`¿Borrar "${d.title}" de la bóveda?${d.kind === 'pdf' || d.kind === 'image' ? ' El archivo se elimina del storage.' : ''}`)) {
+                    if (confirm(`¿Borrar "${d.title}" de la bóveda?${d.kind === 'pdf' || d.kind === 'image' || d.kind === 'file' ? ' El archivo se elimina del storage.' : ''}`)) {
                       run(() => deleteMethodDoc(d.id));
                     }
                   }}
