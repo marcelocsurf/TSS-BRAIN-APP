@@ -174,3 +174,21 @@ input:focus, select:focus, textarea:focus {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+
+/* Página de secuencia (Think · Feel · Do · Review) sobre Ink: el markdown de
+   la lección está pensado para fondo claro; acá el texto va en Paper. */
+.seq-dark .markdown-content,
+.seq-dark .markdown-content p,
+.seq-dark .markdown-content li,
+.seq-dark .markdown-content ul,
+.seq-dark .markdown-content ol,
+.seq-dark .markdown-content blockquote { color: rgba(247, 249, 250, 0.92); }
+.seq-dark .markdown-content strong,
+.seq-dark .markdown-content h1,
+.seq-dark .markdown-content h2,
+.seq-dark .markdown-content h3,
+.seq-dark .markdown-content h4 { color: #F7F9FA; }
+.seq-dark .markdown-content h2 { border-color: rgba(255, 255, 255, 0.1); }
+.seq-dark .markdown-content code { background: rgba(255, 255, 255, 0.1); color: #F7F9FA; }
+.seq-dark .markdown-content mark { background: #FFD166; color: #061C2B; }
+.seq-dark .markdown-content { font-size: 15px; }
