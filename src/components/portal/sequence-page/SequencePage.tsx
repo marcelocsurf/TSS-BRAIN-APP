@@ -97,16 +97,21 @@ export function SequencePage({
             </Card>
             <Card eyebrow="02 · Feet · what changes with the back foot">
               <div className="flex gap-4 items-start">
-                <BoardMap compact />
+                <BoardMap compact active={cfg.think.feet.recommended?.length ? cfg.think.feet.recommended : undefined} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[14px] leading-snug" style={{ color: TEXT }}>{cfg.think.feet.text}</p>
                   <div className="mt-2">
-                    {cfg.think.feet.options.map((o) => (
-                      <div key={o.back} className="py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                        <span className="font-mono font-bold text-[12px]" style={{ color: PAPER }}>{o.label}</span>
-                        <p className="text-[12px] leading-snug" style={{ color: MUTED }}>{o.tradeoff}</p>
-                      </div>
-                    ))}
+                    {cfg.think.feet.options.map((o) => {
+                      const rec = cfg.think.feet.recommended;
+                      const on = !rec?.length || rec.includes(o.back);
+                      return (
+                        <div key={o.back} className="py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)', opacity: on ? 1 : 0.45 }}>
+                          <span className="font-mono font-bold text-[12px]" style={{ color: on ? PAPER : MUTED }}>{o.label}</span>
+                          {rec?.length ? <span className="ml-2 text-[10px] font-mono uppercase tracking-wider" style={{ color: on ? GREEN : RED }}>{on ? 'for this sequence' : 'not here'}</span> : null}
+                          <p className="text-[12px] leading-snug" style={{ color: MUTED }}>{o.tradeoff}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

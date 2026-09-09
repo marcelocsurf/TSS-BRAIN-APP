@@ -25,12 +25,15 @@ export const BB_SEQ_10: SequencePageConfig = {
       where: 'Anywhere on the face where there is wall in front of you. It does not need the lip: the snap can be done in different parts of the wave. The bottom turn is medium — mid-face — because that is the depth this maneuver asks for.',
       whatFor: 'To change direction without losing the wave: you load in the bottom turn, project, change the rail and come back to posture with speed for the next cycle.',
     },
+    // Marcelo (2026-09-09): "en snap sugerir P1 para mayor radicalidad, o P2,
+    // pero nunca P3" — el mapa de la tabla lo indica.
     feet: {
-      text: 'For the snap the back foot goes to the tail: the turn needs the tail alive.',
+      text: 'For the snap the back foot goes back: P1 for the most radical change, P2 as the option. Never P3.',
+      recommended: ['P1', 'P2'],
       options: [
-        { back: 'P1', label: 'FP1 · tail', tradeoff: 'The snap position. Maximum manoeuvrability: the rail change comes out of the tail.' },
-        { back: 'P2', label: 'FP2 · neutral', tradeoff: 'A softer, longer change of direction. Less radical.' },
-        { back: 'P3', label: 'FP3 · forward', tradeoff: 'Speed only. From here the board does not want to turn: pump first, then bring the foot back.' },
+        { back: 'P1', label: 'FP1 · tail', tradeoff: 'The snap position. Maximum manoeuvrability: the rail change comes out of the tail. The most radical.' },
+        { back: 'P2', label: 'FP2 · neutral', tradeoff: 'The option: a softer, longer change of direction. Less radical.' },
+        { back: 'P3', label: 'FP3 · forward', tradeoff: 'Not for the snap. From here the board does not want to turn: pump first, then bring the foot back.' },
       ],
       rule: BB_SEQ_08.think.feet.rule,
     },

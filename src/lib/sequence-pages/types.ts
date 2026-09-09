@@ -58,7 +58,10 @@ export interface SequencePageConfig {
   stepIds: string[];
   think: {
     whatIs: { headline: string; line: string; where: string; whatFor: string };
-    feet: { text: string; options: { back: BackFoot; label: string; tradeoff: string }[]; rule: string };
+    /** Los pies como INDICADOR vivo por secuencia (Marcelo 2026-09-09): el mapa
+     *  de la tabla enciende las posiciones recomendadas y apaga las que no
+     *  van. `recommended` vacío o ausente = las tres sirven. */
+    feet: { text: string; options: { back: BackFoot; label: string; tradeoff: string; note?: string }[]; rule: string; recommended?: BackFoot[] };
     /** Lección de la que se lee "How your body does it" y "The rules". */
     bodyFromLesson: string;
     /** Si la secuencia abarca varias lecciones, el cuerpo y las reglas de la
