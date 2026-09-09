@@ -58,7 +58,7 @@ export const LOOP_INTRO = {
   ],
   newWords: [
     { word: 'Projection', note: 'The moment the energy loaded in the bottom turn becomes forward and upward speed toward the maneuver.' },
-    { word: 'The Cruz', note: 'The frontside maneuver position: the hand crosses, chest opens, eyes over the shoulder, oblique, rail change.' },
+    { word: 'The Cruz', note: 'The frontside maneuver: from the projection back to posture, then an aggressive rail change with the oblique — head leading like the nose of a plane, hands as the wings.' },
     { word: 'Grenade', note: 'The frontside closure: you throw the leading arm and extend out of the Cruz, back to posture.' },
     { word: 'Choke', note: 'The backside projection: legs extend while the arm crosses the waist like grabbing a sword from the other side.' },
     { word: 'Tapaloco', note: 'The backside rail change: the hand, palm up, goes over the head covering the opposite ear.' },
@@ -134,9 +134,9 @@ export const LOOP_SIDES: LoopSide[] = [
       },
       {
         key: 'cruz', command: 'maneuver', name: 'The Cruz', commandLabel: 'Maneuver', known: 'new',
-        whatIs: 'The frontside maneuver position. The snap is a long U through the middle of the face, then an aggressive rail change pointing down but not straight to the flat — to the side, to end perpendicular and keep running the face. It does not need the lip.',
-        body: ['The hand crosses over the body: goofy left hand crosses and right leads; regular the mirror.', 'Chest opens. Eyes over the shoulder toward the back of the wave.', 'The oblique works the other way now — the same muscle that took you into the bottom turn changes the rail here.', 'Front foot stays grounded; the rail tilts and changes. The Cruz without a rail change is not a maneuver.'],
-        keyWords: ['Cross', 'Chest open', 'Eyes over the shoulder', 'Oblique', 'Rail change'],
+        whatIs: 'The frontside maneuver: the transition from the projection to an aggressive rail change. Coming from the projection you enter the Cruz, which is basically returning to posture, and from there you change the rail with the oblique. The line: a long U through the middle of the face, then the rail change pointing down but not straight to the flat — to the side, to keep running the face. It does not need the lip.',
+        body: ['Back to posture first: weight stays on the front foot.', 'Eyes over the shoulder to where you want to go.', 'The oblique works the other way now — the same muscle that took you into the bottom turn changes the rail here (rotation and its rules).', 'The front leg extends while the body stays forward over the front foot — like an airplane: the head is the nose leading, the hands are the wings.', 'The hand crosses (goofy left, regular right); the rail tilts and changes. The Cruz without a rail change is not a maneuver.'],
+        keyWords: ['Posture', 'Eyes over the shoulder', 'Oblique', 'Front leg', 'Airplane', 'Rail change'],
         lessonId: 'STP-041', lessonLabel: 'Cruz Snap',
       },
       {
