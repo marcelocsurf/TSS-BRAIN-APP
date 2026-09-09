@@ -84,7 +84,7 @@ It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
   feel: {
     visualize: 'Eyes closed, on the sand. Run the five words in order and picture the line: down into the U, up, the change at the top, down and to the side, running again. Feel the hold in the bottom turn and the moment the Cruz changes the rail. Ten snaps in your head.',
     land: ['DRL-BB-039', 'DRL-BB-040', 'DRL-BB-041', 'DRL-BB-042', 'DRL-BB-SEQ10-RUN'],
-    skate: ['DRL-BB-039-02'],
+    skate: ['DRL-BB-SEQ10-SKATE'],
   },
   do: {
     result: 'One clean change of direction: a long U through the middle of the face, the projection, the rail change at the top pointing down — as radical as you want — and you come back to posture still running the wave with speed.',
@@ -150,6 +150,6 @@ It starts and ends in posture. The U sets up the change; the Cruz makes it.`,
     },
   ],
   review: {
-    howItFeels: 'It feels like a dynamic from the top down, with intention: you go up and come down on purpose, and at the change of direction you add a little more rotation and a little more energy than the wave gave you. Not a bottom turn — a change of direction you decided, and you come out of it still running.',
+    howItFeels: 'It feels like a dynamic from the top down, with intention: you go up and come down on purpose, and at the change of direction you add a little more rotation and a little more energy than the wave gave you. Not a bottom turn — a change of direction you decided: a fast rail change, and you come out of it still running.',
   },
 };
