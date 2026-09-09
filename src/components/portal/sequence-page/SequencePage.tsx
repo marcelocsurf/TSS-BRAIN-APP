@@ -201,7 +201,7 @@ export function SequencePage({
                   objetivo de la sesión. La misión sola queda como opción. */}
               {(() => {
                 // Let's Play agrupa por wb_sequence_id: el mismo id de la página (BB-SEQ-09…).
-                const lp = cfg.kind === 'entry' ? null : cfg.id;
+                const lp = cfg.id;
                 const chosen = focus ? cfg.details.find((d) => d.key === focus) : null;
                 const focusStep = chosen?.deeper?.lessonId ?? null;
                 const word = chosen ? chosen.title.replace(/^\d+ · /, '') : '';

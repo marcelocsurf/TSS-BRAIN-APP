@@ -6,6 +6,7 @@ import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import {
   COURSE_SEQUENCE_ORDER,
+  BLUE_COURSE_PRELUDE,
   stepKey,
   SEQUENCE_PASS_STARS,
 } from '@/lib/constants/learning-blocks';
@@ -279,10 +280,30 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
   for (const l of (lessons ?? []) as any[]) {
     if (l.wb_sequence_id && !seqMeta.has(l.wb_sequence_id)) seqMeta.set(l.wb_sequence_id, l);
   }
+  // Las tres secuencias de ENTRADA de Blue (Marcelo 2026-09-09: "cada una se
+  // vuelve una secuencia y tiene pasos para ejecutarse") también se entrenan
+  // en Let's Play. Son pasos prestados de White y Yellow, ordenados; viven en
+  // BLUE_COURSE_PRELUDE. Van antes de la #8 dentro de Blue.
+  const preludeOrder: Record<string, string[]> = {};
+  if (beltKeys.includes('blue')) {
+    BLUE_COURSE_PRELUDE.forEach((g, i) => {
+      // 'id:…' apunta a lecciones sin número de paso (Duck Dive): no entran acá.
+      preludeOrder[g.id] = g.steps.filter((k) => !k.startsWith('id:'));
+      if (!seqMeta.has(g.id)) {
+        seqMeta.set(g.id, {
+          wb_sequence_id: g.id,
+          wb_sequence_order: 7.1 + i * 0.1,
+          wb_sequence_name: g.name,
+          wb_sequence_promise: g.promise,
+          course_section: 'blue_belt',
+        });
+      }
+    });
+  }
 
   const sequences = Array.from(seqMeta.entries())
     .map(([seqId, meta]) => {
-      const order = COURSE_SEQUENCE_ORDER[seqId];
+      const order = COURSE_SEQUENCE_ORDER[seqId] ?? preludeOrder[seqId];
       const stepIdsInSeq = order
         ? order.map((k) => lessonByKey2.get(k)?.id).filter(Boolean)
         : (lessons ?? [])
