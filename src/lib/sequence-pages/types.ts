@@ -61,6 +61,10 @@ export interface SequencePageConfig {
     feet: { text: string; options: { back: BackFoot; label: string; tradeoff: string }[]; rule: string };
     /** Lección de la que se lee "How your body does it" y "The rules". */
     bodyFromLesson: string;
+    /** Si la secuencia abarca varias lecciones, el cuerpo y las reglas de la
+     *  línea completa viven acá (markdown) y mandan sobre la lección. */
+    bodyMarkdown?: string;
+    rulesMarkdown?: string;
     keyWords: { label: string; words: string[] }[];
     board: WaveBoardData;
   };

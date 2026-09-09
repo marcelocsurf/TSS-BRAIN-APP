@@ -113,10 +113,10 @@ export function SequencePage({
               <p className="text-[14px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}>{cfg.think.feet.rule}</p>
             </Card>
             <Card eyebrow="03 · The sequence · how your body does it">
-              {body?.body ? <MarkdownContent markdown={body.body} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
+              {(cfg.think.bodyMarkdown ?? body?.body) ? <MarkdownContent markdown={cfg.think.bodyMarkdown ?? body!.body} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
             <Card eyebrow="04 · The rules that hold it together">
-              {body?.rules ? <MarkdownContent markdown={body.rules} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
+              {(cfg.think.rulesMarkdown ?? body?.rules) ? <MarkdownContent markdown={cfg.think.rulesMarkdown ?? body!.rules} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
             <Card eyebrow="05 · Key words">
               {cfg.think.keyWords.map((k) => (
