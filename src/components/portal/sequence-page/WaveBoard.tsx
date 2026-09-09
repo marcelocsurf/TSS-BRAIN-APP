@@ -1,6 +1,7 @@
 // ═══ La cara de la ola, desplegada ═══
 // Lenguaje "Dibujar la Ola" (Marcelo, PDF 2026-09-09): cuatro franjas Z1
-// (flat) → Z4 (labio), el pocket como anillo rojo, la línea de la secuencia
+// (flat) → Z4 (labio), el pocket como anillo VIOLETA (Marcelo 2026-09-09: que
+// no se confunda con postura ni con ningún otro comando), la línea de la secuencia
 // por tramos con un color por comando, y los marcadores I · A · M/B · S.
 // Código de colores de Marcelo: postura rojo · riel verde · projection
 // amarillo · maniobra azul · cierre rosa · hold celeste como capa encima.
@@ -14,11 +15,13 @@ export const COMMAND_COLORS: Record<Command, string> = {
   closure: '#FF5FA2',
 };
 export const HOLD_COLOR = '#7DE3FF';
+/** Pocket: violeta de marca, fuera del lenguaje de los comandos. */
+export const POCKET_COLOR = '#B388FF';
 export const COMMAND_LABELS: Record<Command, string> = {
   posture: 'Posture',
-  rail: 'Rail / rotation',
+  rail: 'Rotation / rail',
   projection: 'Projection',
-  maneuver: 'Maneuver',
+  maneuver: 'Maneuver (the Cruz)',
   closure: 'Closure',
 };
 
@@ -45,8 +48,9 @@ export function WaveBoard({ data, title }: { data: WaveBoardData; title: string 
           <text x="60" y="268" fill="#F0F7FA">FLAT · 0%</text>
           <text x="590" y="268">→ toward the shoulder</text>
         </g>
-        <circle cx={data.pocket.x} cy={data.pocket.y} r="14" fill="none" stroke="#FF6B6B" strokeWidth="3" />
-        <text x={data.pocket.x + 20} y={data.pocket.y + 4} fontSize="11" fill="#FF6B6B" fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace">POCKET</text>
+        <circle cx={data.pocket.x} cy={data.pocket.y} r="20" fill={POCKET_COLOR} opacity=".18" />
+        <circle cx={data.pocket.x} cy={data.pocket.y} r="14" fill="none" stroke={POCKET_COLOR} strokeWidth="3" />
+        <text x={data.pocket.x + 24} y={data.pocket.y + 4} fontSize="11" fill={POCKET_COLOR} fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace">POCKET</text>
         {data.segments.map((s, i) => (
           <path key={i} d={s.d} stroke={COMMAND_COLORS[s.command]} strokeWidth="6" fill="none" strokeLinecap="round"
             markerEnd={i === data.segments.length - 1 ? 'url(#wb-arrow)' : undefined} />
@@ -70,7 +74,7 @@ export function WaveBoard({ data, title }: { data: WaveBoardData; title: string 
           </span>
         ))}
         {hasHold && <span className="inline-flex items-center gap-1.5"><i className="inline-block w-5 h-0.5 rounded" style={{ background: HOLD_COLOR }} />Hold · this position is kept</span>}
-        <span className="inline-flex items-center gap-1.5"><i className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: '#FF6B6B' }} />Pocket · where the energy is</span>
+        <span className="inline-flex items-center gap-1.5"><i className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: POCKET_COLOR }} />Pocket · where the energy is</span>
       </div>
     </div>
   );
