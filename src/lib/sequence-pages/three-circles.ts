@@ -142,7 +142,8 @@ export const CIRCLES: Circle[] = [
       'FP1, FP2 and FP3 always describe the back foot. The front foot is about centre and rails.',
       'The rule that surprises people: no matter how good your body mechanics are, if your feet are in the wrong place the turn will not work. Circle 1 cannot rescue Circle 2.',
     ],
-    feel: ['DRL-BB-035', 'DRL-BB-035-02'],
+    // Marcelo (2026-09-09): el shuffle de pies en tierra y en patineta, manteniendo la postura.
+    feel: ['DRL-YB-FEET-01', 'DRL-YB-FEET-02'],
   },
   {
     key: 'wave', n: 3, label: 'Wave', sub: 'the two energies',
