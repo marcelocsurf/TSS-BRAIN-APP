@@ -31,26 +31,29 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
     bodyFromLesson: 'STP-036',
     keyWords: [
-      { label: 'Pump', words: ['Posture', 'Oblique', 'Extend', 'Swim', 'Low', 'Posture'] },
+      { label: 'Body', words: ['Posture', 'Oblique', 'Extend', 'Swim', 'Low', 'Posture'] },
+      { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the Cruz)', 'Back to posture'] },
     ],
     board: {
       pocket: { x: 110, y: 70 },
       segments: [
-        { d: 'M140,95 C160,95 175,110 185,130', command: 'posture' },
-        { d: 'M185,130 C200,160 215,175 235,180', command: 'rail' },
-        { d: 'M235,180 C265,185 280,150 300,120', command: 'projection' },
-        { d: 'M300,120 C315,100 335,95 350,100', command: 'posture' },
-        { d: 'M350,100 C365,110 380,150 400,175', command: 'rail' },
-        { d: 'M400,175 C430,185 445,150 465,120', command: 'projection' },
-        { d: 'M465,120 C480,100 500,95 515,100', command: 'posture' },
-        { d: 'M515,100 C530,110 545,150 565,175', command: 'rail' },
-        { d: 'M565,175 C590,182 605,160 625,140', command: 'projection' },
+        { d: 'M140,95 C155,95 168,105 178,120', command: 'posture' },
+        { d: 'M178,120 C195,150 212,172 235,180', command: 'rail' },
+        { d: 'M235,180 C262,184 278,155 292,130', command: 'projection' },
+        { d: 'M292,130 C305,112 322,100 338,98', command: 'maneuver' },
+        { d: 'M338,98 C346,98 352,99 358,101', command: 'posture' },
+        { d: 'M358,101 C372,115 385,150 405,175', command: 'rail' },
+        { d: 'M405,175 C432,184 447,155 461,130', command: 'projection' },
+        { d: 'M461,130 C474,112 490,100 505,98', command: 'maneuver' },
+        { d: 'M505,98 C512,98 518,99 524,101', command: 'posture' },
+        { d: 'M524,101 C538,115 552,150 572,175', command: 'rail' },
+        { d: 'M572,175 C598,184 612,158 630,138', command: 'projection' },
       ],
       markers: [
         { x: 140, y: 95, label: 'I' },
         { x: 235, y: 180, label: 'A' },
-        { x: 350, y: 100, label: 'B' },
-        { x: 625, y: 140, label: 'S' },
+        { x: 358, y: 101, label: 'B' },
+        { x: 630, y: 138, label: 'S' },
       ],
     },
   },
@@ -71,6 +74,7 @@ export const BB_SEQ_08: SequencePageConfig = {
   details: [
     {
       key: 'posture',
+      command: 'posture',
       title: 'Start with posture',
       symptom: 'The pump does not start from posture: chest away from the nose, standing tall, weight not on the front foot.',
       indicators: [
@@ -80,7 +84,8 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
     {
       key: 'oblique',
-      title: '1 · Lead with the oblique',
+      command: 'rail',
+      title: '1 · Lead with the oblique · get on the rail',
       symptom: 'The legs push first and the hand follows late; no rhythm.',
       indicators: [
         { ok: 'The leading hand goes first: the oblique projects you forward before the legs extend.', no: 'The legs push first and the hands follow late.', fix: 'Hand first, then extend.' },
@@ -89,7 +94,8 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
     {
       key: 'extend',
-      title: '2 · Extend, weight forward',
+      command: 'projection',
+      title: '2 · Extend, weight forward · projection',
       symptom: 'The board stalls on the down-cycle; the weight went to the back foot.',
       indicators: [
         { ok: 'At full extension the chest is still over the front foot, never behind it.', no: 'The chest drops behind the front foot; the board loses speed.', fix: 'Chest over the front foot.' },
@@ -99,7 +105,8 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
     {
       key: 'swim',
-      title: '3 · Swim the arm, elbow over the head',
+      command: 'maneuver',
+      title: '3 · Swim the arm, elbow over the head · the Cruz',
       symptom: 'The arm stays low; the pump is legs only.',
       indicators: [
         { ok: 'The arm swims through with the elbow higher than the head.', no: 'The arm stays low or swings sideways.', fix: 'Elbow above the head.' },
@@ -108,6 +115,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
     {
       key: 'low',
+      command: 'posture',
       title: '4 · Get low, back to posture',
       symptom: 'You end taller each cycle; the pump dies out.',
       indicators: [

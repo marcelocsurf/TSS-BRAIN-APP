@@ -40,6 +40,8 @@ export interface Indicator {
 export interface SequenceDetail {
   key: string;
   title: string;
+  /** El comando del método al que corresponde este paso (da el color). */
+  command?: Command;
   /** Cómo se ve cuando se rompe ahí (para elegirlo como foco). */
   symptom: string;
   indicators: Indicator[];

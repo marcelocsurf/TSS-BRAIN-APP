@@ -99,8 +99,13 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
             </Card>
             <Card eyebrow="05 · Key words">
               {cfg.think.keyWords.map((k) => (
-                <p key={k.label} className="text-[14px] mb-1"><span style={{ color: MUTED }}>{k.label} · </span><span className="font-mono" style={{ color: CYAN }}>{k.words.join(' · ')}</span></p>
+                <p key={k.label} className="text-[14px] mb-1"><span style={{ color: MUTED }}>{k.label} · </span>
+                  {k.label === 'Method'
+                    ? k.words.map((w, i) => { const cs = [COMMAND_COLORS.posture, COMMAND_COLORS.rail, COMMAND_COLORS.projection, COMMAND_COLORS.maneuver, COMMAND_COLORS.posture]; return <span key={w} className="font-mono" style={{ color: cs[i] ?? CYAN }}>{i ? ' · ' : ''}{w}</span>; })
+                    : <span className="font-mono" style={{ color: CYAN }}>{k.words.join(' · ')}</span>}
+                </p>
               ))}
+              <p className="text-[12px] mt-1" style={{ color: MUTED }}>The body words are the method's formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>
               <p className="text-[12.5px] mt-2" style={{ color: '#cfdbe4' }}>Learn them on land, in the drill, until you can run them without thinking. In the water you carry one: the mission, or the one word that is breaking.</p>
               <details className="mt-3">
                 <summary className="cursor-pointer text-[12.5px]" style={{ color: CYAN }}>Go deeper: each step as its own page</summary>
@@ -154,8 +159,9 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
               <div className="flex flex-wrap gap-2">
                 {cfg.details.map((d) => (
                   <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)}
-                    className="text-[12px] px-3 py-1.5 rounded-full"
+                    className="inline-flex items-center gap-2 text-[12px] px-3 py-1.5 rounded-full"
                     style={focus === d.key ? { background: CYAN, color: INK, fontWeight: 700 } : { background: 'rgba(255,255,255,.06)', color: '#F0F7FA' }}>
+                    {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
                     {d.title}
                   </button>
                 ))}
@@ -190,7 +196,7 @@ export function SequencePage({ cfg, lessons, pieces, token, canTrack }: {
         {tab === 'review' && (
           <div className="space-y-3 mt-4">
             {cfg.details.map((d) => (
-              <Card key={d.key} eyebrow={`How you know you have it · ${d.title}`} color={GREEN}>
+              <Card key={d.key} eyebrow={`How you know you have it · ${d.title}`} color={d.command ? COMMAND_COLORS[d.command] : GREEN}>
                 {d.indicators.map((ind, i) => (
                   <div key={i} className="py-2.5" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
                     <p className="text-[13px]"><span style={{ color: GREEN }}>✓</span> {ind.ok}</p>
