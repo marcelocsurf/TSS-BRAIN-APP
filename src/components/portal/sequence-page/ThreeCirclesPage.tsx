@@ -22,12 +22,15 @@ const CIRCLE_COLOR: Record<Circle['key'], string> = { body: CYAN, board: GOLD, w
 const WAVE_GAME_BOARD: WaveBoardData = {
   pocket: { x: 100, y: 70 },
   segments: [
-    { d: 'M130,95 C170,110 200,150 250,165', command: 'rail' },
-    { d: 'M250,165 C300,180 340,150 380,110', command: 'projection' },
-    { d: 'M380,110 C420,80 470,90 510,130', command: 'rail' },
-    { d: 'M510,130 C550,170 600,175 640,150', command: 'projection' },
+    { d: 'M130,95 C160,120 190,175 235,185', command: 'rail' },
+    { d: 'M235,185 C275,190 300,140 325,100', command: 'projection' },
+    { d: 'M325,100 C338,82 356,80 366,94', command: 'maneuver' },
+    { d: 'M366,94 C385,130 410,180 455,188', command: 'rail' },
+    { d: 'M455,188 C495,192 520,145 545,105', command: 'projection' },
+    { d: 'M545,105 C558,86 576,84 586,98', command: 'maneuver' },
+    { d: 'M586,98 C605,125 625,150 645,160', command: 'rail' },
   ],
-  markers: [{ x: 130, y: 95, label: 'I' }, { x: 640, y: 150, label: 'S' }],
+  markers: [{ x: 130, y: 95, label: 'I' }, { x: 366, y: 94, label: 'M' }, { x: 645, y: 160, label: 'S' }],
 };
 
 function Card({ eyebrow, color = CYAN, children }: { eyebrow: string; color?: string; children: React.ReactNode }) {
@@ -170,7 +173,17 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
           {cur.reads && (
             <>
               <Card eyebrow="Think it · what you read on the wave" color={CIRCLE_COLOR[cur.key]}>
-                <WaveBoard data={WAVE_GAME_BOARD} title="Close to the pocket, away, and back — never to the flat" />
+                <WaveBoard data={WAVE_GAME_BOARD} title="Down, up, a maneuver at the top, down again — never to the flat" />
+                {cur.energy && (
+                  <ol className="mt-3 space-y-2">
+                    {cur.energy.map((e, i) => (
+                      <li key={e.title} className="flex gap-2.5">
+                        <span className="font-mono text-[11px] font-bold shrink-0 mt-0.5" style={{ color: VIOLET }}>0{i + 1}</span>
+                        <div><p className="text-[14px] font-semibold" style={{ color: PAPER }}>{e.title}</p><p className="text-[13.5px] leading-snug" style={{ color: TEXT }}>{e.note}</p></div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
                 <p className="text-[14px] mt-3 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: 'rgba(179,136,255,.10)', color: PAPER }}>{cur.formula}</p>
                 <div className="mt-2">
                   {cur.reads.map((r) => <p key={r.word} className="text-[13.5px] leading-snug py-1" style={{ color: TEXT }}><span className="font-semibold" style={{ color: PAPER }}>{r.word}</span> · {r.note}</p>)}

@@ -48,6 +48,8 @@ export interface Circle {
   /** Ola: lo que se lee. */
   reads?: { word: string; note: string }[];
   formula?: string;
+  /** Ola: la historia de la energía, en orden. */
+  energy?: { title: string; note: string }[];
   feel?: string[];
   game?: { name: string; image: string; rule: string; how: string };
   lessonId: string;
@@ -148,7 +150,16 @@ export const CIRCLES: Circle[] = [
   {
     key: 'wave', n: 3, label: 'Wave', sub: 'the two energies',
     question: 'How do I understand the wave’s energy and use it in my favour?',
-    intro: 'This circle is where the two forces meet: the energy of the wave (external force) and what your body generates with the movements (internal force). When they communicate, you use them in harmony — and the line you can draw is the result.',
+    intro: 'This circle is where the two forces meet: the energy of the wave (external force) and what your body generates with the movements (internal force). When they communicate, you use them in harmony — and the line you can draw is the result. It starts with one thing: understanding where the energy lives.',
+    // Marcelo (2026-09-09): la historia de la energía, en orden. Regla en doctrine_rules.
+    energy: [
+      { title: 'Where the energy lives', note: 'Up on the wave, by the pocket, there is energy. Down at the flat there is none — only resistance.' },
+      { title: 'The dynamic: up and down', note: 'You go down, you go up, you do a maneuver at the top, you go down again, you go up to the next one. Always up and down — even when you are coming back on the wave.' },
+      { title: 'External force', note: 'When you are up and about to go down, that is energy the wave gives you. Use it well to calculate going back up, so you get energy again and go down again.' },
+      { title: 'Internal force', note: 'When the external force starts running out, you extend your body and generate energy with rotations and the other movements. You help yourself up to where you have to go — and there you use the wave again.' },
+      { title: 'Combine them at the right moment', note: 'When one is running out, add the other. Not before (you over-add), not after (you waste it). Hold is the tool that manages that energy in between.' },
+      { title: 'With awareness', note: 'If one day you want to lose energy on purpose and go to the flat, you do it because you chose it — not because the wave decided for you.' },
+    ],
     lessonId: 'STP-033', lessonLabel: 'Reading Wave Stages 1–4',
     formula: 'The wave’s energy (external force) × what your body generates (internal force) = the line you can draw.',
     reads: [
