@@ -54,7 +54,7 @@ export const LOOP_INTRO = {
     { word: 'Posture', note: 'Your stable base. Every action starts and ends here. Chest to the nose, low, weight on the front foot, scapula active.' },
     { word: 'Rotation', note: 'Eyes → head → shoulders → hips → feet. It always starts with the eyes. It is how you engage and change a rail.' },
     { word: 'Compression · extension', note: 'One movement, two halves: compress to absorb and load, extend to release and project.' },
-    { word: 'Hold', note: 'Keeping the position against the forces that show up. Starting a turn is not doing a turn.' },
+    { word: 'Hold', note: 'The tool that keeps a position: to navigate, to manage the energy and use it at the right moment. In a bottom turn you feel the centrifugal force pulling you to the flat; the rail and the fins fight it, and your body position holds the energy so you can redirect it toward the line you want to draw. Starting a turn is not doing a turn.' },
   ],
   newWords: [
     { word: 'Projection', note: 'The moment the energy loaded in the bottom turn becomes forward and upward speed toward the maneuver.' },
@@ -121,7 +121,7 @@ export const LOOP_SIDES: LoopSide[] = [
       {
         key: 'bt', command: 'rail', hold: true, name: 'Rotation + hold · the bottom turn', commandLabel: 'Rotation / rail', known: 'three-circles',
         whatIs: 'The most important concept in surfing: where you turn speed into direction and load the energy for everything that follows. It is always a U, and it ends when the projection begins. There are different depths — some longer, some tighter; mid-face, almost at the flat, or even out onto the flat — depending on what you are going to execute and the angle you want to reach. The U sets you up for what comes next. You hold it: starting a turn is not doing a turn.',
-        body: ['Weight front.', 'Elbow and forearm to the water — the whole forearm goes low, not just the fingers.', 'Palm down.', 'Oblique — that is what turns the lean into a real rotation and puts you on the rail.', 'Hold. The bottom turn ends when the projection begins; there is no gap.'],
+        body: ['Weight front.', 'Elbow and forearm to the water — the whole forearm goes low, not just the fingers.', 'Palm down.', 'Oblique — that is what turns the lean into a real rotation and puts you on the rail.', 'Hold. You feel the centrifugal force pulling you to the flat; rail, fins and your body position hold that energy so you can project it toward the line you want. The bottom turn ends when the projection begins; there is no gap.'],
         keyWords: ['Weight front', 'Elbow and forearm to the water', 'Palm down', 'Oblique', 'Hold'],
         lessonId: 'STP-039', lessonLabel: 'Bottom Turn Medium — Frontside',
       },
@@ -172,7 +172,7 @@ export const LOOP_SIDES: LoopSide[] = [
       {
         key: 'bt', command: 'rail', hold: true, name: 'Rail rotation + hold · the bottom turn backside', commandLabel: 'Rotation / rail', known: 'three-circles',
         whatIs: 'The same U — as deep, as long or as tight as what comes next asks for — with a different arm shape. It ends when the Choke begins. It is the entry to the whole backside expression: the Choke, the Tapaloco and the elbow strike live on the speed and the angle this turn creates.',
-        body: ['Weight front.', 'Front arm at shoulder height, aimed where you are going.', 'Fingertips skimming the water (frontside the whole forearm drops; backside the arm stays high and only the fingertips graze).', 'Oblique, and hold. The bottom turn ends when the Choke begins.'],
+        body: ['Weight front.', 'Front arm at shoulder height, aimed where you are going.', 'Fingertips skimming the water (frontside the whole forearm drops; backside the arm stays high and only the fingertips graze).', 'Oblique, and hold: fight the centrifugal force with rail, fins and body position, keep the energy for the Choke. The bottom turn ends when the Choke begins.'],
         keyWords: ['Weight front', 'Front arm', 'Fingertips', 'Oblique', 'Hold'],
         lessonId: 'STP-039B', lessonLabel: 'Bottom Turn Medium — Backside',
       },
