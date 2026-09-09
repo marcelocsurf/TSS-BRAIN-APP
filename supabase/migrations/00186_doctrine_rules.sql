@@ -71,6 +71,8 @@ create trigger doctrine_rules_updated_at before update on doctrine_rules
 drop trigger if exists lessons_updated_at on lessons;
 create trigger lessons_updated_at before update on lessons
   for each row execute function public.tss_set_updated_at();
+-- drills_missions no tenía updated_at (descubierto al aplicar: el trigger rompía los UPDATE).
+alter table drills_missions add column if not exists updated_at timestamptz not null default now();
 drop trigger if exists drills_missions_updated_at on drills_missions;
 create trigger drills_missions_updated_at before update on drills_missions
   for each row execute function public.tss_set_updated_at();
