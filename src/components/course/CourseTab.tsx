@@ -474,6 +474,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               lessons={g.lessons}
               onOpenLesson={(id) => setOpenLessonId(id)}
               theme={beltTheme}
+              onePageHref={sequencePageFor(g.id) ? `/portal/${data.portalToken}/seq/${g.id}` : null}
             />
           ))}
         </div>

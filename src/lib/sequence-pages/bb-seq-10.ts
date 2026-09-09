@@ -35,7 +35,7 @@ export const BB_SEQ_10: SequencePageConfig = {
         { back: 'P2', label: 'FP2 · neutral', tradeoff: 'The option: a softer, longer change of direction. Less radical.' },
         { back: 'P3', label: 'FP3 · forward', tradeoff: 'Not for the snap. From here the board does not want to turn: pump first, then bring the foot back.' },
       ],
-      rule: BB_SEQ_08.think.feet.rule,
+      rule: BB_SEQ_08.think.feet!.rule,
     },
     bodyFromLesson: 'STP-039',
     // El cuerpo de la secuencia completa (la lección STP-039 solo trae el BT).

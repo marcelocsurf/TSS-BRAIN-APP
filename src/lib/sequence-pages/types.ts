@@ -51,6 +51,11 @@ export interface SequenceDetail {
 
 export interface SequencePageConfig {
   id: string;
+  /** 'loop' (default) = secuencia de maniobra con tablero y pies; 'entry' =
+   *  secuencia de entrada (bloques 1-3), sin tablero ni pies. */
+  kind?: 'loop' | 'entry';
+  /** Rótulo de arriba cuando no es "Sequence #n". */
+  eyebrow?: string;
   belt: 'white_belt' | 'yellow_belt' | 'blue_belt' | 'purple_belt';
   courseKey: string;
   number: number;
@@ -61,7 +66,7 @@ export interface SequencePageConfig {
     /** Los pies como INDICADOR vivo por secuencia (Marcelo 2026-09-09): el mapa
      *  de la tabla enciende las posiciones recomendadas y apaga las que no
      *  van. `recommended` vacío o ausente = las tres sirven. */
-    feet: { text: string; options: { back: BackFoot; label: string; tradeoff: string; note?: string }[]; rule: string; recommended?: BackFoot[] };
+    feet?: { text: string; options: { back: BackFoot; label: string; tradeoff: string; note?: string }[]; rule: string; recommended?: BackFoot[] };
     /** Lección de la que se lee "How your body does it" y "The rules". */
     bodyFromLesson: string;
     /** Si la secuencia abarca varias lecciones, el cuerpo y las reglas de la
@@ -69,7 +74,7 @@ export interface SequencePageConfig {
     bodyMarkdown?: string;
     rulesMarkdown?: string;
     keyWords: { label: string; words: string[] }[];
-    board: WaveBoardData;
+    board?: WaveBoardData;
   };
   feel: {
     visualize: string;

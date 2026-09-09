@@ -31,7 +31,7 @@ export const BB_SEQ_12: SequencePageConfig = {
         { back: 'P2', label: 'FP2 · neutral', tradeoff: 'Possible: a longer, softer arc with more speed — but the full figure 8 does not come out of P2.' },
         { back: 'P3', label: 'FP3 · forward', tradeoff: 'Not for the cutback. From here the board does not want to turn back.' },
       ],
-      rule: BB_SEQ_08.think.feet.rule,
+      rule: BB_SEQ_08.think.feet!.rule,
     },
     bodyFromLesson: 'STP-046',
     bodyMarkdown: `**The frontside cutback pattern**

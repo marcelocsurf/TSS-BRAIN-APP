@@ -27,8 +27,8 @@ export const BB_SEQ_11: SequencePageConfig = {
     feet: {
       text: 'For the snap the back foot goes back: P1 for the most radical change, P2 as the option. Never P3.',
       recommended: ['P1', 'P2'],
-      options: BB_SEQ_10.think.feet.options,
-      rule: BB_SEQ_08.think.feet.rule,
+      options: BB_SEQ_10.think.feet!.options,
+      rule: BB_SEQ_08.think.feet!.rule,
     },
     bodyFromLesson: 'STP-039B',
     bodyMarkdown: `**The backside snap pattern**

@@ -23,7 +23,7 @@ export const BB_SEQ_13: SequencePageConfig = {
       where: 'Farther from the pocket than the snap. You move away along the face to create the space you need to come back. If the board never turns back pointing at the face, it was a snap, not a cutback.',
       whatFor: 'To go back to where the energy is on your backside. You ran away from the pocket; the cutback brings you back to it with speed, ready for the next cycle.',
     },
-    feet: BB_SEQ_12.think.feet,
+    feet: BB_SEQ_12.think.feet!,
     bodyFromLesson: 'STP-048',
     bodyMarkdown: `**The backside cutback pattern**
 

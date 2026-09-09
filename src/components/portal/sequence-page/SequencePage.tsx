@@ -53,13 +53,22 @@ export function SequencePage({
     <div className="seq-dark min-h-screen pb-24 text-[15px]" style={{ background: INK, color: PAPER }}>
       <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4">
         <a href={`${portal}?tab=course`} className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: CYAN }}><ArrowLeft size={14} /> Course</a>
-        <p className="mt-3" style={{ ...F_M, color: CYAN }}>Sequence #{cfg.number} · {cfg.belt.replace('_belt', ' belt')}</p>
+        <p className="mt-3" style={{ ...F_M, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`} · {cfg.belt.replace('_belt', ' belt')}</p>
         <h1 className="text-[26px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' }}>{cfg.title}</h1>
         <p className="text-[13px] mt-2" style={{ color: TEXT }}>{cfg.think.whatIs.headline}</p>
 
         {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
         <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
-          {video ? <SequenceVideo url={video.url} title={video.title} /> : <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} /></div>}
+          {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} /></div> : (
+            <div className="p-4">
+              <p style={{ ...F_M, color: MUTED }}>The steps, in order</p>
+              <ol className="mt-2 space-y-1.5">
+                {cfg.stepIds.map((id, i) => (
+                  <li key={id} className="flex items-center gap-2.5 text-[14px]"><span className="font-mono text-[11px] font-bold w-5 shrink-0" style={{ color: CYAN }}>{i + 1}</span><span className="font-semibold" style={{ color: PAPER }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id}</span></li>
+                ))}
+              </ol>
+            </div>
+          )}
         </div>
         {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-3 text-[13px]">
@@ -90,19 +99,31 @@ export function SequencePage({
           <div className="space-y-3 mt-4">
             <Card eyebrow="01 · What it is">
               <h2 className="text-[16px] font-bold">{cfg.think.whatIs.headline}</h2>
-              {video && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} />}
+              {video && cfg.think.board && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} />}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
               <Row k="Where">{cfg.think.whatIs.where}</Row>
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>
             </Card>
+            {cfg.kind === 'entry' && (
+              <Card eyebrow="02 · The steps · what each one is">
+                {cfg.stepIds.map((id, i) => lessons[id] ? (
+                  <div key={id} className="py-2.5" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
+                    <p className="text-[14px] font-semibold" style={{ color: PAPER }}><span className="font-mono text-[11px] mr-2" style={{ color: CYAN }}>{i + 1}</span>{lessons[id].title}</p>
+                    {lessons[id].whatIs && <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
+                    <a href={`${portal}?tab=course&lesson=${id}`} className="inline-block mt-1 text-[12.5px] font-semibold" style={{ color: CYAN }}>Open the lesson →</a>
+                  </div>
+                ) : null)}
+              </Card>
+            )}
+            {cfg.think.feet && (
             <Card eyebrow="02 · Feet · what changes with the back foot">
               <div className="flex gap-4 items-start">
-                <BoardMap compact active={cfg.think.feet.recommended?.length ? cfg.think.feet.recommended : undefined} />
+                <BoardMap compact active={cfg.think.feet!.recommended?.length ? cfg.think.feet!.recommended : undefined} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[14px] leading-snug" style={{ color: TEXT }}>{cfg.think.feet.text}</p>
                   <div className="mt-2">
                     {cfg.think.feet.options.map((o) => {
-                      const rec = cfg.think.feet.recommended;
+                      const rec = cfg.think.feet!.recommended;
                       const on = !rec?.length || rec.includes(o.back);
                       return (
                         <div key={o.back} className="py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)', opacity: on ? 1 : 0.45 }}>
@@ -117,6 +138,7 @@ export function SequencePage({
               </div>
               <p className="text-[14px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}>{cfg.think.feet.rule}</p>
             </Card>
+            )}
             <Card eyebrow="03 · The sequence · how your body does it">
               {(cfg.think.bodyMarkdown ?? body?.body) ? <MarkdownContent markdown={cfg.think.bodyMarkdown ?? body!.body} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
@@ -133,7 +155,7 @@ export function SequencePage({
                     : <span className="font-mono" style={{ color: CYAN }}>{k.words.join(' · ')}</span>}
                 </p>
               ))}
-              <p className="text-[12px] mt-1" style={{ color: MUTED }}>The body words are the method's formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>
+              {cfg.kind !== 'entry' && <p className="text-[12px] mt-1" style={{ color: MUTED }}>The body words are the method's formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>}
               <p className="text-[13.5px] mt-2" style={{ color: TEXT }}>Learn them on land, in the drill, until you can run them without thinking. In the water you carry one: the mission, or the one word that is breaking.</p>
               <details className="mt-3">
                 <summary className="cursor-pointer text-[13.5px]" style={{ color: CYAN }}>Go deeper: each step as its own page</summary>
