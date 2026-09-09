@@ -114,7 +114,7 @@ export const LOOP_SIDES: LoopSide[] = [
       {
         key: 'posture', command: 'posture', name: 'Posture', commandLabel: 'Posture', known: 'three-circles',
         whatIs: 'Your stable base. Every cycle of the circle starts here and ends here.',
-        body: ['Chest to the nose, low.', 'Front foot centred on the stringer, toes across the board; weight on the front foot, back foot without weight.', 'Back knee pointing toward the nose from the hip. Scapula active.', 'Reach and cross: the shoulders point where the board goes.'],
+        body: ['Shoulders pointing in the same direction as the nose — the base that connects you to the board and prepares the rotation.', 'Weight on the front leg; front foot centred on the stringer, toes across the board; back foot without weight.', 'Front hand toward the nose; the other arm: shoulder back, scapula active, elbow glued to the ribs, hand down or back.', 'Flex (ideally toward 90 degrees, at least some). Back knee pointing where you want to go. Arms and hands active. Eyes forward. Exhale.'],
         keyWords: ['Chest', 'Low', 'Front foot', 'Scapula'],
         lessonId: 'STP-018', lessonLabel: 'Power Stance / Posture (White Belt)',
       },

@@ -78,7 +78,16 @@ export const CIRCLES: Circle[] = [
       {
         key: 'posture', command: 'posture', name: 'Posture',
         what: 'Stability and neutrality. The base you return to.',
-        think: ['Chest to the nose, low.', 'Front foot centred on the stringer, toes across the board; weight on the front foot, back foot without weight.', 'Back knee pointing toward the nose from the hip. Scapula active. Reach and cross: the shoulders point where the board goes.', 'Every action starts here and ends here.'],
+        // Detalle completo de Marcelo (2026-09-09), regla "Power Posture" en doctrine_rules.
+        think: [
+          'Shoulders forward, pointing in the same direction as the nose of the board. That is the base: it connects you to the board and prepares the rotation.',
+          'Weight on the front leg — it activates the position. Front foot centred on the stringer, toes across the board so toe and heel push the rails; back foot without weight.',
+          'Front hand toward the nose (goofy: left; regular: right). The other arm holds the position: shoulder back activating the scapula so the chest points even more forward, elbow glued to the ribs, hand pointing down or back, opposite to the front hand. That is the exaggerated position.',
+          'Flex — ideally toward 90 degrees, the maximum position. It can be less, but there must be flexion.',
+          'Back knee forward, pointing where you want to go, following the direction. Weight stays on the front foot.',
+          'Arms and hands active — slightly rigid with activation, not loose like spaghetti. Eyes forward, shoulders over the front foot.',
+          'Exhale in the position: relaxed and active at the same time. Every action starts here and ends here.',
+        ],
         feel: ['DRL-WB-018-A'],
         lessonId: 'STP-018', lessonLabel: 'Power Stance / Posture',
       },
