@@ -2,12 +2,14 @@ import type { SequencePageConfig } from './types';
 import { BB_SEQ_08 } from './bb-seq-08';
 import { BB_SEQ_09 } from './bb-seq-09';
 import { BB_SEQ_10 } from './bb-seq-10';
+import { BB_SEQ_11 } from './bb-seq-11';
 
 /** Secuencias que ya tienen la página de 4 pestañas. Se agregan de a una. */
 export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
   [BB_SEQ_08.id]: BB_SEQ_08,
   [BB_SEQ_09.id]: BB_SEQ_09,
   [BB_SEQ_10.id]: BB_SEQ_10,
+  [BB_SEQ_11.id]: BB_SEQ_11,
 };
 
 export function sequencePageFor(sequenceId: string | null | undefined): SequencePageConfig | null {
