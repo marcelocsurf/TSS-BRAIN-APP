@@ -18,6 +18,8 @@ export type TrainSequenceArgs = {
   sequenceId: string;
   mode: 'sequence_run' | 'step_focus';
   focusStepId?: string | null;
+  /** La palabra de la sesión (viene del foco elegido en la página de la secuencia). */
+  intention?: string | null;
 };
 
 interface Props {

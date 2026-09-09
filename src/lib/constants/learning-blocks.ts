@@ -686,16 +686,19 @@ BLUE_COURSE_PRELUDE[1].steps = COURSE_SEQUENCE_ORDER['YB-SEQ-6.0'];
 
 /** La etapa que juega cada paso dentro de una secuencia del curso, para
  *  rotularla en la lista: "Foot position", "Bottom turn", "Closure"… */
+/** Secuencia del curso (wb_sequence_id) → definición de etapas (BELT_SEQUENCES.id). */
+export const LETS_PLAY_SEQUENCE_ID: Record<string, string> = {
+  'BB-SEQ-08': 'BB-SEQ-PUMP-FS',
+  'BB-SEQ-09': 'BB-SEQ-PUMP-BS',
+  'BB-SEQ-10': 'BB-SEQ-SNAP-FS',
+  'BB-SEQ-11': 'BB-SEQ-SNAP-BS',
+  'BB-SEQ-12': 'BB-SEQ-CUTBACK-FS',
+  'BB-SEQ-13': 'BB-SEQ-CUTBACK-BS',
+};
+
 export const COURSE_SEQUENCE_STAGE: Record<string, Record<string, string>> = (() => {
   const out: Record<string, Record<string, string>> = {};
-  const bySeqId: Record<string, string> = {
-    'BB-SEQ-08': 'BB-SEQ-PUMP-FS',
-    'BB-SEQ-09': 'BB-SEQ-PUMP-BS',
-    'BB-SEQ-10': 'BB-SEQ-SNAP-FS',
-    'BB-SEQ-11': 'BB-SEQ-SNAP-BS',
-    'BB-SEQ-12': 'BB-SEQ-CUTBACK-FS',
-    'BB-SEQ-13': 'BB-SEQ-CUTBACK-BS',
-  };
+  const bySeqId = LETS_PLAY_SEQUENCE_ID;
   for (const [courseSeq, defId] of Object.entries(bySeqId)) {
     const def = BELT_SEQUENCES.find((s) => s.id === defId);
     if (!def) continue;

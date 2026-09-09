@@ -37,12 +37,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string; survey?: string; drill?: string; step?: string }>;
+  searchParams: Promise<{ tab?: string; survey?: string; drill?: string; step?: string; seq?: string; mode?: string; focus?: string; word?: string }>;
 }
 
 export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab, survey, drill, step } = await searchParams;
+  const { tab, survey, drill, step, seq, mode, focus, word } = await searchParams;
 
   // Skip the anti-sharing check when an admin is impersonating — they
   // legitimately have multiple "sessions" open across alumnos.
@@ -227,6 +227,14 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
         initialSurveyId={survey || null}
         initialDrillId={drill || null}
         initialStepId={step || null}
+        // Desde la página de la secuencia (Do it): la línea completa o el foco
+        // elegido, con su palabra como objetivo de la sesión.
+        initialTrain={seq && /^[A-Z0-9-]{3,40}$/.test(seq) ? {
+          sequenceId: seq,
+          mode: mode === 'step_focus' && focus ? 'step_focus' : 'sequence_run',
+          focusStepId: mode === 'step_focus' && focus && /^[A-Z0-9-]{3,20}$/.test(focus) ? focus : null,
+          intention: word ? String(word).slice(0, 120) : null,
+        } : null}
       />
       </div>
     </>

@@ -175,6 +175,8 @@ interface Props {
   belt: string;
   mode: TrainingMode;
   focusStepId?: string | null;
+  /** Objetivo precargado (la palabra elegida en la página de la secuencia). */
+  initialIntention?: string | null;
   studentBelt?: string;
   onCancel: () => void;
   /** "Rehearse it on land first": abre el drill del paso en el flujo por pieza. */
@@ -182,7 +184,7 @@ interface Props {
   onDone: () => void;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, studentBelt = 'white_belt', onCancel, onRehearse, onDone }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, studentBelt = 'white_belt', onCancel, onRehearse, onDone }: Props) {
   const isRun = mode === 'sequence_run';
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -193,7 +195,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [checks, setChecks] = useState<Record<SafetyKey, boolean>>({ level: false, entry: false, lineup: false, hazards: false });
   const [plannedDuration, setPlannedDuration] = useState(20);
   const [plannedReps, setPlannedReps] = useState(5);
-  const [intention, setIntention] = useState('');
+  const [intention, setIntention] = useState(initialIntention ?? '');
   const [hintText, setHintText] = useState<string | null>(null);
   // Ready
   const [warmUp, setWarmUp] = useState<string | null>(null);

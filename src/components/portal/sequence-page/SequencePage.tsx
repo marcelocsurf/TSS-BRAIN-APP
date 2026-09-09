@@ -196,13 +196,31 @@ export function SequencePage({
               <h2 className="text-[16px] font-bold">{cfg.do.result}</h2>
               <Row k="Timing">{cfg.do.timing}</Row>
               <Row k="Plan">You set the time and the number of waves before you paddle out. The plan is yours; it is not graded.</Row>
-              {pieces[cfg.do.missionId] && (
-                canTrack ? (
-                  <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="inline-flex items-center gap-2 mt-3 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: CYAN, color: INK }}><Play size={14} /> Start the mission in Let&apos;s Play</a>
-                ) : (
-                  <p className="inline-flex items-center gap-2 mt-3 text-[12px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>
-                )
-              )}
+              {/* Conexión con Let's Play (Marcelo 2026-09-09): la línea completa
+                  = sequence_run; el foco elegido = step_focus con su palabra como
+                  objetivo de la sesión. La misión sola queda como opción. */}
+              {(() => {
+                // Let's Play agrupa por wb_sequence_id: el mismo id de la página (BB-SEQ-09…).
+                const lp = cfg.kind === 'entry' ? null : cfg.id;
+                const chosen = focus ? cfg.details.find((d) => d.key === focus) : null;
+                const focusStep = chosen?.deeper?.lessonId ?? null;
+                const word = chosen ? chosen.title.replace(/^\d+ · /, '') : '';
+                if (!canTrack) return <p className="inline-flex items-center gap-2 mt-3 text-[12px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>;
+                if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="inline-flex items-center gap-2 mt-3 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: CYAN, color: INK }}><Play size={14} /> Start the mission in Let&apos;s Play</a> : null;
+                const runHref = `${portal}?tab=sequence&seq=${lp}&mode=sequence_run`;
+                const focusHref = focusStep ? `${portal}?tab=sequence&seq=${lp}&mode=step_focus&focus=${focusStep}&word=${encodeURIComponent(word)}` : null;
+                return (
+                  <div className="mt-3 flex flex-wrap gap-2 items-center">
+                    {focusHref ? (
+                      <a href={focusHref} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: chosen?.command ? COMMAND_COLORS[chosen.command] : CYAN, color: INK }}><Play size={14} /> Train it in Let&apos;s Play · focus: {word}</a>
+                    ) : (
+                      <a href={runHref} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: CYAN, color: INK }}><Play size={14} /> Train the whole line in Let&apos;s Play</a>
+                    )}
+                    {focusHref && <a href={runHref} className="text-[12px] font-semibold" style={{ color: CYAN }}>or the whole line, no focus</a>}
+                    {pieces[cfg.do.missionId] && <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[12px]" style={{ color: MUTED }}>Log the mission only</a>}
+                  </div>
+                );
+              })()}
             </Card>
             <Card eyebrow="Choose a focus · optional">
               <p className="text-[14px] mb-2" style={{ color: TEXT }}>The mission is always the whole line. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>

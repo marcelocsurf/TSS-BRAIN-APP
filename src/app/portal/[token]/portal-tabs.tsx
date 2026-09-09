@@ -464,12 +464,15 @@ export function PortalTabs({
   initialSurveyId,
   initialDrillId,
   initialStepId,
+  initialTrain,
 }: {
   data: PortalData;
   initialTab?: Tab;
   initialSurveyId?: string | null;
   initialDrillId?: string | null;
   initialStepId?: string | null;
+  /** Deep-link desde la página de la secuencia: abrir Let's Play con la línea (o el foco) ya elegida. */
+  initialTrain?: TrainSequenceArgs | null;
 }) {
   // Al terminar una Custom Session el Home debe re-leer del servidor
   // (horas, sesiones) — sin esto quedaba viejo hasta recargar.
@@ -486,7 +489,7 @@ export function PortalTabs({
   useEffect(() => {
     // Nunca por encima de un deep-link (encuesta, lección, drill): el alumno
     // vino a algo puntual — la guía queda en el botón 📖.
-    if (initialTab || initialSurveyId || initialDrillId || initialStepId) return;
+    if (initialTab || initialSurveyId || initialDrillId || initialStepId || initialTrain) return;
     try { if (!localStorage.getItem('tss_athlete_guide_v1')) setGuideOpen(true); } catch { /* sin localStorage, sin auto-open */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -520,7 +523,7 @@ export function PortalTabs({
   const [showCustomSession, setShowCustomSession] = useState(false);
   // Let's Play por SECUENCIA (Marcelo 2026-09-04): correr la secuencia
   // completa o trabajar un paso como foco. Se renderiza inline en el tab.
-  const [pendingSequence, setPendingSequence] = useState<TrainSequenceArgs | null>(null);
+  const [pendingSequence, setPendingSequence] = useState<TrainSequenceArgs | null>(initialTrain ?? null);
 
   // Los parámetros de deep-link (?tab=, ?lesson=, ?drill=, ?step=, ?survey=)
   // ya quedaron capturados en estado arriba, así que se limpian de la barra de
@@ -690,6 +693,7 @@ export function PortalTabs({
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 mode={pendingSequence.mode}
                 focusStepId={pendingSequence.focusStepId ?? null}
+                initialIntention={pendingSequence.intention ?? null}
                 studentBelt={student.belt_level || 'white_belt'}
                 onCancel={() => setPendingSequence(null)}
                 onRehearse={(drillId) => handlePracticeDrill(drillId)}
