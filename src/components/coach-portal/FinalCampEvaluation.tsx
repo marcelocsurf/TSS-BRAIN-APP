@@ -63,7 +63,11 @@ export function FinalCampEvaluation({
   onStudentSaved,
   earlyMode = false,
   openDays = [],
+  submitStandalone,
 }: Props & { savedIds?: string[]; onStudentSaved?: (id: string) => void;
+  /** Modo ficha (Marcelo 2026-09-10): la misma evaluación sin camp — quien
+   *  guarda es esta función en vez de closeCampFinal. */
+  submitStandalone?: (ratings: Array<{ student_id: string; step_id: string; rating: number }>, results: any[], promotions: Array<{ student_id: string; belt_level: string }>, opts?: { finalize?: boolean }) => Promise<{ ok: boolean; error?: string; waterPending?: string[] }>;
   /** Short camp: evaluar UN alumno a mitad de camp — sin el botón que cierra el camp entero. */
   earlyMode?: boolean;
   /** Días del camp sin cerrar. Con uno solo el camp NO se puede finalizar
@@ -279,7 +283,7 @@ export function FinalCampEvaluation({
     setSavingId(s.student_id);
     startTransition(async () => {
       try {
-        const res = await closeCampFinal(token, campInstanceId, ratingsPayload, [result], promos, { finalize: false });
+        const res = submitStandalone ? await submitStandalone(ratingsPayload, [result], promos, { finalize: false }) : await closeCampFinal(token, campInstanceId, ratingsPayload, [result], promos, { finalize: false });
         if (!res?.ok) { alert(res?.error || 'No se pudo guardar este alumno.'); return; }
         if (res.waterPending?.length) {
           alert(
@@ -347,7 +351,7 @@ export function FinalCampEvaluation({
 
     startTransition(async () => {
       try {
-        const res = await closeCampFinal(token, campInstanceId, payload, resultsPayload, promotionsPayload);
+        const res = submitStandalone ? await submitStandalone(payload, resultsPayload, promotionsPayload) : await closeCampFinal(token, campInstanceId, payload, resultsPayload, promotionsPayload);
         if (!res?.ok) { alert(res?.error || 'Failed to finalize camp.'); return; }
         if (res.waterPending?.length) {
           alert(
@@ -432,7 +436,7 @@ export function FinalCampEvaluation({
                     disabled={pending || openDays.length > 0}
                     onClick={() => startTransition(async () => {
                       try {
-                        const res = await closeCampFinal(token, campInstanceId, [], [], [], { finalize: true });
+                        const res = submitStandalone ? await submitStandalone([], [], [], { finalize: true }) : await closeCampFinal(token, campInstanceId, [], [], [], { finalize: true });
                         if (!res?.ok) { alert(res?.error || 'Could not finalize the camp.'); return; }
                         onCompleted();
                       } catch (e: any) {

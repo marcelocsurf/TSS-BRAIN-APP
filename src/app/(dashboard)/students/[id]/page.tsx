@@ -11,6 +11,7 @@ import { PromoteLeadCard } from '@/components/student/PromoteLeadCard';
 import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
 import { BeltOverride } from './BeltOverride';
+import { LevelEvaluationLauncher } from './LevelEvaluationLauncher';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { LevelAccessCard } from '@/components/student/LevelAccessCard';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
@@ -776,6 +777,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Progression Status" value={student.progression_status} />
         </div>
       </Card>
+
+      {/* Evaluación de nivel = la misma del cierre de camp, sin camp (2026-09-10). */}
+      {coach && (
+        <LevelEvaluationLauncher
+          student={{ id: student.id, first_name: student.first_name ?? null, last_name: student.last_name ?? null, photo_url: (student as any).photo_url ?? null, belt_level: student.belt_level }}
+          rows={officialEvalRows as any}
+          coach={{ id: coach.id, role: coach.role ?? null, max_belt_permission: coach.max_belt_permission ?? null }}
+        />
+      )}
 
       {/* --- 3a. OFFICIAL STEP EVALUATION (coach gives cyan stars per STP) --- */}
       {coach && (() => {
