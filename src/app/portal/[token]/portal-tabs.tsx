@@ -54,7 +54,7 @@ import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
-import { sequenceLabel } from '@/lib/constants/learning-blocks';
+import { sequenceLabel, sequencePrefix } from '@/lib/constants/learning-blocks';
 import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
 import { LineupTab } from '@/components/portal/LineupTab';
 import { WaterLevel } from '@/components/portal/WaterLevel';
@@ -223,16 +223,29 @@ interface PortalData {
     stepTitle: string;
     stars: number | null;
     official: boolean;
-    /** held_back = el paso que detuvo tu último run de la secuencia. */
-    source?: 'held_back' | 'weakest';
+    /** held_back = el paso que detuvo tu último run · weakest = el primero
+     *  bajo la barra · unrated = el primero sin calificar. */
+    source?: 'held_back' | 'weakest' | 'unrated';
     selfSequenceRating?: number | null;
-    /** Lo que dejaste a medias hace poco y no es el paso de arriba. */
-    unfinished?: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null;
     /** El detalle más flojo de la última práctica de ese paso. */
     detail?: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
     /** Un lado quedó atrás (Marcelo 2026-09-10): el lado flojo es el próximo movimiento. */
     sideAdvice?: { text: string; sequenceId: string; side: 'fs' | 'bs' } | null;
   } | null;
+  /** Cintas cuyo CURSO tiene el alumno ('white_belt', 'blue_belt'…). El curso
+   *  es aprender; la membresía es entrenar: los links al curso solo salen
+   *  para quien lo tiene (doctrina 2026-09-10). */
+  ownedBelts?: string[];
+}
+
+/** La página de la secuencia (Think · Feel · Do · Review) SOLO si el alumno
+ *  tiene el curso de esa cinta. */
+function seqPageHref(data: PortalData, sequenceId: string | null | undefined, tab?: 'feel'): string | null {
+  const cfg = sequencePageFor(sequenceId);
+  if (!cfg || !sequenceId) return null;
+  const owned = data.ownedBelts ?? [];
+  if (!owned.includes(cfg.belt)) return null;
+  return `/portal/${data.token}/seq/${sequenceId}${tab ? `?tab=${tab}` : ''}`;
 }
 
 // ─── Venue Analysis Constants ───
@@ -341,35 +354,30 @@ function nextMoveRows(
       action: null,
     });
   }
+  // EL CAMINO (doctrina 2026-09-10): una sola sugerencia, siempre la línea
+  // completa con un foco — "Run #8 · focus FP1" — nunca un detalle suelto.
+  // Es el default para el que no sabe por dónde empezar; el mapa queda libre.
   const nm = data.nextMove ?? null;
   if (nm) {
+    const seqLbl = sequencePrefix(nm.sequenceId ?? null, nm.sequenceOrder) ?? nm.sequenceName;
     const seq = seqWord(sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName));
+    const word = nm.detail ? nm.detail.text : null;
     rows.push({
-      key: 'sequence', label: 'Your sequence', title: nm.stepTitle, accent: BRAND.colors.cyan,
+      key: 'sequence', label: 'The path', title: `Run ${seqLbl} · focus: ${nm.stepTitle}`, accent: BRAND.colors.cyan,
       reason: nm.source === 'held_back'
-        ? `Held your last run of ${seq} back${nm.selfSequenceRating != null ? ` · your run ${nm.selfSequenceRating}★` : ''}`
-        : `First step below 4★ in ${seq}${nm.stars !== null ? ` · ${nm.stars}★` : ''}${nm.official ? ' · rated by your coach' : ''}`,
-      detail: nm.detail ? `Last practice · ${nm.detail.result === 'not_met' ? 'not met' : 'partial'}: ${nm.detail.text}` : null,
+        ? `${nm.stepTitle} held your last run of ${seq} back${nm.selfSequenceRating != null ? ` · your run ${nm.selfSequenceRating}★` : ''}`
+        : nm.source === 'unrated'
+          ? `${seq} is not yours yet · ${nm.stepTitle} is the first step of the chain you have not rated`
+          : `${seq} is not yours yet · ${nm.stepTitle} is the first step of the chain below 4★${nm.stars !== null ? ` (${nm.stars}★)` : ''}${nm.official ? ' · rated by your coach' : ''}`,
+      detail: word ? `Your word for the wave: ${word}` : null,
       side: nm.sideAdvice?.text ?? null,
-      action: 'Practice it →',
+      action: 'Run it with this focus →',
       onClick: () => {
-        if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
+        if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId, intention: word });
         else onOpenStep?.(nm.stepId);
       },
-      pageHref: nm.sequenceId && sequencePageFor(nm.sequenceId) ? `/portal/${data.token}/seq/${nm.sequenceId}` : null,
+      pageHref: seqPageHref(data, nm.sequenceId),
     });
-    if (nm.unfinished) {
-      const u = nm.unfinished;
-      rows.push({
-        key: 'unfinished', label: 'Unfinished', title: u.stepTitle, accent: '#FFD166',
-        reason: `Now at ${u.stars}★ · ${seqWord(sequenceLabel(u.sequenceId, u.sequenceOrder, u.sequenceName))} · from the last two weeks`,
-        action: 'Pick it up →',
-        onClick: () => {
-          if (onTrainSequence) onTrainSequence({ sequenceId: u.sequenceId, mode: 'step_focus', focusStepId: u.stepId });
-          else onOpenStep?.(u.stepId);
-        },
-      });
-    }
   }
   return { rows, coachCleared };
 }
@@ -451,7 +459,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
       {rows.map((r, idx) => renderRow(r, idx, true))}
       {rows.length > 0 && (
         <p className="px-4 py-2.5 text-[10.5px] leading-snug" style={{ color: '#8aa0b0', ...rowStyle }}>
-          The order: 1 your coach · 2 the method (the step that held your last run back, or the earliest one below 4★) · 3 what you left below 4★ in the last two weeks. Training something else does not change 1 and 2.
+          The order: 1 your coach · 2 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
         </p>
       )}
     </div>
@@ -734,7 +742,7 @@ export function PortalTabs({
                 initialIntention={pendingSequence.intention ?? null}
                 studentBelt={student.belt_level || 'white_belt'}
                 onCancel={() => setPendingSequence(null)}
-                onRehearse={(drillId) => handlePracticeDrill(drillId)}
+                rehearseHref={seqPageHref(data, pendingSequence.sequenceId, 'feel')}
                 onDone={() => { setPendingSequence(null); portalRouter.refresh(); }}
               />
             </div>
@@ -824,6 +832,7 @@ export function PortalTabs({
                 onPracticeDrill={handlePracticeDrill}
                 onTrainSequence={(args) => { setDeepStepId(null); setPendingSequence(args); }}
                 initialStepId={deepStepId}
+                ownedBelts={data.ownedBelts ?? []}
               />
               <button
                 type="button"

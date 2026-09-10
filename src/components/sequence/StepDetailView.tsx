@@ -298,18 +298,23 @@ function DrillOrMissionCard({
         </div>
       )}
 
-      {/* Practice button */}
-      <button
-        onClick={() => onPractice?.(item.id)}
-        disabled={!onPractice}
-        className="mt-5 w-full rounded-full py-3.5 text-[11px] transition-all active:scale-[0.98] disabled:opacity-40"
-        style={{ ...F_M, background: onPractice ? accentHex : '#e5e7eb', color: INK, fontWeight: 700 }}
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <PenLine size={14} strokeWidth={1.75} />
-          Practice this {isDrill ? 'drill' : 'mission'} →
-        </span>
-      </button>
+      {/* Los drills son ensayo (doctrina 2026-09-10): se hacen, no se
+          registran. Solo la misión — la ejecución en el agua — se anota. */}
+      {isDrill ? (
+        <p className="mt-4 text-[11px] text-gray-500 leading-snug">Rehearsal: do it on land or on the skate as many times as you need. No need to log it — what you log is the mission, in the water.</p>
+      ) : (
+        <button
+          onClick={() => onPractice?.(item.id)}
+          disabled={!onPractice}
+          className="mt-5 w-full rounded-full py-3.5 text-[11px] transition-all active:scale-[0.98] disabled:opacity-40"
+          style={{ ...F_M, background: onPractice ? accentHex : '#e5e7eb', color: INK, fontWeight: 700 }}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <PenLine size={14} strokeWidth={1.75} />
+            Practice this mission →
+          </span>
+        </button>
+      )}
     </div>
   );
 }

@@ -29,8 +29,10 @@ function section(md: string | null | undefined, heading: string): string {
   return (m?.[1] ?? '').trim();
 }
 
-export default async function SequencePageRoute({ params }: { params: Promise<{ token: string; seqId: string }> }) {
+export default async function SequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string }> }) {
   const { token, seqId } = await params;
+  const sp = searchParams ? await searchParams : {};
+  const initialTab = sp.tab === 'feel' || sp.tab === 'do' || sp.tab === 'review' || sp.tab === 'think' ? sp.tab : null;
   const cfg = sequencePageFor(seqId);
   if (!cfg || !UUID_RE.test(token)) notFound();
 
@@ -104,7 +106,7 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} />
+      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} initialTab={initialTab} />
     </div>
   );
 }

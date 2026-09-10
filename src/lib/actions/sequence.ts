@@ -770,16 +770,14 @@ export async function getNextMove(
   stars: number | null;
   official: boolean;
   /** 'held_back' = el paso que detuvo tu último run de la secuencia (Let's
-   *  Play por secuencia); 'weakest' = el primero por debajo de la barra. */
-  source: 'held_back' | 'weakest';
+   *  Play por secuencia); 'weakest' = el primero por debajo de la barra;
+   *  'unrated' = el primero de la cadena que todavía no calificaste. */
+  source: 'held_back' | 'weakest' | 'unrated';
   /** Tu última nota para la cadena entera, si corriste la secuencia. */
   selfSequenceRating: number | null;
   /** El detalle más flojo de la última práctica de ese paso (evaluación por
    *  criterio): el "Work on this" baja del paso al detalle concreto. */
   detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
-  /** Lo que dejaste a medias hace poco y NO es el paso de arriba: para que
-   *  trabajar otra cosa no se pierda del Home. */
-  unfinished: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null;
   /** Un lado quedó atrás (Marcelo 2026-09-10): el lado flojo es el próximo
    *  movimiento. La misma función que usa Let's Play (sideBalance). */
   sideAdvice: { text: string; sequenceId: string; side: 'fs' | 'bs' } | null;
@@ -790,15 +788,26 @@ export async function getNextMove(
     const data = await mySequenceForStudent(studentId, belt);
     const beltKey = data.belt.replace(/_belt$/, '');
     const sideAdvice = sideBalance(data.sequences.filter((s) => s.belt === beltKey)).advice;
-    const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
-    if (!seq || !seq.weakestStepId) return null;
-    // El embudo: secuencia → paso → detalle. El paso que VOS marcaste como el
-    // que detuvo tu último run manda sobre el primero por debajo de la barra:
-    // es más reciente y es tuyo.
+    // EL CAMINO (doctrina 2026-09-10 "Your next move follows the path, not
+    // the score"): la primera secuencia de TU cinta que no es tuya, y adentro
+    // el primer paso de la cadena que no está en 4★ — sin calificar cuenta
+    // igual que bajo. Ir antes en la cadena pesa más que tener menos
+    // estrellas. Antes se saltaba una secuencia entera si ninguno de sus
+    // pasos calificados estaba bajo (p. ej. toda sin empezar).
+    const mine = data.sequences.filter((s) => s.belt === beltKey);
+    const pool = mine.length ? mine : data.sequences;
+    const seq = pool.find((s) => s.state !== 'owned');
+    if (!seq) return null;
+    const eff = (i: SequenceItem) => i.coach_rating ?? i.rating ?? null;
+    const firstNotAtBar = seq.items.find((i) => { const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
+    if (!firstNotAtBar) return null;
+    // El paso que VOS marcaste como el que detuvo tu último run manda sobre el
+    // camino: es más reciente y es tuyo.
     const useHeld = !!seq.heldBackStepId && !!seq.heldBackTitle;
-    const stepId = useHeld ? seq.heldBackStepId! : seq.weakestStepId;
-    const stepTitle = useHeld ? seq.heldBackTitle! : (seq.weakestTitle ?? seq.weakestStepId);
+    const stepId = useHeld ? seq.heldBackStepId! : firstNotAtBar.step_id;
+    const stepTitle = useHeld ? seq.heldBackTitle! : firstNotAtBar.step_title;
     const heldItem = useHeld ? seq.items.find((i) => i.step_id === stepId) ?? null : null;
+    const pathSource: 'weakest' | 'unrated' = eff(firstNotAtBar) == null ? 'unrated' : 'weakest';
     let detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null = null;
     try {
       const admin = createAdminClient();
@@ -865,55 +874,17 @@ export async function getNextMove(
     } catch {
       detail = null;
     }
-    // Lo que quedó a medias hace poco (últimos 14 días, < 4★) y no es el
-    // paso de arriba. Orden del método primero; esto es la tercera línea.
-    let unfinished: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null = null;
-    try {
-      const admin = createAdminClient();
-      const since = new Date(Date.now() - 14 * 86400000).toISOString();
-      const { data: recent } = await admin
-        .from('self_training_sessions')
-        .select('created_at, linked_step_id, execution_rating')
-        .eq('student_id', studentId)
-        .eq('kind', 'drill')
-        .not('linked_step_id', 'is', null)
-        .not('execution_rating', 'is', null)
-        .neq('linked_step_id', stepId)
-        .gte('created_at', since)
-        .order('created_at', { ascending: false })
-        .limit(30);
-      // Solo la ÚLTIMA sesión de cada paso cuenta, y el paso tiene que seguir
-      // por debajo de la barra HOY (la del coach manda, si no la propia): un
-      // run de secuencia o el coach pueden haberlo subido sin dejar fila acá.
-      const byStep = new Map<string, { seq: (typeof data.sequences)[number]; item: SequenceItem }>();
-      for (const q of data.sequences) for (const i of q.items) if (!byStep.has(i.step_id)) byStep.set(i.step_id, { seq: q, item: i });
-      const seen = new Set<string>();
-      for (const r of (recent ?? []) as any[]) {
-        const sid = r.linked_step_id as string;
-        if (seen.has(sid)) continue;
-        seen.add(sid);
-        const hit = byStep.get(sid);
-        if (!hit) continue;
-        const current = hit.item.coach_rating ?? hit.item.rating ?? r.execution_rating;
-        if (current == null || current >= SEQUENCE_PASS_STARS) continue;
-        unfinished = { stepId: hit.item.step_id, stepTitle: hit.item.step_title, sequenceId: hit.seq.id, sequenceOrder: hit.seq.order, sequenceName: hit.seq.name, stars: current, date: r.created_at };
-        break;
-      }
-    } catch {
-      unfinished = null;
-    }
     return {
       sequenceId: seq.id,
       sequenceOrder: seq.order,
       sequenceName: seq.name,
       stepId,
       stepTitle,
-      stars: useHeld ? (heldItem?.coach_rating ?? heldItem?.rating ?? seq.minRating) : seq.minRating,
-      official: useHeld ? heldItem?.coach_rating != null : seq.weakestIsOfficial,
-      source: useHeld ? 'held_back' : 'weakest',
+      stars: useHeld ? (heldItem?.coach_rating ?? heldItem?.rating ?? null) : eff(firstNotAtBar),
+      official: useHeld ? heldItem?.coach_rating != null : firstNotAtBar.coach_rating != null,
+      source: useHeld ? 'held_back' : pathSource,
       selfSequenceRating: seq.selfSequenceRating,
       detail,
-      unfinished,
       sideAdvice,
     };
   } catch {

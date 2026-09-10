@@ -823,13 +823,18 @@ function PracticeSection({ item }: { item: any }) {
         </div>
       )}
 
-      <a
-        href={`?tab=sequence&drill=${item.id}`}
-        className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold text-center hover:opacity-90"
-      >
-        <PlayCircle size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-        {ctaLabel}
-      </a>
+      {/* Los drills son ensayo: se hacen, no se registran (doctrina 2026-09-10). */}
+      {isMission ? (
+        <a
+          href={`?tab=sequence&drill=${item.id}`}
+          className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold text-center hover:opacity-90"
+        >
+          <PlayCircle size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+          {ctaLabel}
+        </a>
+      ) : (
+        <p className="text-[11px] text-gray-500 leading-snug">Rehearsal: do it as many times as you need, on land or on the skate. No need to log it — what you log is the mission, in the water.</p>
+      )}
     </div>
   );
 }

@@ -46,7 +46,7 @@ function Dot({ command, hold, size = 10 }: { command: keyof typeof COMMAND_COLOR
   return <i className="inline-block rounded-full shrink-0" style={{ width: size, height: size, background: hold ? 'transparent' : COMMAND_COLORS[command], boxShadow: hold ? `0 0 0 2.5px ${HOLD_COLOR}` : '0 0 0 2px rgba(255,255,255,.15)' }} />;
 }
 
-function Piece({ p, href, canTrack }: { p?: PieceRow; href: string; canTrack: boolean }) {
+function Piece({ p, canTrack }: { p?: PieceRow; href?: string | null; canTrack: boolean }) {
   if (!p) return null;
   const md = (p.description_md ?? '').trim();
   return (
@@ -54,7 +54,8 @@ function Piece({ p, href, canTrack }: { p?: PieceRow; href: string; canTrack: bo
       <p className="text-[14px] font-semibold">{p.title}</p>
       {md && (md.startsWith('#') ? <div className="mt-1"><MarkdownContent markdown={md} /></div> : <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{md}</p>)}
       <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
-        {canTrack ? <a href={href} className="inline-flex items-center gap-1 font-semibold" style={{ color: CYAN }}><Play size={12} /> Rehearse it</a> : <span className="inline-flex items-center gap-1"><Lock size={11} /> with your training tool</span>}
+        {/* Los drills son ensayo: se hacen, no se registran (doctrina 2026-09-10). */}
+        <span>{canTrack ? 'rehearsal · no need to log it' : 'rehearsal'}</span>
       </div>
     </div>
   );
@@ -70,7 +71,6 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
   const [key, setKey] = useState<Circle['key']>('body');
   const portal = `/portal/${token}`;
   const cur = CIRCLES.find((c) => c.key === key)!;
-  const drillHref = (id: string) => `${portal}?tab=sequence&drill=${id}`;
 
   return (
     <div className="seq-dark min-h-screen pb-24 text-[15px]" style={{ background: INK, color: PAPER }}>
@@ -132,7 +132,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                     </ul>
                     {m.feels && <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}><span style={{ ...F_M, color: VIOLET }}>How it feels · </span>{m.feels}</p>}
                     <p className="mt-3" style={{ ...F_M, color: GREEN }}>Feel it · on land</p>
-                    {m.feel.map((id) => <Piece key={id} p={pieces[id]} href={drillHref(id)} canTrack={canTrack} />)}
+                    {m.feel.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
                     <a href={`${portal}?tab=course&lesson=${m.lessonId}`} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {m.lessonLabel}</a>
                   </div>
                 </details>
@@ -163,7 +163,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 </ul>
               </Card>
               <Card eyebrow="Feel it · on land and on the skate" color={GREEN}>
-                {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} href={drillHref(id)} canTrack={canTrack} />)}
+                {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
                 <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {cur.lessonLabel}</a>
               </Card>
             </>
@@ -190,7 +190,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 </div>
               </Card>
               <Card eyebrow="Feel it · from the beach" color={GREEN}>
-                {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} href={drillHref(id)} canTrack={canTrack} />)}
+                {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
               </Card>
               {cur.game && (
                 <Card eyebrow="Play it · the game" color={VIOLET}>

@@ -120,6 +120,8 @@ export function LinkedTrainingFlow({
       .then((d) => {
         if (!mounted) return;
         if (!d) { setErrorMsg('Drill / mission not found'); setPhase('error'); return; }
+        // Los drills son ensayo (doctrina 2026-09-10): se hacen, no se registran.
+        if (d.type === 'drill') { setErrorMsg('Drills are rehearsal: do them on land or on the skate, no need to log them. What you log is the mission, in the water — pick the sequence in Let’s Play.'); setPhase('error'); return; }
         setDrill(d);
         getLastPracticeHint(portalToken, drillMissionId).then((h) => {
           if (!mounted) return;

@@ -217,6 +217,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
           nextMove: await getNextMove(token, activeCourse?.belt ?? 'white'),
+          // El curso es aprender, la membresía es entrenar: los links al curso
+          // solo salen para quien lo tiene.
+          ownedBelts: ownedCourses.map((c) => c.key),
           // ¿Lo que el coach dejó para trabajar sigue pendiente, o el alumno ya
           // lo llevó a 4 por su cuenta?
           coachFocusState,

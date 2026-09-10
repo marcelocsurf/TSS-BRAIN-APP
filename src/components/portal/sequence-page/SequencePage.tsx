@@ -45,7 +45,7 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, cfg, lessons, pieces, token, canTrack, progress }: {
+  video, cfg, lessons, pieces, token, canTrack, progress, initialTab = null }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
@@ -55,8 +55,10 @@ export function SequencePage({
   video?: { url: string; title: string } | null;
   /** Lo que Let's Play sabe de esta secuencia para este alumno. */
   progress?: SequenceProgress | null;
+  /** ?tab=feel desde Let's Play ("Rehearse it on land first"). */
+  initialTab?: Tab | null;
 }) {
-  const [tab, setTab] = useState<Tab>('think');
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
   // siempre la línea completa; el detalle se elige, o no.
   const [focus, setFocus] = useState<string | null>(null);
@@ -207,10 +209,10 @@ export function SequencePage({
               <p className="text-[14.5px]" style={{ color: TEXT }}>{cfg.feel.visualize}</p>
             </Card>
             <Card eyebrow="Simulate · land, sand, pool or calm water" color={VIOLET}>
-              {cfg.feel.land.map((id) => <Piece key={id} p={pieces[id]} href={`${portal}?tab=sequence&drill=${id}`} canTrack={canTrack} />)}
+              {cfg.feel.land.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
             </Card>
             <Card eyebrow="Simulate · surf skate" color={VIOLET}>
-              {cfg.feel.skate.map((id) => <Piece key={id} p={pieces[id]} href={`${portal}?tab=sequence&drill=${id}`} canTrack={canTrack} />)}
+              {cfg.feel.skate.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
             </Card>
             <p className="text-[12px] px-1" style={{ color: MUTED }}>Each drill closes with one question: ready to take it to the water?</p>
           </div>
@@ -274,7 +276,7 @@ export function SequencePage({
                   {d.deeper && (
                     <div className="mt-2 flex flex-wrap gap-2 text-[12px]">
                       <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: CYAN }}>Go deeper → {d.deeper.label}</a>
-                      {canTrack && d.deeper.drillId && pieces[d.deeper.drillId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.drillId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title}</a>}
+                      {d.deeper.drillId && pieces[d.deeper.drillId] && <button type="button" onClick={() => go('feel')} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title} · Feel it</button>}
                       {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.missionId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
                     </div>
                   )}
@@ -429,7 +431,7 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
   );
 }
 
-function Piece({ p, href, canTrack }: { p?: PieceRow; href: string; canTrack: boolean }) {
+function Piece({ p, href = null, canTrack }: { p?: PieceRow; href?: string | null; canTrack: boolean }) {
   if (!p) return null;
   return (
     <div className="py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
@@ -442,7 +444,8 @@ function Piece({ p, href, canTrack }: { p?: PieceRow; href: string; canTrack: bo
       <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
         {p.time_estimate && <span>{p.time_estimate}</span>}
         {p.reps_recommended && <span>{p.reps_recommended} reps</span>}
-        {canTrack ? <a href={href} className="inline-flex items-center gap-1 font-semibold" style={{ color: CYAN }}><Play size={12} /> Rehearse it</a> : <span className="inline-flex items-center gap-1"><Lock size={11} /> with your training tool</span>}
+        {/* Los drills son ensayo: se hacen, no se registran (doctrina 2026-09-10). Solo las misiones llevan a Let's Play. */}
+        {href ? (canTrack ? <a href={href} className="inline-flex items-center gap-1 font-semibold" style={{ color: CYAN }}><Play size={12} /> Log it in Let&apos;s Play</a> : <span className="inline-flex items-center gap-1"><Lock size={11} /> with your training tool</span>) : <span>rehearsal · no need to log it</span>}
       </div>
     </div>
   );

@@ -67,9 +67,12 @@ interface Props {
    *  trabajar un paso como foco. Sin esto, solo se abre el detalle del paso. */
   onTrainSequence?: (args: TrainSequenceArgs) => void;
   initialStepId?: string | null;
+  /** Cintas cuyo curso tiene el alumno: los links a la página de la secuencia
+   *  solo salen para quien lo tiene (el curso es aprender, la membresía es entrenar). */
+  ownedBelts?: string[];
 }
 
-export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId }: Props) {
+export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [] }: Props) {
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
@@ -150,7 +153,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const nextStepTitle = next ? (next.heldBackStepId ? next.heldBackTitle : next.weakestStepId ? next.weakestTitle : firstUnrated?.step_title ?? next.items[0]?.step_title ?? null) : null;
   const nextWhy = next ? (next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : firstUnrated ? 'not rated yet' : 'start here') : '';
   const beltWord = beltKey.charAt(0).toUpperCase() + beltKey.slice(1);
-  const pageHrefOf = (id: string) => (sequencePageFor(id) ? `/portal/${portalToken}/seq/${id}` : null);
+  const pageHrefOf = (id: string) => { const c = sequencePageFor(id); return c && ownedBelts.includes(c.belt) ? `/portal/${portalToken}/seq/${id}` : null; };
   // Progreso por lado (Marcelo 2026-09-10): general · frontside · backside.
   // La misma función que usa el Home, así los dos dicen lo mismo.
   const sides = sideBalance(levelSeqs);
@@ -248,8 +251,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
         <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
           {onTrainSequence
-            ? 'Pick a sequence → run it whole, or work on one step inside it → rate yourself honestly. Your coach validates in the water.'
-            : 'Pick the sequence you are working on → tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.'}
+            ? 'Pick a sequence → run it whole, or work on one step inside it → rate yourself honestly. Drills are rehearsal (Feel it, in the course): do them, no need to log them. Your coach validates in the water.'
+            : 'Pick the sequence you are working on → tap a step → run its mission → rate yourself honestly. Your coach validates in the water.'}
         </p>
       </div>
 

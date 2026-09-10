@@ -183,12 +183,13 @@ interface Props {
   initialIntention?: string | null;
   studentBelt?: string;
   onCancel: () => void;
-  /** "Rehearse it on land first": abre el drill del paso en el flujo por pieza. */
-  onRehearse: (drillId: string) => void;
+  /** "Rehearse it on land first": el Feel it de la secuencia en el curso (null
+   *  sin curso — los drills son material de aprendizaje, no se registran). */
+  rehearseHref?: string | null;
   onDone: () => void;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, studentBelt = 'white_belt', onCancel, onRehearse, onDone }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone }: Props) {
   const isRun = mode === 'sequence_run';
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -378,12 +379,12 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                 <p className="text-[12.5px] text-gray-700">This step has no mission card yet. Run the sequence with <b>{focus.title}</b> as your focus and rate how it went.</p>
               </div>
             )}
-            {focus.drill && (
-              <button type="button" onClick={() => onRehearse(focus.drill!.id)}
+            {focus.drill && rehearseHref && (
+              <a href={rehearseHref}
                 className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-[1.5px] border-dashed border-gray-300 text-left active:scale-[0.99]">
                 <Dumbbell size={16} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-                <span className="text-[12.5px] text-gray-700"><b>Rehearse it on land first</b> → {focus.drill.title}</span>
-              </button>
+                <span className="text-[12.5px] text-gray-700"><b>Rehearse it on land first</b> → {focus.drill.title} · Feel it, in the course</span>
+              </a>
             )}
             <div>
               <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>Inside the chain</p>
