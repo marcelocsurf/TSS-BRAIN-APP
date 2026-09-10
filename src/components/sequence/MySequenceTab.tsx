@@ -8,6 +8,7 @@ import { Dumbbell, Waves, Target, Play, Crosshair } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
+import { sequencePageFor } from '@/lib/sequence-pages';
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
@@ -207,6 +208,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               onOpenStep={(id) => setOpenStepId(id)}
               onTrain={onTrainSequence}
               theme={theme}
+              pageHref={sequencePageFor(seq.id) ? `/portal/${portalToken}/seq/${seq.id}` : null}
             />
           ))}
         </div>
@@ -250,6 +252,7 @@ function BlockSection({
   selfSequenceRating = null,
   heldBackStepId = null,
   heldBackTitle = null,
+  pageHref = null,
   items,
   onOpenStep,
   onTrain,
@@ -276,6 +279,8 @@ function BlockSection({
   selfSequenceRating?: number | null;
   heldBackStepId?: string | null;
   heldBackTitle?: string | null;
+  /** La página de la secuencia (Think · Feel · Do · Review), si existe. */
+  pageHref?: string | null;
   items: SequenceItem[];
   onOpenStep: (id: string) => void;
   /** Entrenar la secuencia (solo en la vista por secuencia). */
@@ -349,6 +354,15 @@ function BlockSection({
           </div>
         </div>
       </summary>
+      {asSequence && pageHref && (
+        <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 text-[12px]" style={{ background: 'rgba(0,210,255,.06)' }}>
+          <span>
+            <span className="block font-semibold" style={{ color: INK }}>What this sequence is · open it in the course</span>
+            <span className="block text-[10.5px] text-gray-500">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
+          </span>
+          <span className="font-bold" style={{ color: '#0090B0' }}>→</span>
+        </a>
+      )}
 
       {/* Let's Play por secuencia: correrla completa, o elegir un paso como
           foco. Es la unidad de entreno, y la misma forma en que evalúa el

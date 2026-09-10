@@ -297,7 +297,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       if (!seqMeta.has(g.id)) {
         seqMeta.set(g.id, {
           wb_sequence_id: g.id,
-          wb_sequence_order: 7.1 + i * 0.1,
+          wb_sequence_order: Math.round((7.1 + i * 0.1) * 10) / 10,
           wb_sequence_name: g.name,
           wb_sequence_promise: g.promise,
           course_section: 'blue_belt',

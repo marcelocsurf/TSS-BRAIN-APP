@@ -838,9 +838,12 @@ export function sequenceVerdict(stars: (number | null)[]): {
 // pantallas y faltaba en la quinta (la guía del alumno), que es donde se vio
 // el problema. Acá, una sola vez.
 
-export type SequenceRole = 'foundation' | 'closing';
+export type SequenceRole = 'entry' | 'foundation' | 'closing';
 
 export const SEQUENCE_ROLE: Record<string, SequenceRole> = {
+  'BB-NAV': 'entry',              // Getting to the wave · 1 de 3
+  'BB-CATCH': 'entry',            // Getting to the wave · 2 de 3
+  'BB-LINE': 'entry',             // Getting to the wave · 3 de 3
   'BB-SEQ-FOUND': 'foundation',   // los 17 elementos, antes de las maniobras
   'YB-SEQ-8': 'closing',          // la ola completa + certificación de Yellow
   'BB-SEQ-CONCEPTS': 'closing',   // los cuatro conceptos + la ola completa
@@ -848,6 +851,7 @@ export const SEQUENCE_ROLE: Record<string, SequenceRole> = {
 };
 
 const SEQUENCE_ROLE_LABEL: Record<SequenceRole, string> = {
+  entry: 'Getting to the wave',
   foundation: 'Foundation',
   closing: 'Closing',
 };
@@ -859,7 +863,8 @@ export function sequencePrefix(
 ): string | null {
   const role = id ? SEQUENCE_ROLE[id] : undefined;
   if (role) return SEQUENCE_ROLE_LABEL[role];
-  if (order != null && order >= 1 && order <= 13) return `#${order}`;
+  // Solo escalones enteros del método: 7.1 (entrada de Blue) no es "#7.1".
+  if (order != null && Number.isInteger(order) && order >= 1 && order <= 13) return `#${order}`;
   return null;
 }
 

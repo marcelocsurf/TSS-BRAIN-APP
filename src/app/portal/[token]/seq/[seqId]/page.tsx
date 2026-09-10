@@ -46,7 +46,7 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
   const owns = COURSE_OWNER_IDS.has((student as any).id) || !!(course && (student as any)[course.accessColumn]);
   if (!owns) notFound();
 
-  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRow }] = await Promise.all([
+  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRow }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
     admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('step_id', cfg.stepIds),
     getStudentAccess((student as any).id),
@@ -54,6 +54,10 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
     // (Admin → kind "video") con un título que empieza por el id, p. ej.
     // "BB-SEQ-08 · Frontside Pumping". No necesita grant: el curso ya gatea.
     admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    // Lo que Let's Play sabe de esta secuencia (Marcelo 2026-09-09: "que se
+    // comunique lo de los cursos con lo que sale en la secuencia").
+    admin.from('student_sequence_ratings').select('current_rating, held_back_step_id').eq('student_id', (student as any).id).eq('sequence_id', cfg.id).maybeSingle(),
+    admin.from('student_step_ratings').select('step_id, current_rating, coach_rating').eq('student_id', (student as any).id).in('step_id', cfg.stepIds),
   ]);
 
   const lessons: Record<string, LessonBits> = {};
@@ -74,9 +78,30 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
   const pieces: Record<string, PieceRow> = {};
   for (const p of pieceRows ?? []) pieces[p.id] = p as PieceRow;
 
+  // Progreso: estrella por paso (la del coach manda), el paso más flojo en
+  // el orden de la cadena, y la nota del último run de la secuencia.
+  const ratingByStep = new Map<string, number>();
+  for (const r of stepRatings ?? []) {
+    const v = (r as any).coach_rating ?? (r as any).current_rating;
+    if (v != null) ratingByStep.set((r as any).step_id, Number(v));
+  }
+  const rated = cfg.stepIds.filter((id) => ratingByStep.has(id));
+  const weakestId = cfg.stepIds.find((id) => ratingByStep.has(id) && ratingByStep.get(id)! < 4) ?? null;
+  const progress = {
+    lastRun: (seqRating as any)?.current_rating ?? null,
+    heldBackId: (seqRating as any)?.held_back_step_id ?? null,
+    heldBackTitle: (seqRating as any)?.held_back_step_id ? (lessons[(seqRating as any).held_back_step_id]?.title ?? null) : null,
+    ratedSteps: rated.length,
+    totalSteps: cfg.stepIds.length,
+    minRating: rated.length ? Math.min(...rated.map((id) => ratingByStep.get(id)!)) : null,
+    weakestId,
+    weakestTitle: weakestId ? (lessons[weakestId]?.title ?? null) : null,
+    steps: cfg.stepIds.map((id) => ({ id, title: lessons[id]?.title ?? id, rating: ratingByStep.get(id) ?? null })),
+  };
+
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} />
+      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} />
     </div>
   );
 }

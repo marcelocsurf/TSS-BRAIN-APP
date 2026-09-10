@@ -29,8 +29,20 @@ const TABS: { key: Tab; label: string; sub: string; Icon: typeof Brain }[] = [
   { key: 'review', label: 'Review', sub: 'Check', Icon: CheckCircle2 },
 ];
 
+export interface SequenceProgress {
+  lastRun: number | null;
+  heldBackId: string | null;
+  heldBackTitle: string | null;
+  ratedSteps: number;
+  totalSteps: number;
+  minRating: number | null;
+  weakestId: string | null;
+  weakestTitle: string | null;
+  steps: { id: string; title: string; rating: number | null }[];
+}
+
 export function SequencePage({
-  video, cfg, lessons, pieces, token, canTrack }: {
+  video, cfg, lessons, pieces, token, canTrack, progress }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
@@ -38,6 +50,8 @@ export function SequencePage({
   canTrack: boolean;
   /** Video de la ejecución (Library → kind video, título que empieza con el id de la secuencia). */
   video?: { url: string; title: string } | null;
+  /** Lo que Let's Play sabe de esta secuencia para este alumno. */
+  progress?: SequenceProgress | null;
 }) {
   const [tab, setTab] = useState<Tab>('think');
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
@@ -264,6 +278,29 @@ export function SequencePage({
                 </div>
               ))}
             </Card>
+            {progress && progress.ratedSteps > 0 && (
+              <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
+                  {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
+                  {progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
+                  <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {progress.steps.map((st) => (
+                    <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px]" style={{ background: 'rgba(255,255,255,.06)', color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
+                      {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}
+                    </span>
+                  ))}
+                </div>
+                {(progress.heldBackTitle || progress.weakestTitle) && (
+                  <p className="text-[13.5px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)', color: PAPER }}>
+                    <span style={{ ...F_M, color: GOLD }}>Work on · </span>
+                    {progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.
+                  </p>
+                )}
+                <a href={`${portal}?tab=sequence`} className="inline-block mt-2 text-[12.5px] font-semibold" style={{ color: CYAN }}>See all your sequences in Let&apos;s Play →</a>
+              </Card>
+            )}
             <Card eyebrow="Competence · is it yours yet?" color={GREEN}>
               <p className="text-[13.5px]" style={{ color: TEXT }}>{cfg.do.competence}</p>
             </Card>
@@ -307,6 +344,29 @@ export function SequencePage({
                     <div className="pb-3"><MarkdownContent markdown={lessons[id].mistakes} /></div>
                   </details>
                 ) : null)}
+              </Card>
+            )}
+            {progress && progress.ratedSteps > 0 && (
+              <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
+                  {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
+                  {progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
+                  <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {progress.steps.map((st) => (
+                    <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px]" style={{ background: 'rgba(255,255,255,.06)', color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
+                      {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}
+                    </span>
+                  ))}
+                </div>
+                {(progress.heldBackTitle || progress.weakestTitle) && (
+                  <p className="text-[13.5px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)', color: PAPER }}>
+                    <span style={{ ...F_M, color: GOLD }}>Work on · </span>
+                    {progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.
+                  </p>
+                )}
+                <a href={`${portal}?tab=sequence`} className="inline-block mt-2 text-[12.5px] font-semibold" style={{ color: CYAN }}>See all your sequences in Let&apos;s Play →</a>
               </Card>
             )}
             <Card eyebrow="How it feels" color={VIOLET}>
