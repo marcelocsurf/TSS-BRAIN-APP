@@ -9,7 +9,7 @@ import {
   TRAINING_SEQUENCE_ORDER,
   BLUE_COURSE_PRELUDE,
   stepKey,
-  SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide } from '@/lib/constants/learning-blocks';
+  SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide, SEQUENCE_ROLE } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
 
 // ─── Types ───
@@ -796,7 +796,11 @@ export async function getNextMove(
     // pasos calificados estaba bajo (p. ej. toda sin empezar).
     const mine = data.sequences.filter((s) => s.belt === beltKey);
     const pool = mine.length ? mine : data.sequences;
-    const seq = pool.find((s) => s.state !== 'owned');
+    // Las secuencias de ENTRADA (Getting to the wave) no frenan el camino
+    // (Marcelo 2026-09-10): el camino son las secuencias del método; las
+    // entradas solo se sugieren cuando todo lo demás ya es tuyo.
+    const isEntry = (s: (typeof pool)[number]) => SEQUENCE_ROLE[s.id] === 'entry';
+    const seq = pool.find((s) => s.state !== 'owned' && !isEntry(s)) ?? pool.find((s) => s.state !== 'owned');
     if (!seq) return null;
     const eff = (i: SequenceItem) => i.coach_rating ?? i.rating ?? null;
     const firstNotAtBar = seq.items.find((i) => { const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
