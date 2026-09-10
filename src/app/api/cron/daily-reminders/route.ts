@@ -199,6 +199,57 @@ async function handle(req: NextRequest) {
   let closureEmails = 0;
   const svNow = new Date(Date.now() - 6 * 3600_000);
   const closureRun = svNow.getUTCHours() >= 16; // corrida vespertina (cron 23:00 UTC = 5 PM SV)
+
+  // ── 4b. Next focus pendiente (auditoría coach 2026-09-10) ──
+  // El coach puede cerrar el día y dejar "what to work on next" para más
+  // tarde. A las 5 PM se le recuerda lo que sigue vacío de los últimos 2
+  // días, con el mismo correo de cierres pendientes.
+  let focusEmails = 0;
+  if (closureRun) try {
+    const svToday = svNow.toISOString().slice(0, 10);
+    const twoDaysAgo = new Date(svNow.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    const { data: closedSes } = await admin
+      .from('camp_sessions')
+      .select('id, session_date, session_status, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
+      .gte('session_date', twoDaysAgo)
+      .lte('session_date', svToday)
+      .eq('session_status', 'completed');
+    const sesIds = ((closedSes as any[]) ?? []).map((s) => s.id);
+    const missing = new Map<string, number>();
+    if (sesIds.length) {
+      const { data: blocks } = await admin
+        .from('service_plan_blocks')
+        .select('camp_session_id, student_id, whats_next')
+        .in('camp_session_id', sesIds)
+        .eq('order_index', 0);
+      for (const b of (blocks as any[]) ?? []) {
+        if (((b.whats_next ?? '') as string).trim().length >= 5) continue;
+        missing.set(b.camp_session_id, (missing.get(b.camp_session_id) ?? 0) + 1);
+      }
+    }
+    const byCoachF = new Map<string, { name: string; email: string; token: string; academyId: string | null; pending: { service: string; date: string }[] }>();
+    for (const ses of (closedSes as any[]) ?? []) {
+      const n = missing.get(ses.id) ?? 0;
+      if (!n) continue;
+      const inst = Array.isArray(ses.camp_instances) ? ses.camp_instances[0] : ses.camp_instances;
+      if (!inst || inst.status === 'cancelled') continue;
+      const useHead = inst.head_coach_id && inst.head_coach_status === 'accepted';
+      const coach = useHead ? (Array.isArray(inst.hc) ? inst.hc[0] : inst.hc) : (Array.isArray(inst.coaches) ? inst.coaches[0] : inst.coaches);
+      if (!coach?.id || !coach?.email) continue;
+      const e = byCoachF.get(coach.id) ?? { name: coach.display_name ?? 'Coach', email: coach.email, token: coach.portal_token, academyId: inst.academy_id ?? null, pending: [] as { service: string; date: string }[] };
+      e.pending.push({ service: `${(inst.camp_name ?? '').split(' · ')[0]} · next focus pending for ${n} student${n === 1 ? '' : 's'}`, date: ses.session_date });
+      byCoachF.set(coach.id, e);
+    }
+    if (byCoachF.size) {
+      const { sendClosureReminderEmail } = await import('@/lib/actions/email');
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+      for (const [, c] of byCoachF) {
+        const r = await sendClosureReminderEmail({ toEmail: c.email, coachName: c.name, pending: c.pending, portalUrl: `${base}/coach-portal/${c.token}`, academyId: c.academyId });
+        if (r.success) focusEmails++;
+      }
+    }
+  } catch (e) { console.error('[daily-reminders] next-focus section failed', e); }
+  if (focusEmails) console.log(`[daily-reminders] next-focus reminders: ${focusEmails}`);
   if (closureRun) try {
     const svToday = svNow.toISOString().slice(0, 10);
     const weekAgo = new Date(svNow.getTime() - 6 * 86400000).toISOString().slice(0, 10);

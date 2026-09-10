@@ -336,10 +336,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     }
     const noNext = students.filter((s) => ((s.blocks[0]?.whats_next ?? '').trim().length < 5));
     if (noNext.length > 0) {
-      alert(
-        `Write "What to work on next" for: ${noNext.map((s) => s.display_name).join(', ')}.\n\nOne specific line per student — the student sees it as their Next Focus and the next coach plans from it.`
-      );
-      return;
+      // Auditoría coach (2026-09-10): con ocho alumnos y el sol pegando, el
+      // next focus se puede completar más tarde. Queda abierto por alumno
+      // después de cerrar, y a las 5 PM llega el recordatorio.
+      if (!confirm(`${noNext.length} student${noNext.length === 1 ? '' : 's'} without "what to work on next": ${noNext.map((s) => s.display_name).join(', ')}.\n\nClose now and add it later today? You can still write it after closing, and we remind you at 5 PM.`)) return;
     }
     // Anti copy-paste: el mismo texto pegado a 3+ alumnos no es seguimiento.
     const counts = new Map<string, number>();
@@ -1062,7 +1062,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           {/* 0. CLASS DAY — the real-world logistics: start time, which beach,
               transport. Feeds the coordinator's transport board and the whole
               team's 7-day agenda (photographer, assistants, support). */}
-          <Section icon={CalendarClock} title="Class day" subtitle="Start time, beach, and transport — the team plans around this">
+          <Section icon={CalendarClock} title="Class day" subtitle="One record for everyone: the front desk sets and adjusts this too — confirm it or correct it, don't re-enter it.">
             <div className="space-y-3">
               {/* Stacked (not a 2-col grid): the native iOS time picker renders
                   wider than its cell and used to overlap the beach field. */}
@@ -3172,7 +3172,7 @@ function StudentEvalCard({
               "Next Focus" y es el punto de partida del próximo coach. */}
           <div className="rounded-lg bg-cyan-50/60 border border-cyan-200 p-2.5 space-y-1.5">
             <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-700">
-              🎯 Next focus · required — the student sees this
+              🎯 Next focus · {isClosed && (gen?.whats_next ?? '').trim().length < 5 ? 'still pending — the student is waiting' : 'the student sees this'}
             </p>
             {/* Sale del curso (Marcelo 2026-09-10): momentos de la línea de lo
                 que se entrenó hoy, la línea completa, o empezar la siguiente.
@@ -3182,7 +3182,8 @@ function StudentEvalCard({
               const titles: Record<string, string> = {};
               for (const id of stepIds) { const t = stpLabel(id); if (t) titles[id] = t; }
               const groups = coachFocusOptions(stepIds, titles);
-              if (!groups.length || isClosed) return null;
+              const focusOpen = !isClosed || (gen?.whats_next ?? '').trim().length < 5;
+              if (!groups.length || !focusOpen) return null;
               const cur = gen?.whats_next ?? '';
               return (
                 <div className="space-y-1.5">
@@ -3218,7 +3219,7 @@ function StudentEvalCard({
               onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
               placeholder="Tap an option above, or write it — add a phrase to reinforce after ' — '"
               rows={2}
-              disabled={isClosed}
+              disabled={isClosed && (gen?.whats_next ?? '').trim().length >= 5}
             />
             <p className="text-[9px] text-cyan-700/70 italic">
               One specific line for {student.display_name} — what should the next session focus on?
