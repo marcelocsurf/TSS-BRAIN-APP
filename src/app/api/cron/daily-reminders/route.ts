@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendTaskOverdueEmail, sendServiceReminderEmail } from '@/lib/actions/email';
+import { emailEnabled } from '@/lib/email-switch';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,6 +172,7 @@ async function handle(req: NextRequest) {
       if ((later ?? 0) > 0) continue;
       if (!resend) continue; // sin Resend: no marcar enviado, reintentar mañana
       const endDate = new Date((mem as any).ends_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+      if (!(await emailEnabled('membership_expiry'))) continue;
       const { error: sendErr } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
         to: st.email,

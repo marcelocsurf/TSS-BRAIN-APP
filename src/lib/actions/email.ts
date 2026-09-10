@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { BRAND } from '@/lib/constants/brand';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
+import { emailEnabled } from '@/lib/email-switch';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Resend v3 devuelve { data, error } y NO lanza en fallo — el código hacía
@@ -48,6 +49,7 @@ interface SessionEmailData {
 }
 
 export async function sendSessionEmail(data: SessionEmailData): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('session_report'))) return { success: false, error: 'disabled:session_report' } as any;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const portalUrl = `${appUrl}/portal/${data.portalToken}`;
   const belt = BELT_DISPLAY[data.beltLevel];
@@ -96,6 +98,7 @@ interface CoachSurveyEmailData {
 }
 
 export async function sendCoachSurveyEmail(data: CoachSurveyEmailData): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('coach_survey'))) return { success: false, error: 'disabled:coach_survey' } as any;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const portalUrl = data.portalToken ? `${appUrl}/portal/${data.portalToken}` : appUrl;
   const useStandalone = data.feedbackToken && data.studentHasCourseAccess === false;
@@ -192,6 +195,7 @@ export async function sendIntakeLinkEmail(data: {
   intakeUrl: string;
   academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('intake_link'))) return { success: false, error: 'disabled:intake_link' } as any;
   try {
     await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
@@ -219,6 +223,7 @@ export async function sendPortalLinkEmail(data: {
   toEmail: string;
   students: Array<{ firstName: string; portalUrl: string }>;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('portal_link'))) return { success: false, error: 'disabled:portal_link' } as any;
   const many = data.students.length > 1;
   const buttons = data.students
     .map(
@@ -254,6 +259,7 @@ export async function sendAssignmentEmail(data: {
   portalUrl: string;
   academyId?: string | null;
 }): Promise<void> {
+  if (!(await emailEnabled('assignment'))) return { success: false, error: 'disabled:assignment' } as any;
   try {
     const body = `
       <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.coachFirstName)}</strong>,</p>
@@ -283,6 +289,7 @@ export async function sendAssignmentResponseEmail(data: {
   note?: string | null;
   academyId?: string | null;
 }): Promise<void> {
+  if (!(await emailEnabled('assignment_response'))) return { success: false, error: 'disabled:assignment_response' } as any;
   try {
     const verb = data.accepted ? 'accepted' : 'declined';
     const color = data.accepted ? '#059669' : '#DC2626';
@@ -317,6 +324,7 @@ export async function sendTaskOverdueEmail(data: {
   isAssignee: boolean;
   portalUrl: string;
 }): Promise<void> {
+  if (!(await emailEnabled('task_overdue'))) return { success: false, error: 'disabled:task_overdue' } as any;
   try {
     const body = data.isAssignee
       ? `<p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.firstName)}</strong>,</p>
@@ -344,6 +352,7 @@ export async function sendServiceReminderEmail(data: {
   whenLabel: string;
   portalUrl: string;
 }): Promise<void> {
+  if (!(await emailEnabled('service_reminder'))) return { success: false, error: 'disabled:service_reminder' } as any;
   try {
     const body = `
       <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.firstName)}</strong>,</p>
@@ -385,6 +394,7 @@ interface CoachInviteEmailData {
 export async function sendCoachInviteEmail(
   data: CoachInviteEmailData,
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('coach_invite'))) return { success: false, error: 'disabled:coach_invite' } as any;
   // Fail clearly (not cryptically) if the email service isn't configured.
   if (!process.env.RESEND_API_KEY) {
     console.error('sendCoachInviteEmail: RESEND_API_KEY is not set.');
@@ -513,6 +523,7 @@ interface PasswordResetEmailData {
 export async function sendPasswordResetEmail(
   data: PasswordResetEmailData,
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('password_reset'))) return { success: false, error: 'disabled:password_reset' } as any;
   try {
     await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
@@ -669,6 +680,7 @@ interface QuizLeadEmailData {
 export async function sendQuizLeadEmail(
   data: QuizLeadEmailData,
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('quiz_lead'))) return { success: false, error: 'disabled:quiz_lead' } as any;
   // Recipients: TSS HQ always, plus the lead's academy coordinators/admins
   // (dynamic — new academies get their leads without touching this file).
   const to = new Set<string>(['info@thesurfsequence.com']);
@@ -714,6 +726,7 @@ export async function sendBookDeliveryEmail(data: {
   firstName: string;
   portalUrl: string;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('book_delivery'))) return { success: false, error: 'disabled:book_delivery' } as any;
   try {
     await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
@@ -811,6 +824,7 @@ export async function sendBookingConfirmationEmail(data: {
   manageUrl: string;
   academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('booking_confirmation'))) return { success: false, error: 'disabled:booking_confirmation' } as any;
   try {
     await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
@@ -839,6 +853,7 @@ export async function sendClosureReminderEmail(data: {
   portalUrl: string;
   academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('closure_reminder'))) return { success: false, error: 'disabled:closure_reminder' } as any;
   try {
     const rows = data.pending.map((p) => `<li style="margin:0 0 4px;">${p.service} — <strong>${p.date}</strong></li>`).join('');
     await sendEmail({
@@ -871,6 +886,7 @@ export async function sendCoachWelcomeEmail(data: {
   variant?: 'coach' | 'host';
   academyId?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('coach_welcome'))) return { success: false, error: 'disabled:coach_welcome' } as any;
   try {
     const isHost = data.variant === 'host';
     const tour = isHost
