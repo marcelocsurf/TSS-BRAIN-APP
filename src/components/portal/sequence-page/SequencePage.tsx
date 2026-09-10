@@ -120,7 +120,7 @@ export function SequencePage({
                   <div key={id} className="py-2.5" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
                     <p className="text-[14px] font-semibold" style={{ color: PAPER }}><span className="font-mono text-[11px] mr-2" style={{ color: CYAN }}>{i + 1}</span>{lessons[id].title}</p>
                     {lessons[id].whatIs && <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
-                    <a href={`${portal}?tab=course&lesson=${id}`} className="inline-block mt-1 text-[12.5px] font-semibold" style={{ color: CYAN }}>Open the lesson →</a>
+                    <a href={`${portal}?tab=course&lesson=${id}`} className="inline-block mt-1 text-[12.5px] font-semibold" style={{ color: CYAN }}>Read the full lesson in the course →</a>
                   </div>
                 ) : null)}
               </Card>
@@ -367,7 +367,11 @@ function Piece({ p, href, canTrack }: { p?: PieceRow; href: string; canTrack: bo
   return (
     <div className="py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
       <p className="text-[14px] font-semibold">{p.title}</p>
-      {p.description_md && <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{p.description_md}</p>}
+      {/* Los drills de White/Yellow vienen en markdown (## What you'll train…):
+          se renderizan como en el curso, no como texto plano. */}
+      {p.description_md && (p.description_md.trim().startsWith('#') || /\n\s*[-*] /.test(p.description_md)
+        ? <div className="mt-1"><MarkdownContent markdown={p.description_md} /></div>
+        : <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{p.description_md}</p>)}
       <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
         {p.time_estimate && <span>{p.time_estimate}</span>}
         {p.reps_recommended && <span>{p.reps_recommended} reps</span>}
