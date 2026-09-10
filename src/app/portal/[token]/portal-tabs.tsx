@@ -256,9 +256,9 @@ function OpenSessionCard({ data, onFinish, onDiscard }: { data: PortalData; onFi
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: `3px solid ${stale ? '#FFD166' : '#06D6A0'}` }}>
       <div className="px-4 pt-3.5 pb-3">
-        <p className="text-[9px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Session in the water'} · planned {when}</p>
+        <p className="text-[12px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Session in the water'} · planned {when}</p>
         <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{os.sequenceName}</p>
-        <p className="text-[12px] text-white/60 mt-0.5 leading-snug">
+        <p className="text-[12px] text-white/80 mt-0.5 leading-snug">
           {os.mode === 'step_focus' && os.focusTitle ? `Focus: ${os.focusTitle}` : 'The whole line'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}{measure ? ` · ${measure}` : ''}
         </p>
         {os.intention && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>Your word: {os.intention}</p>}
@@ -266,7 +266,7 @@ function OpenSessionCard({ data, onFinish, onDiscard }: { data: PortalData; onFi
           <button type="button" onClick={onFinish} className="flex-1 h-11 rounded-xl text-[12.5px] font-bold active:scale-[0.98]" style={{ background: '#00D2FF', color: '#061C2B' }}>
             I&apos;m back — finish &amp; evaluate →
           </button>
-          <button type="button" onClick={onDiscard} className="h-11 px-3 rounded-xl text-[11.5px]" style={{ color: 'rgba(247,249,250,.6)', border: '1px solid rgba(255,255,255,.15)' }}>
+          <button type="button" onClick={onDiscard} className="h-11 px-3 rounded-xl text-[12.5px]" style={{ color: 'rgba(247,249,250,.78)', border: '1px solid rgba(255,255,255,.15)' }}>
             {stale ? 'Close without evaluating' : 'Discard'}
           </button>
         </div>
@@ -453,14 +453,14 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
     const inner = (
       <div className="flex items-start gap-3">
         {numbered && (
-          <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: r.accent, color: '#061C2B' }} aria-label={`Priority ${idx + 1}`}>
+          <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold" style={{ background: r.accent, color: '#061C2B' }} aria-label={`Priority ${idx + 1}`}>
             {idx + 1}
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[9px]" style={{ ...F_LABEL, color: r.accent }}>{numbered ? r.label : `Work on this · ${r.label.toLowerCase()}`}</p>
+          <p className="text-[12px]" style={{ ...F_LABEL, color: r.accent }}>{numbered ? r.label : `Work on this · ${r.label.toLowerCase()}`}</p>
           <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{r.title}</p>
-          <p className="text-[12px] text-white/60 mt-0.5 leading-snug">{r.reason}</p>
+          <p className="text-[12px] text-white/80 mt-0.5 leading-snug">{r.reason}</p>
           {r.detail && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>{r.detail}</p>}
           {r.side && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#B388FF' }}>Both sides · {r.side}</p>}
           {r.action && <p className="text-[12px] mt-1.5 font-semibold" style={{ color: r.accent }}>{r.action}</p>}
@@ -482,9 +482,9 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
   };
   const cleared = coachCleared && (
     <div className="px-4 py-3" style={rowStyle}>
-      <p className="text-[9px]" style={{ ...F_LABEL, color: '#06D6A0' }}>You cleared it</p>
+      <p className="text-[12px]" style={{ ...F_LABEL, color: '#06D6A0' }}>You cleared it</p>
       <p className="text-[13.5px] text-white mt-1 leading-snug">You took what your coach left you to 4★ on your own.</p>
-      <p className="text-[12px] text-white/60 mt-1 leading-snug">They confirm it next time they see you in the water.</p>
+      <p className="text-[12px] text-white/80 mt-1 leading-snug">They confirm it next time they see you in the water.</p>
     </div>
   );
 
@@ -496,7 +496,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
         {first ? renderRow(first, 0, false) : cleared}
         {first && cleared}
         {rows.length > 1 && (
-          <button type="button" onClick={() => onGoTo?.('sequence')} className="block w-full text-left px-4 py-2.5 text-[11.5px]" style={{ ...rowStyle, color: '#8aa0b0' }}>
+          <button type="button" onClick={() => onGoTo?.('sequence')} className="block w-full text-left px-4 py-2.5 text-[12.5px]" style={{ ...rowStyle, color: '#b3c4d1' }}>
             {rows.length - 1} more waiting in Let&apos;s Play →
           </button>
         )}
@@ -508,13 +508,13 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
       <div className="px-4 pt-3.5 pb-2">
-        <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>Your next moves</p>
-        <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,.55)' }}>{rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
+        <p className="text-[12px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>Your next moves</p>
+        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,.55)' }}>{rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
       </div>
       {cleared}
       {rows.map((r, idx) => renderRow(r, idx, true))}
       {rows.length > 0 && (
-        <p className="px-4 py-2.5 text-[10.5px] leading-snug" style={{ color: '#8aa0b0', ...rowStyle }}>
+        <p className="px-4 py-2.5 text-[12px] leading-snug" style={{ color: '#b3c4d1', ...rowStyle }}>
           The order: 1 your coach · 2 your list · 3 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
         </p>
       )}
@@ -767,13 +767,13 @@ export function PortalTabs({
               className="block w-full text-left rounded-2xl px-4 py-3.5"
               style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
             >
-              <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
+              <p className="text-[12px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
                 What it takes
               </p>
               <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
                 Everything you need for your next belt
               </p>
-              <p className="text-[12px] text-white/60 mt-0.5">
+              <p className="text-[12px] text-white/80 mt-0.5">
                 The same list your coach fills in — sequences, water, course.
               </p>
             </button>
@@ -876,18 +876,18 @@ export function PortalTabs({
               {(data.drillsMissions ?? []).length > 0 && (
                 <div className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
                   <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-                    <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Your drills and missions</p>
-                    <p className="text-[12px] text-white/60 mt-0.5">Part of your course — read them anytime. Train them with the system while your training tool is active.</p>
+                    <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Your drills and missions</p>
+                    <p className="text-[12px] text-white/80 mt-0.5">Part of your course — read them anytime. Train them with the system while your training tool is active.</p>
                   </div>
                   <ul className="divide-y" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
                     {(data.drillsMissions ?? []).map((d: any) => (
                       <li key={d.id} className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-mono uppercase" style={{ background: d.type === 'mission' ? 'rgba(6,214,160,.15)' : 'rgba(0,210,255,.12)', color: d.type === 'mission' ? '#06D6A0' : '#00D2FF' }}>{d.type}</span>
+                          <span className="text-[12px] px-1.5 py-0.5 rounded font-mono uppercase" style={{ background: d.type === 'mission' ? 'rgba(6,214,160,.15)' : 'rgba(0,210,255,.12)', color: d.type === 'mission' ? '#06D6A0' : '#00D2FF' }}>{d.type}</span>
                           <span className="text-[13px] font-semibold text-white">{d.title}</span>
                           <Lock size={12} className="ml-auto text-white/30" />
                         </div>
-                        {d.key_words && <p className="text-[11px] text-white/50 mt-1">{Array.isArray(d.key_words) ? d.key_words.join(' · ') : String(d.key_words)}</p>}
+                        {d.key_words && <p className="text-[12px] text-white/50 mt-1">{Array.isArray(d.key_words) ? d.key_words.join(' · ') : String(d.key_words)}</p>}
                       </li>
                     ))}
                   </ul>
@@ -918,14 +918,14 @@ export function PortalTabs({
                 onClick={() => setShowCustomSession(true)}
                 className="w-full bg-gray-50 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-2xl p-4 text-left transition-colors"
               >
-                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                <p className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider text-gray-400">
                   <Waves size={14} strokeWidth={1.75} />
                   Custom Session
                 </p>
                 <p className="text-sm font-semibold text-[var(--tss-navy)] mt-1">
                   Free surf, breathing, fun — anything off-script
                 </p>
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[12px] text-gray-500 mt-1">
                   Logged for the record but does NOT count toward step mastery.
                 </p>
               </button>
@@ -936,7 +936,7 @@ export function PortalTabs({
                   tarjetas ya se presentan solas (ícono + título + subtítulo):
                   un encabezado y la grilla alcanzan. */}
               <div>
-                <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+                <p className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-2">
                   <Video size={14} strokeWidth={1.75} />
                   Tools
                 </p>
@@ -993,7 +993,7 @@ export function PortalTabs({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`relative flex-1 flex flex-col items-center py-2.5 text-[10px] font-semibold transition-colors ${
+                className={`relative flex-1 flex flex-col items-center py-2.5 text-[12px] font-semibold transition-colors ${
                   isActive ? 'text-[var(--tss-navy)]' : 'text-gray-400 hover:text-gray-600'
                 }`}
                 style={{ fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}
@@ -1025,7 +1025,7 @@ export function PortalTabs({
 
       {/* Footer */}
       <div className="text-center py-4 pb-24">
-        <p className="text-[10px] text-gray-300">The Surf Sequence -- {BRAND.tagline}</p>
+        <p className="text-[12px] text-gray-300">The Surf Sequence -- {BRAND.tagline}</p>
       </div>
     </div>
   );
@@ -1165,10 +1165,10 @@ function HomeTab({
                     {sessionCue.cue}
                   </p>
                   <p className="text-[13px] mt-1.5 leading-snug" style={{ color: '#eaf4fa' }}>
-                    <span className="font-mono uppercase text-[8.5px] tracking-wider mr-1.5" style={{ color: '#00D2FF' }}>Today</span>
+                    <span className="font-mono uppercase text-[12px] tracking-wider mr-1.5" style={{ color: '#00D2FF' }}>Today</span>
                     {sessionCue.today}
                   </p>
-                  <p className="text-[9.5px] mt-1.5" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
+                  <p className="text-[12px] mt-1.5" style={{ color: '#b3c4d1' }}>From One Wave · Marcelo Castellanos</p>
                 </div>
               )}
             </div>
@@ -1198,15 +1198,15 @@ function HomeTab({
                 className="w-16 h-auto rounded shadow-lg shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] tracking-[.18em] uppercase font-mono" style={{ color: '#5AC3E7' }}>
+                <p className="text-[12px] tracking-[.18em] uppercase font-mono" style={{ color: '#5AC3E7' }}>
                   Your book
                 </p>
                 <p className="text-white font-bold text-[15px] mt-0.5 leading-tight">ONE WAVE</p>
-                <p className="text-[11.5px] text-white/55 mt-1 leading-snug">
+                <p className="text-[12.5px] text-white/80 mt-1 leading-snug">
                   A practical system to train with intention — your copy, on any device.
                 </p>
               </div>
-              <span className="shrink-0 text-[11px] font-semibold" style={{ color: '#5AC3E7' }}>
+              <span className="shrink-0 text-[12px] font-semibold" style={{ color: '#5AC3E7' }}>
                 Read →
               </span>
             </div>
@@ -1237,7 +1237,7 @@ function HomeTab({
               className="absolute -top-14 -right-14 w-44 h-44 rounded-full pointer-events-none"
               style={{ background: `radial-gradient(circle, ${d.color}44, transparent 70%)` }}
             />
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] mb-2" style={{ color: d.color }}>
+            <p className="text-[12px] font-mono uppercase tracking-[0.2em] mb-2" style={{ color: d.color }}>
               🏆 Belt promotion
             </p>
             <h2
@@ -1256,7 +1256,7 @@ function HomeTab({
             </p>
             {note && (
               <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background: 'rgba(255,255,255,.05)', borderLeft: '3px solid #00D2FF' }}>
-                <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>From your coach</p>
+                <p className="text-[12px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>From your coach</p>
                 <p className="text-[13px] italic leading-relaxed" style={{ color: 'rgba(247,249,250,.9)' }}>{note}</p>
               </div>
             )}
@@ -1279,19 +1279,19 @@ function HomeTab({
         <div className="rounded-3xl overflow-hidden p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.2)' }}>
           {data.hasAnyCourse ? (
             <>
-              <p className="text-[9px]" style={{ ...F_LABEL, color: '#FFD166' }}>Membership ended</p>
+              <p className="text-[12px]" style={{ ...F_LABEL, color: '#FFD166' }}>Membership ended</p>
               <p className="text-white font-bold text-[17px] mt-1 leading-tight">Your course is yours. Let&apos;s Play is waiting.</p>
               <p className="text-[12.5px] mt-2 leading-snug" style={{ color: 'rgba(240,247,250,.7)' }}>
                 Lessons and drills stay open. Training sessions, your surf hours and your progress come back the moment you renew the training tool ($99/year).
               </p>
               <button type="button" onClick={() => onGoTo('sequence')}
-                className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
+                className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold" style={{ color: '#00D2FF' }}>
                 Renew my membership →
               </button>
             </>
           ) : (
             <>
-              <p className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Start here</p>
+              <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Start here</p>
               <p className="text-white font-bold text-[17px] mt-1 leading-tight">
                 {data.hasBook ? 'Read the book, then train with us.' : 'Your training starts with your course.'}
               </p>
@@ -1299,7 +1299,7 @@ function HomeTab({
                 Every course includes 1 year of the training tool (a $99 value): drills, missions, session logging and your progress. When you get one, everything opens right here — same portal, same login.
               </p>
               <a href="https://www.thesurfsequence.com" target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold" style={{ color: '#00D2FF' }}>
+                className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold" style={{ color: '#00D2FF' }}>
                 See courses and memberships →
               </a>
             </>
@@ -1315,13 +1315,13 @@ function HomeTab({
           className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
         >
-          <span className="text-[9px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Student portal</span>
+          <span className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Student portal</span>
           <button type="button" onClick={openInbox}
             aria-label="Notifications" className="relative p-2.5 -m-2.5">
-            <Bell size={18} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : 'rgba(247,249,250,.6)' }} />
+            <Bell size={18} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : 'rgba(247,249,250,.78)' }} />
             {unreadMsgs > 0 && (
               // Tinta sobre coral (6.3:1) — blanco sobre coral no pasaba AA.
-              <span className="absolute -top-1 -right-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+              <span className="absolute -top-1 -right-1 rounded-full text-[12px] font-bold flex items-center justify-center"
                 style={{ minWidth: 15, height: 15, background: '#FF6B6B', color: '#061C2B', padding: '0 3px' }}>
                 {unreadMsgs}
               </span>
@@ -1340,7 +1340,7 @@ function HomeTab({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <User size={26} strokeWidth={1.75} style={{ color: '#8aa0b2' }} />
+                <User size={26} strokeWidth={1.75} style={{ color: '#b3c4d1' }} />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -1348,7 +1348,7 @@ function HomeTab({
                 {student.first_name} {student.last_name}
               </p>
               <span
-                className="mt-1.5 inline-flex items-center rounded-full px-2.5 py-1 text-[9px]"
+                className="mt-1.5 inline-flex items-center rounded-full px-2.5 py-1 text-[12px]"
                 style={{ ...F_LABEL, background: belt?.color || '#E8E8E8', color: ['white_belt'].includes(student.belt_level) ? '#061C2B' : '#fff' }}
               >
                 {belt?.en}
@@ -1356,7 +1356,7 @@ function HomeTab({
             </div>
             <div className="text-right shrink-0">
               <p className="text-[26px] leading-none" style={{ ...F_DISPLAY, color: '#00D2FF' }}>{streak}</p>
-              <p className="text-[8px] mt-1" style={{ ...F_LABEL, color: '#8aa0b2' }}>Day streak</p>
+              <p className="text-[12px] mt-1" style={{ ...F_LABEL, color: '#b3c4d1' }}>Day streak</p>
             </div>
           </div>
 
@@ -1388,11 +1388,11 @@ function HomeTab({
                 }}>
                   {fmtHm(surf.totalMinutes)}
                 </p>
-                <p className="text-[8px] font-mono uppercase tracking-[0.12em] mt-1 whitespace-nowrap" style={{ color: '#a9bccb' }}>Hours surfed</p>
+                <p className="text-[12px] font-mono uppercase tracking-[0.12em] mt-1 whitespace-nowrap" style={{ color: '#a9bccb' }}>Hours surfed</p>
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Level progress</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Level progress</p>
               <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa' }}>
                 Level {BELT_RANK[beltLevel] ?? 1} of 6
               </p>
@@ -1402,11 +1402,11 @@ function HomeTab({
               {/* Desglose de LAS MISMAS horas del anillo — un solo lugar
                   para el dato (antes eran dos tarjetas sueltas más abajo). */}
               <div className="flex items-center gap-3 mb-2">
-                <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: '#b8cad8' }}>
+                <span className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: '#b8cad8' }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />
                   Training <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.trainingMinutes)}</b>
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: '#b8cad8' }}>
+                <span className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: '#b8cad8' }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />
                   Free surf <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.freeSurfMinutes)}</b>
                 </span>
@@ -1418,10 +1418,10 @@ function HomeTab({
                 return nd ? (
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ background: nd.color }} />
-                    <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Next: {nd.levelName} · {nd.en}</span>
+                    <span className="text-[12px]" style={{ color: '#b3c4d1' }}>Next: {nd.levelName} · {nd.en}</span>
                   </div>
                 ) : (
-                  <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Top belt reached</span>
+                  <span className="text-[12px]" style={{ color: '#b3c4d1' }}>Top belt reached</span>
                 );
               })()}
             </div>
@@ -1460,7 +1460,7 @@ function HomeTab({
               className="block w-full text-left rounded-2xl px-4 py-3.5"
               style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
             >
-              <p className="text-[9px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>
+              <p className="text-[12px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>
                 New in The Lineup
               </p>
               {(data as any).lineup.posts
@@ -1525,30 +1525,30 @@ function HomeTab({
               style={{ background: '#061C2B', margin: 0, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
               <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <button type="button" onClick={() => setInboxOpen(false)} className="text-[11px] font-mono uppercase tracking-wider py-2 pr-3" style={{ color: '#8aa0b2' }}>
+                  <button type="button" onClick={() => setInboxOpen(false)} className="text-[12px] font-mono uppercase tracking-wider py-2 pr-3" style={{ color: '#b3c4d1' }}>
                     ← Home
                   </button>
-                  <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>
+                  <span className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>
                     <Bell size={11} className="inline -mt-0.5" /> Notifications
                   </span>
-                  <button type="button" onClick={() => setInboxOpen(false)} aria-label="Close" className="p-2 -m-2" style={{ color: '#8aa0b2' }}>✕</button>
+                  <button type="button" onClick={() => setInboxOpen(false)} aria-label="Close" className="p-2 -m-2" style={{ color: '#b3c4d1' }}>✕</button>
                 </div>
                 {inboxMsgs.length === 0 && (
                   <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
                     <p className="text-[14px] font-semibold" style={{ color: '#eaf4fa' }}>Nothing new 🤙</p>
-                    <p className="text-[11.5px] mt-1" style={{ color: '#8aa0b2' }}>Messages from your coach will land here.</p>
+                    <p className="text-[12.5px] mt-1" style={{ color: '#b3c4d1' }}>Messages from your coach will land here.</p>
                   </div>
                 )}
                 {inboxMsgs.map((m: any) => (
                   <div key={m.id} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
-                    <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: '#7BA2B5' }}>
+                    <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#7BA2B5' }}>
                       {m.coach_name || 'Your coach'} · {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </p>
                     {m.subject && <p className="text-[14px] font-bold mt-1" style={{ color: '#f4f9fc' }}>{m.subject}</p>}
                     <p className="text-[13px] mt-1 whitespace-pre-line leading-relaxed" style={{ color: '#cfdde8' }}>{m.body}</p>
                   </div>
                 ))}
-                <p className="text-center text-[9px] font-mono uppercase tracking-wider py-2" style={{ color: '#57707f' }}>
+                <p className="text-center text-[12px] font-mono uppercase tracking-wider py-2" style={{ color: '#57707f' }}>
                   The Surf Sequence · Messages
                 </p>
               </div>
@@ -1581,10 +1581,10 @@ function HomeTab({
             className="block w-full text-left p-4"
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
+              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#b3c4d1' }}>
                 Where you are · {String(data.courseData?.activeCourseBelt || beltLevel).replace('_belt', '').toUpperCase()} Belt{data.courseData?.activeCourseBelt && data.courseData.activeCourseBelt !== beltLevel.replace('_belt', '') ? ` · training` : ''}
               </p>
-              <span className="text-[10.5px] font-semibold shrink-0" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
+              <span className="text-[12px] font-semibold shrink-0" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
             </div>
             {/* El ESPEJO del nivel: valida dónde está, no motiva. Vivía a mitad
                 del Home repitiendo la cinta por tercera vez; su lugar es acá,
@@ -1610,7 +1610,7 @@ function HomeTab({
                           opacity: passed ? 1 : 0.4,
                         }}
                       />
-                      <span className="text-[8px]" style={{ color: isCurrent ? '#00D2FF' : '#8aa0b2' }}>{d.levelName}</span>
+                      <span className="text-[12px]" style={{ color: isCurrent ? '#00D2FF' : '#b3c4d1' }}>{d.levelName}</span>
                     </div>
                     {i < BELT_HIERARCHY.length - 1 && (
                       <div className="flex-1 mx-1" style={{ height: 2, background: '#1f344a', marginBottom: 14 }} />
@@ -1641,15 +1641,15 @@ function HomeTab({
             style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}
           >
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
+              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#b3c4d1' }}>
                 In the water
               </p>
-              <p className="text-[12.5px] font-semibold shrink-0" style={{ color: oceanConfirmed ? '#eaf4fa' : '#8aa0b2' }}>
+              <p className="text-[12.5px] font-semibold shrink-0" style={{ color: oceanConfirmed ? '#eaf4fa' : '#b3c4d1' }}>
                 {oceanConfirmed ? oceanConfirmed.name : 'Your water level →'}
               </p>
             </div>
             {oceanConfirmed && (
-              <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#6f8698' }}>
+              <p className="text-[12.5px] mt-0.5 leading-snug" style={{ color: '#b3c4d1' }}>
                 {oceanConfirmed.cleared}
               </p>
             )}
@@ -1682,30 +1682,30 @@ function HomeTab({
       {latestResult && (
         <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-            <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Latest session</p>
+            <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Latest session</p>
             <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}>
               {latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}
             </h3>
           </div>
           <div className="px-4 py-3 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-xs" style={{ color: 'rgba(247,249,250,.55)' }}>Date</span>
+              <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Date</span>
               <span className="text-sm" style={{ color: '#F7F9FA' }}>
                 {new Date(latestResult.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             {latestResult.coaches?.display_name && (
               <div className="flex justify-between items-center">
-                <span className="text-xs" style={{ color: 'rgba(247,249,250,.55)' }}>Coach</span>
+                <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Coach</span>
                 <span className="text-sm font-medium" style={{ color: '#F7F9FA' }}>{latestResult.coaches.display_name}</span>
               </div>
             )}
             <div className="flex justify-between items-start gap-3">
-              <span className="text-xs" style={{ color: 'rgba(247,249,250,.55)' }}>Status</span>
+              <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Status</span>
               <div className="text-right" style={{ maxWidth: '64%' }}>
                 <StatusBadge status={latestResult.status} />
                 {statusMeaning(latestResult.status) && (
-                  <p className="text-[11px] mt-1" style={{ color: 'rgba(247,249,250,.6)' }}>{statusMeaning(latestResult.status)}</p>
+                  <p className="text-[12px] mt-1" style={{ color: 'rgba(247,249,250,.78)' }}>{statusMeaning(latestResult.status)}</p>
                 )}
               </div>
             </div>
@@ -1713,7 +1713,7 @@ function HomeTab({
             {data.surveyResultIds.includes(latestResult.id) ? (
               latestResult.student_visible_summary && (
                 <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                  <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>Coach feedback</p>
+                  <p className="text-[12px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>Coach feedback</p>
                   <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'rgba(247,249,250,.85)' }}>
                     {latestResult.student_visible_summary}
                   </p>
@@ -1728,7 +1728,7 @@ function HomeTab({
                     className="w-full text-left rounded-xl p-3 transition-opacity hover:opacity-90"
                     style={{ background: '#122236', borderLeft: '3px solid #FFD166' }}
                   >
-                    <p className="text-[9px] font-mono uppercase tracking-wider mb-0.5" style={{ color: '#FFD166' }}>
+                    <p className="text-[12px] font-mono uppercase tracking-wider mb-0.5" style={{ color: '#FFD166' }}>
                       Coach feedback waiting
                     </p>
                     <p className="text-sm font-semibold" style={{ color: '#F7F9FA' }}>
@@ -1753,7 +1753,7 @@ function HomeTab({
         const certN = c.coach?.certification_level ? String(c.coach.certification_level).replace(/\D/g, '') : null;
         return (
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-            <p className="text-[9px]" style={{ ...F_LABEL, color: '#0090B0' }}>
+            <p className="text-[12px]" style={{ ...F_LABEL, color: '#0090B0' }}>
               {dayNum
                 ? `In progress · Day ${dayNum} of ${totalDays}`
                 : `Next class · ${startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
@@ -1767,7 +1767,7 @@ function HomeTab({
             </div>
             {c.coach && (
               <button type="button" onClick={() => onGoTo('my-coach')} className="mt-3 w-full flex items-center gap-3 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5 text-left">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                <div className="w-10 h-11 rounded-full overflow-hidden bg-gray-200 shrink-0">
                   {c.coach.photo_url && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.coach.photo_url} alt="" className="w-full h-full object-cover" />
@@ -1775,7 +1775,7 @@ function HomeTab({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold truncate" style={{ color: '#061C2B' }}>{c.coach.display_name}</p>
-                  {certN && <p className="text-[8px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Level {certN} certified</p>}
+                  {certN && <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Level {certN} certified</p>}
                 </div>
                 <ChevronRight size={16} className="text-gray-300 shrink-0" />
               </button>
@@ -1793,7 +1793,7 @@ function HomeTab({
       <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
         <details className="group">
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
+            <span className="inline-flex items-center gap-2 text-[12px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
               <ClipboardList size={15} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
               My Sessions
             </span>
@@ -1805,11 +1805,11 @@ function HomeTab({
         </details>
         <details className="group" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 text-[11px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
+            <span className="inline-flex items-center gap-2 text-[12px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
               <MessageCircle size={15} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
               My Feedback
               {(data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#FF6B6B] font-bold">{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
+                <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#FF6B6B] font-bold">{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
               )}
             </span>
             <ChevronDown size={16} style={{ color: '#4e6a80' }} />
@@ -1863,7 +1863,7 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
           <span style={{ width: 4, height: 18, borderRadius: 3, background: '#00D2FF', display: 'inline-block' }} />
           <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>Flow Channel</span>
         </div>
-        {hasData && <span className="text-[9px]" style={{ color: '#8aa0b2' }}>from your session ratings</span>}
+        {hasData && <span className="text-[12px]" style={{ color: '#b3c4d1' }}>from your session ratings</span>}
       </div>
 
       {!hasData ? (
@@ -1873,8 +1873,8 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
       ) : (
         <>
           {/* Eyebrow + zonas */}
-          <p className="text-[9px] uppercase tracking-[0.18em] mt-3 pb-2 mb-3 text-center"
-            style={{ fontFamily: 'DM Mono, monospace', color: '#8aa0b2', borderBottom: '1px solid #1f344a' }}>
+          <p className="text-[12px] uppercase tracking-[0.18em] mt-3 pb-2 mb-3 text-center"
+            style={{ fontFamily: 'DM Mono, monospace', color: '#b3c4d1', borderBottom: '1px solid #1f344a' }}>
             Output · Learning zone
           </p>
 
@@ -1889,25 +1889,25 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
           </div>
 
           <div className="flex justify-between mt-1.5">
-            <span className="text-[9.5px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'easy' ? '#9fd7e8' : '#7BA2B5' }}>Too easy</span>
-            <span className="text-[9.5px] uppercase tracking-wider font-bold" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'opt' ? '#00D2FF' : '#7BA2B5' }}>Optimal learning</span>
-            <span className="text-[9.5px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'hard' ? '#E28A93' : '#7BA2B5' }}>Too hard</span>
+            <span className="text-[12px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'easy' ? '#9fd7e8' : '#7BA2B5' }}>Too easy</span>
+            <span className="text-[12px] uppercase tracking-wider font-bold" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'opt' ? '#00D2FF' : '#7BA2B5' }}>Optimal learning</span>
+            <span className="text-[12px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'hard' ? '#E28A93' : '#7BA2B5' }}>Too hard</span>
           </div>
 
           {/* La doctrina, en las palabras de Marcelo */}
           <p className="text-[12.5px] font-bold mt-3.5 text-center" style={{ color: '#f0f7fa' }}>
             Challenge matched to capability + conditions
           </p>
-          <p className="text-[10px] mt-1 text-center" style={{ color: '#8aa0b2' }}>
+          <p className="text-[12px] mt-1 text-center" style={{ color: '#b3c4d1' }}>
             Difficult enough to demand attention · possible enough to produce feedback
           </p>
 
           <div className="flex items-baseline justify-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #1f344a' }}>
             <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '24px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
             <span className="font-semibold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: ZONE_COLOR[zone], fontSize: '14px' }}>{label}</span>
-            <span className="text-[10px]" style={{ color: '#8aa0b2' }}>· {flow!.count} rating{flow!.count === 1 ? '' : 's'}</span>
+            <span className="text-[12px]" style={{ color: '#b3c4d1' }}>· {flow!.count} rating{flow!.count === 1 ? '' : 's'}</span>
           </div>
-          <p className="text-[11px] mt-2 text-center" style={{ color: '#dbe8f1' }}>{advice}</p>
+          <p className="text-[12px] mt-2 text-center" style={{ color: '#dbe8f1' }}>{advice}</p>
         </>
       )}
     </div>
@@ -1981,7 +1981,7 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                     <p className="text-sm font-medium text-gray-900">{titleText}</p>
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[12px] text-gray-500">
                       {new Date(session.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -1993,17 +1993,17 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                       return c?.display_name ? (
                         <>
                           <span className="text-gray-300">-</span>
-                          <span className="text-[10px] text-gray-500">{c.display_name}</span>
+                          <span className="text-[12px] text-gray-500">{c.display_name}</span>
                         </>
                       ) : null;
                     })()}
                     {isSelf && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">
+                      <span className="text-[12px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">
                         Self
                       </span>
                     )}
                     {isMultiBlock && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-medium">
+                      <span className="text-[12px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-medium">
                         Plan
                       </span>
                     )}
@@ -2012,12 +2012,12 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                 <div className="flex items-center gap-2 shrink-0">
                   {!isSelf && !isMultiBlock && <StatusBadge status={session.status} />}
                   {isSelf && session.completed && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                    <span className="text-[12px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
                       Done
                     </span>
                   )}
                   {isMultiBlock && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
+                    <span className="text-[12px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
                       Closed
                     </span>
                   )}
@@ -2147,7 +2147,7 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                         <div className="text-right max-w-[64%]">
                           <StatusBadge status={session.status} />
                           {statusMeaning(session.status) && (
-                            <p className="text-[11px] text-gray-500 mt-1">{statusMeaning(session.status)}</p>
+                            <p className="text-[12px] text-gray-500 mt-1">{statusMeaning(session.status)}</p>
                           )}
                         </div>
                       </div>
@@ -2205,7 +2205,7 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                       )}
                     {!surveyResultIds.includes(session.id) &&
                       session.student_visible_summary && (
-                        <div className="pt-1 text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2 italic">
+                        <div className="pt-1 text-[12px] text-amber-700 bg-amber-50 rounded-xl p-2 italic">
                           Fill the coach survey for this session to unlock the feedback.
                         </div>
                       )}
@@ -2320,7 +2320,7 @@ function MaterialsTab({
           style={{ borderLeft: `3px solid ${belt?.color || '#999'}` }}
         >
           <div className="px-4 py-3 bg-white">
-            <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+            <p className="text-[12px] text-gray-500 uppercase tracking-wider font-semibold mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
               {belt?.en} — What You Are Working On
             </p>
             <p className="text-sm text-[var(--tss-navy)] font-medium leading-relaxed">
@@ -2354,7 +2354,7 @@ function MaterialsTab({
                   <h3 className={`text-sm font-bold ${BELT_TEXT_STYLES[bKey] || 'text-gray-800'}`}>
                     {beltInfo?.en}
                   </h3>
-                  <p className={`text-[10px] ${BELT_TEXT_STYLES[bKey] || 'text-gray-800'} opacity-60`}>
+                  <p className={`text-[12px] ${BELT_TEXT_STYLES[bKey] || 'text-gray-800'} opacity-60`}>
                     {beltInfo?.levelName} &middot; {mats.length} sections
                   </p>
                 </div>
@@ -2387,8 +2387,8 @@ function MaterialsTab({
                     }`}>
                       {catGroupLabel}
                     </span>
-                    <span className="text-[11px] text-gray-500 mr-1">({catMats.length})</span>
-                    <span className="text-gray-300 text-[10px]">{isCollapsed ? '▼' : '▲'}</span>
+                    <span className="text-[12px] text-gray-500 mr-1">({catMats.length})</span>
+                    <span className="text-gray-300 text-[12px]">{isCollapsed ? '▼' : '▲'}</span>
                   </button>
                   {!isCollapsed && catMats.map((mat) => (
                     <MaterialCard
@@ -2425,7 +2425,7 @@ function MaterialsTab({
                   <h3 className="text-sm font-bold text-gray-400">
                     {beltInfo?.en}
                   </h3>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[12px] text-gray-500">
                     {mats.length} sections &middot; Locked
                   </p>
                 </div>
@@ -2468,13 +2468,13 @@ function MaterialCard({
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-3.5 opacity-50 cursor-not-allowed shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
+          <div className="w-9 h-11 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
             <Lock size={18} strokeWidth={1.75} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-400">{material.title}</p>
             <p className="text-xs text-gray-300 mt-0.5">{material.subtitle}</p>
-            <p className="text-[11px] text-gray-500 mt-1.5 font-medium">
+            <p className="text-[12px] text-gray-500 mt-1.5 font-medium">
               Ask your coach to unlock {beltInfo?.en} materials
             </p>
           </div>
@@ -2490,7 +2490,7 @@ function MaterialCard({
         className="w-full px-3.5 py-3 text-left"
       >
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 text-[var(--tss-navy)]">
+          <div className="w-9 h-11 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 text-[var(--tss-navy)]">
             <CatIcon size={18} strokeWidth={1.75} />
           </div>
           <div className="flex-1 min-w-0">
@@ -2508,11 +2508,11 @@ function MaterialCard({
           <div className="pt-3">
             {/* Category badge */}
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+              <span className="text-[12px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
                 {MATERIAL_CATEGORY_LABELS[material.category]}
               </span>
               <span
-                className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white"
+                className="text-[12px] px-2 py-0.5 rounded-full font-medium text-white"
                 style={{ backgroundColor: beltInfo?.color || '#999' }}
               >
                 {beltInfo?.en}
@@ -2607,7 +2607,7 @@ function MaterialCard({
                   if (/^STANDARD:/.test(trimmed)) {
                     return (
                       <div key={i} className="bg-green-50 rounded-xl px-3 py-2.5 mt-3 border border-green-200">
-                        <p className="text-[10px] text-green-600 uppercase tracking-wider font-bold mb-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+                        <p className="text-[12px] text-green-600 uppercase tracking-wider font-bold mb-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
                           Success Criteria
                         </p>
                         <p className="text-sm font-medium text-green-800">
@@ -2620,7 +2620,7 @@ function MaterialCard({
                   if (/^SUCCESS CRITERIA:?$/i.test(trimmed)) {
                     return (
                       <div key={i} className="mt-2">
-                        <p className="text-[10px] text-green-600 uppercase tracking-wider font-bold" style={{ fontFamily: 'DM Mono, monospace' }}>
+                        <p className="text-[12px] text-green-600 uppercase tracking-wider font-bold" style={{ fontFamily: 'DM Mono, monospace' }}>
                           Success Criteria
                         </p>
                       </div>
@@ -2738,7 +2738,7 @@ function FeedbackTab({
                 <p className="text-sm font-medium text-cyan-900">
                   Your camp experience{data.pendingExperience.campName ? ` · ${data.pendingExperience.campName}` : ''}
                 </p>
-                <p className="text-[10px] text-cyan-700 mt-0.5">
+                <p className="text-[12px] text-cyan-700 mt-0.5">
                   1 minute — facilities, equipment, transport & value
                 </p>
               </div>
@@ -2768,7 +2768,7 @@ function FeedbackTab({
             <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
               Pending Feedback
             </h2>
-            <span className="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-bold">
+            <span className="text-[12px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-bold">
               {pendingSurveys.length}
             </span>
           </div>
@@ -2780,7 +2780,7 @@ function FeedbackTab({
                     <p className="text-sm font-medium text-amber-900">
                       {result.standalone_sessions?.mission || 'Session'}
                     </p>
-                    <p className="text-[10px] text-amber-700 mt-0.5">
+                    <p className="text-[12px] text-amber-700 mt-0.5">
                       {surveyDateLabel(
                         (Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions)?.session_date,
                         result.created_at,
@@ -2848,7 +2848,7 @@ function FeedbackTab({
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {ssr?.standalone_sessions?.mission || 'Session'}
                     </p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">
+                    <p className="text-[12px] text-gray-500 mt-0.5">
                       {surveyDateLabel(
                         (Array.isArray(ssr?.camp_sessions) ? ssr.camp_sessions[0] : ssr?.camp_sessions)?.session_date,
                         ssr?.created_at || survey.created_at,
@@ -2860,14 +2860,14 @@ function FeedbackTab({
                     <div className="text-sm tracking-tight" style={{ color: BRAND.colors.gold }}>
                       {'★'.repeat(survey.coach_rating)}<span className="text-gray-200">{'★'.repeat(5 - survey.coach_rating)}</span>
                     </div>
-                    <p className="text-[9px] text-gray-400 mt-0.5">You rated</p>
+                    <p className="text-[12px] text-gray-400 mt-0.5">You rated</p>
                   </div>
                 </div>
 
                 {/* The coach's feedback for YOU — the real value */}
                 {coachFeedback ? (
                   <div className="rounded-xl bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2.5">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                    <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1">
                       Your coach&apos;s feedback
                     </p>
                     <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
@@ -2875,7 +2875,7 @@ function FeedbackTab({
                     </p>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-gray-400 italic">
+                  <p className="text-[12px] text-gray-400 italic">
                     Your coach didn&apos;t leave written feedback for this session.
                   </p>
                 )}
@@ -2884,14 +2884,14 @@ function FeedbackTab({
                 {ssr?.homework && (
                   <div className="grid grid-cols-1 gap-2">
                     <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">Homework</p>
+                      <p className="text-[12px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">Homework</p>
                       <p className="text-xs text-amber-900 leading-relaxed">{ssr.homework}</p>
                     </div>
                   </div>
                 )}
 
                 {survey.open_comment && (
-                  <p className="text-[11px] text-gray-400 italic">
+                  <p className="text-[12px] text-gray-400 italic">
                     Your note: &ldquo;{survey.open_comment}&rdquo;
                   </p>
                 )}
@@ -2940,7 +2940,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-medium ${
+      className={`text-[12px] px-2 py-0.5 rounded-full capitalize font-medium ${
         styles[status] || 'bg-gray-50 text-gray-600'
       }`}
     >
@@ -2995,15 +2995,15 @@ function MyCoachTab({ data }: { data: PortalData }) {
               {coach.display_name}
             </p>
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 capitalize font-medium">
+              <span className="text-[12px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 capitalize font-medium">
                 {coach.role.replace(/_/g, ' ')}
               </span>
               {coach.certification_level && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
+                <span className="text-[12px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
                   {coach.certification_level}
                 </span>
               )}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
+              <span className="text-[12px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
                 Up to {coach.max_belt_permission?.replace(/_/g, ' ')}
               </span>
             </div>
@@ -3013,7 +3013,7 @@ function MyCoachTab({ data }: { data: PortalData }) {
           <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
             {coach.specialty_area && (
               <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">
                   Specialty
                 </p>
                 <p className="text-sm text-gray-700 mt-0.5">{coach.specialty_area}</p>
@@ -3021,7 +3021,7 @@ function MyCoachTab({ data }: { data: PortalData }) {
             )}
             {coach.languages && (
               <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">
                   Languages
                 </p>
                 <p className="text-sm text-gray-700 mt-0.5">{coach.languages}</p>
@@ -3033,7 +3033,7 @@ function MyCoachTab({ data }: { data: PortalData }) {
 
       {/* Stats with this student */}
       <div>
-        <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+        <h3 className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
           Your history together
         </h3>
         <div className="grid grid-cols-2 gap-2">
@@ -3064,7 +3064,7 @@ function MyCoachTab({ data }: { data: PortalData }) {
 
       {/* Hint */}
       <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-        <p className="text-[11px] text-amber-700 leading-relaxed">
+        <p className="text-[12px] text-amber-700 leading-relaxed">
           <strong>How this works:</strong> Your coach earns their reputation
           from your honest feedback. After every session, you&apos;ll get an
           email with a quick survey. The more you submit, the more accurate
@@ -3087,10 +3087,10 @@ function StatCard({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
       <p className="text-lg font-bold text-[var(--tss-navy)]">{value}</p>
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">
+      <p className="text-[12px] text-gray-500 uppercase tracking-wider mt-0.5">
         {label}
       </p>
-      {sublabel && <p className="text-[9px] text-gray-400 mt-0.5">{sublabel}</p>}
+      {sublabel && <p className="text-[12px] text-gray-400 mt-0.5">{sublabel}</p>}
     </div>
   );
 }
@@ -3216,7 +3216,7 @@ function PortalAlerts({
               className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
             >
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                className="w-9 h-11 rounded-full flex items-center justify-center shrink-0"
                 style={{ background: r.bg }}
               >
                 <r.Icon size={16} strokeWidth={1.9} style={{ color: r.color }} />
@@ -3266,18 +3266,18 @@ function UpcomingCampCard({ camp }: { camp: any }) {
   return (
     <div className="bg-[var(--tss-navy)] text-white rounded-2xl p-5 shadow-md">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)]">
+        <p className="text-[12px] font-mono uppercase tracking-wider text-[var(--tss-cyan)]">
           Your next class
         </p>
         {isMultiDay && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-semibold">
+          <span className="text-[12px] px-2 py-0.5 rounded-full bg-white/15 text-white font-semibold">
             Day {dayNumber} of {totalDays}
           </span>
         )}
       </div>
       <h2 className="text-lg font-bold leading-tight">{camp.camp_name}</h2>
       {camp.template_name && (
-        <p className="text-[11px] text-white/70 italic mt-0.5">{camp.template_name}</p>
+        <p className="text-[12px] text-white/70 italic mt-0.5">{camp.template_name}</p>
       )}
       <p className="text-sm text-white/85 mt-2">
         {dateLabel}
@@ -3310,19 +3310,19 @@ function UpcomingCampCard({ camp }: { camp: any }) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-[var(--tss-cyan)]">
+            <p className="text-[12px] font-mono uppercase tracking-[0.18em] text-[var(--tss-cyan)]">
               Your coach
             </p>
             <p className="text-sm font-semibold truncate mt-0.5">{coach.display_name}</p>
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               {coach.certification_level && (
-                <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/15 text-white/85 font-semibold uppercase tracking-wide">
+                <span className="text-[12px] px-2 py-0.5 rounded-full bg-white/15 text-white/85 font-semibold uppercase tracking-wide">
                   {String(coach.certification_level).replace(/_/g, ' ').replace(/\btss\b/i, 'TSS')}
                 </span>
               )}
               {coach.max_belt_permission && BELT_DISPLAY[coach.max_belt_permission as BeltLevel] && (
                 <span
-                  className="text-[9px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"
+                  className="text-[12px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"
                   style={{ background: 'rgba(255,255,255,.12)', color: '#fff' }}
                 >
                   <span
@@ -3343,7 +3343,7 @@ function UpcomingCampCard({ camp }: { camp: any }) {
       {/* What you'll work on today */}
       {previewBlocks.length > 0 && (
         <div className="mt-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] mb-1.5">
+          <p className="text-[12px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] mb-1.5">
             What you'll work on
           </p>
           <div className="space-y-1">
@@ -3384,7 +3384,7 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
     >
       <div className="flex items-center justify-between mb-2">
         <div>
-          <p className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider"
+          <p className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider"
              style={{ color: isInProgress ? '#047857' : '#92400E' }}>
             {isInProgress
               ? <CircleDot size={13} strokeWidth={2} />
@@ -3396,7 +3396,7 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
             {dateLabel}
             {upcoming.training_venue ? ` · ${upcoming.training_venue}` : ''}
           </p>
-          <p className="text-[11px] mt-0.5"
+          <p className="text-[12px] mt-0.5"
              style={{ color: isInProgress ? '#047857' : '#92400E' }}>
             Coach: {coachName} · {upcoming.total_planned_minutes} min planned
           </p>
@@ -3405,7 +3405,7 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
 
       {upcoming.blocks.length > 0 && (
         <div className="space-y-1.5 mt-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider"
+          <p className="text-[12px] font-mono uppercase tracking-wider"
              style={{ color: isInProgress ? '#047857' : '#92400E' }}>
             What you'll work on
           </p>
@@ -3414,26 +3414,26 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
               key={b.id}
               className="bg-white rounded-lg p-2.5 flex items-start gap-2"
             >
-              <span className="text-[10px] font-mono text-gray-400 w-6 text-center shrink-0 mt-0.5">
+              <span className="text-[12px] font-mono text-gray-400 w-6 text-center shrink-0 mt-0.5">
                 #{idx + 1}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-800">
                   {b.step_id && (
-                    <span className="text-[10px] font-mono text-gray-400 mr-1">
+                    <span className="text-[12px] font-mono text-gray-400 mr-1">
                       {b.step_id}
                     </span>
                   )}
                   {b.drill_id || 'Custom block'}
                 </p>
                 {b.objective_text && (
-                  <p className="flex items-start gap-1.5 text-[11px] text-gray-500 italic mt-0.5">
+                  <p className="flex items-start gap-1.5 text-[12px] text-gray-500 italic mt-0.5">
                     <CornerDownRight size={12} strokeWidth={1.75} className="shrink-0 mt-0.5" />
                     {b.objective_text}
                   </p>
                 )}
               </div>
-              <span className="text-[11px] text-gray-500 font-medium shrink-0">
+              <span className="text-[12px] text-gray-500 font-medium shrink-0">
                 {b.duration_minutes}m
               </span>
             </div>
@@ -3442,7 +3442,7 @@ function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
       )}
 
       {upcoming.blocks.length === 0 && (
-        <p className="text-[11px] italic mt-2"
+        <p className="text-[12px] italic mt-2"
            style={{ color: isInProgress ? '#047857' : '#92400E' }}>
           Your coach is still building this session.
         </p>

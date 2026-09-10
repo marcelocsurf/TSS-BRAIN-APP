@@ -57,16 +57,16 @@ function Shell({ step, seqLabel, title, onCancel, children }: { step: 1 | 2 | 3;
     <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
       <div className="flex items-center justify-between">
         <div className="min-w-0">
-          <p className="text-[9px] truncate" style={{ ...F_M, color: 'rgba(247,249,250,.6)' }}>Let’s Play · {seqLabel}</p>
+          <p className="text-[12px] truncate" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Let’s Play · {seqLabel}</p>
           <p className="text-[15px] truncate" style={{ ...F_D, color: PAPER }}>{title}</p>
         </div>
-        <button type="button" onClick={onCancel} className="text-[11px] shrink-0 ml-3" style={{ color: 'rgba(247,249,250,.6)' }} aria-label="Cancel">Cancel</button>
+        <button type="button" onClick={onCancel} className="text-[12px] shrink-0 ml-3 h-11 px-3 -mr-3" style={{ color: 'rgba(247,249,250,.78)' }} aria-label="Cancel">Cancel</button>
       </div>
       <div className="flex gap-1">
         {(['Plan', 'Surf', 'Evaluate'] as const).map((l, i) => (
           <div key={l} className="flex-1">
             <div className="h-1 rounded-full" style={{ background: i + 1 <= step ? CYAN : 'rgba(247,249,250,.15)' }} />
-            <p className="text-[8px] mt-1" style={{ ...F_M, color: i + 1 === step ? CYAN : 'rgba(247,249,250,.4)' }}>{l}</p>
+            <p className="text-[12px] mt-1" style={{ ...F_M, color: i + 1 === step ? CYAN : 'rgba(247,249,250,.78)' }}>{l}</p>
           </div>
         ))}
       </div>
@@ -86,7 +86,7 @@ function CriteriaGrid({ list, value, onPick }: { list: string[]; value: Record<n
               const sel = value[i] === o.key;
               return (
                 <button key={o.key} type="button" aria-pressed={sel} onClick={() => onPick(i, o.key)}
-                  className="inline-flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10.5px] font-bold"
+                  className="inline-flex items-center justify-center gap-1 py-1.5 rounded-lg text-[12px] font-bold"
                   style={sel ? { background: o.bg, color: o.fg } : { background: '#f3f4f6', color: '#6b7280' }}>
                   <o.Icon size={11} strokeWidth={2.25} />{o.label}
                 </button>
@@ -102,13 +102,13 @@ function CriteriaGrid({ list, value, onPick }: { list: string[]; value: Record<n
 function FlowPicker({ flow, onChange }: { flow: number | null; onChange: (n: number | null) => void }) {
   return (
     <div>
-      <p className="text-[9px] text-gray-400 mb-1" style={F_M}>How did the challenge feel? Flow lives between boredom and frustration.</p>
+      <p className="text-[12px] text-gray-400 mb-1" style={F_M}>How did the challenge feel? Flow lives between boredom and frustration.</p>
       <div className="grid grid-cols-5 gap-1">
         {(['Bored', 'Easy', 'Flow', 'Hard', 'Too much'] as const).map((l, i) => {
           const n = i + 1; const sel = flow === n;
           return (
             <button key={l} type="button" aria-pressed={sel} onClick={() => onChange(sel ? null : n)}
-              className="py-2 rounded-lg text-[10.5px] font-bold"
+              className="py-2 rounded-lg text-[12px] font-bold"
               style={sel ? { background: n === 3 ? GREEN : INK, color: n === 3 ? INK : PAPER } : { background: '#f3f4f6', color: '#6b7280' }}>{l}</button>
           );
         })}
@@ -126,7 +126,7 @@ function DeeperToggle({ open, onToggle, label, hint }: { open: boolean; onToggle
       style={open ? { borderColor: INK, background: '#f7f9fa' } : { borderColor: '#d1d5db', borderStyle: 'dashed', background: '#fff' }}>
       <span className="min-w-0">
         <span className="block text-[12px] font-bold" style={{ color: INK }}>{label}</span>
-        <span className="block text-[10.5px] text-gray-500">{hint}</span>
+        <span className="block text-[12px] text-gray-500">{hint}</span>
       </span>
       {open ? <ChevronUp size={16} className="shrink-0 text-gray-500" /> : <ChevronDown size={16} className="shrink-0 text-gray-500" />}
     </button>
@@ -137,7 +137,7 @@ function FocusPicker({ value, onChange }: { value: number | null; onChange: (n: 
   const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
   return (
     <div>
-      <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
+      <p className="text-[12px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
       <div className="grid grid-cols-4 gap-1.5">
         {[0, 1, 2, 3].map((n) => {
           const sel = value === n;
@@ -146,7 +146,7 @@ function FocusPicker({ value, onChange }: { value: number | null; onChange: (n: 
               className="py-2.5 rounded-xl border-[1.5px] flex flex-col items-center gap-0.5"
               style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
               <span className="text-base font-bold leading-none">{n}</span>
-              <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
+              <span className="text-[12px] leading-tight opacity-80">{labels[n]}</span>
             </button>
           );
         })}
@@ -388,14 +388,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
       <Shell step={1} seqLabel={seqLabel} title={shellTitle} onCancel={onCancel}>
         {/* 1 · Qué vas a entrenar */}
         <div className="rounded-2xl p-4" style={{ background: INK }}>
-          <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>What you train today</p>
+          <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>What you train today</p>
           <p className="text-[20px] mt-1.5" style={{ ...F_D, color: PAPER }}>{seq.name}</p>
           {seq.promise && <p className="text-[12px] mt-2 leading-snug" style={{ color: 'rgba(247,249,250,.8)' }}>{seq.promise}</p>}
         </div>
 
         {twoSided && (
           <div className="rounded-2xl border border-gray-200 p-3.5">
-            <p className="text-[9px] text-gray-400" style={F_M}>Which side today?</p>
+            <p className="text-[12px] text-gray-400" style={F_M}>Which side today?</p>
             <p className="text-[12px] text-gray-600 mt-0.5 leading-snug">This line is yours only when you own it on both sides. Rate the side you surf.</p>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {(['fs', 'bs'] as const).map((sd) => {
@@ -405,7 +405,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   <button key={sd} type="button" onClick={() => setSide(sd)}
                     className="h-12 rounded-xl text-[12px] font-bold border-[1.5px] active:scale-[0.98]"
                     style={on ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#d1d5db', color: INK }}>
-                    {SIDE_WORD[sd]}{last != null ? <span className="block text-[10px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#6b7280' }}>last {last}★</span> : <span className="block text-[10px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#9ca3af' }}>not rated yet</span>}
+                    {SIDE_WORD[sd]}{last != null ? <span className="block text-[12px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#6b7280' }}>last {last}★</span> : <span className="block text-[12px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#9ca3af' }}>not rated yet</span>}
                   </button>
                 );
               })}
@@ -415,7 +415,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {/* 2 · Tu foco: toda la línea, un paso, o un momento de la línea */}
         <div>
-          <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>Your focus · tap one, or none</p>
+          <p className="text-[12px] text-gray-400 mb-1.5" style={F_M}>Your focus · tap one, or none</p>
           {data.tasks.length > 0 && (
             <div className="mb-1.5 space-y-1.5">
               {data.tasks.map((t) => {
@@ -425,7 +425,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                     onClick={() => { setModeState('step_focus'); setFocusId(t.stepId); setFocusMoment(t.detail); if (t.detail) { setIntention(t.detail); setObjectiveOpen(true); } }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-[1.5px] text-left active:scale-[0.99]"
                     style={sel ? { background: '#FFF8E7', borderColor: '#E0A62B' } : { background: '#fff', borderColor: '#F3D48A' }}>
-                    <span className="text-[9px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>My list</span>
+                    <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>My list</span>
                     <span className="text-[13px] font-semibold flex-1" style={{ color: INK }}>{t.stepTitle}{t.detail ? <span className="font-normal text-gray-600"> · {t.detail}</span> : null}</span>
                   </button>
                 );
@@ -444,18 +444,20 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               const ms = moments[s.step_id] ?? [];
               return (
                 <li key={s.step_id} className="rounded-xl border-[1.5px] overflow-hidden" style={on ? { borderColor: '#E0A62B', background: '#FFFBF0' } : { borderColor: '#e5e7eb' }}>
-                  <button type="button" aria-pressed={on} onClick={() => pickStep(s.step_id)} className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left">
-                    <span className="text-[10px] font-bold w-4 shrink-0 mt-0.5" style={{ color: on ? '#9A6A12' : '#9ca3af' }}>{i + 1}</span>
+                  <button type="button" aria-pressed={on} onClick={() => pickStep(s.step_id)} className="w-full flex items-start gap-2.5 px-3 py-3 min-h-[44px] text-left">
+                    <span className="text-[12px] font-bold w-4 shrink-0 mt-0.5" style={{ color: on ? '#9A6A12' : '#9ca3af' }}>{i + 1}</span>
                     <span className="text-[13px] font-semibold leading-tight flex-1" style={{ color: INK }}>{s.title}</span>
-                    {on && !focusMoment && <span className="text-[9px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>your focus</span>}
+                    {on && !focusMoment && <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>your focus</span>}
                   </button>
-                  {ms.length > 0 && (
+                  {/* Plegado (auditoría 2026-09-10): el plan medía 1777px; los
+                      momentos se abren solo en el paso que elegiste. */}
+                  {on && ms.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 px-3 pb-2.5 -mt-0.5">
                       {ms.map((m) => {
                         const sel = on && focusMoment === m.short;
                         return (
                           <button key={m.key} type="button" aria-pressed={sel} onClick={() => pickMoment(s.step_id, m)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold border"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border"
                             style={sel ? { background: '#E0A62B', borderColor: '#E0A62B', color: INK } : { background: '#fff', borderColor: '#e5e7eb', color: '#4b5563' }}>
                             <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
                             {m.short}
@@ -468,7 +470,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               );
             })}
           </ol>
-          {hintText && <p className="text-[11px] mt-2 rounded-lg px-2.5 py-1.5" style={{ background: '#FFF8E7', color: '#9A6A12' }}>{hintText}</p>}
+          {hintText && <p className="text-[12px] mt-2 rounded-lg px-2.5 py-1.5" style={{ background: '#FFF8E7', color: '#9A6A12' }}>{hintText}</p>}
         </div>
 
         {/* La misión del paso elegido: los indicadores que vas a marcar al volver */}
@@ -476,11 +478,11 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           <div className="space-y-3">
             {focus.mission ? (
               <div className="rounded-2xl border border-gray-200 p-3.5 space-y-2">
-                <p className="text-[9px] text-gray-400" style={F_M}><Waves size={11} className="inline mr-1 -mt-0.5" />Your mission · one execution, then again</p>
+                <p className="text-[12px] text-gray-400" style={F_M}><Waves size={11} className="inline mr-1 -mt-0.5" />Your mission · one execution, then again</p>
                 <p className="text-[14px] font-semibold" style={{ color: INK }}>{focus.mission.title}</p>
                 {focus.mission.success_criteria?.length > 0 && (
                   <div>
-                    <p className="text-[9px] text-gray-400 mt-2 mb-1" style={F_M}>What a good one looks like</p>
+                    <p className="text-[12px] text-gray-400 mt-2 mb-1" style={F_M}>What a good one looks like</p>
                     <ol className="space-y-1">
                       {focus.mission.success_criteria.map((c, i) => (
                         <li key={i} className="text-[12.5px] text-gray-800 leading-snug"><span className="font-bold mr-1">{i + 1}.</span>{c}</li>
@@ -506,7 +508,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {/* 3 · Condiciones: un solo check; leer el spot es opcional */}
         <div className="space-y-2">
-          <p className="text-[9px] text-gray-400" style={F_M}>Conditions</p>
+          <p className="text-[12px] text-gray-400" style={F_M}>Conditions</p>
           <button type="button" aria-pressed={conditionsOk} onClick={() => setConditionsOk((v) => !v)}
             className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-[1.5px] text-left transition-colors active:scale-[0.99]"
             style={conditionsOk ? { background: 'rgba(6,214,160,.12)', borderColor: GREEN } : { background: '#fff', borderColor: '#e5e7eb' }}>
@@ -526,34 +528,34 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {/* 4 · Tu medida: tiempo, runs/olas, o las dos */}
         <div>
-          <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>Your measure</p>
+          <p className="text-[12px] text-gray-400 mb-1.5" style={F_M}>Your measure</p>
           <div className="grid grid-cols-4 gap-1 p-1 rounded-xl" style={{ background: '#f3f4f6' }}>
             {([['time', 'Time'], ['reps', 'Runs'], ['waves', 'Waves'], ['time_reps', 'Time + runs']] as [Measure, string][]).map(([k, l]) => (
               <button key={k} type="button" aria-pressed={measure === k} onClick={() => setMeasure(k)}
-                className="h-9 rounded-lg text-[11px] font-bold"
+                className="h-11 rounded-lg text-[12px] font-bold"
                 style={measure === k ? { background: INK, color: PAPER } : { color: '#6b7280' }}>{l}</button>
             ))}
           </div>
           <div className={`grid gap-3 mt-2 ${wantsTime && wantsReps ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {wantsTime && (
               <div className="rounded-xl border border-gray-200 p-3">
-                <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Clock size={11} className="inline mr-1 -mt-0.5" />Time in the water</p>
+                <p className="text-[12px] text-gray-400 mb-1.5" style={F_M}><Clock size={11} className="inline mr-1 -mt-0.5" />Time in the water</p>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setPlannedDuration((m) => Math.max(5, m - 5))} className="w-10 h-10 rounded-lg bg-gray-100 text-lg font-bold" aria-label="Less time">−</button>
-                  <span className="flex-1 text-center text-2xl font-bold tabular-nums" style={{ color: INK }}>{plannedDuration}<span className="text-[11px] font-semibold text-gray-400 ml-1">min</span></span>
-                  <button type="button" onClick={() => setPlannedDuration((m) => Math.min(240, m + 5))} className="w-10 h-10 rounded-lg bg-gray-100 text-lg font-bold" aria-label="More time">+</button>
+                  <button type="button" onClick={() => setPlannedDuration((m) => Math.max(5, m - 5))} className="w-11 h-11 rounded-lg bg-gray-100 text-lg font-bold" aria-label="Less time">−</button>
+                  <span className="flex-1 text-center text-2xl font-bold tabular-nums" style={{ color: INK }}>{plannedDuration}<span className="text-[12px] font-semibold text-gray-400 ml-1">min</span></span>
+                  <button type="button" onClick={() => setPlannedDuration((m) => Math.min(240, m + 5))} className="w-11 h-11 rounded-lg bg-gray-100 text-lg font-bold" aria-label="More time">+</button>
                 </div>
               </div>
             )}
             {wantsReps && (
               <div className="rounded-xl border border-gray-200 p-3">
-                <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Repeat size={11} className="inline mr-1 -mt-0.5" />{measure === 'waves' ? 'Waves' : 'Runs'}</p>
+                <p className="text-[12px] text-gray-400 mb-1.5" style={F_M}><Repeat size={11} className="inline mr-1 -mt-0.5" />{measure === 'waves' ? 'Waves' : 'Runs'}</p>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setPlannedReps((r) => Math.max(1, r - 1))} className="w-10 h-10 rounded-lg bg-gray-100 text-lg font-bold" aria-label="Fewer">−</button>
+                  <button type="button" onClick={() => setPlannedReps((r) => Math.max(1, r - 1))} className="w-11 h-11 rounded-lg bg-gray-100 text-lg font-bold" aria-label="Fewer">−</button>
                   <span className="flex-1 text-center text-2xl font-bold tabular-nums" style={{ color: INK }}>{plannedReps}</span>
-                  <button type="button" onClick={() => setPlannedReps((r) => Math.min(100, r + 1))} className="w-10 h-10 rounded-lg bg-gray-100 text-lg font-bold" aria-label="More">+</button>
+                  <button type="button" onClick={() => setPlannedReps((r) => Math.min(100, r + 1))} className="w-11 h-11 rounded-lg bg-gray-100 text-lg font-bold" aria-label="More">+</button>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">{measure === 'waves' ? 'Waves you will surf with this focus.' : isRun ? 'One run = the whole sequence, start to finish.' : 'One run = the whole sequence with your focus in it.'}</p>
+                <p className="text-[12px] text-gray-400 mt-1">{measure === 'waves' ? 'Waves you will surf with this focus.' : isRun ? 'One run = the whole sequence, start to finish.' : 'One run = the whole sequence with your focus in it.'}</p>
               </div>
             )}
           </div>
@@ -561,7 +563,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {/* Objetivo en palabras (opcional, plegado) */}
         <details open={objectiveOpen} onToggle={(e) => setObjectiveOpen((e.currentTarget as HTMLDetailsElement).open)}>
-          <summary className="cursor-pointer list-none text-[9px] text-gray-400" style={F_M}>Your word for the wave (optional) ▾</summary>
+          <summary className="cursor-pointer list-none text-[12px] text-gray-400" style={F_M}>Your word for the wave (optional) ▾</summary>
           <textarea value={intention} onChange={(e) => setIntention(e.target.value)} rows={2} aria-label="Your word for the wave (optional)"
             placeholder={isRun ? 'e.g. Keep the chain flowing — no stop between steps' : 'e.g. Weight on the front foot through the whole ride'}
             className="mt-1.5 w-full px-3 py-2 border border-gray-200 rounded-xl text-[13px]" />
@@ -575,7 +577,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           {savingPlan ? 'Saving…' : 'Save my plan →'}
         </button>
         {!canSave && !savingPlan && (
-          <p className="text-[11px] text-gray-400 text-center -mt-2">
+          <p className="text-[12px] text-gray-400 text-center -mt-2">
             {!conditionsOk ? 'Confirm the conditions to save your plan' : twoSided && !side ? 'Pick your side' : 'Pick your measure'}
           </p>
         )}
@@ -588,14 +590,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     return (
       <Shell step={2} seqLabel={seqLabel} title={shellTitle} onCancel={onDone}>
         <div className="rounded-2xl p-5 text-center" style={{ background: INK }}>
-          <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>Plan saved</p>
+          <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Plan saved</p>
           <p className="text-[24px] mt-1" style={{ ...F_D, color: PAPER }}>Now go surf</p>
           <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.75)' }}>
             {isRun ? 'Run the whole line, start to finish, every time.' : `Run the line with ${focus?.title} as your focus.`}
           </p>
           <div className="flex justify-center gap-6 mt-3">
-            {wantsTime && <div><p className="text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.5)' }}>Time</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedDuration} min</p></div>}
-            {wantsReps && <div><p className="text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.5)' }}>{repsWord}</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedReps}</p></div>}
+            {wantsTime && <div><p className="text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Time</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedDuration} min</p></div>}
+            {wantsReps && <div><p className="text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>{repsWord}</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedReps}</p></div>}
           </div>
         </div>
         {/* La ola con la línea y su código de colores (la misma del curso),
@@ -607,7 +609,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         )}
         {(focusMoment || intention.trim()) && (
           <div className="rounded-xl px-3.5 py-2.5" style={{ background: '#FFF8E7' }}>
-            <p className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>Your word for the wave</p>
+            <p className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>Your word for the wave</p>
             <p className="text-[13px] text-gray-800">{intention.trim() || focusMoment}</p>
           </div>
         )}
@@ -691,7 +693,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         {/* EL OBJETIVO, bien claro, antes de evaluar (Marcelo 2026-09-10:
             "para refrescarlo y en letras que se distingan"). */}
         <div className="rounded-2xl p-4" style={{ background: INK }}>
-          <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>Your objective today</p>
+          <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Your objective today</p>
           <p className="text-[22px] mt-1.5" style={{ ...F_D, color: PAPER }}>{isRun ? 'The whole line' : focus?.title}</p>
           {(intention.trim() || focusMoment) && (
             <p className="text-[16px] font-semibold mt-2 leading-snug" style={{ color: GOLD }}>“{intention.trim() || focusMoment}”</p>
@@ -701,7 +703,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         {isRun ? (
           <>
             <div>
-              <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation</p>
+              <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
               <p className="text-[12.5px] text-gray-500 mt-1">Three taps: your star for the whole chain, your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
@@ -736,9 +738,9 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                         <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={on ? { background: '#E0A62B' } : { border: '1.5px solid #d1d5db' }}>
                           {on && <X size={12} strokeWidth={3} className="text-white" />}
                         </span>
-                        <span className="text-[10px] font-bold text-gray-400 w-4">{i + 1}</span>
+                        <span className="text-[12px] font-bold text-gray-400 w-4">{i + 1}</span>
                         <span className="text-[13px] font-semibold flex-1 min-w-0 truncate" style={{ color: INK }}>{s.title}</span>
-                        {on && <span className="text-[9px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>held it back</span>}
+                        {on && <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>held it back</span>}
                       </button>
                       {/* ¿En qué MOMENTO de la línea se rompió? Tocar uno marca la
                           lección como la que frenó el run y deja ese momento como
@@ -754,7 +756,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                                   setHeld((h) => ({ ...h, [s.step_id]: true }));
                                   setStepMoment((p) => ({ ...p, [s.step_id]: m.short }));
                                 }}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold border"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border"
                                 style={sel ? { background: '#E0A62B', borderColor: '#E0A62B', color: INK } : { background: '#fff', borderColor: '#e5e7eb', color: '#4b5563' }}>
                                 <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
                                 {m.short}
@@ -766,7 +768,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                       {on && (
                         <div className="px-3 pb-3 space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-gray-500">{s.title} today (optional)</span>
+                            <span className="text-[12px] text-gray-500">{s.title} today (optional)</span>
                             <StarRating value={stepStars[s.step_id] ?? null} onChange={(n) => setStepStars((p) => ({ ...p, [s.step_id]: n }))} size="sm" />
                           </div>
                           {crit.length > 0 && (
@@ -789,7 +791,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         ) : focus ? (
           <>
             <div>
-              <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation · {focus.title}</p>
+              <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation · {focus.title}</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
               <p className="text-[12.5px] text-gray-500 mt-1">Three taps: your star for {focus.title} today (it updates your self-rating in My Sequence), your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={execStars} onChange={setExecStars} size="lg" showLabel /></div>
@@ -804,12 +806,12 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                 {focus.mission && focus.mission.success_criteria?.length > 0 ? (
                   <CriteriaGrid list={focus.mission.success_criteria} value={focusCrit} onPick={(i, r) => setFocusCrit((p) => ({ ...p, [i]: r }))} />
                 ) : (
-                  <p className="text-[11px] text-gray-500">This step has no criteria card yet — the star is the whole story for now.</p>
+                  <p className="text-[12px] text-gray-500">This step has no criteria card yet — the star is the whole story for now.</p>
                 )}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] text-gray-400" style={F_M}>And the whole sequence? (optional)</p>
-                    <p className="text-[11px] text-gray-500">How the chain ran around your focus.</p>
+                    <p className="text-[12px] text-gray-400" style={F_M}>And the whole sequence? (optional)</p>
+                    <p className="text-[12px] text-gray-500">How the chain ran around your focus.</p>
                   </div>
                   <StarRating value={seqStarsOptional} onChange={setSeqStarsOptional} size="md" />
                 </div>
@@ -833,7 +835,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           {saving ? 'Saving…' : online ? 'Save & update My Sequence' : 'Save (waiting for signal)'}
         </button>
         {!canSave && !saving && (
-          <p className="text-[11px] text-gray-400 text-center -mt-2">
+          <p className="text-[12px] text-gray-400 text-center -mt-2">
             {(isRun ? seqStars === null : execStars === null) ? (isRun ? 'Rate the sequence to save' : 'Rate the step to save')
               : focusRating === null ? 'Pick your focus level to save'
               : 'Pick how the challenge felt to save'}
@@ -850,7 +852,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
       <div className="bg-white rounded-2xl p-7 text-center shadow-sm space-y-4">
         <div>
-          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Session saved</p>
+          <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>Session saved</p>
           <h2 className="text-[22px] mt-1" style={{ ...F_D, color: INK }}>{isRun ? seq.name : focus?.title}</h2>
           <p className="text-sm text-gray-500 mt-1">{seqLabel}</p>
         </div>
@@ -893,10 +895,10 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {nf ? (
           <div className="rounded-xl p-4 text-left" style={{ background: '#FFF8E7' }}>
-            <p className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>Work on this next</p>
+            <p className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>Work on this next</p>
             <p className="text-[14px] font-bold mt-0.5" style={{ color: INK }}>{nf.stepTitle}</p>
             {nf.criterionText && <p className="text-[12px] text-gray-700 mt-0.5">{nf.criterionText}</p>}
-            <p className="text-[11px] text-gray-500 mt-1.5">Next time you open this sequence, it will already be your focus.</p>
+            <p className="text-[12px] text-gray-500 mt-1.5">Next time you open this sequence, it will already be your focus.</p>
           </div>
         ) : (
           <div className="rounded-xl p-4 text-left" style={{ background: isRun && (seqStars ?? 0) < 4 ? '#FFF8E7' : 'rgba(6,214,160,.12)' }}>
@@ -916,7 +918,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {/* ¿Qué trabajás la próxima? Una tarea (o ninguna). Se ofrece, no se impone. */}
         <div className="rounded-xl p-4 text-left border border-gray-200 space-y-2">
-          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>What do you work on next?</p>
+          <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>What do you work on next?</p>
           {taskState.saved ? (
             <p className="text-[12.5px] text-gray-800"><b>On your list:</b> {taskState.saved}</p>
           ) : (
@@ -929,7 +931,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                     setTaskState({ saved: r.ok ? `${r.task.stepTitle}${r.task.detail ? ` · ${r.task.detail}` : ''} (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: false, saving: false });
                   }}
                   className="w-full text-left px-3.5 py-2.5 rounded-xl text-[12.5px] font-semibold active:scale-[0.99]" style={{ background: '#FFF8E7', color: INK }}>
-                  {nf.stepTitle}{nf.criterionText ? <span className="font-normal text-gray-600"> · {nf.criterionText}</span> : null} <span className="text-[10px] text-gray-500">· suggested</span>
+                  {nf.stepTitle}{nf.criterionText ? <span className="font-normal text-gray-600"> · {nf.criterionText}</span> : null} <span className="text-[12px] text-gray-500">· suggested</span>
                 </button>
               )}
               <button type="button" onClick={() => setTaskState((s) => ({ ...s, picking: !s.picking }))} className="w-full text-left px-3.5 py-2.5 rounded-xl text-[12.5px] border border-gray-200" style={{ color: INK }}>
@@ -951,8 +953,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   )))}
                 </div>
               )}
-              {taskState.error && <p className="text-[11px] text-red-600">{taskState.error}</p>}
-              <p className="text-[11px] text-gray-400">Or nothing — you always train what you choose. At most {MAX_OPEN_TASKS} on your list.</p>
+              {taskState.error && <p className="text-[12px] text-red-600">{taskState.error}</p>}
+              <p className="text-[12px] text-gray-400">Or nothing — you always train what you choose. At most {MAX_OPEN_TASKS} on your list.</p>
             </>
           )}
         </div>

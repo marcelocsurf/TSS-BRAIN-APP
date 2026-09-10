@@ -107,33 +107,33 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
         </button>
 
         <div className="text-white rounded-2xl p-5" style={{ background: INK, borderLeft: `4px solid ${CYAN}` }}>
-          <div className="text-[9px]" style={{ ...F_M, color: CYAN }}>{stepId}</div>
+          <div className="text-[12px]" style={{ ...F_M, color: CYAN }}>{stepId}</div>
           <h1 className="text-[20px] mt-1.5" style={F_D}>{lesson.title}</h1>
           {lesson.subtitle && (
             <p className="text-sm mt-1.5" style={{ color: 'rgba(247,249,250,.7)' }}>{lesson.subtitle}</p>
           )}
           {lesson.pillar && (
-            <p className="text-[9px] mt-2.5" style={{ ...F_M, color: GOLD }}>Pillar · {lesson.pillar}</p>
+            <p className="text-[12px] mt-2.5" style={{ ...F_M, color: GOLD }}>Pillar · {lesson.pillar}</p>
           )}
         </div>
       </div>
 
       {/* Self-assessment · sin ola (Marcelo 2026-09-10) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
+        <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
           <Target size={12} strokeWidth={1.75} />
           Where you are on this step
         </div>
         <div className="flex items-end justify-between gap-3">
           <div>
             {coachRating != null ? (
-              <p className="text-[15px]" style={{ ...F_D, color: INK }}>{coachRating}★ <span className="text-[10px] font-normal normal-case tracking-normal text-gray-500">rated by your coach</span></p>
+              <p className="text-[15px]" style={{ ...F_D, color: INK }}>{coachRating}★ <span className="text-[12px] font-normal normal-case tracking-normal text-gray-500">rated by your coach</span></p>
             ) : rating != null ? (
-              <p className="text-[15px]" style={{ ...F_D, color: INK }}>{rating}★ <span className="text-[10px] font-normal normal-case tracking-normal text-gray-500">{selfSource === 'assessed' ? 'self-assessed · not surfed yet' : 'from your last session'}</span></p>
+              <p className="text-[15px]" style={{ ...F_D, color: INK }}>{rating}★ <span className="text-[12px] font-normal normal-case tracking-normal text-gray-500">{selfSource === 'assessed' ? 'self-assessed · not surfed yet' : 'from your last session'}</span></p>
             ) : (
               <p className="text-[13px] text-gray-500">Not rated yet</p>
             )}
-            {lastRated && <p className="text-[11px] text-gray-400 mt-1">Updated {ratingCount} {ratingCount === 1 ? 'time' : 'times'} · Last: {displayDate(lastRated)}</p>}
+            {lastRated && <p className="text-[12px] text-gray-400 mt-1">Updated {ratingCount} {ratingCount === 1 ? 'time' : 'times'} · Last: {displayDate(lastRated)}</p>}
           </div>
           <StarRating value={coachRating ?? rating} size="sm" readOnly variant={coachRating != null ? 'official' : undefined} />
         </div>
@@ -153,7 +153,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                         const sel = cur === o.key;
                         return (
                           <button key={o.key} type="button" aria-pressed={sel} onClick={() => setAssess((p) => ({ ...p, [i]: o.key }))}
-                            className="py-1.5 rounded-lg text-[10.5px] font-bold"
+                            className="py-1.5 rounded-lg text-[12px] font-bold"
                             style={sel ? { background: o.bg, color: o.fg } : { background: '#f3f4f6', color: '#6b7280' }}>{o.label}</button>
                         );
                       })}
@@ -166,16 +166,16 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                 style={{ background: INK, color: PAPER }}>
                 {savingRating ? 'Saving…' : preview ? `Save my self-assessment · ${preview}★` : 'Mark the indicators to save'}
               </button>
-              {assessMsg && <p className="text-[11px] text-red-600">{assessMsg}</p>}
+              {assessMsg && <p className="text-[12px] text-red-600">{assessMsg}</p>}
             </div>
           ) : (
             <div className="mt-3">
               <StarRating value={rating} onChange={handleRate} size="lg" showLabel readOnly={savingRating} />
-              <p className="text-[11px] text-gray-400 mt-1">This step has no indicator card yet — rate honestly.</p>
+              <p className="text-[12px] text-gray-400 mt-1">This step has no indicator card yet — rate honestly.</p>
             </div>
           )}
           {anyNotYet && (
-            <p className="mt-3 text-[11.5px] leading-snug rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.08)', color: '#0A5C70' }}>
+            <p className="mt-3 text-[12.5px] leading-snug rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.08)', color: '#0A5C70' }}>
               The small details that turn a halfway into a yes are what a certified coach sees in one session with you.
             </p>
           )}
@@ -184,7 +184,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
 
       {/* Pedagogy doctrine note (when both drill + mission available) */}
       {drill && mission && (
-        <div className="rounded-2xl p-3.5 text-[11.5px] leading-relaxed" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)', color: 'rgba(247,249,250,.85)' }}>
+        <div className="rounded-2xl p-3.5 text-[12.5px] leading-relaxed" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)', color: 'rgba(247,249,250,.85)' }}>
           <strong>THINK</strong> — the lesson: understand what the movement does and how it works.
           <br />
           <strong>FEEL</strong> — the drill: visualize it and simulate it in a controlled setting (sand, calm water, pool, skateboard).
@@ -214,7 +214,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
       {/* Session history */}
       {sessionHistory && sessionHistory.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
+          <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
             <Waves size={12} strokeWidth={1.75} />
             Recent practice sessions
           </div>
@@ -237,7 +237,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                       const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X;
                       const color = c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#7a5c00' : '#B4232C';
                       return (
-                        <div key={c.criterion_index} className="flex items-start gap-1.5 text-[11px] leading-snug text-gray-600">
+                        <div key={c.criterion_index} className="flex items-start gap-1.5 text-[12px] leading-snug text-gray-600">
                           <Icon size={11} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color }} aria-label={c.result === 'met' ? 'Met' : c.result === 'partial' ? 'Partial' : 'Not met'} />
                           <span>{c.criterion_text}</span>
                         </div>
@@ -253,11 +253,11 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
 
       {/* Theory link */}
       <div className="rounded-2xl p-4 text-center" style={{ background: INK }}>
-        <div className="inline-flex items-center gap-1.5 text-[10px]" style={{ ...F_M, color: CYAN }}>
+        <div className="inline-flex items-center gap-1.5 text-[12px]" style={{ ...F_M, color: CYAN }}>
           <BookOpen size={12} strokeWidth={1.75} />
           Review the theory
         </div>
-        <div className="text-[11px] mt-1" style={{ color: 'rgba(247,249,250,.65)' }}>
+        <div className="text-[12px] mt-1" style={{ color: 'rgba(247,249,250,.65)' }}>
           Course tab → {stepId} in your belt section
         </div>
       </div>
@@ -284,7 +284,7 @@ function DrillOrMissionCard({
     <div className="bg-white rounded-2xl shadow-sm p-5" style={{ border: `2px solid ${accentHex}55` }}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 text-[9px]" style={{ ...F_M, color: accentText }}>
+          <div className="flex items-center gap-1.5 text-[12px]" style={{ ...F_M, color: accentText }}>
             <TypeIcon size={12} strokeWidth={1.75} />
             {isDrill ? 'FEEL · Drill' : 'DO · Mission'}
           </div>
@@ -296,11 +296,11 @@ function DrillOrMissionCard({
       {/* Quick stats */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="rounded-xl p-2.5 text-center" style={{ background: PAPER }}>
-          <div className="text-[8px] text-gray-400" style={F_M}>Time</div>
+          <div className="text-[12px] text-gray-400" style={F_M}>Time</div>
           <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{item.time_estimate || '—'}</div>
         </div>
         <div className="rounded-xl p-2.5 text-center" style={{ background: PAPER }}>
-          <div className="text-[8px] text-gray-400" style={F_M}>Reps</div>
+          <div className="text-[12px] text-gray-400" style={F_M}>Reps</div>
           <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{item.reps_recommended || '—'}</div>
         </div>
       </div>
@@ -308,14 +308,14 @@ function DrillOrMissionCard({
       {/* 5 Key Words — only on drill (canonical chain) */}
       {isDrill && item.key_words && item.key_words.length > 0 && (
         <div className="mb-4">
-          <div className="text-[9px] text-gray-400 mb-2" style={F_M}>
+          <div className="text-[12px] text-gray-400 mb-2" style={F_M}>
             5 key words · canonical chain
           </div>
           <div className="flex flex-wrap gap-1.5">
             {item.key_words.map((kw: string, i: number) => (
               <span
                 key={i}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-full" style={{ background: INK, color: CYAN }}
+                className="px-2.5 py-1 text-[12px] font-bold rounded-full" style={{ background: INK, color: CYAN }}
               >
                 {kw}
               </span>
@@ -327,7 +327,7 @@ function DrillOrMissionCard({
       {/* Description / Procedure */}
       {item.description_md && (
         <div className="mt-4">
-          <div className="text-[9px] text-gray-400 mb-2" style={F_M}>
+          <div className="text-[12px] text-gray-400 mb-2" style={F_M}>
             {isDrill ? 'Procedure' : 'What to do in the water'}
           </div>
           <div className="prose prose-sm max-w-none">
@@ -339,7 +339,7 @@ function DrillOrMissionCard({
       {/* Success criteria */}
       {item.success_criteria && item.success_criteria.length > 0 && (
         <div className="mt-4 p-3.5 rounded-xl" style={{ background: 'rgba(6,214,160,.08)', border: '1px solid rgba(6,214,160,.35)' }}>
-          <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0a7c5d' }}>
+          <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0a7c5d' }}>
             <Check size={12} strokeWidth={2} />
             Success criteria
           </div>
@@ -354,7 +354,7 @@ function DrillOrMissionCard({
           {/* Una sola vez, fija, y solo en la misión: la confirmación del coach
               no es un criterio, y el drill no lo confirma nadie en el app. */}
           {!isDrill && (
-            <p className="mt-2 text-[10.5px]" style={{ color: '#0a7c5d', opacity: .8 }}>
+            <p className="mt-2 text-[12px]" style={{ color: '#0a7c5d', opacity: .8 }}>
               Your coach confirms it when you train together.
             </p>
           )}
@@ -364,12 +364,12 @@ function DrillOrMissionCard({
       {/* Los drills son ensayo (doctrina 2026-09-10): se hacen, no se
           registran. Solo la misión — la ejecución en el agua — se anota. */}
       {isDrill ? (
-        <p className="mt-4 text-[11px] text-gray-500 leading-snug">Rehearsal: do it on land or on the skate as many times as you need. No need to log it — what you log is the mission, in the water.</p>
+        <p className="mt-4 text-[12px] text-gray-500 leading-snug">Rehearsal: do it on land or on the skate as many times as you need. No need to log it — what you log is the mission, in the water.</p>
       ) : (
         <button
           onClick={() => onPractice?.(item.id)}
           disabled={!onPractice}
-          className="mt-5 w-full rounded-full py-3.5 text-[11px] transition-all active:scale-[0.98] disabled:opacity-40"
+          className="mt-5 w-full rounded-full py-3.5 text-[12px] transition-all active:scale-[0.98] disabled:opacity-40"
           style={{ ...F_M, background: onPractice ? accentHex : '#e5e7eb', color: INK, fontWeight: 700 }}
         >
           <span className="inline-flex items-center gap-1.5">

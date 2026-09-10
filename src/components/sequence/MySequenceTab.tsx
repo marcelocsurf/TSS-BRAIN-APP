@@ -25,7 +25,7 @@ export function MomentChips({ list, light = false }: { list: Moment[] | undefine
   return (
     <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-1">
       {list.map((m) => (
-        <span key={m.key} className="inline-flex items-center gap-1 text-[10.5px] leading-tight" style={{ color: light ? 'rgba(247,249,250,.8)' : '#4b5563' }} title={m.title}>
+        <span key={m.key} className="inline-flex items-center gap-1 text-[12px] leading-tight" style={{ color: light ? 'rgba(247,249,250,.8)' : '#4b5563' }} title={m.title}>
           <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
           {m.short}
         </span>
@@ -40,7 +40,7 @@ function SideChip({ side, small = false, dark = false }: { side: SequenceSide | 
   const txt = side === 'both' ? 'FS·BS' : SIDE_SHORT[side];
   return (
     <span
-      className={`inline-flex items-center rounded ${small ? 'px-1 text-[8px]' : 'px-1.5 py-0.5 text-[9px]'} font-bold`}
+      className={`inline-flex items-center rounded ${small ? 'px-1 text-[12px]' : 'px-1.5 py-0.5 text-[12px]'} font-bold`}
       style={{ ...F_M, letterSpacing: '0.08em', background: dark ? 'rgba(0,210,255,.18)' : 'rgba(6,28,43,.08)', color: dark ? '#00D2FF' : '#0A2438' }}
       title={side === 'both' ? 'Frontside and backside' : SIDE_WORD[side]}
     >
@@ -179,27 +179,27 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         <img
           src="/tss-logo-white.png?v=2"
           alt="The Surf Sequence"
-          className="h-9 mb-3 object-contain"
+          className="h-11 mb-3 object-contain"
         />
         <div className="flex items-center justify-between mb-2">
           <h2 className="inline-flex items-center gap-2.5 text-[20px]" style={F_D}>
             <ConcentricRings color={theme.bright} size={22} />
             My Sequence
           </h2>
-          <span className="text-[9px] px-2.5 py-1 rounded-full" style={{ ...F_M, background: theme.tint, color: theme.ink }}>
+          <span className="text-[12px] px-2.5 py-1 rounded-full" style={{ ...F_M, background: theme.tint, color: theme.ink }}>
             {data.belt} Belt
           </span>
         </div>
 
         <div className="mt-3">
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.6)' }}>Overall execution</span>
+            <span className="text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Overall execution</span>
             {data.overallRating !== null ? (
               <span className="text-lg font-bold">
                 {data.overallRating.toFixed(1)}<span className="text-xs opacity-70">/5</span>
               </span>
             ) : (
-              <span className="text-xs text-white/60">Not rated yet</span>
+              <span className="text-xs text-white/80">Not rated yet</span>
             )}
           </div>
           <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
@@ -208,7 +208,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               style={{ width: `${overallPct}%`, background: theme.bright }}
             />
           </div>
-          <p className="text-[11px] text-white/60 mt-2">
+          <p className="text-[12px] text-white/80 mt-2">
             {/* La validación OFICIAL del coach manda; el auto-rating complementa. */}
             {data.coachRatedSteps > 0 ? (
               <>
@@ -225,14 +225,27 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       {/* Dónde estás · qué necesitás · cómo entrenarlo */}
       {levelSeqs.length > 0 && (
         <div className="rounded-2xl p-4" style={{ background: '#0A2438', borderLeft: `4px solid ${theme.accent}` }}>
-          <p className="text-[9px]" style={{ ...F_M, color: theme.bright }}>Where you are · {beltWord} Belt</p>
-          <p className="text-[15px] mt-1" style={{ ...F_D, color: PAPER }}>{owned} of {levelSeqs.length} sequences are yours</p>
+          <p className="text-[12px]" style={{ ...F_M, color: theme.bright }}>Where you are · {beltWord} Belt</p>
+          {levelSeqs.every((sq) => sq.state === 'unrated') ? (
+            <>
+              {/* Primer uso (auditoría 2026-09-10): "0 of 9" se lee como fracaso. */}
+              <p className="text-[15px] mt-1" style={{ ...F_D, color: PAPER }}>Nothing rated yet — start here</p>
+              {onTrainSequence && levelSeqs[0] && (
+                <button type="button" onClick={() => onTrainSequence({ sequenceId: levelSeqs[0].id, mode: 'sequence_run' })}
+                  className="mt-2.5 h-11 px-4 rounded-xl text-[13px] font-bold" style={{ background: theme.bright, color: '#061C2B' }}>
+                  Run {sequencePrefix(levelSeqs[0].id, levelSeqs[0].order)?.startsWith('#') ? sequencePrefix(levelSeqs[0].id, levelSeqs[0].order) : levelSeqs[0].name} →
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-[15px] mt-1" style={{ ...F_D, color: PAPER }}>{owned} of {levelSeqs.length} sequences are yours</p>
+          )}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {levelSeqs.map((sq) => {
-              const st = sq.state === 'owned' ? '#06D6A0' : sq.state === 'unrated' ? 'rgba(247,249,250,.35)' : '#FFD166';
+              const st = sq.state === 'owned' ? '#06D6A0' : sq.state === 'unrated' ? 'rgba(247,249,250,.78)' : '#FFD166';
               const pre = sequencePrefix(sq.id, sq.order);
               return (
-                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]" style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(247,249,250,.9)' }}>
+                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]" style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(247,249,250,.9)' }}>
                   <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
                   {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}
                   <SideChip side={sq.side} small dark />
@@ -244,9 +257,9 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           {/* Por lado: una línea es tuya cuando es tuya de los dos lados. */}
           {(sides.fs != null || sides.bs != null) && (
             <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-              <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[9px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.55)' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
-              <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[9px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.55)' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
-              {sides.gap != null && <span className="text-[11px]" style={{ color: sides.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.6)' }}><span className="text-[9px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.55)' }}>Gap</span><b>{sides.gap}★</b></span>}
+              <span className="text-[12px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[12px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
+              <span className="text-[12px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[12px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
+              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.78)' }}><span className="text-[12px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Gap</span><b>{sides.gap}★</b></span>}
               {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#FFD166' }}>{sides.advice.text}</span>}
             </div>
           )}
@@ -258,7 +271,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
       {/* Instructions */}
       <div className="rounded-2xl p-3.5" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
-        <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
+        <p className="text-[12px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
         <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
           {onTrainSequence
             ? 'Pick a sequence → plan it (your focus, your measure) → go surf → come back and evaluate. Drills are rehearsal (Feel it, in the course): do them, no need to log them. Your coach validates in the water.'
@@ -271,22 +284,22 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       {tasks.length > 0 && (
         <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: '3px solid #FFD166' }}>
           <div className="px-4 pt-3.5 pb-2 flex items-baseline justify-between">
-            <p className="text-[9px]" style={{ ...F_M, color: '#FFD166' }}>My list · {tasks.length} of {MAX_OPEN_TASKS}</p>
-            <p className="text-[10px]" style={{ color: 'rgba(247,249,250,.5)' }}>closes itself at 4★ in the water</p>
+            <p className="text-[12px]" style={{ ...F_M, color: '#FFD166' }}>My list · {tasks.length} of {MAX_OPEN_TASKS}</p>
+            <p className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>closes itself at 4★ in the water</p>
           </div>
           <div className="px-3 pb-3 space-y-1.5">
             {tasks.map((t) => (
               <div key={t.id} className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: 'rgba(255,255,255,.05)' }}>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-semibold leading-snug" style={{ color: PAPER }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#FFD166' }}> · {t.detail}</span> : null}</p>
-                  <p className="text-[10.5px]" style={{ color: 'rgba(247,249,250,.55)' }}>{t.sequenceLabel}</p>
+                  <p className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>{t.sequenceLabel}</p>
                 </div>
                 {onTrainSequence && (
                   <button type="button" onClick={() => onTrainSequence({ sequenceId: t.sequenceId, mode: 'step_focus', focusStepId: t.stepId, focusMoment: t.detail, intention: t.detail })}
-                    className="shrink-0 h-9 px-3 rounded-lg text-[11px] font-bold" style={{ background: '#FFD166', color: INK }}>Train it</button>
+                    className="shrink-0 h-11 px-3 rounded-lg text-[12px] font-bold" style={{ background: '#FFD166', color: INK }}>Train it</button>
                 )}
                 <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); }}
-                  className="shrink-0 h-9 px-2.5 rounded-lg text-[11px]" style={{ color: 'rgba(247,249,250,.7)', border: '1px solid rgba(255,255,255,.15)' }}>Done</button>
+                  className="shrink-0 h-11 px-2.5 rounded-lg text-[12px]" style={{ color: 'rgba(247,249,250,.7)', border: '1px solid rgba(255,255,255,.15)' }}>Done</button>
               </div>
             ))}
           </div>
@@ -299,18 +312,18 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       {sides.pairs.length > 0 && (
         <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438' }}>
           <div className="px-4 pt-3.5 pb-2">
-            <p className="text-[9px]" style={{ ...F_M, color: theme.bright }}>Both sides</p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(247,249,250,.6)' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
+            <p className="text-[12px]" style={{ ...F_M, color: theme.bright }}>Both sides</p>
+            <p className="text-[12px] mt-0.5" style={{ color: 'rgba(247,249,250,.78)' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
           </div>
           <div className="px-3 pb-3 space-y-1.5">
             {sides.pairs.map((p) => {
               const cell = (sd: 'fs' | 'bs', c: { id: string; label: string; value: number | null } | null) => {
-                if (!c) return <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.35)' }}>—</span>;
+                if (!c) return <span className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>—</span>;
                 const weak = p.gap != null && p.gap >= 1 && (c.value ?? 0) < ((sd === 'fs' ? p.bs?.value : p.fs?.value) ?? 0);
                 const inner = (
                   <>
-                    <span className="block text-[9px]" style={{ ...F_M, color: weak ? '#FFD166' : 'rgba(247,249,250,.55)' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
-                    <span className="block text-[15px] font-bold" style={{ color: c.value == null ? 'rgba(247,249,250,.35)' : weak ? '#FFD166' : PAPER }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
+                    <span className="block text-[12px]" style={{ ...F_M, color: weak ? '#FFD166' : 'rgba(247,249,250,.78)' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
+                    <span className="block text-[15px] font-bold" style={{ color: c.value == null ? 'rgba(247,249,250,.78)' : weak ? '#FFD166' : PAPER }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
                   </>
                 );
                 const href = pageHrefOf(c.id);
@@ -318,10 +331,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               };
               return (
                 <div key={p.move} className="grid items-center rounded-xl px-3 py-2" style={{ gridTemplateColumns: '1.2fr 1fr 1fr auto', background: 'rgba(255,255,255,.05)' }}>
-                  <span className="text-[12px] font-semibold" style={{ color: PAPER }}>{p.move}{p.both && <span className="block text-[9px] font-normal" style={{ color: 'rgba(247,249,250,.5)' }}>one sequence · both sides</span>}</span>
+                  <span className="text-[12px] font-semibold" style={{ color: PAPER }}>{p.move}{p.both && <span className="block text-[12px] font-normal" style={{ color: 'rgba(247,249,250,.78)' }}>one sequence · both sides</span>}</span>
                   {cell('fs', p.fs)}
                   {cell('bs', p.bs)}
-                  <span className="text-[10px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.45)' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
+                  <span className="text-[12px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.78)' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
                 </div>
               );
             })}
@@ -342,11 +355,11 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               key={v}
               type="button"
               onClick={() => setView(v)}
-              className="flex-1 h-9 rounded-full text-[11px] font-bold transition"
+              className="flex-1 h-11 rounded-full text-[12px] font-bold transition"
               style={
                 view === v
                   ? { background: theme.bright, color: '#061C2B' }
-                  : { color: 'rgba(247,249,250,.55)' }
+                  : { color: 'rgba(247,249,250,.78)' }
               }
             >
               {v === 'sequence' ? 'By sequence' : 'All my skills'}
@@ -392,10 +405,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         <details className="rounded-2xl overflow-hidden" style={{ background: '#0A2438' }}>
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
             <span>
-              <span className="block text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.6)' }}>Your foundations · earlier belts</span>
+              <span className="block text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Your foundations · earlier belts</span>
               <span className="block text-[13px] font-semibold" style={{ color: PAPER }}>{earlier.length} sequences from {Array.from(new Set(earlier.map((sq) => sq.belt))).map((b) => b.charAt(0).toUpperCase() + b.slice(1)).join(' & ')} — {earlier.filter((sq) => sq.state === 'owned').length} owned</span>
             </span>
-            <span style={{ color: 'rgba(247,249,250,.5)' }}>▾</span>
+            <span style={{ color: 'rgba(247,249,250,.78)' }}>▾</span>
           </summary>
           <div className="px-3 pb-3 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
             {earlier.map((seq) => (
@@ -539,12 +552,12 @@ function BlockSection({
     >
       <summary className="px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer list-none" style={{ background: theme.tint }}>
         <div>
-          <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
+          <div className="text-[12px]" style={{ ...F_M, color: theme.ink }}>
             {asSequence ? seqEyebrow : `${beltWord} Belt · Block ${blockNumber}`}
           </div>
           <div className="text-[13px] mt-0.5 flex items-center gap-1.5" style={{ ...F_D, color: INK }}>{blockName}<SideChip side={asSequence ? side : null} /></div>
           {promise && (
-            <div className="text-[11px] mt-0.5 text-gray-500 italic leading-snug">{promise}</div>
+            <div className="text-[12px] mt-0.5 text-gray-500 italic leading-snug">{promise}</div>
           )}
         </div>
         <div className="text-right text-xs shrink-0">
@@ -555,24 +568,24 @@ function BlockSection({
           ) : asSequence && minRating !== null ? (
             <>
               <div className="font-bold" style={{ color: theme.ink }}>{minRating}★</div>
-              <div className="text-[10px] text-gray-400">
+              <div className="text-[12px] text-gray-400">
                 {state === 'partial' ? `${ratedCount}/${items.length} rated` : 'weakest step'}
               </div>
             </>
           ) : avgRating !== null ? (
             <>
               <div className="font-bold" style={{ color: theme.ink }}>{avgRating.toFixed(1)}/5</div>
-              <div className="text-[10px] text-gray-400">{ratedCount}/{items.length} rated</div>
+              <div className="text-[12px] text-gray-400">{ratedCount}/{items.length} rated</div>
             </>
           ) : (
-            <div className="text-gray-400 text-[10px]">Not rated</div>
+            <div className="text-gray-400 text-[12px]">Not rated</div>
           )}
           {asSequence && side === 'both' && sideRatings && (sideRatings.fs != null || sideRatings.bs != null) ? (
-            <div className="text-[10px] text-gray-500 mt-0.5">FS {sideRatings.fs ?? '—'}{sideRatings.fs != null ? '★' : ''} · BS {sideRatings.bs ?? '—'}{sideRatings.bs != null ? '★' : ''}</div>
+            <div className="text-[12px] text-gray-500 mt-0.5">FS {sideRatings.fs ?? '—'}{sideRatings.fs != null ? '★' : ''} · BS {sideRatings.bs ?? '—'}{sideRatings.bs != null ? '★' : ''}</div>
           ) : asSequence && selfSequenceRating !== null && (
-            <div className="text-[10px] text-gray-500 mt-0.5">your last run: {selfSequenceRating}★</div>
+            <div className="text-[12px] text-gray-500 mt-0.5">your last run: {selfSequenceRating}★</div>
           )}
-          <div className="text-[10px] text-gray-400 mt-0.5">
+          <div className="text-[12px] text-gray-400 mt-0.5">
             {items.length} steps <span className="group-open:hidden">▾</span>
             <span className="hidden group-open:inline">▴</span>
           </div>
@@ -582,7 +595,7 @@ function BlockSection({
         <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 text-[12px]" style={{ background: 'rgba(0,210,255,.06)' }}>
           <span>
             <span className="block font-semibold" style={{ color: INK }}>What this sequence is · open it in the course</span>
-            <span className="block text-[10.5px] text-gray-500">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
+            <span className="block text-[12px] text-gray-500">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
           </span>
           <span className="font-bold" style={{ color: '#0090B0' }}>→</span>
         </a>
@@ -613,7 +626,7 @@ function BlockSection({
           </div>
           {picking && (
             <div className="rounded-xl px-3 py-2.5" style={{ background: '#FFF8E7' }}>
-              <p className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>Pick your focus</p>
+              <p className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>Pick your focus</p>
               <p className="text-[12px] text-gray-800 leading-snug mt-0.5">
                 Tap the step you want to work on. You still run the whole sequence — that step is your objective.
               </p>
@@ -627,7 +640,7 @@ function BlockSection({
                   <button
                     type="button"
                     onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'step_focus', focusStepId: sid }); }}
-                    className="mt-2 w-full h-10 rounded-lg text-[12px] font-bold"
+                    className="mt-2 w-full h-11 rounded-lg text-[12px] font-bold"
                     style={{ background: '#E0A62B', color: INK }}
                   >
                     Start with {title} → {heldBackStepId ? '(held your last run back)' : ''}
@@ -648,7 +661,7 @@ function BlockSection({
           className="w-full text-left px-4 py-2.5 border-b border-gray-100"
           style={{ background: '#FFF8E7' }}
         >
-          <span className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>
+          <span className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>
             Start here
           </span>
           <span className="block text-[12.5px] text-gray-800 leading-snug">
@@ -712,14 +725,14 @@ function StepRow({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] text-gray-400" style={F_M}>{item.step_id}</span>
+            <span className="text-[12px] text-gray-400" style={F_M}>{item.step_id}</span>
           </div>
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
           </div>
           <MomentChips list={moments} />
           {hasSubtitle && (
-            <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+            <div className="flex items-center gap-2 text-[12px] text-gray-500 mt-0.5">
               {hasDrill && (
                 <span className="inline-flex items-center gap-1">
                   <Dumbbell size={12} strokeWidth={1.75} />
@@ -741,18 +754,18 @@ function StepRow({
             // M4: Coach official rating overrides self-rating visually (gold)
             <>
               <StarRating value={item.coach_rating} size="sm" readOnly variant="official" />
-              <div className="text-[9px] text-[var(--tss-cyan,#5AC3E7)] font-bold uppercase tracking-wider">
+              <div className="text-[12px] text-[var(--tss-cyan,#5AC3E7)] font-bold uppercase tracking-wider">
                 Official {item.coach_rating}/5
               </div>
               {item.rating !== null && item.rating !== item.coach_rating && (
-                <div className="text-[9px] text-gray-400">self: {item.rating}/5</div>
+                <div className="text-[12px] text-gray-400">self: {item.rating}/5</div>
               )}
             </>
           ) : (
             <>
               <StarRating value={item.rating} size="sm" readOnly />
               {item.rating !== null && (
-                <div className="text-[10px] text-gray-400">{item.rating}/5{item.self_source === 'assessed' ? ' · self-assessed' : ''}</div>
+                <div className="text-[12px] text-gray-400">{item.rating}/5{item.self_source === 'assessed' ? ' · self-assessed' : ''}</div>
               )}
             </>
           )}
