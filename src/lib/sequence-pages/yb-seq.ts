@@ -32,7 +32,7 @@ export const YB_SEQ_6: SequencePageConfig = {
   do: {
     ...BB_CATCH.do,
     missionId: 'MIS-YB-SEQ6-RUN',
-    result: 'Three green waves caught on your own at stage 2–3, chasing the pocket, with the right angle. Nobody put you on the wave.',
+    result: 'One green wave caught on your own at stage 2–3, chasing the pocket, with the right angle. Nobody put you on the wave.',
   },
   review: { howItFeels: 'It feels like the wave was yours before you caught it: you saw it coming, you knew where the energy was, you arrived with time. Nobody pushed you in. That is the moment you stop being taken by waves and start taking them.' },
 };

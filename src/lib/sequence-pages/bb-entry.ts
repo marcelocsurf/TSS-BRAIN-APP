@@ -46,7 +46,7 @@ The board never gets between you and the wave; the body is on the ocean side.`,
     skate: [],
   },
   do: {
-    result: 'Three paddle-outs on your own, from the sand to the lineup, without the board fighting you, without losing ground on any wave, choosing the speed yourself.',
+    result: 'One paddle-out on your own, from the sand to the lineup: the board never fights you, you never lose ground on a wave, and the speed is yours.',
     missionId: 'MIS-BB-NAV',
     timing: 'Read the sets from the sand before you enter. Go on the lull; pass the foam as it comes; sprint only when a set is on you.',
     competence: 'Three paddle-outs in a row where the board floats level, the speed is yours, and every foam is passed without losing the board or your ground. If you can execute it and you feel comfortable, it is yours.',
@@ -97,7 +97,7 @@ The speeds and the pocket are one system: the speed exists to reach the pocket o
     skate: [],
   },
   do: {
-    result: 'Three green waves caught on your own at stage 2–3, chasing the pocket, with the right angle. Nobody put you on the wave.',
+    result: 'One green wave caught on your own at stage 2–3, chasing the pocket, with the right angle. Nobody put you on the wave.',
     missionId: 'MIS-BB-CATCH',
     timing: 'Commit at stage 2, catch at stage 3. The angle is chosen before the last five strokes.',
     competence: 'Three waves in a row where you can say, for each one, the stage you caught it at, where the pocket was and the angle you took. If you can execute it and you feel comfortable, it is yours.',
@@ -146,7 +146,7 @@ export const BB_LINE: SequencePageConfig = {
     skate: [],
   },
   do: {
-    result: 'Five waves where the line is chosen in the cobra, the pop-up takes about two seconds with both feet together, and you land in posture with the back foot where you decided.',
+    result: 'One wave where the line is chosen in the cobra, the pop-up takes about two seconds with both feet together, and you land in posture with the back foot where you decided.',
     missionId: 'MIS-BB-LINE',
     timing: 'Cobra as the wave takes you; the line is set before the hands release; the pop-up fires as the board starts to glide down the line.',
     competence: 'Five waves in a row standing in posture on the line you chose, back foot landing where you decided, no back-foot-first landings. If you can execute it and you feel comfortable, it is yours.',
