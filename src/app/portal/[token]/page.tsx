@@ -17,6 +17,7 @@ import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
 import { getNextMove } from '@/lib/actions/sequence';
+import { getOpenSession } from '@/lib/actions/lets-play';
 import { RenewalGate } from './RenewalGate';
 import { TermsGate } from './TermsGate';
 import { needsTermsAcceptance } from '@/lib/actions/legal';
@@ -220,6 +221,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // El curso es aprender, la membresía es entrenar: los links al curso
           // solo salen para quien lo tiene.
           ownedBelts: ownedCourses.map((c) => c.key),
+          // El plan guardado antes del agua, si hay uno abierto (Marcelo 2026-09-10).
+          openSession: await getOpenSession(token),
           // ¿Lo que el coach dejó para trabajar sigue pendiente, o el alumno ya
           // lo llevó a 4 por su cuenta?
           coachFocusState,

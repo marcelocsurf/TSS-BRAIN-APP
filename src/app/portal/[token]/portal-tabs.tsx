@@ -31,6 +31,7 @@ function surveyDateLabel(sessionDate: string | null | undefined, createdAt: stri
 import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MySequenceTab';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
+import { discardSession } from '@/lib/actions/lets-play';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
@@ -236,6 +237,39 @@ interface PortalData {
    *  es aprender; la membresía es entrenar: los links al curso solo salen
    *  para quien lo tiene (doctrina 2026-09-10). */
   ownedBelts?: string[];
+  /** El plan guardado antes del agua que todavía no se cerró. */
+  openSession?: import('@/lib/actions/lets-play').OpenSession | null;
+}
+
+// ═══ SESIÓN ABIERTA (Marcelo 2026-09-10) ═══
+// El alumno planea, cierra el app, surfea, y vuelve. Esta tarjeta es la
+// puerta de vuelta: un toque y va a la evaluación con su plan tal cual.
+function OpenSessionCard({ data, onFinish, onDiscard }: { data: PortalData; onFinish: () => void; onDiscard: () => void }) {
+  const os = data.openSession;
+  if (!os) return null;
+  const measure = [os.plannedDuration ? `${os.plannedDuration} min` : null, os.plannedReps ? `${os.plannedReps} ${os.measure === 'waves' ? 'waves' : 'runs'}` : null].filter(Boolean).join(' · ');
+  const stale = os.ageHours >= 24;
+  const when = os.ageHours < 1 ? 'just now' : os.ageHours < 24 ? `${os.ageHours} h ago` : `${Math.round(os.ageHours / 24)} d ago`;
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: `3px solid ${stale ? '#FFD166' : '#06D6A0'}` }}>
+      <div className="px-4 pt-3.5 pb-3">
+        <p className="text-[9px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Session in the water'} · planned {when}</p>
+        <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{os.sequenceName}</p>
+        <p className="text-[12px] text-white/60 mt-0.5 leading-snug">
+          {os.mode === 'step_focus' && os.focusTitle ? `Focus: ${os.focusTitle}` : 'The whole line'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}{measure ? ` · ${measure}` : ''}
+        </p>
+        {os.intention && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>Your word: {os.intention}</p>}
+        <div className="flex items-center gap-2 mt-3">
+          <button type="button" onClick={onFinish} className="flex-1 h-11 rounded-xl text-[12.5px] font-bold active:scale-[0.98]" style={{ background: '#00D2FF', color: '#061C2B' }}>
+            I&apos;m back — finish &amp; evaluate →
+          </button>
+          <button type="button" onClick={onDiscard} className="h-11 px-3 rounded-xl text-[11.5px]" style={{ color: 'rgba(247,249,250,.6)', border: '1px solid rgba(255,255,255,.15)' }}>
+            {stale ? 'Close without evaluating' : 'Discard'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** La página de la secuencia (Think · Feel · Do · Review) SOLO si el alumno
@@ -609,6 +643,23 @@ export function PortalTabs({
     setActiveTab('sequence');
   };
 
+  // La sesión abierta (plan guardado antes del agua): cerrarla o descartarla.
+  const finishOpenSession = () => {
+    const os = data.openSession;
+    if (!os) return;
+    setPendingDrillMissionId(null);
+    setDeepStepId(null);
+    setPendingSequence({ sequenceId: os.sequenceId, mode: os.mode, focusStepId: os.focusStepId, intention: os.intention, focusMoment: os.focusMoment, sessionId: os.id });
+    setActiveTab('sequence');
+  };
+  const discardOpenSession = async () => {
+    const os = data.openSession;
+    if (!os) return;
+    if (!window.confirm('Discard this plan? Nothing gets rated.')) return;
+    await discardSession(data.token, os.id);
+    portalRouter.refresh();
+  };
+
   const handlePracticeDrill = (drillMissionId: string) => {
     setPendingDrillMissionId(drillMissionId);
     // Stay on 'sequence' tab — Let's Play renders LinkedTrainingFlow inline.
@@ -680,6 +731,8 @@ export function PortalTabs({
             onTrainSequence={(a) => { setDeepStepId(null); setPendingDrillMissionId(null); setPendingSequence(a); setActiveTab('sequence'); }}
             onOpenRoadmap={() => setRoadmapOpen(true)}
             onOpenWater={() => setWaterOpen(true)}
+            onFinishOpenSession={finishOpenSession}
+            onDiscardOpenSession={discardOpenSession}
           />
         )}
         {activeTab === 'course' && data.courseData && (
@@ -742,6 +795,8 @@ export function PortalTabs({
                 mode={pendingSequence.mode}
                 focusStepId={pendingSequence.focusStepId ?? null}
                 initialIntention={pendingSequence.intention ?? null}
+                initialFocusMoment={pendingSequence.focusMoment ?? null}
+                openSession={pendingSequence.sessionId && data.openSession?.id === pendingSequence.sessionId ? data.openSession : null}
                 studentBelt={student.belt_level || 'white_belt'}
                 onCancel={() => setPendingSequence(null)}
                 rehearseHref={seqPageHref(data, pendingSequence.sequenceId, 'feel')}
@@ -821,6 +876,7 @@ export function PortalTabs({
           ) : (
             // 3) Default: pick a drill or mission from your sequence
             <div className="space-y-4">
+              <OpenSessionCard data={data} onFinish={finishOpenSession} onDiscard={discardOpenSession} />
               <NextMovesBlock
                 data={data}
                 mode="full"
@@ -966,10 +1022,15 @@ function HomeTab({
   onTrainSequence,
   onOpenRoadmap,
   onOpenWater,
+  onFinishOpenSession,
+  onDiscardOpenSession,
 }: {
   data: PortalData;
   belt: any;
   onGoTo: (tab: Tab) => void;
+  /** La sesión abierta (plan guardado antes del agua): cerrarla o descartarla. */
+  onFinishOpenSession?: () => void;
+  onDiscardOpenSession?: () => void;
   /** Abre un paso puntual en Let's Play. */
   onOpenStep?: (stepId: string) => void;
   /** Arranca el entreno por secuencia con un paso como foco (Let's Play). */
@@ -1333,6 +1394,7 @@ function HomeTab({
               practicarlo) y al final la frase de One Wave.
               El alumno la abre muchas veces SOLO, sin el coach al lado: por eso
               esto va arriba de las horas y del camino de cintas. */}
+          {onFinishOpenSession && onDiscardOpenSession && <OpenSessionCard data={data} onFinish={onFinishOpenSession} onDiscard={onDiscardOpenSession} />}
           {(coachFocus || data.nextMove || sessionCue.cue) && (
             <div
               className="rounded-2xl overflow-hidden"

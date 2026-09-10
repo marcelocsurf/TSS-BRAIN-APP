@@ -54,6 +54,7 @@ export async function getStudentActivitySummary(
         .order('session_date', { ascending: false }),
       admin.from('self_training_sessions')
         .select('*')
+        .eq('status', 'done')
         .eq('student_id', studentId)
         .order('created_at', { ascending: false }),
     ]);

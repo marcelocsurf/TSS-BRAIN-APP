@@ -46,6 +46,7 @@ export async function getStudentPortalData(token: string) {
       .order('session_date', { ascending: false }),
     admin.from('self_training_sessions')
       .select('*')
+      .eq('status', 'done')
       .eq('student_id', student.id)
       .order('created_at', { ascending: false }),
     admin.from('survey_responses')

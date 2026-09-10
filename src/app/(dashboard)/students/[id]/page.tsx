@@ -170,6 +170,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .select(
         'id, drill_name, duration_minutes, execution_rating, mission_completion, intention_text, completed, created_at, linked_step_id, kind, criteria_evaluation'
       )
+      .eq('status', 'done')
       .eq('student_id', id)
       .order('created_at', { ascending: false })
       .limit(20),

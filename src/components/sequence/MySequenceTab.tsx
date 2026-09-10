@@ -57,6 +57,10 @@ export type TrainSequenceArgs = {
   focusStepId?: string | null;
   /** La palabra de la sesión (viene del foco elegido en la página de la secuencia). */
   intention?: string | null;
+  /** El momento de la línea elegido como foco. */
+  focusMoment?: string | null;
+  /** Cerrar un plan guardado antes del agua (sesión abierta). */
+  sessionId?: string | null;
 };
 
 interface Props {
@@ -251,7 +255,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
         <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
           {onTrainSequence
-            ? 'Pick a sequence → run it whole, or work on one step inside it → rate yourself honestly. Drills are rehearsal (Feel it, in the course): do them, no need to log them. Your coach validates in the water.'
+            ? 'Pick a sequence → plan it (your focus, your measure) → go surf → come back and evaluate. Drills are rehearsal (Feel it, in the course): do them, no need to log them. Your coach validates in the water.'
             : 'Pick the sequence you are working on → tap a step → run its mission → rate yourself honestly. Your coach validates in the water.'}
         </p>
       </div>

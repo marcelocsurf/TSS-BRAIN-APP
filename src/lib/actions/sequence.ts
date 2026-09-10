@@ -174,6 +174,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
   const { data: sessions } = await admin
     .from('self_training_sessions')
     .select('linked_step_id, created_at')
+    .eq('status', 'done')
     .eq('student_id', studentId)
     .not('linked_step_id', 'is', null)
     .order('created_at', { ascending: false });
@@ -463,6 +464,7 @@ export async function getStepDetail(portalToken: string, stepId: string) {
   const { data: sessions } = await admin
     .from('self_training_sessions')
     .select('id, created_at, duration_minutes, focus_rating, mission_completion, execution_rating, notes, linked_drill_mission_id, criteria_evaluation, automaticity')
+    .eq('status', 'done')
     .eq('student_id', studentId)
     .eq('linked_step_id', stepId)
     .order('created_at', { ascending: false })
@@ -473,6 +475,7 @@ export async function getStepDetail(portalToken: string, stepId: string) {
   const { data: runs } = await admin
     .from('self_training_sessions')
     .select('id, created_at, duration_minutes, notes, drill_name, step_marks')
+    .eq('status', 'done')
     .eq('student_id', studentId)
     .eq('training_mode', 'sequence_run')
     .contains('step_marks', JSON.stringify([{ step_id: stepId }]))
@@ -746,6 +749,7 @@ export async function getWeeklyPracticeCount(portalToken: string): Promise<numbe
   const { count } = await admin
     .from('self_training_sessions')
     .select('id', { count: 'exact', head: true })
+    .eq('status', 'done')
     .eq('student_id', studentId)
     .gte('created_at', since.toISOString());
   return count ?? 0;
@@ -818,6 +822,7 @@ export async function getNextMove(
       const { data: last } = await admin
         .from('self_training_sessions')
         .select('created_at, drill_name, criteria_evaluation, linked_drill_mission_id')
+        .eq('status', 'done')
         .eq('student_id', studentId)
         .eq('linked_step_id', stepId)
         .eq('kind', 'drill')
@@ -845,6 +850,7 @@ export async function getNextMove(
         const { data: runs } = await admin
           .from('self_training_sessions')
           .select('created_at, drill_name, step_marks')
+          .eq('status', 'done')
           .eq('student_id', studentId)
           .eq('linked_sequence_id', seq.id)
           .not('step_marks', 'is', null)
@@ -922,6 +928,7 @@ export async function getLastPracticeHint(
     let q = admin
       .from('self_training_sessions')
       .select('created_at, criteria_evaluation, mission_completion, linked_drill_mission_id')
+      .eq('status', 'done')
       .eq('student_id', studentId)
       .not('criteria_evaluation', 'is', null);
     if (piece?.type === 'drill' && piece.step_id) {

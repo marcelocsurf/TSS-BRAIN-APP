@@ -151,6 +151,7 @@ export async function getSequenceTraining(
       .from('self_training_sessions')
       .select('created_at, training_mode, linked_step_id, step_marks, criteria_evaluation')
       .eq('student_id', studentId)
+      .eq('status', 'done')
       .eq('linked_sequence_id', sequenceId)
       .order('created_at', { ascending: false })
       .limit(15);
@@ -223,6 +224,13 @@ export type SaveSequenceSessionInput = {
   step_criteria?: Record<string, { criterion_index: number; result: CriterionResultValue }[]>;
   /** Run: el momento de la línea donde se rompió, por paso marcado. */
   step_moments?: Record<string, string>;
+  /** La sesión PLANIFICADA que se cierra (plan guardado antes del agua). Si
+   *  viene, se actualiza esa fila en vez de insertar una nueva. */
+  sessionId?: string | null;
+  /** Cómo se midió: tiempo, runs/olas, o las dos. */
+  measure?: 'time' | 'reps' | 'waves' | 'time_reps' | null;
+  /** El momento de la línea elegido como foco. */
+  focus_moment?: string | null;
   /** Foco: estrella del paso (obligatoria) + detalle opcional. El veredicto
    *  ya no se pregunta: se deriva de la estrella. */
   mission_completion?: 'yes' | 'partial' | 'no';
@@ -353,9 +361,21 @@ export async function saveSequenceSession(
 
     const admin = createAdminClient();
     const seqLabel = sequenceLabel(seq.id, seq.order, seq.name);
-    const { data: session, error } = await admin
-      .from('self_training_sessions')
-      .insert({
+    // Cerrar un plan guardado: la fila ya existe (status 'planned') y es de
+    // este alumno. Se completa en el mismo lugar — una sesión, no dos.
+    let planned: { id: string } | null = null;
+    if (input.sessionId) {
+      const { data: pl } = await admin
+        .from('self_training_sessions')
+        .select('id')
+        .eq('id', input.sessionId)
+        .eq('student_id', studentId)
+        .eq('status', 'planned')
+        .maybeSingle();
+      if (!pl) return { ok: false, error: 'That session was already closed. Start a new plan.' };
+      planned = pl;
+    }
+    const row = {
         student_id: studentId,
         kind: 'drill',
         training_mode: input.mode,
@@ -382,9 +402,13 @@ export async function saveSequenceSession(
         criteria_evaluation: focusCriteria,
         focus_rating: focusRating,
         completed: true,
-      })
-      .select('id')
-      .single();
+        status: 'done' as const,
+        measure: input.measure ?? null,
+        focus_moment: clip(input.focus_moment, 80),
+      };
+    const { data: session, error } = planned
+      ? await admin.from('self_training_sessions').update(row).eq('id', planned.id).select('id').single()
+      : await admin.from('self_training_sessions').insert(row).select('id').single();
     if (error) {
       console.error('[lets-play] insert failed', error);
       return { ok: false, error: 'Could not save the session.' };
@@ -393,7 +417,8 @@ export async function saveSequenceSession(
     // Si una nota no se puede escribir, la sesión no queda a medias: se borra
     // y el alumno ve el error (reintentar no duplica nada).
     const rollback = async (msg: string) => {
-      await admin.from('self_training_sessions').delete().eq('id', session.id);
+      if (planned) await admin.from('self_training_sessions').update({ status: 'planned', completed: false }).eq('id', session.id);
+      else await admin.from('self_training_sessions').delete().eq('id', session.id);
       return { ok: false as const, error: msg };
     };
 
@@ -455,5 +480,178 @@ export async function saveSequenceSession(
   } catch (e) {
     console.error('[lets-play] saveSequenceSession failed', e);
     return { ok: false, error: 'Could not save the session.' };
+  }
+}
+
+
+// ═══ EL PLAN SE GUARDA ANTES DEL AGUA (Marcelo 2026-09-10) ═══
+// "La persona lo más seguro va a entrar al agua, va a cerrar el app y luego
+// va a tener que entrar otra vez para cerrar la sesión." El plan nace como
+// una sesión 'planned'; el Home la muestra hasta que se evalúa (→ 'done') o
+// se descarta.
+
+export type PlanSequenceSessionInput = {
+  sequenceId: string;
+  belt: string;
+  mode: TrainingMode;
+  focusStepId?: string | null;
+  focus_moment?: string | null;
+  side?: 'fs' | 'bs' | null;
+  intention_text?: string;
+  measure: 'time' | 'reps' | 'waves' | 'time_reps';
+  planned_duration_minutes?: number | null;
+  planned_reps?: number | null;
+  /** "Conditions fit my level and my expectations are right." */
+  conditions_ok: boolean;
+};
+
+export type OpenSession = {
+  id: string;
+  sequenceId: string;
+  sequenceLabel: string;
+  sequenceName: string;
+  mode: TrainingMode;
+  focusStepId: string | null;
+  focusTitle: string | null;
+  focusMoment: string | null;
+  intention: string | null;
+  side: 'fs' | 'bs' | null;
+  measure: 'time' | 'reps' | 'waves' | 'time_reps' | null;
+  plannedDuration: number | null;
+  plannedReps: number | null;
+  plannedAt: string;
+  ageHours: number;
+};
+
+export async function planSequenceSession(
+  portalToken: string,
+  input: PlanSequenceSessionInput
+): Promise<{ ok: true; sessionId: string } | { ok: false; error: string }> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { ok: false, error: 'Not authenticated.' };
+    if (!(await studentCanTrack(studentId))) return { ok: false, error: TRACKING_LOCKED_MESSAGE };
+    if (input.mode !== 'sequence_run' && input.mode !== 'step_focus') return { ok: false, error: 'Invalid mode.' };
+    if (!input.conditions_ok) return { ok: false, error: 'Confirm the conditions fit your level first.' };
+    if (!['time', 'reps', 'waves', 'time_reps'].includes(input.measure)) return { ok: false, error: 'Pick how you will measure the session.' };
+    const wantsTime = input.measure === 'time' || input.measure === 'time_reps';
+    const wantsReps = input.measure !== 'time';
+    const duration = wantsTime ? input.planned_duration_minutes : null;
+    const reps = wantsReps ? input.planned_reps : null;
+    if (wantsTime && !inRange(duration, 1, 600)) return { ok: false, error: 'Pick a time.' };
+    if (wantsReps && !inRange(reps, 1, 500)) return { ok: false, error: 'Pick a number of runs or waves.' };
+
+    const safeBelt = await allowedBeltFor(studentId, input.belt);
+    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt);
+    if (!seq) return { ok: false, error: 'Sequence not available yet.' };
+    const isRun = input.mode === 'sequence_run';
+    const focus = !isRun ? seq.items.find((i) => i.step_id === input.focusStepId) ?? null : null;
+    if (!isRun && !focus) return { ok: false, error: 'Focus step not in this sequence.' };
+    const kind = sequenceSide(seq.id);
+    let side: 'fs' | 'bs' | null = null;
+    if (kind === 'fs' || kind === 'bs') side = kind;
+    else if (kind === 'both') {
+      if (input.side !== 'fs' && input.side !== 'bs') return { ok: false, error: 'Pick the side you will surf: frontside or backside.' };
+      side = input.side;
+    }
+    const clip = (v: string | undefined | null, n: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null);
+    const admin = createAdminClient();
+    // Un solo plan abierto a la vez: el anterior sin cerrar se descarta.
+    await admin.from('self_training_sessions').update({ status: 'discarded' }).eq('student_id', studentId).eq('status', 'planned');
+    const seqLabel = sequenceLabel(seq.id, seq.order, seq.name);
+    const { data, error } = await admin
+      .from('self_training_sessions')
+      .insert({
+        student_id: studentId,
+        kind: 'drill',
+        status: 'planned',
+        completed: false,
+        training_mode: input.mode,
+        linked_sequence_id: seq.id,
+        linked_step_id: focus?.step_id ?? null,
+        linked_drill_mission_id: focus?.mission?.id ?? null,
+        side,
+        drill_name: `${isRun ? seqLabel : `${focus!.step_title} · ${seqLabel}`}${kind === 'both' && side ? ` · ${SIDE_WORD[side]}` : ''}`,
+        session_date: new Date().toISOString().slice(0, 10),
+        intention_text: clip(input.intention_text, 300),
+        focus_moment: clip(input.focus_moment, 80),
+        measure: input.measure,
+        // planned_duration_minutes es NOT NULL histórico: sin tiempo elegido va 0.
+        planned_duration_minutes: duration ?? 0,
+        planned_reps: reps ?? 0,
+        safety_check: true,
+        planned_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+    if (error || !data) {
+      console.error('[lets-play] plan failed', error);
+      return { ok: false, error: 'Could not save your plan.' };
+    }
+    return { ok: true, sessionId: data.id };
+  } catch (e) {
+    console.error('[lets-play] planSequenceSession failed', e);
+    return { ok: false, error: 'Could not save your plan.' };
+  }
+}
+
+export async function getOpenSession(portalToken: string): Promise<OpenSession | null> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return null;
+    const admin = createAdminClient();
+    const { data: r } = await admin
+      .from('self_training_sessions')
+      .select('id, linked_sequence_id, training_mode, linked_step_id, focus_moment, intention_text, side, measure, planned_duration_minutes, planned_reps, planned_at, created_at, drill_name')
+      .eq('student_id', studentId)
+      .eq('status', 'planned')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!r || !r.linked_sequence_id) return null;
+    let focusTitle: string | null = null;
+    if (r.linked_step_id) {
+      const { data: l } = await admin.from('lessons').select('title').eq('id', r.linked_step_id).maybeSingle();
+      focusTitle = l?.title ?? null;
+    }
+    const plannedAt = r.planned_at ?? r.created_at;
+    const label = String(r.drill_name ?? '');
+    return {
+      id: r.id,
+      sequenceId: r.linked_sequence_id,
+      sequenceLabel: label.includes(' · ') && r.linked_step_id ? label.split(' · ').slice(1, 2).join(' · ') : label.split(' · ').slice(0, 2).join(' · '),
+      sequenceName: label,
+      mode: (r.training_mode === 'step_focus' ? 'step_focus' : 'sequence_run') as TrainingMode,
+      focusStepId: r.linked_step_id ?? null,
+      focusTitle,
+      focusMoment: r.focus_moment ?? null,
+      intention: r.intention_text ?? null,
+      side: r.side === 'fs' || r.side === 'bs' ? r.side : null,
+      measure: r.measure ?? null,
+      plannedDuration: r.planned_duration_minutes || null,
+      plannedReps: r.planned_reps || null,
+      plannedAt,
+      ageHours: Math.round((Date.now() - new Date(plannedAt).getTime()) / 36e5),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function discardSession(portalToken: string, sessionId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { ok: false, error: 'Not authenticated.' };
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from('self_training_sessions')
+      .update({ status: 'discarded' })
+      .eq('id', sessionId)
+      .eq('student_id', studentId)
+      .eq('status', 'planned');
+    if (error) return { ok: false, error: 'Could not discard the session.' };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Could not discard the session.' };
   }
 }

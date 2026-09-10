@@ -129,6 +129,7 @@ export async function getStepCriterionContext(input: {
     const { data: last } = await admin
       .from('self_training_sessions')
       .select('created_at, criteria_evaluation')
+      .eq('status', 'done')
       .eq('student_id', input.studentId)
       .eq('linked_drill_mission_id', piece.id)
       .not('criteria_evaluation', 'is', null)
