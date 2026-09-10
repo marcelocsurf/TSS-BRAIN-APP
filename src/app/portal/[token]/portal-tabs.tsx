@@ -359,7 +359,9 @@ function nextMoveRows(
   // Es el default para el que no sabe por dónde empezar; el mapa queda libre.
   const nm = data.nextMove ?? null;
   if (nm) {
-    const seqLbl = sequencePrefix(nm.sequenceId ?? null, nm.sequenceOrder) ?? nm.sequenceName;
+    // "Run #8" cuando lleva número; si no, el nombre ("Run Navigate the Ocean").
+    const pre = sequencePrefix(nm.sequenceId ?? null, nm.sequenceOrder);
+    const seqLbl = pre?.startsWith('#') ? pre : nm.sequenceName;
     const seq = seqWord(sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName));
     const word = nm.detail ? nm.detail.text : null;
     rows.push({
