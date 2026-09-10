@@ -428,6 +428,7 @@ export async function publicEnroll(input: {
     const { sendBookingConfirmationEmail } = await import('@/lib/actions/email');
     const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
     const dt = new Date(((camp as any).start_date) + 'T00:00:00');
+    const { data: stuTok } = await admin.from('students').select('portal_token').eq('id', studentId).maybeSingle();
     await sendBookingConfirmationEmail({
       toEmail: email,
       firstName,
@@ -435,6 +436,7 @@ export async function publicEnroll(input: {
       dateLabel: dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + ((camp as any).scheduled_time ? ` · ${(camp as any).scheduled_time.slice(0, 5)}` : ''),
       amountLabel: amount != null && amount > 0 ? `$${(amount / 100).toFixed(2)}` : null,
       manageUrl: `${base}/booking/${(seatRow as any)?.id}`,
+      portalUrl: stuTok?.portal_token ? `${base}/portal/${stuTok.portal_token}` : null,
       academyId: (camp as any)?.academy_id ?? null,
     }).catch(() => {});
   } catch { /* el email nunca bloquea la reserva */ }
