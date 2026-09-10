@@ -408,8 +408,9 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       };
     })
     .filter((s) => s.items.length > 0)
-    // The 17 Elements (Foundation) vive en el curso, no en Let's Play (Marcelo 2026-09-10).
-    .filter((s) => s.id !== 'BB-SEQ-FOUND')
+    // Foundation (17 Elements) y Closing (Concepts & Integration, Self-Evaluation,
+    // cierre de Yellow) viven en el curso, no en Let's Play (Marcelo 2026-09-10).
+    .filter((s) => { const r = SEQUENCE_ROLE[s.id]; return r !== 'foundation' && r !== 'closing'; })
     .sort((a, b) => beltRank(a.belt) - beltRank(b.belt) || a.order - b.order);
 
   return {
