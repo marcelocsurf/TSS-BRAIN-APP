@@ -281,7 +281,7 @@ export function SequencePage({
                 </div>
               ))}
             </Card>
-            {progress && progress.ratedSteps > 0 && (
+            {progress && (progress.ratedSteps > 0 || progress.lastRun !== null) && (
               <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
                   {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
@@ -351,7 +351,7 @@ export function SequencePage({
                 ) : null)}
               </Card>
             )}
-            {progress && progress.ratedSteps > 0 && (
+            {progress && (progress.ratedSteps > 0 || progress.lastRun !== null) && (
               <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
                   {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
