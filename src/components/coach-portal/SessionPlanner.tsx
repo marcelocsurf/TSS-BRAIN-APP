@@ -60,6 +60,7 @@ import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluati
 import { WeekPlanBoard } from '@/components/coach-portal/WeekPlanBoard';
 import { useRouter } from 'next/navigation';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
+import { coachFocusOptions } from '@/lib/sequence-pages/focus-options';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
   type AcademySpace, type SpaceBooking,
@@ -3173,11 +3174,49 @@ function StudentEvalCard({
             <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-700">
               🎯 Next focus · required — the student sees this
             </p>
+            {/* Sale del curso (Marcelo 2026-09-10): momentos de la línea de lo
+                que se entrenó hoy, la línea completa, o empezar la siguiente.
+                Tocar una opción escribe el foco; abajo se puede reforzar. */}
+            {(() => {
+              const stepIds = student.blocks.flatMap((b) => [b.step_id, ...(b.step_ids ?? [])]).filter((x): x is string => !!x);
+              const titles: Record<string, string> = {};
+              for (const id of stepIds) { const t = stpLabel(id); if (t) titles[id] = t; }
+              const groups = coachFocusOptions(stepIds, titles);
+              if (!groups.length || isClosed) return null;
+              const cur = gen?.whats_next ?? '';
+              return (
+                <div className="space-y-1.5">
+                  {groups.map((g) => (
+                    <div key={g.title}>
+                      <p className="text-[10px] text-cyan-800/70 mb-1">{g.title}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {g.options.map((o) => {
+                          const sel = cur.startsWith(o.text);
+                          return (
+                            <button key={o.text} type="button" aria-pressed={sel}
+                              onClick={() => {
+                                // Conserva la frase de refuerzo que ya escribió (después de " — ").
+                                const fromChip = cur.startsWith('#') || cur.startsWith('Start #');
+                                const note = (fromChip ? cur.split(' — ').slice(1).join(' — ') : cur).trim();
+                                onCommit(genOrder, { whats_next: note ? `${o.text} — ${note}` : o.text } as any);
+                              }}
+                              className="px-2.5 py-1.5 rounded-full text-[11px] font-semibold border"
+                              style={sel ? { background: '#0E7490', borderColor: '#0E7490', color: '#fff' } : { background: '#fff', borderColor: '#A5F3FC', color: '#155E75' }}>
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             <TextArea
               label="What to work on next *"
               value={gen?.whats_next ?? ''}
               onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
-              placeholder="e.g. Next session: angle take-offs, look down the line"
+              placeholder="Tap an option above, or write it — add a phrase to reinforce after ' — '"
               rows={2}
               disabled={isClosed}
             />
