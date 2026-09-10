@@ -4,6 +4,7 @@ import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { BRAND } from '@/lib/constants/brand';
 import { notFound } from 'next/navigation';
 import { IntakeForm } from './intake-form';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
@@ -19,6 +20,23 @@ export default async function IntakePage({ params }: Props) {
   if (!student) notFound();
 
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
+  // Dos intakes (Marcelo 2026-09-10): quien viene a un CAMP completa la
+  // evaluación profunda (metas); quien viene a una clase suelta, solo lo
+  // esencial + waiver. Se decide por lo que tiene inscrito.
+  let extendedRequired = false;
+  try {
+    const admin = createAdminClient();
+    const { data: seats } = await admin
+      .from('camp_participants')
+      .select('enrollment_status, camp_instances:camp_instance_id(end_date, status, camp_templates:template_id(service_kind))')
+      .eq('student_id', (student as any).id);
+    const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
+    extendedRequired = (seats ?? []).some((p: any) => {
+      const ci = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;
+      const tpl = ci && (Array.isArray(ci.camp_templates) ? ci.camp_templates[0] : ci.camp_templates);
+      return p.enrollment_status !== 'cancelled' && ci && ci.status !== 'cancelled' && ci.end_date >= today && /camp/i.test(String(tpl?.service_kind ?? ''));
+    });
+  } catch { /* sin dato, el intake sigue como hasta hoy */ }
 
   return (
     <div className={`tss-v10 min-h-screen ${archivo.variable} ${plexMono.variable}`} style={{ background: '#F7F9FA' }}>
@@ -65,7 +83,7 @@ export default async function IntakePage({ params }: Props) {
         </div>
 
         {/* Form */}
-        <IntakeForm token={token} student={student} />
+        <IntakeForm token={token} student={student} extendedRequired={extendedRequired} />
       </div>
 
       <div className="text-center py-8">

@@ -300,6 +300,56 @@ async function handle(req: NextRequest) {
     console.error('closure reminders section failed', e);
   }
 
+  // ── 2b. Recordatorio del día antes AL ALUMNO (Marcelo 2026-09-10) ──
+  // Por sesión de mañana: hora de encuentro, playa y transporte del plan.
+  // Nace apagado (email_settings.student_day_reminder). Idempotente por
+  // camp_sessions.student_reminder_on.
+  let studentReminders = 0;
+  try {
+    if (await emailEnabled('student_day_reminder')) {
+      const { data: tomorrowSessions } = await admin
+        .from('camp_sessions')
+        .select('id, session_date, camp_instance_id, student_reminder_on, camp_instances:camp_instance_id!inner(camp_name, status, scheduled_time, academy_id, camp_participants(enrollment_status, students:student_id(email, first_name, portal_token)))')
+        .eq('session_date', tomorrow)
+        .is('student_reminder_on', null);
+      const sesIds = ((tomorrowSessions as any[]) ?? []).map((x) => x.id);
+      const planBySession = new Map<string, any>();
+      if (sesIds.length) {
+        const { data: plans } = await admin.from('service_plans').select('camp_session_id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status').in('camp_session_id', sesIds);
+        for (const p of (plans as any[]) ?? []) planBySession.set(p.camp_session_id, p);
+      }
+      const { sendStudentDayReminderEmail } = await import('@/lib/actions/email');
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+      for (const ses of (tomorrowSessions as any[]) ?? []) {
+        const inst = Array.isArray(ses.camp_instances) ? ses.camp_instances[0] : ses.camp_instances;
+        if (!inst || ['cancelled', 'completed'].includes(inst.status ?? 'planned')) continue;
+        const plan = planBySession.get(ses.id);
+        const hh = (t: string | null | undefined) => (t ? String(t).slice(0, 5) : null);
+        const meeting = hh(plan?.class_start_time) ?? hh(inst.scheduled_time);
+        const transport = plan?.transport_needed
+          ? (plan.transport_status === 'cancelled' ? null : plan.transport_depart ? `Van leaves ${hh(plan.transport_depart)}${plan.transport_return ? ` · back ${hh(plan.transport_return)}` : ''}` : 'Van requested — time to confirm')
+          : null;
+        const dateLabel = new Date(`${ses.session_date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        let sent = 0;
+        for (const p of (inst.camp_participants ?? []) as any[]) {
+          if (p.enrollment_status !== 'active') continue;
+          const st = Array.isArray(p.students) ? p.students[0] : p.students;
+          if (!st?.email || !st.portal_token) continue;
+          const r = await sendStudentDayReminderEmail({
+            toEmail: st.email, firstName: st.first_name || 'surfer',
+            serviceName: String(inst.camp_name ?? 'your session').replace(/ · \d{4}-\d{2}-\d{2}$/, ''),
+            dateLabel, meetingTime: meeting, venue: plan?.surf_venue ?? null, transport,
+            portalUrl: `${base}/portal/${st.portal_token}`, academyId: inst.academy_id ?? null,
+          });
+          if (r.success) sent++;
+        }
+        studentReminders += sent;
+        await admin.from('camp_sessions').update({ student_reminder_on: today }).eq('id', ses.id);
+      }
+    }
+  } catch (e) { console.error('[daily-reminders] student reminder section failed', e); }
+  if (studentReminders) console.log(`[daily-reminders] student reminders: ${studentReminders}`);
+
   return NextResponse.json({
     closureRun,
     ok: true,

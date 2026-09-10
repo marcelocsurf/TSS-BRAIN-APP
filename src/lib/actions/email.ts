@@ -985,3 +985,45 @@ export async function sendWelcomeEnrolledEmail(data: {
     return { success: false, error: e instanceof Error ? e.message : 'send failed' };
   }
 }
+
+
+// ═══ Recordatorio del día antes AL ALUMNO (Marcelo 2026-09-10) ═══
+// Hora de encuentro, playa y transporte — lo mismo que el front desk manda
+// por WhatsApp. Nace APAGADO (email_settings.student_day_reminder).
+export async function sendStudentDayReminderEmail(data: {
+  toEmail: string;
+  firstName: string;
+  serviceName: string;
+  dateLabel: string;
+  meetingTime: string | null;
+  venue: string | null;
+  transport: string | null;
+  portalUrl: string;
+  academyId?: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('student_day_reminder'))) return { success: false, error: 'disabled:student_day_reminder' } as any;
+  try {
+    const rows = [
+      data.meetingTime ? `<li>🕐 Meet at <strong>${escapeHtml(data.meetingTime)}</strong></li>` : '',
+      data.venue ? `<li>📍 ${escapeHtml(data.venue)}</li>` : '',
+      data.transport ? `<li>🚐 ${escapeHtml(data.transport)}</li>` : '',
+    ].filter(Boolean).join('');
+    await sendEmail({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `Tomorrow: ${data.serviceName} 🌊`,
+      html: assignmentEmailShell(
+        `See you tomorrow, ${data.firstName}!`,
+        `<p><strong>${escapeHtml(data.serviceName)}</strong> — ${escapeHtml(data.dateLabel)}.</p>
+         ${rows ? `<ul style="margin:8px 0 12px;padding-left:18px;color:#334155;font-size:14px;line-height:1.7;">${rows}</ul>` : ''}
+         <p style="font-size:13px;color:#475569;">Bring water, sunscreen and your word for the wave. If you can't make it, tell the front desk today.</p>`,
+        { url: data.portalUrl, label: 'Open my portal' },
+        undefined,
+      ),
+    });
+    return { success: true };
+  } catch (e) {
+    console.error('[email] student day reminder failed', e);
+    return { success: false, error: e instanceof Error ? e.message : 'send failed' };
+  }
+}

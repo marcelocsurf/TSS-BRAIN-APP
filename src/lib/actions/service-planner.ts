@@ -1,4 +1,5 @@
 'use server';
+import { emailEnabled } from '@/lib/email-switch';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { elSalvadorToday, toElSalvadorDate } from '@/lib/utils/tz';
@@ -2370,6 +2371,32 @@ export async function closeServicePlan(
         });
       } catch {
         /* non-blocking — profile snapshot is best-effort */
+      }
+    }
+
+    // FEEDBACK DEL DÍA (Marcelo 2026-09-10): al cerrar, el alumno recibe qué
+    // hizo hoy y qué trabaja la próxima. Nace APAGADO (email_settings.day_feedback).
+    if (stud?.email && result && stud.portal_token && (await emailEnabled('day_feedback'))) {
+      try {
+        const { sendSessionEmail } = await import('@/lib/actions/email');
+        await sendSessionEmail({
+          studentName: stud.first_name || 'surfer',
+          studentEmail: stud.email,
+          portalToken: stud.portal_token,
+          coachName: coach.display_name ?? 'your coach',
+          sessionDate: (sessionAny as any)?.session_date ?? new Date().toISOString().slice(0, 10),
+          mission: missionTitle,
+          status,
+          coachFeedback: firstBlock.notes_post ?? '',
+          homework: '',
+          whatsNext: firstBlock.whats_next ?? '',
+          beltLevel: stud.belt_level,
+          sessionResultId: result.id,
+          feedbackToken: (result as any).feedback_token ?? undefined,
+          studentHasCourseAccess: !!stud.course_access_white || !!stud.course_access_yellow,
+        });
+      } catch (e) {
+        console.error('[close] day feedback email failed', e);
       }
     }
 

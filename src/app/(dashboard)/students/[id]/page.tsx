@@ -10,6 +10,7 @@ import { OpenAsButton } from '@/components/admin/OpenAsButton';
 import { PromoteLeadCard } from '@/components/student/PromoteLeadCard';
 import { createClient } from '@/lib/supabase/server';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
+import { BeltOverride } from './BeltOverride';
 import { PILAR_LABELS, type Pilar } from '@/lib/constants/brand';
 import { LevelAccessCard } from '@/components/student/LevelAccessCard';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
@@ -440,6 +441,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               >
                 {belt?.en}{belt?.levelName ? ` (${belt.levelName})` : ''}
               </span>
+              {(coach?.role === 'coordinator' || coach?.role === 'admin') && (
+                <BeltOverride studentId={student.id} current={student.belt_level} />
+              )}
               {/* Critical flags — always visible, whatever tab is open (M138). */}
               {hasSafetyData && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-red-50 text-red-600 border border-red-200">

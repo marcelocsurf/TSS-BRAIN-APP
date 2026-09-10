@@ -67,11 +67,13 @@ interface Props {
 
 type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done' | 'waiver_only';
 
-export function IntakeForm({ token, student }: Props) {
+export function IntakeForm({ token, student, extendedRequired = false }: Props & { extendedRequired?: boolean }) {
   // New 3-part order: Profile & Safety (ficha) FIRST → Level quiz (members) →
   // Goals. A drop-in stops after the ficha. Members ALWAYS take the level quiz
   // (it handles the never-surfed case internally) — it is never skipped.
-  const isDropin = student.student_type === 'dropin';
+  // Camp (Marcelo 2026-09-10) = evaluación profunda obligatoria, aunque el
+  // alumno esté cargado como drop-in.
+  const isDropin = student.student_type === 'dropin' && !extendedRequired;
   const basicDone =
     student.intake_tier === 'basic' ||
     student.intake_tier === 'extended' ||
@@ -254,7 +256,7 @@ export function IntakeForm({ token, student }: Props) {
       // Member: go to the level quiz — UNLESS they already did it (e.g. via the
       // public /quiz lead), in which case skip straight to goals so they never
       // re-take it.
-      if (student.student_type === 'dropin') {
+      if (student.student_type === 'dropin' && !extendedRequired) {
         setStage('basic_done');
       } else if (student.ocean_quiz_completed_at || student.level_quiz_completed_at) {
         setExtendedStep(0);
@@ -385,16 +387,16 @@ export function IntakeForm({ token, student }: Props) {
 
         {/* Extended profile (goals etc.) is for MEMBERS. Drop-in students
             (single service) finish here — no goals, no portal, no course. */}
-        {student.student_type === 'dropin' ? (
+        {student.student_type === 'dropin' && !extendedRequired ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center space-y-2">
             <p className="text-sm font-semibold text-[var(--tss-navy)]">You&apos;re all set!</p>
             <p className="text-xs text-gray-500">You can close this page. See you in the water.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 p-5 text-center space-y-3">
-            <p className="text-sm text-gray-600 font-medium">Want to help your coach even more?</p>
+            <p className="text-sm text-gray-600 font-medium">{extendedRequired ? 'One more step for your camp: your goals' : 'Want to help your coach even more?'}</p>
             <p className="text-xs text-gray-400">
-              Add your surf experience, goals, and personal details. Takes about 3 minutes.
+              {extendedRequired ? 'Your coach plans the camp around this — surf experience, goals and how you learn. About 3 minutes.' : 'Add your surf experience, goals, and personal details. Takes about 3 minutes.'}
             </p>
             <button
               type="button"
