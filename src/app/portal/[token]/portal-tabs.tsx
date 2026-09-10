@@ -32,6 +32,7 @@ import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MyS
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
 import { discardSession } from '@/lib/actions/lets-play';
+import { isGoofy } from '@/lib/stance';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
@@ -816,6 +817,7 @@ export function PortalTabs({
                 initialIntention={pendingSequence.intention ?? null}
                 initialFocusMoment={pendingSequence.focusMoment ?? null}
                 openSession={pendingSequence.sessionId && data.openSession?.id === pendingSequence.sessionId ? data.openSession : null}
+                goofy={isGoofy(student as any)}
                 studentBelt={student.belt_level || 'white_belt'}
                 onCancel={() => setPendingSequence(null)}
                 rehearseHref={seqPageHref(data, pendingSequence.sequenceId, 'feel')}

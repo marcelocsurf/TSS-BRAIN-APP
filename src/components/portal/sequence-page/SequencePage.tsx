@@ -45,7 +45,7 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, cfg, lessons, pieces, token, canTrack, progress, initialTab = null }: {
+  video, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
@@ -57,6 +57,8 @@ export function SequencePage({
   progress?: SequenceProgress | null;
   /** ?tab=feel desde Let's Play ("Rehearse it on land first"). */
   initialTab?: Tab | null;
+  /** Espejar el tablero según el stance del alumno (goofy frontside / regular backside). */
+  flip?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
@@ -78,7 +80,7 @@ export function SequencePage({
 
         {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
         <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
-          {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} /></div> : (
+          {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} flip={flip} /></div> : (
             <div className="p-4">
               <p style={{ ...F_M, color: MUTED }}>The steps, in order</p>
               <ol className="mt-2 space-y-1.5">
@@ -128,7 +130,7 @@ export function SequencePage({
             )}
             <Card eyebrow="01 · What it is">
               <h2 className="text-[16px] font-bold">{cfg.think.whatIs.headline}</h2>
-              {video && cfg.think.board && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} />}
+              {video && cfg.think.board && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} flip={flip} />}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
               <Row k="Where">{cfg.think.whatIs.where}</Row>
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>

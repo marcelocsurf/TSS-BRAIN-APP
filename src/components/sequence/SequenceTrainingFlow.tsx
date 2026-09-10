@@ -30,6 +30,7 @@ import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { MomentChips } from './MySequenceTab';
 import { COMMAND_COLORS, WaveBoard } from '@/components/portal/sequence-page/WaveBoard';
 import { sequencePageFor } from '@/lib/sequence-pages';
+import { boardFlip } from '@/lib/stance';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 
@@ -166,6 +167,8 @@ interface Props {
   initialFocusMoment?: string | null;
   /** Cerrar un plan guardado antes del agua: arranca directo en la evaluación. */
   openSession?: OpenSession | null;
+  /** Stance del alumno: el tablero se espeja para goofy frontside / regular backside. */
+  goofy?: boolean;
   studentBelt?: string;
   onCancel: () => void;
   /** "Rehearse it on land first": el Feel it de la secuencia en el curso (null
@@ -174,7 +177,7 @@ interface Props {
   onDone: () => void;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone }: Props) {
   // El modo se elige EN el plan (toda la línea, o un paso/momento como foco).
   const [modeState, setModeState] = useState<TrainingMode>(openSession?.mode ?? mode);
   const isRun = modeState === 'sequence_run';
@@ -551,7 +554,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             chica: de un vistazo, los pasos y dónde pasan (Marcelo 2026-09-10). */}
         {sequencePageFor(seq.id)?.think.board && (
           <div className="rounded-2xl p-2" style={{ background: INK }}>
-            <WaveBoard data={sequencePageFor(seq.id)!.think.board!} title={`${seq.name} on the wave face`} />
+            <WaveBoard data={sequencePageFor(seq.id)!.think.board!} title={`${seq.name} on the wave face`} flip={boardFlip(twoSided ? (side ?? 'fs') : seq.side, goofy)} />
           </div>
         )}
         {(focusMoment || intention.trim()) && (

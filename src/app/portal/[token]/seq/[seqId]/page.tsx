@@ -3,6 +3,7 @@
 // src/lib/sequence-pages. Lee lecciones y piezas de la base; la config trae
 // lo que todavía no existe como dato (resultado, criterios aprobados, tablero).
 import { sequenceSide } from '@/lib/constants/learning-blocks';
+import { isGoofy, boardFlip } from '@/lib/stance';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -39,7 +40,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   const admin = createAdminClient();
   const { data: student } = await admin
     .from('students')
-    .select('id, first_name, ' + COURSES.map((c) => c.accessColumn).join(', '))
+    .select('id, first_name, stance, goofy_or_regular, ' + COURSES.map((c) => c.accessColumn).join(', '))
     .eq('portal_token', token)
     .maybeSingle();
   if (!student) notFound();
@@ -106,7 +107,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} initialTab={initialTab} />
+      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
     </div>
   );
 }
