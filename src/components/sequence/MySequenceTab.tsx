@@ -12,6 +12,8 @@ import { sequencePageFor } from '@/lib/sequence-pages';
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
+import { effectiveStars } from '@/lib/stars';
+import { getTasks, closeTask, MAX_OPEN_TASKS, type StudentTask } from '@/lib/actions/lets-play';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 
 /** Los momentos de la línea que cubre una lección, con su punto de color.
@@ -79,6 +81,9 @@ interface Props {
 export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [] }: Props) {
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
+  // Tus tareas (paso + detalle, máximo tres). Marcelo 2026-09-10.
+  const [tasks, setTasks] = useState<StudentTask[]>([]);
+  useEffect(() => { let m = true; getTasks(portalToken).then((t) => { if (m) setTasks(t); }).catch(() => {}); return () => { m = false; }; }, [portalToken]);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
   // Por secuencia es la entrada natural: es como se enseña en el curso.
   const [view, setView] = useState<'sequence' | 'all'>('sequence');
@@ -152,7 +157,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const next = levelSeqs.find((sq) => sq.state !== 'owned') ?? null;
   // El paso: el que frenó tu último run · si no, el primero bajo 4★ · si no,
   // el primero que todavía no calificaste · si no, el primero de la cadena.
-  const firstUnrated = next ? next.items.find((i) => (i.coach_rating ?? i.rating) == null) ?? null : null;
+  const firstUnrated = next ? next.items.find((i) => effectiveStars(i) == null) ?? null : null;
   const nextStepId = next ? (next.heldBackStepId ?? next.weakestStepId ?? firstUnrated?.step_id ?? next.items[0]?.step_id ?? null) : null;
   const nextStepTitle = next ? (next.heldBackStepId ? next.heldBackTitle : next.weakestStepId ? next.weakestTitle : firstUnrated?.step_title ?? next.items[0]?.step_title ?? null) : null;
   const nextWhy = next ? (next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : firstUnrated ? 'not rated yet' : 'start here') : '';
@@ -259,6 +264,33 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             : 'Pick the sequence you are working on → tap a step → run its mission → rate yourself honestly. Your coach validates in the water.'}
         </p>
       </div>
+
+      {/* MY LIST (Marcelo 2026-09-10): las tareas que el alumno se dejó a sí
+          mismo — paso + detalle, máximo tres. Se ofrecen, no se imponen. */}
+      {tasks.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: '3px solid #FFD166' }}>
+          <div className="px-4 pt-3.5 pb-2 flex items-baseline justify-between">
+            <p className="text-[9px]" style={{ ...F_M, color: '#FFD166' }}>My list · {tasks.length} of {MAX_OPEN_TASKS}</p>
+            <p className="text-[10px]" style={{ color: 'rgba(247,249,250,.5)' }}>closes itself at 4★ in the water</p>
+          </div>
+          <div className="px-3 pb-3 space-y-1.5">
+            {tasks.map((t) => (
+              <div key={t.id} className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: 'rgba(255,255,255,.05)' }}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold leading-snug" style={{ color: PAPER }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#FFD166' }}> · {t.detail}</span> : null}</p>
+                  <p className="text-[10.5px]" style={{ color: 'rgba(247,249,250,.55)' }}>{t.sequenceLabel}</p>
+                </div>
+                {onTrainSequence && (
+                  <button type="button" onClick={() => onTrainSequence({ sequenceId: t.sequenceId, mode: 'step_focus', focusStepId: t.stepId, focusMoment: t.detail, intention: t.detail })}
+                    className="shrink-0 h-9 px-3 rounded-lg text-[11px] font-bold" style={{ background: '#FFD166', color: INK }}>Train it</button>
+                )}
+                <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); }}
+                  className="shrink-0 h-9 px-2.5 rounded-lg text-[11px]" style={{ color: 'rgba(247,249,250,.7)', border: '1px solid rgba(255,255,255,.15)' }}>Done</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* BOTH SIDES (Marcelo 2026-09-10): la misma línea, de los dos lados.
           Empareja #8↔#9, #10↔#11, #12↔#13 y muestra las de dos lados (#7) con
@@ -481,7 +513,7 @@ function BlockSection({
   // La nota que cuenta es la EFECTIVA: la del coach si existe, si no la
   // auto-evaluación. Contando solo el auto-rating, un alumno con toda su
   // secuencia validada por el coach leía "0/6 rated".
-  const effective = (i: SequenceItem) => i.coach_rating ?? i.rating ?? null;
+  const effective = (i: SequenceItem) => effectiveStars(i);
   const ratedItems = items.filter((i) => effective(i) !== null);
   const ratedCount = ratedItems.length;
   const avgRating = ratedCount > 0
@@ -719,7 +751,7 @@ function StepRow({
             <>
               <StarRating value={item.rating} size="sm" readOnly />
               {item.rating !== null && (
-                <div className="text-[10px] text-gray-400">{item.rating}/5</div>
+                <div className="text-[10px] text-gray-400">{item.rating}/5{item.self_source === 'assessed' ? ' · self-assessed' : ''}</div>
               )}
             </>
           )}

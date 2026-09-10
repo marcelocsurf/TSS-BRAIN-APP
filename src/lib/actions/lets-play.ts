@@ -58,6 +58,9 @@ export type SequenceTraining = {
   /** El paso que conviene trabajar: el que la detuvo la última vez, si no el
    *  primero por debajo de la barra, si no el primero de la cadena. */
   suggestedFocusStepId: string | null;
+  /** Tus tareas abiertas EN esta secuencia (paso + detalle). Se ofrecen como
+   *  foco al planear; nunca se imponen. */
+  tasks: StudentTask[];
   /** Lo que quedó flojo por paso en tus últimas sesiones de esta secuencia
    *  (runs y focos): el objetivo de hoy cuando elegís ese paso. La marca MÁS
    *  RECIENTE con detalle decide, aunque haya salido todo logrado. */
@@ -176,6 +179,18 @@ export async function getSequenceTraining(
       }
     }
 
+    const { data: taskRows } = await admin
+      .from('student_tasks')
+      .select('id, sequence_id, step_id, detail, source, created_at')
+      .eq('student_id', studentId)
+      .eq('status', 'open')
+      .eq('sequence_id', sequenceId)
+      .order('created_at', { ascending: true });
+    const tasks: StudentTask[] = (taskRows ?? []).filter((t: any) => stepIds.has(t.step_id)).map((t: any) => ({
+      id: t.id, sequenceId: t.sequence_id, sequenceLabel: sequenceLabel(seq.id, seq.order, seq.name), stepId: t.step_id,
+      stepTitle: steps.find((s) => s.step_id === t.step_id)?.title ?? t.step_id, detail: t.detail ?? null, source: t.source, createdAt: t.created_at,
+    }));
+
     let suggested: string | null = null;
     if (sr?.held_back_step_id && stepIds.has(sr.held_back_step_id)) suggested = sr.held_back_step_id;
     else if (seq.weakestStepId) suggested = seq.weakestStepId;
@@ -189,6 +204,7 @@ export async function getSequenceTraining(
         seqRating: sr ? { current_rating: sr.current_rating ?? null, rating_count: sr.rating_count ?? 0, held_back_step_id: sr.held_back_step_id ?? null, last_updated: sr.last_updated } : null,
         suggestedFocusStepId: suggested,
         stepHints,
+        tasks,
       },
     };
   } catch (e) {
@@ -471,9 +487,17 @@ export async function saveSequenceSession(
         student_id: studentId,
         step_id: u.step_id,
         current_rating: u.rating,
+        // Ejecutado en el agua: pisa cualquier autoevaluación.
+        self_source: 'executed',
+        assessed_criteria: null,
         last_updated: new Date().toISOString(),
       }, { onConflict: 'student_id,step_id' });
       if (stepErr) { console.error('[lets-play] step rating failed', stepErr); return rollback('Could not save your step rating.'); }
+      // Una tarea propia se cierra sola cuando el paso llega a 4★ en el agua.
+      if (u.rating >= SEQUENCE_PASS_STARS) {
+        await admin.from('student_tasks').update({ status: 'done', done_at: new Date().toISOString(), done_reason: 'reached_4' })
+          .eq('student_id', studentId).eq('step_id', u.step_id).eq('status', 'open');
+      }
     }
 
     return { ok: true, sessionId: session.id, nextFocus, sequenceRating: seqRating };
@@ -653,5 +677,107 @@ export async function discardSession(portalToken: string, sessionId: string): Pr
     return { ok: true };
   } catch {
     return { ok: false, error: 'Could not discard the session.' };
+  }
+}
+
+
+// ═══ TAREAS PROPIAS (Marcelo 2026-09-10) ═══
+// "Que pueda ir acumulando detalles que sé que tengo que trabajar… pero
+// siempre con la opción de trabajar en lo que yo quiera." Paso + detalle,
+// máximo tres abiertas, se cierran solas al llegar a 4★ en el agua.
+
+export const MAX_OPEN_TASKS = 3;
+
+export type StudentTask = {
+  id: string;
+  sequenceId: string;
+  sequenceLabel: string;
+  stepId: string;
+  stepTitle: string;
+  detail: string | null;
+  source: 'self' | 'system';
+  createdAt: string;
+};
+
+export async function getTasks(portalToken: string): Promise<StudentTask[]> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return [];
+    const admin = createAdminClient();
+    const { data: rows } = await admin
+      .from('student_tasks')
+      .select('id, sequence_id, step_id, detail, source, created_at')
+      .eq('student_id', studentId)
+      .eq('status', 'open')
+      .order('created_at', { ascending: true })
+      .limit(MAX_OPEN_TASKS);
+    if (!rows?.length) return [];
+    const stepIds = Array.from(new Set(rows.map((r: any) => r.step_id)));
+    const seqIds = Array.from(new Set(rows.map((r: any) => r.sequence_id)));
+    const [{ data: lessons }, { data: seqs }] = await Promise.all([
+      admin.from('lessons').select('id, title').in('id', stepIds),
+      admin.from('lessons').select('wb_sequence_id, wb_sequence_name, wb_sequence_order').in('wb_sequence_id', seqIds),
+    ]);
+    const title = new Map((lessons ?? []).map((l: any) => [l.id, l.title]));
+    const seqMeta = new Map<string, { name: string; order: number | null }>();
+    for (const l of (seqs ?? []) as any[]) if (l.wb_sequence_id && !seqMeta.has(l.wb_sequence_id)) seqMeta.set(l.wb_sequence_id, { name: l.wb_sequence_name ?? l.wb_sequence_id, order: l.wb_sequence_order ?? null });
+    return rows.map((r: any) => {
+      const m = seqMeta.get(r.sequence_id);
+      return {
+        id: r.id, sequenceId: r.sequence_id,
+        sequenceLabel: m ? sequenceLabel(r.sequence_id, m.order, m.name) : r.sequence_id,
+        stepId: r.step_id, stepTitle: title.get(r.step_id) ?? r.step_id,
+        detail: r.detail ?? null, source: r.source, createdAt: r.created_at,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function addTask(
+  portalToken: string,
+  input: { sequenceId: string; stepId: string; detail?: string | null; belt: string }
+): Promise<{ ok: true; task: StudentTask; openCount: number } | { ok: false; error: string }> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { ok: false, error: 'Not authenticated.' };
+    const safeBelt = await allowedBeltFor(studentId, input.belt);
+    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt);
+    if (!seq) return { ok: false, error: 'Sequence not available yet.' };
+    const step = seq.items.find((i) => i.step_id === input.stepId);
+    if (!step) return { ok: false, error: 'Step not in this sequence.' };
+    const detail = typeof input.detail === 'string' && input.detail.trim() ? input.detail.trim().slice(0, 120) : null;
+    const admin = createAdminClient();
+    const { data: open } = await admin.from('student_tasks').select('id, step_id, detail').eq('student_id', studentId).eq('status', 'open');
+    const dup = (open ?? []).find((t: any) => t.step_id === input.stepId && (t.detail ?? null) === detail);
+    if (dup) return { ok: false, error: 'That one is already on your list.' };
+    if ((open ?? []).length >= MAX_OPEN_TASKS) return { ok: false, error: `Your list is full (${MAX_OPEN_TASKS}). Finish or drop one first.` };
+    const { data: row, error } = await admin.from('student_tasks').insert({
+      student_id: studentId, sequence_id: seq.id, step_id: input.stepId, detail, source: 'self',
+    }).select('id, created_at').single();
+    if (error || !row) return { ok: false, error: 'Could not save your task.' };
+    return {
+      ok: true,
+      openCount: (open ?? []).length + 1,
+      task: { id: row.id, sequenceId: seq.id, sequenceLabel: sequenceLabel(seq.id, seq.order, seq.name), stepId: input.stepId, stepTitle: step.step_title, detail, source: 'self', createdAt: row.created_at },
+    };
+  } catch {
+    return { ok: false, error: 'Could not save your task.' };
+  }
+}
+
+export async function closeTask(portalToken: string, taskId: string, how: 'marked_done' | 'dropped'): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { ok: false, error: 'Not authenticated.' };
+    const admin = createAdminClient();
+    const { error } = await admin.from('student_tasks')
+      .update({ status: how === 'dropped' ? 'dropped' : 'done', done_at: new Date().toISOString(), done_reason: how })
+      .eq('id', taskId).eq('student_id', studentId).eq('status', 'open');
+    if (error) return { ok: false, error: 'Could not update your task.' };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Could not update your task.' };
   }
 }

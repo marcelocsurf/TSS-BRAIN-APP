@@ -11,6 +11,7 @@ import {
   stepKey,
   SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide, SEQUENCE_ROLE } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
+import { effectiveStars, starsFromCriteria } from '@/lib/stars';
 
 // ─── Types ───
 
@@ -58,6 +59,9 @@ export type SequenceItem = {
   // M4: Official rating from coach (gold). Null when not yet evaluated.
   coach_rating?: number | null;
   coach_rated_at?: string | null;
+  /** executed = nota de una sesión en el agua · assessed = autoevaluación por
+   *  indicadores, sin ola (vale máx. 3★ para el camino; nunca hace propia la secuencia). */
+  self_source?: 'executed' | 'assessed';
   last_practiced: string | null;
 };
 
@@ -230,6 +234,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       last_rated: rating?.last_updated || null,
       coach_rating: rating?.coach_rating ?? null,
       coach_rated_at: rating?.coach_rated_at ?? null,
+            self_source: rating?.self_source === 'assessed' ? 'assessed' : 'executed',
       last_practiced: lastPracticedMap.get(stepId) || null,
     };
   });
@@ -270,7 +275,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
   // si no el auto-rating. Antes solo se contaba el auto-rating y un alumno
   // con toda la secuencia validada 5/5 por su coach veía "Not rated yet".
   const effective = (i: SequenceItem): number | null =>
-    i.coach_rating ?? i.rating ?? null;
+    effectiveStars(i);
   const ratedItems = items.filter((i) => effective(i) !== null);
   const overallRating = ratedItems.length > 0
     ? ratedItems.reduce((sum, i) => sum + (effective(i) || 0), 0) / ratedItems.length
@@ -352,6 +357,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
             last_rated: rating?.last_updated || null,
             coach_rating: rating?.coach_rating ?? null,
             coach_rated_at: rating?.coach_rated_at ?? null,
+            self_source: rating?.self_source === 'assessed' ? 'assessed' : 'executed',
             last_practiced: lastPracticedMap.get(id) || null,
           };
         })
@@ -360,7 +366,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       // parte). Así el alumno ve QUÉ lo frena, no un promedio que esconde el
       // hueco.
       const withRating = seqItems
-        .map((i) => ({ i, v: i.coach_rating ?? i.rating ?? null }))
+        .map((i) => ({ i, v: effectiveStars(i) }))
         .filter((x): x is { i: SequenceItem; v: number } => x.v !== null);
       const minRating = withRating.length
         ? Math.min(...withRating.map((x) => x.v))
@@ -509,38 +515,61 @@ export async function getStepDetail(portalToken: string, stepId: string) {
     rating: rating?.current_rating || null,
     ratingCount: rating?.rating_count || 0,
     lastRated: rating?.last_updated || null,
+    coachRating: rating?.coach_rating ?? null,
+    selfSource: (rating?.self_source === 'assessed' ? 'assessed' : 'executed') as 'executed' | 'assessed',
+    assessedCriteria: (rating?.assessed_criteria ?? null) as { criterion_index: number; criterion_text: string; result: 'met' | 'partial' | 'not_met' }[] | null,
     sessionHistory,
   };
 }
 
 // ─── Update self-rating for a step (1-5) ───
 
+// AUTOEVALUACIÓN sin ola (Marcelo 2026-09-10): el alumno marca cada
+// indicador del paso y la estrella sale de la regla de siempre (todos 4★ ·
+// alguno a medias 3★ · alguno no 2★). Queda marcada 'assessed': ubica, pero
+// no hace propia la secuencia — eso es del agua o del coach.
 export async function updateStepRating(
   portalToken: string,
   stepId: string,
-  rating: number
+  rating: number,
+  assessment?: { criterion_index: number; result: 'met' | 'partial' | 'not_met' }[] | null
 ) {
-  if (rating < 1 || rating > 5) {
-    return { ok: false, error: 'Rating must be 1-5' };
-  }
   const studentId = await studentIdFromPortalToken(portalToken);
   if (!studentId) return { ok: false, error: 'Not authorized' };
 
   const admin = createAdminClient();
+  let finalRating = rating;
+  let assessed: { criterion_index: number; criterion_text: string; result: 'met' | 'partial' | 'not_met' }[] | null = null;
+  if (assessment && assessment.length) {
+    // El texto sale de la tarjeta ACTUAL de la misión del paso.
+    const { data: m } = await admin.from('drills_missions').select('success_criteria').eq('step_id', stepId).eq('type', 'mission').eq('active', true).order('display_order').limit(1).maybeSingle();
+    const list: string[] = Array.isArray(m?.success_criteria) ? m!.success_criteria : [];
+    assessed = assessment
+      .filter((a) => Number.isInteger(a.criterion_index) && a.criterion_index >= 0 && a.criterion_index < list.length && ['met', 'partial', 'not_met'].includes(a.result))
+      .map((a) => ({ criterion_index: a.criterion_index, criterion_text: list[a.criterion_index], result: a.result }));
+    if (!assessed.length) return { ok: false, error: 'Mark at least one indicator.' };
+    finalRating = starsFromCriteria(assessed.map((a) => a.result));
+  }
+  if (finalRating < 1 || finalRating > 5) {
+    return { ok: false, error: 'Rating must be 1-5' };
+  }
 
-  // Upsert rating
+  // Upsert rating — como autoevaluación (sin ola). La ejecución real la pisa.
   const { error } = await admin
     .from('student_step_ratings')
     .upsert({
       student_id: studentId,
       step_id: stepId,
-      current_rating: rating,
+      current_rating: finalRating,
+      self_source: 'assessed',
+      assessed_criteria: assessed,
+      assessed_at: new Date().toISOString(),
       last_updated: new Date().toISOString(),
     }, { onConflict: 'student_id,step_id' });
 
   if (error) return { ok: false, error: error.message };
 
-  return { ok: true };
+  return { ok: true, rating: finalRating };
 }
 
 // ─── Get drill/mission for Train tab pre-fill ───
@@ -806,7 +835,7 @@ export async function getNextMove(
     const isAside = (s: (typeof pool)[number]) => !!SEQUENCE_ROLE[s.id];
     const seq = pool.find((s) => s.state !== 'owned' && !isAside(s)) ?? pool.find((s) => s.state !== 'owned');
     if (!seq) return null;
-    const eff = (i: SequenceItem) => i.coach_rating ?? i.rating ?? null;
+    const eff = (i: SequenceItem) => effectiveStars(i);
     const firstNotAtBar = seq.items.find((i) => { const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
     if (!firstNotAtBar) return null;
     // El paso que VOS marcaste como el que detuvo tu último run manda sobre el

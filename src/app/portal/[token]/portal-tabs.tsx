@@ -239,6 +239,8 @@ interface PortalData {
   ownedBelts?: string[];
   /** El plan guardado antes del agua que todavía no se cerró. */
   openSession?: import('@/lib/actions/lets-play').OpenSession | null;
+  /** Tus tareas abiertas (paso + detalle, máximo tres). */
+  tasks?: import('@/lib/actions/lets-play').StudentTask[];
 }
 
 // ═══ SESIÓN ABIERTA (Marcelo 2026-09-10) ═══
@@ -388,6 +390,21 @@ function nextMoveRows(
       action: null,
     });
   }
+  // TU LISTA (doctrina 2026-09-10): lo que vos te dejaste, antes del camino
+  // — quien se dejó una tarea sabe qué hacer. Una sola fila, la más vieja.
+  const task = data.tasks?.[0] ?? null;
+  if (task) {
+    rows.push({
+      key: 'task', label: 'Your list', title: `${task.stepTitle}${task.detail ? ` · ${task.detail}` : ''}`, accent: '#FFD166',
+      reason: `You put it on your list · ${seqWord(task.sequenceLabel)}${(data.tasks?.length ?? 0) > 1 ? ` · ${data.tasks!.length} on the list` : ''}`,
+      action: 'Train it →',
+      onClick: () => {
+        if (onTrainSequence) onTrainSequence({ sequenceId: task.sequenceId, mode: 'step_focus', focusStepId: task.stepId, focusMoment: task.detail, intention: task.detail });
+        else onOpenStep?.(task.stepId);
+      },
+      pageHref: seqPageHref(data, task.sequenceId),
+    });
+  }
   // EL CAMINO (doctrina 2026-09-10): una sola sugerencia, siempre la línea
   // completa con un foco — "Run #8 · focus FP1" — nunca un detalle suelto.
   // Es el default para el que no sabe por dónde empezar; el mapa queda libre.
@@ -495,7 +512,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
       {rows.map((r, idx) => renderRow(r, idx, true))}
       {rows.length > 0 && (
         <p className="px-4 py-2.5 text-[10.5px] leading-snug" style={{ color: '#8aa0b0', ...rowStyle }}>
-          The order: 1 your coach · 2 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
+          The order: 1 your coach · 2 your list · 3 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
         </p>
       )}
     </div>

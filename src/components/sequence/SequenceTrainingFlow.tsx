@@ -14,6 +14,8 @@ import {
   getSequenceTraining,
   saveSequenceSession,
   planSequenceSession,
+  addTask,
+  MAX_OPEN_TASKS,
   type SequenceTraining,
   type SequenceTrainingStep,
   type TrainingMode,
@@ -217,6 +219,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ nextFocus: NextFocus; sequenceRating: number | null } | null>(null);
+  // Al cerrar: "¿qué trabajás la próxima?" — una tarea, o ninguna (Marcelo 2026-09-10).
+  const [taskState, setTaskState] = useState<{ saved: string | null; error: string | null; picking: boolean; saving: boolean }>({ saved: null, error: null, picking: false, saving: false });
   const [weekCount, setWeekCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -360,6 +364,22 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         {/* 2 · Tu foco: toda la línea, un paso, o un momento de la línea */}
         <div>
           <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>Your focus · tap one, or none</p>
+          {data.tasks.length > 0 && (
+            <div className="mb-1.5 space-y-1.5">
+              {data.tasks.map((t) => {
+                const sel = !isRun && focusId === t.stepId && (t.detail ? focusMoment === t.detail : !focusMoment);
+                return (
+                  <button key={t.id} type="button" aria-pressed={sel}
+                    onClick={() => { setModeState('step_focus'); setFocusId(t.stepId); setFocusMoment(t.detail); if (t.detail) { setIntention(t.detail); setObjectiveOpen(true); } }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-[1.5px] text-left active:scale-[0.99]"
+                    style={sel ? { background: '#FFF8E7', borderColor: '#E0A62B' } : { background: '#fff', borderColor: '#F3D48A' }}>
+                    <span className="text-[9px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>My list</span>
+                    <span className="text-[13px] font-semibold flex-1" style={{ color: INK }}>{t.stepTitle}{t.detail ? <span className="font-normal text-gray-600"> · {t.detail}</span> : null}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <button type="button" aria-pressed={isRun} onClick={pickWhole}
             className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-[1.5px] text-left active:scale-[0.99]"
             style={isRun ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: INK }}>
@@ -818,6 +838,49 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             )}
           </div>
         )}
+
+        {/* ¿Qué trabajás la próxima? Una tarea (o ninguna). Se ofrece, no se impone. */}
+        <div className="rounded-xl p-4 text-left border border-gray-200 space-y-2">
+          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>What do you work on next?</p>
+          {taskState.saved ? (
+            <p className="text-[12.5px] text-gray-800"><b>On your list:</b> {taskState.saved}</p>
+          ) : (
+            <>
+              {nf && (
+                <button type="button" disabled={taskState.saving}
+                  onClick={async () => {
+                    setTaskState((s) => ({ ...s, saving: true, error: null }));
+                    const r = await addTask(portalToken, { sequenceId: seq.id, stepId: nf.stepId, detail: nf.criterionText, belt });
+                    setTaskState({ saved: r.ok ? `${r.task.stepTitle}${r.task.detail ? ` · ${r.task.detail}` : ''} (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: false, saving: false });
+                  }}
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-[12.5px] font-semibold active:scale-[0.99]" style={{ background: '#FFF8E7', color: INK }}>
+                  {nf.stepTitle}{nf.criterionText ? <span className="font-normal text-gray-600"> · {nf.criterionText}</span> : null} <span className="text-[10px] text-gray-500">· suggested</span>
+                </button>
+              )}
+              <button type="button" onClick={() => setTaskState((s) => ({ ...s, picking: !s.picking }))} className="w-full text-left px-3.5 py-2.5 rounded-xl text-[12.5px] border border-gray-200" style={{ color: INK }}>
+                {taskState.picking ? 'Hide the details' : 'Pick another detail of this sequence ▾'}
+              </button>
+              {taskState.picking && (
+                <div className="space-y-1.5">
+                  {steps.map((s) => (moments[s.step_id] ?? []).map((m) => (
+                    <button key={`${s.step_id}:${m.key}`} type="button" disabled={taskState.saving}
+                      onClick={async () => {
+                        setTaskState((st) => ({ ...st, saving: true, error: null }));
+                        const r = await addTask(portalToken, { sequenceId: seq.id, stepId: s.step_id, detail: m.short, belt });
+                        setTaskState({ saved: r.ok ? `${r.task.stepTitle} · ${m.short} (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: !r.ok, saving: false });
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] text-left" style={{ background: '#f7f9fa', color: INK }}>
+                      <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
+                      <span className="text-gray-500 shrink-0">{s.title.replace(/ Operationalized at Blue Belt/, '')} ·</span> {m.short}
+                    </button>
+                  )))}
+                </div>
+              )}
+              {taskState.error && <p className="text-[11px] text-red-600">{taskState.error}</p>}
+              <p className="text-[11px] text-gray-400">Or nothing — you always train what you choose. At most {MAX_OPEN_TASKS} on your list.</p>
+            </>
+          )}
+        </div>
 
         <button type="button" onClick={onDone} className="w-full h-11 rounded-xl text-[13px] font-bold" style={{ background: INK, color: PAPER }}>
           ← Back to My Sequence

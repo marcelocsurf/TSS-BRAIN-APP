@@ -7,11 +7,20 @@ import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { Dumbbell, Waves, Target, BookOpen, Check, PenLine, CircleDot, X } from 'lucide-react';
 import { displayDate } from '@/lib/utils/tz';
 import { COMPLETION_LABEL_EN } from '@/lib/utils/criteria';
+import { starsFromCriteria } from '@/lib/stars';
+
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.05 };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em' };
+type AssessResult = 'met' | 'partial' | 'not_met';
+const ASSESS_OPTS: { key: AssessResult; label: string; bg: string; fg: string }[] = [
+  { key: 'met', label: 'I have it', bg: GREEN, fg: INK },
+  { key: 'partial', label: 'Halfway', bg: GOLD, fg: '#5b4300' },
+  { key: 'not_met', label: 'Not yet', bg: '#FF6B6B', fg: '#fff' },
+];
+
 
 interface Props {
   stepId: string;
@@ -37,12 +46,27 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
     return () => { mounted = false; };
   }, [stepId, portalToken]);
 
+  // Autoevaluación por indicadores (Marcelo 2026-09-10): sin ola. Ubica,
+  // no hace propia la secuencia — eso es del agua o del coach.
+  const [assess, setAssess] = useState<Record<number, AssessResult>>({});
+  const [assessMsg, setAssessMsg] = useState<string | null>(null);
   const handleRate = async (rating: number) => {
     setSavingRating(true);
     await updateStepRating(portalToken, stepId, rating);
-    // Re-fetch
     const fresh = await getStepDetail(portalToken, stepId);
     setData(fresh);
+    setSavingRating(false);
+    onRatingChange?.();
+  };
+  const handleAssess = async () => {
+    const list = Object.entries(assess).map(([i, r]) => ({ criterion_index: Number(i), result: r }));
+    if (!list.length) return;
+    setSavingRating(true); setAssessMsg(null);
+    const res = await updateStepRating(portalToken, stepId, starsFromCriteria(list.map((l) => l.result)), list);
+    if (!res.ok) { setAssessMsg(res.error ?? 'Could not save.'); setSavingRating(false); return; }
+    const fresh = await getStepDetail(portalToken, stepId);
+    setData(fresh);
+    setAssess({});
     setSavingRating(false);
     onRatingChange?.();
   };
@@ -65,7 +89,11 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
     );
   }
 
-  const { lesson, drill, mission, rating, ratingCount, lastRated, sessionHistory } = data;
+  const { lesson, drill, mission, rating, ratingCount, lastRated, sessionHistory, coachRating, selfSource, assessedCriteria } = data;
+  const criteria: string[] = mission?.success_criteria ?? [];
+  const assessedMap: Record<number, AssessResult> = Object.fromEntries(((assessedCriteria ?? []) as { criterion_index: number; result: AssessResult }[]).map((c) => [c.criterion_index, c.result]));
+  const preview = Object.keys(assess).length ? starsFromCriteria(Object.values(assess)) : null;
+  const anyNotYet = Object.values(assess).some((r) => r !== 'met') || Object.values(assessedMap).some((r) => r !== 'met');
 
   return (
     <div className="space-y-4 pb-8">
@@ -90,32 +118,67 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
         </div>
       </div>
 
-      {/* Self-rating */}
+      {/* Self-assessment · sin ola (Marcelo 2026-09-10) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
         <div className="flex items-center gap-1.5 text-[9px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
           <Target size={12} strokeWidth={1.75} />
-          Your self-evaluation
+          Where you are on this step
         </div>
-        <h3 className="text-[15px] mb-3" style={{ ...F_D, color: INK }}>
-          How well do you execute this step?
-        </h3>
-
-        <StarRating
-          value={rating}
-          onChange={handleRate}
-          size="lg"
-          showLabel
-          readOnly={savingRating}
-        />
-
-        {lastRated && (
-          <div className="text-[11px] text-gray-400 mt-3">
-            Updated {ratingCount} {ratingCount === 1 ? 'time' : 'times'} · Last: {displayDate(lastRated)}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            {coachRating != null ? (
+              <p className="text-[15px]" style={{ ...F_D, color: INK }}>{coachRating}★ <span className="text-[10px] font-normal normal-case tracking-normal text-gray-500">rated by your coach</span></p>
+            ) : rating != null ? (
+              <p className="text-[15px]" style={{ ...F_D, color: INK }}>{rating}★ <span className="text-[10px] font-normal normal-case tracking-normal text-gray-500">{selfSource === 'assessed' ? 'self-assessed · not surfed yet' : 'from your last session'}</span></p>
+            ) : (
+              <p className="text-[13px] text-gray-500">Not rated yet</p>
+            )}
+            {lastRated && <p className="text-[11px] text-gray-400 mt-1">Updated {ratingCount} {ratingCount === 1 ? 'time' : 'times'} · Last: {displayDate(lastRated)}</p>}
           </div>
-        )}
+          <StarRating value={coachRating ?? rating} size="sm" readOnly variant={coachRating != null ? 'official' : undefined} />
+        </div>
 
-        <div className="mt-4 p-3 rounded-xl text-[11px] leading-snug" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
-          <strong>Be honest.</strong> Your rating reflects your real execution today. As you practice and improve, update it.
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <h3 className="text-[15px]" style={{ ...F_D, color: INK }}>Assess yourself · no wave needed</h3>
+          <p className="text-[12px] text-gray-500 mt-1 leading-snug">Read the indicators and be honest. All of them → 4★ · one halfway → 3★ · one not yet → 2★. It maps where you are; you own it in the water, or your coach confirms it.</p>
+          {criteria.length > 0 ? (
+            <div className="space-y-2 mt-3">
+              {criteria.map((text: string, i: number) => {
+                const cur = assess[i] ?? assessedMap[i];
+                return (
+                  <div key={i} className="border border-gray-200 rounded-xl p-2.5">
+                    <p className="text-[12px] text-gray-800 mb-1.5 leading-snug"><span className="font-bold mr-1">{i + 1}.</span>{text}</p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {ASSESS_OPTS.map((o) => {
+                        const sel = cur === o.key;
+                        return (
+                          <button key={o.key} type="button" aria-pressed={sel} onClick={() => setAssess((p) => ({ ...p, [i]: o.key }))}
+                            className="py-1.5 rounded-lg text-[10.5px] font-bold"
+                            style={sel ? { background: o.bg, color: o.fg } : { background: '#f3f4f6', color: '#6b7280' }}>{o.label}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              <button type="button" disabled={!Object.keys(assess).length || savingRating} onClick={handleAssess}
+                className="w-full h-11 rounded-xl text-[12.5px] font-bold disabled:opacity-40 active:scale-[0.99]"
+                style={{ background: INK, color: PAPER }}>
+                {savingRating ? 'Saving…' : preview ? `Save my self-assessment · ${preview}★` : 'Mark the indicators to save'}
+              </button>
+              {assessMsg && <p className="text-[11px] text-red-600">{assessMsg}</p>}
+            </div>
+          ) : (
+            <div className="mt-3">
+              <StarRating value={rating} onChange={handleRate} size="lg" showLabel readOnly={savingRating} />
+              <p className="text-[11px] text-gray-400 mt-1">This step has no indicator card yet — rate honestly.</p>
+            </div>
+          )}
+          {anyNotYet && (
+            <p className="mt-3 text-[11.5px] leading-snug rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.08)', color: '#0A5C70' }}>
+              The small details that turn a halfway into a yes are what a certified coach sees in one session with you.
+            </p>
+          )}
         </div>
       </div>
 
