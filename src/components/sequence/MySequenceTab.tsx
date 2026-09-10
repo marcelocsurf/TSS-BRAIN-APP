@@ -187,23 +187,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               );
             })}
           </div>
-          {next && (
-            <div className="mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)' }}>
-              <p className="text-[9px]" style={{ ...F_M, color: '#FFD166' }}>Next to work on</p>
-              <p className="text-[13px] mt-0.5 leading-snug" style={{ color: PAPER }}>
-                <b>{next.name}</b>{nextStepTitle ? <> · {nextWhy}: <b>{nextStepTitle}</b></> : null}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {pageHrefOf(next.id) && <a href={pageHrefOf(next.id)!} className="h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center" style={{ background: 'rgba(255,255,255,.08)', color: CYAN }}>See what it needs</a>}
-                {onTrainSequence && (
-                  <button type="button" onClick={() => onTrainSequence(nextStepId && next.state !== 'unrated' ? { sequenceId: next.id, mode: 'step_focus', focusStepId: nextStepId } : { sequenceId: next.id, mode: 'sequence_run' })}
-                    className="h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center gap-1.5" style={{ background: '#FFD166', color: INK }}>
-                    <Play size={12} strokeWidth={2.5} /> {nextStepId && next.state !== 'unrated' ? 'Train it' : 'Run it'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
+              (coach · método · reciente). Acá solo el mapa. */}
           {!next && <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.7)' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
         </div>
       )}

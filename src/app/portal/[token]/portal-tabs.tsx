@@ -29,6 +29,7 @@ function surveyDateLabel(sessionDate: string | null | undefined, createdAt: stri
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MySequenceTab';
+import { sequencePageFor } from '@/lib/sequence-pages';
 import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
@@ -317,7 +318,7 @@ const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight
 // lista completa numerada, con origen, razón y la regla del orden.
 // Orden: 1 lo que dejó el coach · 2 el método (el paso que detuvo tu último
 // run, o el primero < 4★) · 3 lo que dejaste < 4★ en dos semanas.
-type NextMoveRow = { key: string; label: string; title: string; reason: string; detail?: string | null; action: string | null; accent: string; onClick?: () => void };
+type NextMoveRow = { key: string; label: string; title: string; reason: string; detail?: string | null; action: string | null; accent: string; onClick?: () => void; /** La página de la secuencia (qué necesita). */ pageHref?: string | null };
 // "Sequence #1 · Board Control": con la palabra, porque la secuencia se llama
 // casi igual que un paso ("Control Your Board") y sin ella parece repetido.
 const seqWord = (label: string) => (label.startsWith('#') ? `Sequence ${label}` : label);
@@ -352,6 +353,7 @@ function nextMoveRows(
         if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
         else onOpenStep?.(nm.stepId);
       },
+      pageHref: nm.sequenceId && sequencePageFor(nm.sequenceId) ? `/portal/${data.token}/seq/${nm.sequenceId}` : null,
     });
     if (nm.unfinished) {
       const u = nm.unfinished;
@@ -398,7 +400,14 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
       </div>
     );
     return r.onClick ? (
-      <button key={r.key} type="button" onClick={r.onClick} className="block w-full text-left px-4 py-3.5" style={numbered || idx > 0 ? rowStyle : undefined}>{inner}</button>
+      <div key={r.key} style={numbered || idx > 0 ? rowStyle : undefined}>
+        <button type="button" onClick={r.onClick} className="block w-full text-left px-4 pt-3.5 pb-2">{inner}</button>
+        {r.pageHref && (
+          <a href={r.pageHref} className="block px-4 pb-3 text-[12px]" style={{ color: 'rgba(247,249,250,.75)' }}>
+            See what it needs → the sequence page: what it is, how the body does it, the drills and the indicators
+          </a>
+        )}
+      </div>
     ) : (
       <div key={r.key} className="px-4 py-3.5" style={numbered || idx > 0 ? rowStyle : undefined}>{inner}</div>
     );
