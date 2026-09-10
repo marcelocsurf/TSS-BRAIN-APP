@@ -260,6 +260,7 @@ export function SequenceEvaluation({
                             portalToken={portalToken}
                             campInstanceId={campInstanceId}
                             onFocusSaved={(f) => onFocusSaved?.(r.step_id, f)}
+                            autoOpen={val !== null && val < SEQUENCE_PASS_STARS}
                           />
                         </div>
                       )}

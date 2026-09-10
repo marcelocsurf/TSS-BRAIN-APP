@@ -6,7 +6,7 @@
 // Not met SOLO en los que quiera. Lo flojo se vuelve el next focus del alumno.
 // Al lado de cada criterio, lo que el propio alumno marcó la última vez.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, CircleDot, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStepCriterionContext, saveCoachCriterionEvals } from '@/lib/actions/coach-criterion-evals';
 import type { CriterionResultValue } from '@/lib/utils/criteria';
@@ -26,11 +26,15 @@ export function StepDetailToggle({
   portalToken,
   campInstanceId,
   onFocusSaved,
+  autoOpen = false,
 }: {
   studentId: string;
   stepId: string;
   portalToken?: string | null;
   campInstanceId?: string | null;
+  /** Se abre solo (Marcelo 2026-09-10): cuando la estrella quedó bajo 4★,
+   *  los indicadores aparecen sin buscar el botón. */
+  autoOpen?: boolean;
   /** El foco que quedó guardado en el alumno, para que la pantalla que cierra
    *  con "qué trabajar después" lo precargue en vez de pisarlo. */
   onFocusSaved?: (focus: string | null) => void;
@@ -54,6 +58,13 @@ export function StepDetailToggle({
     if (!res || !res.ok) { setError(res && !res.ok ? res.error : 'Could not load the criteria.'); return; }
     setCtx(res);
   };
+
+  // Bajo 4★ → los criterios se abren solos; la primera vez carga la tarjeta.
+  useEffect(() => {
+    if (!autoOpen || open) return;
+    void toggle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpen]);
 
   const save = async () => {
     if (!ctx) return;
