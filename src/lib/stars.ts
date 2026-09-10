@@ -19,3 +19,6 @@ export function starsFromCriteria(results: ('met' | 'partial' | 'not_met')[]): n
   if (results.some((r) => r === 'partial')) return 3;
   return 4;
 }
+
+/** Tareas propias abiertas como máximo (doctrina 2026-09-10). */
+export const MAX_OPEN_TASKS = 3;

@@ -15,7 +15,6 @@ import {
   saveSequenceSession,
   planSequenceSession,
   addTask,
-  MAX_OPEN_TASKS,
   type SequenceTraining,
   type SequenceTrainingStep,
   type TrainingMode,
@@ -24,6 +23,7 @@ import {
 } from '@/lib/actions/lets-play';
 import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } from '@/lib/actions/sequence';
 import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
+import { MAX_OPEN_TASKS } from '@/lib/stars';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';

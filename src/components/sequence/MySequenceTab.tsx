@@ -13,7 +13,8 @@ import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/c
 import { sideBalance } from '@/lib/sequence-sides';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { effectiveStars } from '@/lib/stars';
-import { getTasks, closeTask, MAX_OPEN_TASKS, type StudentTask } from '@/lib/actions/lets-play';
+import { getTasks, closeTask, type StudentTask } from '@/lib/actions/lets-play';
+import { MAX_OPEN_TASKS } from '@/lib/stars';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 
 /** Los momentos de la línea que cubre una lección, con su punto de color.

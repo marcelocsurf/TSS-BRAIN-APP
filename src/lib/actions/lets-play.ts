@@ -1,4 +1,5 @@
 'use server';
+import { MAX_OPEN_TASKS } from '@/lib/stars';
 
 // ═══ LET'S PLAY POR SECUENCIA ═══
 // Marcelo (2026-09-04): la unidad de entreno es la SECUENCIA. El paso es el
@@ -686,7 +687,6 @@ export async function discardSession(portalToken: string, sessionId: string): Pr
 // siempre con la opción de trabajar en lo que yo quiera." Paso + detalle,
 // máximo tres abiertas, se cierran solas al llegar a 4★ en el agua.
 
-export const MAX_OPEN_TASKS = 3;
 
 export type StudentTask = {
   id: string;
