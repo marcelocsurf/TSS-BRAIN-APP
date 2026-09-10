@@ -942,3 +942,46 @@ export async function sendCoachWelcomeEmail(data: {
     return { success: false, error: err.message };
   }
 }
+
+
+// ═══ Bienvenida al inscribir (Marcelo 2026-09-10) ═══
+// El hueco: del quiz al camp el alumno no recibía nada. Un solo correo al
+// inscribirlo: en qué está, cuándo, y su portal — con los términos adentro,
+// una sola vez. Nace APAGADO (email_settings.welcome_enrolled).
+export async function sendWelcomeEnrolledEmail(data: {
+  toEmail: string;
+  firstName: string;
+  campName: string;
+  dateLabel: string;
+  timeLabel: string | null;
+  portalUrl: string;
+  termsUrl: string;
+  privacyUrl: string;
+  academyId?: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  if (!(await emailEnabled('welcome_enrolled'))) return { success: false, error: 'disabled:welcome_enrolled' } as any;
+  try {
+    await sendEmail({
+      from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
+      to: data.toEmail,
+      subject: `You're in: ${data.campName} 🌊`,
+      html: assignmentEmailShell(
+        `See you in the water, ${data.firstName}!`,
+        `<p>You're booked for <strong>${escapeHtml(data.campName)}</strong> — <strong>${escapeHtml(data.dateLabel)}</strong>${data.timeLabel ? ` at <strong>${escapeHtml(data.timeLabel)}</strong>` : ''}.</p>
+         <p>This is your portal. Save this email — the link is yours and works on any device:</p>
+         <ul style="margin:8px 0 12px;padding-left:18px;color:#334155;font-size:14px;line-height:1.6;">
+           <li>Your course: what you'll learn, step by step.</li>
+           <li>Let's Play: plan a session, surf, come back and rate it.</li>
+           <li>After each class your coach leaves you one thing to work on next.</li>
+         </ul>
+         <p style="font-size:12px;color:#64748b;">By opening your portal you confirm you've read our <a href="${data.termsUrl}" style="color:#0090B0;">Terms</a> and <a href="${data.privacyUrl}" style="color:#0090B0;">Privacy Policy</a>. You'll confirm it once, inside.</p>`,
+        { url: data.portalUrl, label: 'Confirm & open my portal' },
+        undefined,
+      ),
+    });
+    return { success: true };
+  } catch (e) {
+    console.error('[email] welcome enrolled failed', e);
+    return { success: false, error: e instanceof Error ? e.message : 'send failed' };
+  }
+}

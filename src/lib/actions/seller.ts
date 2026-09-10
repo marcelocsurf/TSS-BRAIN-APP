@@ -1,4 +1,5 @@
 'use server';
+import { notifyEnrolled } from '@/lib/actions/enrollment-welcome';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createNotification } from '@/lib/actions/notifications';
@@ -159,6 +160,8 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     ].filter(Boolean).join(' '),
   });
   if (insErr) return { ok: false, error: insErr.message };
+  // Bienvenida al alumno (apagada hasta que se prenda en /admin/emails).
+  if (studentId) await notifyEnrolled(studentId, campId);
 
   // Tell the coordinators there's a payment to confirm (best-effort).
   const { data: coords } = await admin

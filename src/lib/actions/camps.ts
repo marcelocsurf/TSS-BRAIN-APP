@@ -1,4 +1,5 @@
 'use server';
+import { notifyEnrolled } from '@/lib/actions/enrollment-welcome';
 
 import { createClient } from '@/lib/supabase/server';
 import { elSalvadorToday } from '@/lib/utils/tz';
@@ -1479,6 +1480,8 @@ export async function addStudentToCamp(
       }
     } catch (e) { console.error('[addStudentToCamp] grant/membership hook failed', e); }
   }
+  // Bienvenida al alumno (apagada hasta que Marcelo la prenda en /admin/emails).
+  await notifyEnrolled(studentId, campInstanceId);
   return { success: true, isRefresher };
 }
 
