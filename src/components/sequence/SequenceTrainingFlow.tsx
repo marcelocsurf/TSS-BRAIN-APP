@@ -634,6 +634,16 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
     return (
       <Shell step={3} seqLabel={seqLabel} title={shellTitle} onCancel={onCancel}>
+        {/* EL OBJETIVO, bien claro, antes de evaluar (Marcelo 2026-09-10:
+            "para refrescarlo y en letras que se distingan"). */}
+        <div className="rounded-2xl p-4" style={{ background: INK }}>
+          <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>Your objective today</p>
+          <p className="text-[22px] mt-1.5" style={{ ...F_D, color: PAPER }}>{isRun ? 'The whole line' : focus?.title}</p>
+          {(intention.trim() || focusMoment) && (
+            <p className="text-[16px] font-semibold mt-2 leading-snug" style={{ color: GOLD }}>“{intention.trim() || focusMoment}”</p>
+          )}
+          <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.7)' }}>{seq.name}{twoSided && side ? ` · ${SIDE_WORD[side]}` : ''}{measureText ? ` · ${measureText}` : ''}</p>
+        </div>
         {isRun ? (
           <>
             <div>
