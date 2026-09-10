@@ -28,7 +28,8 @@ import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher'
 import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { MomentChips } from './MySequenceTab';
-import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
+import { COMMAND_COLORS, WaveBoard } from '@/components/portal/sequence-page/WaveBoard';
+import { sequencePageFor } from '@/lib/sequence-pages';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 
@@ -546,6 +547,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             {wantsReps && <div><p className="text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.5)' }}>{repsWord}</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedReps}</p></div>}
           </div>
         </div>
+        {/* La ola con la línea y su código de colores (la misma del curso),
+            chica: de un vistazo, los pasos y dónde pasan (Marcelo 2026-09-10). */}
+        {sequencePageFor(seq.id)?.think.board && (
+          <div className="rounded-2xl p-2" style={{ background: INK }}>
+            <WaveBoard data={sequencePageFor(seq.id)!.think.board!} title={`${seq.name} on the wave face`} />
+          </div>
+        )}
         {(focusMoment || intention.trim()) && (
           <div className="rounded-xl px-3.5 py-2.5" style={{ background: '#FFF8E7' }}>
             <p className="text-[9px]" style={{ ...F_M, color: '#9A6A12' }}>Your word for the wave</p>
