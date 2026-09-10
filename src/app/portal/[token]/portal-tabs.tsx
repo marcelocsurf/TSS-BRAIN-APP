@@ -1141,6 +1141,39 @@ function HomeTab({
   const [reader, setReader] = useState<{ id: string; title: string } | null>(null);
   return (
     <div className="space-y-4">
+      {/* ═══ LO ACCIONABLE PRIMERO (auditoría 2026-09-10): a 360px el botón
+          quedaba a 629px de alto, debajo del libro, la racha y las horas. En
+          la playa el alumno abre el app para UNA cosa: cerrar la sesión o
+          saber qué entrenar. Eso va arriba del nombre. ═══ */}
+      {onFinishOpenSession && onDiscardOpenSession && <OpenSessionCard data={data} onFinish={onFinishOpenSession} onDiscard={onDiscardOpenSession} />}
+          {(coachFocus || data.nextMove || sessionCue.cue) && (
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
+            >
+              {/* Una sola cosa en el Home; la lista completa vive en Let's Play. */}
+              <NextMovesBlock data={data} mode="top" onTrainSequence={onTrainSequence} onOpenStep={onOpenStep} onGoTo={onGoTo} />
+
+              {sessionCue.cue && (
+                <div
+                  className="px-4 py-3"
+                  style={{
+                    borderTop: coachFocus || data.nextMove ? '1px solid rgba(255,255,255,.08)' : undefined,
+                  }}
+                >
+                  <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
+                    {sessionCue.cue}
+                  </p>
+                  <p className="text-[13px] mt-1.5 leading-snug" style={{ color: '#eaf4fa' }}>
+                    <span className="font-mono uppercase text-[8.5px] tracking-wider mr-1.5" style={{ color: '#00D2FF' }}>Today</span>
+                    {sessionCue.today}
+                  </p>
+                  <p className="text-[9.5px] mt-1.5" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
+                </div>
+              )}
+            </div>
+          )}
+
       {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
           web 2026-09-01). Solo si tiene el grant; abre el PDF inline con el
           mismo mecanismo de materiales. Las DEMÁS presentaciones siguen en
@@ -1355,7 +1388,7 @@ function HomeTab({
                 }}>
                   {fmtHm(surf.totalMinutes)}
                 </p>
-                <p className="text-[7.5px] font-mono uppercase tracking-[0.12em] mt-1 whitespace-nowrap" style={{ color: '#8aa0b2' }}>In the water</p>
+                <p className="text-[8px] font-mono uppercase tracking-[0.12em] mt-1 whitespace-nowrap" style={{ color: '#a9bccb' }}>Hours surfed</p>
               </div>
             </div>
             <div className="flex-1 min-w-0">
@@ -1415,35 +1448,6 @@ function HomeTab({
               practicarlo) y al final la frase de One Wave.
               El alumno la abre muchas veces SOLO, sin el coach al lado: por eso
               esto va arriba de las horas y del camino de cintas. */}
-          {onFinishOpenSession && onDiscardOpenSession && <OpenSessionCard data={data} onFinish={onFinishOpenSession} onDiscard={onDiscardOpenSession} />}
-          {(coachFocus || data.nextMove || sessionCue.cue) && (
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
-            >
-              {/* Una sola cosa en el Home; la lista completa vive en Let's Play. */}
-              <NextMovesBlock data={data} mode="top" onTrainSequence={onTrainSequence} onOpenStep={onOpenStep} onGoTo={onGoTo} />
-
-              {sessionCue.cue && (
-                <div
-                  className="px-4 py-3"
-                  style={{
-                    borderTop: coachFocus || data.nextMove ? '1px solid rgba(255,255,255,.08)' : undefined,
-                  }}
-                >
-                  <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
-                    {sessionCue.cue}
-                  </p>
-                  <p className="text-[13px] mt-1.5 leading-snug" style={{ color: '#eaf4fa' }}>
-                    <span className="font-mono uppercase text-[8.5px] tracking-wider mr-1.5" style={{ color: '#00D2FF' }}>Today</span>
-                    {sessionCue.today}
-                  </p>
-                  <p className="text-[9.5px] mt-1.5" style={{ color: '#6f8698' }}>From One Wave · Marcelo Castellanos</p>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* EL BUZÓN de la comunidad: lo publicado que este alumno todavía
               no vio. Caduca solo — al abrir The Lineup se marca leído y esta
               tarjeta desaparece. Los títulos se ven aunque la membresía haya
@@ -1578,7 +1582,7 @@ function HomeTab({
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] font-mono uppercase tracking-wider" style={{ color: '#8aa0b2' }}>
-                Where you are · {beltLevel.replace('_belt', '').toUpperCase()} Belt
+                Where you are · {String(data.courseData?.activeCourseBelt || beltLevel).replace('_belt', '').toUpperCase()} Belt{data.courseData?.activeCourseBelt && data.courseData.activeCourseBelt !== beltLevel.replace('_belt', '') ? ` · training` : ''}
               </p>
               <span className="text-[10.5px] font-semibold shrink-0" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
             </div>
