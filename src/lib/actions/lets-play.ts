@@ -24,7 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { pickWeakestCriterion, type CriterionEvaluationItem, type CriterionResultValue } from '@/lib/utils/criteria';
-import { SEQUENCE_PASS_STARS, sequenceLabel } from '@/lib/constants/learning-blocks';
+import { SEQUENCE_PASS_STARS, sequenceLabel, sequenceSide, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { getMySequence, type DrillMissionRow, type SequenceData } from './sequence';
 
 export type TrainingMode = 'sequence_run' | 'step_focus';
@@ -48,6 +48,9 @@ export type SequenceTraining = {
     promise: string | null;
     state: SequenceData['sequences'][number]['state'];
     minRating: number | null;
+    /** fs · bs · both · null (Marcelo 2026-09-10). En 'both' el flujo pide el lado. */
+    side: SequenceData['sequences'][number]['side'];
+    sideRatings: SequenceData['sequences'][number]['sideRatings'];
   };
   steps: SequenceTrainingStep[];
   /** La nota del alumno para la cadena (aparte de los pasos). */
@@ -172,7 +175,7 @@ export async function getSequenceTraining(
     return {
       ok: true,
       data: {
-        sequence: { id: seq.id, order: seq.order, name: seq.name, belt: seq.belt, promise: seq.promise, state: seq.state, minRating: seq.minRating },
+        sequence: { id: seq.id, order: seq.order, name: seq.name, belt: seq.belt, promise: seq.promise, state: seq.state, minRating: seq.minRating, side: seq.side, sideRatings: seq.sideRatings },
         steps,
         seqRating: sr ? { current_rating: sr.current_rating ?? null, rating_count: sr.rating_count ?? 0, held_back_step_id: sr.held_back_step_id ?? null, last_updated: sr.last_updated } : null,
         suggestedFocusStepId: suggested,
@@ -189,6 +192,9 @@ export type SaveSequenceSessionInput = {
   sequenceId: string;
   belt: string;
   mode: TrainingMode;
+  /** El lado (Marcelo 2026-09-10). Obligatorio en las secuencias de dos
+   *  lados (Yellow #7); en #8-#13 lo pone el servidor; sin lado = null. */
+  side?: 'fs' | 'bs' | null;
   focusStepId?: string | null;
   intention_text?: string;
   planned_duration_minutes: number;
@@ -263,6 +269,15 @@ export async function saveSequenceSession(
     const focus = !isRun ? byId.get(input.focusStepId ?? '') ?? null : null;
     if (!isRun && !focus) return { ok: false, error: 'Focus step not in this sequence.' };
 
+    // ── El lado ── fs/bs implícito en #8-#13; elegido en las de dos lados.
+    const kind = sequenceSide(seq.id);
+    let side: 'fs' | 'bs' | null = null;
+    if (kind === 'fs' || kind === 'bs') side = kind;
+    else if (kind === 'both') {
+      if (input.side !== 'fs' && input.side !== 'bs') return { ok: false, error: 'Pick the side you surfed: frontside or backside.' };
+      side = input.side;
+    }
+
     // ── Estrella de la secuencia ──
     const seqRating = input.sequence_rating == null ? null : isRating(input.sequence_rating) ? input.sequence_rating : NaN;
     if (Number.isNaN(seqRating)) return { ok: false, error: 'Invalid sequence rating.' };
@@ -333,10 +348,11 @@ export async function saveSequenceSession(
         kind: 'drill',
         training_mode: input.mode,
         linked_sequence_id: seq.id,
+        side,
         linked_step_id: focus?.step_id ?? null,
         linked_drill_mission_id: focus?.mission?.id ?? null,
         // El nombre viaja con la sesión: Home, bitácora y planner lo leen.
-        drill_name: isRun ? seqLabel : `${focus!.step_title} · ${seqLabel}`,
+        drill_name: `${isRun ? seqLabel : `${focus!.step_title} · ${seqLabel}`}${kind === 'both' && side ? ` · ${SIDE_WORD[side]}` : ''}`,
         session_date: new Date().toISOString().slice(0, 10),
         intention_text: clip(input.intention_text, 300),
         planned_duration_minutes: input.planned_duration_minutes,
@@ -372,10 +388,21 @@ export async function saveSequenceSession(
     // ── La nota de la secuencia (aparte de los pasos) ──
     const { data: prev } = await admin
       .from('student_sequence_ratings')
-      .select('current_rating, rating_count, held_back_step_id')
+      .select('current_rating, rating_count, held_back_step_id, rating_fs, rating_bs')
       .eq('student_id', studentId)
       .eq('sequence_id', seq.id)
       .maybeSingle();
+    // Secuencia de dos lados: la nota se guarda POR LADO y la secuencia vale
+    // su lado más flojo (doctrina "complete on both sides").
+    const sideCols: { rating_fs?: number | null; rating_bs?: number | null } = {};
+    let seqRatingToStore: number | null = seqRating ?? prev?.current_rating ?? null;
+    if (kind === 'both' && seqRating != null && side) {
+      const fs = side === 'fs' ? seqRating : prev?.rating_fs ?? null;
+      const bs = side === 'bs' ? seqRating : prev?.rating_bs ?? null;
+      sideCols.rating_fs = fs;
+      sideCols.rating_bs = bs;
+      seqRatingToStore = fs != null && bs != null ? Math.min(fs, bs) : (fs ?? bs);
+    }
     // Qué paso queda como "el que la detiene":
     //   run con detalle  → el primero marcado en orden de cadena;
     //   run sin detalle  → si PASÓ la barra, nada la detiene (se limpia); si
@@ -389,7 +416,8 @@ export async function saveSequenceSession(
       const { error: seqErr } = await admin.from('student_sequence_ratings').upsert({
         student_id: studentId,
         sequence_id: seq.id,
-        current_rating: seqRating ?? prev?.current_rating ?? null,
+        current_rating: seqRatingToStore,
+        ...sideCols,
         rating_count: (prev?.rating_count ?? 0) + (seqRating != null ? 1 : 0),
         held_back_step_id: keptFocus,
         last_updated: new Date().toISOString(),

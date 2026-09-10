@@ -21,7 +21,7 @@ import {
 import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } from '@/lib/actions/sequence';
 import { SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
 import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
-import { sequenceLabel } from '@/lib/constants/learning-blocks';
+import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 
@@ -196,6 +196,9 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [plannedDuration, setPlannedDuration] = useState(20);
   const [plannedReps, setPlannedReps] = useState(5);
   const [intention, setIntention] = useState(initialIntention ?? '');
+  // El lado (Marcelo 2026-09-10): solo se pregunta en las secuencias que se
+  // surfean de los dos lados (Yellow #7). En #8-#13 lo sabe el servidor.
+  const [side, setSide] = useState<'fs' | 'bs' | null>(null);
   const [hintText, setHintText] = useState<string | null>(null);
   // Ready
   const [warmUp, setWarmUp] = useState<string | null>(null);
@@ -284,11 +287,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const allSafe = SAFETY_CHECKS.every((c) => checks[c.key]);
   const warmupOptions = SELF_TRAINING_WARMUPS[studentBelt] || SELF_TRAINING_WARMUPS['white_belt'];
 
-  const shellTitle = isRun ? 'Run the whole sequence' : `Focus: ${focus?.title ?? '—'}`;
+  const twoSided = seq.side === 'both';
+  const sideTag = twoSided && side ? ` · ${SIDE_WORD[side]}` : '';
+  const shellTitle = (isRun ? 'Run the whole sequence' : `Focus: ${focus?.title ?? '—'}`) + sideTag;
 
   // ─── PLAN ───
   if (phase === 'plan') {
-    const canStart = allSafe && plannedDuration >= 1 && plannedReps >= 1 && (isRun || !!focus);
+    const canStart = allSafe && plannedDuration >= 1 && plannedReps >= 1 && (isRun || !!focus) && (!twoSided || !!side);
     return (
       <Shell step={1} seqLabel={seqLabel} title={shellTitle} onCancel={onCancel}>
         <div className="rounded-2xl p-4" style={{ background: INK }}>
@@ -303,6 +308,28 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           )}
           {isRun && seq.promise && <p className="text-[12px] mt-2 leading-snug" style={{ color: 'rgba(247,249,250,.8)' }}>{seq.promise}</p>}
         </div>
+
+        {/* Secuencia de dos lados: se entrena y se califica POR LADO, y vale
+            su lado más flojo. El número no cambia. */}
+        {twoSided && (
+          <div className="rounded-2xl border border-gray-200 p-3.5">
+            <p className="text-[9px] text-gray-400" style={F_M}>Which side today?</p>
+            <p className="text-[12px] text-gray-600 mt-0.5 leading-snug">This line is yours only when you own it on both sides. Rate the side you surf.</p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {(['fs', 'bs'] as const).map((sd) => {
+                const last = seq.sideRatings?.[sd] ?? null;
+                const on = side === sd;
+                return (
+                  <button key={sd} type="button" onClick={() => setSide(sd)}
+                    className="h-12 rounded-xl text-[12px] font-bold border-[1.5px] active:scale-[0.98]"
+                    style={on ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#d1d5db', color: INK }}>
+                    {SIDE_WORD[sd]}{last != null ? <span className="block text-[10px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#6b7280' }}>last {last}★</span> : <span className="block text-[10px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#9ca3af' }}>not rated yet</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {isRun ? (
           <div>
@@ -498,6 +525,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           sequenceId: seq.id,
           belt,
           mode,
+          side: twoSided ? side : null,
           focusStepId: focus?.step_id ?? null,
           intention_text: intention.trim() || undefined,
           planned_duration_minutes: plannedDuration,

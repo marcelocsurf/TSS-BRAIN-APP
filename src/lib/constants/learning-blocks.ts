@@ -877,3 +877,35 @@ export function sequenceLabel(
   const p = sequencePrefix(id, order);
   return p ? `${p} · ${name}` : name;
 }
+
+// ═══ EL LADO DE CADA SECUENCIA (Marcelo 2026-09-10) ═══
+//
+// Regla de doctrina "A sequence is complete on both sides": la secuencia
+// conserva su número; el lado es un ATRIBUTO, no un grupo nuevo.
+//   fs / bs  → existe una por lado (#8 FS y #9 BS, #10/#11, #12/#13)
+//   both     → se surfea de los dos lados y se califica POR LADO (Yellow #7)
+//   (sin entrada) → no tiene lado (White, #6, entradas, foundation, closing)
+export type SequenceSide = 'fs' | 'bs' | 'both';
+
+export const SEQUENCE_SIDE: Record<string, SequenceSide> = (() => {
+  const out: Record<string, SequenceSide> = { 'YB-SEQ-7.0': 'both' };
+  for (const [courseSeq, defId] of Object.entries(LETS_PLAY_SEQUENCE_ID)) {
+    const def = BELT_SEQUENCES.find((s) => s.id === defId);
+    if (def) out[courseSeq] = def.side;
+  }
+  return out;
+})();
+
+/** La misma línea, de los dos lados: para la tarjeta "Both sides". */
+export const SIDE_PAIRS: { move: string; fs: string; bs: string }[] = [
+  { move: 'Pumping', fs: 'BB-SEQ-08', bs: 'BB-SEQ-09' },
+  { move: 'Snap', fs: 'BB-SEQ-10', bs: 'BB-SEQ-11' },
+  { move: 'Cutback', fs: 'BB-SEQ-12', bs: 'BB-SEQ-13' },
+];
+
+export const SIDE_WORD: Record<'fs' | 'bs', string> = { fs: 'Frontside', bs: 'Backside' };
+export const SIDE_SHORT: Record<'fs' | 'bs', string> = { fs: 'FS', bs: 'BS' };
+
+export function sequenceSide(id: string | null | undefined): SequenceSide | null {
+  return id ? SEQUENCE_SIDE[id] ?? null : null;
+}

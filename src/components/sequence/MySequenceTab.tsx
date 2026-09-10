@@ -9,7 +9,23 @@ import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constant
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
-import { SEQUENCE_ROLE } from '@/lib/constants/learning-blocks';
+import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
+import { sideBalance } from '@/lib/sequence-sides';
+
+/** El chip de lado: FS · BS · FS·BS. Va al lado del nombre; el número no cambia. */
+function SideChip({ side, small = false, dark = false }: { side: SequenceSide | null; small?: boolean; dark?: boolean }) {
+  if (!side) return null;
+  const txt = side === 'both' ? 'FS·BS' : SIDE_SHORT[side];
+  return (
+    <span
+      className={`inline-flex items-center rounded ${small ? 'px-1 text-[8px]' : 'px-1.5 py-0.5 text-[9px]'} font-bold`}
+      style={{ ...F_M, letterSpacing: '0.08em', background: dark ? 'rgba(0,210,255,.18)' : 'rgba(6,28,43,.08)', color: dark ? '#00D2FF' : '#0A2438' }}
+      title={side === 'both' ? 'Frontside and backside' : SIDE_WORD[side]}
+    >
+      {txt}
+    </span>
+  );
+}
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
@@ -116,6 +132,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const nextWhy = next ? (next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : firstUnrated ? 'not rated yet' : 'start here') : '';
   const beltWord = beltKey.charAt(0).toUpperCase() + beltKey.slice(1);
   const pageHrefOf = (id: string) => (sequencePageFor(id) ? `/portal/${portalToken}/seq/${id}` : null);
+  // Progreso por lado (Marcelo 2026-09-10): general · frontside · backside.
+  // La misma función que usa el Home, así los dos dicen lo mismo.
+  const sides = sideBalance(levelSeqs);
+  const starsOf = (v: number | null) => (v == null ? '—' : `${v}★`);
   const headlineOf = (id: string, fallback: string | null) => sequencePageFor(id)?.think.whatIs.headline ?? fallback;
 
   return (
@@ -182,11 +202,22 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               return (
                 <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]" style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(247,249,250,.9)' }}>
                   <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
-                  {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}{sq.state === 'owned' ? ' ✓' : sq.minRating !== null ? ` ${sq.minRating}★` : ''}
+                  {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}
+                  <SideChip side={sq.side} small dark />
+                  {sq.state === 'owned' ? ' ✓' : sq.side === 'both' && sq.sideRatings ? ` ${starsOf(sq.sideRatings.fs)} · ${starsOf(sq.sideRatings.bs)}` : sq.minRating !== null ? ` ${sq.minRating}★` : ''}
                 </a>
               );
             })}
           </div>
+          {/* Por lado: una línea es tuya cuando es tuya de los dos lados. */}
+          {(sides.fs != null || sides.bs != null) && (
+            <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+              <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[9px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.55)' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
+              <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[9px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.55)' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
+              {sides.gap != null && <span className="text-[11px]" style={{ color: sides.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.6)' }}><span className="text-[9px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.55)' }}>Gap</span><b>{sides.gap}★</b></span>}
+              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#FFD166' }}>{sides.advice.text}</span>}
+            </div>
+          )}
           {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
               (coach · método · reciente). Acá solo el mapa. */}
           {!next && <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.7)' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
@@ -202,6 +233,42 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             : 'Pick the sequence you are working on → tap a step → practice its drill or mission → rate yourself honestly. Your coach validates in the water.'}
         </p>
       </div>
+
+      {/* BOTH SIDES (Marcelo 2026-09-10): la misma línea, de los dos lados.
+          Empareja #8↔#9, #10↔#11, #12↔#13 y muestra las de dos lados (#7) con
+          sus dos notas. No reemplaza la lista numerada: la resume. */}
+      {sides.pairs.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438' }}>
+          <div className="px-4 pt-3.5 pb-2">
+            <p className="text-[9px]" style={{ ...F_M, color: theme.bright }}>Both sides</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(247,249,250,.6)' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
+          </div>
+          <div className="px-3 pb-3 space-y-1.5">
+            {sides.pairs.map((p) => {
+              const cell = (sd: 'fs' | 'bs', c: { id: string; label: string; value: number | null } | null) => {
+                if (!c) return <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.35)' }}>—</span>;
+                const weak = p.gap != null && p.gap >= 1 && (c.value ?? 0) < ((sd === 'fs' ? p.bs?.value : p.fs?.value) ?? 0);
+                const inner = (
+                  <>
+                    <span className="block text-[9px]" style={{ ...F_M, color: weak ? '#FFD166' : 'rgba(247,249,250,.55)' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
+                    <span className="block text-[15px] font-bold" style={{ color: c.value == null ? 'rgba(247,249,250,.35)' : weak ? '#FFD166' : PAPER }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
+                  </>
+                );
+                const href = pageHrefOf(c.id);
+                return href ? <a href={href} className="block">{inner}</a> : <span className="block">{inner}</span>;
+              };
+              return (
+                <div key={p.move} className="grid items-center rounded-xl px-3 py-2" style={{ gridTemplateColumns: '1.2fr 1fr 1fr auto', background: 'rgba(255,255,255,.05)' }}>
+                  <span className="text-[12px] font-semibold" style={{ color: PAPER }}>{p.move}{p.both && <span className="block text-[9px] font-normal" style={{ color: 'rgba(247,249,250,.5)' }}>one sequence · both sides</span>}</span>
+                  {cell('fs', p.fs)}
+                  {cell('bs', p.bs)}
+                  <span className="text-[10px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.45)' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Primero la SECUENCIA, después la habilidad suelta.
           Un alumno de Blue tiene 48 pasos: elegir entre 48 no es libertad, es
@@ -248,6 +315,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               selfSequenceRating={seq.selfSequenceRating}
               heldBackStepId={seq.heldBackStepId}
               heldBackTitle={seq.heldBackTitle}
+              side={seq.side}
+              sideRatings={seq.sideRatings}
               defaultOpen={seq.id === focusSequenceId}
               items={seq.items}
               onOpenStep={(id) => setOpenStepId(id)}
@@ -287,6 +356,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 selfSequenceRating={seq.selfSequenceRating}
                 heldBackStepId={seq.heldBackStepId}
                 heldBackTitle={seq.heldBackTitle}
+                side={seq.side}
+                sideRatings={seq.sideRatings}
                 defaultOpen={false}
                 items={seq.items}
                 onOpenStep={(id) => setOpenStepId(id)}
@@ -337,6 +408,8 @@ function BlockSection({
   selfSequenceRating = null,
   heldBackStepId = null,
   heldBackTitle = null,
+  side = null,
+  sideRatings = null,
   pageHref = null,
   items,
   onOpenStep,
@@ -364,6 +437,9 @@ function BlockSection({
   selfSequenceRating?: number | null;
   heldBackStepId?: string | null;
   heldBackTitle?: string | null;
+  /** El lado (fs · bs · both) y, en las de dos lados, la nota por lado. */
+  side?: SequenceSide | null;
+  sideRatings?: { fs: number | null; bs: number | null } | null;
   /** La página de la secuencia (Think · Feel · Do · Review), si existe. */
   pageHref?: string | null;
   items: SequenceItem[];
@@ -405,7 +481,7 @@ function BlockSection({
           <div className="text-[8px]" style={{ ...F_M, color: theme.ink }}>
             {asSequence ? seqEyebrow : `${beltWord} Belt · Block ${blockNumber}`}
           </div>
-          <div className="text-[13px] mt-0.5" style={{ ...F_D, color: INK }}>{blockName}</div>
+          <div className="text-[13px] mt-0.5 flex items-center gap-1.5" style={{ ...F_D, color: INK }}>{blockName}<SideChip side={asSequence ? side : null} /></div>
           {promise && (
             <div className="text-[11px] mt-0.5 text-gray-500 italic leading-snug">{promise}</div>
           )}
@@ -430,7 +506,9 @@ function BlockSection({
           ) : (
             <div className="text-gray-400 text-[10px]">Not rated</div>
           )}
-          {asSequence && selfSequenceRating !== null && (
+          {asSequence && side === 'both' && sideRatings && (sideRatings.fs != null || sideRatings.bs != null) ? (
+            <div className="text-[10px] text-gray-500 mt-0.5">FS {sideRatings.fs ?? '—'}{sideRatings.fs != null ? '★' : ''} · BS {sideRatings.bs ?? '—'}{sideRatings.bs != null ? '★' : ''}</div>
+          ) : asSequence && selfSequenceRating !== null && (
             <div className="text-[10px] text-gray-500 mt-0.5">your last run: {selfSequenceRating}★</div>
           )}
           <div className="text-[10px] text-gray-400 mt-0.5">

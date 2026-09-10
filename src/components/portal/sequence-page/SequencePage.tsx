@@ -31,6 +31,9 @@ const TABS: { key: Tab; label: string; sub: string; Icon: typeof Brain }[] = [
 
 export interface SequenceProgress {
   lastRun: number | null;
+  /** fs · bs · both · null (Marcelo 2026-09-10). */
+  side?: 'fs' | 'bs' | 'both' | null;
+  sideRatings?: { fs: number | null; bs: number | null } | null;
   heldBackId: string | null;
   heldBackTitle: string | null;
   ratedSteps: number;
@@ -282,7 +285,9 @@ export function SequencePage({
               <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
                   {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
-                  {progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
+                  {progress.side === 'both' && progress.sideRatings ? (
+                    <span>frontside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.fs ?? '—'}{progress.sideRatings.fs != null ? '★' : ''}</span> · backside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.bs ?? '—'}{progress.sideRatings.bs != null ? '★' : ''}</span></span>
+                  ) : progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
                   <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -350,7 +355,9 @@ export function SequencePage({
               <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
                   {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
-                  {progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
+                  {progress.side === 'both' && progress.sideRatings ? (
+                    <span>frontside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.fs ?? '—'}{progress.sideRatings.fs != null ? '★' : ''}</span> · backside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.bs ?? '—'}{progress.sideRatings.bs != null ? '★' : ''}</span></span>
+                  ) : progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
                   <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">

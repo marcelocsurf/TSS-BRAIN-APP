@@ -2,6 +2,7 @@
 // Piloto (Marcelo 2026-09-09): solo las secuencias registradas en
 // src/lib/sequence-pages. Lee lecciones y piezas de la base; la config trae
 // lo que todavía no existe como dato (resultado, criterios aprobados, tablero).
+import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -56,7 +57,7 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
     admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     // Lo que Let's Play sabe de esta secuencia (Marcelo 2026-09-09: "que se
     // comunique lo de los cursos con lo que sale en la secuencia").
-    admin.from('student_sequence_ratings').select('current_rating, held_back_step_id').eq('student_id', (student as any).id).eq('sequence_id', cfg.id).maybeSingle(),
+    admin.from('student_sequence_ratings').select('current_rating, held_back_step_id, rating_fs, rating_bs').eq('student_id', (student as any).id).eq('sequence_id', cfg.id).maybeSingle(),
     admin.from('student_step_ratings').select('step_id, current_rating, coach_rating').eq('student_id', (student as any).id).in('step_id', cfg.stepIds),
   ]);
 
@@ -89,6 +90,8 @@ export default async function SequencePageRoute({ params }: { params: Promise<{ 
   const weakestId = cfg.stepIds.find((id) => ratingByStep.has(id) && ratingByStep.get(id)! < 4) ?? null;
   const progress = {
     lastRun: (seqRating as any)?.current_rating ?? null,
+    side: sequenceSide(cfg.id),
+    sideRatings: sequenceSide(cfg.id) === 'both' ? { fs: (seqRating as any)?.rating_fs ?? null, bs: (seqRating as any)?.rating_bs ?? null } : null,
     heldBackId: (seqRating as any)?.held_back_step_id ?? null,
     heldBackTitle: (seqRating as any)?.held_back_step_id ? (lessons[(seqRating as any).held_back_step_id]?.title ?? null) : null,
     ratedSteps: rated.length,

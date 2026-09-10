@@ -230,6 +230,8 @@ interface PortalData {
     unfinished?: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null;
     /** El detalle más flojo de la última práctica de ese paso. */
     detail?: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null;
+    /** Un lado quedó atrás (Marcelo 2026-09-10): el lado flojo es el próximo movimiento. */
+    sideAdvice?: { text: string; sequenceId: string; side: 'fs' | 'bs' } | null;
   } | null;
 }
 
@@ -318,7 +320,7 @@ const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight
 // lista completa numerada, con origen, razón y la regla del orden.
 // Orden: 1 lo que dejó el coach · 2 el método (el paso que detuvo tu último
 // run, o el primero < 4★) · 3 lo que dejaste < 4★ en dos semanas.
-type NextMoveRow = { key: string; label: string; title: string; reason: string; detail?: string | null; action: string | null; accent: string; onClick?: () => void; /** La página de la secuencia (qué necesita). */ pageHref?: string | null };
+type NextMoveRow = { key: string; label: string; title: string; reason: string; detail?: string | null; /** Por lado: "Train backside first…" (misma función que Let's Play). */ side?: string | null; action: string | null; accent: string; onClick?: () => void; /** La página de la secuencia (qué necesita). */ pageHref?: string | null };
 // "Sequence #1 · Board Control": con la palabra, porque la secuencia se llama
 // casi igual que un paso ("Control Your Board") y sin ella parece repetido.
 const seqWord = (label: string) => (label.startsWith('#') ? `Sequence ${label}` : label);
@@ -348,6 +350,7 @@ function nextMoveRows(
         ? `Held your last run of ${seq} back${nm.selfSequenceRating != null ? ` · your run ${nm.selfSequenceRating}★` : ''}`
         : `First step below 4★ in ${seq}${nm.stars !== null ? ` · ${nm.stars}★` : ''}${nm.official ? ' · rated by your coach' : ''}`,
       detail: nm.detail ? `Last practice · ${nm.detail.result === 'not_met' ? 'not met' : 'partial'}: ${nm.detail.text}` : null,
+      side: nm.sideAdvice?.text ?? null,
       action: 'Practice it →',
       onClick: () => {
         if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId });
@@ -395,6 +398,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
           <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{r.title}</p>
           <p className="text-[12px] text-white/60 mt-0.5 leading-snug">{r.reason}</p>
           {r.detail && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>{r.detail}</p>}
+          {r.side && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#B388FF' }}>Both sides · {r.side}</p>}
           {r.action && <p className="text-[12px] mt-1.5 font-semibold" style={{ color: r.accent }}>{r.action}</p>}
         </div>
       </div>

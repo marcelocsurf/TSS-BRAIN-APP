@@ -9,8 +9,8 @@ import {
   TRAINING_SEQUENCE_ORDER,
   BLUE_COURSE_PRELUDE,
   stepKey,
-  SEQUENCE_PASS_STARS,
-} from '@/lib/constants/learning-blocks';
+  SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide } from '@/lib/constants/learning-blocks';
+import { sideBalance } from '@/lib/sequence-sides';
 
 // ─── Types ───
 
@@ -101,6 +101,11 @@ export type SequenceData = {
     selfSequenceRating: number | null;
     heldBackStepId: string | null;
     heldBackTitle: string | null;
+    /** El lado (Marcelo 2026-09-10): fs · bs · both · null = sin lado. El
+     *  número no cambia; el lado es un atributo. */
+    side: SequenceSide | null;
+    /** Solo secuencias de dos lados: tu última nota por lado. */
+    sideRatings: { fs: number | null; bs: number | null } | null;
   }[];
 };
 
@@ -161,7 +166,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
   // paso que la detuvo la última vez: preselecciona el foco.
   const { data: seqRatings } = await admin
     .from('student_sequence_ratings')
-    .select('sequence_id, current_rating, held_back_step_id')
+    .select('sequence_id, current_rating, held_back_step_id, rating_fs, rating_bs')
     .eq('student_id', studentId);
   const seqRatingMap = new Map((seqRatings ?? []).map((r: any) => [r.sequence_id as string, r]));
 
@@ -391,6 +396,8 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
         selfSequenceRating: sr?.current_rating ?? null,
         heldBackStepId: heldBack?.step_id ?? null,
         heldBackTitle: heldBack?.step_title ?? null,
+        side: sequenceSide(seqId),
+        sideRatings: sequenceSide(seqId) === 'both' ? { fs: sr?.rating_fs ?? null, bs: sr?.rating_bs ?? null } : null,
       };
     })
     .filter((s) => s.items.length > 0)
@@ -773,11 +780,16 @@ export async function getNextMove(
   /** Lo que dejaste a medias hace poco y NO es el paso de arriba: para que
    *  trabajar otra cosa no se pierda del Home. */
   unfinished: { stepId: string; stepTitle: string; sequenceId: string; sequenceOrder: number; sequenceName: string; stars: number; date: string } | null;
+  /** Un lado quedó atrás (Marcelo 2026-09-10): el lado flojo es el próximo
+   *  movimiento. La misma función que usa Let's Play (sideBalance). */
+  sideAdvice: { text: string; sequenceId: string; side: 'fs' | 'bs' } | null;
 } | null> {
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return null;
     const data = await mySequenceForStudent(studentId, belt);
+    const beltKey = data.belt.replace(/_belt$/, '');
+    const sideAdvice = sideBalance(data.sequences.filter((s) => s.belt === beltKey)).advice;
     const seq = data.sequences.find((s) => s.state !== 'owned' && s.weakestStepId);
     if (!seq || !seq.weakestStepId) return null;
     // El embudo: secuencia → paso → detalle. El paso que VOS marcaste como el
@@ -897,6 +909,7 @@ export async function getNextMove(
       selfSequenceRating: seq.selfSequenceRating,
       detail,
       unfinished,
+      sideAdvice,
     };
   } catch {
     // El Home no se cae por esto: es una ayuda, no el contenido.

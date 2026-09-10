@@ -93,3 +93,38 @@ describe('campEnrollmentClosed — un camp iniciado no admite inscripciones', ()
     expect(campDayProgress({ start_date: '2026-09-03', end_date: '2026-09-08' })).toEqual({ day: 3, total: 6 });
   });
 });
+
+// ═══ Progreso por lado (Marcelo 2026-09-10) ═══
+import { sideBalance } from '@/lib/sequence-sides';
+describe('sideBalance — el lado flojo es el próximo movimiento, sin perder el número', () => {
+  const seq = (id: string, order: number, name: string, minRating: number | null, extra: Partial<Parameters<typeof sideBalance>[0][number]> = {}) =>
+    ({ id, order, name, state: 'working' as const, minRating, selfSequenceRating: null, ...extra });
+  it('empareja #8 con #9 y aconseja el backside cuando queda 2★ atrás', () => {
+    const b = sideBalance([seq('BB-SEQ-08', 8, 'Frontside Pumping', 4), seq('BB-SEQ-09', 9, 'Backside Pumping', 2), seq('BB-SEQ-10', 10, 'Frontside Snap', 3)]);
+    expect(b.fs).toBe(3.5);
+    expect(b.bs).toBe(2);
+    expect(b.gap).toBe(1.5);
+    expect(b.pairs[0]).toMatchObject({ move: 'Pumping', both: false, gap: 2 });
+    expect(b.pairs[0].fs?.label).toBe('#8 Frontside Pumping');
+    expect(b.advice).toMatchObject({ side: 'bs', sequenceId: 'BB-SEQ-09' });
+    expect(b.advice?.text).toContain('backside first');
+  });
+  it('sin brecha (o lado flojo ya en 4★) no hay consejo: manda el orden del método', () => {
+    expect(sideBalance([seq('BB-SEQ-08', 8, 'Frontside Pumping', 4), seq('BB-SEQ-09', 9, 'Backside Pumping', 4)]).advice).toBeNull();
+    expect(sideBalance([seq('BB-SEQ-08', 8, 'Frontside Pumping', 5), seq('BB-SEQ-09', 9, 'Backside Pumping', 4)]).advice).toBeNull();
+    expect(sideBalance([seq('BB-SEQ-08', 8, 'Frontside Pumping', 4)]).gap).toBeNull();
+  });
+  it('una secuencia de dos lados (Yellow #7) se lee por lado y conserva su número', () => {
+    const b = sideBalance([seq('YB-SEQ-7.0', 7, 'Drawing on the Wave', 4, { sideRatings: { fs: 4, bs: 2 } })]);
+    expect(b.pairs).toHaveLength(1);
+    expect(b.pairs[0]).toMatchObject({ both: true, gap: 2 });
+    expect(b.pairs[0].fs?.label).toBe('#7 Drawing on the Wave');
+    expect(b.advice?.sequenceId).toBe('YB-SEQ-7.0');
+    expect(b.advice?.side).toBe('bs');
+  });
+  it('las secuencias sin lado no entran en la cuenta', () => {
+    const b = sideBalance([seq('WB-SEQ-1', 1, 'Board Control', 5), seq('BB-NAV', 7.1, 'Navigating', 3)]);
+    expect(b.pairs).toHaveLength(0);
+    expect(b.fs).toBeNull();
+  });
+});
