@@ -197,6 +197,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // La sesión planificada que se está cerrando (o la recién guardada).
   const [sessionId, setSessionId] = useState<string | null>(openSession?.id ?? null);
   const [savingPlan, setSavingPlan] = useState(false);
+  // Sin señal en la playa (auditoría 2026-09-10): avisar antes, no después.
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const sync = () => setOnline(typeof navigator === 'undefined' ? true : navigator.onLine);
+    sync();
+    window.addEventListener('online', sync); window.addEventListener('offline', sync);
+    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync); };
+  }, []);
   // El lado (Marcelo 2026-09-10): solo se pregunta en las secuencias que se
   // surfean de los dos lados (Yellow #7). En #8-#13 lo sabe el servidor.
   const [side, setSide] = useState<'fs' | 'bs' | null>(openSession?.side ?? null);
@@ -226,6 +234,46 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // Al cerrar: "¿qué trabajás la próxima?" — una tarea, o ninguna (Marcelo 2026-09-10).
   const [taskState, setTaskState] = useState<{ saved: string | null; error: string | null; picking: boolean; saving: boolean }>({ saved: null, error: null, picking: false, saving: false });
   const [weekCount, setWeekCount] = useState<number | null>(null);
+
+  // ── BORRADOR de la evaluación en el teléfono (auditoría 2026-09-10) ──
+  // Una llamada, un refresh o la pérdida de señal borraban estrella, foco,
+  // flow y momentos antes de "Save". Se guarda en sessionStorage bajo la
+  // sesión (o la secuencia) y se restaura al volver; se borra al guardar.
+  const draftKey = `tss_eval_draft_${openSession?.id ?? sessionId ?? `${sequenceId}:${mode}`}`;
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    if (phase !== 'evaluation' || draftRestored) return;
+    setDraftRestored(true);
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.seqStars != null) setSeqStars(d.seqStars);
+      if (d.execStars != null) setExecStars(d.execStars);
+      if (d.held) setHeld(d.held);
+      if (d.stepStars) setStepStars(d.stepStars);
+      if (d.stepCrit) setStepCrit(d.stepCrit);
+      if (d.stepMoment) setStepMoment(d.stepMoment);
+      if (d.focusRating != null) setFocusRating(d.focusRating);
+      if (d.flow != null) setFlow(d.flow);
+      if (d.focusCrit) setFocusCrit(d.focusCrit);
+      if (d.seqStarsOptional != null) setSeqStarsOptional(d.seqStarsOptional);
+      if (typeof d.notes === 'string') setNotes(d.notes);
+      if (d.held && Object.values(d.held).some(Boolean)) setDeeper(true);
+    } catch { /* sin borrador */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+  useEffect(() => {
+    if (phase !== 'evaluation' || !draftRestored) return;
+    try {
+      sessionStorage.setItem(draftKey, JSON.stringify({ seqStars, execStars, held, stepStars, stepCrit, stepMoment, focusRating, flow, focusCrit, seqStarsOptional, notes }));
+    } catch { /* sin storage, sin borrador */ }
+  }, [phase, draftRestored, draftKey, seqStars, execStars, held, stepStars, stepCrit, stepMoment, focusRating, flow, focusCrit, seqStarsOptional, notes]);
+  const hasMarks = seqStars != null || execStars != null || focusRating != null || flow != null || Object.values(held).some(Boolean) || notes.trim().length > 0;
+  const safeCancel = () => {
+    if (phase === 'evaluation' && hasMarks && !window.confirm('Leave the evaluation? Your answers stay on this phone until you come back.')) return;
+    onCancel();
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -622,6 +670,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           criteria: !isRun ? Object.entries(focusCrit).map(([i, r]) => ({ criterion_index: Number(i), result: r })) : undefined,
         });
         if (!res.ok) { setErrorMsg(res.error); setSaving(false); return; }
+        try { sessionStorage.removeItem(draftKey); } catch { /* nada */ }
         setResult({ nextFocus: res.nextFocus, sequenceRating: res.sequenceRating });
         getWeeklyPracticeCount(portalToken).then(setWeekCount).catch(() => {});
         setPhase('done');
@@ -633,7 +682,12 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     };
 
     return (
-      <Shell step={3} seqLabel={seqLabel} title={shellTitle} onCancel={onCancel}>
+      <Shell step={3} seqLabel={seqLabel} title={shellTitle} onCancel={safeCancel}>
+        {!online && (
+          <p className="text-[13px] leading-snug rounded-xl px-3.5 py-2.5" style={{ background: '#FFF8E7', color: '#7a5c00' }}>
+            No signal right now. Your answers stay on this phone — tap Save when you are back online.
+          </p>
+        )}
         {/* EL OBJETIVO, bien claro, antes de evaluar (Marcelo 2026-09-10:
             "para refrescarlo y en letras que se distingan"). */}
         <div className="rounded-2xl p-4" style={{ background: INK }}>
@@ -776,7 +830,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         <button type="button" disabled={!canSave} onClick={handleSave}
           className="w-full h-12 rounded-xl text-[14px] font-bold disabled:opacity-40 active:scale-[0.99]"
           style={{ background: canSave ? CYAN : '#e5e7eb', color: INK, ...F_D }}>
-          {saving ? 'Saving…' : 'Save & update My Sequence'}
+          {saving ? 'Saving…' : online ? 'Save & update My Sequence' : 'Save (waiting for signal)'}
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-gray-400 text-center -mt-2">
