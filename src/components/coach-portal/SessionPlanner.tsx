@@ -1142,7 +1142,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </Section>
 
           {/* 1. VENUE ANALYSIS */}
-          <Section icon={Waves} title="1. Venue Analysis" subtitle="Read today's conditions before going in">
+          <Section icon={Waves} title="Is today safe for this class?" subtitle="One call. The tide is already below; the rest is optional.">
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-2">
                 {(
@@ -1168,14 +1168,17 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 ))}
               </div>
 
-              {/* Essentials — just the wave size (ft). Wind + everything else
-                  live in "Más detalles". */}
-              <SelectField
-                label="Wave size (ft)"
-                value={plan.venue_wave_size}
-                options={WAVE_SIZE_OPTIONS}
-                onChange={(v) => commitPlanField('venue_wave_size', v)}
-              />
+              {/* Marcelo (2026-09-10): "no tener que hacer todo el análisis de la
+                  zona, solo decir si hay condición segura". Una pregunta; lo demás
+                  es opcional y va plegado. */}
+              {plan.venue_go_no_go && plan.venue_go_no_go !== 'go' && (
+                <SmallField
+                  label="What changes today (optional)"
+                  value={plan.venue_analysis ?? ''}
+                  onBlur={(v) => commitPlanField('venue_analysis', v || null)}
+                  placeholder="e.g. strong current — whitewater only"
+                />
+              )}
 
               {/* Everything else is optional context — tucked away so the common
                   case is just the go/no-go call + wave size. */}
@@ -1185,6 +1188,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 </summary>
                 <div className="px-3 pb-3 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
+                    <SelectField label="Wave size (ft)" value={plan.venue_wave_size} options={WAVE_SIZE_OPTIONS} onChange={(v) => commitPlanField('venue_wave_size', v)} />
                     <SelectField label="Wind" value={plan.venue_wind} options={WIND_OPTIONS} onChange={(v) => commitPlanField('venue_wind', v)} />
                     <SelectField label="Tide" value={plan.venue_tide} options={TIDE_OPTIONS} onChange={(v) => commitPlanField('venue_tide', v)} />
                     <SelectField label="Crowd" value={plan.venue_crowd} options={CROWD_LEVEL_OPTIONS} onChange={(v) => commitPlanField('venue_crowd', v)} />
@@ -1243,8 +1247,53 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             title={(data.camp.camp_name ?? '').split(' · ')[0]}
           />
 
+          {/* 4. PER-STUDENT PLANNING */}
+          <Section
+            icon={Users}
+            title="Today's students"
+            subtitle="Belt · swim · red flag at a glance. Tap one to plan their mission."
+          >
+            <div className="space-y-3">
+              {(() => {
+                const dayTpl = data.templatePlan.find(
+                  (d) => d.day_number === data.selectedDay?.day_number,
+                );
+                const tplBlocks = dayTpl?.blocks ?? [];
+                return students.map((s) => (
+                  <StudentPlanCard
+                    key={s.student_id}
+                    student={s}
+                    stpCatalog={data.stpCatalog}
+                    availableDrills={data.availableDrills}
+                    availableBoards={data.availableBoards}
+                    boardConflictIds={data.boardConflictIds}
+                    templateBlocks={tplBlocks}
+                    onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
+                    onSaveNote={(note) => saveInternalNote(s.student_id, note)}
+                    onAddBlock={() => addStudentBlock(s.student_id)}
+                    onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
+                    onShowDrill={(id) => setDrillDetailId(id)}
+                    multiDay={data.daySummaries.length > 1}
+                    onApplyBoardToWeek={(board) =>
+                      applyStudentBoardToWeek(token, data.selectedDay.camp_session_id, s.student_id, board)
+                    }
+                  />
+                ));
+              })()}
+            </div>
+          </Section>
+
+          {/* ═══ SI QUERÉS PLANEAR MÁS (auditoría coach 2026-09-10): lo mínimo
+              para hoy va arriba; calentamiento, mental hack y notas quedan
+              plegados. Nada de esto es obligatorio para cerrar. ═══ */}
+          <details className="group rounded-2xl border border-dashed border-gray-300 bg-white/60">
+            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-gray-700 flex items-center justify-between">
+              <span>If you want to plan more · warm-up, mental hack, notes</span>
+              <ChevronDown size={16} className="text-gray-400 transition group-open:rotate-180" />
+            </summary>
+            <div className="px-2 pb-2 space-y-3">
           {/* 2. GROUP WARM-UP */}
-          <Section icon={Flame} title="2. Group Warm-Up" subtitle="Pick from your tools or write your own">
+          <Section icon={Flame} title="Warm-up" subtitle="Pick from your tools or write your own">
             <PickerOrCustom
               options={warmupOptions.map((d) => ({
                 id: d.id,
@@ -1268,7 +1317,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           </Section>
 
           {/* 3. MENTAL HACK */}
-          <Section icon={Brain} title="3. Mental Hack" subtitle="Get them in the zone">
+          <Section icon={Brain} title="Mental hack" subtitle="Get them in the zone">
             <div className="grid grid-cols-3 gap-2">
               {MENTAL_HACK_QUICK.map((opt) => {
                 const isSelected = plan.mental_hack === opt.id;
@@ -1307,44 +1356,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             )}
                     </Section>
 
-          {/* 4. PER-STUDENT PLANNING */}
-          <Section
-            icon={Users}
-            title="4. Per Student"
-            subtitle="Plan a different mission for each — sequence, drills, objective"
-          >
-            <div className="space-y-3">
-              {(() => {
-                const dayTpl = data.templatePlan.find(
-                  (d) => d.day_number === data.selectedDay?.day_number,
-                );
-                const tplBlocks = dayTpl?.blocks ?? [];
-                return students.map((s) => (
-                  <StudentPlanCard
-                    key={s.student_id}
-                    student={s}
-                    stpCatalog={data.stpCatalog}
-                    availableDrills={data.availableDrills}
-                    availableBoards={data.availableBoards}
-                    boardConflictIds={data.boardConflictIds}
-                    templateBlocks={tplBlocks}
-                    onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
-                    onSaveNote={(note) => saveInternalNote(s.student_id, note)}
-                    onAddBlock={() => addStudentBlock(s.student_id)}
-                    onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
-                    onShowDrill={(id) => setDrillDetailId(id)}
-                    multiDay={data.daySummaries.length > 1}
-                    onApplyBoardToWeek={(board) =>
-                      applyStudentBoardToWeek(token, data.selectedDay.camp_session_id, s.student_id, board)
-                    }
-                  />
-                ));
-              })()}
-            </div>
-          </Section>
-
           {/* 5. GENERAL NOTES */}
-          <Section icon={NotebookPen} title="5. General notes (private)">
+          <Section icon={NotebookPen} title="Notes (private)">
             <TextArea
               label=""
               value={plan.notes_general}
@@ -1353,6 +1366,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               rows={3}
             />
           </Section>
+            </div>
+          </details>
         </>
       )}
 
@@ -2161,6 +2176,8 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
         <span className="text-[11px] font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
           <ClipboardList size={12} strokeWidth={1.75} />
           Profile & bitácora
+          {beltLevel && <span className="ml-1 text-[11px] font-normal text-gray-600">· {beltLevel.replace(/_belt$/, '').replace(/_/g, ' ')}</span>}
+          {profile.swim_level && <span className="text-[11px] font-normal text-gray-600">· swim {profile.swim_level}</span>}
           {hasMedical && (
             <span className="ml-1 text-[10px] text-red-600 inline-flex items-center gap-0.5">
               <AlertTriangle size={10} strokeWidth={2} />
