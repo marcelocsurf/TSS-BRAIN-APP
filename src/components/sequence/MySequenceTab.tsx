@@ -9,6 +9,7 @@ import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constant
 import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
+import { SEQUENCE_ROLE } from '@/lib/constants/learning-blocks';
 
 // Brand Manual v10
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF';
@@ -96,6 +97,23 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
   const theme = BELT_THEMES[beltLevelFromString(data.belt)];
 
+  // ── El mapa (Marcelo 2026-09-09): "que las personas puedan ubicarse bien
+  // dónde están, qué necesitan y claridad de cómo entrenarlo". Primero TU
+  // cinta: sus secuencias en el orden del curso, cuántas son tuyas, y la
+  // próxima a trabajar con su paso. Las cintas anteriores van plegadas abajo.
+  const beltKey = data.belt.replace(/_belt$/, '');
+  const isMethodSeq = (id: string) => { const r = SEQUENCE_ROLE[id]; return r !== 'closing' && r !== 'foundation'; };
+  const mine = data.sequences.filter((sq) => sq.belt === beltKey);
+  const earlier = data.sequences.filter((sq) => sq.belt !== beltKey);
+  const levelSeqs = mine.filter((sq) => isMethodSeq(sq.id));
+  const owned = levelSeqs.filter((sq) => sq.state === 'owned').length;
+  const next = levelSeqs.find((sq) => sq.state !== 'owned') ?? null;
+  const nextStepId = next ? (next.heldBackStepId ?? next.weakestStepId ?? next.items[0]?.step_id ?? null) : null;
+  const nextStepTitle = next ? (next.heldBackStepId ? next.heldBackTitle : next.weakestStepId ? next.weakestTitle : next.items[0]?.step_title ?? null) : null;
+  const beltWord = beltKey.charAt(0).toUpperCase() + beltKey.slice(1);
+  const pageHrefOf = (id: string) => (sequencePageFor(id) ? `/portal/${portalToken}/seq/${id}` : null);
+  const headlineOf = (id: string, fallback: string | null) => sequencePageFor(id)?.think.whatIs.headline ?? fallback;
+
   return (
     <div className="space-y-5">
       {/* Header — belt-colored rings + accent line, matching the course view */}
@@ -148,6 +166,44 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         </div>
       </div>
 
+      {/* Dónde estás · qué necesitás · cómo entrenarlo */}
+      {levelSeqs.length > 0 && (
+        <div className="rounded-2xl p-4" style={{ background: '#0A2438', borderLeft: `4px solid ${theme.accent}` }}>
+          <p className="text-[9px]" style={{ ...F_M, color: theme.bright }}>Where you are · {beltWord} Belt</p>
+          <p className="text-[15px] mt-1" style={{ ...F_D, color: PAPER }}>{owned} of {levelSeqs.length} sequences are yours</p>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {levelSeqs.map((sq) => {
+              const st = sq.state === 'owned' ? '#06D6A0' : sq.state === 'unrated' ? 'rgba(247,249,250,.35)' : '#FFD166';
+              const pre = sequencePrefix(sq.id, sq.order);
+              return (
+                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]" style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(247,249,250,.9)' }}>
+                  <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
+                  {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}{sq.state === 'owned' ? ' ✓' : sq.minRating !== null ? ` ${sq.minRating}★` : ''}
+                </a>
+              );
+            })}
+          </div>
+          {next && (
+            <div className="mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)' }}>
+              <p className="text-[9px]" style={{ ...F_M, color: '#FFD166' }}>Next to work on</p>
+              <p className="text-[13px] mt-0.5 leading-snug" style={{ color: PAPER }}>
+                <b>{next.name}</b>{nextStepTitle ? <> · {next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : 'start here'}: <b>{nextStepTitle}</b></> : null}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {pageHrefOf(next.id) && <a href={pageHrefOf(next.id)!} className="h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center" style={{ background: 'rgba(255,255,255,.08)', color: CYAN }}>See what it needs</a>}
+                {onTrainSequence && (
+                  <button type="button" onClick={() => onTrainSequence(nextStepId && next.state !== 'unrated' ? { sequenceId: next.id, mode: 'step_focus', focusStepId: nextStepId } : { sequenceId: next.id, mode: 'sequence_run' })}
+                    className="h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center gap-1.5" style={{ background: '#FFD166', color: INK }}>
+                    <Play size={12} strokeWidth={2.5} /> {nextStepId && next.state !== 'unrated' ? 'Train it' : 'Run it'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {!next && <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.7)' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
+        </div>
+      )}
+
       {/* Instructions */}
       <div className="rounded-2xl p-3.5" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
         <p className="text-[9px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
@@ -186,14 +242,14 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
       {view === 'sequence' && data.sequences.length > 0 && (
         <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
-          {data.sequences.map((seq) => (
+          {(mine.length ? mine : data.sequences).map((seq) => (
             <BlockSection
               key={seq.id}
               belt={seq.belt}
               blockId={seq.id}
               blockNumber={seq.order}
               blockName={seq.name}
-              promise={seq.promise}
+              promise={headlineOf(seq.id, seq.promise)}
               asSequence
               state={seq.state}
               minRating={seq.minRating}
@@ -208,10 +264,50 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               onOpenStep={(id) => setOpenStepId(id)}
               onTrain={onTrainSequence}
               theme={theme}
-              pageHref={sequencePageFor(seq.id) ? `/portal/${portalToken}/seq/${seq.id}` : null}
+              pageHref={pageHrefOf(seq.id)}
             />
           ))}
         </div>
+      )}
+
+      {/* Las cintas anteriores: siguen entrenables, pero no tapan tu nivel. */}
+      {view === 'sequence' && mine.length > 0 && earlier.length > 0 && (
+        <details className="rounded-2xl overflow-hidden" style={{ background: '#0A2438' }}>
+          <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+            <span>
+              <span className="block text-[9px]" style={{ ...F_M, color: 'rgba(247,249,250,.6)' }}>Your foundations · earlier belts</span>
+              <span className="block text-[13px] font-semibold" style={{ color: PAPER }}>{earlier.length} sequences from {Array.from(new Set(earlier.map((sq) => sq.belt))).map((b) => b.charAt(0).toUpperCase() + b.slice(1)).join(' & ')} — {earlier.filter((sq) => sq.state === 'owned').length} owned</span>
+            </span>
+            <span style={{ color: 'rgba(247,249,250,.5)' }}>▾</span>
+          </summary>
+          <div className="px-3 pb-3 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
+            {earlier.map((seq) => (
+              <BlockSection
+                key={seq.id}
+                belt={seq.belt}
+                blockId={seq.id}
+                blockNumber={seq.order}
+                blockName={seq.name}
+                promise={headlineOf(seq.id, seq.promise)}
+                asSequence
+                state={seq.state}
+                minRating={seq.minRating}
+                weakestStepId={seq.weakestStepId}
+                weakestTitle={seq.weakestTitle}
+                weakestIsOfficial={seq.weakestIsOfficial}
+                selfSequenceRating={seq.selfSequenceRating}
+                heldBackStepId={seq.heldBackStepId}
+                heldBackTitle={seq.heldBackTitle}
+                defaultOpen={false}
+                items={seq.items}
+                onOpenStep={(id) => setOpenStepId(id)}
+                onTrain={onTrainSequence}
+                theme={BELT_THEMES[beltLevelFromString(seq.belt)]}
+                pageHref={pageHrefOf(seq.id)}
+              />
+            ))}
+          </div>
+        </details>
       )}
 
       {/* Blocks — en tablet (md:) van en 2 columnas: la secuencia completa

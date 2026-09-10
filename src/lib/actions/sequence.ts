@@ -377,7 +377,8 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       const heldBack = sr?.held_back_step_id ? seqItems.find((i) => i.step_id === sr.held_back_step_id) ?? null : null;
       return {
         id: seqId,
-        order: meta.wb_sequence_order ?? 99,
+        // 17 Elements va justo antes de la #8, después de Getting to the wave (como en el curso).
+        order: seqId === 'BB-SEQ-FOUND' ? 7.9 : (meta.wb_sequence_order ?? 99),
         name: meta.wb_sequence_name ?? seqId,
         promise: meta.wb_sequence_promise ?? null,
         belt: (meta.course_section ?? '').replace('_belt', ''),
