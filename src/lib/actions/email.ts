@@ -823,6 +823,8 @@ export async function sendBookingConfirmationEmail(data: {
   amountLabel: string | null;
   manageUrl: string;
   academyId?: string | null;
+  /** El portal del alumno (2026-09-10): quien reserva por QR también recibe su link en el mismo correo. */
+  portalUrl?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   if (!(await emailEnabled('booking_confirmation'))) return { success: false, error: 'disabled:booking_confirmation' } as any;
   try {
@@ -833,6 +835,7 @@ export async function sendBookingConfirmationEmail(data: {
       html: assignmentEmailShell(
         `${seeYouSpot(data.className).line}, ${data.firstName}!`,
         `<p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;"><strong>${data.className}</strong><br/>${data.dateLabel}${data.amountLabel ? `<br/>${data.amountLabel} — pay at front desk (cash or card)` : ''}</p>
+         ${data.portalUrl ? `<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 10px;">This is your student portal — save it, the link is yours: <a href="${data.portalUrl}" style="color:#0090B0;font-weight:600;">open my portal</a>.</p>` : ''}
          <p style="font-size:12px;color:#6b7280;line-height:1.6;margin:0;">Plans changed? Use the button below to move or cancel your booking. Cancel more than 24 hours before class and it's free; within 24 hours the full class price is due.</p>`,
         { url: data.manageUrl, label: 'Manage my booking' },
         await academyBrand(data.academyId),
