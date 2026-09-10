@@ -108,8 +108,12 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const levelSeqs = mine.filter((sq) => isMethodSeq(sq.id));
   const owned = levelSeqs.filter((sq) => sq.state === 'owned').length;
   const next = levelSeqs.find((sq) => sq.state !== 'owned') ?? null;
-  const nextStepId = next ? (next.heldBackStepId ?? next.weakestStepId ?? next.items[0]?.step_id ?? null) : null;
-  const nextStepTitle = next ? (next.heldBackStepId ? next.heldBackTitle : next.weakestStepId ? next.weakestTitle : next.items[0]?.step_title ?? null) : null;
+  // El paso: el que frenó tu último run · si no, el primero bajo 4★ · si no,
+  // el primero que todavía no calificaste · si no, el primero de la cadena.
+  const firstUnrated = next ? next.items.find((i) => (i.coach_rating ?? i.rating) == null) ?? null : null;
+  const nextStepId = next ? (next.heldBackStepId ?? next.weakestStepId ?? firstUnrated?.step_id ?? next.items[0]?.step_id ?? null) : null;
+  const nextStepTitle = next ? (next.heldBackStepId ? next.heldBackTitle : next.weakestStepId ? next.weakestTitle : firstUnrated?.step_title ?? next.items[0]?.step_title ?? null) : null;
+  const nextWhy = next ? (next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : firstUnrated ? 'not rated yet' : 'start here') : '';
   const beltWord = beltKey.charAt(0).toUpperCase() + beltKey.slice(1);
   const pageHrefOf = (id: string) => (sequencePageFor(id) ? `/portal/${portalToken}/seq/${id}` : null);
   const headlineOf = (id: string, fallback: string | null) => sequencePageFor(id)?.think.whatIs.headline ?? fallback;
@@ -187,7 +191,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             <div className="mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)' }}>
               <p className="text-[9px]" style={{ ...F_M, color: '#FFD166' }}>Next to work on</p>
               <p className="text-[13px] mt-0.5 leading-snug" style={{ color: PAPER }}>
-                <b>{next.name}</b>{nextStepTitle ? <> · {next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : 'start here'}: <b>{nextStepTitle}</b></> : null}
+                <b>{next.name}</b>{nextStepTitle ? <> · {nextWhy}: <b>{nextStepTitle}</b></> : null}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {pageHrefOf(next.id) && <a href={pageHrefOf(next.id)!} className="h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center" style={{ background: 'rgba(255,255,255,.08)', color: CYAN }}>See what it needs</a>}
