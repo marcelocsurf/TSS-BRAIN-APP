@@ -17,7 +17,7 @@ import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduation';
 import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
 import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
-import { groupBySequence, sequenceVerdict } from '@/lib/constants/learning-blocks';
+import { groupBySequence, sequenceVerdict, isMethodSequence } from '@/lib/constants/learning-blocks';
 
 interface Props {
   token: string;
@@ -190,7 +190,8 @@ export function FinalCampEvaluation({
     sequence_order: stp.wb_sequence_order ?? null,
     sequence_step_order: stp.sequence_step_order ?? null,
   }));
-  const seqGroups = groupBySequence(catalogRows).groups;
+  // Las mismas secuencias que Let's Play: sin Foundation ni Closing (2026-09-10).
+  const seqGroups = groupBySequence(catalogRows).groups.filter((g) => isMethodSequence(g.id));
 
   // Veredicto en el idioma del coach: "9/13 secuencias · 2 sin evaluar".
   // La regla NO cambia — sigue siendo 4★ en cada parte — pero contarlo en

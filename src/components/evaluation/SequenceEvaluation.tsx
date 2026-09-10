@@ -45,7 +45,12 @@ import {
   SEQUENCE_PASS_STARS,
   type SequenceGroupable,
   sequenceLabel,
+  isMethodSequence,
+  sequenceSide,
+  SIDE_SHORT,
 } from '@/lib/constants/learning-blocks';
+import { momentsByStep } from '@/lib/sequence-pages/moments';
+import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 
 export interface EvalRow extends SequenceGroupable {
   step_id: string;
@@ -119,11 +124,15 @@ export function SequenceEvaluation({
 
   return (
     <div className="space-y-2.5">
-      {groups.map((g) => {
+      {groups.filter((g) => isMethodSequence(g.id)).map((g) => {
         const stars = g.rows.map((r) => starsOf(r.step_id));
         const v = sequenceVerdict(stars);
         const isOpen = open[g.id] ?? v.state === 'working';
         const label = sequenceLabel(g.id, g.order, g.name);
+        // Coherente con el curso (Marcelo 2026-09-10): el lado y, bajo cada
+        // paso, los momentos de la línea que el alumno ve en su curso.
+        const side = sequenceSide(g.id);
+        const moments = momentsByStep(g.id, g.rows.map((r) => ({ id: r.step_id, title: r.step_title ?? r.step_id })));
         const self = studentSequenceRatings?.[g.id];
         const selfHeld = self?.heldBackStepId ? g.rows.find((r) => r.step_id === self.heldBackStepId) : null;
         return (
@@ -131,6 +140,7 @@ export function SequenceEvaluation({
             <div className="px-3 py-2.5 bg-gray-50">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <p className="text-[13px] font-semibold text-gray-900">{label}</p>
+                {side && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">{side === 'both' ? 'FS·BS' : SIDE_SHORT[side]}</span>}
                 {self && (self.rating != null || selfHeld) && (
                   <span className="text-[10px] text-amber-700">
                     alumno{self.rating != null ? ` ${self.rating}★` : ''}{selfHeld ? ` · lo frena ${selfHeld.step_title ?? selfHeld.step_id}` : ''}
@@ -205,6 +215,16 @@ export function SequenceEvaluation({
                         <p className="text-[12.5px] text-gray-800 truncate">
                           {r.step_title || r.step_id}
                         </p>
+                        {(moments[r.step_id] ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                            {moments[r.step_id].map((m) => (
+                              <span key={m.key} className="inline-flex items-center gap-1 text-[10px] text-gray-500" title={m.indicators.map((x) => x.ok).join(' · ')}>
+                                <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
+                                {m.short}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                       <StarRating

@@ -856,6 +856,13 @@ const SEQUENCE_ROLE_LABEL: Record<SequenceRole, string> = {
   closing: 'Closing',
 };
 
+/** Las secuencias que se EVALÚAN y se entrenan (Marcelo 2026-09-10): las del
+ *  método y las de entrada. Foundation y Closing son material del curso. */
+export function isMethodSequence(id: string | null | undefined): boolean {
+  const r = id ? SEQUENCE_ROLE[id] : undefined;
+  return r !== 'foundation' && r !== 'closing';
+}
+
 /** El rótulo de la secuencia: "#8", "Foundation", "Closing" — o null. */
 export function sequencePrefix(
   id: string | null | undefined,

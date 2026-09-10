@@ -1171,6 +1171,7 @@ export async function saveServicePlanBlock(
 
   const ALLOWED = [
     'step_id',
+    'step_ids',
     'land_drill_id',
     'land_drill_custom',
     'water_drill_id',

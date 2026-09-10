@@ -61,6 +61,10 @@ import { WeekPlanBoard } from '@/components/coach-portal/WeekPlanBoard';
 import { useRouter } from 'next/navigation';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 import { coachFocusOptions } from '@/lib/sequence-pages/focus-options';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import type { SequencePageConfig } from '@/lib/sequence-pages/types';
+import { momentsByStep } from '@/lib/sequence-pages/moments';
+import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
   type AcademySpace, type SpaceBooking,
@@ -1247,6 +1251,81 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             defaultStart={(plan.class_start_time ?? data.camp.scheduled_time ?? '09:00').slice(0, 5)}
             title={(data.camp.camp_name ?? '').split(' · ')[0]}
           />
+
+          {/* ═══ PLAN SIMPLE (Marcelo 2026-09-10) ═══
+              El camp define las secuencias del nivel; el coach reparte:
+              hoy UNA secuencia para el grupo, y por alumno los momentos de la
+              línea que practica (de a uno). La línea completa siempre es la
+              meta; el detalle es el foco. Escribe en los mismos bloques de
+              siempre (step_ids + objective_text): no hay datos nuevos. */}
+          {(() => {
+            const beltOf = (b: string | null | undefined) => (b ?? '').replace(/_belt$/, '');
+            const counts = new Map<string, number>();
+            for (const st of students) { const b = beltOf(st.belt_level); if (b) counts.set(b, (counts.get(b) ?? 0) + 1); }
+            const majority = Array.from(counts.entries()).sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
+            const belt = beltOf(data.camp.target_belt) || majority || 'white';
+            const seqs = Object.values(SEQUENCE_PAGES).filter((c) => c.belt === `${belt}_belt`).sort((x, y) => (x.kind === 'entry' ? -1 : 0) - (y.kind === 'entry' ? -1 : 0) || x.number - y.number);
+            if (!seqs.length) return null;
+            const groupSeq = seqs.find((c) => students.length > 0 && students.every((st) => {
+              const b0 = st.blocks.find((x) => x.order_index === 0);
+              const ids = b0?.step_ids ?? (b0?.step_id ? [b0.step_id] : []);
+              return ids.length === c.stepIds.length && c.stepIds.every((id) => ids.includes(id));
+            })) ?? null;
+            const pickSeq = (c: SequencePageConfig) => {
+              for (const st of students) commitStudentBlock(st.student_id, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, objective_text: `Whole line · ${sequenceTag(c)}` } as any);
+            };
+            const sequenceTag = (c: SequencePageConfig) => `#${c.number} ${c.title}`;
+            return (
+              <Section icon={Waves} title="Simple plan · today we work on" subtitle="One sequence for the group, then the moments each student practices — one at a time. The whole line is always the goal.">
+                <div className="flex flex-wrap gap-1.5">
+                  {seqs.map((c) => {
+                    const on = groupSeq?.id === c.id;
+                    return (
+                      <button key={c.id} type="button" aria-pressed={on} onClick={() => pickSeq(c)}
+                        className="px-3 py-2 rounded-full text-[12px] font-semibold border"
+                        style={on ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#d1d5db', color: '#061C2B' }}>
+                        {c.kind === 'entry' ? c.title : sequenceTag(c)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {groupSeq && (
+                  <div className="space-y-2 mt-2">
+                    {students.map((st) => {
+                      const b0 = st.blocks.find((x) => x.order_index === 0);
+                      const cur = b0?.objective_text ?? '';
+                      const ms = momentsByStep(groupSeq.id, groupSeq.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id })));
+                      const chosen = new Set(cur.startsWith('Focus: ') ? cur.slice(7).split(' · ') : []);
+                      const yesterday = st.profile?.next_recommended_focus ?? null;
+                      const setFocus = (next: Set<string>) => commitStudentBlock(st.student_id, 0, { objective_text: next.size ? `Focus: ${Array.from(next).join(' · ')}` : `Whole line · ${sequenceTag(groupSeq)}` } as any);
+                      return (
+                        <div key={st.student_id} className="rounded-xl border border-gray-200 p-2.5">
+                          <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>{st.display_name} <span className="text-[10px] font-normal text-gray-500">· {chosen.size ? `focus: ${Array.from(chosen).join(' · ')}` : 'whole line'}</span></p>
+                          {yesterday && !chosen.size && (
+                            <button type="button" onClick={() => setFocus(new Set([yesterday]))} className="mt-1 text-[11px] px-2.5 py-1 rounded-full" style={{ background: '#FFF8E7', color: '#9A6A12' }}>Yesterday's mission: {yesterday} → use it</button>
+                          )}
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {groupSeq.stepIds.flatMap((id) => (ms[id] ?? []).map((m) => {
+                              const on = chosen.has(m.short);
+                              return (
+                                <button key={`${id}:${m.key}`} type="button" aria-pressed={on}
+                                  onClick={() => { const n = new Set(chosen); if (on) n.delete(m.short); else n.add(m.short); setFocus(n); }}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold border"
+                                  style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#e5e7eb', color: '#4b5563' }}>
+                                  <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
+                                  {m.short}
+                                </button>
+                              );
+                            }))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Section>
+            );
+          })()}
 
           {/* 4. PER-STUDENT PLANNING */}
           <Section
