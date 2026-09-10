@@ -408,6 +408,8 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       };
     })
     .filter((s) => s.items.length > 0)
+    // The 17 Elements (Foundation) vive en el curso, no en Let's Play (Marcelo 2026-09-10).
+    .filter((s) => s.id !== 'BB-SEQ-FOUND')
     .sort((a, b) => beltRank(a.belt) - beltRank(b.belt) || a.order - b.order);
 
   return {
