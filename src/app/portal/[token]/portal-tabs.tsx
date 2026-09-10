@@ -29,6 +29,7 @@ function surveyDateLabel(sessionDate: string | null | undefined, createdAt: stri
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MySequenceTab';
+import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
 import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
@@ -478,6 +479,21 @@ export function PortalTabs({
   // (horas, sesiones) — sin esto quedaba viejo hasta recargar.
   const portalRouter = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // Si el portal se volvió a montar por un refresh (acción del servidor con
+  // revalidatePath + loading.tsx), vuelve a la pestaña donde estaba — no a
+  // Home. Se lee en un efecto (no en el estado inicial) para no desincronizar
+  // la hidratación con el HTML del servidor.
+  const restoredRef = useRef<ReturnType<typeof loadPortalState>>(null);
+  useEffect(() => {
+    const r = loadPortalState(data.token);
+    restoredRef.current = r;
+    if (!initialTab && r?.tab && ALL_TABS.some((t) => t.key === r.tab)) setActiveTab(r.tab as Tab);
+    const bump = () => touchPortalState(data.token);
+    window.addEventListener('pointerdown', bump, { passive: true });
+    return () => window.removeEventListener('pointerdown', bump);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => { savePortalState(data.token, { tab: activeTab }); }, [activeTab, data.token]);
   // El paso que hay que abrir en Let's Play. Arranca con el del deep-link y
   // también lo setea el Home al tocar "tu próximo movimiento": mandar al
   // alumno por ?tab=sequence&step= no funcionaba con los dos parámetros
@@ -489,7 +505,7 @@ export function PortalTabs({
   useEffect(() => {
     // Nunca por encima de un deep-link (encuesta, lección, drill): el alumno
     // vino a algo puntual — la guía queda en el botón 📖.
-    if (initialTab || initialSurveyId || initialDrillId || initialStepId || initialTrain) return;
+    if (initialTab || initialSurveyId || initialDrillId || initialStepId || initialTrain || loadPortalState(data.token)) return;
     try { if (!localStorage.getItem('tss_athlete_guide_v1')) setGuideOpen(true); } catch { /* sin localStorage, sin auto-open */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

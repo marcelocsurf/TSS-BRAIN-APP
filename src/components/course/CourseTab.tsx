@@ -8,6 +8,7 @@ import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intro
 import { toEmbedUrl } from '@/lib/utils/video-embed';
 import { CourseSwitcher } from './CourseSwitcher';
 import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
+import { loadPortalState, savePortalState } from '@/lib/portal/portal-state';
 import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/belt-theme';
 import {
   groupByBlocks,
@@ -134,9 +135,15 @@ export function CourseTab({ data }: { data: CourseData }) {
   useEffect(() => {
     try {
       const id = new URLSearchParams(window.location.search).get('lesson');
-      if (id) setOpenLessonId(id);
+      if (id) { setOpenLessonId(id); return; }
+      // Remount por refresh (marcar leída, cambiar de curso…): la lección
+      // que estaba abierta vuelve a abrirse sola.
+      const restored = loadPortalState(data.portalToken);
+      if (restored?.lesson) setOpenLessonId(restored.lesson);
     } catch { /* sin deep link */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => { savePortalState(data.portalToken, { lesson: openLessonId }); }, [openLessonId, data.portalToken]);
 
   // Access gate
   if (!data.hasAccess) {
