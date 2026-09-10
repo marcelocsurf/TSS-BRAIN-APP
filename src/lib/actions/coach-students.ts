@@ -186,6 +186,11 @@ export type CoachStudentDetail = {
   last_session_status: string | null;
   last_homework: string | null;
   next_recommended_focus: string | null;
+  /** Lo que el alumno dice de sí mismo (2026-09-10): autoevaluaciones sin
+   *  ola, su lista de tareas, y si tiene un plan abierto en el agua. */
+  self_assessed: { step_id: string; title: string; rating: number; at: string | null }[];
+  own_tasks: { step_title: string; detail: string | null; sequence_id: string }[];
+  open_session: { name: string; planned_at: string | null } | null;
 };
 
 export async function getCoachStudentDetail(
@@ -216,7 +221,23 @@ export async function getCoachStudentDetail(
     .single();
 
   if (!data) return null;
-  return data as CoachStudentDetail;
+
+  // Lo que el alumno dice de sí mismo — para que el coach llegue sabiendo
+  // qué cree el alumno y qué se propuso (Marcelo 2026-09-10).
+  const [{ data: assessed }, { data: tasks }, { data: open }] = await Promise.all([
+    admin.from('student_step_ratings').select('step_id, current_rating, assessed_at').eq('student_id', studentId).eq('self_source', 'assessed').is('coach_rating', null).not('current_rating', 'is', null),
+    admin.from('student_tasks').select('step_id, detail, sequence_id').eq('student_id', studentId).eq('status', 'open').order('created_at'),
+    admin.from('self_training_sessions').select('drill_name, planned_at').eq('student_id', studentId).eq('status', 'planned').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const stepIds = Array.from(new Set([...(assessed ?? []).map((r: any) => r.step_id), ...(tasks ?? []).map((t: any) => t.step_id)]));
+  const { data: lessons } = stepIds.length ? await admin.from('lessons').select('id, title').in('id', stepIds) : { data: [] as any[] };
+  const title = new Map((lessons ?? []).map((l: any) => [l.id, l.title as string]));
+  return {
+    ...(data as CoachStudentDetail),
+    self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
+    own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),
+    open_session: open ? { name: open.drill_name ?? 'Session', planned_at: open.planned_at ?? null } : null,
+  };
 }
 
 // ── Confirmar / ajustar la cinta provisional — EN EL AGUA ────────

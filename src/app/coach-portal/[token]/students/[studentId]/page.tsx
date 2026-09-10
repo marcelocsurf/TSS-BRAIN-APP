@@ -219,6 +219,37 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <KV label="Homework left" value={s.last_homework} />
           <KV label="Next recommended focus" value={s.next_recommended_focus} />
         </Section>
+
+        {/* Lo que el alumno dice de sí mismo (2026-09-10): llegás sabiendo
+            qué cree que tiene y qué se propuso. La autoevaluación no es
+            ejecución — vos la confirmás en el agua. */}
+        {(s.self_assessed.length > 0 || s.own_tasks.length > 0 || s.open_session) && (
+          <Section title="What the student says" Icon={Clock} accent="amber">
+            {s.open_session && (
+              <KV label="Open plan in the water" value={s.open_session.name} />
+            )}
+            {s.self_assessed.length > 0 && (
+              <div className="py-1">
+                <p className="text-[11px] text-gray-500 mb-1">Self-assessed, not surfed yet — confirm it in the water</p>
+                <ul className="space-y-0.5">
+                  {s.self_assessed.map((r) => (
+                    <li key={r.step_id} className="text-[13px] text-gray-800">{r.title} <span className="font-semibold">· {r.rating}★</span> <span className="text-[11px] text-gray-400">self-assessed</span></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {s.own_tasks.length > 0 && (
+              <div className="py-1">
+                <p className="text-[11px] text-gray-500 mb-1">Their list — what they chose to work on</p>
+                <ul className="space-y-0.5">
+                  {s.own_tasks.map((t, i) => (
+                    <li key={i} className="text-[13px] text-gray-800">{t.step_title}{t.detail ? <span className="text-gray-600"> · {t.detail}</span> : null}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Section>
+        )}
       </div>
     </div>
   );
