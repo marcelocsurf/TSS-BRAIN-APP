@@ -115,7 +115,7 @@ export const CIRCLES: Circle[] = [
         what: 'One movement with two halves: you compress to absorb and load, you extend to release and project.',
         think: ['Compressing without extending stores energy you never use.', 'Flex · touch · push · extend: from posture, the knees bend, the chest goes toward them, and the extension sends you forward.', 'This is the engine of the projection: what you load in a turn is what you spend on the next line.'],
         feel: ['DRL-WB-019-A'],
-        lessonId: 'STP-019', lessonLabel: 'Impulse — Forward Momentum',
+        lessonId: 'STP-019', lessonLabel: 'Forward Momentum',
       },
       {
         key: 'hold', command: 'rail', hold: true, name: 'Hold',

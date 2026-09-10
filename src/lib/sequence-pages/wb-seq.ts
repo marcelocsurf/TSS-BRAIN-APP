@@ -154,14 +154,14 @@ export const WB_SEQ_3: SequencePageConfig = {
 2. **Pop-up.** One movement, about two seconds: both feet land together, never the back foot first. Hips down, head up. Hands release only when centred and stable.
 3. **Feet in the centre:** back foot in FP2, front foot centred on the stringer with the toes across the board.
 4. **Power Posture:** shoulders pointing where the nose points · weight on the front leg · front hand toward the nose, the other arm with the shoulder back and the elbow on the ribs · flex · back knee toward where you go · arms active · eyes forward · exhale.
-5. **Impulse:** flex · touch · push · extend — forward momentum when the ride slows.
+5. **Momentum:** flex · touch · push · extend — forward momentum when the ride slows.
 6. **Starfish dismount** when it is time to go down: decide before you lose balance, bend, open wide, fall into the foam.`,
     rulesMarkdown: `- The line is chosen in the cobra, before you stand.
 - Both feet land together. Hips down, head up.
 - FP2 is the back foot; the front foot is about centre and rails.
 - The posture is active, not tense: exhale in it.
 - Decide the dismount before you lose balance — never after.`,
-    keyWords: [{ label: 'Steps', words: ['Cobra · line', 'Pop-up', 'FP2', 'Posture', 'Impulse', 'Starfish'] }],
+    keyWords: [{ label: 'Steps', words: ['Cobra · line', 'Pop-up', 'FP2', 'Posture', 'Momentum', 'Starfish'] }],
   },
   feel: {
     visualize: 'On the mat: cobra, eyes down the line, the two-second pop-up with both feet together, the back foot landing in the centre, the posture locked, one impulse, and a soft starfish fall. Ten pop-ups in your head before ten on the mat.',
@@ -179,7 +179,7 @@ export const WB_SEQ_3: SequencePageConfig = {
     { key: 'popup', title: 'Pop-up', symptom: 'Two-stage pop-up, back foot first, or a knee on the board.', indicators: [{ ok: 'Solid cobra, then one movement of about two seconds; both feet land together, hips down, head up; hands release only when centred.', no: 'Back foot first, knee down, hands off too early.', fix: 'Cobra · hands · exhale · feet · connect.' }], deeper: { label: 'Pop-Up', lessonId: 'STP-016', drillId: 'DRL-WB-016-A', missionId: 'MIS-WB-016' } },
     { key: 'feet', title: 'Feet in the centre · FP2', symptom: 'The back foot lands wherever; the board does not respond.', indicators: [{ ok: 'Back foot in FP2, front foot centred on the stringer with the toes across; you feel the board respond to pressure.', no: 'Feet off centre; a rail sinks by itself.', fix: 'Centre · rails · FP2 · back foot · connect.' }], deeper: { label: 'Feet Position Center #2', lessonId: 'STP-017', drillId: 'DRL-WB-017-A', missionId: 'MIS-WB-017' } },
     { key: 'posture', command: 'posture', title: 'Power Posture', symptom: 'Standing tall, weight back, chest away from the nose, loose arms.', indicators: [{ ok: 'Shoulders pointing where the nose points, weight on the front leg, flexed, back knee forward, arms active, eyes forward — and you exhale in it.', no: 'Tall, weight back, spaghetti arms.', fix: 'Shoulders · weight · knee · compact · exhale.' }], deeper: { label: 'Power Stance / Posture', lessonId: 'STP-018', drillId: 'DRL-WB-018-A', missionId: 'MIS-WB-018' } },
-    { key: 'impulse', command: 'projection', title: 'Impulse', symptom: 'The ride dies as soon as the foam slows.', indicators: [{ ok: 'From posture: flex, touch, push, extend — and the board accelerates.', no: 'You stand still and the ride ends.', fix: 'Flex · touch · push · extend.' }], deeper: { label: 'Impulse — Forward Momentum', lessonId: 'STP-019', drillId: 'DRL-WB-019-A', missionId: 'MIS-WB-019' } },
+    { key: 'impulse', command: 'projection', title: 'Forward Momentum', symptom: 'The ride dies as soon as the foam slows.', indicators: [{ ok: 'From posture: flex, touch, push, extend — and the board accelerates.', no: 'You stand still and the ride ends.', fix: 'Flex · touch · push · extend.' }], deeper: { label: 'Forward Momentum', lessonId: 'STP-019', drillId: 'DRL-WB-019-A', missionId: 'MIS-WB-019' } },
     { key: 'starfish', title: 'Starfish dismount', symptom: 'You fall stiff, late, or onto the board.', indicators: [{ ok: 'You decide before losing balance, bend, open wide and fall calm into the foam without losing the board.', no: 'Stiff fall after the balance is gone.', fix: 'Decide · bend · open · fall · foam.' }], deeper: { label: 'Starfish Dismount', lessonId: 'STP-020', drillId: 'DRL-WB-020-A', missionId: 'MIS-WB-020' } },
   ],
   review: { howItFeels: 'It feels like standing on something that answers: the pop-up puts you where your eyes already were, the posture holds you, and one push makes the board go. Going down is your decision, not the wave’s.' },

@@ -70,7 +70,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
       'Regular pop up',
       'Pro pop up',
       'Posición de los pies en la tabla',
-      'Impulse — opcional',
+      'Momentum — opcional',
     ],
   },
   {
@@ -139,7 +139,7 @@ export const LEARNING_BLOCKS: LearningBlock[] = [
       'BS · Tapaloco',
       'BS · Codazo',
       'BS · Touch the board',
-      'BS · Impulse',
+      'BS · Momentum',
       'BS · Postura',
       'Novice · Desmontar',
       'Novice · Caída de estrella',
@@ -219,7 +219,7 @@ export const BLOCK_STEPS: { block: number | null; steps: string[] }[] = [
       'white_belt:16',  // Pop-Up
       'yellow_belt:30', // Pop Up + Foot Position 1 or 2
       'white_belt:17',  // Feet Position Center #2
-      'white_belt:19',  // Impulse - Forward Momentum
+      'white_belt:19',  // Forward Momentum
     ],
   },
   {
@@ -320,7 +320,7 @@ export const INFINITE_CIRCLE = [
   'Rotación',
   'Proyección',
   'Maniobra',
-  'Impulse · pump',
+  'Momentum · pump',
   'Vuelta a postura',
 ] as const;
 
