@@ -19,46 +19,48 @@ export const WB_SEQ_1: SequencePageConfig = {
   courseKey: 'white_belt',
   number: 1,
   title: 'Board Control',
-  stepIds: ['STP-001', 'STP-002', 'STP-003', 'STP-004', 'STP-005', 'STP-006', 'STP-007', 'STP-008', 'STP-009'],
+  // Marcelo (2026-09-09): la secuencia arranca en Grab Board. Venue Analysis y
+  // Warm Up son la preparación de CADA sesión (prep), no pasos de la secuencia.
+  stepIds: ['STP-003', 'STP-004', 'STP-005', 'STP-006', 'STP-007', 'STP-008', 'STP-009'],
+  prep: [
+    { lessonId: 'STP-001', label: 'Venue Analysis', note: 'Read the spot before you touch the board: safe zone, impact zone, hazards, entry and exit.' },
+    { lessonId: 'STP-002', label: 'Warm Up', note: 'Mobility · activation · simulation · breath. You enter warm and focused.' },
+  ],
   think: {
     whatIs: {
-      headline: 'Reading the spot, preparing your body, and controlling the board on land and through whitewater while standing — from the sand and back.',
-      line: 'Venue → warm up → grab the board → walk out → put it in the water → control it → pass the foam standing → turn around safely → walk back.',
+      headline: 'Controlling your board: grabbing it, walking out with it, placing it, passing the foam standing, turning safely, and walking back — from the sand and back.',
+      line: 'Grab the board → walk out → put it in the water → control it → pass the foam standing → turn around safely → walk back.',
       where: 'From the sand to waist-deep water and back. Everything here happens standing, with the board in your hands.',
-      whatFor: 'The board stops being a danger and becomes something you control. Every ride later depends on getting in and out with the board, safely, without thinking.',
+      whatFor: 'This is the first part of the bigger sequence: controlling your board — knowing it, grabbing it, passing foams, turning. Every ride later depends on getting in and out with the board, safely, without thinking.',
     },
     bodyFromLesson: 'STP-006',
     bodyMarkdown: `**The board control pattern**
 
-1. **Read the venue.** The day, the safe zone, the impact zone, hazards, entry and exit, and whether it matches your level.
-2. **Warm up:** mobility · activation · simulation · breath. You enter active and focused.
-3. **Grab the board:** knees bent, back straight, both hands on the rails, carried under control.
-4. **Walk out** on a lull, board beside you, on the ocean side of your body.
-5. **Put the board in the water** at waist depth, gently, nose pointing into the incoming waves — against the direction the wave's energy travels.
-6. **Control it:** press the tail, keep the centre, pivot with the foam; the board never gets between you and the wave.
-7. **Go through whitewater standing:** align, wait, press, lift, pass — and move forward after each one.
-8. **Turn around safely:** check, pivot, body between the board and the wave, ready to paddle.
-9. **Walk back to the sand:** look back, read the foam, adjust, land composed.`,
+1. **Grab the board:** knees bent, back straight, both hands on the rails, carried under control.
+2. **Walk out** on a lull, board beside you, on the ocean side of your body.
+3. **Put the board in the water** at waist depth, gently, nose pointing into the incoming waves — against the direction the wave's energy travels.
+4. **Control it:** press the tail, keep the centre, pivot with the foam; the board never gets between you and the wave.
+5. **Go through whitewater standing:** align, wait, press, lift, pass — and move forward after each one.
+6. **Turn around safely:** check, pivot, body between the board and the wave, ready to paddle.
+7. **Walk back to the sand:** look back, read the foam, adjust, land composed.`,
     rulesMarkdown: `- The board is never between you and the wave: your body stays on the ocean side.
 - Never carry the board over your head; the second carry is under the armpit.
 - The nose points into the incoming waves whenever the board is in the water.
 - Enter on a lull, not on a set. Look back on the way out and on the way in.`,
-    keyWords: [{ label: 'Steps', words: ['Venue', 'Warm up', 'Grab', 'Walk out', 'Place', 'Control', 'Pass', 'Turn', 'Walk back'] }],
+    keyWords: [{ label: 'Steps', words: ['Grab', 'Walk out', 'Place', 'Control', 'Pass', 'Turn', 'Walk back'] }],
   },
   feel: {
-    visualize: 'On the sand: name the safe zone and the impact zone out loud, run the warm-up, lift the board with your knees, walk to the water beside it, place it nose to the foam, feel the tail under your hand as a foam comes. One full lap in your head.',
-    land: ['DRL-WB-01', 'DRL-WB-02', 'DRL-WB-003-A', 'DRL-WB-04', 'DRL-WB-006-A', 'DRL-WB-07', 'DRL-WB-008-A'],
+    visualize: 'On the sand, venue read and body warm: lift the board with your knees, walk to the water beside it, place it nose to the foam, feel the tail under your hand as a foam comes, turn with the board on the beach side, walk back looking behind you. One full lap in your head.',
+    land: ['DRL-WB-003-A', 'DRL-WB-04', 'DRL-WB-005-A', 'DRL-WB-006-A', 'DRL-WB-07', 'DRL-WB-008-A', 'DRL-WB-009-A'],
     skate: NO_SKATE,
   },
   do: {
-    result: 'One full lap on your own: venue read, body warm, board carried and placed correctly, three foam lines passed standing with the board under control, a safe turn, and back to the sand composed.',
+    result: 'One full lap on your own: board carried and placed correctly, three foam lines passed standing with the board under control, a safe turn, and back to the sand composed.',
     missionId: 'MIS-WB-SEQ1-RUN',
-    timing: 'Read the venue before you touch the board. Enter on a lull. Face every foam with the nose into it; never turn your back on a set.',
+    timing: 'Venue read and warm-up done before you touch the board. Enter on a lull. Face every foam with the nose into it; never turn your back on a set.',
     competence: 'Three laps across three sessions where nothing has to be corrected: the board never gets away, never gets between you and a wave, and you come back composed. If you can execute it and you feel comfortable, it is yours.',
   },
   details: [
-    { key: 'venue', title: 'Venue analysis', symptom: 'You enter without knowing where the safe zone, the impact zone or the exit are.', indicators: [{ ok: 'You describe the conditions, point out the safe zone, the impact zone, the hazards and your entry and exit, and say whether it matches your level.', no: 'You walk in where everyone else is, without a plan.', fix: 'Map · zone · hazard · entry · decide.' }], deeper: { label: 'Venue Analysis', lessonId: 'STP-001', drillId: 'DRL-WB-01', missionId: 'MIS-WB-001' } },
-    { key: 'warm', title: 'Warm up', symptom: 'You go in cold and stiff, or scattered.', indicators: [{ ok: 'You run the four segments without prompting and enter warm and focused.', no: 'Stiff body, scattered head.', fix: 'Mobility · activation · simulation · breath.' }], deeper: { label: 'Warm Up', lessonId: 'STP-002', drillId: 'DRL-WB-02', missionId: 'MIS-WB-002' } },
     { key: 'grab', title: 'Grab the board', symptom: 'You lift with your back, swing the board, or slap it down.', indicators: [{ ok: 'Knees bent, back straight, both hands on the rails; carried under control; set down gently.', no: 'Back lift, swinging, slap.', fix: 'Centre · knees · rails · lift · carry.' }], deeper: { label: 'Grab Board', lessonId: 'STP-003', drillId: 'DRL-WB-003-A', missionId: 'MIS-WB-003' } },
     { key: 'walk', title: 'Walk out', symptom: 'You enter on a set, lose the board, or arrive flustered.', indicators: [{ ok: 'You wait for a lull, enter without losing the board and arrive at waist depth composed.', no: 'You walk into a set and the board goes.', fix: 'Patience · drag · side · face · place.' }], deeper: { label: 'Walk Out', lessonId: 'STP-004', drillId: 'DRL-WB-04', missionId: 'MIS-WB-004' } },
     { key: 'place', title: 'Put the board in the water', symptom: 'The board slaps in, or ends up sideways to the foam.', indicators: [{ ok: 'The board enters gently and stays with the nose pointing into the incoming waves — never parallel.', no: 'Sideways board; the foam takes it.', fix: 'Depth · pause · lower · release · nose into the waves.' }], deeper: { label: 'Put Board in the Water', lessonId: 'STP-005', drillId: 'DRL-WB-005-A', missionId: 'MIS-WB-005' } },
@@ -80,10 +82,10 @@ export const WB_SEQ_2: SequencePageConfig = {
   stepIds: ['STP-010', 'STP-011', 'STP-012', 'STP-013', 'STP-014'],
   think: {
     whatIs: {
-      headline: 'Your first rides, lying down: the board ready under you, aligned with the foam, caught by paddling, steered left and right, and left cleanly.',
+      headline: 'The power to catch a wave and choose the line you surf — lying down — and to dismount safely.',
       line: 'Sweet spot → align with the whitewater → paddle to catch it → cobra and steer left and right → prone dismount.',
       where: 'Waist-deep water, on the whitewater. Everything lying on the board.',
-      whatFor: 'The foam gives you your first speed. Here you learn what the board does when it is level, aligned, and pushed — and how to steer it and get off it with control.',
+      whatFor: 'The second part of the bigger sequence: finding the sweet spot, aligning with the foam, understanding the direction to catch it, the cobra, surfing prone, and dismounting safely lying down. What you gain is the power to catch a wave and choose your line — before you ever stand up.',
     },
     bodyFromLesson: 'STP-013',
     bodyMarkdown: `**The sweet spot pattern**
@@ -130,10 +132,10 @@ export const WB_SEQ_3: SequencePageConfig = {
   stepIds: ['STP-015', 'STP-016', 'STP-017', 'STP-018', 'STP-019', 'STP-020'],
   think: {
     whatIs: {
-      headline: 'From lying down to standing on the line you chose: the pop-up, the feet in the centre, the Power Posture, the impulse — and a safe way down.',
+      headline: 'Standing up: the pop-up on the line you chose, the feet in the centre, the Power Posture, the impulse — and the starfish to dismount standing, safely.',
       line: 'Cobra, pick the line → pop-up, both feet together → back foot in FP2 → Power Posture → impulse for speed → starfish dismount when needed.',
       where: 'On the whitewater, waist-deep. The moment the foam takes you.',
-      whatFor: 'Standing up is the door to everything. Here you build the base every maneuver starts from: the pop-up, the feet, and the posture.',
+      whatFor: 'The third part of the bigger sequence: getting to your feet. That is the objective — and it includes how you dismount standing, with the starfish. Here you build the base every maneuver starts from.',
     },
     feet: {
       text: 'At White Belt the back foot lands in FP2, the centre. The front foot lands centred on the stringer, toes across the board.',
@@ -193,10 +195,10 @@ export const WB_SEQ_4: SequencePageConfig = {
   stepIds: ['STP-021', 'STP-022'],
   think: {
     whatIs: {
-      headline: 'Your first turns, standing: backside and frontside, built by the chain — eyes, oblique, hip, rail — not by drift.',
-      line: 'From posture: look → oblique → hip → heel or toes → the rail engages and the board changes direction. Backside on one rail, frontside on the other.',
+      headline: 'Now standing, you start steering the board right and left — backside and frontside, built by the chain, not by drift — and you dismount.',
+      line: 'From posture: look → oblique → hip → heel or toes → the rail engages and the board changes direction. Backside on one rail, frontside on the other. Then the dismount you already know: starfish standing, or prone.',
       where: 'On the whitewater, standing, once the posture holds.',
-      whatFor: 'Rotation is how you engage and change a rail. These two turns are the seed of every line and every maneuver later.',
+      whatFor: 'The fourth part of the bigger sequence: with the first three built — catching the wave, standing up — you start handling the board right and left standing, and you dismount. These two turns are the seed of every line and every maneuver later.',
     },
     feet: {
       text: 'Back foot in FP2, front foot centred. The turn comes from the chain and the rail, not from moving the feet.',
@@ -253,10 +255,10 @@ export const WB_SEQ_5: SequencePageConfig = {
   stepIds: ['STP-023', 'STP-024', 'STP-025'],
   think: {
     whatIs: {
-      headline: 'Independence: you paddle out on your own, pass the waves on the way, and redirect the board lying down — with your own session goal.',
-      line: 'Set your goal → paddle out with technique and gears → turtle roll through the foam → turn left and right lying on the board → ready to paddle.',
+      headline: 'Independence: everything before was done walking in, waist-deep, in safe conditions. Now you enter paddling, pass the foams with turtle rolls, direct the board, position yourself — and catch the wave to do everything you already know.',
+      line: 'Set your goal → paddle out with technique and gears → turtle roll through the foam → turn left and right lying on the board → position yourself → catch the foam and run the whole sequence you already own.',
       where: 'From the shore to the lineup, lying on the board.',
-      whatFor: 'This is where you stop needing someone beside you. Humility is the belt value: you know what you can do, and you do it on your own.',
+      whatFor: 'The fifth part of the bigger sequence: a small independence — entering, playing with the foams, passing them, moving, catching them — still in a controlled place. Humility is the belt value: you know what you can do, and you do it on your own. Sequence 6, at Yellow, takes this to the lineup with other surfers and unbroken waves.',
     },
     bodyFromLesson: 'STP-023',
     bodyMarkdown: `**The independence pattern**
@@ -264,7 +266,8 @@ export const WB_SEQ_5: SequencePageConfig = {
 1. **Set your goal** for the session on the sand.
 2. **Paddle out:** sweet spot, enter, elbow over the ear, body straight, arrow paddle; shift gears 1 → 2 → 3 on demand. Arrive with energy.
 3. **Turtle roll:** align the nose against the foam, roll under holding the rails, elbows on top of the board, hold, recover to paddling.
-4. **Turn left and right lying on the board:** one stroke, back, pivot — intentional, controlled, ready to paddle.`,
+4. **Turn left and right lying on the board:** one stroke, back, pivot — intentional, controlled, ready to paddle.
+5. **Position yourself and catch the foam** — and run everything you already own: cobra, line, pop-up, posture, turn, dismount.`,
     rulesMarkdown: `- Technique over effort: elbow over the ear, body straight, arrow paddle.
 - Turtle roll about one metre before the foam; never let go of the board.
 - Every prone turn is intentional and ends ready to paddle.

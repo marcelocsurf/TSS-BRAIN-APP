@@ -695,6 +695,13 @@ BLUE_COURSE_PRELUDE[1].steps = COURSE_SEQUENCE_ORDER['YB-SEQ-6.0'];
 
 /** La etapa que juega cada paso dentro de una secuencia del curso, para
  *  rotularla en la lista: "Foot position", "Bottom turn", "Closure"… */
+/** Orden de ENTRENAMIENTO (Let's Play) cuando difiere del curso. Marcelo
+ *  (2026-09-09): la secuencia 1 de White arranca en Grab Board; Venue Analysis
+ *  y Warm Up son preparación de cada sesión y siguen en el curso. */
+export const TRAINING_SEQUENCE_ORDER: Record<string, string[]> = {
+  'WB-SEQ-1': ['white_belt:3', 'white_belt:4', 'white_belt:5', 'white_belt:6', 'white_belt:7', 'white_belt:8', 'white_belt:9'],
+};
+
 /** Secuencia del curso (wb_sequence_id) → definición de etapas (BELT_SEQUENCES.id). */
 export const LETS_PLAY_SEQUENCE_ID: Record<string, string> = {
   'BB-SEQ-08': 'BB-SEQ-PUMP-FS',

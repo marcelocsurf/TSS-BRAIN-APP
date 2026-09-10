@@ -61,6 +61,8 @@ export interface SequencePageConfig {
   number: number;
   title: string;
   stepIds: string[];
+  /** Preparación de cada sesión, fuera de la secuencia (p. ej. Venue Analysis y Warm Up en White #1). */
+  prep?: { lessonId: string; label: string; note?: string }[];
   think: {
     whatIs: { headline: string; line: string; where: string; whatFor: string };
     /** Los pies como INDICADOR vivo por secuencia (Marcelo 2026-09-09): el mapa

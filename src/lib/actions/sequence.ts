@@ -6,6 +6,7 @@ import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import {
   COURSE_SEQUENCE_ORDER,
+  TRAINING_SEQUENCE_ORDER,
   BLUE_COURSE_PRELUDE,
   stepKey,
   SEQUENCE_PASS_STARS,
@@ -307,7 +308,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
 
   const sequences = Array.from(seqMeta.entries())
     .map(([seqId, meta]) => {
-      const order = COURSE_SEQUENCE_ORDER[seqId] ?? preludeOrder[seqId];
+      const order = TRAINING_SEQUENCE_ORDER[seqId] ?? COURSE_SEQUENCE_ORDER[seqId] ?? preludeOrder[seqId];
       const stepIdsInSeq = order
         ? order.map((k) => lessonByKey2.get(k)?.id).filter(Boolean)
         : (lessons ?? [])

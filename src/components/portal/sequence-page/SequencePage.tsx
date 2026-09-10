@@ -97,6 +97,16 @@ export function SequencePage({
         {/* ── THINK ── */}
         {tab === 'think' && (
           <div className="space-y-3 mt-4">
+            {cfg.prep && cfg.prep.length > 0 && (
+              <Card eyebrow="Before you start · every session" color={GOLD}>
+                {cfg.prep.map((p, i) => (
+                  <div key={p.lessonId} className="py-2" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
+                    <a href={`${portal}?tab=course&lesson=${p.lessonId}`} className="text-[14px] font-semibold" style={{ color: CYAN }}>{p.label} →</a>
+                    {p.note && <p className="text-[13px] leading-snug mt-0.5" style={{ color: TEXT }}>{p.note}</p>}
+                  </div>
+                ))}
+              </Card>
+            )}
             <Card eyebrow="01 · What it is">
               <h2 className="text-[16px] font-bold">{cfg.think.whatIs.headline}</h2>
               {video && cfg.think.board && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} />}
