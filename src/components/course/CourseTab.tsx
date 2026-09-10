@@ -14,7 +14,6 @@ import {
   groupByBlocks,
   isMappedToBlocks,
   stepKey,
-  PRIOR_PATH_BLOCKS,
   THREE_CIRCLES_LESSON_ID,
   COURSE_SEQUENCE_ORDER,
   COURSE_SEQUENCE_STAGE,
@@ -84,7 +83,12 @@ const PC_SECTION_ICON: Record<string, LucideIcon> = {
   'M0-OCEAN': Waves,       // Ocean Knowledge
   'M0-EQUIP': Anchor,      // Equipment & Stance
   'M0-VALUES': Brain,      // Values & Mindset
-  'M0-SESSION': Dumbbell,  // Session Basics
+  'M0-SESSION': Dumbbell,  // Session System
+  'M0-SAFEOCEAN': LifeBuoy, // Safety & Ocean (grupo de presentación)
+  'M0-EQUIPMIND': Anchor,   // Equipment & Mindset (grupo de presentación)
+  'YB-FUND': Brain,         // Fundamentals · 3 Circles (Yellow)
+  'YB-TOOLS': Dumbbell,     // Tools (Yellow)
+  'BB-TOOLS': Dumbbell,     // Tools (Blue)
   // Yellow Belt onboarding sub-groups
   'YB-VALUE': Award,       // Belt Value
   'YB-FOUND': Brain,       // Foundations · Flow Language
@@ -205,7 +209,20 @@ export function CourseTab({ data }: { data: CourseData }) {
   );
 
   // Group Pre-Course by pc_section_id (canon v1 uses M0 for all 8)
-  const pcSections = groupByPcSection(preCourseLessons);
+  const pcSectionsRaw = groupByPcSection(preCourseLessons);
+  // Pre-Course en CUATRO grupos (Marcelo 2026-09-10): ocho seguidos se leían
+  // como lista de tareas. Es solo presentación; la base no cambia.
+  const PRE_GROUPS: { id: string; name: string; members: string[] }[] = [
+    { id: 'M0-START', name: 'Start Here', members: ['M0-START'] },
+    { id: 'M0-SAFEOCEAN', name: 'Safety & Ocean', members: ['M0-SAFETY', 'M0-OSE', 'M0-ETIQ', 'M0-OCEAN'] },
+    { id: 'M0-EQUIPMIND', name: 'Equipment & Mindset', members: ['M0-EQUIP', 'M0-VALUES'] },
+    { id: 'M0-SESSION', name: 'Session System · venue read + warm-up, every level', members: ['M0-SESSION'] },
+  ];
+  const preCovered = new Set(PRE_GROUPS.flatMap((g) => g.members));
+  const pcSections = [
+    ...PRE_GROUPS.map((g, i) => ({ id: g.id, name: g.name, order: i, lessons: pcSectionsRaw.filter((s) => g.members.includes(s.id)).flatMap((s) => s.lessons) })).filter((g) => g.lessons.length > 0),
+    ...pcSectionsRaw.filter((s) => !preCovered.has(s.id)),
+  ];
 
   // Onboarding: when every lesson carries a pc_section_id (e.g. Yellow Belt's
   // Belt Value + Foundations), render as thematic sub-groups. Otherwise fall
@@ -257,6 +274,31 @@ export function CourseTab({ data }: { data: CourseData }) {
         if (!borrowed) return l;
         return { ...l, locked: false, lockReason: null, borrowedFrom: BELT_OF_SECTION[l.course_section] ?? null };
       });
+
+  // TOOLS (Marcelo 2026-09-10): técnicas únicas que sirven en toda cinta —
+  // Forward Momentum (la misma lección de White) y Duck Dive. Viven una vez y
+  // aparecen en Yellow y Blue apuntando a la misma lección.
+  const toolsLessons = resolveSteps(['id:STP-019', 'id:YB-FND-03']);
+  type StartGroup = { id: string; name: string; order: number; lessons: LessonRow[] };
+  let startGroups: StartGroup[] | null = startHereGroups;
+  if (activeCourse.key === 'yellow_belt' && startHereGroups) {
+    const value = startHereGroups.find((g) => g.id === 'YB-VALUE');
+    const circles = (startHereGroups.find((g) => g.id === 'YB-FOUND')?.lessons ?? []).filter((l) => l.id === THREE_CIRCLES_LESSON_ID);
+    startGroups = [
+      value ? { ...value, name: 'Belt Value' } : null,
+      circles.length ? { id: 'YB-FUND', name: 'Fundamentals · The 3 Circles of Power', order: 2, lessons: circles } : null,
+      toolsLessons.length ? { id: 'YB-TOOLS', name: 'Tools · techniques you use at every belt', order: 3, lessons: toolsLessons } : null,
+    ].filter((g): g is StartGroup => !!g);
+  }
+  if (activeCourse.key === 'blue_belt') {
+    const value = startHereGroups?.find((g) => g.id === 'BB-VALUE');
+    // Los valores se acumulan: el de Yellow viene con vos.
+    const prior = resolveSteps(['id:YB-ONB-01']);
+    startGroups = [
+      value ? { ...value, name: 'Belt Values · what you bring with you', lessons: [...prior, ...value.lessons] } : null,
+      toolsLessons.length ? { id: 'BB-TOOLS', name: 'Tools · techniques you use at every belt', order: 2, lessons: toolsLessons } : null,
+    ].filter((g): g is StartGroup => !!g);
+  }
 
   // Prólogo de Blue (Marcelo 2026-09-09): el camino del agua antes de los
   // tres círculos — Navigate the Ocean · Catch Waves · Pick Your Line + Pop-Up.
@@ -398,7 +440,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       )}
 
       {/* SHARED ONBOARDING (e.g. WB onboarding shown to YB students) */}
-      {sharedOnboardingLessons.length > 0 && (
+      {sharedOnboardingLessons.length > 0 && activeCourse.key !== 'blue_belt' && (
         <div className="space-y-3 pt-2">
           <GroupHeader
             theme={whiteTheme}
@@ -432,8 +474,8 @@ export function CourseTab({ data }: { data: CourseData }) {
             videoUrl={onboardingSection ? intros[onboardingSection]?.video_url : undefined}
           />
 
-          {startHereGroups ? (
-            startHereGroups.map((section) => (
+          {startGroups ? (
+            startGroups.map((section) => (
               <SectionBlock
                 key={section.id}
                 title={section.name}
@@ -443,6 +485,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                 lessons={section.lessons}
                 onOpenLesson={(id) => setOpenLessonId(id)}
                 theme={beltTheme}
+                onePageHref={section.id === 'YB-FUND' ? `/portal/${data.portalToken}/circles` : null}
               />
             ))
           ) : (
@@ -458,61 +501,6 @@ export function CourseTab({ data }: { data: CourseData }) {
               theme={beltTheme}
             />
           )}
-        </div>
-      )}
-
-      {/* PRÓLOGO DE BLUE — el camino del agua, con pasos de White y Yellow. */}
-      {bluePrelude.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <GroupHeader
-            theme={beltTheme}
-            eyebrow={`${bluePrelude.length} groups · from the water up`}
-            title="Getting to the wave"
-            subtitle="Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them."
-            videoUrl={null}
-          />
-          {bluePrelude.map((g) => (
-            <SectionBlock
-              key={g.id}
-              title={g.name}
-              subtitle={g.promise}
-              Icon={WB_SEQUENCE_ICON[g.id] || BookOpen}
-              badge={null}
-              lessons={g.lessons}
-              onOpenLesson={(id) => setOpenLessonId(id)}
-              theme={beltTheme}
-              onePageHref={sequencePageFor(g.id) ? `/portal/${data.portalToken}/seq/${g.id}` : null}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* El recorrido que ya trae de White y Yellow. Solo el mapa: título y
-          cuántos pasos. No hay lecciones adentro, así que no cuenta para el
-          progreso ni para el examen final. */}
-      {beltUsesBlocks && (
-        <div className="rounded-xl border border-white/10 px-4 py-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-white/40">
-            The road so far · from White and Yellow
-          </p>
-          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
-            {PRIOR_PATH_BLOCKS.map((b) => (
-              <span key={b.n} className="flex items-baseline gap-2 text-[12.5px] text-white/70">
-                <span
-                  className="font-mono text-[10px] shrink-0"
-                  style={{ color: beltTheme.bright }}
-                >
-                  {b.n}
-                </span>
-                {b.en}
-                <span className="font-mono text-[10px] text-white/35">{b.count}</span>
-              </span>
-            ))}
-          </div>
-          <p className="mt-2 text-[11px] text-white/40">
-            The Three Circles switch on after the pop-up. Everything before that is
-            diagnosed with the Block System.
-          </p>
         </div>
       )}
 
@@ -559,6 +547,32 @@ export function CourseTab({ data }: { data: CourseData }) {
             theme={beltTheme}
             onePageHref={`/portal/${data.portalToken}/loop`}
           />
+        </div>
+      )}
+
+      {/* PRÓLOGO DE BLUE — el camino del agua, con pasos de White y Yellow. */}
+      {bluePrelude.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <GroupHeader
+            theme={beltTheme}
+            eyebrow={`${bluePrelude.length} groups · from the water up`}
+            title="Getting to the wave"
+            subtitle="Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them."
+            videoUrl={null}
+          />
+          {bluePrelude.map((g) => (
+            <SectionBlock
+              key={g.id}
+              title={g.name}
+              subtitle={g.promise}
+              Icon={WB_SEQUENCE_ICON[g.id] || BookOpen}
+              badge={null}
+              lessons={g.lessons}
+              onOpenLesson={(id) => setOpenLessonId(id)}
+              theme={beltTheme}
+              onePageHref={sequencePageFor(g.id) ? `/portal/${data.portalToken}/seq/${g.id}` : null}
+            />
+          ))}
         </div>
       )}
 

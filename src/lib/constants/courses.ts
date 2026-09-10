@@ -39,7 +39,9 @@ export const COURSES = [
     belt: 'blue' as const,
     accessColumn: 'course_access_blue' as const,
     lessonSections: ['bb_onboarding', 'blue_belt'] as const,
-    sharedLessonSections: ['wb_onboarding', 'yb_onboarding'] as readonly string[],
+    // Blue (2026-09-10): History of Surf (wb_onboarding) ya no se exige; lo de
+    // Yellow entra como Belt Values y Tools.
+    sharedLessonSections: ['yb_onboarding'] as readonly string[],
   },
   {
     key: 'purple_belt',
