@@ -423,7 +423,9 @@ function nextMoveRows(
           ? `${seq} is not yours yet · ${nm.stepTitle} is the first step of the chain you have not rated`
           : `${seq} is not yours yet · ${nm.stepTitle} is the first step of the chain below 4★${nm.stars !== null ? ` (${nm.stars}★)` : ''}${nm.official ? ' · rated by your coach' : ''}`,
       detail: word ? `Your word for the wave: ${word}` : null,
-      side: nm.sideAdvice?.text ?? null,
+      // El consejo de lados NO va acá (Marcelo 2026-09-10: "no sé a qué se
+      // refiere"): mezclaba otras secuencias en la fila del camino. Vive en
+      // Let's Play → Where you are / Both sides.
       action: 'Run it with this focus →',
       onClick: () => {
         if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId, intention: word });
