@@ -22,6 +22,9 @@ import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } fro
 import { SELF_TRAINING_WARMUPS } from '@/lib/constants/brand';
 import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
+import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
+import { MomentChips } from './MySequenceTab';
+import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 
@@ -70,17 +73,18 @@ function Shell({ step, seqLabel, title, onCancel, children }: { step: 1 | 2 | 3;
   );
 }
 
-function Chain({ steps, highlight = null }: { steps: SequenceTrainingStep[]; highlight?: string | null }) {
+function Chain({ steps, highlight = null, moments = {} }: { steps: SequenceTrainingStep[]; highlight?: string | null; moments?: Record<string, Moment[]> }) {
   return (
     <ol className="space-y-1.5">
       {steps.map((s, i) => {
         const hot = highlight === s.step_id;
+        const ms = moments[s.step_id];
         return (
           <li key={s.step_id} className="flex items-start gap-2.5 rounded-xl px-3 py-2" style={hot ? { background: '#FFFBF0', boxShadow: 'inset 3px 0 0 #E0A62B' } : { background: '#f7f9fa' }}>
             <span className="text-[10px] font-bold w-4 shrink-0 mt-0.5" style={{ color: hot ? '#9A6A12' : '#9ca3af' }}>{i + 1}</span>
             <div className="min-w-0">
               <p className="text-[13px] font-semibold leading-tight" style={{ color: INK }}>{s.title}{hot ? ' · today’s focus' : ''}</p>
-              {s.key_words.length > 0 && <p className="text-[10px] text-gray-500 mt-0.5">{s.key_words.join(' · ')}</p>}
+              {ms?.length ? <MomentChips list={ms} /> : s.key_words.length > 0 && <p className="text-[10px] text-gray-500 mt-0.5">{s.key_words.join(' · ')}</p>}
             </div>
           </li>
         );
@@ -208,6 +212,9 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [held, setHeld] = useState<Record<string, boolean>>({});
   const [stepStars, setStepStars] = useState<Record<string, number>>({});
   const [stepCrit, setStepCrit] = useState<Record<string, Record<number, CriterionResult>>>({});
+  // El MOMENTO de la línea donde se rompió (Marcelo 2026-09-10): se toca el
+  // momento, el sistema sabe a qué lección pertenece. Uno por lección.
+  const [stepMoment, setStepMoment] = useState<Record<string, string>>({});
   // Evaluate · focus
   const [execStars, setExecStars] = useState<number | null>(null);
   // "Go deeper": niveles cerrados por defecto.
@@ -280,6 +287,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
   const seq = data.sequence;
   const steps = data.steps;
+  const moments = momentsByStep(seq.id, steps.map((s) => ({ id: s.step_id, title: s.title })));
   const focus: SequenceTrainingStep | null = !isRun ? steps.find((s) => s.step_id === focusId) ?? null : null;
   // El mismo rótulo que ve en todos lados (y el que se guarda en drill_name):
   // "#3 · Pop-Up", o "Foundation · …" para las que no son escalones numerados.
@@ -334,10 +342,16 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         {isRun ? (
           <div>
             <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>The chain · {steps.length} steps</p>
-            <Chain steps={steps} />
+            <Chain steps={steps} moments={moments} />
           </div>
         ) : focus ? (
           <div className="space-y-3">
+            {moments[focus.step_id]?.length ? (
+              <div className="rounded-2xl border border-gray-200 p-3.5">
+                <p className="text-[9px] text-gray-400" style={F_M}>The moments of the line in this step</p>
+                <MomentChips list={moments[focus.step_id]} />
+              </div>
+            ) : null}
             {focus.mission ? (
               <div className="rounded-2xl border border-gray-200 p-3.5 space-y-2">
                 <p className="text-[9px] text-gray-400" style={F_M}><Waves size={11} className="inline mr-1 -mt-0.5" />Your mission for every run</p>
@@ -538,6 +552,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           held_back_step_ids: isRun ? heldIds : undefined,
           step_ratings: isRun ? stepRatings : undefined,
           step_criteria: isRun ? stepCriteria : undefined,
+          step_moments: isRun ? Object.fromEntries(Object.entries(stepMoment).filter(([id]) => heldSet.has(id))) : undefined,
           focus_rating: focusRating ?? undefined,
           execution_rating: !isRun ? execStars ?? undefined : undefined,
           criteria: !isRun ? Object.entries(focusCrit).map(([i, r]) => ({ criterion_index: Number(i), result: r })) : undefined,
@@ -567,7 +582,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <FocusPicker value={focusRating} onChange={setFocusRating} />
             <FlowPicker flow={flow} onChange={setFlow} />
 
-            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Check each step of this sequence" hint="Tap the step that held it back — the earliest one in the chain becomes your next focus. Open a step to check its details." />
+            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Check each step of this sequence" hint="Tap the moment of the line where it broke, or the step itself — the earliest one in the chain becomes your next focus. Open a step to check its details." />
             {deeper && (
             <div>
               <div className="space-y-1.5">
@@ -585,6 +600,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                             // viejo viaja escondido en el guardado.
                             setStepStars((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
                             setStepCrit((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
+                            setStepMoment((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
                             setDeepStep((p) => { const n = { ...p }; delete n[s.step_id]; return n; });
                           }
                         }}
@@ -596,6 +612,29 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                         <span className="text-[13px] font-semibold flex-1 min-w-0 truncate" style={{ color: INK }}>{s.title}</span>
                         {on && <span className="text-[9px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>held it back</span>}
                       </button>
+                      {/* ¿En qué MOMENTO de la línea se rompió? Tocar uno marca la
+                          lección como la que frenó el run y deja ese momento como
+                          objetivo de la próxima sesión. */}
+                      {moments[s.step_id]?.length ? (
+                        <div className="flex flex-wrap gap-1.5 px-3 pb-2.5 -mt-0.5">
+                          {moments[s.step_id].map((m) => {
+                            const sel = on && stepMoment[s.step_id] === m.short;
+                            return (
+                              <button key={m.key} type="button" aria-pressed={sel}
+                                onClick={() => {
+                                  if (sel) { setStepMoment((p) => { const n = { ...p }; delete n[s.step_id]; return n; }); return; }
+                                  setHeld((h) => ({ ...h, [s.step_id]: true }));
+                                  setStepMoment((p) => ({ ...p, [s.step_id]: m.short }));
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold border"
+                                style={sel ? { background: '#E0A62B', borderColor: '#E0A62B', color: INK } : { background: '#fff', borderColor: '#e5e7eb', color: '#4b5563' }}>
+                                <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
+                                {m.short}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                       {on && (
                         <div className="px-3 pb-3 space-y-2.5">
                           <div className="flex items-center justify-between">

@@ -11,6 +11,25 @@ import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
+import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
+import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
+
+/** Los momentos de la línea que cubre una lección, con su punto de color.
+ *  Es el lenguaje de la ejecución (posture · palm up · extend · elbow); la
+ *  estrella sigue en la lección. */
+export function MomentChips({ list, light = false }: { list: Moment[] | undefined; light?: boolean }) {
+  if (!list || list.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-1">
+      {list.map((m) => (
+        <span key={m.key} className="inline-flex items-center gap-1 text-[10.5px] leading-tight" style={{ color: light ? 'rgba(247,249,250,.8)' : '#4b5563' }} title={m.title}>
+          <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
+          {m.short}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /** El chip de lado: FS · BS · FS·BS. Va al lado del nombre; el número no cambia. */
 function SideChip({ side, small = false, dark = false }: { side: SequenceSide | null; small?: boolean; dark?: boolean }) {
@@ -466,6 +485,8 @@ function BlockSection({
   // las dos que no son escalones numerados del método.
   const beltWord = blockBelt.charAt(0).toUpperCase() + blockBelt.slice(1);
   const prefix = sequencePrefix(blockId, blockNumber);
+  // Los momentos de la línea debajo de cada lección (de la página de la secuencia).
+  const moments = asSequence && blockId ? momentsByStep(blockId, items.map((i) => ({ id: i.step_id, title: i.step_title }))) : {};
   const seqEyebrow = prefix
     ? `${beltWord} Belt · ${prefix.startsWith('#') ? `Sequence ${prefix}` : prefix}`
     : `${beltWord} Belt`;
@@ -603,6 +624,7 @@ function BlockSection({
           <StepRow
             key={item.step_id}
             item={item}
+            moments={moments[item.step_id]}
             highlight={asSequence && item.step_id === weakestStepId && state !== 'owned'}
             picking={picking}
             onOpen={() => {
@@ -622,11 +644,14 @@ function BlockSection({
 
 function StepRow({
   item,
+  moments,
   onOpen,
   highlight = false,
   picking = false,
 }: {
   item: SequenceItem;
+  /** Los momentos de la línea que cubre esta lección. */
+  moments?: Moment[];
   onOpen: () => void;
   /** El paso que frena la secuencia: se marca para que no haya que buscarlo. */
   highlight?: boolean;
@@ -652,6 +677,7 @@ function StepRow({
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
           </div>
+          <MomentChips list={moments} />
           {hasSubtitle && (
             <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
               {hasDrill && (

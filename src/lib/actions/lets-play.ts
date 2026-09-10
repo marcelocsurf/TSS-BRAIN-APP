@@ -64,7 +64,9 @@ export type SequenceTraining = {
   stepHints: Record<string, { text: string; result: 'partial' | 'not_met'; at: string }>;
 };
 
-type StepMark = { step_id: string; held_back: boolean; rating?: number | null; criteria_evaluation?: CriterionEvaluationItem[] | null };
+/** `moment` (2026-09-10): el momento de la línea donde se rompió ("Back hand,
+ *  palm up…"), en palabras de la página de la secuencia. */
+type StepMark = { step_id: string; held_back: boolean; rating?: number | null; criteria_evaluation?: CriterionEvaluationItem[] | null; moment?: string | null };
 
 function isRating(n: unknown): n is number {
   return Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 5;
@@ -152,16 +154,22 @@ export async function getSequenceTraining(
       .eq('linked_sequence_id', sequenceId)
       .order('created_at', { ascending: false })
       .limit(15);
-    const consider = (stepId: string | null, crit: unknown, at: string) => {
+    const consider = (stepId: string | null, crit: unknown, at: string, moment: string | null = null) => {
       if (!stepId || decided.has(stepId) || !stepIds.has(stepId)) return;
-      if (!Array.isArray(crit) || crit.length === 0) return;
+      const hasCrit = Array.isArray(crit) && crit.length > 0;
+      if (!hasCrit && !moment) return;
       decided.add(stepId);
-      const weak = pickWeakestCriterion(crit as CriterionEvaluationItem[]);
-      if (weak && weak.result !== 'met') stepHints[stepId] = { text: weak.criterion_text, result: weak.result, at };
+      if (hasCrit) {
+        const weak = pickWeakestCriterion(crit as CriterionEvaluationItem[]);
+        if (weak && weak.result !== 'met') { stepHints[stepId] = { text: weak.criterion_text, result: weak.result, at }; return; }
+        if (weak) return; // todo logrado: no hay pista
+      }
+      // Sin criterios pero con el momento donde se rompió: ese es el objetivo.
+      if (moment) stepHints[stepId] = { text: moment, result: 'not_met', at };
     };
     for (const r of (recent ?? []) as any[]) {
       if (r.training_mode === 'sequence_run') {
-        for (const m of (r.step_marks ?? []) as StepMark[]) consider(m?.step_id ?? null, m?.criteria_evaluation, r.created_at);
+        for (const m of (r.step_marks ?? []) as StepMark[]) consider(m?.step_id ?? null, m?.criteria_evaluation, r.created_at, typeof m?.moment === 'string' ? m.moment : null);
       } else {
         consider(r.linked_step_id ?? null, r.criteria_evaluation, r.created_at);
       }
@@ -213,6 +221,8 @@ export type SaveSequenceSessionInput = {
   step_ratings?: Record<string, number>;
   /** Run: detalle opcional por paso marcado (criterios de la MISIÓN de ese paso). */
   step_criteria?: Record<string, { criterion_index: number; result: CriterionResultValue }[]>;
+  /** Run: el momento de la línea donde se rompió, por paso marcado. */
+  step_moments?: Record<string, string>;
   /** Foco: estrella del paso (obligatoria) + detalle opcional. El veredicto
    *  ya no se pregunta: se deriva de la estrella. */
   mission_completion?: 'yes' | 'partial' | 'no';
@@ -292,7 +302,8 @@ export async function saveSequenceSession(
         if (!held.has(id)) continue;
         const r = input.step_ratings?.[id];
         const crit = cleanCriteria(byId.get(id)?.mission ?? null, input.step_criteria?.[id]);
-        marks.push({ step_id: id, held_back: true, rating: isRating(r) ? r : null, criteria_evaluation: crit });
+        const mo = input.step_moments?.[id];
+        marks.push({ step_id: id, held_back: true, rating: isRating(r) ? r : null, criteria_evaluation: crit, moment: typeof mo === 'string' && mo.trim() ? mo.trim().slice(0, 80) : null });
       }
       stepMarks = marks.length ? marks : null;
     }
@@ -327,7 +338,8 @@ export async function saveSequenceSession(
         nextFocus = {
           stepId: heldFirst.step_id,
           stepTitle: byId.get(heldFirst.step_id)?.step_title ?? heldFirst.step_id,
-          criterionText: weak && weak.result !== 'met' ? weak.criterion_text : null,
+          // Sin detalle por criterio, el momento de la línea es el objetivo.
+          criterionText: weak && weak.result !== 'met' ? weak.criterion_text : (heldFirst.moment ?? null),
         };
       }
     } else if (focus) {

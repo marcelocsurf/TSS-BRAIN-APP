@@ -560,10 +560,19 @@ export function PortalTabs({
   // lección o a Let's Play por un link y a partir de ahí cada recarga lo
   // devuelve al mismo lugar, aunque haya navegado a Inicio con la barra de
   // abajo (que solo cambia estado y nunca tocó la URL).
+  //
+  // OJO (bug 2026-09-10, "le doy Let's Play desde el curso y me saca del
+  // flow"): Next 14.2 parchea window.history.replaceState y trata cualquier
+  // llamada externa como una navegación a esa URL. Limpiar la query así
+  // disparaba un re-render del servidor SIN los parámetros → loading.tsx →
+  // PortalTabs se montaba de nuevo con initialTrain=null y el alumno caía
+  // en la lista. Conservar el estado interno de Next (__NA) hace que el
+  // parche devuelva el replaceState nativo: la barra se limpia y nada navega.
   useEffect(() => {
     try {
       if (!window.location.search) return;
-      window.history.replaceState(null, '', window.location.pathname);
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', window.location.pathname);
     } catch { /* la limpieza es cosmética, nunca debe romper el portal */ }
   }, []);
 

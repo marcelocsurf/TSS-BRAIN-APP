@@ -838,11 +838,16 @@ export async function getNextMove(
           .order('created_at', { ascending: false })
           .limit(5);
         for (const r of runs ?? []) {
-          const m = ((r as any).step_marks ?? []).find((x: any) => x?.step_id === stepId && Array.isArray(x?.criteria_evaluation));
+          const m = ((r as any).step_marks ?? []).find((x: any) => x?.step_id === stepId && (Array.isArray(x?.criteria_evaluation) || typeof x?.moment === 'string'));
           if (!m) continue;
+          // Sin criterios pero con el MOMENTO de la línea donde se rompió
+          // (2026-09-10): ese momento es el detalle.
+          const weak = Array.isArray(m.criteria_evaluation)
+            ? pickWeakestCriterion(m.criteria_evaluation as CriterionEvaluationItem[])
+            : ({ criterion_index: -1, criterion_text: String(m.moment), result: 'not_met' } as CriterionEvaluationItem);
           cands.push({
             date: r.created_at,
-            weak: pickWeakestCriterion(m.criteria_evaluation as CriterionEvaluationItem[]),
+            weak,
             missionId: heldItem?.mission?.id ?? null,
             drillName: (r as any).drill_name ?? null,
           });
@@ -980,7 +985,9 @@ async function currentCriterionText(
   index: number,
   fallback: string
 ): Promise<string | null> {
-  if (!drillMissionId) return fallback || null;
+  // index -1 = el texto no es un criterio de la tarjeta (p. ej. el momento
+  // de la línea donde se rompió): vale tal cual.
+  if (!drillMissionId || index < 0) return fallback || null;
   const { data } = await admin.from('drills_missions').select('success_criteria').eq('id', drillMissionId).maybeSingle();
   const list: string[] = Array.isArray(data?.success_criteria) ? data!.success_criteria : [];
   if (list.length === 0) return fallback || null;
