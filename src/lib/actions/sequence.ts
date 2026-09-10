@@ -796,11 +796,11 @@ export async function getNextMove(
     // pasos calificados estaba bajo (p. ej. toda sin empezar).
     const mine = data.sequences.filter((s) => s.belt === beltKey);
     const pool = mine.length ? mine : data.sequences;
-    // Las secuencias de ENTRADA (Getting to the wave) no frenan el camino
-    // (Marcelo 2026-09-10): el camino son las secuencias del método; las
-    // entradas solo se sugieren cuando todo lo demás ya es tuyo.
-    const isEntry = (s: (typeof pool)[number]) => SEQUENCE_ROLE[s.id] === 'entry';
-    const seq = pool.find((s) => s.state !== 'owned' && !isEntry(s)) ?? pool.find((s) => s.state !== 'owned');
+    // El camino son las secuencias NUMERADAS del método (#1–#13). Las de
+    // entrada (Getting to the wave), Foundation y Closing no lo frenan
+    // (Marcelo 2026-09-10): solo se sugieren cuando todo lo numerado ya es tuyo.
+    const isAside = (s: (typeof pool)[number]) => !!SEQUENCE_ROLE[s.id];
+    const seq = pool.find((s) => s.state !== 'owned' && !isAside(s)) ?? pool.find((s) => s.state !== 'owned');
     if (!seq) return null;
     const eff = (i: SequenceItem) => i.coach_rating ?? i.rating ?? null;
     const firstNotAtBar = seq.items.find((i) => { const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
