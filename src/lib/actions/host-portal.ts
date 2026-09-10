@@ -10,6 +10,7 @@ import { elSalvadorToday } from '@/lib/utils/tz';
 import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { ageFromDob } from '@/lib/utils/age';
 import { sendIntakeLinkEmail } from '@/lib/actions/email';
+import { getOpsByDay, dayProgramText } from '@/lib/ops/day-program';
 
 async function resolveHost(token: string) {
   const admin = createAdminClient();
@@ -1024,4 +1025,21 @@ export async function hostAvailability(token: string): Promise<AvailabilityRow[]
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date) || String(a.time ?? '99').localeCompare(String(b.time ?? '99')));
+}
+
+
+/** La "Programación diaria" de un día como texto para WhatsApp — el mismo
+ *  formato que copia el coordinador en Week Operations (Kat, 2026-09-10). */
+export async function hostDayProgramText(token: string, dateISO: string): Promise<{ ok: true; text: string; count: number } | { ok: false; error: string }> {
+  try {
+    const who = await resolveHost(token);
+    if (!who?.academy_id) return { ok: false, error: 'No autorizado.' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return { ok: false, error: 'Fecha inválida.' };
+    const byDay = await getOpsByDay(who.academy_id, dateISO, dateISO);
+    const rows = byDay.get(dateISO) ?? [];
+    return { ok: true, text: dayProgramText(dateISO, rows), count: rows.length };
+  } catch (e) {
+    console.error('[host] day program failed', e);
+    return { ok: false, error: 'No se pudo armar la programación.' };
+  }
 }

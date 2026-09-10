@@ -18,7 +18,7 @@ import {
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
   hostSetTransport, hostConfirmRenewal, hostGrantRenewal,
-  hostTransportBoard, hostTransportNotices, hostAvailability,
+  hostTransportBoard, hostTransportNotices, hostAvailability, hostDayProgramText,
   type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow, type AvailabilityRow,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
@@ -315,6 +315,17 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   const [results, setResults] = useState<HostStudentRow[] | null>(null);
   // Operación: línea de tiempo del día seleccionado
   const [opDate, setOpDate] = useState(() => new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10));
+  // La "Programación diaria" del día elegido, lista para WhatsApp (Kat,
+  // 2026-09-10) — el mismo texto que copia el coordinador. Se arma al
+  // cambiar de día para que el botón copie con un solo toque.
+  const [program, setProgram] = useState<{ date: string; text: string; count: number } | null>(null);
+  useEffect(() => {
+    let m = true;
+    setProgram(null);
+    hostDayProgramText(token, opDate).then((r) => { if (m && r.ok) setProgram({ date: opDate, text: r.text, count: r.count }); }).catch(() => {});
+    return () => { m = false; };
+  }, [token, opDate]);
+  const tomorrowISO = () => { const d = new Date(Date.now() - 6 * 3600_000); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
   // Inicio de la tira visible — navegable semana a semana por TODO el año
   const [stripStart, setStripStart] = useState(() => new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10));
   const shiftStrip = (days: number) => {
@@ -495,6 +506,21 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                   </button>
                 );
               })}
+            </div>
+
+            {/* Programación del día para WhatsApp: el mismo texto del coordinador. */}
+            <div className="rounded-2xl px-3.5 py-3 flex items-center gap-2 flex-wrap" style={{ background: '#0A2438' }}>
+              <div className="min-w-0 flex-1">
+                <p className="text-[8px]" style={{ ...F_M, color: '#00D2FF' }}>Programación para WhatsApp</p>
+                <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
+                  {program && program.date === opDate
+                    ? (program.count ? `${program.count} servicio${program.count === 1 ? '' : 's'} el ${new Date(opDate + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}` : 'Sin servicios ese día')
+                    : 'Armando la programación…'}
+                </p>
+              </div>
+              <button type="button" onClick={() => { const t = tomorrowISO(); setOpDate(t); setStripStart(t); }}
+                className="rounded-full px-3 h-9 text-[11px] font-bold" style={{ background: 'rgba(255,255,255,.08)', color: '#F7F9FA' }}>Mañana</button>
+              {program && program.date === opDate && program.count > 0 && <CopyTextButton text={program.text} label="📋 Copiar" />}
             </div>
 
             {opEvents === null ? <p className="text-[12px] text-gray-400 text-center py-8">Cargando el día…</p>
