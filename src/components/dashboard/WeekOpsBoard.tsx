@@ -51,10 +51,11 @@ export async function WeekOpsBoard({ academyId }: { academyId: string }) {
           const isToday = d === today;
           const isTomorrow = days[1] === d;
           return (
-            <div key={d} className="rounded-xl border overflow-hidden" style={{ borderColor: isToday ? 'rgba(0,210,255,.45)' : '#F0F2F4' }}>
-              <div className="flex items-center justify-between px-3 py-2" style={{ background: isToday ? 'rgba(0,210,255,.08)' : '#FAFBFC' }}>
-                <p className="text-[11px] font-extrabold uppercase" style={{ color: '#061C2B' }}>
-                  {fmtDay(d)}{isToday ? ' · HOY' : isTomorrow ? ' · MAÑANA' : ''}
+            <div key={d} className="rounded-xl border overflow-hidden" style={{ borderColor: isToday ? '#00D2FF' : '#F0F2F4', borderLeftWidth: isToday ? 6 : 1, borderLeftColor: isToday ? '#00D2FF' : '#F0F2F4' }}>
+              <div className="flex items-center justify-between px-3 py-2" style={{ background: isToday ? '#061C2B' : '#FAFBFC' }}>
+                <p className="text-[11px] font-extrabold uppercase" style={{ color: isToday ? '#FFFFFF' : '#061C2B' }}>
+                  {isToday && <span className="mr-2 rounded-full px-2 py-0.5 text-[11px] font-black" style={{ background: '#00D2FF', color: '#061C2B' }}>HOY</span>}
+                  {fmtDay(d)}{isTomorrow ? ' · MAÑANA' : ''}
                   <span className="text-gray-400 font-semibold normal-case"> · {rows.length} servicio{rows.length === 1 ? '' : 's'}</span>
                 </p>
                 <CopyTextButton text={dayProgramText(d, rows)} label="📋 Copiar" />
