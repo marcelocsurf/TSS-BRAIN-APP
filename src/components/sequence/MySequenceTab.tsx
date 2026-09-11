@@ -6,7 +6,6 @@ import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
 import { Dumbbell, Waves, Target, Play, Crosshair } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
-import { ConcentricRings } from '@/components/shared/ConcentricRings';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
@@ -172,43 +171,28 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
   return (
     <div className="space-y-5">
-      {/* Header — belt-colored rings + accent line, matching the course view */}
-      <div className="text-white rounded-2xl p-5 shadow-lg border-l-4" style={{ background: INK, borderColor: theme.accent }}>
-        {/* The Surf Sequence logo — prominent on the sequence screen */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/tss-logo-white.png?v=2"
-          alt="The Surf Sequence"
-          className="h-11 mb-3 object-contain"
-        />
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="inline-flex items-center gap-2.5 text-[20px]" style={F_D}>
-            <ConcentricRings color={theme.bright} size={22} />
-            My Sequence
-          </h2>
-          <span className="text-[12px] px-2.5 py-1 rounded-full" style={{ ...F_M, background: theme.tint, color: theme.ink }}>
-            {data.belt} Belt
-          </span>
+      {/* Header — el MISMO lenguaje que Course (Marcelo 2026-09-11): eyebrow
+          Plex, lockup oficial, barra con brillo cyan y el número grande. */}
+      <div className="px-2 pt-2 pb-4 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>Let&apos;s Play · {data.belt} Belt</span>
         </div>
-
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" className="mt-4 w-full max-w-[300px] h-auto object-contain object-left" />
+        <div className="flex items-end gap-4 mt-5">
+          <div className="flex-1">
+            <div className="flex items-baseline justify-between mb-2">
+              <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: 'rgba(247,249,250,.55)' }}>Overall execution</span>
+              <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.overallRating !== null ? `${data.overallRating.toFixed(1)} / 5` : 'Not rated yet'}</span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPct)}%`, background: 'linear-gradient(90deg, #0090B0 0%, #00D2FF 100%)', boxShadow: '0 0 12px rgba(0,210,255,.45)' }} />
+            </div>
+          </div>
+          <span className="leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 34, letterSpacing: '-0.02em', color: CYAN }}>{Math.round(overallPct)}<span style={{ fontSize: 16, marginLeft: 2 }}>%</span></span>
+        </div>
         <div className="mt-3">
-          <div className="flex items-baseline justify-between mb-1">
-            <span className="text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Overall execution</span>
-            {data.overallRating !== null ? (
-              <span className="text-lg font-bold">
-                {data.overallRating.toFixed(1)}<span className="text-xs opacity-70">/5</span>
-              </span>
-            ) : (
-              <span className="text-xs text-white/80">Not rated yet</span>
-            )}
-          </div>
-          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-full transition-all duration-500"
-              style={{ width: `${overallPct}%`, background: theme.bright }}
-            />
-          </div>
-          <p className="text-[12px] text-white/80 mt-2">
+          <p className="text-[12px] text-white/80">
             {/* La validación OFICIAL del coach manda; el auto-rating complementa. */}
             {data.coachRatedSteps > 0 ? (
               <>
@@ -224,28 +208,28 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
       {/* Dónde estás · qué necesitás · cómo entrenarlo */}
       {levelSeqs.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: '#0A2438', borderLeft: `4px solid ${theme.accent}` }}>
-          <p className="text-[12px]" style={{ ...F_M, color: theme.bright }}>Where you are · {beltWord} Belt</p>
+        <div className="mx-2 p-4" style={{ background: '#E9E2D2', borderLeft: '4px solid #00D2FF' }}>
+          <p className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: '#005F79' }}>Where you are · {beltWord} Belt</p>
           {levelSeqs.every((sq) => sq.state === 'unrated') ? (
             <>
               {/* Primer uso (auditoría 2026-09-10): "0 of 9" se lee como fracaso. */}
-              <p className="text-[15px] mt-1" style={{ ...F_D, color: PAPER }}>Nothing rated yet — start here</p>
+              <p className="text-[20px] mt-1.5" style={{ ...F_D, color: INK }}>Nothing rated yet — start here</p>
               {onTrainSequence && levelSeqs[0] && (
                 <button type="button" onClick={() => onTrainSequence({ sequenceId: levelSeqs[0].id, mode: 'sequence_run' })}
-                  className="mt-2.5 h-11 px-4 rounded-xl text-[13px] font-bold" style={{ background: theme.bright, color: '#061C2B' }}>
+                  className="mt-2.5 h-11 px-4 text-[11px] font-bold" style={{ ...F_M, background: INK, color: PAPER }}>
                   Run {sequencePrefix(levelSeqs[0].id, levelSeqs[0].order)?.startsWith('#') ? sequencePrefix(levelSeqs[0].id, levelSeqs[0].order) : levelSeqs[0].name} →
                 </button>
               )}
             </>
           ) : (
-            <p className="text-[15px] mt-1" style={{ ...F_D, color: PAPER }}>{owned} of {levelSeqs.length} sequences are yours</p>
+            <p className="text-[20px] mt-1.5" style={{ ...F_D, color: INK }}>{owned} of {levelSeqs.length} sequences are yours</p>
           )}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {levelSeqs.map((sq) => {
-              const st = sq.state === 'owned' ? '#06D6A0' : sq.state === 'unrated' ? 'rgba(247,249,250,.78)' : '#FFD166';
+              const st = sq.state === 'owned' ? '#0A7C5D' : sq.state === 'unrated' ? '#55666E' : '#B8860B';
               const pre = sequencePrefix(sq.id, sq.order);
               return (
-                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]" style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(247,249,250,.9)' }}>
+                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]" style={{ background: 'rgba(6,28,43,.08)', color: INK }}>
                   <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
                   {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}
                   <SideChip side={sq.side} small dark />
@@ -256,16 +240,16 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           </div>
           {/* Por lado: una línea es tuya cuando es tuya de los dos lados. */}
           {(sides.fs != null || sides.bs != null) && (
-            <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-              <span className="text-[12px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[12px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
-              <span className="text-[12px]" style={{ color: 'rgba(247,249,250,.85)' }}><span className="text-[12px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
-              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.78)' }}><span className="text-[12px] mr-1.5" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Gap</span><b>{sides.gap}★</b></span>}
-              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#FFD166' }}>{sides.advice.text}</span>}
+            <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(6,28,43,.12)' }}>
+              <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
+              <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
+              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#9A6A12' : INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Gap</span><b>{sides.gap}★</b></span>}
+              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#9A6A12' }}>{sides.advice.text}</span>}
             </div>
           )}
           {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
               (coach · método · reciente). Acá solo el mapa. */}
-          {!next && <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.7)' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
+          {!next && <p className="text-[12px] mt-2" style={{ color: '#3E4A50' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
         </div>
       )}
 
@@ -282,7 +266,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       {/* MY LIST (Marcelo 2026-09-10): las tareas que el alumno se dejó a sí
           mismo — paso + detalle, máximo tres. Se ofrecen, no se imponen. */}
       {tasks.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: '3px solid #FFD166' }}>
+        <div className="rounded-xl overflow-hidden" style={{ background: '#0A2A3A', borderLeft: '3px solid #FFD166' }}>
           <div className="px-4 pt-3.5 pb-2 flex items-baseline justify-between">
             <p className="text-[12px]" style={{ ...F_M, color: '#FFD166' }}>My list · {tasks.length} of {MAX_OPEN_TASKS}</p>
             <p className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>closes itself at 4★ in the water</p>
@@ -310,9 +294,9 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           Empareja #8↔#9, #10↔#11, #12↔#13 y muestra las de dos lados (#7) con
           sus dos notas. No reemplaza la lista numerada: la resume. */}
       {sides.pairs.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438' }}>
+        <div className="rounded-xl overflow-hidden" style={{ background: '#0A2A3A' }}>
           <div className="px-4 pt-3.5 pb-2">
-            <p className="text-[12px]" style={{ ...F_M, color: theme.bright }}>Both sides</p>
+            <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Both sides</p>
             <p className="text-[12px] mt-0.5" style={{ color: 'rgba(247,249,250,.78)' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
           </div>
           <div className="px-3 pb-3 space-y-1.5">
@@ -547,45 +531,50 @@ function BlockSection({
   return (
     <details
       open={defaultOpen}
-      className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-      style={{ borderLeft: `4px solid ${theme.accent}` }}
+      className="group bg-white rounded-xl overflow-hidden"
+      style={{ boxShadow: '0 0 0 1px rgba(247,249,250,.10)' }}
     >
-      <summary className="px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer list-none" style={{ background: theme.tint }}>
-        <div>
-          <div className="text-[12px]" style={{ ...F_M, color: theme.ink }}>
-            {asSequence ? seqEyebrow : `${beltWord} Belt · Block ${blockNumber}`}
+      {/* Cabecera Ink con el número grande de la secuencia — el mismo lenguaje
+          que Course (Marcelo 2026-09-11). El cuerpo sigue en Paper. */}
+      <summary className="px-4 py-4 flex items-center justify-between gap-3 cursor-pointer list-none" style={{ background: '#0A2A3A' }}>
+        {prefix?.startsWith('#') ? (
+          <span className="shrink-0 w-12 leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', color: CYAN }}>{prefix.slice(1).padStart(2, '0')}</span>
+        ) : null}
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px]" style={{ ...F_M, letterSpacing: '0.12em', color: 'rgba(247,249,250,.40)' }}>
+            {asSequence ? (prefix?.startsWith('#') ? `${beltWord} Belt` : seqEyebrow) : `${beltWord} Belt · Block ${blockNumber}`}
           </div>
-          <div className="text-[13px] mt-0.5 flex items-center gap-1.5" style={{ ...F_D, color: INK }}>{blockName}<SideChip side={asSequence ? side : null} /></div>
+          <div className="text-[15.5px] font-semibold mt-0.5 flex items-center gap-1.5 leading-tight" style={{ color: PAPER }}>{blockName}<SideChip side={asSequence ? side : null} small dark /></div>
           {promise && (
-            <div className="text-[12px] mt-0.5 text-gray-500 italic leading-snug">{promise}</div>
+            <div className="text-[12.5px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.62)' }}>{promise}</div>
           )}
         </div>
-        <div className="text-right text-xs shrink-0">
+        <div className="text-right shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
           {/* La secuencia vale lo que vale su paso más flojo — no el promedio,
               que esconde el hueco. Es la regla del canon: 4★ en cada parte. */}
           {asSequence && state === 'owned' ? (
-            <div className="font-bold" style={{ color: '#1E9E5A' }}>✓ Owned</div>
+            <div className="text-[12px] font-semibold" style={{ color: CYAN }}>✓ Owned</div>
           ) : asSequence && minRating !== null ? (
             <>
-              <div className="font-bold" style={{ color: theme.ink }}>{minRating}★</div>
-              <div className="text-[12px] text-gray-400">
+              <div className="text-[15px] font-semibold" style={{ color: PAPER }}>{minRating}★</div>
+              <div className="text-[10.5px]" style={{ color: 'rgba(247,249,250,.45)' }}>
                 {state === 'partial' ? `${ratedCount}/${items.length} rated` : 'weakest step'}
               </div>
             </>
           ) : avgRating !== null ? (
             <>
-              <div className="font-bold" style={{ color: theme.ink }}>{avgRating.toFixed(1)}/5</div>
-              <div className="text-[12px] text-gray-400">{ratedCount}/{items.length} rated</div>
+              <div className="text-[15px] font-semibold" style={{ color: PAPER }}>{avgRating.toFixed(1)}/5</div>
+              <div className="text-[10.5px]" style={{ color: 'rgba(247,249,250,.45)' }}>{ratedCount}/{items.length} rated</div>
             </>
           ) : (
-            <div className="text-gray-400 text-[12px]">Not rated</div>
+            <div className="text-[11px]" style={{ color: 'rgba(247,249,250,.45)' }}>Not rated</div>
           )}
           {asSequence && side === 'both' && sideRatings && (sideRatings.fs != null || sideRatings.bs != null) ? (
-            <div className="text-[12px] text-gray-500 mt-0.5">FS {sideRatings.fs ?? '—'}{sideRatings.fs != null ? '★' : ''} · BS {sideRatings.bs ?? '—'}{sideRatings.bs != null ? '★' : ''}</div>
+            <div className="text-[10.5px] mt-0.5" style={{ color: 'rgba(247,249,250,.55)' }}>FS {sideRatings.fs ?? '—'}{sideRatings.fs != null ? '★' : ''} · BS {sideRatings.bs ?? '—'}{sideRatings.bs != null ? '★' : ''}</div>
           ) : asSequence && selfSequenceRating !== null && (
-            <div className="text-[12px] text-gray-500 mt-0.5">your last run: {selfSequenceRating}★</div>
+            <div className="text-[10.5px] mt-0.5" style={{ color: 'rgba(247,249,250,.55)' }}>last run {selfSequenceRating}★</div>
           )}
-          <div className="text-[12px] text-gray-400 mt-0.5">
+          <div className="text-[10.5px] mt-0.5" style={{ color: 'rgba(247,249,250,.45)' }}>
             {items.length} steps <span className="group-open:hidden">▾</span>
             <span className="hidden group-open:inline">▴</span>
           </div>
