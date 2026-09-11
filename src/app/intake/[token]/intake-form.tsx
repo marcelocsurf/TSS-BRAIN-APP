@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { submitBasicIntake, submitIntake, type IntakeFormInput, type BasicIntakeInput } from '@/lib/actions/intake';
 import { BRAND } from '@/lib/constants/brand';
-import { LevelQuizStep } from './level-quiz-step';
 import { PinSetupCard } from '@/components/intake/PinSetupCard';
 import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
 import { ConsentBoxes } from '@/components/legal/ConsentBoxes';
-import { signWaiverOnly } from '@/lib/actions/intake';
+import { signWaiverOnly, submitWelcomeBack } from '@/lib/actions/intake';
 import { dobError, dobMaxAttr } from '@/lib/utils/dob';
 
 interface StudentData {
@@ -52,6 +51,12 @@ interface StudentData {
   returning_student?: boolean;
   waiver_signed?: boolean;
   waiver_signed_at?: string | null;
+  waiver_version?: string | null;
+  first_name?: string | null;
+  next_recommended_focus?: string | null;
+  last_session_date?: string | null;
+  last_session_mission?: string | null;
+  personal_goal?: string | null;
   intake_completed_at?: string | null;
   intake_tier?: string | null;
   ocean_level?: string | null;
@@ -65,22 +70,28 @@ interface Props {
   student: StudentData;
 }
 
-type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done' | 'waiver_only';
+type Stage = 'ocean_quiz' | 'ocean_quiz_done' | 'basic' | 'basic_done' | 'extended' | 'all_done' | 'waiver_only' | 'welcome_back';
 
-export function IntakeForm({ token, student, extendedRequired = false }: Props & { extendedRequired?: boolean }) {
+export function IntakeForm({ token, student, extendedRequired = false, singleDayOnly = false }: Props & { extendedRequired?: boolean; singleDayOnly?: boolean }) {
   // New 3-part order: Profile & Safety (ficha) FIRST → Level quiz (members) →
   // Goals. A drop-in stops after the ficha. Members ALWAYS take the level quiz
   // (it handles the never-surfed case internally) — it is never skipped.
   // Camp (Marcelo 2026-09-10) = evaluación profunda obligatoria, aunque el
   // alumno esté cargado como drop-in.
-  const isDropin = student.student_type === 'dropin' && !extendedRequired;
+  // Servicio de un día = solo lo esencial (regla 2026-09-11). El student_type
+  // 'dropin' viejo sigue valiendo; lo nuevo es decidir por lo inscrito.
+  const isDropin = (student.student_type === 'dropin' || singleDayOnly) && !extendedRequired;
+  // Ya vino antes (intake completo): no repite formularios. Firma el waiver
+  // otra vez SOLO si cambió la versión (Marcelo 2026-09-11).
+  const waiverStale = !student.waiver_signed || (!!student.waiver_version && student.waiver_version !== WAIVER_VERSION);
+  const returning = student.intake_tier === 'extended' || !!student.intake_completed_at;
   const basicDone =
     student.intake_tier === 'basic' ||
     student.intake_tier === 'extended' ||
     (!!student.waiver_signed && !!student.emergency_contact_name);
   const initialStage: Stage =
-    student.intake_tier === 'extended' && !student.waiver_signed ? 'waiver_only'
-    : student.intake_tier === 'extended' ? 'all_done'
+    returning && waiverStale ? 'waiver_only'
+    : returning ? 'welcome_back'
     : !basicDone ? 'basic'
     : isDropin ? 'basic_done'
     : student.ocean_quiz_completed_at ? 'extended'
@@ -256,7 +267,7 @@ export function IntakeForm({ token, student, extendedRequired = false }: Props &
       // Member: go to the level quiz — UNLESS they already did it (e.g. via the
       // public /quiz lead), in which case skip straight to goals so they never
       // re-take it.
-      if (student.student_type === 'dropin' && !extendedRequired) {
+      if (isDropin) {
         setStage('basic_done');
       } else if (student.ocean_quiz_completed_at || student.level_quiz_completed_at) {
         setExtendedStep(0);
@@ -298,7 +309,7 @@ export function IntakeForm({ token, student, extendedRequired = false }: Props &
           <div>
             <p className="text-lg font-bold text-[var(--tss-navy)]">Hi {(student as any).first_name || 'surfer'} — one last step</p>
             <p className="text-sm text-gray-500 mt-1">
-              Your profile is already on file. To surf with us, please read and sign the liability waiver below.
+              {student.waiver_signed ? 'Welcome back! Our waiver was updated since your last visit — please read and sign the new version.' : 'Your profile is already on file. To surf with us, please read and sign the liability waiver below.'}
             </p>
           </div>
 
@@ -387,7 +398,7 @@ export function IntakeForm({ token, student, extendedRequired = false }: Props &
 
         {/* Extended profile (goals etc.) is for MEMBERS. Drop-in students
             (single service) finish here — no goals, no portal, no course. */}
-        {student.student_type === 'dropin' && !extendedRequired ? (
+        {isDropin ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center space-y-2">
             <p className="text-sm font-semibold text-[var(--tss-navy)]">You&apos;re all set!</p>
             <p className="text-xs text-gray-500">You can close this page. See you in the water.</p>
@@ -418,20 +429,35 @@ export function IntakeForm({ token, student, extendedRequired = false }: Props &
   // ═══════════════════════════════════════
 
   if (stage === 'ocean_quiz') {
+    // UN SOLO QUIZ en todo el sistema (regla 2026-09-11): el v2 oficial de la
+    // web (quiz-v2.html, 10 escenas, /100). Con ?t= el resultado se ata a
+    // esta ficha y con &from=intake el quiz trae de vuelta acá; al volver, la
+    // página ve level_quiz_completed_at y sigue con las metas. El v1 del
+    // intake (12 escenarios) queda retirado.
+    const quizUrl = `/quiz-v2.html?t=${encodeURIComponent(token)}&from=intake`;
     return (
       <div className="space-y-4">
         <StageIndicator current={1} />
-        <LevelQuizStep
-          token={token}
-          onComplete={(belt) => {
-            // Beginner branch for the goals form = entry belt white_belt.
-            setIsBeginner(belt === 'white_belt');
-            setExtendedStep(0);
-            setStage('extended');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">Step 1 · Your level</p>
+          <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>Let&apos;s find your real level</h2>
+          <p className="text-sm text-gray-600">Ten real scenarios, about 3 minutes. No self-rating: your answers place you, and your coach confirms it in the water.</p>
+          <a href={quizUrl} className="block w-full py-3.5 rounded-full text-sm font-bold text-center" style={{ background: '#00D2FF', color: '#061C2B', textDecoration: 'none' }}>
+            Take the level quiz →
+          </a>
+          <p className="text-[12px] text-gray-400 text-center">When you finish, tap “Continue your intake” to come back here.</p>
+        </div>
       </div>
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // WELCOME BACK — ya vino antes, nada de formularios de nuevo
+  // ═══════════════════════════════════════
+
+  if (stage === 'welcome_back') {
+    return (
+      <WelcomeBack token={token} student={student} extendedRequired={extendedRequired} onDone={() => setStage('all_done')} />
     );
   }
 
@@ -1112,4 +1138,63 @@ function Checkbox({ label, checked, onChange, required }: {
 
 function FormRow({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-3">{children}</div>;
+}
+
+
+// ═══ WELCOME BACK (Marcelo 2026-09-11): el que ya vino no repite nada.
+// Ve su cinta, lo último que trabajó, y responde 3 cosas cortas si cambió
+// algo. El nivel no se vuelve a preguntar: lo confirma el coach en el agua.
+function WelcomeBack({ token, student, extendedRequired, onDone }: { token: string; student: StudentData; extendedRequired: boolean; onDone: () => void }) {
+  const [injuries, setInjuries] = useState(student.injuries ?? '');
+  const [goal, setGoal] = useState(student.personal_goal ?? '');
+  const [lastSurf, setLastSurf] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const focus = student.next_recommended_focus || student.last_session_mission || null;
+  const beltName = student.belt_level ? student.belt_level.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : null;
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl p-5 text-white" style={{ background: BRAND.colors.navy }}>
+        <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Welcome back{student.first_name ? `, ${student.first_name}` : ''}</p>
+        <p className="text-lg font-bold mt-1" style={{ fontFamily: 'var(--font-heading)' }}>We already have your profile.</p>
+        <div className="mt-3 space-y-1 text-sm text-white/85">
+          {beltName && <p>Belt: <span className="font-semibold text-white">{beltName}</span></p>}
+          {focus && <p>Last focus: <span className="font-semibold text-white">{focus}</span></p>}
+          {student.last_session_date && <p>Last session: <span className="font-semibold text-white">{student.last_session_date}</span></p>}
+        </div>
+        <p className="text-[12px] text-white/60 mt-3">Your waiver is on file. No quiz needed: your coach confirms your level in the water.</p>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+        <p className="text-sm font-semibold text-[var(--tss-navy)]">Anything changed? (optional)</p>
+        <label className="block text-[12px] text-gray-600">When did you last surf?
+          <select value={lastSurf} onChange={(e) => setLastSurf(e.target.value)} className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white">
+            <option value="">—</option>
+            <option value="Last surfed: this month">This month</option>
+            <option value="Last surfed: 1-3 months ago">1–3 months ago</option>
+            <option value="Last surfed: 3-12 months ago">3–12 months ago</option>
+            <option value="Last surfed: over a year ago">Over a year ago</option>
+          </select>
+        </label>
+        <label className="block text-[12px] text-gray-600">Any new injury or health note?
+          <textarea value={injuries} onChange={(e) => setInjuries(e.target.value)} rows={2} className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Leave empty if nothing changed" />
+        </label>
+        <label className="block text-[12px] text-gray-600">What do you want out of this visit?
+          <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={2} className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder={extendedRequired ? 'Your coach plans the camp around this' : 'One line is enough'} />
+        </label>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <button type="button" disabled={saving}
+          onClick={async () => {
+            setSaving(true); setErr('');
+            const r = await submitWelcomeBack(token, { injuries, personal_goal: goal, surf_frequency: lastSurf || null });
+            setSaving(false);
+            if (!r.ok) { setErr(r.error || 'Could not save.'); return; }
+            onDone();
+          }}
+          className="w-full py-3.5 rounded-full text-sm font-bold disabled:opacity-40" style={{ background: '#00D2FF', color: '#061C2B' }}>
+          {saving ? 'Saving…' : "I'm ready ✓"}
+        </button>
+      </div>
+    </div>
+  );
 }

@@ -391,11 +391,13 @@ export async function signWaiverOnly(token: string, input: {
   const admin = createAdminClient();
   const { data: st } = await admin
     .from('students')
-    .select('id, first_name, date_of_birth, waiver_signed')
+    .select('id, first_name, date_of_birth, waiver_signed, waiver_version')
     .eq('portal_token', token)
     .maybeSingle();
   if (!st) return { ok: false, error: 'Link not valid.' };
-  if (st.waiver_signed) return { ok: true };
+  // Ya firmó ESTA versión → nada que hacer. Si la versión cambió, se vuelve
+  // a firmar (Marcelo 2026-09-11: "solo si cambia la versión").
+  if (st.waiver_signed && st.waiver_version === input.waiver_version) return { ok: true };
   if (!input.signed_name?.trim() || input.signed_name.trim().length < 5) {
     return { ok: false, error: 'Type the full legal name to sign.' };
   }
@@ -427,6 +429,28 @@ export async function signWaiverOnly(token: string, input: {
     ...meta,
     ...(minor ? { guardian_name: input.guardian_name!.trim(), guardian_relationship: 'parent/guardian' } : {}),
   }).eq('id', st.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+
+// ═══ WELCOME BACK (2026-09-11) ═══
+// El que ya completó su intake no repite formularios: solo actualiza lo que
+// cambió. Nunca toca cinta, océano ni waiver.
+export async function submitWelcomeBack(token: string, input: {
+  injuries?: string | null;
+  personal_goal?: string | null;
+  surf_frequency?: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { data: st } = await admin.from('students').select('id').eq('portal_token', token).maybeSingle();
+  if (!st) return { ok: false, error: 'Link not valid.' };
+  const update: Record<string, unknown> = { returning_student: true };
+  const clean = (v?: string | null) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  if (clean(input.injuries)) update.injuries = clean(input.injuries);
+  if (clean(input.personal_goal)) update.personal_goal = clean(input.personal_goal);
+  if (clean(input.surf_frequency)) update.surf_frequency = clean(input.surf_frequency);
+  const { error } = await admin.from('students').update(update).eq('id', st.id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

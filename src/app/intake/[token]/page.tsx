@@ -20,22 +20,31 @@ export default async function IntakePage({ params }: Props) {
   if (!student) notFound();
 
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
-  // Dos intakes (Marcelo 2026-09-10): quien viene a un CAMP completa la
-  // evaluación profunda (metas); quien viene a una clase suelta, solo lo
-  // esencial + waiver. Se decide por lo que tiene inscrito.
-  let extendedRequired = false;
+  // Dos intakes (regla de Marcelo 2026-09-11, doctrine_rules): un servicio de
+  // DOS DÍAS O MÁS cuenta como camp → intake completo (ficha + waiver + quiz
+  // v2 + metas). Un servicio de UN DÍA (surf lesson, Discover Surfing, surf
+  // skate, ice bath…) → solo ficha + waiver. Se decide por la duración de lo
+  // que tiene inscrito, nunca por el nombre del servicio.
+  let extendedRequired = false;   // tiene al menos un servicio de 2+ días vigente
+  let singleDayOnly = false;      // tiene servicios vigentes y TODOS son de 1 día
   try {
     const admin = createAdminClient();
     const { data: seats } = await admin
       .from('camp_participants')
-      .select('enrollment_status, camp_instances:camp_instance_id(end_date, status, camp_templates:template_id(service_kind))')
+      .select('enrollment_status, camp_instances:camp_instance_id(start_date, end_date, status)')
       .eq('student_id', (student as any).id);
     const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
-    extendedRequired = (seats ?? []).some((p: any) => {
+    const live = (seats ?? []).map((p: any) => {
       const ci = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;
-      const tpl = ci && (Array.isArray(ci.camp_templates) ? ci.camp_templates[0] : ci.camp_templates);
-      return p.enrollment_status !== 'cancelled' && ci && ci.status !== 'cancelled' && ci.end_date >= today && /camp/i.test(String(tpl?.service_kind ?? ''));
-    });
+      return { p, ci };
+    }).filter(({ p, ci }) => p.enrollment_status !== 'cancelled' && ci && ci.status !== 'cancelled' && ci.end_date >= today);
+    const days = (ci: any) => {
+      const a = Date.parse(`${ci.start_date}T00:00:00Z`);
+      const b = Date.parse(`${ci.end_date}T00:00:00Z`);
+      return Number.isFinite(a) && Number.isFinite(b) ? Math.round((b - a) / 86_400_000) + 1 : 1;
+    };
+    extendedRequired = live.some(({ ci }) => days(ci) >= 2);
+    singleDayOnly = live.length > 0 && !extendedRequired;
   } catch { /* sin dato, el intake sigue como hasta hoy */ }
 
   return (
@@ -83,7 +92,7 @@ export default async function IntakePage({ params }: Props) {
         </div>
 
         {/* Form */}
-        <IntakeForm token={token} student={student} extendedRequired={extendedRequired} />
+        <IntakeForm token={token} student={student} extendedRequired={extendedRequired} singleDayOnly={singleDayOnly} />
       </div>
 
       <div className="text-center py-8">
