@@ -203,7 +203,7 @@ export default async function DashboardHome() {
         style={{ fontFamily: 'DM Mono, monospace' }}
       >
         {role === 'admin' && 'System Overview'}
-        {role === 'coordinator' && 'Coordination Hub'}
+        {role === 'coordinator' && `Coordination · ${new Date(Date.now() - 6 * 3600_000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })} · ${activeCamps ?? 0} active services`}
         {role === 'coach' && 'Coaching Operating System'}
         {role === 'assistant' && 'Safety Reference'}
       </p>
@@ -292,6 +292,7 @@ export default async function DashboardHome() {
           ordered grid instead of one long stack. Each panel self-gates. */}
       {/* Full-width stack: panel heights vary wildly day to day (collapsed
           strip vs tall board), so side-by-side pairing always left voids. */}
+      <Layer fold={role === 'coordinator'} title="More · transport, promotions, requisitions, tasks">
       <div className="space-y-4 mb-4">
         {(role === 'admin' || role === 'coordinator') && <TransportPanel />}
         <PendingPromotionsPanel />
@@ -388,6 +389,7 @@ export default async function DashboardHome() {
         </div>
       )}
       {role === 'coordinator' && <CoordinatorDashboard />}
+      </Layer>
 
       {/* Coach closes + feedback oversight (M137) — bottom, collapsible. */}
       {/* RecentClosesPanel del admin vive arriba, en par con Audit (M152). */}
@@ -585,6 +587,7 @@ async function CoordinatorDashboard() {
           Operations board pipeline; tools moved to the band at the bottom. */}
 
       {/* ── Mi academia — single stats home (analytics + operational KPIs) ── */}
+      <Layer fold title="Numbers · academy stats and recent closes">
       {academyAnalytics ? (
         <AcademyAnalyticsPanel data={academyAnalytics} stats={stats} />
       ) : (
@@ -602,6 +605,7 @@ async function CoordinatorDashboard() {
 
       {/* ── Cierres y feedback — the detail behind the week matrix ── */}
       <RecentClosesPanel />
+      </Layer>
 
       {/* ── Tools & reference — one band, end of page ── */}
       {me?.academy_id && (
@@ -1059,5 +1063,21 @@ function TodayPanel({ camps }: { camps: any[] }) {
         })}
       </div>
     </div>
+  );
+}
+
+
+// ═══ Tres capas para el coordinador (auditoría 2026-09-11): HOY arriba,
+// la SEMANA después, y lo demás plegado. Para los otros roles no cambia nada.
+function Layer({ fold, title, children }: { fold: boolean; title: string; children: React.ReactNode }) {
+  if (!fold) return <>{children}</>;
+  return (
+    <details className="group rounded-2xl border border-dashed border-gray-300 bg-white/60 mb-4">
+      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[var(--tss-navy)] flex items-center justify-between">
+        <span>{title}</span>
+        <span className="text-gray-400 group-open:rotate-180 transition">▾</span>
+      </summary>
+      <div className="px-2 pb-2">{children}</div>
+    </details>
   );
 }

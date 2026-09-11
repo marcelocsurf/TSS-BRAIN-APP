@@ -120,7 +120,7 @@ function Dot({ state, dash }: { state: 'ok' | 'now' | 'no' | 'late'; dash?: bool
     late: { background: 'rgba(255,107,107,.16)', color: '#C04545' },
   };
   return (
-    <span className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-extrabold" style={style[state]}>
+    <span className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-[12px] font-extrabold" style={style[state]}>
       {dash ? '–' : state === 'ok' ? '✓' : state === 'now' ? '●' : state === 'late' ? '!' : '·'}
     </span>
   );
@@ -189,7 +189,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
       <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
         <div className="rounded-3xl p-6 flex flex-col justify-between min-h-64" style={{ background: '#061C2B' }}>
           <div>
-            <p className="text-[10px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Coordination · today</p>
+            <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Coordination · today</p>
             <h2 className="text-[34px] mt-2" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{dayName}<br />operations</h2>
           </div>
           <div className="grid grid-cols-4 gap-3 mt-6 pt-4" style={{ borderTop: '1px solid rgba(247,249,250,.1)' }}>
@@ -201,14 +201,14 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
             ].map((s) => (
               <div key={s.label}>
                 <p className="text-[38px] leading-none" style={{ ...F_DISPLAY, color: s.color }}>{s.v}</p>
-                <p className="text-[8px] mt-1.5" style={{ ...F_LABEL, color: 'rgba(247,249,250,.5)' }}>{s.label}</p>
+                <p className="text-[11px] mt-1.5" style={{ ...F_LABEL, color: 'rgba(247,249,250,.5)' }}>{s.label}</p>
               </div>
             ))}
           </div>
         </div>
 
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4" style={{ borderTop: '3px solid #FF6B6B' }}>
-          <p className="text-[9px] mb-1 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
+          <p className="text-[11px] mb-1 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
             <AlertTriangle size={12} /> Needs attention
           </p>
           {attention.length === 0 && studentAlerts.length === 0 ? (
@@ -221,7 +221,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                     <Link key={i} href={a.href} className="block py-2 hover:bg-gray-50 rounded-lg px-1 -mx-1">
                       <p className="text-[13px] font-bold text-[var(--tss-navy)]">
                         {a.title}{' '}
-                        <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 align-middle ${a.sev === 'red' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{a.chip}</span>
+                        <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 align-middle ${a.sev === 'red' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{a.chip}</span>
                       </p>
                       <p className="text-[11px] text-gray-400">{a.detail}</p>
                     </Link>
@@ -230,7 +230,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
               )}
               {studentAlerts.length > 0 && (
                 <div className={attention.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
-                  <p className="text-[8px] text-gray-400 mb-1 inline-flex items-center gap-1" style={F_LABEL}><UserX size={10} /> Students</p>
+                  <p className="text-[11px] text-gray-400 mb-1 inline-flex items-center gap-1" style={F_LABEL}><UserX size={10} /> Students</p>
                   <div className="flex flex-wrap gap-1.5">
                     {studentAlerts.map((a) => (
                       <Link key={a.label} href={a.href}
@@ -249,10 +249,10 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
       {/* ── Row 2: today's pipeline ── */}
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
         <div className="flex items-baseline justify-between mb-1">
-          <p className="text-[10px] inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
+          <p className="text-[12px] inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
             <Waves size={12} /> Today · service pipeline
           </p>
-          <p className="text-[7px] text-gray-300" style={F_LABEL}>Plan → Open → Close → Feedback</p>
+          <p className="text-[11px] text-gray-300" style={F_LABEL}>Plan → Open → Close → Feedback</p>
         </div>
         {todayRows.length === 0 ? (
           <p className="text-sm text-gray-400 py-3">No services scheduled today.</p>
@@ -272,7 +272,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                 <Link key={r.id} href={`/camps/${r.campId}`} className="flex items-center gap-3 py-2.5 hover:bg-gray-50 rounded-lg px-1 -mx-1">
                   <div className="w-56 min-w-56">
                     <p className="text-[13px] font-bold text-[var(--tss-navy)] truncate">{r.name}{r.dayNumber && r.kind === 'surf_camp' ? ` · D${r.dayNumber}` : ''}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{r.coach ?? '—'}{r.time ? ` · ${r.time}` : ''} · {r.students} student{r.students === 1 ? '' : 's'}</p>
+                    <p className="text-[12px] text-gray-400 truncate">{r.coach ?? '—'}{r.time ? ` · ${r.time}` : ''} · {r.students} student{r.students === 1 ? '' : 's'}</p>
                   </div>
                   <Dot state={r.planned ? 'ok' : isClass ? 'no' : 'late'} dash={isClass && !r.planned} />
                   <Bar on={r.planned} />
@@ -281,7 +281,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                   <Dot state={r.closed ? 'ok' : 'no'} />
                   <Bar on={r.closed && (isClass || fbOk)} />
                   <Dot state={isClass ? 'no' : r.closed && fbOk ? 'ok' : r.closed ? 'late' : 'no'} dash={isClass} />
-                  <span className={`shrink-0 text-[10px] font-bold rounded-full px-2 py-0.5 min-w-20 text-center ${chip.c}`}>{chip.t}</span>
+                  <span className={`shrink-0 text-[12px] font-bold rounded-full px-2 py-0.5 min-w-20 text-center ${chip.c}`}>{chip.t}</span>
                 </Link>
               );
             })}
@@ -292,15 +292,15 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
       {/* ── Row 3: week matrix + discipline ── */}
       <div className="grid gap-4 md:grid-cols-2 md:items-start">
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 overflow-x-auto">
-          <p className="text-[10px] mb-2.5 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
+          <p className="text-[12px] mb-2.5 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
             <CalendarCheck2 size={12} /> This week · process
           </p>
           <table className="w-full text-[11px]">
             <thead>
               <tr>
-                <td className="text-[7px] text-gray-400 p-1" style={F_LABEL}>Service</td>
+                <td className="text-[11px] text-gray-400 p-1" style={F_LABEL}>Service</td>
                 {dayLetters.map((l, i) => (
-                  <td key={i} className={`text-[7px] text-center ${weekDates[i] === today ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-400'}`} style={F_LABEL}>{l}</td>
+                  <td key={i} className={`text-[11px] text-center ${weekDates[i] === today ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-400'}`} style={F_LABEL}>{l}</td>
                 ))}
               </tr>
             </thead>
@@ -323,7 +323,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
               ))}
             </tbody>
           </table>
-          <p className="text-[9px] text-gray-400 mt-2">
+          <p className="text-[11px] text-gray-400 mt-2">
             <span className="inline-block w-3 h-3 rounded align-[-2px]" style={{ background: '#06D6A0' }} /> complete ·{' '}
             <span className="inline-block w-3 h-3 rounded align-[-2px]" style={{ background: '#FFD166' }} /> no feedback ·{' '}
             <span className="inline-block w-3 h-3 rounded align-[-2px]" style={{ background: '#FF6B6B' }} /> incomplete ·{' '}
@@ -332,7 +332,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
         </div>
 
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] mb-2.5" style={{ ...F_LABEL, color: '#0090B0' }}>Coach discipline · this week</p>
+          <p className="text-[12px] mb-2.5" style={{ ...F_LABEL, color: '#0090B0' }}>Coach discipline · this week</p>
           {discipline.length === 0 ? (
             <p className="text-sm text-gray-400">No sessions run yet this week.</p>
           ) : (
@@ -354,7 +354,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
               })}
             </div>
           )}
-          <p className="text-[9px] text-gray-400 mt-2">Days with the full process (plan · open · close · feedback) / days with a service.</p>
+          <p className="text-[11px] text-gray-400 mt-2">Days with the full process (plan · open · close · feedback) / days with a service.</p>
         </div>
       </div>
     </div>

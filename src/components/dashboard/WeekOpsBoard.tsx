@@ -38,10 +38,10 @@ export async function WeekOpsBoard({ academyId }: { academyId: string }) {
   return (
     <div className="mb-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-        <p className="text-[10px] inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
+        <p className="text-[12px] inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
           <CalendarRange size={12} /> Week operations · logística planeada
         </p>
-        <p className="text-[9px] text-gray-400">Lo que los coaches fijaron en su Vista Semana · 📋 copia el día para el chat de performance</p>
+        <p className="text-[11px] text-gray-400">Lo que los coaches fijaron en su Vista Semana · 📋 copia el día para el chat de performance</p>
       </div>
 
       <div className="space-y-3 mt-2">
