@@ -19,9 +19,9 @@ export const BB_SEQ_13: SequencePageConfig = {
   think: {
     whatIs: {
       headline: 'The backside cutback is moving away from the pocket with your back to the wave and coming back: a long U to create space, then a wide arc — the Tapaloco, with the rotation held — that closes with the elbow strike pointing at the face.',
-      line: 'A long bottom turn away from the pocket, the climb, then one wide arc that turns back and closes with the board pointing at the face of the wave. The drawing is a lying figure 8, and it uses all the zones of the wave: down to the flat, up to the lip, down again and back up to the face. A cutback can also be simpler: just coming back to the foam and out to the face again.',
+      line: 'A long bottom turn away from the pocket, the climb, then one wide arc that turns back and closes with the board pointing at the face of the wave. The drawing is a lying figure 8, and it uses all the zones of the wave: down to the flat, up to the lip, down again and back up to the face. Two endings: if the wave is over, you finish there; if it keeps going, you always want to rebound on the whitewater to take its energy and go back to the face. The game, in order: first come back to the whitewater and keep going; then aim higher and hit the pocket on the way back and rebound; when you hit the pocket you are on top of the wave again, with all its energy to go down and project into the next turn. That is the lying figure 8.',
       where: 'Farther from the pocket than the snap. You move away along the face to create the space you need to come back. If the board never turns back pointing at the face, it was a snap, not a cutback.',
-      whatFor: 'To go back to where the energy is on your backside. You ran away from the pocket; the cutback brings you back to it with speed, ready for the next cycle.',
+      whatFor: 'To go back to where the energy is on your backside. You ran away from the pocket; the cutback brings you back — to the whitewater or all the way to the pocket — with speed, and the rebound gives you the energy for the next cycle.',
     },
     feet: BB_SEQ_12.think.feet!,
     bodyFromLesson: 'STP-048',
@@ -108,10 +108,10 @@ It starts and ends in posture. The long U makes the space; the held Tapaloco dra
     {
       key: 'elbow',
       command: 'closure',
-      title: '4 · Elbow strike · when the board points at the face',
-      symptom: 'You throw the elbow too early (the board still points at the shoulder), downward, or too softly; or the other arm is dead.',
+      title: '4 · Elbow strike · the decision that closes the arc',
+      symptom: 'You throw the elbow too early (the board still points at the shoulder), downward, too softly, or without deciding where you are going; or the other arm is dead.',
       indicators: [
-        { ok: 'The elbow strike fires when the board points back at the face: the elbow of the Tapaloco arm goes up, the other arm receives, the scapulas unite — the M is your body — and the energy travels down to the rail.', no: 'The elbow is thrown down, or with the board pointing at the foam or at the shoulder; the close does not convert.', fix: 'Wait for the face. Elbow up, the other arm receives.' },
+        { ok: 'The elbow strikes as soon as you are ready to finish going in that direction — because you want to hit the whitewater, or switch direction again and point at the face, toward where the wave is breaking: the elbow of the Tapaloco arm goes up, the other arm receives, the scapulas unite — the M is your body — and the energy travels down to the rail. The board pointing at the face is the result of the strike.', no: 'The elbow is thrown down, or with the board still pointing at the shoulder, or you never decide and the arc fades out.', fix: 'Decide where you are going. Elbow up, the other arm receives.' },
       ],
       deeper: { label: 'Elbow (BS Closure)', lessonId: 'STP-045', drillId: 'DRL-BB-045', missionId: 'MIS-BB-045' },
     },
@@ -127,6 +127,6 @@ It starts and ends in posture. The long U makes the space; the held Tapaloco dra
     },
   ],
   review: {
-    howItFeels: 'It feels like patience with your back to the wave: you run away from the energy on purpose, and after the Tapaloco you wait in the rotation — flexed, holding against the force — until the face comes back into view. Then the elbow strike lets everything go and you are heading to the pocket again with speed. A big, round line you drew and closed yourself.',
+    howItFeels: 'It feels like patience with your back to the wave: you run away from the energy on purpose, and after the Tapaloco you wait in the rotation — flexed, holding against the force — as long as the arc takes. Then you decide: the elbow strike lets everything go and you are heading back to the whitewater, or all the way to the pocket, with speed; the rebound hands you the energy for the next turn. A big, round line you drew and closed yourself.',
   },
 };

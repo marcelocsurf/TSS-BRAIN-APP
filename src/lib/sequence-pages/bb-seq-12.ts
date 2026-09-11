@@ -17,9 +17,9 @@ export const BB_SEQ_12: SequencePageConfig = {
   think: {
     whatIs: {
       headline: 'The cutback is moving away from the pocket and coming back: a long U to create space, then a wide arc — the Cruz, held — that closes pointing at the face.',
-      line: 'A long bottom turn away from the pocket, the climb, then one wide arc that turns back and closes with the board pointing at the face of the wave. The drawing is a lying figure 8, and it uses all the zones of the wave: down to the flat, up to the lip, down again and back up to the face. A cutback can also be simpler: just coming back to the foam and out to the face again.',
+      line: 'A long bottom turn away from the pocket, the climb, then one wide arc that turns back and closes with the board pointing at the face of the wave. The drawing is a lying figure 8, and it uses all the zones of the wave: down to the flat, up to the lip, down again and back up to the face. Two endings: if the wave is over, you finish there; if it keeps going, you always want to rebound on the whitewater to take its energy and go back to the face. The game, in order: first come back to the whitewater and keep going; then aim higher and hit the pocket on the way back and rebound; when you hit the pocket you are on top of the wave again, with all its energy to go down and project into the next turn. That is the lying figure 8.',
       where: 'Farther from the pocket than the snap. You move away along the face to create the space you need to come back. If the board never turns back, it was a snap, not a cutback.',
-      whatFor: 'To go back to where the energy is. You ran away from the pocket; the cutback brings you back to it with speed, ready for the next cycle.',
+      whatFor: 'To go back to where the energy is. You ran away from the pocket; the cutback brings you back — to the whitewater or all the way to the pocket — with speed, and the rebound gives you the energy for the next cycle.',
     },
     // Pies: P1 o P2 (la cola viva para sostener la Cruz en todo el arco). Por confirmar con Marcelo.
     feet: {
@@ -138,10 +138,10 @@ It starts and ends in posture. The long U makes the space; the held Cruz draws t
     {
       key: 'grenade',
       command: 'closure',
-      title: '4 · Grenade · when the board points at the face',
-      symptom: 'You throw too early (the board still points at the shoulder) or too softly; or you close toward the foam.',
+      title: '4 · Grenade · the decision that closes the arc',
+      symptom: 'You throw too early (the board still points at the shoulder), too softly, or without deciding where you are going: to the whitewater or back to the face.',
       indicators: [
-        { ok: 'The Grenade fires when the board points back at the face of the wave: throw the leading arm, extend with the rail still engaged, low finish.', no: 'You throw with the board pointing at the foam or at the shoulder; the close does not convert.', fix: 'Wait for the face. Then throw, extend, low.' },
+        { ok: 'The Grenade fires as soon as you are ready to finish going in that direction — because you want to hit the whitewater, or switch direction again and point at the face, toward where the wave is breaking: throw the leading arm, extend with the rail still engaged, low finish. The board pointing at the face is the result of the throw.', no: 'You throw with the board still pointing at the shoulder, or you never decide and the arc fades out.', fix: 'Decide where you are going. Then throw, extend, low.' },
       ],
       deeper: { label: 'Grenade', lessonId: 'STP-042', drillId: 'DRL-BB-042', missionId: 'MIS-BB-042' },
     },
@@ -157,6 +157,6 @@ It starts and ends in posture. The long U makes the space; the held Cruz draws t
     },
   ],
   review: {
-    howItFeels: 'It feels like patience with the rail engaged: you run away from the energy on purpose, and in the Cruz you wait — flexed, holding against the force — until the face comes back into view. Then the Grenade lets everything go and you are heading to the pocket again with speed. A big, round line you drew and closed yourself.',
+    howItFeels: 'It feels like patience with the rail engaged: you run away from the energy on purpose, and in the Cruz you wait — flexed, holding against the force — as long as the arc takes. Then you decide: the Grenade lets everything go and you are heading back to the whitewater, or all the way to the pocket, with speed; the rebound hands you the energy for the next turn. A big, round line you drew and closed yourself.',
   },
 };
