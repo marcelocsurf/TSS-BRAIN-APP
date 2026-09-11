@@ -137,6 +137,7 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
     shirt_size: (student as any).shirt_size || '',
     date_of_birth: student.date_of_birth || '',
     phone: (student as any).phone || '',
+    email: (student as any).email || '',
     nationality: student.nationality || '',
     languages: student.languages || '',
     gender: student.gender || '',
@@ -504,6 +505,16 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
               value={basicForm.phone || ''}
               onChange={(v) => setBasic('phone', v)}
               placeholder="+503 7777 7777"
+              required
+            />
+            {/* Correo del alumno: al crear el perfil el equipo pone el WhatsApp
+                y el correo queda opcional; se pide acá (2026-09-11). */}
+            <Field
+              label="Email"
+              type="email"
+              value={basicForm.email || ''}
+              onChange={(v) => setBasic('email', v)}
+              placeholder="you@email.com"
               required
             />
             <FormRow>

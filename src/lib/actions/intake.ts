@@ -23,6 +23,9 @@ export interface BasicIntakeInput {
   /** Teléfono/WhatsApp del PROPIO alumno (students.phone) — el equipo lo usa
    *  para coordinar; distinto del emergency_contact_phone. */
   phone?: string;
+  /** Correo del alumno: el equipo lo crea con el WhatsApp y el correo queda
+   *  opcional; el intake lo pide (obligatorio si la ficha no lo tiene). */
+  email?: string;
   nationality?: string;
   languages?: string;
   gender?: string;
@@ -111,7 +114,7 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
   // Find student by portal token
   const { data: student, error: findErr } = await admin
     .from('students')
-    .select('id, intake_completed_at, intake_tier')
+    .select('id, intake_completed_at, intake_tier, email')
     .eq('portal_token', token)
     .single();
 
@@ -120,6 +123,13 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
   }
 
   // Validate required fields
+  const emailIn = input.email?.trim().toLowerCase() || '';
+  if (emailIn && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailIn)) {
+    throw new Error('That email does not look right.');
+  }
+  if (!emailIn && !student.email) {
+    throw new Error('Email is required so we can send you your confirmations.');
+  }
   if (!input.emergency_contact_name?.trim()) {
     throw new Error('Emergency contact name is required.');
   }
@@ -159,6 +169,7 @@ export async function submitBasicIntake(token: string, input: BasicIntakeInput) 
     // Solo pisar el teléfono si el alumno escribió algo — no borrar el que
     // el equipo ya haya cargado a mano.
     ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
+    ...(emailIn ? { email: emailIn } : {}),
     nationality: input.nationality?.trim() || null,
     languages: input.languages?.trim() || null,
     gender: input.gender?.trim() || null,
