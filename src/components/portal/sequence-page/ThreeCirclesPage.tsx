@@ -4,6 +4,7 @@
 // Marcelo (2026-09-09): Think + Feel, sin Do en cuerpo y tabla; la ola lleva
 // juego; compresión-extensión en amarillo; los colores del lenguaje desde acá.
 import { useState } from 'react';
+import { markLessonComplete } from '@/lib/actions/course';
 import { ArrowLeft, Play, Lock } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveBoard, COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
@@ -224,7 +225,9 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             <p className="text-[12.5px] mt-3" style={{ color: MUTED }}>If you can name the circle, you already know what to train tomorrow.</p>
           </Card>
 
-          <a href={`${portal}?tab=course&lesson=${lessonId}`} className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold" style={{ border: `1px solid ${CYAN}66`, color: CYAN }}>Mark the lesson as read →</a>
+          {/* Marcar leída ACÁ, sin salir (Marcelo 2026-09-11: "si le doy mark
+              as read me manda a la clase detallada"). Antes era un link. */}
+          <MarkReadButton token={token} lessonId={lessonId} portal={portal} />
         </div>
       </div>
     </div>
@@ -237,4 +240,24 @@ function Video({ url, title }: { url: string; title: string }) {
   const src = yt ? `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&modestbranding=1` : vm ? `https://player.vimeo.com/video/${vm[1]}` : null;
   if (src) return <div className="relative w-full" style={{ paddingTop: '56.25%' }}><iframe src={src} title={title} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>;
   return <video src={url} controls playsInline preload="metadata" className="w-full block" title={title} />;
+}
+
+
+function MarkReadButton({ token, lessonId, portal }: { token: string; lessonId: string; portal: string }) {
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <button type="button" disabled={state === 'busy' || state === 'done'}
+        onClick={async () => {
+          setState('busy');
+          const r = await markLessonComplete(token, lessonId).catch(() => ({ ok: false }));
+          setState((r as any)?.ok ? 'done' : 'error');
+        }}
+        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold disabled:opacity-80"
+        style={state === 'done' ? { background: CYAN, color: '#061C2B' } : { border: `1px solid ${CYAN}66`, color: CYAN }}>
+        {state === 'done' ? '✓ Marked as read' : state === 'busy' ? 'Saving…' : state === 'error' ? 'Could not save · try again' : 'Mark the lesson as read'}
+      </button>
+      {state === 'done' && <a href={`${portal}?tab=course`} className="text-[13px]" style={{ color: CYAN }}>Back to Course →</a>}
+    </div>
+  );
 }
