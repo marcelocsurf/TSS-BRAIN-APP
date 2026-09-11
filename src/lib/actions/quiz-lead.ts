@@ -356,7 +356,7 @@ export async function checkReturningByEmail(email: string, academySlug: string |
   let academyId: string | null = null;
   let whatsapp: string | null = null;
   if (academySlug) {
-    const { data: ac } = await admin.from('academies').select('id, booking_whatsapp').eq('slug', academySlug).maybeSingle();
+    const { data: ac } = await admin.from('academies').select('id, booking_whatsapp').eq('slug', SLUG_ALIASES[academySlug] ?? academySlug).maybeSingle();
     academyId = (ac as any)?.id ?? null; whatsapp = (ac as any)?.booking_whatsapp ?? null;
   }
   let q = admin.from('students')
