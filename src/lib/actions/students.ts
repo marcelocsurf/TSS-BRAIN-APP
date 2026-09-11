@@ -375,8 +375,10 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
   if (me && !me.is_platform_admin) {
     // Academy scope for non-platform-admins
     if (me.academy_id) {
-      // Tolerate legacy rows where academy_id is NULL — show them to coordinators too
-      query = query.or(`academy_id.eq.${me.academy_id},academy_id.is.null`);
+      // Solo la academia del coordinador. La tolerancia a academy_id NULL
+      // se quitó el 2026-09-11: los 28 huérfanos ya tienen academia
+      // (Marcelo: "que en Puro Surf no se confunda info con otras academias").
+      query = query.eq('academy_id', me.academy_id);
     }
     // Coach-only: intersect with time-bounded accessible students
     if (me.role === 'coach') {
