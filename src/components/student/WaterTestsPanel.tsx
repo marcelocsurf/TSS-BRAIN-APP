@@ -87,6 +87,47 @@ export function WaterTestsPanel({
     return <p className="text-sm text-gray-400 italic">Cargando…</p>;
   }
 
+  // El formulario se pinta DEBAJO de la fila tocada (2026-09-11): antes iba
+  // al final de toda la lista, fuera de la pantalla, y parecía que
+  // "registrar" no hacía nada.
+  const renderForm = () => form && (
+        <div className="rounded-xl border-2 border-cyan-500 p-3 space-y-2">
+          <p className="text-[12.5px] font-semibold text-gray-900">
+            {testByKey(form.test)?.name} · {OCEAN_LEVEL_INFO[form.level].short}
+          </p>
+          {testByKey(form.test)?.unit && (
+            <input
+              type="number"
+              inputMode="decimal"
+              value={form.measured}
+              onChange={(e) => setForm({ ...form, measured: e.target.value })}
+              placeholder={`Cuánto (${testByKey(form.test)?.unit})`}
+              className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-[13px]"
+            />
+          )}
+          <input
+            value={form.conditions}
+            onChange={(e) => setForm({ ...form, conditions: e.target.value })}
+            placeholder="Condiciones (opcional) — p. ej. mar chico, piscina"
+            className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-[13px]"
+          />
+          <div className="flex gap-2">
+            <button type="button" disabled={pending} onClick={() => save(true)}
+              className="flex-1 h-9 rounded-lg bg-emerald-600 text-white text-[12.5px] font-bold disabled:opacity-50">
+              Pasó
+            </button>
+            <button type="button" disabled={pending} onClick={() => save(false)}
+              className="flex-1 h-9 rounded-lg bg-gray-200 text-gray-700 text-[12.5px] font-bold disabled:opacity-50">
+              No pasó
+            </button>
+            <button type="button" onClick={() => setForm(null)}
+              className="px-3 h-9 rounded-lg text-[12.5px] text-gray-400">
+              ✕
+            </button>
+          </div>
+        </div>
+  );
+
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-2 flex-wrap">
@@ -130,7 +171,8 @@ export function WaterTestsPanel({
                 const ok = meets(level, req);
                 const t = testByKey(req.test);
                 return (
-                  <div key={req.test} className="px-3 py-2 flex items-center justify-between gap-3">
+                  <div key={req.test} className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className={`text-[12.5px] ${ok ? 'text-gray-800' : 'text-gray-600'}`}>
                         {ok && <span className="text-emerald-600">✓ </span>}
@@ -148,10 +190,14 @@ export function WaterTestsPanel({
                     <button
                       type="button"
                       onClick={() => setForm({ level, test: req.test, measured: '', conditions: '' })}
-                      className="shrink-0 text-[11px] px-2.5 h-7 rounded-lg border border-gray-200 hover:border-gray-400"
+                      className="shrink-0 text-[12px] px-3 h-9 rounded-lg border border-gray-300 hover:border-gray-500 font-semibold"
                     >
                       {r ? 'repetir' : 'registrar'}
                     </button>
+                  </div>
+                  {form && form.level === level && form.test === req.test && (
+                    <div className="mt-2">{renderForm()}</div>
+                  )}
                   </div>
                 );
               })}
@@ -160,43 +206,6 @@ export function WaterTestsPanel({
         );
       })}
 
-      {form && (
-        <div className="rounded-xl border-2 border-cyan-500 p-3 space-y-2">
-          <p className="text-[12.5px] font-semibold text-gray-900">
-            {testByKey(form.test)?.name} · {OCEAN_LEVEL_INFO[form.level].short}
-          </p>
-          {testByKey(form.test)?.unit && (
-            <input
-              type="number"
-              inputMode="decimal"
-              value={form.measured}
-              onChange={(e) => setForm({ ...form, measured: e.target.value })}
-              placeholder={`Cuánto (${testByKey(form.test)?.unit})`}
-              className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-[13px]"
-            />
-          )}
-          <input
-            value={form.conditions}
-            onChange={(e) => setForm({ ...form, conditions: e.target.value })}
-            placeholder="Condiciones (opcional) — p. ej. mar chico, piscina"
-            className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-[13px]"
-          />
-          <div className="flex gap-2">
-            <button type="button" disabled={pending} onClick={() => save(true)}
-              className="flex-1 h-9 rounded-lg bg-emerald-600 text-white text-[12.5px] font-bold disabled:opacity-50">
-              Pasó
-            </button>
-            <button type="button" disabled={pending} onClick={() => save(false)}
-              className="flex-1 h-9 rounded-lg bg-gray-200 text-gray-700 text-[12.5px] font-bold disabled:opacity-50">
-              No pasó
-            </button>
-            <button type="button" onClick={() => setForm(null)}
-              className="px-3 h-9 rounded-lg text-[12.5px] text-gray-400">
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
