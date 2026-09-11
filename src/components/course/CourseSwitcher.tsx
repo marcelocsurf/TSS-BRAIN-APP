@@ -18,8 +18,8 @@ export function CourseSwitcher({ portalToken, ownedCourses, activeCourseKey }: P
   if (ownedCourses.length < 2) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-3 py-2 flex items-center gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 flex-shrink-0">
+    <div className="mx-2 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
+      <span className="text-[10px] flex-shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>
         Course
       </span>
       <div className="relative flex-1">
@@ -38,7 +38,8 @@ export function CourseSwitcher({ portalToken, ownedCourses, activeCourseKey }: P
               }
             });
           }}
-          className="w-full appearance-none bg-transparent text-sm font-semibold text-[var(--tss-navy)] pr-6 focus:outline-none disabled:opacity-50"
+          className="w-full appearance-none bg-transparent text-[13px] font-bold uppercase text-white pr-6 focus:outline-none disabled:opacity-50"
+          style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', letterSpacing: '0.02em' }}
         >
           {ownedCourses.map((c) => (
             <option key={c.key} value={c.key}>

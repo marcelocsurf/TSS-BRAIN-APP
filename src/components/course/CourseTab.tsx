@@ -384,33 +384,24 @@ export function CourseTab({ data }: { data: CourseData }) {
         activeCourseKey={data.activeCourseKey}
       />
 
-      {/* Header */}
-      <div className="text-white rounded-xl p-5 shadow-lg" style={{ background: '#0A2438', borderLeft: '4px solid #00D2FF' }}>
-        {/* The Surf Sequence logo — prominent on the course screen */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/tss-logo-white.png?v=2"
-          alt="The Surf Sequence"
-          className="h-9 mb-3 object-contain"
-        />
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold">The Surf Sequence Method</h2>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-white/20">
-            {overallPercent}% complete
-          </span>
+      {/* Header — v10 (Marcelo 2026-09-11: "más pro, más limpio, que no se vea
+          genérico"): sin tarjeta, la tipografía hace el trabajo. Archivo
+          Expanded en el título, Plex Mono en etiquetas, Lora SOLO en el tagline,
+          cyan como acento y nunca como fondo. */}
+      <div className="px-2 pt-2 pb-4 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#00D2FF' }}>{beltLabelShort} · {activeCourse.label}</span>
+          <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>{data.studentName}</span>
         </div>
-        <p className="text-xs text-white/70 mb-3">
-          Welcome, {data.studentName}. THINK it here, in the lessons. FEEL it in the drills. DO it in the missions.
-        </p>
-        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-          <div
-            className="h-full bg-[#00D2FF] transition-all duration-500"
-            style={{ width: `${overallPercent}%` }}
-          />
+        <h2 className="mt-2 leading-[1] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em' }}>The Surf<br />Sequence</h2>
+        <p className="mt-1.5 text-[14px] italic" style={{ fontFamily: 'var(--font-tagline), Lora, serif', color: '#00D2FF' }}>Evolve through play</p>
+        <div className="flex items-center gap-3 mt-4">
+          <div className="flex-1 h-1 rounded-sm overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
+            <div className="h-full transition-all duration-500" style={{ width: `${overallPercent}%`, background: '#00D2FF' }} />
+          </div>
+          <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.totalCompleted} / {data.totalLessons} · {overallPercent}%</span>
         </div>
-        <p className="text-[11px] text-white/60 mt-2">
-          {data.totalCompleted} of {data.totalLessons} lessons completed
-        </p>
+        <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.55)' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
       </div>
 
       {/* PRE-COURSE — 8 sections */}
@@ -746,31 +737,15 @@ function GroupHeader({
 }) {
   const embed = videoUrl ? toEmbedUrl(videoUrl) : null;
   return (
-    <div className="px-2">
-      <div
-        className="rounded-2xl overflow-hidden border border-white/10"
-        style={{ background: '#0A2438', borderLeft: `4px solid ${theme.accent}` }}
-      >
-        <div className="p-4">
-          {eyebrow && (
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="inline-block w-4 h-0.5" style={{ background: theme.bright }} />
-              <span
-                className="text-[10px] tracking-[0.14em] uppercase font-medium"
-                style={{ color: theme.bright, fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.14em' }}
-              >
-                {eyebrow}
-              </span>
-            </div>
-          )}
-          <div className="flex items-center gap-2.5">
-            <ConcentricRings color={theme.bright} />
-            <h3 className="text-lg font-bold text-white">{title}</h3>
-          </div>
-          {subtitle && <p className="text-[11px] text-white/55 mt-1">{subtitle}</p>}
+    <div className="px-2 pt-5">
+      <div>
+        <div className="flex items-baseline justify-between gap-3 pb-2" style={{ borderBottom: `2px solid ${theme.accent}` }}>
+          <h3 className="text-[15px] text-white uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, letterSpacing: '-0.01em' }}>{title}</h3>
+          {eyebrow && <span className="text-[10px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>{eyebrow}</span>}
         </div>
+        {subtitle && <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.55)' }}>{subtitle}</p>}
         {embed && (
-          <div className="bg-black aspect-video border-t border-white/10">
+          <div className="bg-black aspect-video mt-3 rounded-lg overflow-hidden">
             <iframe
               src={embed}
               title={`${title} intro`}
@@ -820,25 +795,18 @@ function SectionBlock({
     return (
       <a
         href={onePageHref}
-        className="block rounded-xl overflow-hidden border border-white/10"
-        style={{ background: '#0A2438', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
+        className="block mx-2"
+        style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}
       >
-        <div className="px-4 py-3 flex items-start justify-between gap-3">
+        <div className="py-3.5 flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm flex items-center gap-2 text-white">
-              <Icon size={16} strokeWidth={1.75} className="flex-shrink-0" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }} />
-              <span className="truncate">{title}</span>
-            </h3>
-            {subtitle && <p className="text-[11px] text-white/40 mt-0.5 italic">"{subtitle}"</p>}
-            <p className="text-[11px] mt-1" style={{ color: 'var(--tss-cyan)' }}>{onePageHref.endsWith('/loop') || onePageHref.endsWith('/circles') ? 'Open the course' : 'Think it · Feel it · Do it · Review'}</p>
+            <p className="text-[14.5px] font-medium text-white truncate">{title}</p>
+            <p className="text-[10.5px] mt-0.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(247,249,250,.40)' }}>{onePageHref.endsWith('/loop') || onePageHref.endsWith('/circles') ? 'Open' : 'Think · Feel · Do · Review'}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-right">
-              <div className="text-xs font-bold" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }}>{sectionPercent}%</div>
-              <div className="text-[10px] text-white/40">{completed}/{productized.length}</div>
-            </div>
-            <span className="text-[16px] font-bold text-white/60">→</span>
-          </div>
+          <span className="text-[11px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.08em', color: sectionPercent === 100 ? '#00D2FF' : 'rgba(247,249,250,.62)' }}>
+            {sectionPercent === 100 ? '✓ Done' : `${completed}/${productized.length}`}
+          </span>
+          <span className="text-[15px]" style={{ color: '#00D2FF' }}>→</span>
         </div>
       </a>
     );
@@ -846,38 +814,25 @@ function SectionBlock({
 
   return (
     <details
-      className="group rounded-xl overflow-hidden border border-white/10"
-      style={{ background: '#0A2438', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
+      className="group mx-2"
+      style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}
     >
-      <summary className="px-4 py-3 cursor-pointer list-none">
-        <div className="flex items-start justify-between gap-3">
+      <summary className="py-3.5 cursor-pointer list-none">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm flex items-center gap-2 text-white">
-              <Icon size={16} strokeWidth={1.75} className="flex-shrink-0" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }} />
-              <span className="truncate">{title}</span>
-              {badge && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono flex-shrink-0">
-                  {badge}
-                </span>
-              )}
-            </h3>
-            {subtitle && (
-              <p className="text-[11px] text-white/40 mt-0.5 italic">"{subtitle}"</p>
-            )}
+            <p className="text-[14.5px] font-medium text-white truncate">
+              {title}
+              {badge && <span className="ml-2 text-[10px] text-white/50" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{badge}</span>}
+            </p>
+            {subtitle && <p className="text-[10.5px] mt-0.5 truncate" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(247,249,250,.40)' }}>{subtitle}</p>}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-right">
-              <div className="text-xs font-bold" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }}>{sectionPercent}%</div>
-              <div className="text-[10px] text-white/40">
-                {completed}/{productized.length}
-                {proposedCount > 0 && (<span className="text-white/50"> +{proposedCount}↗</span>)}
-              </div>
-            </div>
-            <ChevronDown size={16} className="text-white/40 transition-transform group-open:rotate-180" />
-          </div>
+          <span className="text-[11px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.08em', color: sectionPercent === 100 ? '#00D2FF' : 'rgba(247,249,250,.62)' }}>
+            {sectionPercent === 100 ? '✓ Done' : `${completed}/${productized.length}`}{proposedCount > 0 && <span className="text-white/40"> +{proposedCount}</span>}
+          </span>
+          <ChevronDown size={16} className="text-white/40 transition-transform group-open:rotate-180 shrink-0" />
         </div>
       </summary>
-      <div className="divide-y divide-white/5 border-t border-white/10">
+      <div className="divide-y divide-white/5 border-t border-white/10 mb-2 rounded-lg" style={{ background: '#0A2438' }}>
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
