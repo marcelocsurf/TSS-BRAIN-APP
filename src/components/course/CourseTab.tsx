@@ -402,7 +402,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           cyan como acento y nunca como fondo. */}
       <div className="px-2 pt-2 pb-4 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#00D2FF' }}>{beltLabelShort} · {activeCourse.label}</span>
+          <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#00D2FF' }}>{beltLabelShort} · {({ white_belt: 'Beginner', yellow_belt: 'Novice', blue_belt: 'Foundation', purple_belt: 'Emerging', brown_belt: 'Pre-Elite', black_belt: 'Elite' } as Record<string, string>)[activeCourse.key] ?? ''}</span>
           <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>{data.studentName}</span>
         </div>
         {/* El logo oficial (lockup con el tagline adentro), no el nombre en texto
