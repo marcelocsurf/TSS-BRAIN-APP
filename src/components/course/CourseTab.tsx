@@ -385,7 +385,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       />
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5 shadow-lg">
+      <div className="text-white rounded-xl p-5 shadow-lg" style={{ background: '#0A2438', borderLeft: '4px solid #00D2FF' }}>
         {/* The Surf Sequence logo — prominent on the course screen */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -404,7 +404,7 @@ export function CourseTab({ data }: { data: CourseData }) {
         </p>
         <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
           <div
-            className="h-full bg-[var(--tss-gold,#d4a017)] transition-all duration-500"
+            className="h-full bg-[#00D2FF] transition-all duration-500"
             style={{ width: `${overallPercent}%` }}
           />
         </div>
@@ -648,7 +648,7 @@ export function CourseTab({ data }: { data: CourseData }) {
 
       {/* Footer */}
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (
-        <div className="bg-gradient-to-r from-cyan-50 to-sky-100 border border-cyan-300 rounded-xl p-5 text-center">
+        <div className="rounded-xl p-5 text-center" style={{ background: '#F7F9FA', border: '1.5px solid #00D2FF' }}>
           <Trophy className="mx-auto mb-2 text-[var(--tss-cyan)]" size={36} strokeWidth={1.75} />
           <h3 className="font-bold text-lg text-[var(--tss-navy)] mb-1">{beltLabelShort} Course Complete!</h3>
           <p className="text-sm text-[var(--tss-navy)]/70">
@@ -749,7 +749,7 @@ function GroupHeader({
     <div className="px-2">
       <div
         className="rounded-2xl overflow-hidden border border-white/10"
-        style={{ background: '#0F1E33', borderLeft: `4px solid ${theme.accent}` }}
+        style={{ background: '#0A2438', borderLeft: `4px solid ${theme.accent}` }}
       >
         <div className="p-4">
           {eyebrow && (
@@ -821,7 +821,7 @@ function SectionBlock({
       <a
         href={onePageHref}
         className="block rounded-xl overflow-hidden border border-white/10"
-        style={{ background: '#0F1E33', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
+        style={{ background: '#0A2438', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
       >
         <div className="px-4 py-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -847,7 +847,7 @@ function SectionBlock({
   return (
     <details
       className="group rounded-xl overflow-hidden border border-white/10"
-      style={{ background: '#0F1E33', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
+      style={{ background: '#0A2438', borderLeft: theme ? `4px solid ${theme.accent}` : undefined }}
     >
       <summary className="px-4 py-3 cursor-pointer list-none">
         <div className="flex items-start justify-between gap-3">
@@ -870,7 +870,7 @@ function SectionBlock({
               <div className="text-xs font-bold" style={{ color: theme ? theme.bright : 'var(--tss-cyan)' }}>{sectionPercent}%</div>
               <div className="text-[10px] text-white/40">
                 {completed}/{productized.length}
-                {proposedCount > 0 && (<span className="text-amber-400"> +{proposedCount}↗</span>)}
+                {proposedCount > 0 && (<span className="text-white/50"> +{proposedCount}↗</span>)}
               </div>
             </div>
             <ChevronDown size={16} className="text-white/40 transition-transform group-open:rotate-180" />
@@ -906,7 +906,7 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
   if (isProposed) {
     StatusIcon = Hourglass;
     statusText = 'v1.5';
-    statusColor = 'text-amber-300';
+    statusColor = 'text-white/60';
   } else if (isLocked) {
     StatusIcon = Lock;
     statusText = 'Locked';
@@ -914,7 +914,7 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
   } else if (isCompleted) {
     StatusIcon = CheckCircle2;
     statusText = 'Completed';
-    statusColor = 'text-green-400';
+    statusColor = 'text-[#00D2FF]';
   } else if (isInProgress) {
     StatusIcon = PlayCircle;
     statusText = 'Continue';
@@ -933,19 +933,19 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
       disabled={isLocked}
       className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors ${
         isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5'
-      } ${isProposed ? 'bg-amber-500/10' : ''}`}
+      } ${isProposed ? 'bg-white/5' : ''}`}
     >
       {/* Step number badge */}
       <div
         className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${
           isProposed
-            ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 border-dashed'
+            ? 'bg-white/5 text-white/50 border border-white/30 border-dashed'
             : isCompleted
-            ? 'bg-green-500/20 text-green-300'
+            ? 'bg-[#00D2FF] text-[#061C2B]'
             : isInProgress
-            ? 'bg-amber-500/20 text-amber-300'
+            ? 'bg-[#00D2FF]/20 text-[#00D2FF] border border-[#00D2FF]/60'
             : lesson.is_test
-            ? 'bg-purple-500/20 text-purple-300'
+            ? 'bg-white/10 text-[#00D2FF] border border-[#00D2FF]/40'
             : 'bg-white/10 text-white/60'
         }`}
       >
@@ -957,12 +957,12 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-sm truncate text-white">{lesson.title}</span>
           {isProposed && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wide flex-shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 font-bold uppercase tracking-wide flex-shrink-0">
               Coming v1.5
             </span>
           )}
           {lesson.is_test && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold uppercase tracking-wide flex-shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#00D2FF]/15 text-[#00D2FF] font-bold uppercase tracking-wide flex-shrink-0">
               Gate Test
             </span>
           )}
@@ -987,7 +987,7 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
             </>
           )}
           {isProposed && (
-            <span className="italic text-amber-300">
+            <span className="italic text-white/50">
               Canonical content coming in v1.5
             </span>
           )}

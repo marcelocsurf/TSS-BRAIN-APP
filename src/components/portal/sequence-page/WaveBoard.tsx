@@ -85,6 +85,13 @@ export function WaveBoard({ data, title, flip = false }: { data: WaveBoardData; 
         {hasHold && <span className="inline-flex items-center gap-1.5"><i className="inline-block w-5 h-1.5 rounded" style={{ background: HOLD_COLOR }} />Hold · the arc beside the line: this position is kept</span>}
         {flip && <span className="inline-flex items-center gap-1.5" style={{ color: 'rgba(247,249,250,.55)' }}>Drawn for your stance · the wave goes left</span>}
         <span className="inline-flex items-center gap-1.5"><i className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: POCKET_COLOR }} />Pocket · where the energy is</span>
+        {/* Fases de la línea (PDF "Dibujar la Ola", Marcelo 2026-09-09): las
+            letras del dibujo, explicadas — nadie debería adivinarlas. */}
+        {data.markers.length > 0 && (
+          <span className="inline-flex items-center gap-1.5" style={{ color: 'rgba(247,249,250,.7)', fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', fontSize: 11 }}>
+            {data.markers.map((m) => m.label).filter((l, i, arr) => arr.indexOf(l) === i).map((l) => ({ I: 'I entry', A: 'A set-up', B: 'B connection', M: 'M action', S: 'S exit' } as Record<string, string>)[l] ?? l).join(' · ')}
+          </span>
+        )}
       </div>
     </div>
   );
