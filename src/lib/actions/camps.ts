@@ -2552,21 +2552,29 @@ export type CampDayStatus = {
   session_date: string | null;
   state: 'planned' | 'in_progress' | 'closed';
   coach: string | null;
-  results: { student_id: string; name: string; status: string | null; whats_next: string | null; coach_feedback: string | null }[];
+  venue: string | null;
+  conditions: string | null;
+  common_notes: string | null;
+  results: {
+    student_id: string; name: string; status: string | null; whats_next: string | null; coach_feedback: string | null;
+    mission: string | null; achieved: string | null; homework: string | null; internal_notes: string | null;
+    incident: { type: string; description: string | null; action: string | null } | null;
+    video_link: string | null;
+  }[];
 };
 
 export async function getCampDayStatus(campInstanceId: string): Promise<CampDayStatus[]> {
   const admin = createAdminClient();
   const { data: sessions } = await admin
     .from('camp_sessions')
-    .select('id, day_number, session_date, session_status, completion_state')
+    .select('id, day_number, session_date, session_status, completion_state, venue_actual, ocean_conditions_actual, common_notes')
     .eq('camp_instance_id', campInstanceId)
     .order('day_number');
   if (!sessions?.length) return [];
   const ids = sessions.map((s: any) => s.id);
   const { data: results } = await admin
     .from('student_session_results')
-    .select('camp_session_id, student_id, status, whats_next, coach_feedback, created_at, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
+    .select('camp_session_id, student_id, status, whats_next, coach_feedback, mission, achieved, homework, internal_notes, incident_type, incident_description, incident_action, video_link, created_at, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
     .in('camp_session_id', ids)
     .order('created_at', { ascending: false });
   const bySession = new Map<string, any[]>();
@@ -2587,9 +2595,18 @@ export async function getCampDayStatus(campInstanceId: string): Promise<CampDayS
       session_date: s.session_date ?? null,
       state: closed ? 'closed' : inProgress ? 'in_progress' : 'planned',
       coach,
+      venue: s.venue_actual ?? null,
+      conditions: s.ocean_conditions_actual ?? null,
+      common_notes: s.common_notes ?? null,
       results: list.map((r) => {
         const st = Array.isArray(r.students) ? r.students[0] : r.students;
-        return { student_id: r.student_id, name: `${st?.first_name ?? ''} ${st?.last_name ?? ''}`.trim() || 'Student', status: r.status ?? null, whats_next: r.whats_next ?? null, coach_feedback: r.coach_feedback ?? null };
+        return {
+          student_id: r.student_id, name: `${st?.first_name ?? ''} ${st?.last_name ?? ''}`.trim() || 'Student',
+          status: r.status ?? null, whats_next: r.whats_next ?? null, coach_feedback: r.coach_feedback ?? null,
+          mission: r.mission ?? null, achieved: r.achieved ?? null, homework: r.homework ?? null, internal_notes: r.internal_notes ?? null,
+          incident: r.incident_type && r.incident_type !== 'none' ? { type: r.incident_type, description: r.incident_description ?? null, action: r.incident_action ?? null } : null,
+          video_link: r.video_link ?? null,
+        };
       }).sort((a, b) => a.name.localeCompare(b.name)),
     } as CampDayStatus;
   });

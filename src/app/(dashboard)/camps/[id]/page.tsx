@@ -172,7 +172,7 @@ export default async function CampDetailPage({ params }: Props) {
                       <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0">{d.day_number}</span>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900">Day {d.day_number}{d.session_date ? ` · ${d.session_date}` : ''}</p>
-                        <p className="text-[12px] text-gray-500 truncate">{d.coach ? `Coach ${d.coach}` : 'No coach yet'}{d.results.length ? ` · ${d.results.length} student${d.results.length === 1 ? '' : 's'} with feedback` : ''}</p>
+                        <p className="text-[12px] text-gray-500 truncate">{d.coach ? `Coach ${d.coach}` : 'No coach yet'}{d.venue ? ` · 📍 ${d.venue}` : ''}{d.results.length ? ` · ${d.results.length} student${d.results.length === 1 ? '' : 's'} with feedback` : ''}{d.results.some((r) => r.incident) ? ' · ⚠ incident' : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -180,14 +180,29 @@ export default async function CampDetailPage({ params }: Props) {
                       <Link href={`/camps/${id}/day/${d.day_number}`} className="text-[12px] text-[var(--tss-navy)] underline">open</Link>
                     </div>
                   </summary>
+                  {(d.venue || d.conditions || d.common_notes) && (
+                    <div className="px-4 pb-2 text-[12px] text-gray-600 space-y-0.5">
+                      {d.venue && <p>📍 Where: <span className="text-gray-900">{d.venue}</span></p>}
+                      {d.conditions && <p>🌊 Conditions: <span className="text-gray-900">{d.conditions}</span></p>}
+                      {d.common_notes && <p>📝 Coach notes: <span className="text-gray-900">{d.common_notes}</span></p>}
+                    </div>
+                  )}
                   {d.results.length > 0 ? (
                     <div className="px-4 pb-3 space-y-1.5">
                       {d.results.map((r) => (
-                        <div key={r.student_id} className="rounded-lg bg-gray-50 px-3 py-2">
+                        <div key={r.student_id} className={`rounded-lg px-3 py-2 ${r.incident ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}>
                           <p className="text-[13px] font-semibold text-gray-900">{r.name}{r.status ? <span className="ml-2 text-[11px] font-normal text-gray-500">{r.status.replace(/_/g, ' ')}</span> : null}</p>
-                          {r.whats_next && <p className="text-[12.5px] text-[var(--tss-navy)]">🎯 {r.whats_next}</p>}
+                          {r.incident && (
+                            <p className="text-[12.5px] text-red-700 font-semibold">⚠ Incident · {r.incident.type.replace(/_/g, ' ')}{r.incident.description ? ` — ${r.incident.description}` : ''}{r.incident.action ? ` · Action: ${r.incident.action}` : ''}</p>
+                          )}
+                          {r.mission && <p className="text-[12px] text-gray-700">Worked on: {r.mission}</p>}
+                          {r.achieved && <p className="text-[12px] text-emerald-700">✓ {r.achieved}</p>}
+                          {r.whats_next && <p className="text-[12.5px] text-[var(--tss-navy)]">🎯 Next: {r.whats_next}</p>}
                           {r.coach_feedback && <p className="text-[12px] text-gray-600">{r.coach_feedback}</p>}
-                          {!r.whats_next && !r.coach_feedback && <p className="text-[12px] text-gray-400 italic">Closed without notes.</p>}
+                          {r.homework && <p className="text-[12px] text-gray-600">Homework: {r.homework}</p>}
+                          {r.internal_notes && <p className="text-[12px] text-amber-800">🔒 Internal: {r.internal_notes}</p>}
+                          {r.video_link && <a href={r.video_link} target="_blank" rel="noreferrer" className="text-[12px] text-[var(--tss-navy)] underline">Video</a>}
+                          {!r.whats_next && !r.coach_feedback && !r.mission && !r.incident && <p className="text-[12px] text-gray-400 italic">Closed without notes.</p>}
                         </div>
                       ))}
                     </div>

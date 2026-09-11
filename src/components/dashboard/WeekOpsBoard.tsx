@@ -80,6 +80,7 @@ export async function WeekOpsBoard({ academyId }: { academyId: string }) {
                           <Link href={`/camps/${r.campId}`} className="font-bold text-[var(--tss-navy)] hover:underline">
                             {r.name}{r.dayNumber && r.totalDays && r.totalDays > 1 ? ` · D${r.dayNumber}/${r.totalDays}` : ''}
                           </Link>
+                          <Link href={`/camps/${r.campId}`} className="ml-2 text-[11px] font-semibold text-[var(--tss-cyan,#00A8CC)] hover:underline whitespace-nowrap">ver camp →</Link>
                         </td>
                         <td className="py-2 pr-2">
                           {r.coachNote === 'rejected' ? (
