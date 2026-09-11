@@ -475,24 +475,41 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             )}
           </div>
         </div>
+        {/* ═══ LO QUE SE USA SIEMPRE (auditoría ficha 2026-09-11): cinta · agua ·
+            next focus · última sesión, y las tres acciones. El resto, en pestañas. ═══ */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            ['Cinta', belt?.en ?? student.belt_level],
+            ['En el agua', (student as any).ocean_level ? String((student as any).ocean_level).replace(/_/g, ' ') : '—'],
+            ['Trabaja en', (student as any).next_recommended_focus || '—'],
+            ['Última sesión', (student as any).last_session_date ? new Date((student as any).last_session_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '—'],
+          ].map(([k, v]) => (
+            <div key={k as string} className="rounded-xl bg-gray-50 px-3 py-2 min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-gray-500" style={{ fontFamily: 'DM Mono, monospace' }}>{k}</p>
+              <p className="text-[13px] font-semibold text-[var(--tss-navy)] truncate" title={String(v)}>{v}</p>
+            </div>
+          ))}
+        </div>
         {/* Quick actions */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-3">
           <Link
-            href={`/sessions/new?student=${student.id}`}
-            className="flex-1 min-w-[110px] text-center py-2 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+            href={`/portal/${student.portal_token}?tab=sequence`}
+            target="_blank"
+            title="El mismo flujo de Let's Play del alumno: planear, surfear, evaluar. Lo hacés vos en su portal y queda guardado igual."
+            className="flex-1 min-w-[110px] text-center py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
-            Start Session
+            Planear sesión
           </Link>
-          <PlanSessionButton
+          <span hidden><PlanSessionButton
             studentId={student.id}
             className="flex-1 min-w-[110px] text-center py-2 bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)] text-sm font-medium rounded-lg hover:bg-[var(--tss-cyan,#5AC3E7)]/25 transition-colors disabled:opacity-50"
-          />
+          /></span>
           <Link
             href={`/portal/${student.portal_token}`}
             target="_blank"
-            className="px-3 py-2 bg-gray-50 text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-3 py-2.5 bg-gray-50 text-[var(--tss-navy)] text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
           >
-            Open Portal
+            Abrir portal
           </Link>
           <span className={justCreated ? 'ring-2 ring-emerald-400 ring-offset-1 rounded-lg animate-pulse' : ''}>
             <CopyIntakeLinkButton portalToken={student.portal_token} />
@@ -505,6 +522,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           )}
         </div>
       </div>
+
+      {/* Evaluación de nivel = la misma del cierre de camp, sin camp — arriba, siempre a un toque. */}
+      {coach && (
+        <LevelEvaluationLauncher
+          student={{ id: student.id, first_name: student.first_name ?? null, last_name: student.last_name ?? null, photo_url: (student as any).photo_url ?? null, belt_level: student.belt_level }}
+          rows={officialEvalRows as any}
+          coach={{ id: coach.id, role: coach.role ?? null, max_belt_permission: coach.max_belt_permission ?? null }}
+        />
+      )}
 
       {/* Membresía = acceso al portal — visible siempre, no enterrado (pedido Marcelo) */}
       <MembershipPanel studentId={student.id} info={membershipInfo} />
@@ -723,7 +749,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       )}
 
       {/* --- 8. COACH NOTES (collapsible) --- */}
-      <CollapsibleSection title="Coach Notes" defaultOpen={false}>
+      <CollapsibleSection title="Notas del coach" defaultOpen={true}>
         <div className="space-y-3">
           {student.coach_notes_general ? (
             <div>
@@ -778,8 +804,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       </Card>
 
-      {/* Evaluación de nivel = la misma del cierre de camp, sin camp (2026-09-10). */}
-      {coach && (
+      {/* (Evaluación de nivel ahora vive arriba, en el header.) */}
+      {false && coach && (
         <LevelEvaluationLauncher
           student={{ id: student.id, first_name: student.first_name ?? null, last_name: student.last_name ?? null, photo_url: (student as any).photo_url ?? null, belt_level: student.belt_level }}
           rows={officialEvalRows as any}
@@ -834,7 +860,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             )}
           </>
         }
-        defaultOpen={!!(student as any).ocean_level_provisional}
+        defaultOpen={true}
       >
         <div className="space-y-4">
           <OceanLevelPanel
