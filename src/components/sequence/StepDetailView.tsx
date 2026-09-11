@@ -89,7 +89,9 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
     );
   }
 
-  const { lesson, drill, mission, rating, ratingCount, lastRated, sessionHistory, coachRating, selfSource, assessedCriteria } = data;
+  const { lesson, drill, mission, rating, ratingCount, lastRated, sessionHistory, coachRating, selfSource, assessedCriteria, coachCriteria } = data;
+  const coachMark: Record<number, { result: AssessResult; at: string }> = coachCriteria ?? {};
+  const markWord = (r: AssessResult) => (r === 'met' ? 'yes' : r === 'partial' ? 'halfway' : 'not yet');
   const criteria: string[] = mission?.success_criteria ?? [];
   const assessedMap: Record<number, AssessResult> = Object.fromEntries(((assessedCriteria ?? []) as { criterion_index: number; result: AssessResult }[]).map((c) => [c.criterion_index, c.result]));
   const preview = Object.keys(assess).length ? starsFromCriteria(Object.values(assess)) : null;
@@ -148,6 +150,11 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                 return (
                   <div key={i} className="border border-gray-200 rounded-xl p-2.5">
                     <p className="text-[12px] text-gray-800 mb-1.5 leading-snug"><span className="font-bold mr-1">{i + 1}.</span>{text}</p>
+                    {(assessedMap[i] || coachMark[i]) && (
+                      <p className="text-[11px] mb-1.5" style={{ color: '#0A5C70' }}>
+                        {assessedMap[i] ? `You: ${markWord(assessedMap[i])}` : ''}{assessedMap[i] && coachMark[i] ? ' · ' : ''}{coachMark[i] ? `Your coach: ${markWord(coachMark[i].result)}` : ''}
+                      </p>
+                    )}
                     <div className="grid grid-cols-3 gap-1">
                       {ASSESS_OPTS.map((o) => {
                         const sel = cur === o.key;

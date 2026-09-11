@@ -469,6 +469,20 @@ export async function getStepDetail(portalToken: string, stepId: string) {
     .eq('step_id', stepId)
     .maybeSingle();
 
+  // Marcas del COACH por criterio (2026-09-11): la última por índice. El
+  // alumno las ve al lado de las suyas — "Vos: partial · Tu coach: not met".
+  const { data: coachCritRows } = await admin
+    .from('coach_criterion_evals')
+    .select('criterion_index, criterion_text, result, evaluated_at')
+    .eq('student_id', studentId)
+    .eq('step_id', stepId)
+    .order('evaluated_at', { ascending: false })
+    .limit(40);
+  const coachCriteria: Record<number, { result: 'met' | 'partial' | 'not_met'; at: string }> = {};
+  for (const r of (coachCritRows ?? []) as any[]) {
+    if (coachCriteria[r.criterion_index] === undefined) coachCriteria[r.criterion_index] = { result: r.result, at: r.evaluated_at };
+  }
+
   // Get session history for this step
   const { data: sessions } = await admin
     .from('self_training_sessions')
@@ -520,6 +534,7 @@ export async function getStepDetail(portalToken: string, stepId: string) {
     lastRated: rating?.last_updated || null,
     coachRating: rating?.coach_rating ?? null,
     selfSource: (rating?.self_source === 'assessed' ? 'assessed' : 'executed') as 'executed' | 'assessed',
+    coachCriteria,
     assessedCriteria: (rating?.assessed_criteria ?? null) as { criterion_index: number; criterion_text: string; result: 'met' | 'partial' | 'not_met' }[] | null,
     sessionHistory,
   };

@@ -406,7 +406,7 @@ export function FinalCampEvaluation({
             </p>
           </div>
           <p className="text-[10px] text-white/50 mt-1">
-            {rule.beltLabel} ready = las {seqGroups.length} secuencias logradas
+            {submitStandalone && targetBeltLabel ? targetBeltLabel : rule.beltLabel} ready = las {seqGroups.length} secuencias logradas
             {` (${rule.stpThreshold}★ en cada parte)`}
             {rule.principles.length > 0 && ' + autonomía'}.
             {' '}Lo que no viste queda pendiente, no reprobado — el alumno lo encuentra en su curso.
@@ -715,7 +715,7 @@ export function FinalCampEvaluation({
           })}
         </div>
 
-        {students.length > 0 && (
+        {students.length > 0 && !submitStandalone && (
           <div className="shrink-0 bg-white border-t border-gray-200 p-3 flex gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <button
               type="button"
