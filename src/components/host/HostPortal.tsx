@@ -23,6 +23,8 @@ import {
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
 import { CopyTextButton } from '@/components/dashboard/CopyTextButton';
+import { HoldingAssignPanel } from '@/components/shared/HoldingAssignPanel';
+import { hostHoldingBoard, hostAssignFromHolding, type HoldingSeat, type HoldingTarget } from '@/lib/actions/holding';
 import { sellerSearchStudents, sellerReserveSpot } from '@/lib/actions/seller';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 
@@ -338,6 +340,8 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   const [reserveFor, setReserveFor] = useState<HostDayEvent | null>(null);
   // ➕ Inscribir cliente desde Clientes: elegir servicio → mismo ReserveModal.
   const [pickOpen, setPickOpen] = useState(false);
+  const [holding, setHolding] = useState<{ seats: HoldingSeat[]; targets: HoldingTarget[] } | null>(null);
+  useEffect(() => { if (tab === 'clientes' && holding === null) hostHoldingBoard(token).then(setHolding).catch(() => setHolding({ seats: [], targets: [] })); }, [tab, holding, token]);
   const [upcoming, setUpcoming] = useState<{ date: string; ev: HostDayEvent }[] | null>(null);
   useEffect(() => { if (pickOpen && upcoming === null) hostUpcomingForReserve(token).then(setUpcoming).catch(() => setUpcoming([])); }, [pickOpen, upcoming, token]);
   // Clase fuera de horario (pedido de Rick): plantilla + hora en el día visto
@@ -647,6 +651,11 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                 </div>
               </div>
             )}
+            {holding && (
+              <HoldingAssignPanel lang="es" seats={holding.seats} targets={holding.targets}
+                assign={(pid, tid) => hostAssignFromHolding(token, pid, tid)}
+                onAssigned={() => { setHolding(null); setAttention(null); }} />
+            )}
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email o teléfono…"
               className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm bg-white shadow-sm" />
             {results !== null ? (
@@ -668,7 +677,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
       {reserveFor && (
         <ReserveModal token={token} event={reserveFor}
           onClose={() => setReserveFor(null)}
-          onDone={() => { setReserveFor(null); setUpcoming(null); setAttention(null); hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); }} />
+          onDone={() => { setReserveFor(null); setUpcoming(null); setAttention(null); setHolding(null); hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); }} />
       )}
       {guideOpen && <HostGuide onClose={closeGuide} />}
     </div>

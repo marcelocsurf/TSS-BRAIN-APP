@@ -10,7 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { campEnrollmentClosed, campClosedNoticeES, campDayProgress } from '@/lib/utils/camp-window';
 import { elSalvadorToday } from '@/lib/utils/tz';
 
-async function resolveDesk(token: string) {
+export async function resolveDesk(token: string) {
   const admin = createAdminClient();
   const { data } = await admin
     .from('coaches')

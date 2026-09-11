@@ -24,6 +24,8 @@ import { getMyNotifications } from '@/lib/actions/notifications';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { OperationsBoard } from '@/components/dashboard/OperationsBoard';
 import { WeekOpsBoard } from '@/components/dashboard/WeekOpsBoard';
+import { HoldingAssignPanel } from '@/components/shared/HoldingAssignPanel';
+import { getHoldingBoard, assignFromHolding } from '@/lib/actions/holding';
 import { AdminOpsBoard } from '@/components/dashboard/AdminOpsBoard';
 import { TideWidget } from '@/components/dashboard/TideWidget';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
@@ -100,6 +102,7 @@ export default async function DashboardHome() {
     .eq('is_holding', false);
   if (academyId) campsQ = campsQ.eq('academy_id', academyId);
   const { count: activeCamps } = await campsQ;
+  const holding = role === 'coordinator' && academyId ? await getHoldingBoard(academyId).catch(() => ({ seats: [], targets: [] })) : { seats: [], targets: [] };
 
   let surveyQ = academyId
     ? supabase
@@ -285,6 +288,8 @@ export default async function DashboardHome() {
               los coaches planearon — encuentro, transfer, lugar, espacios,
               staff, alumnos — con copia por día para el chat de performance. */}
           <WeekOpsBoard academyId={academyId} />
+          {/* Por asignar · nivel por confirmar (Marcelo 2026-09-11) */}
+          <HoldingAssignPanel seats={holding.seats} targets={holding.targets} assign={assignFromHolding} />
           <div className="mb-6"><TideWidget isAdmin={false} /></div>
         </>
       )}
