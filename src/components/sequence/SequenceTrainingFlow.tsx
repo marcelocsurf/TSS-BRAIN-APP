@@ -174,7 +174,8 @@ interface Props {
   /** "Rehearse it on land first": el Feel it de la secuencia en el curso (null
    *  sin curso — los drills son material de aprendizaje, no se registran). */
   rehearseHref?: string | null;
-  onDone: () => void;
+  /** A dónde vuelve al terminar: 'home' (plan guardado) o 'sequence' (Let's Play). */
+  onDone: (next?: 'home' | 'sequence') => void;
 }
 
 export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone }: Props) {
@@ -616,7 +617,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         <div className="rounded-xl border border-gray-200 p-3.5">
           <p className="text-[12.5px] text-gray-700 leading-snug">Close the app and surf. When you are back, open it: <b>Home → Finish &amp; evaluate</b>. Your plan stays saved.</p>
         </div>
-        <button type="button" onClick={onDone} className="w-full h-12 rounded-xl text-[14px] font-bold active:scale-[0.99]" style={{ background: INK, color: PAPER, ...F_D }}>
+        <button type="button" onClick={() => onDone('home')} className="w-full h-12 rounded-xl text-[14px] font-bold active:scale-[0.99]" style={{ background: INK, color: PAPER, ...F_D }}>
           Done — see you after the water
         </button>
         <button type="button" onClick={() => setPhase('evaluation')} className="w-full text-[12px] text-gray-500 underline">Already back? Evaluate now</button>
@@ -959,7 +960,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           )}
         </div>
 
-        <button type="button" onClick={onDone} className="w-full h-11 rounded-xl text-[13px] font-bold" style={{ background: INK, color: PAPER }}>
+        <button type="button" onClick={() => onDone('sequence')} className="w-full h-11 rounded-xl text-[13px] font-bold" style={{ background: INK, color: PAPER }}>
           ← Back to My Sequence
         </button>
       </div>

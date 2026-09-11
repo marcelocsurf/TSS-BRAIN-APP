@@ -666,6 +666,14 @@ export function PortalTabs({
   };
 
   // La sesión abierta (plan guardado antes del agua): cerrarla o descartarla.
+  // Ir a una pestaña con datos frescos, SIN router.refresh(): refresh re-pide
+  // la página con la URL interna de Next (que puede traer ?seq=… de un
+  // deep-link) y el flow arrancaba de nuevo (Marcelo 2026-09-11).
+  const goTab = (t: Tab) => {
+    setActiveTab(t);
+    savePortalState(data.token, { tab: t, lesson: null });
+    portalRouter.replace(`${window.location.pathname}?tab=${t}`);
+  };
   const finishOpenSession = () => {
     const os = data.openSession;
     if (!os) return;
@@ -679,7 +687,7 @@ export function PortalTabs({
     if (!os) return;
     if (!window.confirm('Discard this plan? Nothing gets rated.')) return;
     await discardSession(data.token, os.id);
-    portalRouter.refresh();
+    goTab('home');
   };
 
   const handlePracticeDrill = (drillMissionId: string) => {
@@ -823,7 +831,15 @@ export function PortalTabs({
                 studentBelt={student.belt_level || 'white_belt'}
                 onCancel={() => setPendingSequence(null)}
                 rehearseHref={seqPageHref(data, pendingSequence.sequenceId, 'feel')}
-                onDone={() => { setPendingSequence(null); portalRouter.refresh(); }}
+                onDone={(next) => {
+                  // Marcelo (2026-09-11): "cuando termino me manda otra vez a
+                  // iniciar en lugar de Home". router.refresh() re-pedía la
+                  // página con la URL interna de Next, que todavía traía
+                  // ?seq=… del deep-link → initialTrain → el flow arrancaba de
+                  // nuevo. Ahora se navega EXPLÍCITO a la pestaña prometida.
+                  setPendingSequence(null);
+                  goTab(next ?? 'sequence');
+                }}
               />
             </div>
           )}
@@ -844,7 +860,7 @@ export function PortalTabs({
             <CustomSessionFlow
               portalToken={data.token}
               onCancel={() => setShowCustomSession(false)}
-              onDone={() => { setShowCustomSession(false); portalRouter.refresh(); }}
+              onDone={() => { setShowCustomSession(false); goTab('sequence'); }}
             />
           ) : !data.hasAnyCourse ? (
             // Los drills vienen EN EL PAQUETE con el curso. Inscribirse a un
