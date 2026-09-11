@@ -73,6 +73,10 @@ export interface IntakeFormInput {
   // Adaptive — beginner branch
   board_familiarity?: string;
   water_comfort?: string;
+  // Evaluación general (Marcelo 2026-09-11)
+  self_sufficiency?: string;
+  fitness_level?: string;
+  wave_preference?: string;
 
   // Adaptive — experienced branch
   comfort_wave_size?: string;

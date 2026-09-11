@@ -90,7 +90,10 @@ export async function setStudentPin(portalToken: string, pin: string): Promise<v
 }
 
 // ─── Login with PIN — returns { portalToken } on success, sets cookie ───
-export async function loginStudentByPin(pin: string): Promise<{ portalToken: string }> {
+// PIN + CORREO (2026-09-11): un PIN de 4 dígitos solo, contra todos los
+// alumnos, chocaba (dos alumnos con el mismo PIN → entraba al portal
+// equivocado). El correo lo vuelve único por persona.
+export async function loginStudentByPin(pin: string, email?: string): Promise<{ portalToken: string }> {
   if (!/^\d{4,6}$/.test(pin)) {
     throw new Error('PIN must be 4 to 6 digits.');
   }
@@ -106,9 +109,12 @@ export async function loginStudentByPin(pin: string): Promise<{ portalToken: str
   // students that have a PIN set. Production with many students should add
   // a secondary identifier (email/phone + PIN) — for the current scale this
   // is fine and short-lived; promote-to-member volumes are modest.
+  const mail = (email ?? '').trim().toLowerCase();
+  if (!mail) throw new Error('Enter the email on your profile together with your PIN.');
   const { data: candidates } = await admin
     .from('students')
     .select('id, portal_token, pin_hash')
+    .eq('email', mail)
     .not('pin_hash', 'is', null);
 
   const match = (candidates ?? []).find(

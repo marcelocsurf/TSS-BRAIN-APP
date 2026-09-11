@@ -286,6 +286,8 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
 
   // ── Submit Stage 2 (Extended) ──
   const handleExtendedSubmit = async () => {
+    // Nunca se envía con una obligatoria vacía en un paso anterior.
+    for (const st of [0, 2]) { const e = stepError(st); if (e) { setExtendedStep(st); setError(e); return; } }
     setLoading(true);
     setError('');
     try {
@@ -674,12 +676,53 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
   // STAGE 2: EXTENDED INTAKE
   // ═══════════════════════════════════════
 
+  // Intake profundo (Marcelo 2026-09-11): UNA evaluación general para todos,
+  // sin rama beginner/experimentado. Cuatro pasos: tu surf · tu tabla y olas
+  // (opcional) · tus metas a 3 plazos · detalles.
   const EXT_STEPS = [
-    { title: isBeginner ? 'Your Starting Point' : 'Your Surf Today' },
+    { title: 'Your Surfing' },
+    { title: 'Your Board & Waves' },
     { title: 'Your Goals' },
     { title: 'Final Details' },
   ];
   const extTotalSteps = EXT_STEPS.length;
+  // Principiante (nunca surfeó): no se le pregunta frecuencia, autosuficiencia
+  // ni tabla/olas; esos valores se fijan solos (Marcelo 2026-09-11).
+  const neverSurfed = (extForm.surf_experience_years as string) === "I haven't surfed yet";
+  // Obligatorio: lo que el coach necesita sí o sí para planear el camp.
+  // Opcional: lo que ayuda pero no frena.
+  const stepError = (step: number): string | null => {
+    const f = extForm as Record<string, unknown>;
+    const miss = (k: string) => !String(f[k] ?? '').trim();
+    if (step === 0) {
+      if (miss('stance')) return 'Tell us your stance (or "Not sure yet").';
+      if (miss('surf_experience_years')) return 'Tell us when you started surfing.';
+      if (!neverSurfed && miss('surf_frequency')) return 'Tell us how often you surf.';
+      if (!neverSurfed && miss('self_sufficiency')) return 'Tell us if you are self-sufficient in the water.';
+      if (miss('water_comfort')) return 'Tell us how comfortable you feel in the ocean.';
+      if (miss('fitness_level')) return 'Tell us your fitness level.';
+    }
+    if (step === 2) {
+      if (miss('goal_short_term')) return 'Tell us what you want to improve in this camp — your coach plans around it.';
+    }
+    return null;
+  };
+  const nextStep = () => {
+    const err = stepError(extendedStep);
+    if (err) { setError(err); return; }
+    setError('');
+    if (extendedStep === 0 && neverSurfed) {
+      // Valores fijos del principiante + salta "tabla y olas".
+      setExtForm((prev) => ({ ...prev, surf_frequency: 'Never yet', self_sufficiency: 'I need help getting out and catching waves', board_type: prev.board_type || "I don't have one yet" }));
+      setExtendedStep(2);
+      return;
+    }
+    setExtendedStep(extendedStep + 1);
+  };
+  const prevStep = () => {
+    setError('');
+    setExtendedStep(extendedStep === 2 && neverSurfed ? 0 : extendedStep - 1);
+  };
 
   return (
     <div className="space-y-4">
@@ -728,76 +771,85 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
         </div>
 
         <div className="p-4 space-y-4">
-          {/* ── STEP 0: SURF EXPERIENCE (adaptive) ── */}
-          {extendedStep === 0 && isBeginner && (
+          {/* ── STEP 0: YOUR SURFING — evaluación general ── */}
+          {extendedStep === 0 && (
             <>
+              <OptionGroup
+                label="What's your stance?"
+                required
+                value={(extForm.stance as string) || ''}
+                onChange={(v) => setExt('stance', v)}
+                options={['Regular', 'Goofy', 'Not sure yet']}
+              />
+              <Select
+                label="When did you start surfing?"
+                required
+                value={(extForm.surf_experience_years as string) || ''}
+                onChange={(v) => setExt('surf_experience_years', v)}
+                options={['', "I haven't surfed yet", 'Less than 1 year ago', '1-3 years ago', '3-5 years ago', '5-10 years ago', 'More than 10 years ago']}
+              />
+              {!neverSurfed && (
+                <Select
+                  label="How often do you surf?"
+                  required
+                  value={(extForm.surf_frequency as string) || ''}
+                  onChange={(v) => setExt('surf_frequency', v)}
+                  options={['', 'A few times a year', 'Monthly', 'Weekly', 'Several times a week', 'Almost daily']}
+                />
+              )}
+              {!neverSurfed && (
+                <OptionGroup
+                  label="In the water, are you self-sufficient or do you need help?"
+                  required
+                  value={(extForm.self_sufficiency as string) || ''}
+                  onChange={(v) => setExt('self_sufficiency', v)}
+                  options={[
+                    'I need help getting out and catching waves',
+                    'I manage, but sometimes I need a hand',
+                    'Self-sufficient: I get out, pick and catch my own waves',
+                  ]}
+                />
+              )}
+              <OptionGroup
+                label="How comfortable do you feel in the ocean?"
+                required
+                value={(extForm.water_comfort as string) || ''}
+                onChange={(v) => setExt('water_comfort', v)}
+                options={['Very comfortable', 'Somewhat', 'It makes me nervous']}
+              />
+              <OptionGroup
+                label="Your fitness level today"
+                required
+                value={(extForm.fitness_level as string) || ''}
+                onChange={(v) => setExt('fitness_level', v)}
+                options={['Low — not training right now', 'Moderate — active some days', 'Good — train regularly', 'Athlete — train hard most days']}
+              />
+              {neverSurfed && <p className="text-[12px] text-gray-500">First time? Perfect. We skip the board questions — your coach picks your board on day one.</p>}
               <Field
                 label="Other sports you practice"
                 value={(extForm.other_sports as string) || ''}
                 onChange={(v) => setExt('other_sports', v)}
-                placeholder="e.g. Skateboarding, swimming, soccer"
+                placeholder="e.g. Skateboarding, swimming, BJJ, running"
               />
               <OptionGroup
                 label="How do you learn best?"
                 value={(extForm.learning_style as string) || ''}
                 onChange={(v) => setExt('learning_style', v)}
-                options={[
-                  'Watching (visual)',
-                  'Doing (kinesthetic)',
-                  'Hearing explanations',
-                  'Not sure',
-                ]}
-              />
-              <OptionGroup
-                label="Have you ever tried standing on a board? (skate, snow, foam surf)"
-                value={(extForm.board_familiarity as string) || ''}
-                onChange={(v) => setExt('board_familiarity', v)}
-                options={['Yes', 'A little', 'No']}
-              />
-              <OptionGroup
-                label="How comfortable do you feel in the ocean?"
-                value={(extForm.water_comfort as string) || ''}
-                onChange={(v) => setExt('water_comfort', v)}
-                options={['Very comfortable', 'Somewhat', 'It makes me nervous']}
+                options={['Watching (visual)', 'Doing (kinesthetic)', 'Hearing explanations', 'Not sure']}
               />
             </>
           )}
 
-          {extendedStep === 0 && !isBeginner && (
+          {/* ── STEP 1: YOUR BOARD & WAVES (optional) ── */}
+          {extendedStep === 1 && (
             <>
-              <OptionGroup
-                label="What's your stance?"
-                value={(extForm.stance as string) || ''}
-                onChange={(v) => setExt('stance', v)}
-                options={['Regular', 'Goofy', 'Not sure']}
-              />
-              <Select
-                label="How long have you been surfing?"
-                value={(extForm.surf_experience_years as string) || ''}
-                onChange={(v) => setExt('surf_experience_years', v)}
-                options={[
-                  '', 'Less than 1 year', '1-3 years', '3-5 years', '5+ years',
-                ]}
-              />
-              <Select
-                label="How often do you surf?"
-                value={(extForm.surf_frequency as string) || ''}
-                onChange={(v) => setExt('surf_frequency', v)}
-                options={[
-                  '', 'A few times a year', 'Monthly', 'Weekly', 'Almost daily',
-                ]}
-              />
+              <p className="text-[12.5px] text-gray-500">All optional. It helps your coach pick the right board and the right peak for you. Fields marked * elsewhere are required.</p>
               <Select
                 label="What board(s) do you ride?"
                 value={(extForm.board_type as string) || ''}
                 onChange={(v) => setExt('board_type', v)}
-                options={[
-                  '', 'Foamie / Soft top', 'Funboard',
-                  'Shortboard', 'Longboard', 'Several',
-                ]}
+                options={['', "I don't have one yet", 'Foamie / Soft top', 'Funboard / Mid-length', 'Shortboard', 'Longboard', 'Fish', 'Several']}
               />
-              {/* Exact board size + volume — optional reference for the coach
-                  when choosing today's board. Leave blank if you don't know. */}
               <FormRow>
                 <Select
                   label="Board length (feet)"
@@ -819,90 +871,52 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
                 placeholder="e.g. 32"
               />
               <OptionGroup
+                label="What kind of wave do you enjoy most?"
+                value={(extForm.wave_preference as string) || ''}
+                onChange={(v) => setExt('wave_preference', v)}
+                options={['Small and mellow', 'Long walls / point breaks', 'Beach break peaks', 'Steep and hollow', "I don't know yet"]}
+              />
+              <OptionGroup
                 label="What wave size are you comfortable with today?"
                 value={(extForm.comfort_wave_size as string) || ''}
                 onChange={(v) => setExt('comfort_wave_size', v)}
-                options={['Up to waist', 'Up to chest', 'Up to head', 'Overhead']}
-              />
-              {/* "How would you describe your surfing today?" removed —
-                  the surf-level quiz (Step 1) already determines this. No
-                  duplicate self-rating. */}
-              <OptionGroup
-                label="How do you learn best?"
-                value={(extForm.learning_style as string) || ''}
-                onChange={(v) => setExt('learning_style', v)}
-                options={[
-                  'Watching (visual)',
-                  'Doing (kinesthetic)',
-                  'Hearing explanations',
-                  'Not sure',
-                ]}
-              />
-              <Field
-                label="Other sports you practice"
-                value={(extForm.other_sports as string) || ''}
-                onChange={(v) => setExt('other_sports', v)}
-                placeholder="e.g. Skateboarding, swimming, BJJ"
+                options={['Whitewater only', 'Up to waist', 'Up to chest', 'Up to head', 'Overhead']}
               />
             </>
           )}
 
-          {/* ── STEP 1: GOALS (adaptive) ── */}
-          {extendedStep === 1 && isBeginner && (
+          {/* ── STEP 2: GOALS — tres plazos ── */}
+          {extendedStep === 2 && (
             <>
               <TextArea
-                label="What would you like to achieve in this trip/course?"
-                value={(extForm.goal_short_term as string) || ''}
-                onChange={(v) => setExt('goal_short_term', v)}
-                placeholder="e.g. Stand up for the first time, catch my first wave"
-              />
-              <TextArea
-                label="What's your dream with surfing?"
+                label="Long term — in about 3 years, what do you want to achieve in your surfing?"
                 value={(extForm.goal_long_term as string) || ''}
                 onChange={(v) => setExt('goal_long_term', v)}
-                placeholder="e.g. Surf with confidence, lose my fear of the ocean"
+                placeholder="e.g. Surf confidently anywhere I travel; ride head-high waves; do real turns"
               />
               <TextArea
-                label="Any fears related to the ocean or surfing?"
-                value={(extForm.fears_phobias as string) || ''}
-                onChange={(v) => setExt('fears_phobias', v)}
-                placeholder="Be honest \u2014 it helps us take care of you"
-                hint="This is confidential. Only your coach team sees it."
-              />
-            </>
-          )}
-
-          {extendedStep === 1 && !isBeginner && (
-            <>
-              <TextArea
-                label="What do you want to achieve this trip/course?"
-                value={(extForm.goal_short_term as string) || ''}
-                onChange={(v) => setExt('goal_short_term', v)}
-                placeholder="e.g. Start turning, surf bigger waves"
-              />
-              <TextArea
-                label="Where do you want to be in 3-6 months?"
+                label="Medium term — from here to one month from now, what do you want to achieve?"
                 value={(extForm.goal_mid_term as string) || ''}
                 onChange={(v) => setExt('goal_mid_term', v)}
-                placeholder="e.g. Surf unbroken waves consistently, cutbacks"
+                placeholder="e.g. Catch green waves on my own; stand up every time"
               />
               <TextArea
-                label="What's your dream with surfing? (1-3 years)"
-                value={(extForm.goal_long_term as string) || ''}
-                onChange={(v) => setExt('goal_long_term', v)}
-                placeholder="e.g. Surf confidently anywhere I travel"
+                label="Short term — in this camp (next week), what do you want to improve? *"
+                value={(extForm.goal_short_term as string) || ''}
+                onChange={(v) => setExt('goal_short_term', v)}
+                placeholder="e.g. My pop-up; reading where to sit; my first turn"
               />
               <TextArea
                 label="What has held you back, or what bad habits do you want to fix?"
                 value={(extForm.biggest_barrier as string) || ''}
                 onChange={(v) => setExt('biggest_barrier', v)}
-                placeholder="e.g. Fear of big waves, bad positioning, inconsistency"
+                placeholder="e.g. Fear of bigger waves, bad positioning, inconsistency"
               />
               <TextArea
                 label="Any fears related to the ocean or surfing?"
                 value={(extForm.fears_phobias as string) || ''}
                 onChange={(v) => setExt('fears_phobias', v)}
-                placeholder="Be honest \u2014 it helps us coach you better"
+                placeholder="Be honest — it helps us take care of you"
                 hint="This is confidential. Only your coach team sees it."
               />
               <TextArea
@@ -914,8 +928,8 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
             </>
           )}
 
-          {/* ── STEP 2: FINAL DETAILS ── */}
-          {extendedStep === 2 && (
+          {/* ── STEP 3: FINAL DETAILS ── */}
+          {extendedStep === 3 && (
             <>
               <Field
                 label="Instagram"
@@ -947,7 +961,7 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
         {extendedStep > 0 && (
           <button
             type="button"
-            onClick={() => { setExtendedStep(extendedStep - 1); setError(''); }}
+            onClick={prevStep}
             className="flex-1 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"
           >
             Back
@@ -956,7 +970,7 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
         {extendedStep < extTotalSteps - 1 ? (
           <button
             type="button"
-            onClick={() => { setExtendedStep(extendedStep + 1); setError(''); }}
+            onClick={nextStep}
             className="flex-1 py-3 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
             style={{ background: BRAND.colors.navy }}
           >
@@ -1073,12 +1087,12 @@ function TextArea({ label, value, onChange, placeholder, hint }: {
   );
 }
 
-function Select({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[];
+function Select({ label, value, onChange, options, required }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[]; required?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && <span className="text-red-500"> *</span>}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -1092,12 +1106,12 @@ function Select({ label, value, onChange, options }: {
   );
 }
 
-function OptionGroup({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[];
+function OptionGroup({ label, value, onChange, options, required }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[]; required?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-2">{label}</label>
+      <label className="block text-xs font-medium text-gray-600 mb-2">{label}{required && <span className="text-red-500"> *</span>}</label>
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => (
           <button

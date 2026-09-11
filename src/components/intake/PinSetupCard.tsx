@@ -76,7 +76,7 @@ export function PinSetupCard({
     <form onSubmit={submit} className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3">
       <p className="text-sm font-semibold text-[var(--tss-navy)]">Choose a PIN</p>
       <p className="text-xs text-gray-500 leading-relaxed">
-        4–6 digits. You'll use this to sign in on this device — or any device where you want to access your portal.
+        4–6 digits. To sign in from any device: go to the app, type your PIN and the email on your profile.
       </p>
       <input
         type="password"

@@ -96,6 +96,7 @@ function TabButton({
 function StudentPanel() {
   const router = useRouter();
   const [code, setCode] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -114,9 +115,10 @@ function StudentPanel() {
     }
 
     if (looksLikePin) {
+      if (!email.trim()) { setError('Add the email on your profile to sign in with your PIN.'); return; }
       setLoading(true);
       try {
-        const { portalToken } = await loginStudentByPin(trimmed);
+        const { portalToken } = await loginStudentByPin(trimmed, email);
         router.push(`/portal/${portalToken}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not sign in.');
@@ -147,9 +149,17 @@ function StudentPanel() {
           placeholder="TSS-XXXX-XXXX or your PIN"
         />
         <p className="text-[11px] text-gray-500 mt-1.5">
-          First time? Use the code your coach sent you. Already activated? Use your PIN (soon) or the portal link saved on your device.
+          First time? Use the code your coach sent you. Already have a PIN? Type it and add your email below.
         </p>
       </div>
+      {looksLikePin && (
+        <div>
+          <label className="block text-xs font-medium text-[var(--tss-gray-500)] mb-1.5 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Your email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email"
+            className="w-full px-4 py-2.5 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent"
+            placeholder="The email on your profile" />
+        </div>
+      )}
 
       {error && <p className="text-sm text-[var(--tss-danger,#dc2626)] bg-red-50 p-3 rounded-xl">{error}</p>}
 

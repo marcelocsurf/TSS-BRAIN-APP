@@ -156,9 +156,17 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <KV label="Stance" value={s.stance} />
           <KV label="Surf experience (years)" value={s.surf_experience_years} />
           <KV label="Frequency" value={s.surf_frequency} />
+          <KV label="Self-sufficiency" value={(s as any).self_sufficiency} />
+          <KV label="Fitness" value={(s as any).fitness_level} />
+          <KV label="Wave preference" value={(s as any).wave_preference} />
           <KV label="Board type" value={s.board_type} />
+          <KV label="Board size" value={(s as any).board_length_feet ? `${(s as any).board_length_feet}'${(s as any).board_length_inches ?? 0}"${(s as any).board_volume_liters ? ` · ${(s as any).board_volume_liters} L` : ''}` : (s as any).board_volume_liters ? `${(s as any).board_volume_liters} L` : null} />
+          <KV label="Comfortable wave size" value={(s as any).comfort_wave_size} />
+          <KV label="Ocean comfort" value={(s as any).water_comfort} />
           <KV label="Other sports" value={s.other_sports} />
           <KV label="Learning style" value={s.learning_style} />
+          <KV label="Surf injuries" value={(s as any).surf_injuries} />
+          <KV label="Returning student" value={(s as any).returning_student ? 'Yes' : null} />
         </Section>
 
         {/* Level quiz — lo que el alumno declaró, habilidad por habilidad.
@@ -199,6 +207,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
         {/* Goals + barriers */}
         <Section title="Goals & barriers" Icon={Target}>
           <KV label="Primary goal" value={s.primary_goal} />
+          <KV label="This visit (Welcome back)" value={(s as any).personal_goal} />
           <KV label="Short-term goal" value={s.goal_short_term} />
           <KV label="Mid-term goal" value={s.goal_mid_term} />
           <KV label="Long-term goal" value={s.goal_long_term} />

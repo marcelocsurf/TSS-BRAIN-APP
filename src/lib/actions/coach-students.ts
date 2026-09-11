@@ -215,7 +215,8 @@ export async function getCoachStudentDetail(
        stance, surf_experience_years, surf_frequency, board_type, other_sports, learning_style,
        primary_goal, goal_short_term, goal_mid_term, goal_long_term, biggest_barrier, fears_phobias,
        last_session_date, last_session_mission, last_session_pilar, last_session_drill,
-       last_session_status, last_homework, next_recommended_focus`,
+       last_session_status, last_homework, next_recommended_focus,
+       self_sufficiency, fitness_level, wave_preference, board_length_feet, board_length_inches, board_volume_liters, comfort_wave_size, water_comfort, surf_injuries, returning_student, personal_goal`,
     )
     .eq('id', studentId)
     .single();
@@ -233,7 +234,7 @@ export async function getCoachStudentDetail(
   const { data: lessons } = stepIds.length ? await admin.from('lessons').select('id, title').in('id', stepIds) : { data: [] as any[] };
   const title = new Map((lessons ?? []).map((l: any) => [l.id, l.title as string]));
   return {
-    ...(data as CoachStudentDetail),
+    ...(data as unknown as CoachStudentDetail),
     self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
     own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),
     open_session: open ? { name: open.drill_name ?? 'Session', planned_at: open.planned_at ?? null } : null,

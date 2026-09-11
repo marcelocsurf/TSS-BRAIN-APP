@@ -1096,12 +1096,21 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             <Row label="Stance" value={student.stance} />
             <Row label="Experience" value={student.surf_experience_years} />
             <Row label="Frequency" value={student.surf_frequency} />
+            <Row label="Self-sufficiency" value={(student as any).self_sufficiency} />
+            <Row label="Fitness" value={(student as any).fitness_level} />
+            <Row label="Wave preference" value={(student as any).wave_preference} />
             <Row label="Board Type" value={student.board_type} />
+            <Row label="Board size" value={(student as any).board_length_feet ? `${(student as any).board_length_feet}'${(student as any).board_length_inches ?? 0}"${(student as any).board_volume_liters ? ` · ${(student as any).board_volume_liters} L` : ''}` : (student as any).board_volume_liters ? `${(student as any).board_volume_liters} L` : null} />
+            <Row label="Comfortable wave size" value={(student as any).comfort_wave_size} />
+            <Row label="Ocean comfort" value={(student as any).water_comfort} />
             <Row label="Other Sports" value={student.other_sports} />
             <Row label="Learning Style" value={student.learning_style} />
+            <Row label="Surf injuries" value={(student as any).surf_injuries} />
+            <Row label="Returning student" value={(student as any).returning_student ? 'Yes' : null} />
           </div>
           <div className="border-t border-gray-50 pt-2 mt-3">
             <p className="text-[12px] font-semibold text-gray-400 uppercase mb-2">Goals</p>
+            <Row label="This visit (Welcome back)" value={(student as any).personal_goal} />
             <Row label="Short Term" value={student.goal_short_term} />
             <Row label="Mid Term" value={student.goal_mid_term} />
             <Row label="Long Term" value={student.goal_long_term} />
