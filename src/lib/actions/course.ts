@@ -1,4 +1,5 @@
 'use server';
+import { activatePendingCoursesForStudent } from '@/lib/actions/course-grants';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
@@ -805,6 +806,35 @@ export async function redeemCodeAndCreateStudent(
       const m = now.getMonth() - birth.getMonth();
       if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
       if (age < 0 || age > 120) age = null;
+    }
+  }
+
+  // Alumno EXISTENTE (Marcelo 2026-09-11): si el email ya tiene portal, el
+  // curso se le otorga a esa cuenta — antes se creaba una segunda cuenta con
+  // un segundo portal. Mismo criterio que el link de regalo del libro.
+  const emailNorm = profile.email?.trim().toLowerCase() || null;
+  if (emailNorm) {
+    const { data: existing } = await admin
+      .from('students')
+      .select('id, portal_token, pending_courses, waiver_signed, anonymized_at')
+      .ilike('email', emailNorm)
+      .is('anonymized_at', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.portal_token) {
+      const pend = Array.isArray(existing.pending_courses) ? existing.pending_courses : [];
+      if (!pend.includes(codeRow.product_type)) {
+        const { error: pErr } = await admin.from('students').update({ pending_courses: [...pend, codeRow.product_type] }).eq('id', existing.id);
+        if (pErr) return { ok: false, error: pErr.message };
+      }
+      const { error: cErr } = await admin.from('access_codes').update({ used_by: existing.id, used_at: new Date().toISOString() }).eq('code', code.toUpperCase().trim());
+      if (cErr) return { ok: false, error: cErr.message };
+      // Si ya firmó el waiver, el curso se activa ahora; si no, al firmarlo.
+      if (existing.waiver_signed) {
+        try { await activatePendingCoursesForStudent(existing.id); } catch (e) { console.error('[redeem] activate pending failed', e); }
+      }
+      return { ok: true, portalToken: existing.portal_token as string };
     }
   }
 
