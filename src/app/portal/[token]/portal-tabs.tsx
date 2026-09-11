@@ -693,7 +693,7 @@ export function PortalTabs({
   const brand = resolveAcademyBranding((data as any).academyBranding ?? null);
 
   return (
-    <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#000' }}>
+    <div className="min-h-screen tss-portal-bg pb-20" style={{ background: '#061C2B' }}>
       {/* Header — themed by academy. Slim band: academy logo + tagline on the
           left, The Surf Sequence lineage logo on the right (shown on every
           screen), logout tucked in the corner. */}

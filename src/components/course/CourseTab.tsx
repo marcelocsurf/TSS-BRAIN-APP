@@ -357,6 +357,18 @@ export function CourseTab({ data }: { data: CourseData }) {
       ? data.lessons.find((l) => l.id === THREE_CIRCLES_LESSON_ID) ?? null
       : null;
 
+  // Siguiente paso = la primera secuencia de la cinta con algún paso sin completar.
+  const nextSeqGroup = beltSequences.find((g) => g.lessons.some((l) => !l.completed)) ?? null;
+  const nextSeq = nextSeqGroup
+    ? {
+        prefix: sequencePrefix(nextSeqGroup.id, nextSeqGroup.order),
+        name: nextSeqGroup.name,
+        subtitle: nextSeqGroup.subtitle || null,
+        href: sequencePageFor(nextSeqGroup.id) ? `/portal/${data.portalToken}/seq/${nextSeqGroup.id}` : null,
+      }
+    : null;
+  const beltIndex = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'].indexOf(activeCourse.key);
+
   const beltLabelShort =
     activeCourse.key === 'yellow_belt' ? 'Yellow Belt'
     : activeCourse.key === 'blue_belt' ? 'Blue Belt'
@@ -393,8 +405,10 @@ export function CourseTab({ data }: { data: CourseData }) {
           <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#00D2FF' }}>{beltLabelShort} · {activeCourse.label}</span>
           <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>{data.studentName}</span>
         </div>
-        <h2 className="mt-2 leading-[1] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em' }}>The Surf<br />Sequence</h2>
-        <p className="mt-1.5 text-[14px] italic" style={{ fontFamily: 'var(--font-tagline), Lora, serif', color: '#00D2FF' }}>Evolve through play</p>
+        {/* El logo oficial (lockup con el tagline adentro), no el nombre en texto
+            (Marcelo 2026-09-11: "quizás que sea el logo original"). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" className="mt-4 h-14 w-auto object-contain object-left" />
         <div className="flex items-center gap-3 mt-4">
           <div className="flex-1 h-1 rounded-sm overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
             <div className="h-full transition-all duration-500" style={{ width: `${overallPercent}%`, background: '#00D2FF' }} />
@@ -402,6 +416,32 @@ export function CourseTab({ data }: { data: CourseData }) {
           <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.totalCompleted} / {data.totalLessons} · {overallPercent}%</span>
         </div>
         <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.55)' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
+      </div>
+
+      {/* NEXT STEP — el único bloque con fondo claro (arena del manual): la
+          primera secuencia de la cinta que no está completa. Marcelo
+          2026-09-11: "darle más importancia a los títulos que merecen la
+          atención" y los colores del sitio (ink · arena · cyan). */}
+      {nextSeq && (
+        <div className="mx-2 mt-4 p-5" style={{ background: '#E9E2D2', borderLeft: '4px solid #00D2FF' }}>
+          <p className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#005F79' }}>Next step</p>
+          <h3 className="mt-2 text-[22px] leading-[1.05] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, letterSpacing: '-0.02em', color: '#061C2B' }}>
+            {nextSeq.prefix ? `${nextSeq.prefix} · ` : ''}{nextSeq.name}
+          </h3>
+          {nextSeq.subtitle && <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: '#3E4A50' }}>{nextSeq.subtitle}</p>}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {nextSeq.href ? (
+              <a href={nextSeq.href} className="inline-block px-5 py-3 text-[11px] font-semibold" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', background: '#061C2B', color: '#F7F9FA' }}>Open</a>
+            ) : null}
+            <a href={`/portal/${data.portalToken}?tab=sequence`} className="inline-block px-5 py-3 text-[11px] font-semibold" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', border: '1px solid #061C2B', color: '#061C2B' }}>Let&apos;s Play</a>
+          </div>
+        </div>
+      )}
+      {/* Las seis cintas: hasta la tuya en color pleno, el resto apagadas. */}
+      <div className="mx-2 mt-4 flex gap-1">
+        {(['#E8ECEF', '#F5C518', '#1E9BE0', '#7B4FBE', '#7D4E27', '#0F1A22'] as const).map((c, i) => (
+          <i key={c} className="flex-1 h-1.5 rounded-sm" style={{ background: c, opacity: i <= beltIndex ? 1 : 0.25, boxShadow: c === '#0F1A22' ? 'inset 0 0 0 1px rgba(247,249,250,.25)' : undefined }} />
+        ))}
       </div>
 
       {/* PRE-COURSE — 8 sections */}
@@ -832,7 +872,7 @@ function SectionBlock({
           <ChevronDown size={16} className="text-white/40 transition-transform group-open:rotate-180 shrink-0" />
         </div>
       </summary>
-      <div className="divide-y divide-white/5 border-t border-white/10 mb-2 rounded-lg" style={{ background: '#0A2438' }}>
+      <div className="divide-y divide-white/5 border-t border-white/10 mb-2 rounded-lg" style={{ background: '#0A2A3A' }}>
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
