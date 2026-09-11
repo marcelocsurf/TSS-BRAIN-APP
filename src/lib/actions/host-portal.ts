@@ -1056,3 +1056,27 @@ export async function hostDayProgramText(token: string, dateISO: string): Promis
     return { ok: false, error: 'No se pudo armar la programación.' };
   }
 }
+
+
+// ═══ INSCRIBIR CLIENTE desde 👥 Clientes (Marcelo 2026-09-11) ═══
+// "¿Dónde está el botón?": el + Reservar vivía solo dentro de cada tarjeta
+// de la Agenda. Esto lista los servicios de los próximos 14 días con lugar,
+// para elegir uno y reservar con el mismo ReserveModal.
+export async function hostUpcomingForReserve(token: string, days = 14): Promise<{ date: string; ev: HostDayEvent }[]> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return [];
+  const t0 = Date.parse(`${elSalvadorToday()}T00:00:00Z`);
+  const dates = Array.from({ length: days }, (_, i) => new Date(t0 + i * 86_400_000).toISOString().slice(0, 10));
+  const perDay = await Promise.all(dates.map((d) => hostDayOperation(token, d).catch(() => [] as HostDayEvent[])));
+  const out: { date: string; ev: HostDayEvent }[] = [];
+  const seen = new Set<string>();
+  perDay.forEach((evs, i) => {
+    for (const ev of evs) {
+      if (ev.closed || seen.has(ev.camp_id)) continue;            // un camp de varios días sale UNA vez
+      if (ev.capacity > 0 && ev.enrolled >= ev.capacity) continue; // lleno: no se ofrece
+      seen.add(ev.camp_id);
+      out.push({ date: dates[i], ev });
+    }
+  });
+  return out;
+}

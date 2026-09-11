@@ -13,7 +13,7 @@ import { SeatContactPanel } from '@/components/shared/SeatContactPanel';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
-  hostRecentIncidents, hostSendIntakeEmail, hostDayOperation,
+  hostRecentIncidents, hostSendIntakeEmail, hostDayOperation, hostUpcomingForReserve,
   hostAdhocTemplates, hostCreateAdhocClass,
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
@@ -336,6 +336,10 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   };
   const [opEvents, setOpEvents] = useState<HostDayEvent[] | null>(null);
   const [reserveFor, setReserveFor] = useState<HostDayEvent | null>(null);
+  // ➕ Inscribir cliente desde Clientes: elegir servicio → mismo ReserveModal.
+  const [pickOpen, setPickOpen] = useState(false);
+  const [upcoming, setUpcoming] = useState<{ date: string; ev: HostDayEvent }[] | null>(null);
+  useEffect(() => { if (pickOpen && upcoming === null) hostUpcomingForReserve(token).then(setUpcoming).catch(() => setUpcoming([])); }, [pickOpen, upcoming, token]);
   // Clase fuera de horario (pedido de Rick): plantilla + hora en el día visto
   const [adhocOpen, setAdhocOpen] = useState(false);
   const [adhocTpls, setAdhocTpls] = useState<any[] | null>(null);
@@ -607,6 +611,40 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
 
         {tab === 'clientes' && (
           <div className="space-y-3">
+            {/* El botón del proceso: vendido = inscribir + link (Marcelo 2026-09-11). */}
+            <button type="button" onClick={() => setPickOpen(true)}
+              className="w-full rounded-full py-3.5 text-[10px]" style={{ ...F_M, background: GREEN, color: INK, fontWeight: 700 }}>
+              ➕ Inscribir cliente · elegir servicio → link de intake
+            </button>
+            {pickOpen && !reserveFor && (
+              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.8)' }} onClick={() => setPickOpen(false)}>
+                <div className="w-full max-w-md bg-white rounded-2xl p-4 space-y-2 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Paso 1 de 2</p>
+                      <p className="font-bold text-[15px]" style={{ color: INK }}>¿A qué servicio lo inscribís?</p>
+                      <p className="text-[11px] text-gray-500">Próximos 14 días con lugar. Después elegís o creás al cliente y te sale su link.</p>
+                    </div>
+                    <button type="button" onClick={() => setPickOpen(false)} className="text-[20px] leading-none text-gray-400 px-1">×</button>
+                  </div>
+                  {upcoming === null ? <p className="text-[12px] text-gray-400 py-4 text-center">Cargando…</p>
+                    : upcoming.length === 0 ? <p className="text-[12px] text-gray-400 py-4 text-center">No hay servicios con lugar en los próximos 14 días. Creá la clase en Agenda (+ Clase en otro horario).</p>
+                    : upcoming.map(({ date, ev }) => {
+                      const left = ev.capacity > 0 ? ev.capacity - ev.enrolled : null;
+                      const multi = (ev.total_days ?? 1) > 1;
+                      return (
+                        <button key={ev.camp_id} type="button" onClick={() => { setPickOpen(false); setReserveFor(ev); }}
+                          className="w-full text-left rounded-xl px-3 py-2.5 border border-gray-200 bg-white hover:border-[#00D2FF]">
+                          <p className="text-[13px] font-bold" style={{ color: INK }}>{ev.name}</p>
+                          <p className="text-[11px] text-gray-500">
+                            {date}{ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}{multi ? ` · ${ev.total_days} días (camp)` : ' · 1 día'}{ev.coach ? ` · ${ev.coach}` : ''}{left !== null ? ` · ${left} libre${left === 1 ? '' : 's'}` : ''}
+                          </p>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email o teléfono…"
               className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm bg-white shadow-sm" />
             {results !== null ? (
@@ -628,7 +666,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
       {reserveFor && (
         <ReserveModal token={token} event={reserveFor}
           onClose={() => setReserveFor(null)}
-          onDone={() => { setReserveFor(null); hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); }} />
+          onDone={() => { setReserveFor(null); setUpcoming(null); setAttention(null); hostDayOperation(token, opDate).then(setOpEvents).catch(() => {}); }} />
       )}
       {guideOpen && <HostGuide onClose={closeGuide} />}
     </div>
