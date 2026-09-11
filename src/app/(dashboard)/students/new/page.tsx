@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createLead } from '@/lib/actions/leads';
+import { listCampsInRange, addStudentToCamp } from '@/lib/actions/camps';
 import { ArrowLeft } from 'lucide-react';
 import { HowToAddStudent } from '@/components/students/HowToAddStudent';
 
@@ -15,7 +16,24 @@ export default function AddStudentPage() {
   const [last, setLast] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [studentType, setStudentType] = useState<'member' | 'dropin'>('member');
+  // El servicio decide (Marcelo 2026-09-11): 1 día = drop-in, 2+ días =
+  // member. Sin servicio (lead que todavía no compró) = member sin inscribir.
+  const [services, setServices] = useState<{ id: string; name: string; start: string; end: string; days: number }[]>([]);
+  const [serviceId, setServiceId] = useState('');
+  const [enrollNote, setEnrollNote] = useState<string | null>(null);
+  const chosen = services.find((x) => x.id === serviceId) ?? null;
+  const studentType: 'member' | 'dropin' = chosen && chosen.days < 2 ? 'dropin' : 'member';
+  useEffect(() => {
+    const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
+    const horizon = new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10);
+    listCampsInRange(today, horizon).then((rows: any[]) => {
+      setServices(rows.filter((r) => r.status !== 'completed').map((r) => {
+        const a = Date.parse(`${r.start_date}T00:00:00Z`); const b = Date.parse(`${r.end_date}T00:00:00Z`);
+        const days = Number.isFinite(a) && Number.isFinite(b) ? Math.round((b - a) / 86_400_000) + 1 : 1;
+        return { id: r.id, name: r.camp_name, start: r.start_date, end: r.end_date, days };
+      }));
+    }).catch(() => setServices([]));
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
@@ -45,6 +63,18 @@ export default function AddStudentPage() {
         allowDuplicate,
       });
       if (res.ok) {
+        // Perfil creado. Si eligió servicio, lo inscribe ahí mismo: vendido =
+        // perfil + inscripción + UN link, sin pasar por Services.
+        if (chosen) {
+          try {
+            const en: any = await addStudentToCamp(chosen.id, res.studentId, { allowStarted: true });
+            if (en?.success) setEnrollNote(`Enrolled in ${chosen.name}.`);
+            else if (en?.full) setEnrollNote(`Profile created, but ${chosen.name} is full (${en.full.act}/${en.full.cap}). Enroll from Services.`);
+            else setEnrollNote(`Profile created, but could not enroll: ${en?.error ?? 'unknown error'}. Enroll from Services.`);
+          } catch (e: any) {
+            setEnrollNote(`Profile created, but could not enroll: ${e?.message ?? 'error'}. Enroll from Services.`);
+          }
+        }
         setCreatedUrl(res.leadFormUrl);
         setEmailSent(!!res.emailSent);
       } else if (res.duplicate) {
@@ -89,14 +119,20 @@ export default function AddStudentPage() {
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp" className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
 
-          <div className="grid grid-cols-2 gap-2">
-            {([['member', 'Member', 'Academy · portal + course'], ['dropin', 'Drop-in', 'Single class · waiver only']] as const).map(([val, label, desc]) => (
-              <button key={val} type="button" onClick={() => setStudentType(val)}
-                className={`text-left rounded-xl border px-3 py-2 transition-colors ${studentType === val ? 'border-[var(--tss-cyan)] bg-cyan-50/40' : 'border-gray-200 hover:border-gray-300'}`}>
-                <p className="text-sm font-semibold text-[var(--tss-navy)]">{label}</p>
-                <p className="text-[10px] text-gray-500">{desc}</p>
-              </button>
-            ))}
+          <div>
+            <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]">
+              <option value="">Service · none yet (interested, not sold)</option>
+              {services.map((sv) => (
+                <option key={sv.id} value={sv.id}>{sv.name} · {sv.days === 1 ? sv.start : `${sv.start} → ${sv.end}`}</option>
+              ))}
+            </select>
+            <p className="text-[12px] text-gray-500 mt-1.5">
+              {chosen
+                ? (chosen.days < 2
+                  ? 'One-day service → drop-in. The intake asks profile + waiver only.'
+                  : `${chosen.days}-day service → member. The intake asks profile + waiver + level quiz + goals.`)
+                : 'No service yet → member without enrollment. Enroll later from Services.'}
+            </p>
           </div>
 
           {error && <p className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>}
@@ -108,7 +144,8 @@ export default function AddStudentPage() {
         <div ref={successRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3 text-center">
           <p className="text-2xl">✅</p>
           <p className="text-sm font-semibold text-[var(--tss-navy)]">Profile created</p>
-          <p className="text-xs text-gray-500">Send this link to the student to complete their intake (level + details + waiver).</p>
+          {enrollNote && <p className={`text-xs font-medium ${enrollNote.startsWith('Enrolled') ? 'text-emerald-700' : 'text-amber-700'}`}>{enrollNote}</p>}
+          <p className="text-xs text-gray-500">Send this ONE link to the student. The intake asks exactly what their service needs.</p>
           {emailSent && (
             <p className="text-xs text-emerald-700 font-medium">✓ We also emailed the link to {email}.</p>
           )}
