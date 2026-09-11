@@ -17,7 +17,7 @@ export const BB_SEQ_09: SequencePageConfig = {
   stepIds: ['STP-035', 'STP-018', 'STP-038', 'STP-037'],
   think: {
     whatIs: {
-      headline: 'Backside pumping generates speed with your body on a wave that breaks behind you: chest open to the wave, eyes over the back shoulder.',
+      headline: 'Backside pumping is the same partnership — the wave’s energy plus your biomechanics — on a wave that breaks behind you: chest open to the wave, eyes over the back shoulder.',
       line: 'Arcs from the top of the face down through the middle and up again. One arc per pump.',
       where: 'Z2 to Z4 — the open face, wherever there is wall in front of you. It does not need to touch the lip.',
       whatFor: 'Speed you can spend on your backside: to make a section, to reach the pocket, to set up the bottom turn. The closer to the pocket, the more energy the wave gives you.',
@@ -98,6 +98,6 @@ export const BB_SEQ_09: SequencePageConfig = {
     },
   ],
   review: {
-    howItFeels: 'You feel you can generate speed forward on your backside using the face of the wave, with your chest open and your eyes already where you are going. You feel in control of your board and you are drawing your lines. The rhythm is yours, not the wave’s.',
+    howItFeels: 'You feel you can generate speed forward on your backside using the face of the wave, with your chest open and your eyes already where you are going. You feel in control of your board and you are drawing your lines. The rhythm is yours: you decide when to take the wave’s energy and when to add your own.',
   },
 };

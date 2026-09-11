@@ -15,7 +15,8 @@ export const BB_SEQ_08: SequencePageConfig = {
   stepIds: ['STP-035', 'STP-018', 'STP-036'],
   think: {
     whatIs: {
-      headline: 'Pumping generates speed with your body, not with the wave.',
+      // Regla de Marcelo (2026-09-11, doctrine_rules): la ola Y tu biomecánica, juntas — nunca una sin la otra.
+      headline: 'Pumping is the wave’s energy and your biomechanics working together: you use the face and your body to draw the lines that make speed.',
       line: 'Arcs from the top of the face down through the middle and up again. One arc per pump.',
       where: 'Z2 to Z4 — the open face, wherever there is wall in front of you. It does not need to touch the lip.',
       whatFor: 'Speed you can spend: to make a section, to reach the pocket, to set up a maneuver. The closer to the pocket, the more energy the wave gives you.',
@@ -129,6 +130,6 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
   ],
   review: {
-    howItFeels: 'You feel you can generate speed forward using the face of the wave. You feel in control of your board and you are drawing your lines. You have the ability to make sections and to gain speed using the wave and your line. The rhythm is yours, not the wave’s.',
+    howItFeels: 'You feel you can generate speed forward using the face of the wave. You feel in control of your board and you are drawing your lines. You have the ability to make sections and to gain speed using the wave and your line. The rhythm is yours: you decide when to take the wave’s energy and when to add your own.',
   },
 };
