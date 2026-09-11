@@ -75,6 +75,9 @@ export function SellerPortal({ token, sellerName, services, heading = 'Seller' }
   }, [live.length]);
 
   // Disponibilidad por día (para los puntitos de la tira)
+  // Camp "por confirmar" (Marcelo 2026-09-11): quiere camp, nivel aún sin
+  // saber → queda inscrito acá y se asigna al camp real cuando llena el intake.
+  const holding = useMemo(() => (services ?? []).find((s: any) => s.is_holding) ?? null, [services]);
   const dayInfo = useMemo(() => {
     const m = new Map<string, { n: number; free: boolean }>();
     for (const s of live) {
@@ -117,6 +120,7 @@ export function SellerPortal({ token, sellerName, services, heading = 'Seller' }
       return 'class';
     };
     const rows = live
+      .filter((s) => !s.is_holding)
       .filter((s) => filter === 'all' || kindOf(s) === filter)
       .filter((s) => !q.trim() || (s.camp_name ?? '').toLowerCase().includes(q.trim().toLowerCase()));
     const map = new Map<string, any[]>();
@@ -199,6 +203,24 @@ export function SellerPortal({ token, sellerName, services, heading = 'Seller' }
                 </button>
               ))}
             </div>
+            {holding && (
+              <div className="rounded-2xl p-3 mb-2" style={{ background: '#0A2438', border: `1.5px solid ${GOLD}66` }}>
+                <p style={{ ...F_M, color: GOLD }} className="text-[8px]">Quiere camp · nivel por confirmar</p>
+                <p className="text-[14px] font-bold mt-0.5" style={{ color: PAPER }}>Surf Camp · nivel por confirmar</p>
+                <p className="text-[11px] mt-0.5" style={{ color: 'rgba(247,249,250,.55)' }}>Queda inscrito. Cuando llene su intake (quiz), coordinación lo asigna al camp de su nivel.</p>
+                <div className="flex gap-1.5 mt-2">
+                  <button onClick={() => setReservingId(reservingId === holding.id ? null : holding.id)}
+                    className="text-[11px] font-extrabold px-3 py-1.5 rounded-full"
+                    style={reservingId === holding.id ? { background: 'rgba(247,249,250,.15)', color: PAPER } : { background: GREEN, color: INK }}>
+                    {reservingId === holding.id ? '× Cerrar' : '+ Reservar'}
+                  </button>
+                </div>
+                {reservingId === holding.id && (
+                  <SellerReserveForm token={token} campId={holding.id}
+                    onDone={() => { setReservingId(null); sellerMySales(token).then(setSales).catch(() => {}); router.refresh(); }} />
+                )}
+              </div>
+            )}
             {grouped.length === 0 && <p className="text-[13px] py-6 text-center" style={{ color: 'rgba(247,249,250,.4)' }}>Nada que coincida — probá otro filtro.</p>}
             {(selectedDay ? grouped.filter(([d]) => d === selectedDay) : grouped).slice(0, 30).map(([day, rows]) => (
               <div key={day}>

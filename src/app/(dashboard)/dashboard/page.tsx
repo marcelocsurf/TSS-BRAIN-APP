@@ -96,7 +96,8 @@ export default async function DashboardHome() {
   let campsQ = supabase
     .from('camp_instances')
     .select('*', { count: 'exact', head: true })
-    .in('status', ['planned', 'active']);
+    .in('status', ['planned', 'active'])
+    .eq('is_holding', false);
   if (academyId) campsQ = campsQ.eq('academy_id', academyId);
   const { count: activeCamps } = await campsQ;
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createLead } from '@/lib/actions/leads';
-import { listCampsInRange, addStudentToCamp } from '@/lib/actions/camps';
+import { listCampsInRange, addStudentToCamp, getHoldingCamp } from '@/lib/actions/camps';
 import { ArrowLeft } from 'lucide-react';
 import { HowToAddStudent } from '@/components/students/HowToAddStudent';
 
@@ -26,12 +26,15 @@ export default function AddStudentPage() {
   useEffect(() => {
     const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
     const horizon = new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10);
-    listCampsInRange(today, horizon).then((rows: any[]) => {
-      setServices(rows.filter((r) => r.status !== 'completed').map((r) => {
+    Promise.all([listCampsInRange(today, horizon), getHoldingCamp()]).then(([rows, holding]: [any[], any]) => {
+      const list = rows.filter((r) => r.status !== 'completed' && !r.is_holding).map((r) => {
         const a = Date.parse(`${r.start_date}T00:00:00Z`); const b = Date.parse(`${r.end_date}T00:00:00Z`);
         const days = Number.isFinite(a) && Number.isFinite(b) ? Math.round((b - a) / 86_400_000) + 1 : 1;
         return { id: r.id, name: r.camp_name, start: r.start_date, end: r.end_date, days };
-      }));
+      });
+      // "Quiere camp, nivel por confirmar" va primero: queda inscrito y se asigna después.
+      if (holding) list.unshift({ id: holding.id, name: holding.camp_name, start: 'por confirmar', end: '', days: 6 });
+      setServices(list);
     }).catch(() => setServices([]));
   }, []);
   const [loading, setLoading] = useState(false);
@@ -123,12 +126,14 @@ export default function AddStudentPage() {
             <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]">
               <option value="">Service · none yet (interested, not sold)</option>
               {services.map((sv) => (
-                <option key={sv.id} value={sv.id}>{sv.name} · {sv.days === 1 ? sv.start : `${sv.start} → ${sv.end}`}</option>
+                <option key={sv.id} value={sv.id}>{sv.name}{sv.start === 'por confirmar' ? '' : ` · ${sv.days === 1 ? sv.start : `${sv.start} → ${sv.end}`}`}</option>
               ))}
             </select>
             <p className="text-[12px] text-gray-500 mt-1.5">
               {chosen
-                ? (chosen.days < 2
+                ? (chosen.start === 'por confirmar'
+                  ? 'Wants a camp, level not known yet → member, enrolled as "level to confirm". The intake asks everything; assign the real camp once the quiz is in.'
+                  : chosen.days < 2
                   ? 'One-day service → drop-in. The intake asks profile + waiver only.'
                   : `${chosen.days}-day service → member. The intake asks profile + waiver + level quiz + goals.`)
                 : 'No service yet → member without enrollment. Enroll later from Services.'}

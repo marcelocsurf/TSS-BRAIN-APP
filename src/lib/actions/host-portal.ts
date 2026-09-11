@@ -1070,6 +1070,24 @@ export async function hostUpcomingForReserve(token: string, days = 14): Promise<
   const perDay = await Promise.all(dates.map((d) => hostDayOperation(token, d).catch(() => [] as HostDayEvent[])));
   const out: { date: string; ev: HostDayEvent }[] = [];
   const seen = new Set<string>();
+  // Primero el camp "por confirmar" (quiere camp, nivel aún sin saber).
+  try {
+    const admin = createAdminClient();
+    const { data: h } = await admin
+      .from('camp_instances')
+      .select('id, camp_name, camp_participants(enrollment_status)')
+      .eq('academy_id', who.academy_id).eq('is_holding', true).neq('status', 'cancelled')
+      .maybeSingle();
+    if (h) {
+      seen.add(h.id);
+      out.push({ date: 'por confirmar', ev: {
+        camp_id: h.id, name: h.camp_name, kind: 'surf_camp', time: null, coach: null, day_number: null, total_days: 6,
+        session_status: null, coach_status: null, closed: false, capacity: 0,
+        enrolled: ((h as any).camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length,
+        students: [], spaces: [], transport: null, venue: null, price_cents: null,
+      } });
+    }
+  } catch { /* sin holding no pasa nada */ }
   perDay.forEach((evs, i) => {
     for (const ev of evs) {
       if (ev.closed || seen.has(ev.camp_id)) continue;            // un camp de varios días sale UNA vez

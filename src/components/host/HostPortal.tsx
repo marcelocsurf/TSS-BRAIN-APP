@@ -637,7 +637,9 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                           className="w-full text-left rounded-xl px-3 py-2.5 border border-gray-200 bg-white hover:border-[#00D2FF]">
                           <p className="text-[13px] font-bold" style={{ color: INK }}>{ev.name}</p>
                           <p className="text-[11px] text-gray-500">
-                            {date}{ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}{multi ? ` · ${ev.total_days} días (camp)` : ' · 1 día'}{ev.coach ? ` · ${ev.coach}` : ''}{left !== null ? ` · ${left} libre${left === 1 ? '' : 's'}` : ''}
+                            {date === 'por confirmar'
+                              ? 'Quiere camp, nivel aún sin saber. Queda inscrito; se asigna al camp real cuando llena su intake.'
+                              : <>{date}{ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}{multi ? ` · ${ev.total_days} días (camp)` : ' · 1 día'}{ev.coach ? ` · ${ev.coach}` : ''}{left !== null ? ` · ${left} libre${left === 1 ? '' : 's'}` : ''}</>}
                           </p>
                         </button>
                       );
