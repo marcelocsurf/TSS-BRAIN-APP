@@ -26,9 +26,9 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
       <div className="px-4 py-3 border-b border-red-50 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-red-500 inline-flex items-center gap-1.5">
           <Lock size={13} strokeWidth={1.75} />
-          Notas del coach
+          Internal Coach Notes
         </h3>
-        <span className="text-[11px] text-red-300 bg-red-50 px-2 py-0.5 rounded-full">El alumno nunca las ve</span>
+        <span className="text-[11px] text-red-300 bg-red-50 px-2 py-0.5 rounded-full">Never visible to student</span>
       </div>
       <div className="px-4 py-3">
         <textarea
@@ -36,7 +36,7 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
           onChange={e => setValue(e.target.value)}
           rows={3}
           onBlur={() => { if ((notes || '') !== value) void handleSave(); }}
-          placeholder="Notas privadas — comportamiento, actitud, tu lectura real. Se guardan solas al salir del campo."
+          placeholder="Private notes — behavior, attitude, your real read. Saves itself when you leave the field."
           className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-gray-700 focus:outline-none focus:ring-1 focus:ring-red-200"
         />
         <button
@@ -44,12 +44,12 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
           disabled={saving}
           className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? 'Guardando…' : saved ? (
+          {saving ? 'Saving…' : saved ? (
             <span className="inline-flex items-center gap-1">
               <Check size={12} strokeWidth={2.5} />
-              Guardado
+              Saved
             </span>
-          ) : 'Guardar'}
+          ) : 'Save'}
         </button>
       </div>
     </div>

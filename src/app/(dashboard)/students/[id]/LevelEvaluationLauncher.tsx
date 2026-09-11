@@ -23,8 +23,8 @@ export function LevelEvaluationLauncher({ student, rows, coach }: {
     return (
       <button type="button" onClick={() => setOpen(true)}
         className="w-full rounded-2xl border-2 border-dashed border-cyan-300 bg-cyan-50/40 px-4 py-3 text-left hover:bg-cyan-50">
-        <p className="text-sm font-semibold text-[var(--tss-navy)]">Evaluación de nivel →</p>
-        <p className="text-[11px] text-gray-500 mt-0.5">La misma evaluación del final del camp, sin camp: secuencias con estrella oficial, autonomía en el agua, foco y cinta ({target.replace('_belt', '')} si aprueba).</p>
+        <p className="text-sm font-semibold text-[var(--tss-navy)]">Level evaluation →</p>
+        <p className="text-[11px] text-gray-500 mt-0.5">The same end-of-camp evaluation, without a camp: sequences with the official star, water autonomy, focus and belt ({target.replace('_belt', '')} if approved).</p>
       </button>
     );
   }
@@ -33,7 +33,7 @@ export function LevelEvaluationLauncher({ student, rows, coach }: {
       <FinalCampEvaluation
         token=""
         campInstanceId=""
-        campName="Evaluación de nivel"
+        campName="Level evaluation"
         students={[{ student_id: student.id, display_name: name, photo_url: student.photo_url, belt_level: student.belt_level, blocks: [], profile: {}, recentSessions: [], stepRatings: { selfRatedCount: 0, coachRatedCount: 0 } } as any]}
         stpCatalog={rows.map((r) => ({
           id: r.step_id, title: r.step_title ?? r.step_id, pillar: null, display_order: r.step_number ?? 0, course_section: r.course_section ?? '',

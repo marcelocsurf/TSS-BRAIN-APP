@@ -406,10 +406,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-1">
           <p className="text-sm font-semibold text-emerald-700 inline-flex items-center gap-1.5">
             <CheckCircle2 size={15} strokeWidth={2} />
-            Alumno creado
+            Student created successfully!
           </p>
           <p className="text-xs text-emerald-700/80">
-            Copiá el link del intake y mandáselo para que complete su ficha y firme el waiver.
+            Copy the intake link below and send it to the student to complete their profile and sign the waiver.
           </p>
         </div>
       )}
@@ -470,7 +470,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             </p>
             {(student as any).created_at && (
               <p className="text-[12px] text-gray-400 mt-1">
-                Desde {new Date((student as any).created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                Member since {new Date((student as any).created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             )}
           </div>
@@ -479,10 +479,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             next focus · última sesión, y las tres acciones. El resto, en pestañas. ═══ */}
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
-            ['Cinta', belt?.en ?? student.belt_level],
-            ['En el agua', (student as any).ocean_level ? String((student as any).ocean_level).replace(/_/g, ' ') : '—'],
-            ['Trabaja en', (student as any).next_recommended_focus || '—'],
-            ['Última sesión', (student as any).last_session_date ? new Date((student as any).last_session_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '—'],
+            ['Belt', belt?.en ?? student.belt_level],
+            ['In the water', (student as any).ocean_level ? String((student as any).ocean_level).replace(/_/g, ' ') : '—'],
+            ['Working on', (student as any).next_recommended_focus || '—'],
+            ['Last session', (student as any).last_session_date ? new Date((student as any).last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'],
           ].map(([k, v]) => (
             <div key={k as string} className="rounded-xl bg-gray-50 px-3 py-2 min-w-0">
               <p className="text-[12px] uppercase tracking-wider text-gray-500" style={{ fontFamily: 'DM Mono, monospace' }}>{k}</p>
@@ -495,10 +495,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Link
             href={`/portal/${student.portal_token}?tab=sequence`}
             target="_blank"
-            title="El mismo flujo de Let's Play del alumno: planear, surfear, evaluar. Lo hacés vos en su portal y queda guardado igual."
+            title="The student's own Let's Play flow: plan, surf, evaluate. You do it in their portal and it saves the same way."
             className="flex-1 min-w-[110px] text-center py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
-            Planear sesión
+            Plan session
           </Link>
           <span hidden><PlanSessionButton
             studentId={student.id}
@@ -509,7 +509,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             target="_blank"
             className="px-3 py-2.5 bg-gray-50 text-[var(--tss-navy)] text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
           >
-            Abrir portal
+            Open portal
           </Link>
           <span className={justCreated ? 'ring-2 ring-emerald-400 ring-offset-1 rounded-lg animate-pulse' : ''}>
             <CopyIntakeLinkButton portalToken={student.portal_token} />
@@ -554,7 +554,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
            asma el coach no puede tener que abrir una sección plegada para
            enterarse. */}
       {/* --- RELATIONSHIP / VISITS (who is this, at a glance) --- */}
-      <Card title="Relación" highlighted={visitStats.visits > 1}>
+      <Card title="Relationship" highlighted={visitStats.visits > 1}>
         <div className="pt-2 space-y-3">
           <div className="flex items-center gap-2">
             {visitStats.visits > 1 ? (
@@ -573,25 +573,25 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">Visitas</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
               <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[12px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
             </div>
             <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">Días entrenados</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
               <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
             </div>
           </div>
-          <Row label="Primera visita" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
-          <Row label="Última visita" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
+          <Row label="First visit" value={visitStats.firstVisit ? new Date(visitStats.firstVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} />
+          <Row label="Last visit" value={visitStats.lastVisit ? `${new Date(visitStats.lastVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${visitStats.daysSinceLast != null ? ` · ${visitStats.daysSinceLast}d ago` : ''}` : '—'} />
           <PriorVisitsEditor studentId={student.id} initial={visitStats.priorVisits} />
         </div>
       </Card>
 
       {/* --- SAFETY & MEDICAL (highlighted if data) --- */}
-      <Card title="Seguridad y salud" highlighted={hasSafetyData}>
+      <Card title="Safety &amp; Medical" highlighted={hasSafetyData}>
         <div className="space-y-2">
-          <Row label="Contacto de emergencia" value={student.emergency_contact_name} />
-          <Row label="Tel. de emergencia" value={student.emergency_contact_phone} />
+          <Row label="Emergency Contact" value={student.emergency_contact_name} />
+          <Row label="Emergency Phone" value={student.emergency_contact_phone} />
           {student.allergies && (
             <div className="flex items-start justify-between gap-4">
               <span className="text-xs text-gray-500 shrink-0">Allergies</span>
@@ -604,9 +604,9 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               <span className="text-sm text-right text-amber-600 font-medium">{student.injuries}</span>
             </div>
           )}
-          <Row label="Notas médicas" value={student.medical_notes} />
-          <Row label="Nado" value={student.swim_level} />
-          <Row label="Notas de riesgo" value={student.risk_notes} />
+          <Row label="Medical Notes" value={student.medical_notes} />
+          <Row label="Swim Level" value={student.swim_level} />
+          <Row label="Risk Notes" value={student.risk_notes} />
         </div>
       </Card>
 
@@ -624,27 +624,27 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           Use the most recent real session entry (richest: coach feedback,
           mission, what's next). Fall back to the student snapshot only if
           the unified history is empty. */}
-      <Card title="Última sesión" highlighted>
+      <Card title="Latest Session" highlighted>
         {allSessions.length > 0 ? (
           <div className="space-y-2">
-            <Row label="Fecha" value={new Date(allSessions[0].date).toLocaleDateString()} />
-            <Row label="Misión" value={allSessions[0].mission} />
+            <Row label="Date" value={new Date(allSessions[0].date).toLocaleDateString()} />
+            <Row label="Mission" value={allSessions[0].mission} />
             <Row label="Coach" value={allSessions[0].coachName} />
-            <Row label="Estado" value={allSessions[0].status} badge />
-            <Row label="Feedback del coach" value={allSessions[0].coachFeedback} highlight />
-            <Row label="Tarea" value={allSessions[0].homework} highlight />
-            <Row label="Qué trabajar después" value={allSessions[0].whatsNext} highlight />
+            <Row label="Status" value={allSessions[0].status} badge />
+            <Row label="Coach Feedback" value={allSessions[0].coachFeedback} highlight />
+            <Row label="Homework" value={allSessions[0].homework} highlight />
+            <Row label="What to Work Next" value={allSessions[0].whatsNext} highlight />
           </div>
         ) : student.last_session_date ? (
           <div className="space-y-2">
-            <Row label="Fecha" value={new Date(student.last_session_date).toLocaleDateString()} />
-            <Row label="Misión" value={student.last_session_mission} />
-            <Row label="Estado" value={student.last_session_status} badge />
-            <Row label="Tarea" value={student.last_homework} highlight />
-            <Row label="Qué trabajar después" value={student.next_recommended_focus} highlight />
+            <Row label="Date" value={new Date(student.last_session_date).toLocaleDateString()} />
+            <Row label="Mission" value={student.last_session_mission} />
+            <Row label="Status" value={student.last_session_status} badge />
+            <Row label="Homework" value={student.last_homework} highlight />
+            <Row label="What to Work Next" value={student.next_recommended_focus} highlight />
           </div>
         ) : (
-          <p className="text-sm text-gray-400 py-4 text-center">Sin sesiones todavía</p>
+          <p className="text-sm text-gray-400 py-4 text-center">No sessions recorded yet</p>
         )}
       </Card>
 
@@ -690,11 +690,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       )}
 
       {/* --- 6. SESSION HISTORY (collapsible) --- */}
-      <CollapsibleSection title={`Historial de sesiones (${allSessions.length})`} defaultOpen={true}>
+      <CollapsibleSection title={`Session History (${allSessions.length})`} defaultOpen={true}>
         <SessionHistoryPanel sessions={allSessions.slice(0, 5)} />
         {allSessions.length > 5 && (
           <Link href={`/students/${student.id}/history`} className="block mt-2 text-sm font-semibold text-[var(--tss-navy)] underline">
-            Ver todas ({allSessions.length}) →
+            See all ({allSessions.length}) →
           </Link>
         )}
       </CollapsibleSection>
@@ -737,7 +737,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                 )}
                 {n.student_visible_note && (
                   <div className="mb-2 rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">
-                    <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">El alumno lo ve</p>
+                    <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Student sees this</p>
                     <p className="text-sm text-gray-700 whitespace-pre-line">{n.student_visible_note}</p>
                   </div>
                 )}
@@ -754,32 +754,32 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       )}
 
       {/* --- 8. COACH NOTES (collapsible) --- */}
-      <CollapsibleSection title="Notas del coach" defaultOpen={true}>
+      <CollapsibleSection title="Coach Notes" defaultOpen={true}>
         <div className="space-y-3">
           {student.coach_notes_general ? (
             <div>
-              <p className="text-[12px] font-semibold text-gray-400 uppercase mb-1">Notas internas</p>
+              <p className="text-[12px] font-semibold text-gray-400 uppercase mb-1">Internal Notes</p>
               <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">
                 {student.coach_notes_general}
               </p>
             </div>
           ) : (
-            <p className="text-xs text-gray-400">Sin notas todavía</p>
+            <p className="text-xs text-gray-400">No coach notes yet</p>
           )}
           {student.current_focus_area && (
             <div>
-              <p className="text-[12px] font-semibold text-gray-400 uppercase mb-1">Enfoque actual</p>
+              <p className="text-[12px] font-semibold text-gray-400 uppercase mb-1">Current Focus Area</p>
               <p className="text-sm text-[var(--tss-navy)] font-medium">{student.current_focus_area}</p>
             </div>
           )}
-          <Row label="Meta principal" value={student.primary_goal} />
+          <Row label="Primary Goal" value={student.primary_goal} />
         </div>
       </CollapsibleSection>
 
         </>}
         progresion={<>
       {/* --- 3. PROGRESSION (always visible) --- */}
-      <Card title="Progresión">
+      <Card title="Progression">
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
             <span
@@ -815,8 +815,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             title={
               <>
                 <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-                Evaluación oficial por secuencia
-                {ratedCount > 0 && <span className="text-gray-400 font-normal">· {ratedCount} calificados</span>}
+                Official evaluation by sequence
+                {ratedCount > 0 && <span className="text-gray-400 font-normal">· {ratedCount} rated</span>}
               </>
             }
             defaultOpen={true}
@@ -985,7 +985,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               if (!latest?.skillmap?.length) return null;
               return (
                 <div className="pt-2">
-                  <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Último desglose</p>
+                  <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Latest skill breakdown</p>
                   <div className="space-y-1">
                     {latest.skillmap.map((s, j) => (
                       <div key={j} className="flex items-center gap-2">
@@ -1033,12 +1033,12 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </>}
         perfil={<>
       {/* --- WAIVER STATUS --- */}
-      <Card title="Waiver">
+      <Card title="Waiver Status">
         {student.waiver_signed ? (
           <div className="flex items-center gap-2 py-1">
             <CheckCircle2 size={20} strokeWidth={1.75} className="text-emerald-600 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-emerald-700">Waiver firmado</p>
+              <p className="text-sm font-medium text-emerald-700">Waiver signed</p>
               {student.waiver_signed_at && (
                 <p className="text-xs text-gray-400">
                   Signed on {new Date(student.waiver_signed_at).toLocaleDateString()}
@@ -1050,7 +1050,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <div className="flex items-center gap-2 py-2 bg-red-50 rounded-lg px-3">
             <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-red-600">Falta el waiver</p>
+              <p className="text-sm font-medium text-red-600">Waiver required</p>
               <p className="text-xs text-red-400">Student has not signed the liability waiver</p>
             </div>
           </div>
@@ -1079,34 +1079,34 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       )}
 
       {/* --- 7. PROFILE DETAILS (collapsible, default closed) --- */}
-      <CollapsibleSection title="Datos del perfil" defaultOpen={false}>
+      <CollapsibleSection title="Profile Details" defaultOpen={false}>
         <div className="space-y-2">
           <Row label="Email" value={student.email} />
-          <Row label="Teléfono" value={student.phone} />
-          <Row label="Edad" value={student.age?.toString()} />
-          <Row label="Nacimiento" value={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : null} />
-          <Row label="Género" value={student.gender} />
-          <Row label="Nacionalidad" value={student.nationality} />
-          <Row label="Idiomas" value={student.languages} />
+          <Row label="Phone" value={student.phone} />
+          <Row label="Age" value={student.age?.toString()} />
+          <Row label="Date of Birth" value={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : null} />
+          <Row label="Gender" value={student.gender} />
+          <Row label="Nationality" value={student.nationality} />
+          <Row label="Languages" value={student.languages} />
           <Row label="Instagram" value={student.instagram} />
-          <Row label="Altura" value={student.height} />
-          <Row label="Peso" value={student.weight} />
+          <Row label="Height" value={student.height} />
+          <Row label="Weight" value={student.weight} />
           <div className="border-t border-gray-50 pt-2 mt-3">
-            <p className="text-[12px] font-semibold text-gray-400 uppercase mb-2">Perfil de surf</p>
+            <p className="text-[12px] font-semibold text-gray-400 uppercase mb-2">Surf Profile</p>
             <Row label="Stance" value={student.stance} />
-            <Row label="Experiencia" value={student.surf_experience_years} />
-            <Row label="Frecuencia" value={student.surf_frequency} />
-            <Row label="Tabla" value={student.board_type} />
-            <Row label="Otros deportes" value={student.other_sports} />
-            <Row label="Cómo aprende" value={student.learning_style} />
+            <Row label="Experience" value={student.surf_experience_years} />
+            <Row label="Frequency" value={student.surf_frequency} />
+            <Row label="Board Type" value={student.board_type} />
+            <Row label="Other Sports" value={student.other_sports} />
+            <Row label="Learning Style" value={student.learning_style} />
           </div>
           <div className="border-t border-gray-50 pt-2 mt-3">
             <p className="text-[12px] font-semibold text-gray-400 uppercase mb-2">Goals</p>
-            <Row label="Corto plazo" value={student.goal_short_term} />
-            <Row label="Mediano plazo" value={student.goal_mid_term} />
-            <Row label="Largo plazo" value={student.goal_long_term} />
-            <Row label="Mayor barrera" value={student.biggest_barrier} />
-            <Row label="Miedos" value={student.fears_phobias} />
+            <Row label="Short Term" value={student.goal_short_term} />
+            <Row label="Mid Term" value={student.goal_mid_term} />
+            <Row label="Long Term" value={student.goal_long_term} />
+            <Row label="Biggest Barrier" value={student.biggest_barrier} />
+            <Row label="Fears" value={student.fears_phobias} />
           </div>
         </div>
       </CollapsibleSection>
