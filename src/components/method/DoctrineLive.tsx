@@ -10,7 +10,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Circle, Plus, Pencil, Trash2, ChevronDown } from 'lucide-react';
-import { MATERIAL_KINDS, MATERIAL_LABELS, DOCTRINE_BELTS, type MaterialKind } from '@/lib/constants/doctrine';
+import { MATERIAL_KINDS, MATERIAL_LABELS, DOCTRINE_BELTS, isBrandRule, type MaterialKind } from '@/lib/constants/doctrine';
 import { upsertDoctrineRule, setDoctrineReview, deleteDoctrineRule, type DoctrineData, type DoctrineRule } from '@/lib/actions/doctrine';
 
 const BELT_LABEL: Record<string, string> = { all: 'General', pre: 'Pre-curso', white: 'White', yellow: 'Yellow', blue: 'Blue', purple: 'Purple', brown: 'Brown', black: 'Black' };
@@ -21,6 +21,8 @@ export function DoctrineLive({ data }: { data: DoctrineData }) {
   const [editing, setEditing] = useState<DoctrineRule | null | 'new'>(null);
   const [filter, setFilter] = useState<'all' | 'pending'>('all');
   const [belt, setBelt] = useState<string>('all');
+  // Reglas técnicas · Filosofía y marca (Marcelo 2026-09-11)
+  const [scope, setScope] = useState<'tech' | 'brand'>('tech');
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>) =>
     start(async () => {
@@ -30,19 +32,31 @@ export function DoctrineLive({ data }: { data: DoctrineData }) {
     });
 
   const rules = useMemo(() => {
-    let rs = data.rules;
+    let rs = data.rules.filter((r) => (scope === 'brand') === isBrandRule(r.applies_to));
     if (belt !== 'all') rs = rs.filter((r) => r.belt === belt || r.belt === 'all');
     if (filter === 'pending') rs = rs.filter((r) => r.materials.some((m) => !m.reviewed));
     return rs;
-  }, [data.rules, belt, filter]);
+  }, [data.rules, belt, filter, scope]);
 
   const pendingCount = data.rules.reduce((n, r) => n + r.materials.filter((m) => !m.reviewed).length, 0);
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white">
+      <div className="px-4 pt-3 flex gap-1.5">
+        {([['tech', 'Reglas técnicas'], ['brand', 'Filosofía y marca']] as const).map(([id, label]) => {
+          const n = data.rules.filter((r) => (id === 'brand') === isBrandRule(r.applies_to)).length;
+          return (
+            <button key={id} type="button" onClick={() => setScope(id)}
+              className="text-[12px] font-semibold rounded-full px-3 py-1.5 border"
+              style={scope === id ? { background: 'var(--tss-navy, #0A1628)', color: '#fff', borderColor: 'transparent' } : { borderColor: '#e5e7eb', color: '#6b7280' }}>
+              {label} · {n}
+            </button>
+          );
+        })}
+      </div>
       <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-bold text-[var(--tss-navy)]">Doctrina viva · la fuente única</h3>
+          <h3 className="text-[14px] font-bold text-[var(--tss-navy)]">{scope === 'brand' ? 'Filosofía y marca · lo que Marcelo decidió' : 'Doctrina viva · la fuente única'}</h3>
           <p className="text-[11px] text-gray-500 leading-snug">
             {data.rules.length} reglas · {pendingCount === 0 ? 'todos los materiales al día' : `${pendingCount} material${pendingCount === 1 ? '' : 'es'} por revisar`}.
             Una regla nueva se escribe acá primero; después se corrige lo que toca.
