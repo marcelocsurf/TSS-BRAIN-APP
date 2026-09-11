@@ -143,12 +143,15 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                       const s0 = Math.max(START_HOUR, esHourFloat(b.starts_at));
                       const s1 = Math.min(END_HOUR, esHourFloat(b.ends_at));
                       const top = (s0 - START_HOUR) * ROW_H;
-                      const height = Math.max(18, (s1 - s0) * ROW_H - 2);
+                      const height = Math.max(20, (s1 - s0) * ROW_H - 2);
                       const mine = b.coach_id === currentCoachId;
+                      // Reserva corta (menos de ~50 min): una sola línea "hora · quién",
+                      // así nada queda cortado (Marcelo 2026-09-11: "se ve como cortado").
+                      const compact = height < 40;
                       return (
                         <div
                           key={b.id}
-                          className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-1 overflow-hidden"
+                          className={`absolute left-0.5 right-0.5 rounded-md px-1.5 overflow-hidden ${compact ? "py-0.5" : "py-1"}`}
                           style={{ top, height, background: (s.color || '#5A6B78') + '22', borderLeft: `3px solid ${s.color || '#5A6B78'}` }}
                           title={`${hhmm(b.starts_at)}–${hhmm(b.ends_at)} · ${b.title || 'Reserva'} · Reservado por ${b.coach_name || '—'}`}
                         >
@@ -156,6 +159,7 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                             {/* From–to range, Google-Calendar style. */}
                             <p className="text-[10px] font-semibold leading-tight truncate" style={{ color: '#17272F' }}>
                               {rangeLabel(b.starts_at, b.ends_at)}
+                              {compact && <span className="font-bold" style={{ color: s.color || '#17272F' }}> · {b.coach_name || 'Reserva'}</span>}
                             </p>
                             {(mine || canManage) && (
                               <button
@@ -167,10 +171,12 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                           </div>
                           {/* WHO booked it — the fact the coordinator needs, so it
                               leads and never gets clipped behind the title. */}
-                          <p className="text-[10px] font-bold leading-tight truncate" style={{ color: s.color || '#17272F' }}>
-                            {b.coach_name || 'Reserva'}
-                          </p>
-                          {b.title && (
+                          {!compact && (
+                            <p className="text-[10px] font-bold leading-tight truncate" style={{ color: s.color || '#17272F' }}>
+                              {b.coach_name || 'Reserva'}
+                            </p>
+                          )}
+                          {!compact && b.title && (
                             <p className="text-[10px] text-gray-600 leading-tight truncate">{b.title}</p>
                           )}
                         </div>
