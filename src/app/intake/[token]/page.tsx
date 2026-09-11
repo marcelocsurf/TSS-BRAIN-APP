@@ -9,6 +9,11 @@ import { createAdminClient } from '@/lib/supabase/admin';
 const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 
+// Página token-gated con datos vivos (lo inscrito decide qué pide el
+// intake): nunca se cachea. Lección de las encuestas (2026-08-21).
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 interface Props {
   params: Promise<{ token: string }>;
 }

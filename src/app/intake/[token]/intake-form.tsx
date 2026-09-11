@@ -1160,7 +1160,7 @@ function WelcomeBack({ token, student, extendedRequired, onDone }: { token: stri
         <div className="mt-3 space-y-1 text-sm text-white/85">
           {beltName && <p>Belt: <span className="font-semibold text-white">{beltName}</span></p>}
           {focus && <p>Last focus: <span className="font-semibold text-white">{focus}</span></p>}
-          {student.last_session_date && <p>Last session: <span className="font-semibold text-white">{student.last_session_date}</span></p>}
+          {student.last_session_date && <p>Last session: <span className="font-semibold text-white">{String(student.last_session_date).slice(0, 10)}</span></p>}
         </div>
         <p className="text-[12px] text-white/60 mt-3">Your waiver is on file. No quiz needed: your coach confirms your level in the water.</p>
       </div>
