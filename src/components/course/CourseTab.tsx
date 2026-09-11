@@ -408,12 +408,18 @@ export function CourseTab({ data }: { data: CourseData }) {
         {/* El logo oficial (lockup con el tagline adentro), no el nombre en texto
             (Marcelo 2026-09-11: "quizás que sea el logo original"). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" className="mt-4 h-14 w-auto object-contain object-left" />
-        <div className="flex items-center gap-3 mt-4">
-          <div className="flex-1 h-1 rounded-sm overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
-            <div className="h-full transition-all duration-500" style={{ width: `${overallPercent}%`, background: '#00D2FF' }} />
+        <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" className="mt-4 w-full max-w-[300px] h-auto object-contain object-left" />
+        <div className="flex items-end gap-4 mt-5">
+          <div className="flex-1">
+            <div className="flex items-baseline justify-between mb-2">
+              <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.55)' }}>Your progress</span>
+              <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.totalCompleted} of {data.totalLessons} lessons</span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPercent)}%`, background: 'linear-gradient(90deg, #0090B0 0%, #00D2FF 100%)', boxShadow: '0 0 12px rgba(0,210,255,.45)' }} />
+            </div>
           </div>
-          <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.totalCompleted} / {data.totalLessons} · {overallPercent}%</span>
+          <span className="leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 34, letterSpacing: '-0.02em', color: '#00D2FF' }}>{overallPercent}<span style={{ fontSize: 16, marginLeft: 2 }}>%</span></span>
         </div>
         <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.55)' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
       </div>
@@ -587,7 +593,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           <GroupHeader
             theme={beltTheme}
             eyebrow={`${bluePrelude.length} groups · from the water up`}
-            title="Getting to the wave"
+            title="Going out, catching the wave, picking your line"
             subtitle="Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them."
             videoUrl={null}
           />
@@ -622,18 +628,15 @@ export function CourseTab({ data }: { data: CourseData }) {
           {beltSequences.map((group) => (
             <SectionBlock
               key={group.id}
-              title={
-                // "Sequence #3: Pop-Up" · pero "Foundation: The 17 Elements",
-                // no "Sequence Foundation: …" — la palabra Sequence solo va
-                // delante de un número.
-                (() => {
-                  const p = sequencePrefix(group.id, group.order);
-                  if (!p) return group.name;
-                  return p.startsWith('#')
-                    ? `Sequence ${p}: ${group.name}`
-                    : `${p}: ${group.name}`;
-                })()
-              }
+              title={(() => {
+                const p = sequencePrefix(group.id, group.order);
+                return p && !p.startsWith('#') ? `${p}: ${group.name}` : group.name;
+              })()}
+              number={(() => {
+                const p = sequencePrefix(group.id, group.order);
+                return p && p.startsWith('#') ? p.slice(1).padStart(2, '0') : null;
+              })()}
+              desc={SEQ_DESC[group.id] ?? group.subtitle ?? null}
               subtitle={group.subtitle}
               Icon={WB_SEQUENCE_ICON[group.id] || BookOpen}
               badge={
@@ -751,6 +754,18 @@ function groupByWbSequence(lessons: LessonRow[]) {
     }));
 }
 
+// Qué es cada secuencia, en una línea (Marcelo 2026-09-11: "backside pumping
+// es get speed going up and down; snap, make a turn, change direction with
+// intention"). Para las que no están acá se usa la promesa del grupo.
+const SEQ_DESC: Record<string, string> = {
+  'BB-SEQ-08': 'Generate speed going up and down the face, frontside.',
+  'BB-SEQ-09': 'Generate speed going up and down the face, with your back to the wave.',
+  'BB-SEQ-10': 'Change direction with intention: one U, one rail change, keep running the wave.',
+  'BB-SEQ-11': 'Change direction with your back to the wave: Choke, Tapaloco, elbow strike.',
+  'BB-SEQ-12': 'Move away from the pocket and come back to the energy — the lying figure 8.',
+  'BB-SEQ-13': 'Away from the pocket and back to the energy, backside — the lying figure 8.',
+};
+
 function beltLevelForCourse(key: CourseKey): BeltLevel {
   return key === 'yellow_belt' ? 'yellow'
     : key === 'blue_belt' ? 'blue'
@@ -777,15 +792,15 @@ function GroupHeader({
 }) {
   const embed = videoUrl ? toEmbedUrl(videoUrl) : null;
   return (
-    <div className="px-2 pt-5">
-      <div>
-        <div className="flex items-baseline justify-between gap-3 pb-2" style={{ borderBottom: `2px solid ${theme.accent}` }}>
-          <h3 className="text-[15px] text-white uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, letterSpacing: '-0.01em' }}>{title}</h3>
-          {eyebrow && <span className="text-[10px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>{eyebrow}</span>}
-        </div>
-        {subtitle && <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.55)' }}>{subtitle}</p>}
+    <div className="px-2 pt-6">
+      {/* Arena + cyan (Marcelo 2026-09-11: "ese color arena con el cyan a la par
+          se puede usar en cada título"). Un solo acento; texto en Ink. */}
+      <div className="px-4 py-4" style={{ background: '#E9E2D2', borderLeft: '4px solid #00D2FF' }}>
+        {eyebrow && <p className="text-[10.5px] mb-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#005F79' }}>{eyebrow}</p>}
+        <h3 className="text-[20px] uppercase leading-[1.05]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, letterSpacing: '-0.02em', color: '#061C2B' }}>{title}</h3>
+        {subtitle && <p className="text-[13px] mt-2 leading-snug" style={{ color: '#3E4A50' }}>{subtitle}</p>}
         {embed && (
-          <div className="bg-black aspect-video mt-3 rounded-lg overflow-hidden">
+          <div className="bg-black aspect-video mt-3 overflow-hidden">
             <iframe
               src={embed}
               title={`${title} intro`}
@@ -811,11 +826,17 @@ function SectionBlock({
   onOpenLesson,
   theme,
   onePageHref,
+  number = null,
+  desc = null,
 }: {
   title: string;
   subtitle: string | null;
   Icon: LucideIcon;
   badge: string | null;
+  /** Número grande de la secuencia ("08") — Marcelo 2026-09-11. */
+  number?: string | null;
+  /** Qué es, en una línea. */
+  desc?: string | null;
   lessons: LessonRow[];
   onOpenLesson: (id: string) => void;
   theme?: BeltTheme;
@@ -838,10 +859,12 @@ function SectionBlock({
         className="block mx-2"
         style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}
       >
-        <div className="py-3.5 flex items-center justify-between gap-3">
+        <div className="py-4 flex items-center justify-between gap-3">
+          {number && <span className="shrink-0 w-12 leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', color: '#00D2FF' }}>{number}</span>}
           <div className="flex-1 min-w-0">
-            <p className="text-[14.5px] font-medium text-white truncate">{title}</p>
-            <p className="text-[10.5px] mt-0.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(247,249,250,.40)' }}>{onePageHref.endsWith('/loop') || onePageHref.endsWith('/circles') ? 'Open' : 'Think · Feel · Do · Review'}</p>
+            <p className="text-[15.5px] font-semibold text-white leading-tight">{title}</p>
+            {(desc || subtitle) && <p className="text-[12.5px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.62)' }}>{desc || subtitle}</p>}
+            <p className="text-[10px] mt-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(247,249,250,.40)' }}>{onePageHref.endsWith('/loop') || onePageHref.endsWith('/circles') ? 'Open' : 'Think · Feel · Do · Review'}</p>
           </div>
           <span className="text-[11px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.08em', color: sectionPercent === 100 ? '#00D2FF' : 'rgba(247,249,250,.62)' }}>
             {sectionPercent === 100 ? '✓ Done' : `${completed}/${productized.length}`}
@@ -857,10 +880,12 @@ function SectionBlock({
       className="group mx-2"
       style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}
     >
-      <summary className="py-3.5 cursor-pointer list-none">
+      <summary className="py-4 cursor-pointer list-none">
         <div className="flex items-center justify-between gap-3">
+          {number && <span className="shrink-0 w-12 leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', color: '#00D2FF' }}>{number}</span>}
           <div className="flex-1 min-w-0">
-            <p className="text-[14.5px] font-medium text-white truncate">
+            {desc && <p className="text-[12.5px] mb-1 leading-snug" style={{ color: 'rgba(247,249,250,.62)' }}>{desc}</p>}
+            <p className="text-[15.5px] font-semibold text-white leading-tight">
               {title}
               {badge && <span className="ml-2 text-[10px] text-white/50" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{badge}</span>}
             </p>
