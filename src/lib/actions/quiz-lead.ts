@@ -68,7 +68,7 @@ export async function createLeadFromQuiz(input: {
     board?: string | null;
     needs?: number[];
   };
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; returning?: boolean; whatsapp?: string | null }> {
   if (!input.first_name?.trim()) return { ok: false, error: 'First name is required.' };
   // Mandatorio del mostrador (2026-08-18): sin apellido no se puede ni buscar
   // a la persona — misma regla que el QR de clases.
@@ -334,7 +334,43 @@ export async function createLeadFromQuiz(input: {
     console.error('[createLeadFromQuiz] notification email failed', e);
   }
 
-  return { ok: true };
+  // Para la pantalla final (Marcelo 2026-09-11): si ya lo conocíamos, y el
+  // WhatsApp de reservas de la academia para el botón "Book".
+  let whatsapp: string | null = null;
+  if (academyId) {
+    const { data: ac } = await admin.from('academies').select('booking_whatsapp').eq('id', academyId).maybeSingle();
+    whatsapp = (ac as any)?.booking_whatsapp ?? null;
+  }
+  return { ok: true, returning: !!existingId, whatsapp };
+}
+
+// ═══ ¿YA SURFEÓ CON NOSOTROS? (pantalla de inicio del quiz) ═══
+// Por correo, solo en la academia del quiz. Devuelve lo mínimo para el
+// "Welcome back": nombre, cinta y último foco. Nunca datos sensibles.
+export async function checkReturningByEmail(email: string, academySlug: string | null): Promise<{
+  found: boolean; first_name?: string; belt?: string | null; level_name?: string | null; last_focus?: string | null; whatsapp?: string | null;
+}> {
+  const e = email.trim().toLowerCase();
+  if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { found: false };
+  const admin = createAdminClient();
+  let academyId: string | null = null;
+  let whatsapp: string | null = null;
+  if (academySlug) {
+    const { data: ac } = await admin.from('academies').select('id, booking_whatsapp').eq('slug', academySlug).maybeSingle();
+    academyId = (ac as any)?.id ?? null; whatsapp = (ac as any)?.booking_whatsapp ?? null;
+  }
+  let q = admin.from('students')
+    .select('first_name, belt_level, next_recommended_focus, last_session_mission, intake_completed_at, belt_provisional, camp_participants(id)')
+    .eq('status', 'active').eq('email', e).limit(1);
+  if (academyId) q = q.eq('academy_id', academyId);
+  const { data } = await q;
+  const s: any = (data ?? [])[0];
+  // "Ya vino" = completó intake, o tiene cinta confirmada, o estuvo en un servicio.
+  const came = !!s && (!!s.intake_completed_at || s.belt_provisional === false || (s.camp_participants ?? []).length > 0);
+  if (!came) return { found: false };
+  const { V2_LEVELS } = await import('@/lib/quiz/surf-level-v2');
+  const lvl = V2_LEVELS.find((l) => l.belt === s.belt_level);
+  return { found: true, first_name: s.first_name ?? '', belt: s.belt_level ?? null, level_name: lvl?.name ?? null, last_focus: s.next_recommended_focus || s.last_session_mission || null, whatsapp };
 }
 
 // ═══ V2 CON TOKEN — el alumno que YA existe (intake / portal) ═══

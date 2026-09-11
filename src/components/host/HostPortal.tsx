@@ -13,7 +13,7 @@ import { SeatContactPanel } from '@/components/shared/SeatContactPanel';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import {
   hostSearchStudents, hostAttentionList, hostStudentDetail,
-  hostRecentIncidents, hostSendIntakeEmail, hostDayOperation, hostUpcomingForReserve,
+  hostRecentIncidents, hostSendIntakeEmail, hostDayOperation, hostUpcomingForReserve, hostQuizLeads, type QuizLeadRow,
   hostAdhocTemplates, hostCreateAdhocClass,
   hostPortalFlags, hostDayAlerts, hostCoachOptions, hostAssignCoach,
   hostRescheduleClass, hostCancelClass,
@@ -341,6 +341,9 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   // ➕ Inscribir cliente desde Clientes: elegir servicio → mismo ReserveModal.
   const [pickOpen, setPickOpen] = useState(false);
   const [holding, setHolding] = useState<{ seats: HoldingSeat[]; targets: HoldingTarget[] } | null>(null);
+  const [quizLeads, setQuizLeads] = useState<QuizLeadRow[] | null>(null);
+  const [quizOpen, setQuizOpen] = useState(false);
+  useEffect(() => { if (tab === 'clientes' && quizLeads === null) hostQuizLeads(token).then(setQuizLeads).catch(() => setQuizLeads([])); }, [tab, quizLeads, token]);
   useEffect(() => { if (tab === 'clientes' && holding === null) hostHoldingBoard(token).then(setHolding).catch(() => setHolding({ seats: [], targets: [] })); }, [tab, holding, token]);
   const [upcoming, setUpcoming] = useState<{ date: string; ev: HostDayEvent }[] | null>(null);
   useEffect(() => { if (pickOpen && upcoming === null) hostUpcomingForReserve(token).then(setUpcoming).catch(() => setUpcoming([])); }, [pickOpen, upcoming, token]);
@@ -649,6 +652,33 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                       );
                     })}
                 </div>
+              </div>
+            )}
+            {quizLeads && quizLeads.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <button type="button" onClick={() => setQuizOpen(!quizOpen)} className="w-full text-left px-3.5 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Quiz de la web · sin compra · 30 días</p>
+                    <p className="font-bold text-[14px]" style={{ color: INK }}>{quizLeads.length} interesado{quizLeads.length === 1 ? '' : 's'} con nivel</p>
+                  </div>
+                  <span className="text-gray-400">{quizOpen ? '▴' : '▾'}</span>
+                </button>
+                {quizOpen && (
+                  <div className="px-3.5 pb-3 space-y-1.5 border-t border-gray-50 pt-2">
+                    {quizLeads.map((l) => (
+                      <div key={l.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2" style={{ background: 'rgba(0,210,255,.06)' }}>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-bold truncate" style={{ color: INK }}>{l.name} <span className="font-semibold text-[11px]" style={{ color: '#0090B0' }}>{l.level_name ?? ''}{l.score != null ? ` · ${l.score}/100` : ''}</span></p>
+                          <p className="text-[11px] text-gray-500 truncate">{l.when}{l.email ? ` · ${l.email}` : ''}{l.phone ? ` · ${l.phone}` : ''}</p>
+                        </div>
+                        {l.phone && (
+                          <a href={`https://wa.me/${l.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${l.name.split(' ')[0]}! Vimos tu quiz de nivel (${l.level_name ?? ''}). ¿Te ayudamos a elegir tu camp?`)}`} target="_blank" rel="noreferrer"
+                            className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full" style={{ background: '#25D366', color: '#fff' }}>WhatsApp</a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {holding && (

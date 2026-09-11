@@ -94,6 +94,15 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
   <p class="center" style="color:var(--cyan);font-weight:600;max-width:420px;margin:0 auto 16px;text-wrap:balance">That's what The Surf Sequence is built on.</p>
   <p class="center mono" style="font-size:.6rem;color:var(--tm);margin-bottom:22px">10 scenes · 2 tracks · ~90 seconds</p>
   <div class="center"><button class="btn" onclick="show('gate')">Find my level →</button></div>
+  <div class="center" style="margin-top:14px">
+    <button class="btn ghost" onclick="document.getElementById('rb-box').style.display='block';this.style.display='none'" style="padding:10px 18px;font-size:.8rem">Already surfed with Puro Surf?</button>
+    <div id="rb-box" style="display:none;max-width:400px;margin:10px auto 0">
+      <input class="fld" id="rb-email" placeholder="Your email" type="email" autocomplete="email">
+      <button class="btn" onclick="rbCheck()" id="rb-btn" style="margin-top:8px;width:100%">Find my profile →</button>
+      <p id="rb-err" style="display:none;color:#FF6B6B;font-size:.8rem;margin-top:6px"></p>
+    </div>
+    <div id="rb-card" style="display:none;max-width:440px;margin:14px auto 0;background:var(--card);border:1px solid var(--cyan);border-radius:14px;padding:16px 18px;text-align:left"></div>
+  </div>
   <div class="cobrand">
     <img class="cb-puro" id="cbPuro" alt="Puro Surf">
     <span class="cb-div"></span>
@@ -313,6 +322,43 @@ async function sendResult(payload){
   const res=await fetch('/api/quiz-v2-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const j=await res.json().catch(()=>({ok:false,error:'Bad response'}));
   if(!res.ok||!j.ok)throw new Error(j.error||'Could not save.');
+  return j;
+}
+let leadInfo=null;
+// Camp recomendado por nivel (Marcelo 2026-09-11): el resultado termina en
+// un siguiente paso concreto, no en "sos Novice" y nada más.
+const CAMP_BY_LEVEL={Beginner:"Surf Camp Beginner \u00b7 White Belt",Novice:"Surf Camp Novice \u00b7 Yellow Belt",Foundation:"Surf Camp Foundation \u00b7 Blue Belt"};
+function waLink(num,text){return 'https://wa.me/'+String(num).replace(/[^0-9]/g,'')+'?text='+encodeURIComponent(text)}
+function nextStepBlock(lv,returning,whatsapp){
+  const camp=CAMP_BY_LEVEL[lv.name]||'Personal Coaching \u00b7 built for your level';
+  const msg=`Hi! I just did the level quiz: I'm ${lv.name} (${lv.belt}). I'd like info about the ${camp}.`;
+  return `<div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1.5px solid var(--cyan);border-radius:14px;padding:16px 18px;text-align:left">
+    <div class="mono" style="font-size:.6rem;color:var(--cyan)">Your next step</div>
+    ${returning?`<p style="font-size:.85rem;line-height:1.5;margin-top:6px;color:var(--tl)">Welcome back \u2014 we already have your profile at Puro Surf. This result is now on it.</p>`:''}
+    <p style="font-size:.95rem;font-weight:600;margin-top:6px;color:var(--tw)">${camp}</p>
+    <p style="font-size:.82rem;line-height:1.5;margin-top:4px;color:var(--tl)">Built for exactly where you are. Your coach confirms your level in the water on day one.</p>
+    ${whatsapp?`<a class="btn" href="${waLink(whatsapp,msg)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;text-decoration:none;background:#25D366;color:#fff">Book on WhatsApp \u2192</a>`:`<p style="font-size:.8rem;margin-top:10px;color:var(--tm)">Write to Puro Surf on WhatsApp or Instagram to book \u2014 tell them your level.</p>`}
+  </div>`;
+}
+async function rbCheck(){
+  const email=document.getElementById('rb-email').value.trim();const err=document.getElementById('rb-err');err.style.display='none';
+  if(!email){err.textContent='Type your email.';err.style.display='block';return}
+  const b=document.getElementById('rb-btn');b.disabled=true;b.textContent='Looking\u2026';
+  try{
+    const res=await fetch('/api/quiz-v2-lead?email='+encodeURIComponent(email)+'&academy_slug=puro-surf');
+    const j=await res.json();
+    b.disabled=false;b.textContent='Find my profile \u2192';
+    if(!j.found){err.textContent="We couldn't find that email \u2014 no worries, take the quiz and we'll set you up.";err.style.display='block';return}
+    const card=document.getElementById('rb-card');
+    const msg=`Hi! It's ${j.first_name}, I've surfed with you before (${j.level_name||''}). I'd like to book again.`;
+    card.innerHTML=`<div class="mono" style="font-size:.6rem;color:var(--cyan)">Welcome back, ${j.first_name}</div>
+      <p style="font-size:.95rem;font-weight:600;margin-top:6px;color:var(--tw)">${j.level_name?j.level_name+' \u00b7 ':''}${(j.belt||'').replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}</p>
+      ${j.last_focus?`<p style="font-size:.82rem;margin-top:4px;color:var(--tl)">Last focus: <strong style="color:var(--tw)">${j.last_focus}</strong></p>`:''}
+      <p style="font-size:.82rem;line-height:1.5;margin-top:8px;color:var(--tl)">No need to redo the quiz. Book and your coach picks up where you left off.</p>
+      ${j.whatsapp?`<a class="btn" href="${waLink(j.whatsapp,msg)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;text-decoration:none;background:#25D366;color:#fff">Book on WhatsApp \u2192</a>`:''}
+      <div class="center" style="margin-top:10px"><button class="btn ghost" onclick="show('gate')" style="padding:10px 18px;font-size:.8rem">Retake the quiz anyway</button></div>`;
+    card.style.display='block';document.getElementById('rb-box').style.display='none';
+  }catch(e){b.disabled=false;b.textContent='Find my profile \u2192';err.textContent='Could not check \u2014 try again.';err.style.display='block'}
 }
 async function finishQuiz(){
   pendingR=compute();
@@ -333,7 +379,7 @@ async function capSubmit(){
   if(!email&&!phone){err.textContent='Email or WhatsApp is required.';err.style.display='block';return}
   const b=document.getElementById('cap-btn');b.disabled=true;b.textContent='Unlocking\u2026';
   try{
-    await sendResult({first_name:first,last_name:last,email:email||null,phone:phone||null,academy_slug:'puro-surf',answers:ans.map(a=>a<0?0:a),board,needs});
+    leadInfo=await sendResult({first_name:first,last_name:last,email:email||null,phone:phone||null,academy_slug:'puro-surf',answers:ans.map(a=>a<0?0:a),board,needs});
     renderResult(pendingR||compute());
   }catch(e){
     err.textContent=(e&&e.message)||'Could not save \u2014 try again.';err.style.display='block';
@@ -520,6 +566,7 @@ function renderResult(r){
      <div class="jlabels">${beltlab}</div>
    </div>
    <p class="center" style="font-size:.72rem;color:var(--tm);margin-top:18px">This is an estimate — your official belt is confirmed by a TSS coach, in the water.</p>
+   ${TOKEN?'':nextStepBlock(lv,!!(leadInfo&&leadInfo.returning),leadInfo&&leadInfo.whatsapp)}
    <div class="center" style="margin-top:14px"><button class="btn ghost" onclick="location.reload()">Retake</button></div>
    ${r.syncFailed?`<p class="center" style="color:var(--gold);font-size:.78rem;max-width:400px;margin:16px auto 0">We could not sync this result to your profile \u2014 check your connection and retake it, or tell your coach.</p>`:''}
    ${TOKEN&&FROM==='intake'?`<div class="center" style="margin-top:20px"><a class="btn" href="/intake/${encodeURIComponent(TOKEN)}" style="text-decoration:none">Continue your intake \u2192</a></div>`:''}

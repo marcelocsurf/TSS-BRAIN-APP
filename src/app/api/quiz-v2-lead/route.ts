@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createLeadFromQuiz, submitQuizV2ByToken } from '@/lib/actions/quiz-lead';
+import { createLeadFromQuiz, submitQuizV2ByToken, checkReturningByEmail } from '@/lib/actions/quiz-lead';
 import { isValidV2Answers } from '@/lib/quiz/surf-level-v2';
 import { rateLimitOk, clientIp } from '@/lib/rate-limit';
 
@@ -15,6 +15,18 @@ import { rateLimitOk, clientIp } from '@/lib/rate-limit';
 //  · sin token  → lead nuevo: nombre + apellido + email/teléfono.
 
 export const dynamic = 'force-dynamic';
+
+// GET ?email=&academy_slug= → ¿ya surfeó con nosotros? (Welcome back en el
+// quiz). Mismo rate limit que el POST; nunca devuelve más que nombre + cinta.
+export async function GET(req: NextRequest) {
+  if (!rateLimitOk(`qv2c:${clientIp(req.headers)}`, 10, 10 * 60 * 1000)) {
+    return NextResponse.json({ found: false, error: 'Too many attempts.' }, { status: 429 });
+  }
+  const email = (req.nextUrl.searchParams.get('email') ?? '').slice(0, 160);
+  const slug = (req.nextUrl.searchParams.get('academy_slug') ?? 'puro-surf').slice(0, 80);
+  const r = await checkReturningByEmail(email, slug);
+  return NextResponse.json(r);
+}
 
 export async function POST(req: NextRequest) {
   // Rate limit (revisión 2026-09-01): endpoint sin auth que inserta leads y

@@ -1098,3 +1098,34 @@ export async function hostUpcomingForReserve(token: string, days = 14): Promise<
   });
   return out;
 }
+
+
+// ═══ HICIERON EL QUIZ · SIN COMPRA (30 días) — Marcelo 2026-09-11 ═══
+// Leads del quiz de la web que todavía no están en ningún servicio. Kat
+// decide si les escribe. Nada automático.
+export interface QuizLeadRow { id: string; name: string; email: string | null; phone: string | null; level_name: string | null; score: number | null; when: string; portal_url: string | null }
+export async function hostQuizLeads(token: string): Promise<QuizLeadRow[]> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return [];
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const { data } = await admin
+    .from('students')
+    .select('id, first_name, last_name, email, phone, belt_level, level_quiz_score, level_quiz_completed_at, portal_token, camp_participants(enrollment_status)')
+    .eq('academy_id', who.academy_id).eq('status', 'active').eq('lifecycle_status', 'lead')
+    .gte('level_quiz_completed_at', since)
+    .order('level_quiz_completed_at', { ascending: false })
+    .limit(60);
+  const { V2_LEVELS } = await import('@/lib/quiz/surf-level-v2');
+  return (data ?? [])
+    .filter((s: any) => !(s.camp_participants ?? []).some((p: any) => p.enrollment_status === 'active'))
+    .map((s: any) => ({
+      id: s.id,
+      name: [s.first_name, s.last_name].filter(Boolean).join(' '),
+      email: s.email ?? null, phone: s.phone ?? null,
+      level_name: V2_LEVELS.find((l) => l.belt === s.belt_level)?.name ?? null,
+      score: s.level_quiz_score ?? null,
+      when: String(s.level_quiz_completed_at).slice(0, 10),
+      portal_url: s.portal_token ? `${BASE()}/intake/${s.portal_token}` : null,
+    }));
+}
