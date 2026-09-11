@@ -940,6 +940,10 @@ function ReserveModal({ token, event, onClose, onDone }: {
   const [nu, setNu] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // Vendido = link en la mano (Marcelo 2026-09-11): al reservar se muestra
+  // el link de intake para mandarlo por WhatsApp, y recién ahí se cierra.
+  const [doneLink, setDoneLink] = useState<{ name: string; url: string | null } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Aviso de posible duplicado (2026-08-10): la deduplicación del sistema es
   // por CORREO, así que un nombre repetido con correo distinto —o mal
@@ -981,8 +985,39 @@ function ReserveModal({ token, event, onClose, onDone }: {
     setMsg((r as any).included
       ? `✓ ${r.studentName ?? 'Cliente'} reservado — INCLUIDO en ${(r as any).includedIn ?? 'su camp'}, NO cobrar. 🎁${tail}`
       : `✓ ${r.studentName ?? 'Cliente'} reservado — cobrar en HOY cuando llegue.${tail}`);
-    setTimeout(onDone, 1800);
+    setDoneLink({ name: r.studentName ?? 'Cliente', url: (r as any).intakeUrl ?? null });
   };
+
+  if (doneLink) {
+    const url = doneLink.url;
+    return (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.8)' }} onClick={onDone}>
+        <div className="w-full max-w-md bg-white rounded-2xl p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+          {msg && <p className="text-[12px] font-semibold" style={{ color: '#0a7c5d' }}>{msg}</p>}
+          <p className="text-[13px] font-bold" style={{ color: INK }}>Ahora mandale este link por WhatsApp</p>
+          <p className="text-[11.5px] text-gray-500">Es el ÚNICO que necesita: ficha y waiver, y si es camp también su nivel y metas. Si ya vino antes, solo confirma sus datos.</p>
+          {url ? (
+            <>
+              <code className="block text-[11px] break-all rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.09)', color: '#0090B0' }}>{url}</code>
+              <div className="flex gap-2">
+                <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(url); setCopied(true); } catch { setCopied(false); } }}
+                  className="flex-1 rounded-full py-3 text-[10px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
+                  {copied ? '✓ Copiado' : '📋 Copiar link'}
+                </button>
+                <a href={`https://wa.me/?text=${encodeURIComponent(`Hola ${doneLink.name}! Completá tu ficha acá antes de tu clase: ${url}`)}`} target="_blank" rel="noreferrer"
+                  className="flex-1 rounded-full py-3 text-[10px] text-center" style={{ ...F_M, background: '#25D366', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>
+                  WhatsApp
+                </a>
+              </div>
+            </>
+          ) : (
+            <p className="text-[11.5px]" style={{ color: '#c04545' }}>No se pudo generar el link; copialo desde 👥 Clientes.</p>
+          )}
+          <button type="button" onClick={onDone} className="w-full py-2 text-[11px] font-bold text-gray-500">Listo</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.8)' }} onClick={onClose}>

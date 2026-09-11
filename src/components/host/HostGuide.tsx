@@ -44,6 +44,22 @@ export function HostGuide({ onClose }: { onClose: () => void }) {
           Volvés a esta guía cuando quieras con el botón <strong>📖</strong> de arriba.
         </p>
 
+        {/* El proceso de inscripción (Marcelo con Kat, 2026-09-11): un solo
+            link, sin mandadera. Va primero porque es la pregunta #1. */}
+        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(217,164,6,.45)' }}>
+          <p className="text-[9px] mb-1" style={{ ...F_M, color: '#7a5c00' }}>El proceso de inscripción · un solo link</p>
+          <p className="text-[12.5px] leading-relaxed text-gray-700">
+            <strong style={{ color: INK }}>1. Interesado, todavía no compra</strong> — mandale el quiz de la web (thesurfsequence.com/quiz). Queda creado con su nivel.<br />
+            <strong style={{ color: INK }}>2. Compró</strong> — en AGENDA, <strong>+ Reservar</strong> en su clase o camp. Al terminar te sale <strong>el link de intake</strong>: mandáselo por WhatsApp. Es el único que necesita.<br />
+            <strong style={{ color: INK }}>3. Clase de un día</strong> (surf lesson, Discover, skate, ice bath, yoga) — ese link pide solo ficha + waiver.<br />
+            <strong style={{ color: INK }}>4. Camp (2 días o más)</strong> — ese mismo link pide ficha + waiver + quiz de nivel + metas. Si ya hizo el quiz en la web, no lo repite.<br />
+            <strong style={{ color: INK }}>5. Ya vino antes</strong> — mismo link. Ve &quot;Welcome back&quot;, confirma si cambió algo y listo.
+          </p>
+          <p className="text-[11.5px] leading-relaxed text-gray-600 mt-1.5">
+            Nunca mandes el quiz de la web a alguien que ya compró. Si no llenó, lo ves en 👥 CLIENTES con los ✗ de lo que falta.
+          </p>
+        </div>
+
         <div className="rounded-2xl p-3.5" style={{ background: 'rgba(6,214,160,.10)', border: '1px solid rgba(6,214,160,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0a7c5d' }}>Tus 4 pestañas de siempre</p>
           <p className="text-[12.5px] leading-relaxed text-gray-700">
@@ -87,7 +103,7 @@ export function HostGuide({ onClose }: { onClose: () => void }) {
           <Li k="Cada tarjeta">Hora, coach, día X de Y del camp, alumnos (💰 = debe pagar, ⚠ = sin waiver), transporte 🚐 y espacios 🏛 reservados.</Li>
           <Li k="🕐 Encuentro">La hora (y lugar) a la que citás al cliente — la fija el coach al planear su semana. No es lo mismo que el 🚐: la van sale después del encuentro. Si una tarjeta no la muestra, el coach aún no la puso.</Li>
           <Li k="Tocá un nombre">Se abre su ficha de contacto: WhatsApp, correo, habitación del huésped y <strong>cómo llegó la reserva</strong> (QR del cliente o el vendedor que la hizo, con fecha y hora). Los mismos datos que en el mostrador. El cobro no se hace acá — se hace en HOY el día de la clase.</Li>
-          <Li k="+ Reservar">Cliente enfrente → tocá el botón verde de la clase, buscalo (o crealo con nombre y teléfono) y listo. El cobro se confirma en HOY cuando llegue.</Li>
+          <Li k="+ Reservar">Cliente enfrente → tocá el botón verde de la clase, buscalo (o crealo con nombre y teléfono) y listo. Al terminar te sale el <strong>link de intake</strong> para mandar por WhatsApp. El cobro se confirma en HOY cuando llegue.</Li>
           <Li k="+ Clase en otro horario">¿Piden Skate un martes 2 PM? Elegí la plantilla y la hora — la clase se crea al instante y ya podés reservarle.</Li>
         </Sec>
 
