@@ -40,7 +40,7 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
         >
           <AlertTriangle size={14} strokeWidth={1.75} /> Incidents
           {unread.length > 0 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-600 text-white">{unread.length} unread</span>
+            <span className="text-[12px] px-2 py-0.5 rounded-full bg-red-600 text-white">{unread.length} unread</span>
           )}
           <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
@@ -55,10 +55,10 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
             <div key={inc.id} className={inc.acknowledged ? 'opacity-55' : ''}>
               <div className="px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+                  <span className="text-[12px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
                     {incidentTypeLabel(inc.incident_type)}
                   </span>
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[12px] text-gray-400">
                     {inc.created_at ? displayDate(inc.created_at) : ''}
                   </span>
                 </div>
@@ -82,7 +82,7 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
                 )}
                 <div className="mt-2">
                   {inc.acknowledged ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700"><Check size={11} strokeWidth={2.5} /> Read</span>
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-700"><Check size={11} strokeWidth={2.5} /> Read</span>
                   ) : inc.source === 'reported' ? (
                     <button
                       onClick={() => markRead(inc.id)}
@@ -92,7 +92,7 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
                       <Check size={12} strokeWidth={2.5} /> {busyId === inc.id ? '…' : 'Mark as read'}
                     </button>
                   ) : (
-                    <span className="text-[10px] text-gray-400 italic">Logged with the session</span>
+                    <span className="text-[12px] text-gray-400 italic">Logged with the session</span>
                   )}
                 </div>
               </div>

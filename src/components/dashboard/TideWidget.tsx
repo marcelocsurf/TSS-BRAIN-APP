@@ -191,14 +191,14 @@ export function TideWidget({ isAdmin: _isAdmin }: { isAdmin: boolean }) {
 
               {mids.length > 0 && (
                 <div className="rounded-xl bg-[var(--tss-cyan,#5AC3E7)]/10 border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1 inline-flex items-center gap-1">
+                  <p className="text-[12px] font-mono uppercase tracking-wider text-gray-500 mb-1 inline-flex items-center gap-1">
                     <Target size={11} /> Mid-tide (whitewater)
                   </p>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                     {mids.map((w, i) => (
                       <span key={i} className="text-xs font-semibold text-[var(--tss-navy)] tabular-nums">
                         {fmt12(w.time)}
-                        <span className="text-[10px] font-normal text-gray-400 ml-0.5">
+                        <span className="text-[12px] font-normal text-gray-400 ml-0.5">
                           {w.direction === 'rising' ? '↑' : '↓'}
                         </span>
                       </span>

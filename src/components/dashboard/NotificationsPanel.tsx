@@ -33,7 +33,7 @@ export function NotificationsPanel({ notifications }: { notifications: AppNotifi
           <Bell size={16} className="text-[var(--tss-cyan)]" />
           <span className="hidden sm:inline">Notificaciones</span>
           {unread.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-[var(--tss-navy)] text-white">
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[12px] font-bold rounded-full bg-[var(--tss-navy)] text-white">
               {unread.length}
             </span>
           )}
@@ -66,7 +66,7 @@ export function NotificationsPanel({ notifications }: { notifications: AppNotifi
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-800 leading-snug">{n.title}</p>
                           {n.body && <p className="text-xs text-gray-500 mt-0.5 leading-snug">{n.body}</p>}
-                          <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                          <p className="text-[12px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
                         </div>
                       </div>
                     </div>

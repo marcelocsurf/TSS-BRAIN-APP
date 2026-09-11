@@ -112,10 +112,10 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
           <ClipboardList size={16} strokeWidth={1.75} />
           To-do list
           {openTasks.length > 0 && (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{openTasks.length}</span>
+            <span className="text-[12px] font-mono px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{openTasks.length}</span>
           )}
           {overdueCount > 0 && (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">{overdueCount} overdue</span>
+            <span className="text-[12px] font-mono px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">{overdueCount} overdue</span>
           )}
         </span>
         {open ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
@@ -158,14 +158,14 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                     {DOW.map((d) => (
                       <button key={d.iso} type="button"
                         onClick={() => setRecDays((ds) => ds.includes(d.iso) ? ds.filter((x) => x !== d.iso) : [...ds, d.iso].sort())}
-                        className="px-2 py-1 rounded-lg text-[10px] font-bold border"
+                        className="px-2 py-1 rounded-lg text-[12px] font-bold border"
                         style={recDays.includes(d.iso)
                           ? { background: 'var(--tss-navy)', color: '#fff', borderColor: 'var(--tss-navy)' }
                           : { background: '#fff', color: '#6B7A82', borderColor: '#E2E8F0' }}>
                         {d.l}
                       </button>
                     ))}
-                    <span className="text-[10px] text-gray-400 ml-1">{recDays.length === 0 ? 'No days = every day' : `${recDays.length} day${recDays.length === 1 ? '' : 's'}/week`}</span>
+                    <span className="text-[12px] text-gray-400 ml-1">{recDays.length === 0 ? 'No days = every day' : `${recDays.length} day${recDays.length === 1 ? '' : 's'}/week`}</span>
                   </div>
                 )}
                 <select value={attachTool} onChange={(e) => setAttachTool(e.target.value)} className="text-sm px-2.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
@@ -213,21 +213,21 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                         <p className="text-sm text-gray-800 truncate">
                           {t.title}
                           {t.recurrence === 'daily' && (t as any).recurrence_days?.length ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 font-semibold">
+                            <span className="inline-flex items-center gap-1 text-[12px] px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 font-semibold">
                               <Repeat size={9} /> {((t as any).recurrence_days as number[]).map((n) => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][n - 1]).join(' ')}
                             </span>
                           ) : t.recurrence && (
-                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-1.5 py-0.5 align-middle">
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-1.5 py-0.5 align-middle">
                               <Repeat size={9} /> {t.recurrence}
                             </span>
                           )}
                           {(t.checklist?.length ?? 0) > 0 && (
-                            <span className="ml-1 inline-flex items-center gap-0.5 text-[9px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-1.5 py-0.5 align-middle">
+                            <span className="ml-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-1.5 py-0.5 align-middle">
                               <ListChecks size={9} /> {t.checklist!.length} steps
                             </span>
                           )}
                           {t.link_url === 'inventory' && (
-                            <span className="ml-1 inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 align-middle">
+                            <span className="ml-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 align-middle">
                               📦 inventory
                             </span>
                           )}
@@ -275,14 +275,14 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
           {/* Done tasks */}
           {doneTasks.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-300 mb-1">Done ({doneTasks.length})</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-300 mb-1">Done ({doneTasks.length})</p>
               {doneTasks.map((t) => (
                 <li key={t.id} className="flex items-center gap-2.5 list-none px-3 py-1.5">
                   <button onClick={() => toggle(t)} className="w-5 h-5 shrink-0 rounded-md bg-emerald-500 flex items-center justify-center text-white" aria-label="Reopen"><Check size={12} /></button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-400 line-through truncate">{t.title}</p>
                     {(t.done_by_name || t.done_at) && (
-                      <p className="text-[10px] text-emerald-600/70">
+                      <p className="text-[12px] text-emerald-600/70">
                         ✓ {t.done_by_name || 'Done'}{t.done_at ? ` · ${fmtDue(t.done_at.slice(0, 10))}` : ''}
                       </p>
                     )}
@@ -350,12 +350,12 @@ function DailyBoard({ academyId }: { academyId: string | null }) {
               <p className="text-xs font-semibold text-[var(--tss-navy)]">
                 {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </p>
-              {updatedAt && <p className="text-[9px] text-gray-400">auto-refresh 30s · updated {updatedAt}</p>}
+              {updatedAt && <p className="text-[11px] text-gray-400">auto-refresh 30s · updated {updatedAt}</p>}
             </div>
             <button onClick={() => shiftDay(1)} className="p-1 text-gray-400 hover:text-[var(--tss-navy)]" aria-label="Next day"><ChevronRight size={14} /></button>
           </div>
 
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Due this day · {pend.length} pending</p>
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Due this day · {pend.length} pending</p>
           <div className="space-y-1 mb-3">
             {tasks.map((t) => (
               <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5"
@@ -363,10 +363,10 @@ function DailyBoard({ academyId }: { academyId: string | null }) {
                 <p className="text-[12px] truncate" style={{ textDecoration: t.done_today ? 'line-through' : 'none', color: '#0C2231' }}>
                   {t.done_today ? '✅ ' : t.overdue ? '⚠ ' : '⬜ '}{t.title}
                   {t.recurrence === 'daily' && t.recurrence_days?.length ? (
-                    <span className="text-[9px] text-cyan-700 ml-1">({t.recurrence_days.map((n) => DOWL[n - 1]).join(' ')})</span>
+                    <span className="text-[11px] text-cyan-700 ml-1">({t.recurrence_days.map((n) => DOWL[n - 1]).join(' ')})</span>
                   ) : null}
                 </p>
-                <p className="text-[10.5px] shrink-0 text-gray-500">
+                <p className="text-[12px] shrink-0 text-gray-500">
                   {t.assignee_name ?? 'Unassigned'}{t.overdue && !t.done_today ? ` · overdue ${t.due_date}` : ''}
                 </p>
               </div>
@@ -374,7 +374,7 @@ function DailyBoard({ academyId }: { academyId: string | null }) {
             {tasks.length === 0 && <p className="text-[11px] text-gray-400">Nothing due this day.</p>}
           </div>
 
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Reported · {comps.length}</p>
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Reported · {comps.length}</p>
           <div className="space-y-1">
             {comps.map((c, i) => (
               <div key={i} className="rounded-lg px-2.5 py-1.5" style={{ background: c.outcome === 'done' ? '#ECFDF5' : '#FFF7ED' }}>
@@ -382,7 +382,7 @@ function DailyBoard({ academyId }: { academyId: string | null }) {
                   <p className="text-[12px] font-medium truncate" style={{ color: '#0C2231' }}>
                     {c.outcome === 'done' ? '✅' : '❌'} {c.task_title}
                   </p>
-                  <p className="text-[10px] shrink-0 text-gray-400">
+                  <p className="text-[12px] shrink-0 text-gray-400">
                     {new Date(c.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {c.completed_by_name ?? '—'}
                   </p>
                 </div>
@@ -443,21 +443,21 @@ function MonthlyReport({ academyId }: { academyId: string | null }) {
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="rounded-lg bg-gray-50 px-2 py-1.5 text-center">
                   <p className="text-lg font-extrabold text-[var(--tss-navy)] leading-none">{data.total}</p>
-                  <p className="text-[9px] uppercase tracking-wide text-gray-400 mt-1">reports</p>
+                  <p className="text-[11px] uppercase tracking-wide text-gray-400 mt-1">reports</p>
                 </div>
                 <div className="rounded-lg bg-emerald-50 px-2 py-1.5 text-center">
                   <p className="text-lg font-extrabold text-emerald-600 leading-none">{data.done}</p>
-                  <p className="text-[9px] uppercase tracking-wide text-emerald-600/70 mt-1">done</p>
+                  <p className="text-[11px] uppercase tracking-wide text-emerald-600/70 mt-1">done</p>
                 </div>
                 <div className="rounded-lg bg-red-50 px-2 py-1.5 text-center">
                   <p className="text-lg font-extrabold text-red-600 leading-none">{data.notDone}</p>
-                  <p className="text-[9px] uppercase tracking-wide text-red-500/70 mt-1">not done</p>
+                  <p className="text-[11px] uppercase tracking-wide text-red-500/70 mt-1">not done</p>
                 </div>
               </div>
               {rate !== null && (
                 <p className="text-[11px] text-gray-500 mb-3">Completion rate: <strong className={rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-600'}>{rate}%</strong></p>
               )}
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-300 mb-1">By person</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-300 mb-1">By person</p>
               <ul className="space-y-0.5 mb-3">
                 {data.byPerson.map((p) => (
                   <li key={p.name} className="flex items-center justify-between text-[12px]">
@@ -469,7 +469,7 @@ function MonthlyReport({ academyId }: { academyId: string | null }) {
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-300 mb-1">By task</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-300 mb-1">By task</p>
               <ul className="space-y-1">
                 {data.byTask.map((t) => (
                   <li key={t.title} className="text-[12px]">
@@ -481,7 +481,7 @@ function MonthlyReport({ academyId }: { academyId: string | null }) {
                       </span>
                     </div>
                     {t.notDoneComments.length > 0 && (
-                      <p className="text-[10px] text-red-400 italic truncate">“{t.notDoneComments[t.notDoneComments.length - 1]}”</p>
+                      <p className="text-[12px] text-red-400 italic truncate">“{t.notDoneComments[t.notDoneComments.length - 1]}”</p>
                     )}
                   </li>
                 ))}

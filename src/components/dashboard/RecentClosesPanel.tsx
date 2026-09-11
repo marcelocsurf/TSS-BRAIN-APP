@@ -48,10 +48,10 @@ export function RecentClosesPanel() {
           <ClipboardCheck size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Cierres y feedback
           <span className="text-[11px] font-semibold text-gray-500">· {closes.length} esta semana</span>
           {newCount > 0 && (
-            <span className="text-[10px] font-bold text-white bg-[var(--tss-cyan,#5AC3E7)] rounded-full px-2 py-0.5">{newCount} nuevo{newCount > 1 ? 's' : ''}</span>
+            <span className="text-[12px] font-bold text-white bg-[var(--tss-cyan,#5AC3E7)] rounded-full px-2 py-0.5">{newCount} nuevo{newCount > 1 ? 's' : ''}</span>
           )}
           {pending.length > 0 && (
-            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{pending.length} sin cerrar</span>
+            <span className="text-[12px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{pending.length} sin cerrar</span>
           )}
         </span>
         <ChevronDown size={16} className={`text-gray-400 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
@@ -62,7 +62,7 @@ export function RecentClosesPanel() {
           {/* Pending close (started, not closed) */}
           {pending.length > 0 && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-amber-600 mb-1.5 inline-flex items-center gap-1">
+              <p className="text-[12px] font-mono uppercase tracking-wider text-amber-600 mb-1.5 inline-flex items-center gap-1">
                 <Clock size={11} /> En curso · pendientes de cerrar
               </p>
               <div className="space-y-1.5">
@@ -82,16 +82,16 @@ export function RecentClosesPanel() {
           {/* Recent closes with feedback */}
           {closes.length > 0 && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Cierres · últimos 7 días</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Cierres · últimos 7 días</p>
               <div className="space-y-2">
                 {closes.map((c) => (
                   <div key={c.camp_session_id} className={`rounded-xl border p-3 ${c.is_new ? 'border-[var(--tss-cyan,#5AC3E7)]/50 bg-[var(--tss-cyan,#5AC3E7)]/5' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <p className="text-sm font-semibold text-[var(--tss-navy)] min-w-0 truncate">
                         {c.camp_name || 'Servicio'}{c.day_number ? ` · Día ${c.day_number}` : ''}
-                        {c.is_new && <span className="ml-1.5 text-[9px] font-bold uppercase text-[var(--tss-cyan,#0369A1)]">nuevo</span>}
+                        {c.is_new && <span className="ml-1.5 text-[11px] font-bold uppercase text-[var(--tss-cyan,#0369A1)]">nuevo</span>}
                       </p>
-                      <span className="text-[10px] text-gray-400 shrink-0">{fmtWhen(c.closed_at)}</span>
+                      <span className="text-[12px] text-gray-400 shrink-0">{fmtWhen(c.closed_at)}</span>
                     </div>
                     <p className="text-[11px] text-gray-500 mb-2">Cerró: {c.coach_name || 'Coach'}</p>
                     <div className="space-y-1.5">
@@ -102,11 +102,11 @@ export function RecentClosesPanel() {
                             <div className="flex items-center gap-1.5">
                               <Circle size={8} fill={st.dot} strokeWidth={0} />
                               <span className="text-[12px] font-semibold text-gray-800">{s.name}</span>
-                              <span className={`text-[10px] font-semibold ${st.text}`}>{st.label}</span>
+                              <span className={`text-[12px] font-semibold ${st.text}`}>{st.label}</span>
                             </div>
                             {s.feedback && <p className="text-[11px] text-gray-600 leading-snug mt-0.5">💬 {s.feedback}</p>}
                             {s.whats_next && <p className="text-[11px] text-gray-500 leading-snug">→ {s.whats_next}</p>}
-                            {!s.feedback && !s.whats_next && <p className="text-[10px] text-gray-400 italic mt-0.5">Sin comentarios</p>}
+                            {!s.feedback && !s.whats_next && <p className="text-[12px] text-gray-400 italic mt-0.5">Sin comentarios</p>}
                           </div>
                         );
                       })}

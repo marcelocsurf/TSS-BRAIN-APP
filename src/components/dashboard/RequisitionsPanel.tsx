@@ -63,7 +63,7 @@ export function RequisitionsPanel() {
                   </span>
                 </button>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`text-[10px] font-bold uppercase tracking-wide rounded-full border px-2 py-0.5 ${st.cls}`}>{st.label}</span>
+                  <span className={`text-[12px] font-bold uppercase tracking-wide rounded-full border px-2 py-0.5 ${st.cls}`}>{st.label}</span>
                   <a
                     href={`/inventory/requisition/${r.id}`}
                     target="_blank"
@@ -78,7 +78,7 @@ export function RequisitionsPanel() {
                 <div className="border-t border-gray-100 px-3 py-2.5">
                   <table className="w-full text-[12px]">
                     <thead>
-                      <tr className="text-[10px] uppercase tracking-wider text-gray-400 text-left">
+                      <tr className="text-[12px] uppercase tracking-wider text-gray-400 text-left">
                         <th className="py-1 font-mono">Ítem</th>
                         <th className="py-1 font-mono text-center">Stock</th>
                         <th className="py-1 font-mono text-center">Mín</th>

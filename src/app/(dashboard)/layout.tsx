@@ -40,6 +40,15 @@ export const revalidate = 0;
 
 type NavItem = { href: string; label: string; Icon: LucideIcon; roles: string[] };
 
+// Menú del coordinador en 4 grupos (auditoría 2026-09-11). Los otros roles
+// siguen viendo la lista plana de siempre.
+const COORD_GROUPS: { title: string; hrefs: string[] }[] = [
+  { title: 'Today',  hrefs: ['/', '/spaces', '/desk'] },
+  { title: 'People', hrefs: ['/students', '/camps', '/coaches'] },
+  { title: 'Money',  hrefs: ['/sales-log', '/costs', '/payroll', '/reports'] },
+  { title: 'Setup',  hrefs: ['/course-codes', '/my-academy', '/community'] },
+];
+
 const NAV_ITEMS: NavItem[] = [
   // \u2014 Admin + coordinator + coach + assistant \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
   { href: '/',              label: 'Home',         Icon: Home,        roles: ['admin', 'coordinator', 'coach', 'assistant'] },
@@ -49,17 +58,17 @@ const NAV_ITEMS: NavItem[] = [
   // Espacios / Venue Scout / Course Codes / Pricing / Billing left the ADMIN
   // sidebar — they live in the dashboard Quick Actions now (less clutter).
   // Other roles keep their entries.
-  { href: '/spaces',        label: 'Espacios',     Icon: CalendarClock, roles: ['coordinator', 'coach', 'assistant'] },
+  { href: '/spaces',        label: 'Spaces',     Icon: CalendarClock, roles: ['coordinator', 'coach', 'assistant'] },
   { href: '/venue-scout',   label: 'Venue Scout',  Icon: MapPin,      roles: ['coach'] },
   // Course Codes: despierta 2026-09-05 — ahí se generan los LINKS DE REGALO
   // del libro ONE WAVE (y los códigos de curso). Marcelo no la encontraba.
   { href: '/course-codes',  label: 'Course Codes', Icon: Ticket,      roles: ['admin', 'coordinator'] },
   { href: '/my-academy',    label: 'My Academy',   Icon: Building2,    roles: ['coordinator'] },
   { href: '/sales-log',     label: 'Sales Log',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
-  { href: '/reports',       label: 'Reportes',     Icon: BarChart3,    roles: ['admin', 'coordinator'] },
+  { href: '/reports',       label: 'Reports',     Icon: BarChart3,    roles: ['admin', 'coordinator'] },
   { href: '/costs',         label: 'Costs',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
-  { href: '/payroll',       label: 'Pagos',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
-  { href: '/desk',          label: 'Mostrador',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
+  { href: '/payroll',       label: 'Payroll',        Icon: DollarSign,   roles: ['admin', 'coordinator'] },
+  { href: '/desk',          label: 'Front desk',    Icon: ShoppingBag,  roles: ['admin', 'coordinator'] },
   // Comunidad: The Lineup — el canal donde Marcelo postea para los miembros.
   { href: '/community',     label: 'The Lineup',   Icon: Megaphone,    roles: ['admin', 'coordinator'] },
   // \u2014 Coach / assistant session workflow \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014
@@ -130,6 +139,11 @@ export default async function DashboardLayout({
   const visibleNav = getNavItemsForRole(effectiveRole).filter(
     (i) => i.href !== '/metodo' || (isAdmin && !actAsId),
   );
+  const navGroups: { title: string | null; items: NavItem[] }[] = effectiveRole === 'coordinator'
+    ? COORD_GROUPS
+        .map((g) => ({ title: g.title, items: g.hrefs.map((h) => visibleNav.find((i) => i.href === h)).filter((i): i is NavItem => !!i) }))
+        .filter((g) => g.items.length > 0)
+    : [{ title: null, items: visibleNav }];
   let actAsAcademyName: string | null = null;
   let allAcademies: { id: string; name: string; slug: string }[] = [];
   if (isAdmin) {
@@ -210,15 +224,22 @@ export default async function DashboardLayout({
           <AcademySwitcher academies={allAcademies} currentActAsId={actAsId} />
         )}
         <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-0.5">
-          {visibleNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/8 hover:text-white transition-all border-l-2 border-transparent hover:border-[var(--tss-cyan)]"
-            >
-              <item.Icon size={16} strokeWidth={1.75} className="opacity-70" />
-              <span style={{ fontFamily: 'var(--font-body)' }}>{item.label}</span>
-            </Link>
+          {navGroups.map((g) => (
+            <div key={g.title ?? 'flat'} className={g.title ? 'pt-3 first:pt-0' : ''}>
+              {g.title && (
+                <p className="px-3 pb-1 text-[11px] uppercase tracking-wider text-white/40" style={{ fontFamily: 'var(--font-mono)' }}>{g.title}</p>
+              )}
+              {g.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/8 hover:text-white transition-all border-l-2 border-transparent hover:border-[var(--tss-cyan)]"
+                >
+                  <item.Icon size={16} strokeWidth={1.75} className="opacity-70" />
+                  <span style={{ fontFamily: 'var(--font-body)' }}>{item.label}</span>
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="p-4 border-t border-white/10 flex items-center justify-between">

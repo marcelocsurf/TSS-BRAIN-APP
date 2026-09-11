@@ -41,7 +41,7 @@ export function CopyTextButton({ text, label }: { text: string; label: string })
           }
         }
       }}
-      className="shrink-0 text-[10px] font-bold rounded-full px-3 py-1.5 border transition-colors text-center"
+      className="shrink-0 text-[12px] font-bold rounded-full px-3 py-1.5 border transition-colors text-center"
       style={{
         minWidth: 96,
         ...(state === 'ok'

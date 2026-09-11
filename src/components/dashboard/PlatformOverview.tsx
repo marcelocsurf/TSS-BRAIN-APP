@@ -59,7 +59,7 @@ function PulseStat({ label, value, href, alert }: { label: string; value: number
       }`}
     >
       <p className={`text-xl font-bold leading-none ${alert ? 'text-red-600' : 'text-[var(--tss-navy)]'}`}>{value}</p>
-      <p className="mt-1.5 text-[9px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+      <p className="mt-1.5 text-[11px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
         {label}
       </p>
     </Link>
@@ -76,7 +76,7 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-[var(--tss-navy)] truncate">{a.name}</p>
-          <p className="text-[10px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+          <p className="text-[12px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
             {a.studentsActive} active students
           </p>
         </div>
@@ -91,7 +91,7 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
       <div className="px-4 py-3 space-y-3">
         {/* Today */}
         <div>
-          <p className="text-[9px] font-mono uppercase tracking-wider text-gray-400 mb-1 inline-flex items-center gap-1">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-1 inline-flex items-center gap-1">
             <Tent size={10} /> Today
           </p>
           {a.servicesToday.length === 0 ? (
@@ -116,7 +116,7 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
         {/* Incidents */}
         {(a.unreadIncidents > 0 || a.recentIncidents.length > 0) && (
           <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-red-600 mb-1 inline-flex items-center gap-1">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-red-600 mb-1 inline-flex items-center gap-1">
               <AlertTriangle size={10} /> Incidents{a.unreadIncidents > 0 ? ` · ${a.unreadIncidents} unread` : ''}
             </p>
             <ul className="space-y-0.5">
@@ -134,12 +134,12 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
         {(a.pendingPromotions > 0 || a.overdueTasks > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {a.pendingPromotions > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[12px] font-semibold text-amber-800">
                 <Award size={10} /> {a.pendingPromotions} promotion{a.pendingPromotions > 1 ? 's' : ''} to confirm
               </span>
             )}
             {a.overdueTasks > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[12px] font-semibold text-red-700">
                 <ClipboardList size={10} /> {a.overdueTasks} overdue task{a.overdueTasks > 1 ? 's' : ''}
               </span>
             )}
@@ -150,11 +150,11 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-gray-50 px-3 py-2 text-center">
             <p className="text-base font-bold text-[var(--tss-navy)] leading-none">{a.weekSessionsClosed}</p>
-            <p className="mt-1 text-[9px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Sessions this week</p>
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Sessions this week</p>
           </div>
           <div className="rounded-xl bg-gray-50 px-3 py-2 text-center">
             <p className="text-base font-bold text-[var(--tss-navy)] leading-none">{a.weekNewStudents}</p>
-            <p className="mt-1 text-[9px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>New students this week</p>
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>New students this week</p>
           </div>
         </div>
       </div>

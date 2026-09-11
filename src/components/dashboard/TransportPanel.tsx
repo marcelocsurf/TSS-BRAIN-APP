@@ -243,7 +243,7 @@ export function TransportPanel() {
                         <div className="flex items-center gap-1 shrink-0">
                           {r.transport_status ? (
                             <>
-                              <span className={`text-[10px] font-bold uppercase tracking-wide ${r.transport_status === 'taken' ? 'text-emerald-700' : 'text-gray-500'}`}>
+                              <span className={`text-[12px] font-bold uppercase tracking-wide ${r.transport_status === 'taken' ? 'text-emerald-700' : 'text-gray-500'}`}>
                                 {r.transport_status === 'taken' ? '✓ Tomado' : '✗ Cancelado'}
                               </span>
                               <button

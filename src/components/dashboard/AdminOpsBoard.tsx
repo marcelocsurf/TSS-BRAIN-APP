@@ -39,7 +39,7 @@ export async function AdminOpsBoard({ unreadIncidents, pendingSurveys }: { unrea
     <div className="mb-6 grid gap-4 md:grid-cols-2 md:items-stretch">
       <div className="rounded-3xl p-6 flex flex-col justify-between min-h-56" style={{ background: '#061C2B' }}>
         <div>
-          <p className="text-[10px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Platform</p>
+          <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Platform</p>
           <h2 className="text-[30px] mt-2" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{dayName}<br />operations</h2>
         </div>
         <div className="grid grid-cols-5 gap-2 mt-6 pt-4" style={{ borderTop: '1px solid rgba(247,249,250,.1)' }}>
@@ -52,14 +52,14 @@ export async function AdminOpsBoard({ unreadIncidents, pendingSurveys }: { unrea
           ].map((s) => (
             <div key={s.label}>
               <p className="text-[30px] leading-none" style={{ ...F_DISPLAY, color: s.color }}>{s.v}</p>
-              <p className="text-[7px] mt-1.5" style={{ ...F_LABEL, color: 'rgba(247,249,250,.5)' }}>{s.label}</p>
+              <p className="text-[11px] mt-1.5" style={{ ...F_LABEL, color: 'rgba(247,249,250,.5)' }}>{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4" style={{ borderTop: '3px solid #FF6B6B' }}>
-        <p className="text-[9px] mb-2 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
+        <p className="text-[11px] mb-2 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
           <AlertTriangle size={12} /> Needs attention · platform
         </p>
         {attention.length === 0 ? (

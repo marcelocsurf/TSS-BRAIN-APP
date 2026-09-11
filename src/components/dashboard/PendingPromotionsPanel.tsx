@@ -34,7 +34,7 @@ export function PendingPromotionsPanel() {
 
   return (
     <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-4">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-amber-600 mb-2 flex items-center gap-1.5">
+      <p className="text-[12px] font-mono uppercase tracking-wider text-amber-600 mb-2 flex items-center gap-1.5">
         <Award size={12} /> Belt promotions to confirm ({items.length})
       </p>
       <p className="text-xs text-gray-500 mb-3">

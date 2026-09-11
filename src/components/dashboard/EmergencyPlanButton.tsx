@@ -72,7 +72,7 @@ export function EmergencyPlanButton({ plan }: { plan: EmergencyPlan | null }) {
                   <div key={r.label} className="flex gap-3">
                     <span className="mt-0.5 shrink-0 text-red-500">{r.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{r.label}</p>
+                      <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">{r.label}</p>
                       <p className="whitespace-pre-line text-sm font-medium text-gray-800">{r.value}</p>
                     </div>
                   </div>
