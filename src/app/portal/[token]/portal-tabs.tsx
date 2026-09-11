@@ -416,18 +416,20 @@ function nextMoveRows(
     const seqLbl = pre?.startsWith('#') ? pre : nm.sequenceName;
     const seq = seqWord(sequenceLabel(nm.sequenceId ?? null, nm.sequenceOrder, nm.sequenceName));
     const word = nm.detail ? nm.detail.text : null;
+    // Marcelo (2026-09-11): "algo súper claro: # de secuencia + nombre, y
+    // qué parte de la secuencia lo está deteniendo". Nada más.
     rows.push({
-      key: 'sequence', label: 'The path', title: `Run ${seqLbl} · focus: ${nm.stepTitle}`, accent: BRAND.colors.cyan,
+      key: 'sequence', label: 'The path', title: `${seqLbl} · ${nm.sequenceName}`, accent: BRAND.colors.cyan,
       reason: nm.source === 'held_back'
-        ? `${nm.stepTitle} held your last run of ${seq} back${nm.selfSequenceRating != null ? ` · your run ${nm.selfSequenceRating}★` : ''}`
+        ? `Holding you back: ${nm.stepTitle}`
         : nm.source === 'unrated'
-          ? `${seq} is not yours yet · ${nm.stepTitle} is the first step of the chain you have not rated`
-          : `${seq} is not yours yet · ${nm.stepTitle} is the first step of the chain below 4★${nm.stars !== null ? ` (${nm.stars}★)` : ''}${nm.official ? ' · rated by your coach' : ''}`,
-      detail: word ? `Your word for the wave: ${word}` : null,
+          ? `Start with: ${nm.stepTitle}`
+          : `Work on: ${nm.stepTitle}${nm.stars !== null ? ` · ${nm.stars}★` : ''}`,
+      detail: word ? `Your word: ${word}` : null,
       // El consejo de lados NO va acá (Marcelo 2026-09-10: "no sé a qué se
       // refiere"): mezclaba otras secuencias en la fila del camino. Vive en
       // Let's Play → Where you are / Both sides.
-      action: 'Run it with this focus →',
+      action: 'Train it →',
       onClick: () => {
         if (nm.sequenceId && onTrainSequence) onTrainSequence({ sequenceId: nm.sequenceId, mode: 'step_focus', focusStepId: nm.stepId, intention: word });
         else onOpenStep?.(nm.stepId);
@@ -458,7 +460,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[12px]" style={{ ...F_LABEL, color: r.accent }}>{numbered ? r.label : `Work on this · ${r.label.toLowerCase()}`}</p>
+          <p className="text-[12px]" style={{ ...F_LABEL, color: r.accent }}>{numbered ? r.label : 'Next'}</p>
           <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{r.title}</p>
           <p className="text-[12px] text-white/80 mt-0.5 leading-snug">{r.reason}</p>
           {r.detail && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>{r.detail}</p>}
@@ -472,7 +474,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
         <button type="button" onClick={r.onClick} className="block w-full text-left px-4 pt-3.5 pb-2">{inner}</button>
         {r.pageHref && (
           <a href={r.pageHref} className="block px-4 pb-3 text-[12px]" style={{ color: 'rgba(247,249,250,.75)' }}>
-            See what it needs → the sequence page: what it is, how the body does it, the drills and the indicators
+            Open the sequence page →
           </a>
         )}
       </div>
@@ -1146,15 +1148,17 @@ function HomeTab({
           la playa el alumno abre el app para UNA cosa: cerrar la sesión o
           saber qué entrenar. Eso va arriba del nombre. ═══ */}
       {onFinishOpenSession && onDiscardOpenSession && <OpenSessionCard data={data} onFinish={onFinishOpenSession} onDiscard={onDiscardOpenSession} />}
-          {(coachFocus || data.nextMove || sessionCue.cue) && (
+          {(coachFocus || data.nextMove) && (
             <div
               className="rounded-2xl overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
             >
-              {/* Una sola cosa en el Home; la lista completa vive en Let's Play. */}
+              {/* Una sola cosa en el Home; la lista completa vive en Let's Play.
+                  La frase del libro (sessionCue) salió de acá (Marcelo
+                  2026-09-11: "mucha info para leer"). */}
               <NextMovesBlock data={data} mode="top" onTrainSequence={onTrainSequence} onOpenStep={onOpenStep} onGoTo={onGoTo} />
 
-              {sessionCue.cue && (
+              {false && sessionCue.cue && (
                 <div
                   className="px-4 py-3"
                   style={{
@@ -1388,7 +1392,7 @@ function HomeTab({
                 }}>
                   {fmtHm(surf.totalMinutes)}
                 </p>
-                <p className="text-[12px] font-mono uppercase tracking-[0.12em] mt-1 whitespace-nowrap" style={{ color: '#a9bccb' }}>Hours surfed</p>
+                <p className="text-[9px] font-mono uppercase tracking-[0.06em] mt-1 whitespace-nowrap" style={{ color: '#a9bccb' }}>Hours surfed</p>
               </div>
             </div>
             <div className="flex-1 min-w-0">
