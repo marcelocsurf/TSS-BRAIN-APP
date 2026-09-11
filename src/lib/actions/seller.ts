@@ -53,7 +53,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
   phone?: string;
   note?: string;
   allowOverbook?: boolean;
-}): Promise<{ ok: boolean; error?: string; full?: boolean; studentName?: string; included?: boolean; includedIn?: string | null; overbooked?: boolean }> {
+}): Promise<{ ok: boolean; error?: string; full?: boolean; studentName?: string; included?: boolean; includedIn?: string | null; overbooked?: boolean; intakeUrl?: string | null }> {
   const coach = await sellerByToken(token);
   if (!coach) return { ok: false, error: 'Not authorized to sell.' };
   const admin = createAdminClient();
@@ -181,7 +181,15 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
       metadata: { campId, studentId, soldBy: coach.id },
     }).catch(() => {});
   }
-  return { ok: true, studentName, included: !!includedIn, includedIn, overbooked: !!overbookNote };
+  // Vendido = link en la mano (Marcelo 2026-09-11): el intake es el ÚNICO
+  // link que se manda después de vender; se devuelve acá para copiarlo.
+  let intakeUrl: string | null = null;
+  try {
+    const { data: tk } = await admin.from('students').select('portal_token').eq('id', studentId).maybeSingle();
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+    intakeUrl = tk?.portal_token ? `${base}/intake/${tk.portal_token}` : null;
+  } catch { /* sin link no se rompe la venta */ }
+  return { ok: true, studentName, included: !!includedIn, includedIn, overbooked: !!overbookNote, intakeUrl };
 }
 
 export interface SellerSale {

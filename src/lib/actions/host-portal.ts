@@ -62,6 +62,8 @@ export interface HostStudentRow {
   waiver: boolean;
   intake: boolean;
   quiz: boolean;
+  /** false = solo servicios de 1 día → el quiz no aplica (regla 2026-09-11). */
+  quiz_required: boolean;
   lifecycle: string | null;
   intake_url: string | null;
   portal_url: string | null;
@@ -69,7 +71,7 @@ export interface HostStudentRow {
 
 const BASE = () => process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
 
-function toRow(s: any): HostStudentRow {
+function toRow(s: any, quizRequired = true): HostStudentRow {
   return {
     id: s.id,
     name: [s.first_name, s.last_name].filter(Boolean).join(' '),
@@ -79,6 +81,7 @@ function toRow(s: any): HostStudentRow {
     waiver: !!s.waiver_signed,
     intake: !!s.intake_completed_at,
     quiz: !!s.level_quiz_completed_at,
+    quiz_required: quizRequired,
     lifecycle: s.lifecycle_status ?? null,
     intake_url: s.portal_token ? `${BASE()}/intake/${s.portal_token}` : null,
     portal_url: s.portal_token ? `${BASE()}/portal/${s.portal_token}` : null,
@@ -101,7 +104,7 @@ export async function hostSearchStudents(token: string, q: string): Promise<Host
     .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term},phone.ilike.${term}`)
     .order('created_at', { ascending: false })
     .limit(20);
-  return (data ?? []).map(toRow);
+  return (data ?? []).map((s: any) => toRow(s));
 }
 
 // "Necesitan atención": inscritos en servicios PRÓXIMOS con alguna ficha
@@ -114,20 +117,30 @@ export async function hostAttentionList(token: string): Promise<HostStudentRow[]
   const horizon = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
   const { data: seats } = await admin
     .from('camp_participants')
-    .select('student_id, camp_instances:camp_instance_id!inner(academy_id, start_date)')
+    .select('student_id, camp_instances:camp_instance_id!inner(academy_id, start_date, end_date)')
     .eq('camp_instances.academy_id', who.academy_id)
     .gte('camp_instances.start_date', today)
     .lte('camp_instances.start_date', horizon)
     .eq('enrollment_status', 'active');
+  // Quiz de nivel SOLO si tiene un servicio de 2+ días (camp). Clase de un
+  // día: ficha + waiver y nada más (regla de Marcelo 2026-09-11).
+  const needsQuiz = new Set<string>();
+  for (const s of (seats ?? []) as any[]) {
+    const ci = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
+    const a = Date.parse(`${ci?.start_date}T00:00:00Z`); const b = Date.parse(`${ci?.end_date}T00:00:00Z`);
+    if (Number.isFinite(a) && Number.isFinite(b) && Math.round((b - a) / 86_400_000) + 1 >= 2) needsQuiz.add(s.student_id);
+  }
   const ids = [...new Set((seats ?? []).map((s: any) => s.student_id).filter(Boolean))];
   if (!ids.length) return [];
   const { data } = await admin
     .from('students')
     .select(STUDENT_COLS)
     .in('id', ids)
-    .eq('status', 'active')
-    .or('waiver_signed.eq.false,intake_completed_at.is.null,level_quiz_completed_at.is.null');
-  return (data ?? []).map(toRow).sort((a, b) => Number(a.waiver) - Number(b.waiver));
+    .eq('status', 'active');
+  return (data ?? [])
+    .map((s: any) => toRow(s, needsQuiz.has(s.id)))
+    .filter((r) => !r.waiver || !r.intake || (r.quiz_required && !r.quiz))
+    .sort((a, b) => Number(a.waiver) - Number(b.waiver));
 }
 
 // Ficha completa de un cliente: bitácora resumida + membresía + incidentes.

@@ -335,6 +335,8 @@ function SellerReserveForm({ token, campId, onDone }: { token: string; campId: s
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sold, setSold] = useState<{ name: string; intakeUrl: string | null } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (mode !== 'search' || q.trim().length < 2) { setResults([]); return; }
@@ -348,10 +350,34 @@ function SellerReserveForm({ token, campId, onDone }: { token: string; campId: s
       picked ? { studentId: picked.id, note } : { firstName: first, lastName: last, email, phone, note });
     setBusy(false);
     if (!res.ok) { setMsg(res.error || 'No se pudo reservar.'); return; }
-    onDone();
+    // Vendido = link en la mano: se muestra ANTES de cerrar el formulario.
+    setSold({ name: res.studentName || (picked?.name ?? first), intakeUrl: res.intakeUrl ?? null });
   };
 
   const inp: React.CSSProperties = { background: 'rgba(247,249,250,.06)', border: '1.5px solid rgba(247,249,250,.15)', color: PAPER };
+  if (sold) {
+    const copy = async () => {
+      if (!sold.intakeUrl) return;
+      try { await navigator.clipboard.writeText(sold.intakeUrl); setCopied(true); } catch { setCopied(false); }
+    };
+    return (
+      <div className="mt-2.5 rounded-xl p-3 space-y-2" style={{ background: `${GREEN}14`, border: `1px solid ${GREEN}66` }}>
+        <p className="text-[13px] font-bold" style={{ color: PAPER }}>✓ Reservado: {sold.name}</p>
+        <p className="text-[12px]" style={{ color: 'rgba(247,249,250,.7)' }}>Ahora mandale este link por WhatsApp. Es el ÚNICO que necesita: ficha, waiver y, si es camp, su nivel y metas.</p>
+        {sold.intakeUrl ? (
+          <>
+            <p className="text-[11px] break-all rounded-lg px-2 py-1.5" style={{ background: 'rgba(247,249,250,.06)', color: CYAN }}>{sold.intakeUrl}</p>
+            <button onClick={copy} className="w-full py-2.5 rounded-full text-[11px] font-extrabold" style={{ background: CYAN, color: INK, ...F_M }}>
+              {copied ? '✓ Copiado — pegalo en WhatsApp' : 'Copiar link de intake'}
+            </button>
+          </>
+        ) : (
+          <p className="text-[11px]" style={{ color: CORAL }}>No se pudo generar el link; el coordinador lo copia desde la ficha.</p>
+        )}
+        <button onClick={onDone} className="w-full py-2 text-[11px] font-bold" style={{ color: 'rgba(247,249,250,.6)' }}>Listo</button>
+      </div>
+    );
+  }
   return (
     <div className="mt-2.5 rounded-xl p-3 space-y-2" style={{ background: 'rgba(247,249,250,.03)', border: '1px solid rgba(247,249,250,.1)' }}>
       <div className="flex gap-1.5">

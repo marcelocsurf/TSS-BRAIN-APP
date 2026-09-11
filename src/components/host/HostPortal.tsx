@@ -61,7 +61,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
   // Renovación de membresía en mostrador (host cubre coordinador).
   const [renewMonths, setRenewMonths] = useState<number | null>(null);
   const [renewBusy, setRenewBusy] = useState(false);
-  const complete = row.waiver && row.intake && row.quiz;
+  const complete = row.waiver && row.intake && (!row.quiz_required || row.quiz);
 
   const doRenew = async (mode: 'confirm' | 'grant', method: string) => {
     setRenewBusy(true);
@@ -97,7 +97,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
         <div className="flex flex-wrap gap-1.5 mt-2">
           <Check ok={row.waiver} label="Waiver" />
           <Check ok={row.intake} label="Ficha" />
-          <Check ok={row.quiz} label="Quiz nivel" />
+          {row.quiz_required && <Check ok={row.quiz} label="Quiz nivel" />}
         </div>
       </button>
       {open && (
