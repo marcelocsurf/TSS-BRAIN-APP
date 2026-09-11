@@ -2541,3 +2541,56 @@ export async function serviceQuickViewByToken(
     roster,
   };
 }
+
+// ═══ CÓMO VA EL CAMP, día por día (auditoría coordinador 2026-09-11) ═══
+// "Si quiero saber el status de un camp y lo que el coach escribió a cada
+// alumno, no lo encuentro." Un solo bloque: por día, estado + coach, y al
+// abrirlo, por alumno: cómo le fue, qué trabaja después, nota del coach.
+export type CampDayStatus = {
+  session_id: string;
+  day_number: number;
+  session_date: string | null;
+  state: 'planned' | 'in_progress' | 'closed';
+  coach: string | null;
+  results: { student_id: string; name: string; status: string | null; whats_next: string | null; coach_feedback: string | null }[];
+};
+
+export async function getCampDayStatus(campInstanceId: string): Promise<CampDayStatus[]> {
+  const admin = createAdminClient();
+  const { data: sessions } = await admin
+    .from('camp_sessions')
+    .select('id, day_number, session_date, session_status, completion_state')
+    .eq('camp_instance_id', campInstanceId)
+    .order('day_number');
+  if (!sessions?.length) return [];
+  const ids = sessions.map((s: any) => s.id);
+  const { data: results } = await admin
+    .from('student_session_results')
+    .select('camp_session_id, student_id, status, whats_next, coach_feedback, created_at, coaches:coach_id(display_name), students:student_id(first_name, last_name)')
+    .in('camp_session_id', ids)
+    .order('created_at', { ascending: false });
+  const bySession = new Map<string, any[]>();
+  for (const r of (results ?? []) as any[]) {
+    const list = bySession.get(r.camp_session_id) ?? [];
+    if (list.some((x) => x.student_id === r.student_id)) continue; // la más reciente por alumno
+    list.push(r);
+    bySession.set(r.camp_session_id, list);
+  }
+  return sessions.map((s: any) => {
+    const list = bySession.get(s.id) ?? [];
+    const coach = list.map((r) => (Array.isArray(r.coaches) ? r.coaches[0] : r.coaches)?.display_name).find(Boolean) ?? null;
+    const closed = s.completion_state === 'closed' || s.session_status === 'completed';
+    const inProgress = !closed && (s.completion_state === 'in_progress' || s.session_status === 'active');
+    return {
+      session_id: s.id,
+      day_number: s.day_number,
+      session_date: s.session_date ?? null,
+      state: closed ? 'closed' : inProgress ? 'in_progress' : 'planned',
+      coach,
+      results: list.map((r) => {
+        const st = Array.isArray(r.students) ? r.students[0] : r.students;
+        return { student_id: r.student_id, name: `${st?.first_name ?? ''} ${st?.last_name ?? ''}`.trim() || 'Student', status: r.status ?? null, whats_next: r.whats_next ?? null, coach_feedback: r.coach_feedback ?? null };
+      }).sort((a, b) => a.name.localeCompare(b.name)),
+    } as CampDayStatus;
+  });
+}

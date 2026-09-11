@@ -1,5 +1,5 @@
 import { CampCostPanel } from '@/components/camps/CampCostPanel';
-import { getCampDetail, getCampEvaluations, getScheduledEvaluations } from '@/lib/actions/camps';
+import { getCampDetail, getCampEvaluations, getScheduledEvaluations, getCampDayStatus } from '@/lib/actions/camps';
 import { getCampPlanForRead } from '@/lib/actions/service-planner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { getCurrentCoach } from '@/lib/actions/auth';
@@ -51,6 +51,7 @@ export default async function CampDetailPage({ params }: Props) {
   if (!instance) notFound();
 
   const coach = await getCurrentCoach();
+  const dayStatus = await getCampDayStatus(id).catch(() => []);
   const [serviceStaff, assignableCoaches, academyStaffMembers] = await Promise.all([
     listServiceStaff(id).catch(() => []),
     listAssignableCoaches().catch(() => []),
@@ -150,6 +151,55 @@ export default async function CampDetailPage({ params }: Props) {
         coaches={assignableCoaches}
         staffMembers={academyStaffMembers}
       />
+
+      {/* ═══ HOW IT'S GOING · day by day (auditoría coordinador 2026-09-11) ═══
+          Estado + coach por día; al abrir, lo que el coach dejó a cada alumno. */}
+      {dayStatus.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[var(--tss-navy)]">How it&apos;s going · day by day</h3>
+            <p className="text-[12px] text-gray-500">{dayStatus.filter((d) => d.state === 'closed').length}/{dayStatus.length} days closed</p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {dayStatus.map((d) => {
+              const open = d.state !== 'planned' && d.results.length > 0;
+              const pill = d.state === 'closed' ? 'bg-emerald-50 text-emerald-700' : d.state === 'in_progress' ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' : 'bg-gray-50 text-gray-500';
+              const word = d.state === 'closed' ? 'Closed' : d.state === 'in_progress' ? 'In progress' : 'Planned';
+              return (
+                <details key={d.session_id} open={open && d.state === 'in_progress'} className="group">
+                  <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0">{d.day_number}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">Day {d.day_number}{d.session_date ? ` · ${d.session_date}` : ''}</p>
+                        <p className="text-[12px] text-gray-500 truncate">{d.coach ? `Coach ${d.coach}` : 'No coach yet'}{d.results.length ? ` · ${d.results.length} student${d.results.length === 1 ? '' : 's'} with feedback` : ''}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[12px] px-2 py-0.5 rounded-full font-semibold ${pill}`}>{word}</span>
+                      <Link href={`/camps/${id}/day/${d.day_number}`} className="text-[12px] text-[var(--tss-navy)] underline">open</Link>
+                    </div>
+                  </summary>
+                  {d.results.length > 0 ? (
+                    <div className="px-4 pb-3 space-y-1.5">
+                      {d.results.map((r) => (
+                        <div key={r.student_id} className="rounded-lg bg-gray-50 px-3 py-2">
+                          <p className="text-[13px] font-semibold text-gray-900">{r.name}{r.status ? <span className="ml-2 text-[11px] font-normal text-gray-500">{r.status.replace(/_/g, ' ')}</span> : null}</p>
+                          {r.whats_next && <p className="text-[12.5px] text-[var(--tss-navy)]">🎯 {r.whats_next}</p>}
+                          {r.coach_feedback && <p className="text-[12px] text-gray-600">{r.coach_feedback}</p>}
+                          {!r.whats_next && !r.coach_feedback && <p className="text-[12px] text-gray-400 italic">Closed without notes.</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="px-4 pb-3 text-[12px] text-gray-400 italic">Nothing written yet for this day.</p>
+                  )}
+                </details>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Participants with belt levels — kept right under the staff section so
           enrolment is visible without scrolling to the bottom. */}
