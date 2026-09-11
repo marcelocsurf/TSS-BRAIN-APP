@@ -129,6 +129,7 @@ export async function getCoachToolsByStep(
     )
     .eq('step_id', stepId)
     .eq('active', true)
+    .eq('coach_visible', true)
     .order('display_order');
 
   // Filter by belt: each tool's `belt` is a short token ('white','yellow',

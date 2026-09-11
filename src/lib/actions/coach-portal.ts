@@ -194,6 +194,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       .from('drills_missions')
       .select('id, step_id, title, type, time_estimate, key_words, block_name, belt, description_md, success_criteria, reps_recommended')
       .eq('active', true)
+      .eq('coach_visible', true)
       .order('belt')
       .order('display_order'),
   ]);
@@ -774,6 +775,7 @@ export async function getCoachLessonDetail(
       .from('drills_missions')
       .select('id, title, type, key_words, time_estimate, block_name, description_md, success_criteria, reps_recommended')
       .eq('step_id', lesson.linked_step_id)
+      .eq('coach_visible', true)
       .eq('active', true);
     for (const row of dm ?? []) {
       const item: LinkedTool = {

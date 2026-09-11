@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { revalidatePath } from 'next/cache';
 
-export type DrillType = 'drill' | 'mission';
+export type DrillType = 'drill' | 'mission' | 'game';
 export type DrillBelt = 'white' | 'yellow' | 'blue' | 'purple' | 'brown' | 'black';
 
 export interface DrillRow {
@@ -23,6 +23,14 @@ export interface DrillRow {
   display_order: number | null;
   active: boolean;
   student_visible: boolean;
+  // Directorio (2026-09-11): procedencia, público, qué desarrolla, acceso.
+  coach_visible: boolean;
+  audience: string[];
+  context: string | null;
+  develops: string | null;
+  source: string | null;
+  dictated_on: string | null;
+  source_note: string | null;
   video_url?: string | null; // from content_videos (first video for this drill)
 }
 
@@ -115,6 +123,13 @@ interface DrillInput {
   block_name?: string | null;
   display_order?: number | null;
   student_visible?: boolean;
+  coach_visible?: boolean;
+  audience?: string[];
+  context?: string | null;
+  develops?: string | null;
+  source?: string | null;
+  dictated_on?: string | null;
+  source_note?: string | null;
   video_url?: string | null;
 }
 
@@ -133,6 +148,13 @@ function clean(input: DrillInput) {
     block_name: input.block_name?.trim() || null,
     display_order: input.display_order ?? null,
     student_visible: input.student_visible ?? true,
+    coach_visible: input.coach_visible ?? true,
+    audience: (input.audience ?? []).filter(Boolean),
+    context: input.context?.trim() || null,
+    develops: input.develops?.trim() || null,
+    source: input.source?.trim() || null,
+    dictated_on: input.dictated_on?.trim() || null,
+    source_note: input.source_note?.trim() || null,
   };
 }
 
@@ -143,7 +165,7 @@ const BELT_CODE: Record<string, string> = {
 // id is a human-readable TEXT key with no DB default (e.g. DRL-BB-040 /
 // MIS-WB-012). Generate the next free one for this type + belt.
 async function nextDrillId(admin: ReturnType<typeof createAdminClient>, type: DrillType, belt: string): Promise<string> {
-  const prefix = type === 'drill' ? 'DRL' : 'MIS';
+  const prefix = type === 'drill' ? 'DRL' : type === 'game' ? 'GAM' : 'MIS';
   const code = BELT_CODE[belt] || belt.slice(0, 2).toUpperCase();
   const base = `${prefix}-${code}-`;
   const { data } = await admin.from('drills_missions').select('id').ilike('id', `${base}%`);
@@ -163,7 +185,7 @@ export async function createDrill(input: DrillInput): Promise<DrillRow> {
   await requireAdmin();
   if (!input.title?.trim()) throw new Error('Title is required.');
   if (!input.belt) throw new Error('Belt is required.');
-  if (input.type !== 'drill' && input.type !== 'mission') throw new Error('Type must be drill or mission.');
+  if (!['drill', 'mission', 'game'].includes(input.type)) throw new Error('Type must be drill, mission or game.');
   const admin = createAdminClient();
   const id = await nextDrillId(admin, input.type, input.belt);
   const { data, error } = await admin.from('drills_missions').insert({ id, ...clean(input), active: true }).select('*').single();

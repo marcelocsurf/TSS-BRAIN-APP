@@ -504,7 +504,8 @@ export async function getDrillsForStep(stepId: string, belt?: string) {
       .from('drills_missions')
       .select('id, step_id, title, type, time_estimate, key_words, success_criteria, belt, block_name')
       .eq('step_id', stepId)
-      .eq('active', true);
+      .eq('active', true)
+      .eq('coach_visible', true);
 
   if (normalizedBelt) {
     const { data } = await baseQuery().eq('belt', normalizedBelt).order('type').order('id');

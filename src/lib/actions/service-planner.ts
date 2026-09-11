@@ -629,6 +629,7 @@ export async function getServicePlan(
         'reps_recommended, description_md, success_criteria, display_order'
     )
     .eq('active', true)
+    .eq('coach_visible', true)
     .order('display_order');
   const availableDrills = (drillsRaw ?? []).filter(
     (d: any) => (beltRank[d.belt] ?? 1) <= myRank
