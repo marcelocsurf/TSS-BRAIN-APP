@@ -5,6 +5,7 @@
 // con su color; lo que ya viene de los 3 Círculos vs lo nuevo de Blue.
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { MarkReadButton } from './ThreeCirclesPage';
 import { WaveBoard, COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
 import { InfinityCircle } from './InfinityCircle';
 import { LOOP_INTRO, LOOP_SIDES, type LoopSide, type LoopStep } from '@/lib/sequence-pages/infinite-circle';
@@ -150,11 +151,8 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
             <p className="text-[12.5px] mt-3" style={{ color: MUTED }}>Name the block, not the whole wave. That is what you will train tomorrow.</p>
           </Card>
 
-          {loopLessonId && (
-            <a href={`${portal}?tab=course&lesson=${loopLessonId}`} className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold" style={{ border: `1px solid ${CYAN}66`, color: CYAN }}>
-              Mark the lesson as read →
-            </a>
-          )}
+          {/* Marcar leída acá mismo, sin ir a la lección (2026-09-11). */}
+          {loopLessonId && <MarkReadButton token={token} lessonId={loopLessonId} portal={portal} />}
         </div>
 
         <p className="text-[11px] mt-8 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: MUTED }}>

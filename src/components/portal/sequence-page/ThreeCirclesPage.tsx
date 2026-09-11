@@ -243,7 +243,7 @@ function Video({ url, title }: { url: string; title: string }) {
 }
 
 
-function MarkReadButton({ token, lessonId, portal }: { token: string; lessonId: string; portal: string }) {
+export function MarkReadButton({ token, lessonId, portal }: { token: string; lessonId: string; portal: string }) {
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   return (
     <div className="flex items-center gap-3 flex-wrap">
