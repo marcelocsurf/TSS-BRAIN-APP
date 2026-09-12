@@ -27,6 +27,7 @@ import {
   LifeBuoy, Dumbbell, Eye, DoorOpen, Anchor, Rocket, ArrowLeftRight,
   ChevronDown,
   type LucideIcon,
+  FileText,
 } from 'lucide-react';
 
 interface LessonRow {
@@ -396,32 +397,28 @@ export function CourseTab({ data }: { data: CourseData }) {
         activeCourseKey={data.activeCourseKey}
       />
 
-      {/* Header — v10 (Marcelo 2026-09-11: "más pro, más limpio, que no se vea
-          genérico"): sin tarjeta, la tipografía hace el trabajo. Archivo
-          Expanded en el título, Plex Mono en etiquetas, Lora SOLO en el tagline,
-          cyan como acento y nunca como fondo. */}
-      <div className="px-2 pt-2 pb-4 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
+      {/* Header — línea aprobada 2026-09-12 (TSS_Design_Handoff): navy, texto
+          claro, tarjeta de progreso con borde cyan. El logo vive en la barra
+          del portal. Contenido intacto. */}
+      <div className="px-2 pt-2 text-white">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#00D2FF' }}>{beltLabelShort} · {({ white_belt: 'Beginner', yellow_belt: 'Novice', blue_belt: 'Foundation', purple_belt: 'Emerging', brown_belt: 'Pre-Elite', black_belt: 'Elite' } as Record<string, string>)[activeCourse.key] ?? ''}</span>
-          <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.40)' }}>{data.studentName}</span>
+          <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>{beltLabelShort} · {({ white_belt: 'Beginner', yellow_belt: 'Novice', blue_belt: 'Foundation', purple_belt: 'Emerging', brown_belt: 'Pre-Elite', black_belt: 'Elite' } as Record<string, string>)[activeCourse.key] ?? ''}</span>
+          <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: 'rgba(214,225,231,.7)' }}>{data.studentName}</span>
         </div>
-        {/* El logo oficial (lockup con el tagline adentro), no el nombre en texto
-            (Marcelo 2026-09-11: "quizás que sea el logo original"). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" className="mt-4 w-full max-w-[300px] h-auto object-contain object-left" />
-        <div className="flex items-end gap-4 mt-5">
-          <div className="flex-1">
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(247,249,250,.55)' }}>Your progress</span>
-              <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.totalCompleted} of {data.totalLessons} lessons</span>
-            </div>
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPercent)}%`, background: 'linear-gradient(90deg, #0090B0 0%, #00D2FF 100%)', boxShadow: '0 0 12px rgba(0,210,255,.45)' }} />
-            </div>
+        <h2 className="mt-2 leading-[1.08] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 36, letterSpacing: '-0.022em', color: '#F8F5EC' }}>{activeCourse.label.replace(/ Masterclass$/, '')}</h2>
+        <p className="mt-1 text-[17px] font-semibold leading-[1.35]" style={{ color: '#D6E1E7' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
+        <div className="mt-4 rounded-[8px] p-3" style={{ border: '1px solid rgba(0,210,255,.45)', background: 'rgba(0,210,255,.05)' }}>
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>Course progress</span>
+            <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#D6E1E7' }}>{data.totalCompleted} of {data.totalLessons} lessons</span>
           </div>
-          <span className="leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 34, letterSpacing: '-0.02em', color: '#00D2FF' }}>{overallPercent}<span style={{ fontSize: 16, marginLeft: 2 }}>%</span></span>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(214,225,231,.18)' }}>
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPercent)}%`, background: '#00D2FF' }} />
+            </div>
+            <span className="leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em', color: '#00D2FF' }}>{overallPercent}<span style={{ fontSize: 15, marginLeft: 1 }}>%</span></span>
+          </div>
         </div>
-        <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.55)' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
       </div>
 
       {/* NEXT STEP — el único bloque con fondo claro (arena del manual): la
@@ -429,17 +426,17 @@ export function CourseTab({ data }: { data: CourseData }) {
           2026-09-11: "darle más importancia a los títulos que merecen la
           atención" y los colores del sitio (ink · arena · cyan). */}
       {nextSeq && (
-        <div className="mx-2 mt-4 p-5" style={{ background: '#E9E2D2', borderLeft: '4px solid #00D2FF' }}>
-          <p className="text-[10.5px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#005F79' }}>Next step</p>
-          <h3 className="mt-2 text-[22px] leading-[1.05] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, letterSpacing: '-0.02em', color: '#061C2B' }}>
+        <div className="mx-2 mt-4 rounded-[8px] p-4" style={{ background: '#0A2A3A', borderLeft: '4px solid #00D2FF' }}>
+          <p className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>Next step</p>
+          <h3 className="mt-1.5 text-[23px] leading-[1.1] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.02em', color: '#F8F5EC' }}>
             {nextSeq.prefix ? `${nextSeq.prefix} · ` : ''}{nextSeq.name}
           </h3>
-          {nextSeq.subtitle && <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: '#3E4A50' }}>{nextSeq.subtitle}</p>}
+          {nextSeq.subtitle && <p className="mt-1.5 text-[14px] leading-[1.4]" style={{ color: '#D6E1E7' }}>{nextSeq.subtitle}</p>}
           <div className="flex flex-wrap gap-2 mt-4">
             {nextSeq.href ? (
-              <a href={nextSeq.href} className="inline-block px-5 py-3 text-[11px] font-semibold" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', background: '#061C2B', color: '#F7F9FA' }}>Open</a>
+              <a href={nextSeq.href} className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[5px] text-[15px] font-black uppercase tracking-[0.035em]" style={{ background: '#00D2FF', color: '#061C2B' }}>Open →</a>
             ) : null}
-            <a href={`/portal/${data.portalToken}?tab=sequence`} className="inline-block px-5 py-3 text-[11px] font-semibold" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', border: '1px solid #061C2B', color: '#061C2B' }}>Let&apos;s Play</a>
+            <a href={`/portal/${data.portalToken}?tab=sequence`} className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[5px] text-[15px] font-black uppercase tracking-[0.035em]" style={{ border: '1px solid rgba(214,225,231,.5)', color: '#F8F5EC' }}>Let&apos;s Play</a>
           </div>
         </div>
       )}
@@ -461,9 +458,10 @@ export function CourseTab({ data }: { data: CourseData }) {
             videoUrl={intros['pre_course']?.video_url}
           />
 
-          {pcSections.map((section) => (
+          {pcSections.map((section, i) => (
             <SectionBlock
               key={section.id}
+              number={String(i + 1).padStart(2, '0')}
               title={section.name}
               subtitle={null}
               Icon={PC_SECTION_ICON[section.id] || BookOpen}
@@ -792,15 +790,15 @@ function GroupHeader({
 }) {
   const embed = videoUrl ? toEmbedUrl(videoUrl) : null;
   return (
-    <div className="px-2 pt-6">
-      {/* Arena + cyan (Marcelo 2026-09-11: "ese color arena con el cyan a la par
-          se puede usar en cada título"). Un solo acento; texto en Ink. */}
-      <div className="px-4 py-4" style={{ background: '#E9E2D2', borderLeft: '4px solid #00D2FF' }}>
-        {eyebrow && <p className="text-[10.5px] mb-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#005F79' }}>{eyebrow}</p>}
-        <h3 className="text-[20px] uppercase leading-[1.05]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, letterSpacing: '-0.02em', color: '#061C2B' }}>{title}</h3>
-        {subtitle && <p className="text-[13px] mt-2 leading-snug" style={{ color: '#3E4A50' }}>{subtitle}</p>}
+    <div className="px-2 pt-7">
+      {/* Línea aprobada 2026-09-12: el título del grupo en grande sobre navy
+          ("PRE-COURSE"), el conteo en mono, el subtítulo claro. */}
+      <div>
+        <h3 className="text-[30px] uppercase leading-[1.08]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.022em', color: '#F8F5EC' }}>{title}</h3>
+        {eyebrow && <p className="text-[13px] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.045em', color: '#D6E1E7' }}>{eyebrow}</p>}
+        {subtitle && <p className="text-[14px] mt-1.5 leading-[1.4]" style={{ color: 'rgba(214,225,231,.75)' }}>{subtitle}</p>}
         {embed && (
-          <div className="bg-black aspect-video mt-3 overflow-hidden">
+          <div className="bg-black aspect-video mt-3 overflow-hidden rounded-[8px]">
             <iframe
               src={embed}
               title={`${title} intro`}
@@ -852,52 +850,51 @@ function SectionBlock({
 
   // Piloto 2026-09-09 (Marcelo): si la secuencia tiene su página de cuatro
   // pestañas, el clic la abre directo. Las lecciones viven adentro (Think it).
+  const Status = () => (
+    sectionPercent === 100 ? (
+      <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: '#1E9E5A' }}>
+        <i className="inline-flex w-5 h-5 rounded-full items-center justify-center text-[11px] font-black" style={{ background: '#1E9E5A', color: '#fff' }}>✓</i>
+        {completed}/{productized.length} complete
+      </span>
+    ) : (
+      <span className="text-[14px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#10263B' }}>{completed}/{productized.length}{proposedCount > 0 && <span style={{ color: '#55666E' }}> +{proposedCount}</span>}</span>
+    )
+  );
+  const Num = () => (number ? <span className="shrink-0 text-[17px] font-black" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#10263B' }}>{number} /</span> : null);
+
   if (onePageHref) {
     return (
-      <a
-        href={onePageHref}
-        className="block mx-2"
-        style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}
-      >
-        <div className="py-4 flex items-center justify-between gap-3">
-          {number && <span className="shrink-0 w-12 leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', color: '#00D2FF' }}>{number}</span>}
+      <a href={onePageHref} className="block mx-2 rounded-[8px] px-3.5 py-3.5" style={{ background: '#F3F0E5', border: '1px solid #DCD7C6', color: '#10263B' }}>
+        <div className="flex items-center gap-3">
+          <Num />
           <div className="flex-1 min-w-0">
-            <p className="text-[15.5px] font-semibold text-white leading-tight">{title}</p>
-            {(desc || subtitle) && <p className="text-[12.5px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.62)' }}>{desc || subtitle}</p>}
-            <p className="text-[10px] mt-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(247,249,250,.40)' }}>{onePageHref.endsWith('/loop') || onePageHref.endsWith('/circles') ? 'Open' : 'Think · Feel · Do · Review'}</p>
+            <p className="text-[17px] font-bold leading-tight">{title}</p>
+            {(desc || subtitle) && <p className="text-[13.5px] mt-0.5 leading-snug" style={{ color: '#55666E' }}>{desc || subtitle}</p>}
           </div>
-          <span className="text-[11px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.08em', color: sectionPercent === 100 ? '#00D2FF' : 'rgba(247,249,250,.62)' }}>
-            {sectionPercent === 100 ? '✓ Done' : `${completed}/${productized.length}`}
-          </span>
-          <span className="text-[15px]" style={{ color: '#00D2FF' }}>→</span>
+          <Status />
+          <span className="text-[18px] font-black" style={{ color: '#10263B' }}>›</span>
         </div>
       </a>
     );
   }
 
   return (
-    <details
-      className="group mx-2"
-      style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}
-    >
-      <summary className="py-4 cursor-pointer list-none">
-        <div className="flex items-center justify-between gap-3">
-          {number && <span className="shrink-0 w-12 leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', color: '#00D2FF' }}>{number}</span>}
+    <details className="group mx-2 rounded-[8px]" style={{ background: '#F3F0E5', border: '1px solid #DCD7C6', color: '#10263B' }}>
+      <summary className="px-3.5 py-3.5 cursor-pointer list-none">
+        <div className="flex items-center gap-3">
+          <Num />
           <div className="flex-1 min-w-0">
-            {desc && <p className="text-[12.5px] mb-1 leading-snug" style={{ color: 'rgba(247,249,250,.62)' }}>{desc}</p>}
-            <p className="text-[15.5px] font-semibold text-white leading-tight">
+            <p className="text-[17px] font-bold leading-tight">
               {title}
-              {badge && <span className="ml-2 text-[10px] text-white/50" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{badge}</span>}
+              {badge && <span className="ml-2 text-[11px] font-medium" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#55666E' }}>{badge}</span>}
             </p>
-            {subtitle && <p className="text-[10.5px] mt-0.5 truncate" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(247,249,250,.40)' }}>{subtitle}</p>}
+            {(desc || subtitle) && <p className="text-[13.5px] mt-0.5 leading-snug" style={{ color: '#55666E' }}>{desc || subtitle}</p>}
           </div>
-          <span className="text-[11px] shrink-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.08em', color: sectionPercent === 100 ? '#00D2FF' : 'rgba(247,249,250,.62)' }}>
-            {sectionPercent === 100 ? '✓ Done' : `${completed}/${productized.length}`}{proposedCount > 0 && <span className="text-white/40"> +{proposedCount}</span>}
-          </span>
-          <ChevronDown size={16} className="text-white/40 transition-transform group-open:rotate-180 shrink-0" />
+          <Status />
+          <ChevronDown size={18} className="transition-transform group-open:rotate-180 shrink-0" style={{ color: '#10263B' }} />
         </div>
       </summary>
-      <div className="divide-y divide-white/5 border-t border-white/10 mb-2 rounded-lg" style={{ background: '#0A2A3A' }}>
+      <div className="px-2 pb-2 space-y-1.5">
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} onOpen={() => onOpenLesson(lesson.id)} />
         ))}
@@ -951,76 +948,28 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
     <button
       onClick={isLocked ? undefined : onOpen}
       disabled={isLocked}
-      className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors ${
-        isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5'
-      } ${isProposed ? 'bg-white/5' : ''}`}
+      className={`w-full px-3 py-3 flex items-center gap-3 text-left rounded-[5px] ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+      style={{ background: '#F8F5EC', border: '1px solid #DCD7C6', color: '#10263B' }}
     >
-      {/* Step number badge */}
-      <div
-        className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${
-          isProposed
-            ? 'bg-white/5 text-white/50 border border-white/30 border-dashed'
-            : isCompleted
-            ? 'bg-[#00D2FF] text-[#061C2B]'
-            : isInProgress
-            ? 'bg-[#00D2FF]/20 text-[#00D2FF] border border-[#00D2FF]/60'
-            : lesson.is_test
-            ? 'bg-white/10 text-[#00D2FF] border border-[#00D2FF]/40'
-            : 'bg-white/10 text-white/60'
-        }`}
-      >
-        {badgeNum}
-      </div>
-
-      {/* Title + meta */}
+      <FileText size={22} strokeWidth={1.75} className="shrink-0" style={{ color: isCompleted ? '#1E9E5A' : '#10263B' }} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-sm truncate text-white">{lesson.title}</span>
-          {isProposed && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 font-bold uppercase tracking-wide flex-shrink-0">
-              Coming v1.5
-            </span>
-          )}
-          {lesson.is_test && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#00D2FF]/15 text-[#00D2FF] font-bold uppercase tracking-wide flex-shrink-0">
-              Gate Test
-            </span>
-          )}
-          {/* Paso traído de una cinta anterior para completar esta secuencia.
-              Si ya lo estudió allá, además aparece ✓ Completed. */}
-          {lesson.borrowedFrom && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 font-bold uppercase tracking-wide flex-shrink-0">
-              From {lesson.borrowedFrom}
-            </span>
-          )}
+          <span className="text-[15px] font-bold leading-tight">{lesson.title}</span>
+          {isProposed && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide" style={{ background: 'rgba(16,38,59,.08)', color: '#55666E' }}>Coming v1.5</span>}
+          {lesson.is_test && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide" style={{ background: 'rgba(0,210,255,.18)', color: '#005F79' }}>Gate Test</span>}
+          {lesson.borrowedFrom && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide" style={{ background: 'rgba(16,38,59,.08)', color: '#55666E' }}>From {lesson.borrowedFrom}</span>}
         </div>
-        <div className="text-[11px] text-white/50 flex items-center gap-2 mt-0.5">
-          {lesson.pillar && !isProposed && (
-            <span className="truncate">{lesson.pillar}</span>
-          )}
-          {!isProposed && lesson.lesson_type !== 'reading' && (
-            <>
-              {lesson.pillar && <span>·</span>}
-              <span className="font-medium text-[var(--tss-cyan)]">
-                {lesson.lesson_type === 'form' ? 'Goal Setting' : 'Self Test'}
-              </span>
-            </>
-          )}
-          {isProposed && (
-            <span className="italic text-white/50">
-              Canonical content coming in v1.5
-            </span>
-          )}
+        <div className="text-[12.5px] mt-0.5 flex items-center gap-2" style={{ color: '#55666E' }}>
+          <span style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{badgeNum}</span>
+          {lesson.pillar && !isProposed && <span className="truncate">{lesson.pillar}</span>}
+          {!isProposed && lesson.lesson_type !== 'reading' && <span className="font-semibold" style={{ color: '#005F79' }}>{lesson.lesson_type === 'form' ? 'Goal Setting' : 'Self Test'}</span>}
+          {isProposed && <span className="italic">Canonical content coming in v1.5</span>}
         </div>
-        {isLocked && lesson.lockReason && (
-          <div className="text-[10px] text-white/40 mt-1 italic">{lesson.lockReason}</div>
-        )}
+        {isLocked && lesson.lockReason && <div className="text-[11px] mt-1 italic" style={{ color: '#55666E' }}>{lesson.lockReason}</div>}
       </div>
-
-      {/* Status indicator */}
-      <div className={`text-[10px] font-medium flex flex-col items-center gap-0.5 ${statusColor}`}>
-        <StatusIcon size={18} strokeWidth={1.75} />
-        <span>{statusText}</span>
+      <div className="shrink-0 inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: isCompleted ? '#1E9E5A' : isInProgress ? '#005F79' : '#55666E' }}>
+        {isCompleted ? <i className="inline-flex w-5 h-5 rounded-full items-center justify-center text-[11px] font-black" style={{ background: '#1E9E5A', color: '#fff' }}>✓</i> : <StatusIcon size={16} strokeWidth={2} />}
+        <span>{isCompleted ? 'Completed' : statusText}</span>
       </div>
     </button>
   );

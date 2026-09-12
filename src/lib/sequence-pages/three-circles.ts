@@ -164,7 +164,7 @@ export const CIRCLES: Circle[] = [
     formula: 'The wave’s energy (external force) × what your body generates (internal force) = the line you can draw.',
     reads: [
       { word: 'Energy', note: 'The power and momentum living in the section. Highest at the pocket, lowest at the flat.' },
-      { word: 'Direction', note: 'The line you choose and the angle you take across the face.' },
+      { word: 'Direction', note: 'The line you choose and the angle you take across the face — and the direction the energy itself is travelling: the foam, the lip. Read where it is going, adapt to that direction and work with it.' },
       { word: 'Section', note: 'Reading where the wave is going to let you express next.' },
       { word: 'Pocket', note: 'The sweet spot. The closer you ride to it, the more speed you get; the closer your turns are to the breaking part, the more radical your surfing becomes.' },
       { word: 'The flat', note: 'Where the energy ends. Go there and the wave stops giving.' },
