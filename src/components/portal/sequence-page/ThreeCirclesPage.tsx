@@ -220,7 +220,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                     ) : (
                       <span className="w-10 text-center" style={{ ...MONO, color: '#7B4FBE', fontSize: 15, fontWeight: 900 }}>0{i + 1}</span>
                     )}
-                    <div><div className="tss-eyebrow">0{i + 1} / {e.title}</div><p>{e.note}</p></div>
+                    <div><div className="tss-eyebrow">{kind ? `0${i + 1} / ` : ''}{e.title}</div><p>{e.note}</p></div>
                   </div>
                 );
               })}
