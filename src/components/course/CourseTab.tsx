@@ -861,6 +861,8 @@ function SectionBlock({
     )
   );
   const Num = () => (number ? <span className="shrink-0 text-[17px] font-black" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#10263B' }}>{number} /</span> : null);
+  // Un título largo con " · " se parte en título + línea secundaria (mismo texto).
+  const [titleMain, titleRest] = title.includes(' · ') ? [title.slice(0, title.indexOf(' · ')), title.slice(title.indexOf(' · ') + 3)] : [title, null];
 
   if (onePageHref) {
     return (
@@ -868,8 +870,8 @@ function SectionBlock({
         <div className="flex items-center gap-3">
           <Num />
           <div className="flex-1 min-w-0">
-            <p className="text-[17px] font-bold leading-tight">{title}</p>
-            {(desc || subtitle) && <p className="text-[13.5px] mt-0.5 leading-snug" style={{ color: '#55666E' }}>{desc || subtitle}</p>}
+            <p className="text-[17px] font-bold leading-tight">{titleMain}</p>
+            {(titleRest || desc || subtitle) && <p className="text-[13.5px] mt-0.5 leading-snug" style={{ color: '#55666E' }}>{titleRest || desc || subtitle}</p>}
           </div>
           <Status />
           <span className="text-[18px] font-black" style={{ color: '#10263B' }}>›</span>
@@ -885,10 +887,10 @@ function SectionBlock({
           <Num />
           <div className="flex-1 min-w-0">
             <p className="text-[17px] font-bold leading-tight">
-              {title}
+              {titleMain}
               {badge && <span className="ml-2 text-[11px] font-medium" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#55666E' }}>{badge}</span>}
             </p>
-            {(desc || subtitle) && <p className="text-[13.5px] mt-0.5 leading-snug" style={{ color: '#55666E' }}>{desc || subtitle}</p>}
+            {(titleRest || desc || subtitle) && <p className="text-[13.5px] mt-0.5 leading-snug" style={{ color: '#55666E' }}>{titleRest || desc || subtitle}</p>}
           </div>
           <Status />
           <ChevronDown size={18} className="transition-transform group-open:rotate-180 shrink-0" style={{ color: '#10263B' }} />
