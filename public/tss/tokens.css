@@ -1,0 +1,29 @@
+/* TSS / Board + Wave approved direction / implementation values v1.0 */
+.tss {
+  --tss-navy: #061c2b;
+  --tss-ink: #10263b;
+  --tss-cyan: #00d2ff;
+  --tss-cream: #f3f0e5;
+  --tss-paper: #f8f5ec;
+  --tss-white: #ffffff;
+  --tss-muted: #55666e;
+  --tss-on-dark: #d6e1e7;
+  --tss-border: #dcd7c6;
+  --tss-selected: #d9edf5;
+  --tss-circle-body: #00d2ff;
+  --tss-circle-board: #ffdc33;
+  --tss-circle-wave: #ba69ee;
+  --tss-phase-posture: #ff3b3b;
+  --tss-phase-rail: #19c567;
+  --tss-phase-projection: #ffd600;
+  --tss-phase-maneuver: #2f69ff;
+  --tss-phase-closure: #f454a2;
+  --tss-font: 'TSS Archivo', Arial, sans-serif;
+  --tss-mono: 'TSS IBM Plex Mono', monospace;
+  --tss-radius: 8px;
+  --tss-radius-small: 5px;
+  --tss-gutter: 16px;
+  --tss-touch: 44px;
+  --tss-content-max: 480px;
+  --tss-footer-height: 72px;
+}

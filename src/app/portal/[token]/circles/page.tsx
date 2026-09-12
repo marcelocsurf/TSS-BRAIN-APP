@@ -39,6 +39,9 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
+      {/* Tema de la línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss */}
+      {/* eslint-disable-next-line @next/next/no-css-tags */}
+      <link rel="stylesheet" href="/tss/theme.css" />
       <ThreeCirclesPage token={token} pieces={pieces} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} lessonId={THREE_CIRCLES_LESSON_ID} />
     </div>
   );

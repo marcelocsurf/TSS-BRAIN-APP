@@ -1,0 +1,71 @@
+@import url('./tokens.css');
+@font-face { font-family:'TSS Archivo';src:url('./fonts/archivo-400.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap }
+@font-face { font-family:'TSS Archivo';src:url('./fonts/archivo-600.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap }
+@font-face { font-family:'TSS Archivo';src:url('./fonts/archivo-700.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap }
+@font-face { font-family:'TSS Archivo';src:url('./fonts/archivo-900.ttf') format('truetype');font-weight:900;font-style:normal;font-display:swap }
+@font-face { font-family:'TSS IBM Plex Mono';src:url('./fonts/ibm-plex-mono-500.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap }
+
+.tss,.tss * { box-sizing:border-box }
+.tss { margin:0;isolation:isolate;color:var(--tss-white);background:var(--tss-navy);font-family:var(--tss-font);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased;min-height:100dvh;display:flex;flex-direction:column }
+.tss button,.tss a { -webkit-tap-highlight-color:transparent }
+.tss button { font:inherit;cursor:pointer }
+.tss button:disabled { cursor:default }
+.tss :focus-visible { outline:3px solid var(--tss-cyan);outline-offset:3px }
+.tss .tss-card :focus-visible { outline-color:var(--tss-ink) }
+.tss svg { flex-shrink:0 }
+.tss .tss-main { width:100%;max-width:var(--tss-content-max);margin:0 auto;padding:calc(12px + env(safe-area-inset-top,0px)) var(--tss-gutter) 16px;flex:1 }
+.tss .tss-brand-row { display:flex;align-items:center;justify-content:space-between;min-height:48px;margin-bottom:2px }
+.tss .tss-logo { display:block;width:148px;height:42px }
+.tss .tss-icon-button { border:0;background:transparent;color:var(--tss-on-dark);height:var(--tss-touch);width:var(--tss-touch);display:grid;place-items:center;border-radius:var(--tss-radius-small) }
+.tss .tss-back { display:inline-flex;align-items:center;gap:9px;min-height:36px;border:0;background:none;padding:0;color:var(--tss-cyan);font-size:14px;text-align:left }
+.tss h1 { margin:0;color:var(--tss-paper);font-size:36px;font-weight:900;line-height:1.08;letter-spacing:-.022em;text-transform:uppercase }
+.tss .tss-subtitle { margin:3px 0 0;color:var(--tss-on-dark);font-size:17px;font-weight:600;line-height:1.35 }
+.tss .tss-circle-nav { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:6px 0 10px }
+.tss .tss-circle-nav button { position:relative;min-height:44px;padding:8px 2px 10px;border:0;color:#b9c8d1;background:transparent;font-size:15px;white-space:nowrap }
+.tss .tss-circle-nav button::after { content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:4px;background:#35505e }
+.tss .tss-circle-nav button[data-active='true'] { color:var(--circle-color);font-weight:700 }
+.tss .tss-circle-nav button[data-active='true']::after { background:var(--circle-color) }
+.tss .tss-circle-number { margin-right:6px;font-family:var(--tss-mono);font-size:13px }
+.tss .tss-card { background:var(--tss-cream);color:var(--tss-ink);border:1px solid var(--tss-border);border-radius:var(--tss-radius);padding:12px }
+.tss .tss-card + .tss-card { margin-top:10px }
+.tss .tss-intro { margin:0 0 9px;font-size:16px;line-height:1.35;font-weight:700 }
+.tss .tss-board-figure { margin:0;border:1px solid var(--tss-border);border-radius:var(--tss-radius-small);overflow:hidden;background:var(--tss-paper) }
+.tss .tss-board-figure img { display:block;width:100%;height:auto;aspect-ratio:352 / 362 }
+.tss .tss-position-selector { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:2px;margin-top:4px;background:#ded9c8;border:1px solid #d3cdb8;border-radius:var(--tss-radius-small) }
+.tss .tss-position-selector button { min-height:44px;background:transparent;border:0;border-radius:4px;color:var(--tss-ink);font-weight:900;font-size:15px }
+.tss .tss-position-selector button[aria-pressed='true'] { background:var(--tss-cyan) }
+.tss .tss-position-copy { text-align:center;padding:8px 0;min-height:76px }
+.tss .tss-position-copy h2 { margin:0 0 2px;font-weight:900;font-size:18px;line-height:1.2;letter-spacing:.02em;text-transform:uppercase }
+.tss .tss-position-copy p { margin:0;font-size:14px;line-height:1.35 }
+.tss .tss-position-summary { margin:0;display:grid;gap:3px }
+.tss .tss-position-summary div { display:flex;gap:8px;justify-content:space-between;align-items:center;min-height:26px;padding:2px 9px;background:var(--tss-paper);border:1px solid var(--tss-border);border-radius:var(--tss-radius-small) }
+.tss .tss-position-summary dt { font-family:var(--tss-mono);font-size:12px;font-weight:500 }
+.tss .tss-position-summary dd { font-size:12px;margin:0 }
+.tss .tss-section-title { margin:0 0 7px;font-size:23px;font-weight:900;line-height:1.1;letter-spacing:-.02em;text-transform:uppercase }
+.tss .tss-force { display:flex;align-items:center;gap:12px;min-height:72px;padding:9px 10px;background:var(--tss-paper);border:1px solid var(--tss-border);border-radius:var(--tss-radius-small) }
+.tss .tss-force + .tss-force { margin-top:6px }
+.tss .tss-force img { width:40px;height:40px;flex-shrink:0 }
+.tss .tss-eyebrow { font-family:var(--tss-mono);font-size:12px;font-weight:500;letter-spacing:.045em;line-height:1.4 }
+.tss .tss-force p { margin:3px 0 0;font-size:14px;line-height:1.45 }
+.tss .tss-timing { display:flex;gap:12px;align-items:center;margin-top:7px;padding:12px;background:var(--tss-navy);color:var(--tss-white);border-radius:var(--tss-radius-small) }
+.tss .tss-timing svg { color:var(--tss-cyan) }
+.tss .tss-timing h3 { margin:0 0 4px;font-size:17px;font-weight:900;line-height:1.15;letter-spacing:.04em;text-transform:uppercase }
+.tss .tss-timing p { color:var(--tss-on-dark);margin:0;font-size:14px;line-height:1.4 }
+.tss .tss-accordion { margin-bottom:4px;border:1px solid var(--tss-border);border-radius:var(--tss-radius-small);background:var(--tss-paper) }
+.tss .tss-accordion summary { display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;min-height:44px;list-style:none;font-weight:700;font-size:14px;cursor:pointer }
+.tss .tss-accordion summary::-webkit-details-marker { display:none }
+.tss .tss-accordion summary svg { transition:transform 120ms ease }
+.tss .tss-accordion[open] { background:var(--tss-selected);border-color:#9bc7d8 }
+.tss .tss-accordion[open] summary svg { transform:rotate(180deg) }
+.tss .tss-accordion p { margin:0;padding:0 12px 12px;font-size:14px;line-height:1.45 }
+.tss .tss-primary { display:flex;justify-content:center;align-items:center;gap:12px;width:100%;min-height:48px;padding:10px 12px;margin-top:12px;border:0;border-radius:var(--tss-radius-small);background:var(--tss-cyan);color:var(--tss-navy);font-size:17px;font-weight:900;letter-spacing:.035em;text-transform:uppercase }
+.tss .tss-primary:hover { filter:brightness(1.04) }
+.tss .tss-primary:active { transform:translateY(1px) }
+.tss .tss-bottom-nav { position:sticky;bottom:0;z-index:10;background:var(--tss-white);color:var(--tss-ink);border-top:1px solid #d2dce1;padding-bottom:env(safe-area-inset-bottom,0px);margin-top:auto }
+.tss .tss-bottom-nav-inner { max-width:var(--tss-content-max);margin:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:var(--tss-footer-height) }
+.tss .tss-bottom-nav button { position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:68px;padding:7px 4px 11px;border:0;background:transparent;color:var(--tss-ink);font-size:11px;font-weight:700;letter-spacing:.055em;text-transform:uppercase }
+.tss .tss-bottom-nav button[aria-current='page'] svg { color:var(--tss-cyan) }
+.tss .tss-bottom-nav button[aria-current='page']::after { content:'';position:absolute;bottom:5px;width:72%;height:4px;background:var(--tss-cyan);border-radius:8px }
+.tss .tss-sr-only { position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0 }
+@media (max-width:359px) { .tss { --tss-gutter:12px }.tss h1 { font-size:32px }.tss .tss-card { padding:10px }.tss .tss-section-title { font-size:21px } }
+@media (prefers-reduced-motion:reduce) { .tss * { scroll-behavior:auto!important;transition:none!important } }
