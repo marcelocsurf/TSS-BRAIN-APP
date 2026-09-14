@@ -7,23 +7,9 @@
 // amarillo · maniobra azul · cierre rosa · hold celeste como capa encima.
 import type { WaveBoardData, Command } from '@/lib/sequence-pages/types';
 
-export const COMMAND_COLORS: Record<Command, string> = {
-  posture: '#FF3B3B',
-  rail: '#22C55E',
-  projection: '#FFD400',
-  maneuver: '#2F6BFF',
-  closure: '#FF5FA2',
-};
-export const HOLD_COLOR = '#7DE3FF';
-/** Pocket: violeta de marca, fuera del lenguaje de los comandos. */
-export const POCKET_COLOR = '#B388FF';
-export const COMMAND_LABELS: Record<Command, string> = {
-  posture: 'Posture',
-  rail: 'Rotation / rail',
-  projection: 'Projection',
-  maneuver: 'Maneuver',
-  closure: 'Closure',
-};
+// Colores y etiquetas: una sola fuente, compartida con el Wave Guide ilustrado.
+import { COMMAND_COLORS, HOLD_COLOR, POCKET_COLOR, COMMAND_LABELS } from '@/lib/sequence-pages/wave-guide-svg';
+export { COMMAND_COLORS, HOLD_COLOR, POCKET_COLOR, COMMAND_LABELS };
 
 /** `flip` = espejar: la ola va hacia la izquierda (goofy frontside / regular backside). */
 export function WaveBoard({ data, title, flip = false }: { data: WaveBoardData; title: string; flip?: boolean }) {

@@ -6,27 +6,37 @@
 // del agua; Do = la misión (resultado, sin conteo) + prueba de competencia
 // (el único conteo) + "cuando no sale"; Review = indicadores con espejo,
 // fix y "go deeper", common mistakes y how it feels.
+//
+// Diseño (2026-09-14, línea aprobada · TSS_Design_Handoff + guías de ola):
+// fondo navy, tarjetas crema, títulos grandes Archivo, etiquetas mono, botón
+// cyan, nav inferior blanca. La ola es el Wave Guide ilustrado con el
+// recorrido ORIGINAL de cada secuencia. TODO el contenido (textos, orden,
+// links, lógica de Let's Play) es el mismo de antes: solo cambia cómo se ve.
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Lock, Waves, Footprints, Brain, Play, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
-import { WaveBoard, COMMAND_COLORS } from './WaveBoard';
+import { WaveGuide } from './WaveGuide';
+import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-guide-svg';
 import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 
-// Brand Manual v10 (src/lib/constants/brand.ts): Ink · Ink claro · Paper · Signature Cyan · Pop dorado · Foam · Coral.
-const INK = '#061C2B', PANEL = '#0A2438', PAPER = '#F7F9FA', CYAN = '#00D2FF', GREEN = '#06D6A0', GOLD = '#FFD166', VIOLET = '#B388FF', RED = '#FF6B6B';
-const TEXT = 'rgba(247,249,250,.92)', MUTED = 'rgba(247,249,250,.62)';
-const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', fontSize: 10 };
+// Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
+const NAVY = '#061C2B', INK = '#10263B', CREAM = '#F3F0E5', PAPER = '#F8F5EC', BORDER = '#DCD7C6', CYAN = '#00D2FF', WHITE = '#FFFFFF';
+const MUTED = '#55666E', ON_DARK = '#D9E4EA';
+const GREEN = '#0F8A5F', GOLD = '#B7791F', VIOLET = '#7C4DFF', RED = '#C62828';
+const GOLD_BRIGHT = '#FFDC33', VIOLET_BRIGHT = '#BA69EE', GREEN_BRIGHT = '#06D6A0';
+const MONO: React.CSSProperties = { fontFamily: 'var(--tss-mono), var(--font-plex), IBM Plex Mono, monospace', fontSize: 12, fontWeight: 500, letterSpacing: '0.045em', textTransform: 'uppercase' };
+const H1: React.CSSProperties = { fontFamily: 'var(--tss-font), var(--font-archivo), Archivo, sans-serif' };
 
 export interface PieceRow { id: string; type: 'drill' | 'mission'; title: string; description_md: string | null; key_words: string[] | null; time_estimate: string | null; reps_recommended: string | null }
 export interface LessonBits { id: string; title: string; whatIs: string; body: string; rules: string; mistakes: string; cue: string }
 
 type Tab = 'think' | 'feel' | 'do' | 'review';
-const TABS: { key: Tab; label: string; sub: string; Icon: typeof Brain }[] = [
-  { key: 'think', label: 'Think it', sub: 'Understand', Icon: Brain },
-  { key: 'feel', label: 'Feel it', sub: 'Rehearse', Icon: Footprints },
-  { key: 'do', label: 'Do it', sub: 'Execute', Icon: Waves },
-  { key: 'review', label: 'Review', sub: 'Check', Icon: CheckCircle2 },
+const TABS: { key: Tab; label: string; sub: string }[] = [
+  { key: 'think', label: 'Think it', sub: 'Understand' },
+  { key: 'feel', label: 'Feel it', sub: 'Rehearse' },
+  { key: 'do', label: 'Do it', sub: 'Execute' },
+  { key: 'review', label: 'Review', sub: 'Check' },
 ];
 
 export interface SequenceProgress {
@@ -69,130 +79,146 @@ export function SequencePage({
   const order: Tab[] = ['think', 'feel', 'do', 'review'];
   const next = order[order.indexOf(tab) + 1];
   const go = (t: Tab) => { setTab(t); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
+  const waveDirection = flip ? 'left' : 'right';
+  const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
+  const shortLesson = (t: string) => t.replace(/ Operationalized at Blue Belt/, '');
 
   return (
-    <div className="seq-dark min-h-screen pb-24 text-[15px]" style={{ background: INK, color: PAPER }}>
-      <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4">
-        <a href={`${portal}?tab=course`} className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: CYAN }}><ArrowLeft size={14} /> Course</a>
-        <p className="mt-3" style={{ ...F_M, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`} · {cfg.belt.replace('_belt', ' belt')}</p>
-        <h1 className="text-[26px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' }}>{cfg.title}</h1>
-        <p className="text-[13px] mt-2" style={{ color: TEXT }}>{cfg.think.whatIs.headline}</p>
+    <section className="tss" data-screen="sequence">
+      <div className="tss-main pb-6">
+        <header>
+          <div className="tss-brand-row">
+            <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
+          </div>
+          <a className="tss-back" href={`${portal}?tab=course`}><Icon name="back" />Course</a>
+          <p className="mt-2" style={{ ...MONO, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`} · {cfg.belt.replace('_belt', ' belt')}</p>
+          <h1 style={H1}>{cfg.title}</h1>
+          <p className="tss-subtitle">{cfg.think.whatIs.headline}</p>
+        </header>
 
         {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
-        <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
-          {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? <div className="p-3"><WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} flip={flip} /></div> : (
-            <div className="p-4">
-              <p style={{ ...F_M, color: MUTED }}>The steps, in order</p>
-              <ol className="mt-2 space-y-1.5">
-                {cfg.stepIds.map((id, i) => (
-                  <li key={id} className="flex items-center gap-2.5 text-[14px]"><span className="font-mono text-[11px] font-bold w-5 shrink-0" style={{ color: CYAN }}>{i + 1}</span><span className="font-semibold" style={{ color: PAPER }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id}</span></li>
-                ))}
-              </ol>
-            </div>
+        <Card className="mt-3">
+          {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? (
+            <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} />
+          ) : (
+            <ol className="m-0 p-0 list-none">
+              {cfg.stepIds.map((id, i) => (
+                <li key={id} className="flex items-center gap-3 py-2" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
+                  <span className="w-7 shrink-0 font-bold" style={{ ...MONO, fontSize: 15, color: INK }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span className="text-[15px] font-semibold" style={{ color: INK }}>{shortLesson(lessons[id]?.title ?? id)}</span>
+                </li>
+              ))}
+            </ol>
           )}
-        </div>
-        {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-3 text-[13px]">
-          <span style={{ ...F_M, color: MUTED }}>The steps that build it</span>
-          {cfg.details.map((d, i) => (
-            <span key={d.key} className="inline-flex items-center gap-1.5 font-semibold" style={{ color: PAPER }}>
-              {i > 0 && <span style={{ color: MUTED }}>→</span>}
-              {d.command && <i className="inline-block w-2 h-2 rounded-full" style={{ background: COMMAND_COLORS[d.command] }} />}
-              {d.title.replace(/^\d+ · /, '').replace(/ · .*$/, '')}
-            </span>
-          ))}
-        </div>
+          {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
+          <h2 className="tss-section-title mt-4 mb-1">The steps that build it</h2>
+          <ol className="m-0 p-0 list-none">
+            {cfg.details.map((d, i) => (
+              <li key={d.key} className="flex items-center gap-3 py-2" style={{ borderTop: `1px solid ${BORDER}` }}>
+                <span className="w-7 shrink-0 font-bold" style={{ ...MONO, fontSize: 15, color: INK }}>{String(i + 1).padStart(2, '0')}</span>
+                {d.command ? <i className="inline-block w-3.5 h-3.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} /> : <i className="inline-block w-3.5 h-3.5 shrink-0" />}
+                <span className="text-[15px] font-semibold" style={{ color: INK }}>{stripStep(d.title)}</span>
+              </li>
+            ))}
+          </ol>
+        </Card>
 
         {/* Pestañas */}
-        <div className="grid grid-cols-4 gap-1 rounded-2xl p-1.5 mt-4 sticky top-2 z-10" style={{ background: PANEL }} role="tablist">
-          {TABS.map((t) => (
-            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => go(t.key)}
-              className="rounded-xl py-2 text-center"
-              style={tab === t.key ? { background: '#132840', boxShadow: `inset 0 0 0 1px ${CYAN}55` } : {}}>
-              <span className="block text-[14px] font-bold" style={{ color: tab === t.key ? CYAN : PAPER }}>{t.label}</span>
-              <span className="hidden sm:block text-[10px]" style={{ color: MUTED }}>{t.sub}</span>
-            </button>
-          ))}
+        <div className="sticky top-0 z-10 -mx-1 px-1 pt-2 pb-1" style={{ background: NAVY }}>
+          <nav className="grid grid-cols-4 gap-1" role="tablist" aria-label="Think it · Feel it · Do it · Review">
+            {TABS.map((t) => (
+              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => go(t.key)}
+                className="relative min-h-[44px] pt-2 pb-2.5 text-center bg-transparent border-0"
+                style={{ color: tab === t.key ? CYAN : '#b9c8d1', fontWeight: tab === t.key ? 700 : 500, fontSize: 15 }}>
+                {t.label}
+                <span className="hidden sm:block text-[10px] font-normal" style={{ color: '#8fa3ae' }}>{t.sub}</span>
+                <span className="absolute left-0 right-0 bottom-0 h-[3px] rounded" style={{ background: tab === t.key ? CYAN : '#35505e' }} />
+              </button>
+            ))}
+          </nav>
         </div>
 
         {/* ── THINK ── */}
         {tab === 'think' && (
-          <div className="space-y-3 mt-4">
+          <div className="mt-3">
             {cfg.prep && cfg.prep.length > 0 && (
-              <Card eyebrow="Before you start · every session" color={GOLD}>
+              <Card title="Before you start · every session" color={GOLD_BRIGHT}>
                 {cfg.prep.map((p, i) => (
-                  <div key={p.lessonId} className="py-2" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
-                    <a href={`${portal}?tab=course&lesson=${p.lessonId}`} className="text-[14px] font-semibold" style={{ color: CYAN }}>{p.label} →</a>
-                    {p.note && <p className="text-[13px] leading-snug mt-0.5" style={{ color: TEXT }}>{p.note}</p>}
+                  <div key={p.lessonId} className="py-2" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
+                    <Go href={`${portal}?tab=course&lesson=${p.lessonId}`}>{p.label}</Go>
+                    {p.note && <p className="text-[14px] leading-snug mt-0.5 m-0" style={{ color: INK }}>{p.note}</p>}
                   </div>
                 ))}
               </Card>
             )}
-            <Card eyebrow="01 · What it is">
-              <h2 className="text-[16px] font-bold">{cfg.think.whatIs.headline}</h2>
-              {video && cfg.think.board && <WaveBoard data={cfg.think.board} title={`${cfg.title} on the wave face`} flip={flip} />}
+            <Card title="01 · What it is">
+              <p className="tss-intro">{cfg.think.whatIs.headline}</p>
+              {video && cfg.think.board && <div className="mb-2"><WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} /></div>}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
               <Row k="Where">{cfg.think.whatIs.where}</Row>
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>
             </Card>
             {cfg.kind === 'entry' && (
-              <Card eyebrow="02 · The steps · what each one is">
+              <Card title="02 · The steps · what each one is">
                 {cfg.stepIds.map((id, i) => lessons[id] ? (
-                  <div key={id} className="py-2.5" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
-                    <p className="text-[14px] font-semibold" style={{ color: PAPER }}><span className="font-mono text-[11px] mr-2" style={{ color: CYAN }}>{i + 1}</span>{lessons[id].title}</p>
-                    {lessons[id].whatIs && <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
-                    <a href={`${portal}?tab=course&lesson=${id}`} className="inline-block mt-1 text-[12.5px] font-semibold" style={{ color: CYAN }}>Read the full lesson in the course →</a>
+                  <div key={id} className="py-2.5" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
+                    <p className="text-[15px] font-bold m-0" style={{ color: INK }}><span className="mr-2" style={{ ...MONO, fontSize: 13 }}>{String(i + 1).padStart(2, '0')}</span>{lessons[id].title}</p>
+                    {lessons[id].whatIs && <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
+                    <Go href={`${portal}?tab=course&lesson=${id}`} small>Read the full lesson in the course</Go>
                   </div>
                 ) : null)}
               </Card>
             )}
             {cfg.think.feet && (
-            <Card eyebrow="02 · Feet · what changes with the back foot">
+            <Card title="02 · Feet · what changes with the back foot">
               <div className="flex gap-4 items-start">
-                <BoardMap compact active={cfg.think.feet!.recommended?.length ? cfg.think.feet!.recommended : undefined} />
+                <div className="shrink-0 rounded-[5px] p-1" style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
+                  <BoardMap compact active={cfg.think.feet!.recommended?.length ? cfg.think.feet!.recommended : undefined} />
+                </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] leading-snug" style={{ color: TEXT }}>{cfg.think.feet.text}</p>
+                  <p className="text-[14px] leading-snug m-0" style={{ color: INK }}>{cfg.think.feet.text}</p>
                   <div className="mt-2">
                     {cfg.think.feet.options.map((o) => {
                       const rec = cfg.think.feet!.recommended;
                       const on = !rec?.length || rec.includes(o.back);
                       return (
-                        <div key={o.back} className="py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)', opacity: on ? 1 : 0.45 }}>
-                          <span className="font-mono font-bold text-[12px]" style={{ color: on ? PAPER : MUTED }}>{o.label}</span>
-                          {rec?.length ? <span className="ml-2 text-[10px] font-mono uppercase tracking-wider" style={{ color: on ? GREEN : RED }}>{on ? 'for this sequence' : 'not here'}</span> : null}
-                          <p className="text-[12px] leading-snug" style={{ color: MUTED }}>{o.tradeoff}</p>
+                        <div key={o.back} className="py-1.5" style={{ borderTop: `1px solid ${BORDER}`, opacity: on ? 1 : 0.5 }}>
+                          <span className="font-bold" style={{ ...MONO, fontSize: 13, color: INK }}>{o.label}</span>
+                          {rec?.length ? <span className="ml-2" style={{ ...MONO, fontSize: 10, color: on ? GREEN : RED }}>{on ? 'for this sequence' : 'not here'}</span> : null}
+                          <p className="text-[13px] leading-snug m-0" style={{ color: MUTED }}>{o.tradeoff}</p>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               </div>
-              <p className="text-[14px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}>{cfg.think.feet.rule}</p>
+              <Callout>{cfg.think.feet.rule}</Callout>
             </Card>
             )}
-            <Card eyebrow="03 · The sequence · how your body does it">
-              {(cfg.think.bodyMarkdown ?? body?.body) ? <MarkdownContent markdown={cfg.think.bodyMarkdown ?? body!.body} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
+            <Card title="03 · The sequence · how your body does it">
+              {(cfg.think.bodyMarkdown ?? body?.body) ? <MarkdownContent markdown={cfg.think.bodyMarkdown ?? body!.body} /> : <p className="m-0" style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
-            <Card eyebrow="04 · The rules that hold it together">
-              {(cfg.think.rulesMarkdown ?? body?.rules) ? <MarkdownContent markdown={cfg.think.rulesMarkdown ?? body!.rules} /> : <p style={{ color: MUTED }}>Coming soon.</p>}
+            <Card title="04 · The rules that hold it together">
+              {(cfg.think.rulesMarkdown ?? body?.rules) ? <MarkdownContent markdown={cfg.think.rulesMarkdown ?? body!.rules} /> : <p className="m-0" style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
-            <Card eyebrow="05 · Key words">
+            <Card title="05 · Key words">
               {cfg.think.keyWords.map((k) => (
-                <p key={k.label} className="text-[14px] mb-1"><span style={{ color: MUTED }}>{k.label} · </span>
+                <div key={k.label} className="py-2" style={{ borderTop: `1px solid ${BORDER}` }}>
+                  <p className="m-0 mb-1" style={{ ...MONO, color: MUTED }}>{k.label}</p>
                   {k.label === 'Method'
-                    // Marcelo 2026-09-09: palabra en Paper con un punto de color bien
-                    // marcado delante — sólido, no arcoíris.
-                    ? k.words.map((w, i) => { const cs = [COMMAND_COLORS.posture, COMMAND_COLORS.rail, COMMAND_COLORS.projection, COMMAND_COLORS.maneuver, COMMAND_COLORS.posture]; return <span key={w} className="inline-flex items-center gap-1.5 font-mono mr-3" style={{ color: PAPER }}><i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cs[i] ?? CYAN, boxShadow: '0 0 0 2px rgba(255,255,255,.15)' }} />{w}</span>; })
-                    : <span className="font-mono" style={{ color: CYAN }}>{k.words.join(' · ')}</span>}
-                </p>
+                    // Marcelo 2026-09-09: palabra con un punto de color bien marcado delante — sólido, no arcoíris.
+                    ? <p className="m-0 flex flex-wrap gap-x-3 gap-y-1.5">{k.words.map((w, i) => { const cs = [COMMAND_COLORS.posture, COMMAND_COLORS.rail, COMMAND_COLORS.projection, COMMAND_COLORS.maneuver, COMMAND_COLORS.posture]; return <span key={`${w}-${i}`} className="inline-flex items-center gap-1.5 text-[15px] font-bold" style={{ color: INK }}><i className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: cs[i] ?? CYAN, boxShadow: '0 0 0 1px rgba(16,38,59,.15)' }} />{w}</span>; })}</p>
+                    : <p className="m-0 flex flex-wrap gap-x-3 gap-y-1.5">{k.words.map((w, i) => <span key={`${w}-${i}`} className="text-[15px] font-bold" style={{ color: INK }}>{w}</span>)}</p>}
+                </div>
               ))}
-              {cfg.kind !== 'entry' && <p className="text-[12px] mt-1" style={{ color: MUTED }}>The body words are the method's formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>}
-              <p className="text-[13.5px] mt-2" style={{ color: TEXT }}>Learn them on land, in the drill, until you can run them without thinking. In the water you carry one: the mission, or the one word that is breaking.</p>
-              <details className="mt-3">
-                <summary className="cursor-pointer text-[13.5px]" style={{ color: CYAN }}>Go deeper: each step as its own page</summary>
-                <div className="mt-2 flex flex-wrap gap-2">
+              {cfg.kind !== 'entry' && <p className="text-[13px] mt-2 mb-0" style={{ color: MUTED }}>The body words are the method&apos;s formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>}
+              <p className="text-[14px] mt-2 mb-0" style={{ color: INK }}>Learn them on land, in the drill, until you can run them without thinking. In the water you carry one: the mission, or the one word that is breaking.</p>
+              <details className="tss-accordion mt-3">
+                <summary>Go deeper: each step as its own page<Chevron /></summary>
+                <div className="px-3 pb-3 flex flex-wrap gap-2">
                   {cfg.stepIds.map((id) => (
-                    <a key={id} href={`${portal}?tab=course&lesson=${id}`} className="text-[12px] px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: PAPER }}>{lessons[id]?.title.replace(/ Operationalized at Blue Belt/, '') ?? id} →</a>
+                    <a key={id} href={`${portal}?tab=course&lesson=${id}`} className="text-[13px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>{shortLesson(lessons[id]?.title ?? id)} →</a>
                   ))}
                 </div>
               </details>
@@ -202,29 +228,29 @@ export function SequencePage({
 
         {/* ── FEEL ── */}
         {tab === 'feel' && (
-          <div className="space-y-3 mt-4">
-            <Card eyebrow="Feel it · out of the water" color={VIOLET}>
-              <h2 className="text-[16px] font-bold">Connect the mechanics to your body before the wave asks for them.</h2>
-              <p className="text-[14px] mt-1" style={{ color: TEXT }}>Three kinds of rehearsal, from stillness to movement. None of them is a test.</p>
+          <div className="mt-3">
+            <Card title="Feel it · out of the water" color={VIOLET_BRIGHT}>
+              <p className="tss-intro">Connect the mechanics to your body before the wave asks for them.</p>
+              <p className="text-[14px] m-0" style={{ color: INK }}>Three kinds of rehearsal, from stillness to movement. None of them is a test.</p>
             </Card>
-            <Card eyebrow="Visualize" color={VIOLET}>
-              <p className="text-[14.5px]" style={{ color: TEXT }}>{cfg.feel.visualize}</p>
+            <Card title="Visualize" color={VIOLET_BRIGHT}>
+              <p className="text-[15px] m-0 leading-snug" style={{ color: INK }}>{cfg.feel.visualize}</p>
             </Card>
-            <Card eyebrow="Simulate · land, sand, pool or calm water" color={VIOLET}>
+            <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT}>
               {cfg.feel.land.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
             </Card>
-            <Card eyebrow="Simulate · surf skate" color={VIOLET}>
+            <Card title="Simulate · surf skate" color={VIOLET_BRIGHT}>
               {cfg.feel.skate.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
             </Card>
-            <p className="text-[12px] px-1" style={{ color: MUTED }}>Each drill closes with one question: ready to take it to the water?</p>
+            <p className="text-[13px] px-1 mt-3 mb-0" style={{ color: ON_DARK }}>Each drill closes with one question: ready to take it to the water?</p>
           </div>
         )}
 
         {/* ── DO ── */}
         {tab === 'do' && (
-          <div className="space-y-3 mt-4">
-            <Card eyebrow="Mission · in the water" color={GREEN}>
-              <h2 className="text-[16px] font-bold">{cfg.do.result}</h2>
+          <div className="mt-3">
+            <Card title="Mission · in the water" color={GREEN_BRIGHT}>
+              <p className="tss-intro">{cfg.do.result}</p>
               <Row k="Timing">{cfg.do.timing}</Row>
               <Row k="Plan">You set the time and the number of waves before you paddle out. The plan is yours; it is not graded.</Row>
               {/* Conexión con Let's Play (Marcelo 2026-09-09): la línea completa
@@ -236,173 +262,149 @@ export function SequencePage({
                 const chosen = focus ? cfg.details.find((d) => d.key === focus) : null;
                 const focusStep = chosen?.deeper?.lessonId ?? null;
                 const word = chosen ? chosen.title.replace(/^\d+ · /, '') : '';
-                if (!canTrack) return <p className="inline-flex items-center gap-2 mt-3 text-[12px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>;
-                if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="inline-flex items-center gap-2 mt-3 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: CYAN, color: INK }}><Play size={14} /> Start the mission in Let&apos;s Play</a> : null;
+                if (!canTrack) return <p className="inline-flex items-center gap-2 mt-3 mb-0 text-[13px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>;
+                if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="tss-primary no-underline"><Play size={16} /> Start the mission in Let&apos;s Play</a> : null;
                 const runHref = `${portal}?tab=sequence&seq=${lp}&mode=sequence_run`;
                 const focusHref = focusStep ? `${portal}?tab=sequence&seq=${lp}&mode=step_focus&focus=${focusStep}&word=${encodeURIComponent(word)}` : null;
                 return (
-                  <div className="mt-3 flex flex-wrap gap-2 items-center">
+                  <div className="mt-1">
                     {focusHref ? (
-                      <a href={focusHref} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: chosen?.command ? COMMAND_COLORS[chosen.command] : CYAN, color: INK }}><Play size={14} /> Train it in Let&apos;s Play · focus: {word}</a>
+                      <a href={focusHref} className="tss-primary no-underline" style={chosen?.command ? { background: COMMAND_COLORS[chosen.command], color: chosen.command === 'projection' ? NAVY : WHITE } : undefined}><Play size={16} /> Train it in Let&apos;s Play · focus: {word}</a>
                     ) : (
-                      <a href={runHref} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[12px] font-bold" style={{ background: CYAN, color: INK }}><Play size={14} /> Train the whole line in Let&apos;s Play</a>
+                      <a href={runHref} className="tss-primary no-underline"><Play size={16} /> Train the whole line in Let&apos;s Play</a>
                     )}
-                    {focusHref && <a href={runHref} className="text-[12px] font-semibold" style={{ color: CYAN }}>or the whole line, no focus</a>}
-                    {pieces[cfg.do.missionId] && <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[12px]" style={{ color: MUTED }}>Log the mission only</a>}
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                      {focusHref && <Go href={runHref} small>or the whole line, no focus</Go>}
+                      {pieces[cfg.do.missionId] && <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[13px] no-underline" style={{ color: MUTED }}>Log the mission only</a>}
+                    </div>
                   </div>
                 );
               })()}
             </Card>
-            <Card eyebrow="Choose a focus · optional">
-              <p className="text-[14px] mb-2" style={{ color: TEXT }}>The mission is always the whole line. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
+            <Card title="Choose a focus · optional">
+              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>The mission is always the whole line. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
               <div className="flex flex-wrap gap-2">
                 {cfg.details.map((d) => (
-                  <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)}
-                    className="inline-flex items-center gap-2 text-[12px] px-3 py-1.5 rounded-full"
-                    style={focus === d.key ? { background: CYAN, color: INK, fontWeight: 700 } : { background: 'rgba(255,255,255,.06)', color: PAPER }}>
+                  <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)} aria-pressed={focus === d.key}
+                    className="inline-flex items-center gap-2 text-[13px] px-3 py-2 rounded-full min-h-[40px] border"
+                    style={focus === d.key ? { background: CYAN, borderColor: CYAN, color: NAVY, fontWeight: 700 } : { background: WHITE, borderColor: BORDER, color: INK }}>
                     {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
                     {d.title}
                   </button>
                 ))}
               </div>
               {cfg.details.filter((d) => d.key === focus).map((d) => (
-                <div key={d.key} className="mt-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,.04)' }}>
-                  <p className="text-[12px] mb-2" style={{ color: MUTED }}>Where it breaks: {d.symptom}</p>
-                  {d.indicators.map((ind, i) => (
-                    <div key={i} className="py-2" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                      <p className="text-[14px]"><span style={{ color: GREEN }}>✓</span> {ind.ok}</p>
-                      <p className="text-[13.5px] mt-0.5" style={{ color: TEXT }}><span style={{ color: RED }}>✗</span> {ind.no}</p>
-                      <p className="text-[13.5px] mt-0.5"><span className="font-bold" style={{ color: GOLD }}>Fix:</span> {ind.fix}</p>
-                    </div>
-                  ))}
+                <div key={d.key} className="mt-3 rounded-[5px] p-3" style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
+                  <p className="text-[13px] mt-0 mb-2" style={{ color: MUTED }}>Where it breaks: {d.symptom}</p>
+                  {d.indicators.map((ind, i) => <Indicator key={i} ok={ind.ok} no={ind.no} fix={ind.fix} first={i === 0} />)}
                   {d.deeper && (
-                    <div className="mt-2 flex flex-wrap gap-2 text-[12px]">
-                      <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: CYAN }}>Go deeper → {d.deeper.label}</a>
-                      {d.deeper.drillId && pieces[d.deeper.drillId] && <button type="button" onClick={() => go('feel')} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title} · Feel it</button>}
-                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.missionId}`} className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,.06)', color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
+                    <div className="mt-2 flex flex-wrap gap-2 text-[13px]">
+                      <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>Go deeper → {d.deeper.label}</a>
+                      {d.deeper.drillId && pieces[d.deeper.drillId] && <button type="button" onClick={() => go('feel')} className="px-3 py-1.5 rounded-full font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title} · Feel it</button>}
+                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.missionId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
                     </div>
                   )}
                 </div>
               ))}
             </Card>
-            {progress && (progress.ratedSteps > 0 || progress.lastRun !== null) && (
-              <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
-                <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
-                  {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
-                  {progress.side === 'both' && progress.sideRatings ? (
-                    <span>frontside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.fs ?? '—'}{progress.sideRatings.fs != null ? '★' : ''}</span> · backside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.bs ?? '—'}{progress.sideRatings.bs != null ? '★' : ''}</span></span>
-                  ) : progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
-                  <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {progress.steps.map((st) => (
-                    <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px]" style={{ background: 'rgba(255,255,255,.06)', color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
-                      {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}
-                    </span>
-                  ))}
-                </div>
-                {(progress.heldBackTitle || progress.weakestTitle) && (
-                  <p className="text-[13.5px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)', color: PAPER }}>
-                    <span style={{ ...F_M, color: GOLD }}>Work on · </span>
-                    {progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.
-                  </p>
-                )}
-                <a href={`${portal}?tab=sequence`} className="inline-block mt-2 text-[12.5px] font-semibold" style={{ color: CYAN }}>See all your sequences in Let&apos;s Play →</a>
-              </Card>
-            )}
-            <Card eyebrow="Competence · is it yours yet?" color={GREEN}>
-              <p className="text-[13.5px]" style={{ color: TEXT }}>{cfg.do.competence}</p>
+            <WhereYouAre progress={progress} portal={portal} />
+            <Card title="Competence · is it yours yet?" color={GREEN_BRIGHT}>
+              <p className="text-[14px] m-0 leading-snug" style={{ color: INK }}>{cfg.do.competence}</p>
             </Card>
           </div>
         )}
 
         {/* ── REVIEW ── */}
         {tab === 'review' && (
-          <div className="space-y-3 mt-4">
-            <Card eyebrow="How you know you have it" color={GREEN}>
-              <p className="text-[14px] mb-1" style={{ color: TEXT }}>One topic per step of the sequence. Open only the one you want to check.</p>
+          <div className="mt-3">
+            <Card title="How you know you have it" color={GREEN_BRIGHT}>
+              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>One topic per step of the sequence. Open only the one you want to check.</p>
               {cfg.details.map((d) => (
-                <details key={d.key} className="group" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                  <summary className="cursor-pointer list-none flex items-center gap-2.5 py-3">
-                    {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
-                    <span className="text-[15px] font-semibold flex-1" style={{ color: PAPER }}>{d.title}</span>
-                    <span className="text-[11px]" style={{ color: MUTED }}>{d.indicators.length}</span>
-                    <span className="transition-transform group-open:rotate-90" style={{ color: MUTED }}>›</span>
+                <details key={d.key} className="tss-accordion">
+                  <summary>
+                    <span className="inline-flex items-center gap-2.5 flex-1">
+                      {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
+                      <span>{d.title}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-2"><span className="text-[12px] font-normal" style={{ color: MUTED }}>{d.indicators.length}</span><Chevron /></span>
                   </summary>
-                  <div className="pb-3">
-                    {d.indicators.map((ind, i) => (
-                      <div key={i} className="py-2" style={{ borderTop: i ? '1px solid rgba(255,255,255,.06)' : undefined }}>
-                        <p className="text-[14px]" style={{ color: PAPER }}><span style={{ color: GREEN }}>✓</span> {ind.ok}</p>
-                        <p className="text-[13.5px] mt-1" style={{ color: TEXT }}><span style={{ color: RED }}>✗</span> {ind.no}</p>
-                        <p className="text-[13.5px] mt-1" style={{ color: TEXT }}><span className="font-bold" style={{ color: GOLD }}>Fix:</span> {ind.fix}</p>
-                      </div>
-                    ))}
-                    {d.deeper && <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="inline-block mt-1 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {d.deeper.label}</a>}
+                  <div className="px-3 pb-3">
+                    {d.indicators.map((ind, i) => <Indicator key={i} ok={ind.ok} no={ind.no} fix={ind.fix} first={i === 0} />)}
+                    {d.deeper && <Go href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} small>Go deeper → {d.deeper.label}</Go>}
                   </div>
                 </details>
               ))}
             </Card>
             {lessons[cfg.think.bodyFromLesson]?.mistakes && (
-              <Card eyebrow="Common mistakes" color={RED}>
+              <Card title="Common mistakes" color="#FF6B6B">
                 {[cfg.think.bodyFromLesson].map((id) => lessons[id]?.mistakes ? (
-                  <details key={id} className="group" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                    <summary className="cursor-pointer list-none flex items-center gap-2 py-3">
-                      <span className="text-[15px] font-semibold flex-1" style={{ color: PAPER }}>{lessons[id].title.replace(/ Operationalized at Blue Belt/, '')}</span>
-                      <span className="transition-transform group-open:rotate-90" style={{ color: MUTED }}>›</span>
-                    </summary>
-                    <div className="pb-3"><MarkdownContent markdown={lessons[id].mistakes} /></div>
+                  <details key={id} className="tss-accordion">
+                    <summary><span className="flex-1">{shortLesson(lessons[id].title)}</span><Chevron /></summary>
+                    <div className="px-3 pb-3"><MarkdownContent markdown={lessons[id].mistakes} /></div>
                   </details>
                 ) : null)}
               </Card>
             )}
-            {progress && (progress.ratedSteps > 0 || progress.lastRun !== null) && (
-              <Card eyebrow="Where you are · from Let's Play" color={GOLD}>
-                <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]" style={{ color: TEXT }}>
-                  {progress.minRating !== null && <span><span className="font-bold" style={{ color: PAPER }}>{progress.minRating}★</span> the sequence is worth its weakest step</span>}
-                  {progress.side === 'both' && progress.sideRatings ? (
-                    <span>frontside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.fs ?? '—'}{progress.sideRatings.fs != null ? '★' : ''}</span> · backside <span className="font-bold" style={{ color: PAPER }}>{progress.sideRatings.bs ?? '—'}{progress.sideRatings.bs != null ? '★' : ''}</span></span>
-                  ) : progress.lastRun !== null && <span>last run <span className="font-bold" style={{ color: PAPER }}>{progress.lastRun}★</span></span>}
-                  <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {progress.steps.map((st) => (
-                    <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px]" style={{ background: 'rgba(255,255,255,.06)', color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
-                      {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}
-                    </span>
-                  ))}
-                </div>
-                {(progress.heldBackTitle || progress.weakestTitle) && (
-                  <p className="text-[13.5px] mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,209,102,.10)', color: PAPER }}>
-                    <span style={{ ...F_M, color: GOLD }}>Work on · </span>
-                    {progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.
-                  </p>
-                )}
-                <a href={`${portal}?tab=sequence`} className="inline-block mt-2 text-[12.5px] font-semibold" style={{ color: CYAN }}>See all your sequences in Let&apos;s Play →</a>
-              </Card>
-            )}
-            <Card eyebrow="How it feels" color={VIOLET}>
-              <p className="text-[13.5px]" style={{ color: TEXT }}>{cfg.review.howItFeels}</p>
+            <WhereYouAre progress={progress} portal={portal} />
+            <Card title="How it feels" color={VIOLET_BRIGHT}>
+              <p className="text-[14px] m-0 leading-snug" style={{ color: INK }}>{cfg.review.howItFeels}</p>
             </Card>
-            <Card eyebrow="After a session">
-              <p className="text-[14px]" style={{ color: TEXT }}><b>★ 1–5</b> how it went · <b>Focus 0–3</b> · <b>Flow</b> bored → too much. Then, if you want, check the indicators above one by one. The weakest one becomes your next word.</p>
-              {canTrack && <a href={`${portal}?tab=sequence`} className="inline-flex items-center gap-1.5 mt-2 text-[12px] font-semibold" style={{ color: CYAN }}>Open Let&apos;s Play <ArrowRight size={13} /></a>}
+            <Card title="After a session">
+              <p className="text-[14px] m-0" style={{ color: INK }}><b>★ 1–5</b> how it went · <b>Focus 0–3</b> · <b>Flow</b> bored → too much. Then, if you want, check the indicators above one by one. The weakest one becomes your next word.</p>
+              {canTrack && <Go href={`${portal}?tab=sequence`} small>Open Let&apos;s Play</Go>}
             </Card>
           </div>
         )}
 
         {next && (
-          <button type="button" onClick={() => go(next)} className="mt-5 inline-flex items-center gap-1.5 text-[12px] font-semibold px-4 py-2 rounded-full" style={{ boxShadow: `inset 0 0 0 1px ${CYAN}80`, color: CYAN }}>
-            Next: {TABS.find((t) => t.key === next)?.label} <ArrowRight size={13} />
+          <button type="button" onClick={() => go(next)} className="tss-primary">
+            Next: {TABS.find((t) => t.key === next)?.label} <Icon name="arrow" />
           </button>
         )}
-        <p className="text-[11px] mt-8 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: MUTED }}>
+        <p className="text-[12px] mt-6 mb-0 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: ON_DARK, opacity: .8 }}>
           <span>Colours on the wave</span>
           {(['posture', 'rail', 'projection', 'maneuver', 'closure'] as const).map((c) => (
             <span key={c} className="inline-flex items-center gap-1.5"><i className="inline-block w-2 h-2 rounded-full" style={{ background: COMMAND_COLORS[c] }} />{c}</span>
           ))}
         </p>
       </div>
-    </div>
+
+      {/* Nav inferior blanca: los mismos destinos del portal. */}
+      <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
+        <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
+        <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
+        <a href={`${portal}?tab=sequence`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="play" />Let&apos;s Play</a>
+      </div></nav>
+    </section>
+  );
+}
+
+/** "Where you are · from Let's Play" — el mismo bloque en Do y en Review. */
+function WhereYouAre({ progress, portal }: { progress?: SequenceProgress | null; portal: string }) {
+  if (!progress || !(progress.ratedSteps > 0 || progress.lastRun !== null)) return null;
+  return (
+    <Card title="Where you are · from Let's Play" color={GOLD_BRIGHT}>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]" style={{ color: INK }}>
+        {progress.minRating !== null && <span><b>{progress.minRating}★</b> the sequence is worth its weakest step</span>}
+        {progress.side === 'both' && progress.sideRatings ? (
+          <span>frontside <b>{progress.sideRatings.fs ?? '—'}{progress.sideRatings.fs != null ? '★' : ''}</b> · backside <b>{progress.sideRatings.bs ?? '—'}{progress.sideRatings.bs != null ? '★' : ''}</b></span>
+        ) : progress.lastRun !== null && <span>last run <b>{progress.lastRun}★</b></span>}
+        <span>{progress.ratedSteps}/{progress.totalSteps} steps rated</span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {progress.steps.map((st) => (
+          <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
+            {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}
+          </span>
+        ))}
+      </div>
+      {(progress.heldBackTitle || progress.weakestTitle) && (
+        <Callout label="Work on">
+          {progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.
+        </Callout>
+      )}
+      <Go href={`${portal}?tab=sequence`} small>See all your sequences in Let&apos;s Play</Go>
+    </Card>
   );
 }
 
@@ -411,14 +413,15 @@ function SequenceVideo({ url, title }: { url: string; title: string }) {
   const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{6,})/);
   const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   const src = yt ? `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&modestbranding=1` : vm ? `https://player.vimeo.com/video/${vm[1]}` : null;
-  if (src) return <div className="relative w-full" style={{ paddingTop: '56.25%' }}><iframe src={src} title={title} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>;
-  return <video src={url} controls playsInline preload="metadata" className="w-full block" title={title} />;
+  const box = 'relative w-full rounded-[5px] overflow-hidden';
+  if (src) return <div className={box} style={{ paddingTop: '56.25%', background: NAVY }}><iframe src={src} title={title} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>;
+  return <video src={url} controls playsInline preload="metadata" className="w-full block rounded-[5px]" title={title} />;
 }
 
-function Card({ eyebrow, color = CYAN, children }: { eyebrow: string; color?: string; children: React.ReactNode }) {
+function Card({ title, color, className = '', children }: { title?: string; color?: string; className?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl p-4" style={{ background: PANEL }}>
-      <p className="mb-2" style={{ ...F_M, color }}>{eyebrow}</p>
+    <section className={`tss-card ${className}`} style={color ? { borderTop: `4px solid ${color}` } : undefined}>
+      {title && <h2 className="tss-section-title">{title}</h2>}
       {children}
     </section>
   );
@@ -426,29 +429,70 @@ function Card({ eyebrow, color = CYAN, children }: { eyebrow: string; color?: st
 
 function Row({ k, children }: { k: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 items-start py-2" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
-      <span className="shrink-0 pt-0.5" style={{ ...F_M, color: MUTED, minWidth: 62 }}>{k}</span>
-      <p className="text-[14px] leading-snug" style={{ color: TEXT }}>{children}</p>
+    <div className="py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+      <p className="m-0 mb-0.5" style={{ ...MONO, color: MUTED }}>{k}</p>
+      <p className="text-[14px] leading-snug m-0" style={{ color: INK }}>{children}</p>
     </div>
   );
 }
 
+/** La regla / el aviso: caja navy dentro de la tarjeta crema (como "timing" en Three Circles). */
+function Callout({ label, children }: { label?: string; children: React.ReactNode }) {
+  return (
+    <div className="tss-timing"><div>
+      {label && <h3>{label}</h3>}
+      <p style={{ color: WHITE, fontSize: 15, fontWeight: 600, lineHeight: 1.35 }}>{children}</p>
+    </div></div>
+  );
+}
+
+function Indicator({ ok, no, fix, first }: { ok: string; no: string; fix: string; first: boolean }) {
+  return (
+    <div className="py-2" style={{ borderTop: first ? undefined : `1px solid ${BORDER}` }}>
+      <p className="text-[14px] m-0" style={{ color: INK }}><b style={{ color: GREEN }}>✓</b> {ok}</p>
+      <p className="text-[14px] mt-1 mb-0" style={{ color: INK }}><b style={{ color: RED }}>✗</b> {no}</p>
+      <p className="text-[14px] mt-1 mb-0" style={{ color: INK }}><b style={{ color: GOLD }}>Fix:</b> {fix}</p>
+    </div>
+  );
+}
+
+/** Link sobre crema: tinta, negrita, flecha. */
+function Go({ href, children, small = false }: { href: string; children: React.ReactNode; small?: boolean }) {
+  return <a href={href} className={`inline-flex items-center gap-1.5 font-bold no-underline ${small ? 'text-[13px] mt-1' : 'text-[15px]'}`} style={{ color: INK }}>{children} <ArrowRight size={small ? 13 : 15} /></a>;
+}
+
 function Piece({ p, href = null, canTrack }: { p?: PieceRow; href?: string | null; canTrack: boolean }) {
   if (!p) return null;
+  const md = (p.description_md ?? '').trim();
   return (
-    <div className="py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}>
-      <p className="text-[14px] font-semibold">{p.title}</p>
+    <div className="mt-2 rounded-[5px] px-3 py-2.5" style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
+      <p className="text-[15px] font-bold m-0" style={{ color: INK }}>{p.title}</p>
       {/* Los drills de White/Yellow vienen en markdown (## What you'll train…):
           se renderizan como en el curso, no como texto plano. */}
-      {p.description_md && (p.description_md.trim().startsWith('#') || /\n\s*[-*] /.test(p.description_md)
-        ? <div className="mt-1"><MarkdownContent markdown={p.description_md} /></div>
-        : <p className="text-[13.5px] mt-1 leading-snug" style={{ color: TEXT }}>{p.description_md}</p>)}
-      <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
+      {md && (md.startsWith('#') || /\n\s*[-*] /.test(md)
+        ? <div className="mt-1"><MarkdownContent markdown={md} /></div>
+        : <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{md}</p>)}
+      <div className="flex items-center gap-3 mt-1.5 text-[12px]" style={{ color: MUTED }}>
         {p.time_estimate && <span>{p.time_estimate}</span>}
         {p.reps_recommended && <span>{p.reps_recommended} reps</span>}
         {/* Los drills son ensayo: se hacen, no se registran (doctrina 2026-09-10). Solo las misiones llevan a Let's Play. */}
-        {href ? (canTrack ? <a href={href} className="inline-flex items-center gap-1 font-semibold" style={{ color: CYAN }}><Play size={12} /> Log it in Let&apos;s Play</a> : <span className="inline-flex items-center gap-1"><Lock size={11} /> with your training tool</span>) : <span>rehearsal · no need to log it</span>}
+        {href ? (canTrack ? <a href={href} className="inline-flex items-center gap-1 font-bold no-underline" style={{ color: INK }}><Play size={12} /> Log it in Let&apos;s Play</a> : <span className="inline-flex items-center gap-1"><Lock size={11} /> with your training tool</span>) : <span>rehearsal · no need to log it</span>}
       </div>
     </div>
   );
+}
+
+function Chevron() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>;
+}
+
+function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'arrow' }) {
+  const p: Record<string, React.ReactNode> = {
+    home: <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
+    course: <><path d="M2 8.5 12 4l10 4.5-10 4.5z" /><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" /></>,
+    play: <path d="M7 4.5v15l12-7.5z" />,
+    back: <path d="M15 5l-7 7 7 7" />,
+    arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  };
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
 }

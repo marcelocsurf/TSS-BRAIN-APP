@@ -107,6 +107,8 @@ export default async function SequencePageRoute({ params, searchParams }: { para
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
+      {/* Línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss; /tss/ es público en el middleware. */}
+      <link rel="stylesheet" href="/tss/theme.css" />
       <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
     </div>
   );
