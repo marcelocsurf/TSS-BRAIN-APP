@@ -101,6 +101,8 @@ import {
   MapPin,
   Wind,
   type LucideIcon,
+  Flame,
+  ArrowRight,
 } from 'lucide-react';
 
 // ─── Types ───
@@ -363,6 +365,12 @@ type Tab = 'home' | 'course' | 'sequence' | 'lineup' | 'sessions' | 'feedback' |
 // ── Brand v10 type + color helpers (M140 student-home redesign) ──
 const F_DISPLAY = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.08 } as const;
 const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' } as const;
+// Línea aprobada (TSS_Design_Handoff, 2026-09-14 · mock de Home): navy, tarjetas
+// crema, títulos grandes Archivo 900, etiquetas mono, botón cyan.
+const H_BIG = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.06 } as const;
+const T_CREAM = '#F3F0E5', T_PAPER = '#F8F5EC', T_INK = '#10263B', T_BORDER = '#DCD7C6', T_MUTED = '#55666E', T_NAVY = '#061C2B';
+const T_LABEL = { ...F_LABEL, letterSpacing: '0.08em', fontSize: 12 } as const;
+const creamLabel = (accent: string) => (accent === '#FFD166' ? '#B7791F' : accent === '#06D6A0' ? '#0F8A5F' : '#0A7FA0');
 
 // ═══ YOUR NEXT MOVES ═══ (Marcelo 2026-09-04/05)
 // Una sola fuente para las dos puertas: en el HOME sale SOLO la primera (lo
@@ -491,15 +499,48 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
   );
 
   if (mode === 'top') {
-    // HOME: una sola cosa. El resto vive en Let's Play.
+    // HOME: una sola cosa. El resto vive en Let's Play. Tarjeta crema con el
+    // botón cyan (línea aprobada 2026-09-14); mismos textos y mismos destinos.
     const first = rows[0];
+    const clearedCream = coachCleared && (
+      <div className="rounded-[5px] px-3 py-2.5 mt-3 flex items-start gap-2.5" style={{ background: '#DDF0E4' }}>
+        <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold" style={{ background: '#0F8A5F', color: '#fff' }}>✓</span>
+        <div>
+          <p className="text-[14px] font-bold leading-snug" style={{ color: '#0F6B4A' }}>You cleared it · You took what your coach left you to 4★ on your own.</p>
+          <p className="text-[13px] mt-0.5 leading-snug" style={{ color: '#0F6B4A' }}>They confirm it next time they see you in the water.</p>
+        </div>
+      </div>
+    );
     return (
       <>
-        {first ? renderRow(first, 0, false) : cleared}
-        {first && cleared}
+        <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+          {first ? (
+            <>
+              <p style={{ ...T_LABEL, color: creamLabel(first.accent) }}>{first.label}</p>
+              <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>{first.title}</p>
+              <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>{first.reason}</p>
+              {first.detail && <p className="text-[14px] mt-1 leading-snug font-semibold" style={{ color: '#B7791F' }}>{first.detail}</p>}
+              {first.side && <p className="text-[14px] mt-1 leading-snug" style={{ color: '#7C4DFF' }}>Both sides · {first.side}</p>}
+              {first.onClick && first.action && (
+                <button type="button" onClick={first.onClick}
+                  className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
+                  style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                  {first.action.replace(/\s*→\s*$/, '')} <ArrowRight size={18} />
+                </button>
+              )}
+              {first.pageHref && (
+                <a href={first.pageHref} className="flex items-center justify-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_INK }}>
+                  Open the sequence page <ArrowRight size={15} />
+                </a>
+              )}
+            </>
+          ) : null}
+          {clearedCream}
+        </div>
         {rows.length > 1 && (
-          <button type="button" onClick={() => onGoTo?.('sequence')} className="block w-full text-left px-4 py-2.5 text-[12.5px]" style={{ ...rowStyle, color: '#b3c4d1' }}>
-            {rows.length - 1} more waiting in Let&apos;s Play →
+          <button type="button" onClick={() => onGoTo?.('sequence')} className="flex items-center gap-3 w-full text-left rounded-lg px-4 py-3 mt-2.5 text-[15px] font-semibold"
+            style={{ border: '1px solid rgba(0,210,255,.35)', color: '#F8F5EC' }}>
+            <Play size={16} strokeWidth={1.75} /> {rows.length - 1} more waiting in Let&apos;s Play <ArrowRight size={15} />
           </button>
         )}
       </>
@@ -1164,11 +1205,48 @@ function HomeTab({
           la playa el alumno abre el app para UNA cosa: cerrar la sesión o
           saber qué entrenar. Eso va arriba del nombre. ═══ */}
       {onFinishOpenSession && onDiscardOpenSession && <OpenSessionCard data={data} onFinish={onFinishOpenSession} onDiscard={onDiscardOpenSession} />}
+
+      {/* ── Identidad (línea aprobada 2026-09-14): foto, nombre, CURRENT LEVEL,
+          cinta y nivel. Antes vivía dentro del cockpit; la campana 🔔 sube con
+          ella. Mismos datos. ── */}
+      <div className="flex items-center gap-3.5">
+        <div className="w-[68px] h-[68px] rounded-full overflow-hidden flex items-center justify-center shrink-0"
+          style={{ border: '3px solid #00D2FF', background: '#1b3148' }}>
+          {student.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[30px] font-black" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>{(student.first_name || '?').slice(0, 1).toUpperCase()}</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[22px] font-black leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>
+            {student.first_name} {student.last_name}
+          </p>
+          <p className="mt-0.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current level</p>
+          <div className="mt-1 flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center rounded-[5px] px-2.5 py-1" style={{ ...T_LABEL, background: belt?.color || '#E8E8E8', color: LIGHT_BELTS.includes(beltLevel) ? T_NAVY : '#fff' }}>
+              {belt?.en}
+            </span>
+            <span className="text-[14px]" style={{ color: '#D9E4EA' }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</span>
+          </div>
+        </div>
+        {data.canTrack !== false && (
+          <button type="button" onClick={openInbox} aria-label="Notifications" className="relative p-2.5 -m-2.5 shrink-0 self-start">
+            <Bell size={22} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : '#F8F5EC' }} />
+            {unreadMsgs > 0 && (
+              <span className="absolute -top-1 -right-1 rounded-full text-[12px] font-bold flex items-center justify-center"
+                style={{ minWidth: 15, height: 15, background: '#FF6B6B', color: '#061C2B', padding: '0 3px' }}>
+                {unreadMsgs}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+
           {(coachFocus || data.nextMove) && (
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #5AC3E7' }}
-            >
+            <div>
+              <h1 className="text-[36px] mb-3" style={{ ...H_BIG, color: '#F8F5EC' }}>Your next move</h1>
               {/* Una sola cosa en el Home; la lista completa vive en Let's Play.
                   La frase del libro (sessionCue) salió de acá (Marcelo
                   2026-09-11: "mucha info para leer"). */}
@@ -1194,6 +1272,27 @@ function HomeTab({
             </div>
           )}
 
+      {/* ── Horas surfeadas + racha: dos casillas navy con borde cyan (mock de
+          Home 2026-09-14). Las mismas cifras del cockpit. ── */}
+      {data.canTrack !== false && (
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ border: '1px solid rgba(0,210,255,.35)' }}>
+            <Clock size={26} strokeWidth={1.5} style={{ color: '#F8F5EC' }} />
+            <div className="min-w-0">
+              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>{fmtHm(surf.totalMinutes)}</p>
+              <p className="mt-1.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Hours surfed</p>
+            </div>
+          </div>
+          <div className="rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ border: '1px solid rgba(0,210,255,.35)' }}>
+            <Flame size={26} strokeWidth={1.5} style={{ color: '#F8F5EC' }} />
+            <div className="min-w-0">
+              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>{streak} {streak === 1 ? 'day' : 'days'}</p>
+              <p className="mt-1.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current streak</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
           web 2026-09-01). Solo si tiene el grant; abre el PDF inline con el
           mismo mecanismo de materiales. Las DEMÁS presentaciones siguen en
@@ -1207,27 +1306,25 @@ function HomeTab({
           <button
             type="button"
             onClick={() => setReader({ id: bk.id, title: 'ONE WAVE' })}
-            className="block w-full text-left rounded-2xl overflow-hidden"
-            style={{ background: '#0F1E33', border: '1px solid rgba(0,210,255,.25)' }}
+            className="block w-full text-left rounded-lg overflow-hidden"
+            style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}
           >
             <div className="flex items-center gap-4 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/web/img/one-wave-cover.jpg"
                 alt="ONE WAVE"
-                className="w-16 h-auto rounded shadow-lg shrink-0"
+                className="w-[72px] h-auto rounded-[4px] shadow-md shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] tracking-[.18em] uppercase font-mono" style={{ color: '#5AC3E7' }}>
-                  Your book
-                </p>
-                <p className="text-white font-bold text-[15px] mt-0.5 leading-tight">ONE WAVE</p>
-                <p className="text-[12.5px] text-white/80 mt-1 leading-snug">
+                <p style={{ ...T_LABEL, color: T_MUTED }}>Your book</p>
+                <p className="text-[22px] font-black leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>ONE WAVE</p>
+                <p className="text-[14px] mt-1 leading-snug" style={{ color: T_INK }}>
                   A practical system to train with intention — your copy, on any device.
                 </p>
               </div>
-              <span className="shrink-0 text-[12px] font-semibold" style={{ color: '#5AC3E7' }}>
-                Read →
+              <span className="shrink-0 inline-flex items-center gap-1 text-[15px] font-bold" style={{ color: T_INK }}>
+                Read <ArrowRight size={15} />
               </span>
             </div>
           </button>
@@ -1235,6 +1332,12 @@ function HomeTab({
       })()}
       {reader && (
         <MaterialReader token={data.token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />
+      )}
+      {/* "View my progress" (mock de Home): baja al cockpit de progreso. */}
+      {data.canTrack !== false && (
+        <a href="#my-progress" className="flex items-center justify-center gap-2 py-1 text-[15px] font-bold" style={{ color: '#00D2FF' }}>
+          <BarChart3 size={18} strokeWidth={1.75} /> View my progress <ArrowRight size={15} />
+        </a>
       )}
       {/* ── 🏆 Promoción de cinta — celebración 30 días, SIN candados. El copy
           es por cinta (qué dominó / qué desbloquea) desde promotion-copy.ts. ── */}
@@ -1250,7 +1353,7 @@ function HomeTab({
         const ctaInk = LIGHT_BELTS.includes(beltLevel);
         return (
           <div
-            className="relative overflow-hidden rounded-3xl p-5"
+            className="relative overflow-hidden rounded-lg p-5"
             style={{ background: '#0A1628', border: `1px solid ${d.color}77`, boxShadow: `0 6px 30px ${d.color}22` }}
           >
             <div
@@ -1296,7 +1399,7 @@ function HomeTab({
           El Home le dice qué tiene y qué abre lo demás (blueprint 2026-09-04,
           Marcelo 2026-09-08). ── */}
       {data.canTrack === false && (
-        <div className="rounded-3xl overflow-hidden p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.2)' }}>
+        <div className="rounded-lg overflow-hidden p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.2)' }}>
           {data.hasAnyCourse ? (
             <>
               <p className="text-[12px]" style={{ ...F_LABEL, color: '#FFD166' }}>Membership ended</p>
@@ -1326,60 +1429,16 @@ function HomeTab({
           )}
         </div>
       )}
-      {/* ── Dark "cockpit" hero — TSS Ocean Navy, Garmin-style telemetry ── */}
+      {/* ── MY PROGRESS: el cockpit de siempre (horas, nivel, camino, agua, HP).
+          La identidad y la campana subieron arriba (línea aprobada 2026-09-14). ── */}
       {data.canTrack !== false && (
-      <div className="rounded-3xl overflow-hidden" style={{ background: '#061C2B' }}>
-        {/* Notifications row (TSS wordmark now lives in the shared header on
-            every screen, so it isn't repeated here). */}
-        <div
-          className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: '1px solid rgba(255,255,255,.06)' }}
-        >
-          <span className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Student portal</span>
-          <button type="button" onClick={openInbox}
-            aria-label="Notifications" className="relative p-2.5 -m-2.5">
-            <Bell size={18} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : 'rgba(247,249,250,.78)' }} />
-            {unreadMsgs > 0 && (
-              // Tinta sobre coral (6.3:1) — blanco sobre coral no pasaba AA.
-              <span className="absolute -top-1 -right-1 rounded-full text-[12px] font-bold flex items-center justify-center"
-                style={{ minWidth: 15, height: 15, background: '#FF6B6B', color: '#061C2B', padding: '0 3px' }}>
-                {unreadMsgs}
-              </span>
-            )}
-          </button>
+      <div id="my-progress" className="rounded-lg overflow-hidden" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.25)' }}>
+        <div className="px-4 pt-4 flex items-center justify-between gap-3">
+          <h2 className="text-[26px]" style={{ ...H_BIG, color: '#F8F5EC' }}>My progress</h2>
+          <BarChart3 size={22} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Identity row: photo + name + belt + streak */}
-          <div className="flex items-center gap-3">
-            <div
-              className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center shrink-0"
-              style={{ border: '2px solid #5AC3E7', background: '#1b3148' }}
-            >
-              {student.photo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <User size={26} strokeWidth={1.75} style={{ color: '#b3c4d1' }} />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[21px] truncate" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>
-                {student.first_name} {student.last_name}
-              </p>
-              <span
-                className="mt-1.5 inline-flex items-center rounded-full px-2.5 py-1 text-[12px]"
-                style={{ ...F_LABEL, background: belt?.color || '#E8E8E8', color: ['white_belt'].includes(student.belt_level) ? '#061C2B' : '#fff' }}
-              >
-                {belt?.en}
-              </span>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-[26px] leading-none" style={{ ...F_DISPLAY, color: '#00D2FF' }}>{streak}</p>
-              <p className="text-[12px] mt-1" style={{ ...F_LABEL, color: '#b3c4d1' }}>Day streak</p>
-            </div>
-          </div>
-
           {/* Primary ring: total water time + belt progress */}
           <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <div className="relative shrink-0" style={{ width: 104, height: 104 }}>
@@ -1700,7 +1759,7 @@ function HomeTab({
       {/* Latest Session — dark, matches the hero. OJO: fondo oscuro → textos
           CLAROS (antes quedaron en tinta #061C2B y la tarjeta era ilegible). */}
       {latestResult && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
+        <div className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: '1px solid rgba(0,210,255,.18)' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
             <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Latest session</p>
             <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}>
@@ -1772,7 +1831,7 @@ function HomeTab({
         const dayNum = todayD >= startD ? Math.min(totalDays, Math.round((todayD.getTime() - startD.getTime()) / 86400000) + 1) : null;
         const certN = c.coach?.certification_level ? String(c.coach.certification_level).replace(/\D/g, '') : null;
         return (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+          <div className="rounded-lg p-4" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
             <p className="text-[12px]" style={{ ...F_LABEL, color: '#0090B0' }}>
               {dayNum
                 ? `In progress · Day ${dayNum} of ${totalDays}`
@@ -1810,7 +1869,7 @@ function HomeTab({
           las busca y mientras tanto no compiten con nada.
           Solo para quien puede registrar (curso o membresía). */}
       {data.canTrack !== false && (
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0A1628' }}>
+      <div className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: '1px solid rgba(0,210,255,.18)' }}>
         <details className="group">
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
             <span className="inline-flex items-center gap-2 text-[12px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
