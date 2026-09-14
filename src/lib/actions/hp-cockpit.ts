@@ -1081,6 +1081,7 @@ export async function hpListDeepEvaluations(): Promise<{ ok: boolean; error?: st
     const { data, error } = await admin
       .from('hp_deep_evaluations')
       .select('id, eval_kind, eval_date, event_name, round_reached, final_ranking, scores, diagnostico, students(first_name, last_name), coaches(display_name)')
+      .neq('eval_kind', 'completa') // las completas TSS tienen su propia pestaña (hp-eval-full.ts)
       .order('eval_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(30);

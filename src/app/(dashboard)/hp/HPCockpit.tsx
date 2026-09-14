@@ -14,6 +14,7 @@ import {
 } from '@/lib/actions/hp-cockpit';
 import { adminSetHpAccess, adminSearchStudents, adminListAppointments, adminCreateAppointment, adminListHPCoaches, adminSetAppointmentStatus, type AdminAppointmentRow } from '@/lib/actions/program-admin';
 import { elSalvadorToday } from '@/lib/utils/tz';
+import { FullEvals } from './FullEvals';
 import { LayoutDashboard, ClipboardList, CalendarClock, Star, Mail, Users, Waves, BookOpen } from 'lucide-react';
 
 // ─── El cockpit del head coach — réplica de la app HP dentro de BRAIN ───
@@ -718,19 +719,19 @@ const DEEP_DIAG_FIELDS: { key: string; label: string }[] = [
 ];
 
 function EvalTab() {
-  const [mode, setMode] = useState<'rapidas' | 'profundas'>('rapidas');
+  const [mode, setMode] = useState<'rapidas' | 'profundas' | 'completa'>('rapidas');
   return (
     <div className="space-y-3">
-      <div className="flex gap-1.5">
-        {(['rapidas', 'profundas'] as const).map((m) => (
+      <div className="flex gap-1.5 flex-wrap">
+        {(['rapidas', 'profundas', 'completa'] as const).map((m) => (
           <button key={m} type="button" onClick={() => setMode(m)}
             className="px-3.5 py-1.5 rounded-full text-[11px] font-bold"
             style={mode === m ? { background: CYAN, color: '#06202F' } : { background: CARD, color: DIM, border: `1px solid ${BORDER}` }}>
-            {m === 'rapidas' ? 'Rápidas · por pilar' : 'Profundas · competencia'}
+            {m === 'rapidas' ? 'Rápidas · por pilar' : m === 'profundas' ? 'Profundas · competencia' : 'Completa · TSS'}
           </button>
         ))}
       </div>
-      {mode === 'rapidas' ? <QuickEvals /> : <DeepEvals />}
+      {mode === 'rapidas' ? <QuickEvals /> : mode === 'profundas' ? <DeepEvals /> : <FullEvals />}
     </div>
   );
 }
