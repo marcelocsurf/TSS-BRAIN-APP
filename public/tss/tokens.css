@@ -3,8 +3,8 @@
   --tss-navy: #061c2b;
   --tss-ink: #10263b;
   --tss-cyan: #00d2ff;
-  --tss-cream: #f3f0e5;
-  --tss-paper: #f8f5ec;
+  --tss-cream: #e9e2d2; /* Sand del manual de marca v10 (Marcelo 2026-09-14) */
+  --tss-paper: #f7f9fa;
   --tss-white: #ffffff;
   --tss-muted: #55666e;
   --tss-on-dark: #d6e1e7;

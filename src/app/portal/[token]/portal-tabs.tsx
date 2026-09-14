@@ -368,7 +368,7 @@ const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight
 // Línea aprobada (TSS_Design_Handoff, 2026-09-14 · mock de Home): navy, tarjetas
 // crema, títulos grandes Archivo 900, etiquetas mono, botón cyan.
 const H_BIG = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.06 } as const;
-const T_CREAM = '#F3F0E5', T_PAPER = '#F8F5EC', T_INK = '#10263B', T_BORDER = '#DCD7C6', T_MUTED = '#55666E', T_NAVY = '#061C2B';
+const T_CREAM = '#E9E2D2', T_PAPER = '#F7F9FA', T_INK = '#10263B', T_BORDER = '#DCD7C6', T_MUTED = '#55666E', T_NAVY = '#061C2B';
 const T_LABEL = { ...F_LABEL, letterSpacing: '0.08em', fontSize: 12 } as const;
 const creamLabel = (accent: string) => (accent === '#FFD166' ? '#B7791F' : accent === '#06D6A0' ? '#0F8A5F' : '#0A7FA0');
 
@@ -539,7 +539,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
         </div>
         {rows.length > 1 && (
           <button type="button" onClick={() => onGoTo?.('sequence')} className="flex items-center gap-3 w-full text-left rounded-lg px-4 py-3 mt-2.5 text-[15px] font-semibold"
-            style={{ border: '1px solid rgba(0,210,255,.35)', color: '#F8F5EC' }}>
+            style={{ border: '1px solid rgba(0,210,255,.35)', color: '#F7F9FA' }}>
             <Play size={16} strokeWidth={1.75} /> {rows.length - 1} more waiting in Let&apos;s Play <ArrowRight size={15} />
           </button>
         )}
@@ -1216,11 +1216,11 @@ function HomeTab({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[30px] font-black" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>{(student.first_name || '?').slice(0, 1).toUpperCase()}</span>
+            <span className="text-[30px] font-black" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>{(student.first_name || '?').slice(0, 1).toUpperCase()}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[22px] font-black leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>
+          <p className="text-[22px] font-black leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>
             {student.first_name} {student.last_name}
           </p>
           <p className="mt-0.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current level</p>
@@ -1233,7 +1233,7 @@ function HomeTab({
         </div>
         {data.canTrack !== false && (
           <button type="button" onClick={openInbox} aria-label="Notifications" className="relative p-2.5 -m-2.5 shrink-0 self-start">
-            <Bell size={22} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : '#F8F5EC' }} />
+            <Bell size={22} strokeWidth={1.75} style={{ color: unreadMsgs > 0 ? '#00D2FF' : '#F7F9FA' }} />
             {unreadMsgs > 0 && (
               <span className="absolute -top-1 -right-1 rounded-full text-[12px] font-bold flex items-center justify-center"
                 style={{ minWidth: 15, height: 15, background: '#FF6B6B', color: '#061C2B', padding: '0 3px' }}>
@@ -1246,7 +1246,7 @@ function HomeTab({
 
           {(coachFocus || data.nextMove) && (
             <div>
-              <h1 className="text-[36px] mb-3" style={{ ...H_BIG, color: '#F8F5EC' }}>Your next move</h1>
+              <h1 className="text-[36px] mb-3" style={{ ...H_BIG, color: '#F7F9FA' }}>Your next move</h1>
               {/* Una sola cosa en el Home; la lista completa vive en Let's Play.
                   La frase del libro (sessionCue) salió de acá (Marcelo
                   2026-09-11: "mucha info para leer"). */}
@@ -1277,16 +1277,16 @@ function HomeTab({
       {data.canTrack !== false && (
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ border: '1px solid rgba(0,210,255,.35)' }}>
-            <Clock size={26} strokeWidth={1.5} style={{ color: '#F8F5EC' }} />
+            <Clock size={26} strokeWidth={1.5} style={{ color: '#F7F9FA' }} />
             <div className="min-w-0">
-              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>{fmtHm(surf.totalMinutes)}</p>
+              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>{fmtHm(surf.totalMinutes)}</p>
               <p className="mt-1.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Hours surfed</p>
             </div>
           </div>
           <div className="rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ border: '1px solid rgba(0,210,255,.35)' }}>
-            <Flame size={26} strokeWidth={1.5} style={{ color: '#F8F5EC' }} />
+            <Flame size={26} strokeWidth={1.5} style={{ color: '#F7F9FA' }} />
             <div className="min-w-0">
-              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F8F5EC' }}>{streak} {streak === 1 ? 'day' : 'days'}</p>
+              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>{streak} {streak === 1 ? 'day' : 'days'}</p>
               <p className="mt-1.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current streak</p>
             </div>
           </div>
@@ -1434,7 +1434,7 @@ function HomeTab({
       {data.canTrack !== false && (
       <div id="my-progress" className="rounded-lg overflow-hidden" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.25)' }}>
         <div className="px-4 pt-4 flex items-center justify-between gap-3">
-          <h2 className="text-[26px]" style={{ ...H_BIG, color: '#F8F5EC' }}>My progress</h2>
+          <h2 className="text-[26px]" style={{ ...H_BIG, color: '#F7F9FA' }}>My progress</h2>
           <BarChart3 size={22} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
         </div>
 

@@ -17,7 +17,7 @@ import { CIRCLES, CIRCLES_INTRO, type Circle } from '@/lib/sequence-pages/three-
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
 import type { PieceRow } from './SequencePage';
 
-const INK = '#10263B', NAVY = '#061C2B', CYAN = '#00D2FF', MUTED = '#55666E', PAPER = '#F8F5EC', BORDER = '#DCD7C6';
+const INK = '#10263B', NAVY = '#061C2B', CYAN = '#00D2FF', MUTED = '#55666E', PAPER = '#F7F9FA', BORDER = '#DCD7C6';
 const CIRCLE_COLOR: Record<Circle['key'], string> = { body: 'var(--tss-circle-body)', board: 'var(--tss-circle-board)', wave: 'var(--tss-circle-wave)' };
 const SUBTITLE: Record<Circle['key'], string> = { body: 'P · R · C · H — the four movements.', board: 'Connect through your feet.', wave: 'Two energies. One line.' };
 const MONO: React.CSSProperties = { fontFamily: 'var(--tss-mono)', fontSize: 12, fontWeight: 500, letterSpacing: '0.045em', textTransform: 'uppercase' };

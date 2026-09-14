@@ -21,7 +21,7 @@ import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
-const NAVY = '#061C2B', INK = '#10263B', CREAM = '#F3F0E5', PAPER = '#F8F5EC', BORDER = '#DCD7C6', CYAN = '#00D2FF', WHITE = '#FFFFFF';
+const NAVY = '#061C2B', INK = '#10263B', CREAM = '#E9E2D2', PAPER = '#F7F9FA', BORDER = '#DCD7C6', CYAN = '#00D2FF', WHITE = '#FFFFFF';
 const MUTED = '#55666E', ON_DARK = '#D9E4EA';
 const GREEN = '#0F8A5F', GOLD = '#B7791F', VIOLET = '#7C4DFF', RED = '#C62828';
 const GOLD_BRIGHT = '#FFDC33', VIOLET_BRIGHT = '#BA69EE', GREEN_BRIGHT = '#06D6A0';

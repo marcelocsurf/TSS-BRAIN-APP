@@ -405,7 +405,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>{beltLabelShort} · {({ white_belt: 'Beginner', yellow_belt: 'Novice', blue_belt: 'Foundation', purple_belt: 'Emerging', brown_belt: 'Pre-Elite', black_belt: 'Elite' } as Record<string, string>)[activeCourse.key] ?? ''}</span>
           <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: 'rgba(214,225,231,.7)' }}>{data.studentName}</span>
         </div>
-        <h2 className="mt-2 leading-[1.08] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 36, letterSpacing: '-0.022em', color: '#F8F5EC' }}>{activeCourse.label.replace(/ Masterclass$/, '')}</h2>
+        <h2 className="mt-2 leading-[1.08] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 36, letterSpacing: '-0.022em', color: '#F7F9FA' }}>{activeCourse.label.replace(/ Masterclass$/, '')}</h2>
         <p className="mt-1 text-[17px] font-semibold leading-[1.35]" style={{ color: '#D6E1E7' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
         <div className="mt-4 rounded-[8px] p-3" style={{ border: '1px solid rgba(0,210,255,.45)', background: 'rgba(0,210,255,.05)' }}>
           <div className="flex items-baseline justify-between gap-3">
@@ -428,7 +428,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       {nextSeq && (
         <div className="mx-2 mt-4 rounded-[8px] p-4" style={{ background: '#0A2A3A', borderLeft: '4px solid #00D2FF' }}>
           <p className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>Next step</p>
-          <h3 className="mt-1.5 text-[23px] leading-[1.1] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.02em', color: '#F8F5EC' }}>
+          <h3 className="mt-1.5 text-[23px] leading-[1.1] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.02em', color: '#F7F9FA' }}>
             {nextSeq.prefix ? `${nextSeq.prefix} · ` : ''}{nextSeq.name}
           </h3>
           {nextSeq.subtitle && <p className="mt-1.5 text-[14px] leading-[1.4]" style={{ color: '#D6E1E7' }}>{nextSeq.subtitle}</p>}
@@ -436,7 +436,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             {nextSeq.href ? (
               <a href={nextSeq.href} className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[5px] text-[15px] font-black uppercase tracking-[0.035em]" style={{ background: '#00D2FF', color: '#061C2B' }}>Open →</a>
             ) : null}
-            <a href={`/portal/${data.portalToken}?tab=sequence`} className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[5px] text-[15px] font-black uppercase tracking-[0.035em]" style={{ border: '1px solid rgba(214,225,231,.5)', color: '#F8F5EC' }}>Let&apos;s Play</a>
+            <a href={`/portal/${data.portalToken}?tab=sequence`} className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[5px] text-[15px] font-black uppercase tracking-[0.035em]" style={{ border: '1px solid rgba(214,225,231,.5)', color: '#F7F9FA' }}>Let&apos;s Play</a>
           </div>
         </div>
       )}
@@ -794,7 +794,7 @@ function GroupHeader({
       {/* Línea aprobada 2026-09-12: el título del grupo en grande sobre navy
           ("PRE-COURSE"), el conteo en mono, el subtítulo claro. */}
       <div>
-        <h3 className="text-[30px] uppercase leading-[1.08]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.022em', color: '#F8F5EC' }}>{title}</h3>
+        <h3 className="text-[30px] uppercase leading-[1.08]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.022em', color: '#F7F9FA' }}>{title}</h3>
         {eyebrow && <p className="text-[13px] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.045em', color: '#D6E1E7' }}>{eyebrow}</p>}
         {subtitle && <p className="text-[14px] mt-1.5 leading-[1.4]" style={{ color: 'rgba(214,225,231,.75)' }}>{subtitle}</p>}
         {embed && (
@@ -866,7 +866,7 @@ function SectionBlock({
 
   if (onePageHref) {
     return (
-      <a href={onePageHref} className="block mx-2 rounded-[8px] px-3.5 py-3.5" style={{ background: '#F3F0E5', border: '1px solid #DCD7C6', color: '#10263B' }}>
+      <a href={onePageHref} className="block mx-2 rounded-[8px] px-3.5 py-3.5" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#10263B' }}>
         <div className="flex items-center gap-3">
           <Num />
           <div className="flex-1 min-w-0">
@@ -881,7 +881,7 @@ function SectionBlock({
   }
 
   return (
-    <details className="group mx-2 rounded-[8px]" style={{ background: '#F3F0E5', border: '1px solid #DCD7C6', color: '#10263B' }}>
+    <details className="group mx-2 rounded-[8px]" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#10263B' }}>
       <summary className="px-3.5 py-3.5 cursor-pointer list-none">
         <div className="flex items-center gap-3">
           <Num />
@@ -951,7 +951,7 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
       onClick={isLocked ? undefined : onOpen}
       disabled={isLocked}
       className={`w-full px-3 py-3 flex items-center gap-3 text-left rounded-[5px] ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
-      style={{ background: '#F8F5EC', border: '1px solid #DCD7C6', color: '#10263B' }}
+      style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}
     >
       <FileText size={22} strokeWidth={1.75} className="shrink-0" style={{ color: isCompleted ? '#1E9E5A' : '#10263B' }} />
       <div className="flex-1 min-w-0">
