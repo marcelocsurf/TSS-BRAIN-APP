@@ -6,6 +6,9 @@
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
 import { buildWaveGuideSvg, legendItems, type WaveDirection } from '@/lib/sequence-pages/wave-guide-svg';
 
+/** Poner la ruta cuando exista el PNG aprobado; null = ilustración en código. */
+export const WAVE_FACE_IMAGE: string | null = null;
+
 export function WaveGuide({ data, title, waveDirection = 'right', legend = true, legendColor = '#10263B' }: {
   data: WaveBoardData;
   title: string;
@@ -14,7 +17,8 @@ export function WaveGuide({ data, title, waveDirection = 'right', legend = true,
   legend?: boolean;
   legendColor?: string;
 }) {
-  const svg = buildWaveGuideSvg(data, { waveDirection, title });
+  // Ola pintada (cuando Marcelo la apruebe): public/tss/assets/wave-face-right.png. Hasta entonces, la ilustración en código.
+  const svg = buildWaveGuideSvg(data, { waveDirection, title, faceImageHref: WAVE_FACE_IMAGE ?? undefined });
   return (
     <figure className="m-0">
       <div className="rounded-[5px] overflow-hidden" style={{ background: '#061C2B', lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: svg }} />

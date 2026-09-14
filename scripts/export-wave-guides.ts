@@ -8,7 +8,7 @@
 // resoluble (NODE_PATH), también el PNG a 2× (1440×680). Los recorridos salen
 // de src/lib/sequence-pages (fuente de verdad); nada se dibuja a ojo.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { SEQUENCE_PAGES } from '../src/lib/sequence-pages';
 import { buildWaveGuideSvg, type WaveDirection } from '../src/lib/sequence-pages/wave-guide-svg';
@@ -17,6 +17,11 @@ const IDS = ['BB-SEQ-08', 'BB-SEQ-09', 'BB-SEQ-10', 'BB-SEQ-11', 'BB-SEQ-12', 'B
 const out = process.argv[2];
 if (!out) { console.error('destino?'); process.exit(1); }
 mkdirSync(join(out, 'assets'), { recursive: true });
+
+// Ola pintada aprobada (sin textos): si existe, va embebida en cada SVG.
+const FACE_PNG = join(__dirname, '..', 'public', 'tss', 'assets', 'wave-face-right.png');
+const faceImageHref = existsSync(FACE_PNG) ? `data:image/png;base64,${readFileSync(FACE_PNG).toString('base64')}` : undefined;
+if (!faceImageHref) console.warn('sin public/tss/assets/wave-face-right.png: ola dibujada en código');
 
 let Resvg: any = null;
 try { Resvg = require('@resvg/resvg-js').Resvg; } catch { console.warn('sin @resvg/resvg-js: solo SVG'); }
@@ -27,7 +32,7 @@ for (const id of IDS) {
   if (!cfg?.think.board) { console.error(`FALTA el recorrido (think.board) de ${id}`); continue; }
   for (const direction of ['right', 'left'] as WaveDirection[]) {
     const slug = `${id.toLowerCase()}-wave-${direction}`;
-    const svg = buildWaveGuideSvg(cfg.think.board, { waveDirection: direction, legend: true, fixedSize: true, title: `${cfg.title} · wave ${direction}` });
+    const svg = buildWaveGuideSvg(cfg.think.board, { waveDirection: direction, legend: true, fixedSize: true, faceImageHref, title: `${cfg.title} · wave ${direction}` });
     writeFileSync(join(out, 'assets', `${slug}.svg`), svg);
     let png: string | null = null;
     if (Resvg) {

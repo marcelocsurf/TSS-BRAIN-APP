@@ -52,6 +52,9 @@ export interface WaveGuideOptions {
   plain?: boolean;
   /** width/height fijos en el <svg> (archivos exportados). En el app se omiten: escala al ancho de la tarjeta. */
   fixedSize?: boolean;
+  /** Ola de fondo pintada (PNG 1440×600 aprobado por Marcelo, sin textos ni líneas): reemplaza la ilustración en
+   *  código. Se espeja junto con la geometría. URL pública (app) o data URI (export). */
+  faceImageHref?: string;
 }
 
 // ── Geometría base (ola hacia la derecha; se espeja todo el grupo) ──
@@ -340,7 +343,9 @@ export function buildWaveGuideSvg(data: WaveBoardData, opts: WaveGuideOptions = 
   const height = H + legendH;
   const geo = dir === 'left' ? ` transform="translate(${W},0) scale(-1,1)"` : '';
   const title = opts.title ? `<title>${esc(opts.title)}</title>` : '';
-  const illustration = opts.plain ? `<rect x="0" y="0" width="${W}" height="${H}" fill="#061C2B"/><g id="wg-zone-bands" fill="#FFFFFF">${[0, 1, 2, 3].map((i) => `<path d="M${FACE_X0},${f(zoneLineY(i, FACE_X0))} L${W},${f(zoneLineY(i, W))} L${W},${f(zoneLineY(i + 1, W))} L${FACE_X0},${f(zoneLineY(i + 1, FACE_X0))} Z" opacity="${i % 2 ? '.04' : '.07'}"/>`).join('')}</g>` : layers.face() + layers.foam();
+  const illustration = opts.faceImageHref
+    ? `<rect x="0" y="0" width="${W}" height="${H}" fill="#061C2B"/><image id="wg-face-image" href="${esc(opts.faceImageHref)}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>`
+    : opts.plain ? `<rect x="0" y="0" width="${W}" height="${H}" fill="#061C2B"/><g id="wg-zone-bands" fill="#FFFFFF">${[0, 1, 2, 3].map((i) => `<path d="M${FACE_X0},${f(zoneLineY(i, FACE_X0))} L${W},${f(zoneLineY(i, W))} L${W},${f(zoneLineY(i + 1, W))} L${FACE_X0},${f(zoneLineY(i + 1, FACE_X0))} Z" opacity="${i % 2 ? '.04' : '.07'}"/>`).join('')}</g>` : layers.face() + layers.foam();
   const size = opts.fixedSize ? ` width="${W}" height="${height}"` : ` style="display:block;width:100%;height:auto"`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}"${size} role="img" data-wave-direction="${dir}">${title}
 <defs>
