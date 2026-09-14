@@ -137,47 +137,57 @@ export const DEFAULT_ZONE_LABELS: [string, string, string, string] = ['Z4 · hig
 
 /** Capas reutilizables. Cada una devuelve un <g id="wg-…">. */
 export const layers = {
-  /** Fondo ilustrado: cara con degradé, líneas de energía, labio y flat. */
+  /** Fondo ilustrado: cara con degradé y brillo desde el pocket, arcos de energía
+   *  (las costillas del tubo), anillos de la cara, labio brillante y flat. */
   face(): string {
     const top0 = crestY(0), top1 = crestY(W);
     const facePath = `M0,${f(top0)} L${W},${f(top1)} L${W},${FLAT_Y} L0,${FLAT_Y} Z`;
-    // Líneas de energía: arcos que bajan de la cresta al flat, inclinados hacia el pocket.
-    let grid = '';
-    for (let x = FACE_X0 + 20; x <= FACE_X1 + 40; x += 46) {
-      const t = crestY(x);
-      grid += `<path d="M${f(x + 26)},${f(t + 1)} Q${f(x - 4)},${f((t + FLAT_Y) / 2)} ${f(x - 12)},${FLAT_Y}" />`;
+    // Costillas: salen de la cresta y bajan curvándose hacia el pocket, como el interior de un tubo.
+    let ribs = '';
+    for (let x = FACE_X0 - 10; x <= W + 80; x += 38) {
+      const t = crestY(Math.min(x, W));
+      ribs += `<path d="M${f(x + 30)},${f(t)} C${f(x + 6)},${f(t + (FLAT_Y - t) * 0.42)} ${f(x - 40)},${f(t + (FLAT_Y - t) * 0.78)} ${f(x - 78)},${FLAT_Y}" />`;
     }
-    // Contornos horizontales suaves (la textura de la cara).
-    let contours = '';
-    for (let i = 1; i <= 7; i++) {
-      const y0 = top0 + (FLAT_Y - top0) * (i / 8), y1 = top1 + (FLAT_Y - top1) * (i / 8);
-      contours += `<path d="M0,${f(y0)} C${W * 0.35},${f(y0 + 6)} ${W * 0.65},${f(y1 - 6)} ${W},${f(y1)}" />`;
+    // Anillos: bandas que siguen la cara y se hunden hacia el pocket.
+    let rings = '';
+    for (let i = 1; i <= 9; i++) {
+      const q = i / 10;
+      const y0 = top0 + (FLAT_Y - top0) * q, y1 = top1 + (FLAT_Y - top1) * q;
+      rings += `<path d="M0,${f(y0 + 10)} C${f(W * 0.18)},${f(y0 - 4)} ${f(W * 0.55)},${f(y1 - 10)} ${W},${f(y1)}" />`;
     }
     return `<g id="wg-face">
-  <rect x="0" y="0" width="${W}" height="${H}" fill="#061C2B"/>
+  <rect x="0" y="0" width="${W}" height="${H}" fill="#04131F"/>
   <path d="${facePath}" fill="url(#wg-face-grad)"/>
-  <g stroke="#7DE3FF" stroke-width="1" fill="none" opacity=".22">${grid}</g>
-  <g stroke="#9FE8FF" stroke-width="1" fill="none" opacity=".14">${contours}</g>
-  <path d="M0,${f(top0)} L${W},${f(top1)}" stroke="#FFFFFF" stroke-width="2.5" opacity=".9"/>
-  <path d="M0,${f(top0 + 4)} L${W},${f(top1 + 4)}" stroke="#BDEFFF" stroke-width="5" opacity=".18"/>
-  <rect x="0" y="${FLAT_Y}" width="${W}" height="${H - FLAT_Y}" fill="#04121D"/>
-  <path d="M0,${FLAT_Y} L${W},${FLAT_Y}" stroke="#3AA7D8" stroke-width="1.5" opacity=".55"/>
-  <path d="M0,${FLAT_Y + 14} C120,${FLAT_Y + 8} 240,${FLAT_Y + 20} 360,${FLAT_Y + 12} S600,${FLAT_Y + 6} ${W},${FLAT_Y + 14}" stroke="#3AA7D8" stroke-width="1" fill="none" opacity=".25"/>
+  <path d="${facePath}" fill="url(#wg-pocket-glow)"/>
+  <g stroke="#8FE9FF" stroke-width="1.1" fill="none" opacity=".28">${ribs}</g>
+  <g stroke="#BDEFFF" stroke-width="1" fill="none" opacity=".16">${rings}</g>
+  <path d="M0,${f(top0 + 3)} L${W},${f(top1 + 3)}" stroke="#DFF7FF" stroke-width="7" opacity=".16"/>
+  <path d="M0,${f(top0)} L${W},${f(top1)}" stroke="#FFFFFF" stroke-width="3" opacity=".95" stroke-linecap="round"/>
+  <path d="M0,${f(top0 + 12)} C${f(W * 0.3)},${f(top0 + 20 + (top1 - top0) * 0.3)} ${f(W * 0.7)},${f(top1 + 6)} ${W},${f(top1 + 14)}" stroke="#BDEFFF" stroke-width="2" fill="none" opacity=".35"/>
+  <rect x="0" y="${FLAT_Y}" width="${W}" height="${H - FLAT_Y}" fill="url(#wg-flat-grad)"/>
+  <path d="M0,${FLAT_Y} L${W},${FLAT_Y}" stroke="#5FC8F0" stroke-width="1.5" opacity=".7"/>
+  <path d="M0,${FLAT_Y + 12} C120,${FLAT_Y + 6} 240,${FLAT_Y + 18} 360,${FLAT_Y + 10} S600,${FLAT_Y + 4} ${W},${FLAT_Y + 12}" stroke="#5FC8F0" stroke-width="1" fill="none" opacity=".3"/>
+  <path d="M0,${FLAT_Y + 26} C160,${FLAT_Y + 20} 300,${FLAT_Y + 32} 460,${FLAT_Y + 24} S640,${FLAT_Y + 18} ${W},${FLAT_Y + 26}" stroke="#5FC8F0" stroke-width="1" fill="none" opacity=".18"/>
 </g>`;
   },
 
-  /** Espuma: el labio rompiendo en la esquina del pocket y la espuma bajando. */
+  /** Espuma: el labio curvándose y rompiendo en la esquina del pocket, spray y la cascada blanca que baja al flat. */
   foam(): string {
     const t = crestY(0);
+    let spray = '';
+    // Gotas de spray sobre el labio, más chicas hacia el hombro.
+    const drops: [number, number, number, number][] = [[18, -30, 9, .95], [40, -40, 12, .9], [64, -34, 8, .92], [84, -22, 10, .95], [104, -14, 6, .9], [122, -6, 4.5, .85], [140, 0, 3, .8], [156, 6, 2.2, .7], [52, -52, 4, .7], [92, -38, 3.5, .75], [30, -12, 5, .85], [8, -46, 6, .8], [116, -28, 2.5, .7], [170, 12, 1.6, .6]];
+    for (const [dx, dy, r, o] of drops) spray += `<circle cx="${dx}" cy="${f(t + dy)}" r="${r}" opacity="${o}"/>`;
+    // Burbujas en la cascada.
+    const bubbles: [number, number, number, number][] = [[14, 60, 8, .45], [34, 92, 6, .4], [10, 120, 10, .38], [40, 150, 5, .35], [22, 190, 9, .32], [46, 215, 4, .3], [8, 230, 6, .3]];
+    for (const [dx, dy, r, o] of bubbles) spray += `<circle cx="${dx}" cy="${f(t + dy)}" r="${r}" opacity="${o}"/>`;
     return `<g id="wg-foam">
-  <path d="M-6,${f(t - 14)} C30,${f(t - 30)} 90,${f(t - 26)} 128,${f(t + 6)} C112,${f(t + 26)} 84,${f(t + 34)} 60,${f(t + 44)} C40,${f(t + 30)} 12,${f(t + 12)} -6,${f(t + 10)} Z" fill="#EAF7FF" opacity=".92"/>
-  <path d="M-6,${f(t + 4)} C22,${f(t + 30)} 46,${f(t + 70)} 52,${f(FLAT_Y - 4)} L-6,${f(FLAT_Y)} Z" fill="#FFFFFF" opacity=".22"/>
-  <path d="M-6,${f(t + 30)} C14,${f(t + 60)} 26,${f(t + 120)} 30,${f(FLAT_Y)} L-6,${f(FLAT_Y)} Z" fill="#FFFFFF" opacity=".28"/>
-  <g fill="#FFFFFF">
-    <circle cx="96" cy="${f(t - 8)}" r="9" opacity=".95"/><circle cx="118" cy="${f(t - 2)}" r="6" opacity=".9"/><circle cx="136" cy="${f(t + 6)}" r="3.5" opacity=".8"/>
-    <circle cx="72" cy="${f(t - 18)}" r="7" opacity=".9"/><circle cx="48" cy="${f(t - 20)}" r="10" opacity=".85"/><circle cx="24" cy="${f(t - 12)}" r="8" opacity=".9"/>
-    <circle cx="150" cy="${f(t + 14)}" r="2" opacity=".7"/><circle cx="60" cy="${f(t + 60)}" r="5" opacity=".35"/><circle cx="34" cy="${f(t + 100)}" r="7" opacity=".3"/><circle cx="18" cy="${f(t + 160)}" r="9" opacity=".28"/>
-  </g>
+  <path d="M-10,${f(t + 40)} C10,${f(t + 20)} 30,${f(t + 60)} 46,${f(t + 110)} C58,${f(t + 150)} 50,${f(t + 200)} 62,${f(FLAT_Y + 2)} L-10,${f(FLAT_Y + 2)} Z" fill="url(#wg-foam-grad)"/>
+  <path d="M-10,${f(t + 10)} C6,${f(t + 40)} 22,${f(t + 90)} 26,${f(t + 140)} C30,${f(t + 190)} 20,${f(t + 220)} 30,${f(FLAT_Y + 2)} L-10,${f(FLAT_Y + 2)} Z" fill="#FFFFFF" opacity=".5"/>
+  <path d="M-10,${f(t - 22)} C24,${f(t - 44)} 76,${f(t - 40)} 118,${f(t - 14)} C142,${f(t)} 156,${f(t + 8)} 168,${f(t + 12)} C150,${f(t + 26)} 120,${f(t + 34)} 94,${f(t + 48)} C72,${f(t + 60)} 56,${f(t + 62)} 44,${f(t + 56)} C36,${f(t + 34)} 14,${f(t + 8)} -10,${f(t + 4)} Z" fill="#EEF9FF" opacity=".96"/>
+  <path d="M0,${f(t - 8)} C30,${f(t - 20)} 70,${f(t - 18)} 104,${f(t - 2)} C90,${f(t + 12)} 66,${f(t + 22)} 48,${f(t + 30)} C36,${f(t + 16)} 18,${f(t + 4)} 0,${f(t)} Z" fill="#FFFFFF" opacity=".9"/>
+  <path d="M44,${f(t + 56)} C60,${f(t + 68)} 90,${f(t + 62)} 118,${f(t + 40)}" stroke="#9FDFF6" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/>
+  <g fill="#FFFFFF">${spray}</g>
 </g>`;
   },
 
@@ -246,23 +256,40 @@ function labelsLayer(data: WaveBoardData, dir: WaveDirection): string {
   for (let a = 0; a < 360; a += 30) obstacles.push([px + 26 * Math.cos(a), py + 26 * Math.sin(a)]);
   const CH = 7.3; // ancho aprox. por carácter a 12px mono
   const free = (x0: number, y0: number, w: number, h: number) => !obstacles.some(([ox, oy]) => ox > x0 - 8 && ox < x0 + w + 8 && oy > y0 - 6 && oy < y0 + h + 6);
-  let zones = '';
-  for (let i = 0; i < 4; i++) {
-    const text = zl[i];
-    const w = text.length * CH + 12, h = 18;
-    // candidatos: (x del borde izquierdo de la pastilla en pantalla, fracción de altura dentro de la zona)
-    const xs = right ? [FACE_X0 + 10, W - 10 - w, W / 2 - w / 2] : [W - FACE_X0 - 10 - w, 10, W / 2 - w / 2];
-    const fr = [0.5, 0.3, 0.7, 0.15, 0.85];
-    let placed: [number, number] | null = null;
-    outer: for (const x0 of xs) for (const q of fr) {
-      const gx = mx(x0 + w / 2);
+  const CHW = (t: string) => t.length * CH + 12, LH = 18;
+  const fr = [0.5, 0.3, 0.7, 0.15, 0.85];
+  const maxW = Math.max(...zl.map(CHW));
+  // Columnas candidatas (borde izquierdo de la pastilla): junto al pocket, hombro, medio.
+  const cols = right ? [FACE_X0 + 10, W - 10 - maxW, W / 2 - maxW / 2] : [W - FACE_X0 - 10 - maxW, 10, W / 2 - maxW / 2];
+  type Pl = [number, number];
+  const tryCol = (x0: number): (Pl | null)[] => zl.map((text, i) => {
+    const w = CHW(text);
+    const gx = mx(x0 + w / 2);
+    for (const q of fr) {
       const yc = zoneLineY(i, gx) + (zoneLineY(i + 1, gx) - zoneLineY(i, gx)) * q;
-      if (free(x0, yc - h / 2, w, h)) { placed = [x0, yc]; break outer; }
+      if (free(x0, yc - LH / 2, w, LH)) return [x0, yc];
     }
-    if (!placed) { const gx = mx(xs[0] + w / 2); placed = [xs[0], (zoneLineY(i, gx) + zoneLineY(i + 1, gx)) / 2]; }
+    return null;
+  });
+  // La columna con más etiquetas libres gana (misma x para las cuatro = ordenado).
+  let best = tryCol(cols[0]), bestN = best.filter(Boolean).length;
+  for (const c of cols.slice(1)) { const r = tryCol(c); const n = r.filter(Boolean).length; if (n > bestN) { best = r; bestN = n; } }
+  let zones = '';
+  zl.forEach((text, i) => {
+    const w = CHW(text);
+    let placed = best[i];
+    if (!placed) {
+      // Esa zona no entra en la columna: buscar en las otras columnas; si no, la columna elegida en el medio.
+      outer: for (const x0 of cols) for (const q of fr) {
+        const gx = mx(x0 + w / 2);
+        const yc = zoneLineY(i, gx) + (zoneLineY(i + 1, gx) - zoneLineY(i, gx)) * q;
+        if (free(x0, yc - LH / 2, w, LH)) { placed = [x0, yc]; break outer; }
+      }
+      if (!placed) { const x0 = cols[0]; const gx = mx(x0 + w / 2); placed = [x0, (zoneLineY(i, gx) + zoneLineY(i + 1, gx)) / 2]; }
+    }
     const [x0, yc] = placed;
-    zones += `<g transform="translate(${f(x0)},${f(yc)})"><rect x="0" y="-9" width="${f(w)}" height="18" rx="4" fill="#061C2B" opacity=".62"/><text x="6" y="4">${esc(text)}</text></g>`;
-  }
+    zones += `<g transform="translate(${f(x0)},${f(yc)})"><rect x="0" y="-9" width="${f(w)}" height="18" rx="4" fill="#061C2B" opacity=".66"/><text x="6" y="4">${esc(text)}</text></g>`;
+  });
   const pLabelX = right ? px + 34 : px - 34;
   const pocket = `<path d="M${f(right ? px + 16 : px - 16)},${f(py - 6)} L${f(right ? px + 28 : px - 28)},${f(py - 16)} L${f(pLabelX)},${f(py - 16)}" stroke="#FFFFFF" stroke-width="1.2" fill="none" opacity=".9"/>
   <text x="${f(pLabelX + (right ? 4 : -4))}" y="${f(py - 12)}" text-anchor="${right ? 'start' : 'end'}" fill="#FFFFFF" font-weight="700">POCKET</text>`;
@@ -318,9 +345,23 @@ export function buildWaveGuideSvg(data: WaveBoardData, opts: WaveGuideOptions = 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}"${size} role="img" data-wave-direction="${dir}">${title}
 <defs>
   <linearGradient id="wg-face-grad" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#2C8DD1"/>
-    <stop offset=".35" stop-color="#0F4F8A"/>
-    <stop offset="1" stop-color="#072B4B"/>
+    <stop offset="0" stop-color="#3FA9E6"/>
+    <stop offset=".22" stop-color="#1B6FB5"/>
+    <stop offset=".6" stop-color="#0B3F73"/>
+    <stop offset="1" stop-color="#062A4C"/>
+  </linearGradient>
+  <radialGradient id="wg-pocket-glow" cx="0.12" cy="0.1" r="0.75">
+    <stop offset="0" stop-color="#9FE8FF" stop-opacity=".55"/>
+    <stop offset=".35" stop-color="#3FA9E6" stop-opacity=".18"/>
+    <stop offset="1" stop-color="#062A4C" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="wg-flat-grad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#0A2E4E"/>
+    <stop offset="1" stop-color="#04131F"/>
+  </linearGradient>
+  <linearGradient id="wg-foam-grad" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/>
+    <stop offset="1" stop-color="#CDEFFF" stop-opacity=".15"/>
   </linearGradient>
   <clipPath id="wg-clip"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath>
 </defs>
