@@ -148,7 +148,7 @@ export function LinkedTrainingFlow({
     return (
       <div className="text-center py-16">
         <Target size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2" style={{ color: CYAN }} />
-        <p className="text-gray-500 text-sm">Loading your mission…</p>
+        <p className="text-[#55666E] text-sm">Loading your mission…</p>
       </div>
     );
   }
@@ -157,7 +157,7 @@ export function LinkedTrainingFlow({
     return (
       <div className="text-center py-12">
         <p className="text-red-600 mb-2">{errorMsg || 'Something went wrong'}</p>
-        <button onClick={onClearIncoming} className="text-sm underline text-gray-600">← Back to Train</button>
+        <button onClick={onClearIncoming} className="text-sm underline text-[#55666E]">← Back to Train</button>
       </div>
     );
   }
@@ -173,7 +173,7 @@ export function LinkedTrainingFlow({
     return (
       <Shell drill={drill} onCancel={onClearIncoming} step={1}>
         {/* Misión: la protagonista, pre-cargada de My Sequence */}
-        <div className="rounded-2xl p-4" style={{ background: INK }}>
+        <div className="rounded-lg p-4" style={{ background: INK }}>
           <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>
             Today’s {isMission ? 'mission (in water)' : 'drill (dry land)'} · {drill.step_id}
           </p>
@@ -194,7 +194,7 @@ export function LinkedTrainingFlow({
         {/* Check de seguridad — 4 toques, 4 respuestas pensadas. Cada sesión. */}
         {isMission && (
           <div className="space-y-1.5">
-            <p className="text-[9px] text-gray-400" style={F_M}>Safety check · every session</p>
+            <p className="text-[9px] text-[#55666E]" style={F_M}>Safety check · every session</p>
             {SAFETY_CHECKS.map((c) => {
               const on = checks[c.key];
               return (
@@ -202,8 +202,8 @@ export function LinkedTrainingFlow({
                   key={c.key}
                   type="button"
                   onClick={() => setChecks((p) => ({ ...p, [c.key]: !p[c.key] }))}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-[1.5px] text-left transition-colors active:scale-[0.99]"
-                  style={on ? { borderColor: GREEN, background: 'rgba(6,214,160,.08)' } : { borderColor: '#e5e7eb', background: '#fff' }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-[5px] border-[1.5px] text-left transition-colors active:scale-[0.99]"
+                  style={on ? { borderColor: GREEN, background: 'rgba(6,214,160,.08)' } : { borderColor: '#DCD7C6', background: '#F7F9FA' }}
                 >
                   <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold"
                     style={on ? { background: GREEN, color: INK } : { border: '1.5px solid #d1d5db', color: 'transparent' }}>✓</span>
@@ -212,16 +212,16 @@ export function LinkedTrainingFlow({
               );
             })}
             {!checks.level && (
-              <p className="text-[11px] leading-snug rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
+              <p className="text-[11px] leading-snug rounded-[5px] px-3 py-2" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
                 If today isn’t safe for your level, it’s not your day — the ocean will be here tomorrow.
               </p>
             )}
 
             {/* Análisis profundo: para el que quiere leer el mar en serio */}
-            <details className="rounded-xl border border-gray-200 bg-white">
-              <summary className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer text-[11px] text-gray-500 select-none" style={F_M}>
+            <details className="rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA]">
+              <summary className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer text-[11px] text-[#55666E] select-none" style={F_M}>
                 <span className="inline-flex items-center gap-1.5"><Waves size={12} /> Deep venue analysis (optional)</span>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-[#55666E]" />
               </summary>
               <div className="px-3.5 pb-3.5 space-y-3">
                 <Picker label="Wave size" options={WAVE_CONDITIONS} value={waveConditions} onChange={setWaveConditions} cols={3} />
@@ -230,7 +230,7 @@ export function LinkedTrainingFlow({
                 <Picker label="Crowd" options={CROWD_OPTIONS} value={crowdLevel} onChange={setCrowdLevel} cols={2} />
                 <textarea value={venueNotes} onChange={(e) => setVenueNotes(e.target.value)} rows={2}
                   placeholder="Notes about today’s conditions…"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm" />
               </div>
             </details>
           </div>
@@ -239,7 +239,7 @@ export function LinkedTrainingFlow({
         {/* Tiempo + reps, con lo esencial a un toque */}
         <div className="space-y-3">
           <div>
-            <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Clock size={11} className="inline mr-1 -mt-0.5" />Time on this</p>
+            <p className="text-[9px] text-[#55666E] mb-1.5" style={F_M}><Clock size={11} className="inline mr-1 -mt-0.5" />Time on this</p>
             <div className="grid grid-cols-4 gap-2">
               {[10, 20, 30, 45].map((min) => (
                 <Pill key={min} active={plannedDuration === min} onClick={() => setPlannedDuration(min)} label={`${min} min`} />
@@ -247,21 +247,21 @@ export function LinkedTrainingFlow({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col px-3 py-2 border border-gray-200 rounded-xl bg-white">
-              <span className="text-[9px] text-gray-400" style={F_M}>Custom min</span>
+            <label className="flex flex-col px-3 py-2 border border-[#DCD7C6] rounded-[5px] bg-[#F7F9FA]">
+              <span className="text-[9px] text-[#55666E]" style={F_M}>Custom min</span>
               <input type="number" min={1} max={180} value={plannedDuration}
                 onChange={(e) => setPlannedDuration(parseInt(e.target.value, 10) || 0)}
                 className="text-sm outline-none bg-transparent" />
             </label>
-            <label className="flex flex-col px-3 py-2 border border-gray-200 rounded-xl bg-white">
-              <span className="text-[9px] text-gray-400" style={F_M}><Repeat size={10} className="inline mr-1 -mt-0.5" />Reps target</span>
+            <label className="flex flex-col px-3 py-2 border border-[#DCD7C6] rounded-[5px] bg-[#F7F9FA]">
+              <span className="text-[9px] text-[#55666E]" style={F_M}><Repeat size={10} className="inline mr-1 -mt-0.5" />Reps target</span>
               <input type="number" min={1} max={100} value={plannedReps}
                 onChange={(e) => setPlannedReps(parseInt(e.target.value, 10) || 0)}
                 className="text-sm outline-none bg-transparent" />
             </label>
           </div>
           {lastHint?.weakest && (
-            <div className="rounded-xl p-3 border" style={lastHint.weakest.result === 'not_met'
+            <div className="rounded-[5px] p-3 border" style={lastHint.weakest.result === 'not_met'
               ? { background: 'rgba(255,107,107,.12)', borderColor: '#FF6B6B99' }
               : { background: 'rgba(255,209,102,.16)', borderColor: `${GOLD}99` }}>
               <p className="text-[9px]" style={{ ...F_M, color: lastHint.weakest.result === 'not_met' ? '#B4232C' : '#7a5c00' }}>
@@ -280,31 +280,31 @@ export function LinkedTrainingFlow({
               )}
             </div>
           )}
-          <details className="rounded-xl border border-gray-200 bg-white" open={objectiveOpen}
+          <details className="rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA]" open={objectiveOpen}
             onToggle={(e) => setObjectiveOpen((e.currentTarget as HTMLDetailsElement).open)}>
-            <summary className="px-3.5 py-2.5 cursor-pointer text-[11px] text-gray-500 select-none" style={F_M}>
+            <summary className="px-3.5 py-2.5 cursor-pointer text-[11px] text-[#55666E] select-none" style={F_M}>
               <Target size={12} className="inline mr-1.5 -mt-0.5" />Specific objective (optional)
             </summary>
             <div className="px-3.5 pb-3">
               <textarea value={intention} onChange={(e) => setIntention(e.target.value)} rows={2}
                 placeholder="e.g. posture, back knee forward, chest forward, scapula…"
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm" />
             </div>
           </details>
         </div>
 
         <div className="flex gap-2.5 pt-1">
-          <button onClick={onClearIncoming} className="flex-1 py-3.5 rounded-full border border-gray-300 text-sm font-medium text-gray-600 active:scale-[0.98]">
+          <button onClick={onClearIncoming} className="flex-1 py-3.5 rounded-full border border-[#DCD7C6] text-sm font-medium text-[#55666E] active:scale-[0.98]">
             Cancel
           </button>
           <button onClick={() => setPhase('ready')} disabled={!canStart}
             className="flex-[2] py-3.5 rounded-full text-[11px] transition-all active:scale-[0.98] disabled:opacity-40"
-            style={{ ...F_M, background: canStart ? CYAN : '#e5e7eb', color: INK, fontWeight: 700 }}>
+            style={{ ...F_M, background: canStart ? CYAN : '#DCD7C6', color: INK, fontWeight: 700 }}>
             I’m ready →
           </button>
         </div>
         {isMission && !allSafe && (
-          <p className="text-[11px] text-gray-400 text-center">Answer the 4 safety questions to continue.</p>
+          <p className="text-[11px] text-[#55666E] text-center">Answer the 4 safety questions to continue.</p>
         )}
       </Shell>
     );
@@ -314,7 +314,7 @@ export function LinkedTrainingFlow({
   if (phase === 'ready') {
     return (
       <Shell drill={drill} onCancel={onClearIncoming} step={2}>
-        <div className="rounded-2xl p-5 text-center" style={{ background: INK }}>
+        <div className="rounded-lg p-5 text-center" style={{ background: INK }}>
           <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>The Surf Sequence</p>
           <p className="text-[24px] mt-2" style={{ ...F_D, color: PAPER }}>Now go practice</p>
           <p className="text-[12.5px] mt-2 leading-relaxed" style={{ color: 'rgba(247,249,250,.7)' }}>
@@ -323,11 +323,11 @@ export function LinkedTrainingFlow({
               : 'Execute the drill on land. When you finish your reps, come back and evaluate.'}
           </p>
           <div className="grid grid-cols-2 gap-2.5 mt-4">
-            <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(247,249,250,.07)' }}>
+            <div className="rounded-[5px] p-3 text-left" style={{ background: 'rgba(247,249,250,.07)' }}>
               <p className="text-[8px]" style={{ ...F_M, color: 'rgba(247,249,250,.5)' }}>Planned</p>
               <p className="text-[15px] font-bold mt-0.5" style={{ color: PAPER }}>{plannedDuration} min</p>
             </div>
-            <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(247,249,250,.07)' }}>
+            <div className="rounded-[5px] p-3 text-left" style={{ background: 'rgba(247,249,250,.07)' }}>
               <p className="text-[8px]" style={{ ...F_M, color: 'rgba(247,249,250,.5)' }}>Reps target</p>
               <p className="text-[15px] font-bold mt-0.5" style={{ color: PAPER }}>{plannedReps}</p>
             </div>
@@ -340,8 +340,8 @@ export function LinkedTrainingFlow({
         {/* El plan completo a la vista: qué va a hacer y qué cuenta como
             lograrlo — con esto decide si ancla la mente o rema directo. */}
         {successCriteria.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-3.5">
-            <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Check size={11} className="inline mr-1 -mt-0.5" />Today’s plan · what success looks like</p>
+          <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-3.5">
+            <p className="text-[9px] text-[#55666E] mb-1.5" style={F_M}><Check size={11} className="inline mr-1 -mt-0.5" />Today’s plan · what success looks like</p>
             <ul className="space-y-1">
               {successCriteria.map((sc, i) => (
                 <li key={i} className="text-[12px] leading-snug flex gap-2" style={{ color: INK }}>
@@ -351,10 +351,10 @@ export function LinkedTrainingFlow({
               ))}
             </ul>
             {isMission && (
-              <p className="text-[10.5px] text-gray-400 mt-2">Your coach confirms it when you train together.</p>
+              <p className="text-[10.5px] text-[#55666E] mt-2">Your coach confirms it when you train together.</p>
             )}
             {drill.key_words && drill.key_words.length > 0 && (
-              <p className="text-[10.5px] text-gray-400 mt-2 pt-2 border-t border-gray-100">
+              <p className="text-[10.5px] text-[#55666E] mt-2 pt-2 border-t border-[#DCD7C6]">
                 Keys: {drill.key_words.join(' · ')}
               </p>
             )}
@@ -363,7 +363,7 @@ export function LinkedTrainingFlow({
 
         {/* Warm-up: un toque, no un paso */}
         <div>
-          <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Dumbbell size={11} className="inline mr-1 -mt-0.5" />Warm-up · one tap</p>
+          <p className="text-[9px] text-[#55666E] mb-1.5" style={F_M}><Dumbbell size={11} className="inline mr-1 -mt-0.5" />Warm-up · one tap</p>
           <div className="flex flex-wrap gap-1.5">
             {warmupOptions.map((w) => (
               <Chip key={w.value} active={warmUp === w.value} onClick={() => setWarmUp(w.value)} label={w.label} />
@@ -372,7 +372,7 @@ export function LinkedTrainingFlow({
           </div>
           {warmUp === 'custom' && (
             <input value={warmUpCustom} onChange={(e) => setWarmUpCustom(e.target.value)} autoFocus
-              placeholder="Describe your warm-up…" className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+              placeholder="Describe your warm-up…" className="mt-2 w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm" />
           )}
         </div>
 
@@ -389,7 +389,7 @@ export function LinkedTrainingFlow({
           style={{ ...F_M, background: GOLD, color: INK, fontWeight: 700 }}>
           <Check size={16} strokeWidth={2.5} /> I finished — evaluate now
         </button>
-        <button onClick={() => setPhase('plan')} className="w-full py-1 text-[11px] text-gray-400">← Back to plan</button>
+        <button onClick={() => setPhase('plan')} className="w-full py-1 text-[11px] text-[#55666E]">← Back to plan</button>
       </Shell>
     );
   }
@@ -464,7 +464,7 @@ export function LinkedTrainingFlow({
         <div>
           <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
           <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Ready to take it to the water?'}</h3>
-          <p className="text-[12.5px] text-gray-500 mt-1">
+          <p className="text-[12.5px] text-[#55666E] mt-1">
             {isMission
               ? 'Three taps: your star, your focus, how it felt. Check the details only if you want to.'
               : 'A drill is practice, not a test. One honest answer.'}
@@ -477,13 +477,13 @@ export function LinkedTrainingFlow({
                 La única pregunta es esa. Sin "casi": o vas al agua o seguís. */}
             {([
               { key: 'yes', label: 'Yes, ready', sub: 'Take it to the mission', bg: GREEN, fg: INK },
-              { key: 'not_yet', label: 'Not yet', sub: 'Stay in the drill', bg: '#FF6B6B', fg: '#fff' },
+              { key: 'not_yet', label: 'Not yet', sub: 'Stay in the drill', bg: '#FF6B6B', fg: '#F7F9FA' },
             ] as const).map((o) => {
               const sel = automaticity === o.key;
               return (
                 <button key={o.key} onClick={() => setAutomaticity(o.key)}
-                  className="py-3 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 px-1"
-                  style={sel ? { background: o.bg, borderColor: o.bg, color: o.fg } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                  className="py-3 rounded-[5px] border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5 px-1"
+                  style={sel ? { background: o.bg, borderColor: o.bg, color: o.fg } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
                   <span className="text-[12px] font-bold leading-tight text-center">{o.label}</span>
                   <span className="text-[9px] leading-tight text-center opacity-80">{o.sub}</span>
                 </button>
@@ -499,8 +499,8 @@ export function LinkedTrainingFlow({
               const sel = executionRating === n;
               return (
                 <button key={n} aria-pressed={sel} onClick={() => setExecutionRating(n)}
-                  className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
-                  style={sel ? { background: GOLD, borderColor: GOLD, color: INK } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                  className="py-2.5 rounded-[5px] border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
+                  style={sel ? { background: GOLD, borderColor: GOLD, color: INK } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
                   <span className="text-[12px] leading-none">{'★'.repeat(n)}</span>
                   <span className="text-[8px] leading-tight">{labels[n - 1]}</span>
                 </button>
@@ -511,15 +511,15 @@ export function LinkedTrainingFlow({
 
         {isMission && (<>
             <div>
-              <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
+              <p className="text-[9px] text-[#55666E] mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
               <div className="grid grid-cols-4 gap-1.5">
                 {[0, 1, 2, 3].map((n) => {
                   const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
                   const sel = focusRating === n;
                   return (
                     <button key={n} aria-pressed={sel} onClick={() => setFocusRating(sel ? null : n)}
-                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
-                      style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                      className="py-2.5 rounded-[5px] border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-0.5"
+                      style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
                       <span className="text-base font-bold leading-none">{n}</span>
                       <span className="text-[9px] leading-tight opacity-80">{labels[n]}</span>
                     </button>
@@ -528,8 +528,8 @@ export function LinkedTrainingFlow({
               </div>
             </div>
             <div>
-              <p className="text-[9px] text-gray-400 mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
-              <p className="text-[11px] text-gray-500 mb-2">Flow lives between boredom and frustration. This feeds your Flow Channel.</p>
+              <p className="text-[9px] text-[#55666E] mb-1" style={F_M}><Target size={11} className="inline mr-1 -mt-0.5" />How did the challenge feel?</p>
+              <p className="text-[11px] text-[#55666E] mb-2">Flow lives between boredom and frustration. This feeds your Flow Channel.</p>
               <div className="grid grid-cols-5 gap-1.5">
                 {([
                   { n: 1, label: 'Bored', Icon: Moon },
@@ -541,10 +541,10 @@ export function LinkedTrainingFlow({
                   const sel = flowChannel === o.n;
                   return (
                     <button key={o.n} aria-pressed={sel} onClick={() => setFlowChannel(sel ? null : o.n)}
-                      className="py-2.5 rounded-xl border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
+                      className="py-2.5 rounded-[5px] border-[1.5px] transition-colors active:scale-[0.98] flex flex-col items-center gap-1"
                       style={sel
                         ? o.n === 3 ? { background: CYAN, borderColor: CYAN, color: INK } : { background: INK, borderColor: INK, color: PAPER }
-                        : { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                        : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
                       <o.Icon size={16} strokeWidth={1.75} />
                       <span className="text-[8.5px] leading-tight">{o.label}</span>
                     </button>
@@ -561,19 +561,19 @@ export function LinkedTrainingFlow({
           {deeper && successCriteria.length > 0 && (
             <div className="space-y-2">
               {successCriteria.map((text, i) => (
-                <div key={i} className="border border-gray-200 rounded-xl p-3 bg-white">
-                  <div className="text-xs text-gray-800 mb-2 leading-relaxed"><span className="font-bold mr-1">{i + 1}.</span>{text}</div>
+                <div key={i} className="border border-[#DCD7C6] rounded-[5px] p-3 bg-[#F7F9FA]">
+                  <div className="text-xs text-[#10263B] mb-2 leading-relaxed"><span className="font-bold mr-1">{i + 1}.</span>{text}</div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {([
                       { key: 'met', label: 'Met', Icon: Check, bg: GREEN, fg: INK },
                       { key: 'partial', label: 'Partial', Icon: CircleDot, bg: GOLD, fg: '#5b4300' },
-                      { key: 'not_met', label: 'Not met', Icon: X, bg: '#FF6B6B', fg: '#fff' },
+                      { key: 'not_met', label: 'Not met', Icon: X, bg: '#FF6B6B', fg: '#F7F9FA' },
                     ] as const).map((opt) => {
                       const selected = criteriaResults[i] === opt.key;
                       return (
                         <button key={opt.key} aria-pressed={selected} onClick={() => setCriteriaResults((prev) => ({ ...prev, [i]: opt.key }))}
                           className="inline-flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-bold transition-colors"
-                          style={selected ? { background: opt.bg, color: opt.fg } : { background: '#f3f4f6', color: '#6b7280' }}>
+                          style={selected ? { background: opt.bg, color: opt.fg } : { background: '#F7F9FA', color: '#55666E' }}>
                           <opt.Icon size={12} strokeWidth={2} />{opt.label}
                         </button>
                       );
@@ -590,18 +590,18 @@ export function LinkedTrainingFlow({
         {noteOpen && (
           <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} rows={3} autoFocus aria-label="What you learned (optional)"
             placeholder="One thing you noticed, felt, or want to remember…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm" />
         )}
 
-        {errorMsg && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{errorMsg}</p>}
+        {errorMsg && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-[5px]">{errorMsg}</p>}
 
         <button onClick={handleSave} disabled={!canSave}
           className="w-full py-3.5 rounded-full text-[11px] transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 disabled:opacity-40"
-          style={{ ...F_M, background: canSave ? CYAN : '#e5e7eb', color: INK, fontWeight: 700 }}>
+          style={{ ...F_M, background: canSave ? CYAN : '#DCD7C6', color: INK, fontWeight: 700 }}>
           {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> {isMission ? 'Save & update My Sequence' : 'Save practice'}</>}
         </button>
         {!canSave && !saving && (
-          <p className="text-[11px] text-gray-400 text-center">
+          <p className="text-[11px] text-[#55666E] text-center">
             {!isMission ? 'Answer the one question to save'
               : executionRating === 0 ? 'Pick a star rating to save'
               : focusRating === null ? 'Pick your focus level to save'
@@ -623,8 +623,8 @@ export function LinkedTrainingFlow({
       ? { t: 'Ready for the water', s: 'Open the mission from this step when you go.' }
       : { t: 'Stay in the drill', s: 'Practice counts. Take it to the water when it feels ready.' };
     return (
-      <div className="space-y-4 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
-        <div className="bg-white rounded-2xl p-7 text-center shadow-sm space-y-4">
+      <div className="space-y-4 rounded-lg p-3 sm:p-4" style={{ background: INK }}>
+        <div className="bg-[#F7F9FA] rounded-lg p-7 text-center shadow-sm space-y-4">
           <svg width="72" height="72" viewBox="0 0 100 100" className="mx-auto" aria-hidden="true">
             <defs><clipPath id="ltf-yy"><circle cx="50" cy="50" r="48" /></clipPath></defs>
             <g clipPath="url(#ltf-yy)">
@@ -637,7 +637,7 @@ export function LinkedTrainingFlow({
           </svg>
           <div>
             <h2 className="text-[22px]" style={{ ...F_D, color: INK }}>Session saved</h2>
-            <p className="text-sm text-gray-500 mt-1">{drill.title} · {drill.step_id}</p>
+            <p className="text-sm text-[#55666E] mt-1">{drill.title} · {drill.step_id}</p>
           </div>
 
           {weekCount != null && weekCount > 0 && (
@@ -647,28 +647,28 @@ export function LinkedTrainingFlow({
           )}
 
           {!isMission && (
-            <div className="rounded-xl p-4 text-left" style={{ background: automaticity === 'yes' ? 'rgba(6,214,160,.12)' : 'rgba(255,107,107,.12)' }}>
+            <div className="rounded-[5px] p-4 text-left" style={{ background: automaticity === 'yes' ? 'rgba(6,214,160,.12)' : 'rgba(255,107,107,.12)' }}>
               <p className="text-[14px] font-bold" style={{ color: INK }}>{autoCopy.t}</p>
-              <p className="text-[12px] text-gray-600 mt-0.5">{autoCopy.s}</p>
+              <p className="text-[12px] text-[#55666E] mt-0.5">{autoCopy.s}</p>
             </div>
           )}
 
           {isMission && (<>
-          <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2">
+          <div className="bg-[#F7F9FA] rounded-[5px] p-4 text-left space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Execution rating</span>
+              <span className="text-[#55666E]">Execution rating</span>
               <span className="font-bold" style={{ color: INK }}>{'★'.repeat(executionRating)}{'☆'.repeat(5 - executionRating)} {executionRating}/5</span>
             </div>
             {focusRating !== null && (
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Focus level</span>
+                <span className="text-[#55666E]">Focus level</span>
                 <span className="font-bold">{focusRating}/3</span>
               </div>
             )}
             {doneEvals.length > 0 && (
               <div className="pt-1 space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Parts you marked</span>
+                  <span className="text-[#55666E]">Parts you marked</span>
                   <span className="font-bold">{metN} met / {doneEvals.length}</span>
                 </div>
                 {doneEvals.map((c) => {
@@ -677,7 +677,7 @@ export function LinkedTrainingFlow({
                   return (
                     <div key={c.criterion_index} className="flex items-start gap-2 text-[11.5px] leading-snug">
                       <Icon size={12} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color }} aria-label={c.result === 'met' ? 'Met' : c.result === 'partial' ? 'Partial' : 'Not met'} />
-                      <span className="text-gray-700">{c.criterion_text}</span>
+                      <span className="text-[#55666E]">{c.criterion_text}</span>
                     </div>
                   );
                 })}
@@ -686,19 +686,19 @@ export function LinkedTrainingFlow({
           </div>
 
           {doneWeakest ? (
-            <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
+            <div className="rounded-[5px] p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Work on this next</p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{doneWeakest.criterion_text}</p>
-              <p className="text-[11px] text-gray-500 mt-1">Next time you open this step, it will already be today’s objective.</p>
+              <p className="text-[11px] text-[#55666E] mt-1">Next time you open this step, it will already be today’s objective.</p>
             </div>
           ) : isMission && executionRating < 4 ? (
-            <div className="rounded-xl p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
+            <div className="rounded-[5px] p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
               <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Next time</p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>Keep working the whole move. If one part stands out, mark it next time and it becomes your objective.</p>
             </div>
           ) : null}
 
-          <div className="flex items-center justify-center gap-1.5 rounded-xl p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
+          <div className="flex items-center justify-center gap-1.5 rounded-[5px] p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
             <Check size={13} strokeWidth={2} className="shrink-0" />
             <span>Your self-rating in <strong>My Sequence</strong> is now {executionRating}/5.</span>
           </div>
@@ -708,7 +708,7 @@ export function LinkedTrainingFlow({
             <button onClick={onReturnToSequence} className="w-full py-3 rounded-full text-[11px]" style={{ ...F_M, background: INK, color: PAPER, fontWeight: 700 }}>
               ← Back to My Sequence
             </button>
-            <button onClick={onClearIncoming} className="w-full py-2 text-xs text-gray-500">Stay in Train tab</button>
+            <button onClick={onClearIncoming} className="w-full py-2 text-xs text-[#55666E]">Stay in Train tab</button>
           </div>
         </div>
       </div>
@@ -748,10 +748,10 @@ function BreathCard({ keyWords, selected, onSelect, kindLabel }: {
 
   return (
     <div>
-      <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Mental anchor · optional</p>
+      <p className="text-[9px] text-[#55666E] mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Mental anchor · optional</p>
       <button type="button" onClick={startBreath}
-        className="w-full rounded-2xl p-4 text-center transition-all active:scale-[0.99] overflow-hidden relative"
-        style={{ background: selected === 'play' ? 'rgba(0,210,255,.1)' : '#fff', border: `1.5px solid ${selected === 'play' ? CYAN : '#e5e7eb'}` }}>
+        className="w-full rounded-lg p-4 text-center transition-all active:scale-[0.99] overflow-hidden relative"
+        style={{ background: selected === 'play' ? 'rgba(0,210,255,.1)' : '#F7F9FA', border: `1.5px solid ${selected === 'play' ? CYAN : '#DCD7C6'}` }}>
         <style>{`@keyframes tssbreath { 0%{transform:scale(.55)} 26%{transform:scale(1)} 53%{transform:scale(1)} 80%{transform:scale(.55)} 100%{transform:scale(.55)} }`}</style>
         <span className="mx-auto mb-2 flex items-center justify-center rounded-full"
           style={{
@@ -765,7 +765,7 @@ function BreathCard({ keyWords, selected, onSelect, kindLabel }: {
         <span className="block text-[14px] font-bold" style={{ color: INK }}>
           {breathing ? breathLabel : 'Breathe · Focus · Play'}
         </span>
-        <span className="block text-[10.5px] text-gray-400 mt-0.5">
+        <span className="block text-[10.5px] text-[#55666E] mt-0.5">
           {breathing ? 'Follow the circle' : selected === 'play' ? '✓ Anchored — The Surf Sequence mantra' : 'Tap to breathe 15 seconds and drop in'}
         </span>
       </button>
@@ -774,7 +774,7 @@ function BreathCard({ keyWords, selected, onSelect, kindLabel }: {
           className="mt-1.5 w-full rounded-full px-3 py-2 text-[10.5px] transition-colors inline-flex items-center justify-center gap-1.5"
           style={selected === 'key_words'
             ? { background: INK, color: CYAN }
-            : { background: '#fff', border: '1px solid #e5e7eb', color: '#6b7280' }}>
+            : { background: '#F7F9FA', border: '1px solid #e5e7eb', color: '#55666E' }}>
           <Target size={12} className="shrink-0" /> {selected === 'key_words' ? '✓ ' : ''}{kindLabel} key words: {keyWords}
         </button>
       )}
@@ -789,7 +789,7 @@ function Shell({ drill, onCancel, step, children }: {
 }) {
   const STEPS = ['Plan', 'Play', 'Evaluate'];
   return (
-    <div className="space-y-3 rounded-2xl p-3 sm:p-4" style={{ background: INK }}>
+    <div className="space-y-3 rounded-lg p-3 sm:p-4" style={{ background: INK }}>
       <Banner drill={drill} onCancel={onCancel} />
       <div className="flex items-center justify-center gap-2">
         {STEPS.map((s, i) => (
@@ -799,7 +799,7 @@ function Shell({ drill, onCancel, step, children }: {
           </span>
         ))}
       </div>
-      <div className="rounded-2xl p-4 space-y-4" style={{ background: PAPER }}>
+      <div className="rounded-lg p-4 space-y-4" style={{ background: PAPER }}>
         {children}
       </div>
     </div>
@@ -809,7 +809,7 @@ function Shell({ drill, onCancel, step, children }: {
 function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => void }) {
   const TypeIcon = drill.type === 'drill' ? Dumbbell : Waves;
   return (
-    <div className="rounded-2xl p-3.5 flex items-start gap-3" style={{ background: '#0A2438', borderLeft: `4px solid ${GOLD}` }}>
+    <div className="rounded-lg p-3.5 flex items-start gap-3" style={{ background: '#0A2438', borderLeft: `4px solid ${GOLD}` }}>
       <TypeIcon size={20} strokeWidth={1.75} className="flex-shrink-0 mt-0.5" style={{ color: GOLD }} />
       <div className="flex-1 min-w-0">
         <p className="text-[8px]" style={{ ...F_M, color: GOLD }}>Practicing from My Sequence · {drill.step_id}</p>
@@ -826,8 +826,8 @@ function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => v
 function Pill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
     <button onClick={onClick}
-      className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-xl text-[12.5px] font-semibold border-[1.5px] transition-colors active:scale-[0.98]"
-      style={active ? { background: INK, borderColor: INK, color: PAPER } : { background: '#fff', borderColor: '#e5e7eb', color: '#374151' }}>
+      className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-[5px] text-[12.5px] font-semibold border-[1.5px] transition-colors active:scale-[0.98]"
+      style={active ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#374151' }}>
       {active && <Check size={13} strokeWidth={2.5} className="flex-shrink-0" />}
       {label}
     </button>
@@ -840,7 +840,7 @@ function Chip({ active, onClick, label, muted }: { active: boolean; onClick: () 
       className="px-3 py-2 rounded-full text-[11.5px] font-semibold transition-colors active:scale-[0.97]"
       style={active
         ? { background: GREEN, color: INK }
-        : { background: '#fff', border: muted ? '1px dashed #d1d5db' : '1px solid #e5e7eb', color: muted ? '#9ca3af' : '#374151' }}>
+        : { background: '#F7F9FA', border: muted ? '1px dashed #d1d5db' : '1px solid #e5e7eb', color: muted ? '#9ca3af' : '#374151' }}>
       {active ? '✓ ' : ''}{label}
     </button>
   );
@@ -856,7 +856,7 @@ function Picker({ label, options, value, onChange, cols = 2 }: {
   const colsClass = cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4';
   return (
     <div>
-      <p className="text-[9px] text-gray-400 mb-1.5" style={F_M}>{label}</p>
+      <p className="text-[9px] text-[#55666E] mb-1.5" style={F_M}>{label}</p>
       <div className={`grid ${colsClass} gap-1.5`}>
         {options.map((o) => (
           <Pill key={o.value} active={value === o.value} onClick={() => onChange(o.value)} label={o.label} />
@@ -877,20 +877,20 @@ function DrillVideoPlayer({ videos, title }: {
   const embedUrl = toEmbedUrlLocal(current.url);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-3 space-y-2">
-      <p className="text-[9px] text-gray-400" style={F_M}>▶ Demo{videos.length > 1 ? ` (${videos.length} videos)` : ''}</p>
+    <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-3 space-y-2">
+      <p className="text-[9px] text-[#55666E]" style={F_M}>▶ Demo{videos.length > 1 ? ` (${videos.length} videos)` : ''}</p>
       {videos.length > 1 && (
         <div className="flex gap-1 overflow-x-auto pb-1">
           {videos.map((v, i) => (
             <button key={v.id ?? i} type="button" onClick={() => setActiveIdx(i)}
               className="px-2 py-1 text-[10px] font-medium rounded-full whitespace-nowrap"
-              style={activeIdx === i ? { background: INK, color: PAPER } : { background: '#fff', border: '1px solid #e5e7eb', color: '#6b7280' }}>
+              style={activeIdx === i ? { background: INK, color: PAPER } : { background: '#F7F9FA', border: '1px solid #e5e7eb', color: '#55666E' }}>
               {v.label || `Video ${i + 1}`}
             </button>
           ))}
         </div>
       )}
-      <div className="aspect-video bg-black rounded-xl overflow-hidden">
+      <div className="aspect-video bg-black rounded-[5px] overflow-hidden">
         {embedUrl ? (
           <iframe key={current.url} src={embedUrl} title={current.label || title} className="w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
@@ -899,7 +899,7 @@ function DrillVideoPlayer({ videos, title }: {
         )}
       </div>
       {current.label && videos.length === 1 && (
-        <p className="text-[11px] text-gray-500 italic">{current.label}</p>
+        <p className="text-[11px] text-[#55666E] italic">{current.label}</p>
       )}
     </div>
   );
@@ -921,13 +921,13 @@ function toEmbedUrlLocal(url: string): string | null {
 function Deeper({ open, onToggle, label, hint }: { open: boolean; onToggle: () => void; label: string; hint: string }) {
   return (
     <button type="button" aria-expanded={open} onClick={onToggle}
-      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left"
-      style={open ? { borderColor: INK, background: '#f7f9fa' } : { borderColor: '#d1d5db', borderStyle: 'dashed', background: '#fff' }}>
+      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-[5px] border text-left"
+      style={open ? { borderColor: INK, background: '#F7F9FA' } : { borderColor: '#DCD7C6', borderStyle: 'dashed', background: '#F7F9FA' }}>
       <span className="min-w-0">
         <span className="block text-[12px] font-bold" style={{ color: INK }}>{label}</span>
-        <span className="block text-[10.5px] text-gray-500">{hint}</span>
+        <span className="block text-[10.5px] text-[#55666E]">{hint}</span>
       </span>
-      {open ? <ChevronUp size={16} className="shrink-0 text-gray-500" /> : <ChevronDown size={16} className="shrink-0 text-gray-500" />}
+      {open ? <ChevronUp size={16} className="shrink-0 text-[#55666E]" /> : <ChevronDown size={16} className="shrink-0 text-[#55666E]" />}
     </button>
   );
 }
