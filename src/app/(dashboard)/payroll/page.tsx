@@ -1,11 +1,16 @@
 import { PayrollBoard } from './PayrollBoard';
+import { getCurrentCoach } from '@/lib/actions/auth';
+import { redirect } from 'next/navigation';
 
 // 💵 Pagos al equipo — semana por semana, persona por persona.
 // Regla: sesión sin cierre = pago retenido (el cierre es requisito).
 
 export const dynamic = 'force-dynamic';
 
-export default function PayrollPage() {
+export default async function PayrollPage() {
+  // Cobertura de coordinación (host): sin acceso a lo que no es planeación.
+  const me = await getCurrentCoach();
+  if ((me as any)?.ops_only) redirect('/dashboard');
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <div>

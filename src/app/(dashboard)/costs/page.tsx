@@ -12,6 +12,8 @@ export const revalidate = 0;
 // recipes. Admin + coordinator.
 export default async function CostsPage() {
   const me = await getCurrentCoach();
+  // Cobertura de coordinación (host): sin acceso a lo que no es planeación.
+  if ((me as any)?.ops_only) redirect('/dashboard');
   if (!me || !['admin', 'coordinator'].includes(me.role)) redirect('/dashboard');
 
   let settings;

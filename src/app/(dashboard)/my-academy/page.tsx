@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 // to the shared academy detail page, which already gates admin-only controls.
 export default async function MyAcademyPage() {
   const me = await getCurrentCoach();
+  // Cobertura de coordinación (host): sin acceso a lo que no es planeación.
+  if ((me as any)?.ops_only) redirect('/dashboard');
   if (me?.academy_id) {
     redirect(`/academies/${me.academy_id}`);
   }

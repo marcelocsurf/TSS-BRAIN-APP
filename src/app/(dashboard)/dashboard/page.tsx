@@ -461,7 +461,11 @@ export default async function DashboardHome() {
               { href: '/audit', label: 'Audit', Icon: ShieldCheck },
               { href: '/admin/analytics', label: 'Analytics', Icon: BarChart3 },
             ]},
-          ].map((g) => {
+          ]
+            // Cobertura de coordinación (host): solo planeación.
+            .filter((g) => !(coach as any)?.ops_only || (g.fam !== 'Negocio' && g.fam !== 'Sistema'))
+            .map((g) => ({ ...g, items: (coach as any)?.ops_only ? g.items.filter((it) => it.href !== '/course-codes') : g.items }))
+            .map((g) => {
             const FAM_COLOR: Record<string, string> = { 'Operación': '#00D2FF', 'Gente': '#06D6A0', 'Contenido': '#FFD166', 'Negocio': '#061C2B', 'Sistema': '#55666E' };
             const c = FAM_COLOR[g.fam] ?? '#00D2FF';
             return (

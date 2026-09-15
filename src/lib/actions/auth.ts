@@ -12,6 +12,12 @@ export interface CurrentCoach {
   role: CoachRole;
   academy_id?: string | null;
   is_platform_admin?: boolean;
+  /** Host con cobertura de coordinación (coaches.ops_coordination): entra como
+   *  coordinator SOLO para planeación (servicios, camps, coaches, staff, alumnos,
+   *  espacios). Costos, reportes, nómina, ventas y códigos quedan cerrados.
+   *  Marcelo (2026-09-15, Kat): "las herramientas del coordinador en cuanto a
+   *  planeación y coordinación para cubrir cuando el coordinador no está". */
+  ops_only?: boolean;
 }
 
 // M7 — Act-as-academy cookie. Lets platform_admin (Marcelo) temporarily
@@ -29,12 +35,17 @@ async function getCurrentCoachRaw(): Promise<CurrentCoach | null> {
 
   const { data } = await supabase
     .from('coaches')
-    .select('id, display_name, role, academy_id, is_platform_admin')
+    .select('id, display_name, role, academy_id, is_platform_admin, ops_coordination')
     .eq('auth_user_id', user.id)
     .single();
 
   if (!data) return null;
-  return data as CurrentCoach;
+  const row = data as any;
+  if (row.role === 'host' && row.ops_coordination === true) {
+    return { id: row.id, display_name: row.display_name, role: 'coordinator' as CoachRole, academy_id: row.academy_id, is_platform_admin: row.is_platform_admin, ops_only: true };
+  }
+  const { ops_coordination: _o, ...rest } = row;
+  return rest as CurrentCoach;
 }
 
 export async function getCurrentCoach(): Promise<CurrentCoach | null> {

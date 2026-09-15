@@ -35,6 +35,8 @@ function money(cents: number | null, currency: string | null): string {
 
 export default async function SalesLogPage() {
   const me = await getCurrentCoach();
+  // Cobertura de coordinación (host): sin acceso a lo que no es planeación.
+  if ((me as any)?.ops_only) redirect('/dashboard');
   if (!me || !(me.is_platform_admin || me.role === 'coordinator')) redirect('/dashboard');
 
   const rows = await listDetailedCourseGrants();

@@ -40,16 +40,19 @@ async function hostCanCoordinate(who: { id: string; role: string }): Promise<boo
   return (data as any)?.portal_can_coordinate !== false;
 }
 
-export async function hostPortalFlags(token: string): Promise<{ canCoordinate: boolean; academySlug: string | null }> {
+export async function hostPortalFlags(token: string): Promise<{ canCoordinate: boolean; academySlug: string | null; opsCoordination: boolean }> {
   const who = await resolveHost(token);
-  if (!who) return { canCoordinate: false, academySlug: null };
+  if (!who) return { canCoordinate: false, academySlug: null, opsCoordination: false };
   let academySlug: string | null = null;
+  const admin = createAdminClient();
   if (who.academy_id) {
-    const admin = createAdminClient();
     const { data: ac } = await admin.from('academies').select('slug').eq('id', who.academy_id).maybeSingle();
     academySlug = (ac as any)?.slug ?? null;
   }
-  return { canCoordinate: await hostCanCoordinate(who as any), academySlug };
+  // Cobertura de coordinación (Kat, 2026-09-15): abre el dashboard de planeación.
+  const { data: oc } = await admin.from('coaches').select('ops_coordination').eq('id', who.id).maybeSingle();
+  const opsCoordination = (oc as any)?.ops_coordination === true;
+  return { canCoordinate: await hostCanCoordinate(who as any), academySlug, opsCoordination };
 }
 
 // ── Fichas del cliente: el semáforo que el host persigue ──────────

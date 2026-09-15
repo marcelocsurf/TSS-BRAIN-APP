@@ -360,7 +360,8 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
   const [guideOpen, setGuideOpen] = useState(false);
 
   const [academySlug, setAcademySlug] = useState<string | null>(null);
-  useEffect(() => { hostPortalFlags(token).then((f) => { setCanCoordinate(f.canCoordinate); setAcademySlug(f.academySlug); }).catch(() => {}); }, [token]);
+  const [opsCoordination, setOpsCoordination] = useState(false);
+  useEffect(() => { hostPortalFlags(token).then((f) => { setCanCoordinate(f.canCoordinate); setAcademySlug(f.academySlug); setOpsCoordination(!!f.opsCoordination); }).catch(() => {}); }, [token]);
   useEffect(() => { hostDayAlerts(token).then(setAlerts).catch(() => {}); }, [token]);
   useEffect(() => {
     // Primera visita: la guía se abre sola; después queda en el botón 📖.
@@ -393,10 +394,18 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Servicio al cliente</p>
             <h1 style={{ ...F_D, color: PAPER }} className="text-[24px] mt-1">{hostName}</h1>
           </div>
-          <button type="button" onClick={() => setGuideOpen(true)}
-            className="shrink-0 rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,.1)', color: CYAN }}>
-            📖 Guía
-          </button>
+          <div className="shrink-0 flex items-center gap-2">
+            {/* Cobertura de coordinación: las herramientas de planeación del coordinador (servicios, camps, coaches, staff). */}
+            {opsCoordination && (
+              <a href="/camps" className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK }}>
+                🗓 Coordinación
+              </a>
+            )}
+            <button type="button" onClick={() => setGuideOpen(true)}
+              className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,.1)', color: CYAN }}>
+              📖 Guía
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
           {([['disponibilidad', '📣 Disponibilidad'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (

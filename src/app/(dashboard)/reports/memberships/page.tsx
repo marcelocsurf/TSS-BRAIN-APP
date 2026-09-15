@@ -17,6 +17,8 @@ export default async function MembershipsReportPage({
   searchParams: Promise<{ from?: string; to?: string; academy?: string }>;
 }) {
   const me = await getCurrentCoach();
+  // Cobertura de coordinación (host): sin acceso a lo que no es planeación.
+  if ((me as any)?.ops_only) redirect('/dashboard');
   if (!me || !(me.is_platform_admin || me.role === 'admin' || me.role === 'coordinator')) redirect('/dashboard');
 
   const sp = await searchParams;

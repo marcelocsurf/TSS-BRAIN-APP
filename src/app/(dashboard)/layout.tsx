@@ -112,9 +112,13 @@ export default async function DashboardLayout({
 
   const { data: coach, error: coachError } = await supabase
     .from('coaches')
-    .select('display_name, role, academy_id')
+    .select('display_name, role, academy_id, ops_coordination')
     .eq('auth_user_id', user.id)
     .single();
+  // Cobertura de coordinación (Kat, 2026-09-15): un host con ops_coordination
+  // ve el menú del coordinador PERO solo lo de planeación.
+  const opsOnly = (coach as any)?.role === 'host' && (coach as any)?.ops_coordination === true;
+  const OPS_ALLOWED = new Set(['/', '/students', '/camps', '/coaches', '/spaces', '/desk']);
 
   if (coachError) {
     console.error('[DashboardLayout] Failed to fetch coach for user', user.id, coachError);
@@ -132,12 +136,12 @@ export default async function DashboardLayout({
   // When acting-as a coordinator, show coordinator nav (not full admin nav)
   const effectiveRole = (isAdmin && actAsId)
     ? 'coordinator'
-    : (coach?.role as CoachRole) || 'assistant';
+    : opsOnly ? 'coordinator' : (coach?.role as CoachRole) || 'assistant';
   // El Método es del DUEÑO (is_platform_admin), no de cualquier role
   // 'admin': sin este filtro, un admin de academia veía el ítem y se
   // topaba con "Solo el dueño del método".
   const visibleNav = getNavItemsForRole(effectiveRole).filter(
-    (i) => i.href !== '/metodo' || (isAdmin && !actAsId),
+    (i) => (i.href !== '/metodo' || (isAdmin && !actAsId)) && (!opsOnly || OPS_ALLOWED.has(i.href)),
   );
   const navGroups: { title: string | null; items: NavItem[] }[] = effectiveRole === 'coordinator'
     ? COORD_GROUPS

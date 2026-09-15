@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function CourseCodesPage() {
   const currentCoach = await getCurrentCoach();
   if (!currentCoach) redirect('/login');
+  if ((currentCoach as any).ops_only) redirect('/dashboard');
 
   const allowed = await isCoordinatorOrAbove(currentCoach.role);
   if (!allowed) redirect('/dashboard');

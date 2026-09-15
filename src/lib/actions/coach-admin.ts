@@ -35,7 +35,7 @@ async function assertCanManageCoach(coachId: string) {
 // so it bypasses RLS, and keeps the auth account email in sync when one exists.
 export async function updateCoachIdentity(
   coachId: string,
-  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string; portal_can_coordinate?: boolean; portal_can_manage_boards?: boolean; specialist_role?: string | null },
+  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string; portal_can_coordinate?: boolean; portal_can_manage_boards?: boolean; ops_coordination?: boolean; specialist_role?: string | null },
 ): Promise<{ ok: boolean; error?: string }> {
   await assertCanManageCoach(coachId);
   const admin = createAdminClient();
@@ -60,6 +60,8 @@ export async function updateCoachIdentity(
   // existe, se reintenta sin ella para no bloquear la edición de identidad.
   if (typeof input.portal_can_coordinate === 'boolean') patch.portal_can_coordinate = input.portal_can_coordinate;
   if (typeof input.portal_can_manage_boards === 'boolean') patch.portal_can_manage_boards = input.portal_can_manage_boards;
+  // Cobertura de coordinación (migración 00199): dashboard de planeación para un host.
+  if (typeof input.ops_coordination === 'boolean') patch.ops_coordination = input.ops_coordination;
   if (input.specialist_role !== undefined) {
     const valid = input.specialist_role && ['psicologo', 'fisico', 'nutricionista'].includes(input.specialist_role)
       ? input.specialist_role : null;

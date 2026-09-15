@@ -17,6 +17,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
   const [academyId, setAcademyId] = useState(coach.academy_id || '');
   const [canCoordinate, setCanCoordinate] = useState(coach.portal_can_coordinate === true);
   const [canBoards, setCanBoards] = useState(coach.portal_can_manage_boards === true);
+  const [opsCoordination, setOpsCoordination] = useState(coach.ops_coordination === true);
   const [specialistRole, setSpecialistRole] = useState<string>(coach.specialist_role || '');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -33,6 +34,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
       academy_id: academyId || undefined,
       portal_can_coordinate: canCoordinate,
       portal_can_manage_boards: canBoards,
+      ops_coordination: opsCoordination,
       specialist_role: specialistRole || null,
     });
     setSaving(false);
@@ -98,6 +100,15 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             <span>
               <span className="font-semibold text-[var(--tss-navy)]">Coverage mode (coordination)</span><br />
               On coordinator-off days this host can assign coaches and reschedule/cancel one-day classes from their portal. Money and configuration stay dashboard-only.
+            </span>
+          </label>
+        )}
+        {role === 'host' && (
+          <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
+            <input type="checkbox" checked={opsCoordination} onChange={(e) => setOpsCoordination(e.target.checked)} className="mt-0.5" />
+            <span>
+              <span className="font-semibold text-[var(--tss-navy)]">Coordination coverage (planning dashboard)</span><br />
+              Opens the coordinator&apos;s planning tools in the dashboard: services, camps, schedules, coaches and staff assignment, students, spaces. No costs, reports, payroll, sales or course codes.
             </span>
           </label>
         )}
