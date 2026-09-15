@@ -236,6 +236,15 @@ export function TasksPanel({ initialTasks, assignees, academyId }: {
                           {t.assignee_name ? <span>{t.assignee_name}</span> : <span className="italic">Unassigned</span>}
                           {t.due_date && <span className={isOverdue(t) ? 'text-red-500 font-semibold' : ''}>Due {fmtDue(t.due_date)}</span>}
                         </p>
+                        {/* El paso a paso que escribió quien ejecuta (data de los procesos reales). */}
+                        {t.process_notes && (
+                          <details className="mt-1.5 rounded-[5px]" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+                            <summary className="cursor-pointer list-none px-2.5 py-1.5 text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>
+                              How {t.assignee_name || 'the assignee'} does it · step by step{t.process_notes_updated_at ? ` · ${fmtDue(t.process_notes_updated_at.slice(0, 10))}` : ''}
+                            </summary>
+                            <p className="px-2.5 pb-2.5 text-[13px] whitespace-pre-line leading-snug" style={{ color: '#10263B' }}>{t.process_notes}</p>
+                          </details>
+                        )}
                       </div>
                       <button onClick={() => toggleHistory(t.id)} className={`p-1 transition-colors shrink-0 ${historyId === t.id ? 'text-[var(--tss-navy)]' : 'text-gray-300 hover:text-[var(--tss-navy)]'}`} aria-label="History"><History size={14} /></button>
                       <button onClick={() => { setEditingId(t.id); setErr(null); }} className="p-1 text-gray-300 hover:text-[var(--tss-navy)] transition-colors shrink-0" aria-label="Edit"><Pencil size={14} /></button>

@@ -300,14 +300,28 @@ export async function getMyTasks(token: string): Promise<AcademyTask[]> {
  *  tareas que se le delegan para ir levantando data de los procesos". */
 export async function saveMyTaskProcess(token: string, id: string, notes: string): Promise<{ ok: boolean; error?: string }> {
   const admin = createAdminClient();
-  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).maybeSingle();
+  const { data: coach } = await admin.from('coaches').select('id, display_name').eq('portal_token', token).maybeSingle();
   if (!coach) return { ok: false, error: 'Portal not found.' };
+  const { data: task } = await admin.from('academy_tasks').select('id, title, created_by, process_notes').eq('id', id).eq('assignee_coach_id', coach.id).maybeSingle();
+  if (!task) return { ok: false, error: 'Task not found.' };
+  const clean = notes.trim().slice(0, 4000) || null;
   const { error } = await admin
     .from('academy_tasks')
-    .update({ process_notes: notes.trim().slice(0, 4000) || null, process_notes_updated_at: new Date().toISOString(), process_notes_by: coach.id })
-    .eq('id', id)
-    .eq('assignee_coach_id', coach.id);
+    .update({ process_notes: clean, process_notes_updated_at: new Date().toISOString(), process_notes_by: coach.id })
+    .eq('id', id);
   if (error) return { ok: false, error: error.message };
+  // Cualquier actualización del proceso le llega a quien delegó la tarea
+  // (Marcelo 2026-09-15: "Rick y Daren deben ver cualquier actualización").
+  if (clean && clean !== (task.process_notes ?? '') && task.created_by && task.created_by !== coach.id) {
+    await createNotification({
+      recipientCoachId: task.created_by,
+      type: 'task_process',
+      title: `Process updated: ${task.title}`,
+      body: `${coach.display_name || 'The assignee'} wrote how they do it, step by step. See it in Tasks.`,
+      link: null,
+      metadata: { taskId: id },
+    }).catch(() => {});
+  }
   return { ok: true };
 }
 
