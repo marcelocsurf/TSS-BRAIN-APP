@@ -46,7 +46,7 @@ const PRODUCT_TYPES: { value: string; label: string }[] = [
 const APP_BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
 /** Lo que se comparte: para el libro es el link; para los cursos, el código. */
 function shareText(code: string, productType: string) {
-  return productType === 'one_wave' ? `${APP_BASE}/gift/${code}` : code;
+  return productType === 'one_wave' ? `${APP_BASE}/one-wave/${code}` : code;
 }
 
 function copyToClipboard(text: string) {

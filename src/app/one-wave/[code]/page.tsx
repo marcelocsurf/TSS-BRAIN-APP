@@ -1,4 +1,4 @@
-// ═══ /gift/[code] — link de regalo del libro ONE WAVE ═══
+// ═══ /one-wave/[code] — link de regalo del libro ONE WAVE (antes /gift) ═══
 // Público (token-gated por el código). La persona pone nombre + email y entra
 // a su portal con el libro. Ver src/lib/actions/book-gift.ts.
 

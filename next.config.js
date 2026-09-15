@@ -12,6 +12,9 @@ const nextConfig = {
     return [
       { source: '/find-your-level.html', destination: '/quiz', permanent: true },
       { source: '/find-your-level', destination: '/quiz', permanent: true },
+      // El link de regalo del libro ahora habla del libro: /one-wave/CÓDIGO.
+      // Los links /gift/… ya enviados siguen funcionando.
+      { source: '/gift/:code', destination: '/one-wave/:code', permanent: true },
     ];
   },
   images: {
