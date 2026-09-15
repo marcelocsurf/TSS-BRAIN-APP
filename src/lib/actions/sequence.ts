@@ -779,8 +779,17 @@ export async function saveLinkedTrainingSession(
         student_id: studentId,
         step_id: drillMission.step_id,
         current_rating: executionRating,
+        // Ejecutado en el agua: pisa cualquier autoevaluación (misma regla que
+        // el flujo por secuencia; auditoría 2026-09-15 — antes quedaba topado en 3★).
+        self_source: 'executed',
+        assessed_criteria: null,
         last_updated: new Date().toISOString(),
       }, { onConflict: 'student_id,step_id' });
+    // Una tarea propia se cierra sola cuando el paso llega a 4★ en el agua.
+    if (executionRating >= SEQUENCE_PASS_STARS) {
+      await admin.from('student_tasks').update({ status: 'done', done_at: new Date().toISOString(), done_reason: 'reached_4' })
+        .eq('student_id', studentId).eq('step_id', drillMission.step_id).eq('status', 'open');
+    }
   }
 
   return { ok: true, session, stepId: drillMission.step_id };

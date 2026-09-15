@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getMySequence, type SequenceData, type SequenceItem } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
@@ -79,6 +80,7 @@ interface Props {
 }
 
 export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [] }: Props) {
+  const router = useRouter();
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
   // Tus tareas (paso + detalle, máximo tres). Marcelo 2026-09-10.
@@ -175,7 +177,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           Plex, lockup oficial, barra con brillo cyan y el número grande. */}
       <div className="px-2 pt-2 pb-4 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>Let&apos;s Play · {data.belt} Belt</span>
+          <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>Let&apos;s Play · {beltWord} Belt</span>
         </div>
         <h1 className="mt-1 text-[26px]" style={{ ...F_D, fontWeight: 900, lineHeight: 1.06, color: PAPER }}>Let&apos;s Play</h1>
         <div className="flex items-end gap-4 mt-4">
@@ -228,7 +230,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               const st = sq.state === 'owned' ? '#0A7C5D' : sq.state === 'unrated' ? '#55666E' : '#FFD166';
               const pre = sequencePrefix(sq.id, sq.order);
               return (
-                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
+                <a key={sq.id} href={pageHrefOf(sq.id) ?? undefined} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
                   <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
                   {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}
                   <SideChip side={sq.side} small dark />
@@ -281,7 +283,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                   <button type="button" onClick={() => onTrainSequence({ sequenceId: t.sequenceId, mode: 'step_focus', focusStepId: t.stepId, focusMoment: t.detail, intention: t.detail })}
                     className="shrink-0 h-11 px-3.5 rounded-[5px] text-[13px] font-black uppercase" style={{ background: CYAN, color: INK, letterSpacing: '0.03em' }}>Train it</button>
                 )}
-                <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); }}
+                <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); router.refresh(); }}
                   className="shrink-0 h-11 px-2.5 rounded-[5px] text-[12px] font-semibold" style={{ color: '#10263B', border: '1px solid #DCD7C6', background: '#F7F9FA' }}>Done</button>
               </div>
             ))}

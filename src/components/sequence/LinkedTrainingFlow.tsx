@@ -157,7 +157,7 @@ export function LinkedTrainingFlow({
     return (
       <div className="text-center py-12">
         <p className="text-[#B03A2E] mb-2">{errorMsg || 'Something went wrong'}</p>
-        <button onClick={onClearIncoming} className="text-sm underline text-[#55666E]">← Back to Train</button>
+        <button onClick={onClearIncoming} className="text-sm underline text-[#55666E]">← Back to Let&apos;s Play</button>
       </div>
     );
   }
@@ -598,7 +598,7 @@ export function LinkedTrainingFlow({
         <button onClick={handleSave} disabled={!canSave}
           className="w-full py-3.5 rounded-full text-[11px] transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 disabled:opacity-40"
           style={{ ...F_M, background: canSave ? CYAN : '#DCD7C6', color: INK, fontWeight: 700 }}>
-          {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> {isMission ? 'Save & update My Sequence' : 'Save practice'}</>}
+          {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> {isMission ? 'Save & update Let&apos;s Play' : 'Save practice'}</>}
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-[#55666E] text-center">
@@ -700,15 +700,15 @@ export function LinkedTrainingFlow({
 
           <div className="flex items-center justify-center gap-1.5 rounded-[5px] p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#10263B' }}>
             <Check size={13} strokeWidth={2} className="shrink-0" />
-            <span>Your self-rating in <strong>My Sequence</strong> is now {executionRating}/5.</span>
+            <span>Your self-rating in <strong>Let&apos;s Play</strong> is now {executionRating}/5.</span>
           </div>
           </>)}
 
           <div className="space-y-2 pt-1">
             <button onClick={onReturnToSequence} className="w-full py-3 rounded-full text-[11px]" style={{ ...F_M, background: INK, color: PAPER, fontWeight: 700 }}>
-              ← Back to My Sequence
+              ← Back to Let&apos;s Play
             </button>
-            <button onClick={onClearIncoming} className="w-full py-2 text-xs text-[#55666E]">Stay in Train tab</button>
+            <button onClick={onClearIncoming} className="w-full py-2 text-xs text-[#55666E]">Stay in Let&apos;s Play</button>
           </div>
         </div>
       </div>
@@ -812,7 +812,7 @@ function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => v
     <div className="rounded-lg p-3.5 flex items-start gap-3" style={{ background: '#0A2532', borderLeft: `4px solid ${GOLD}` }}>
       <TypeIcon size={20} strokeWidth={1.75} className="flex-shrink-0 mt-0.5" style={{ color: GOLD }} />
       <div className="flex-1 min-w-0">
-        <p className="text-[8px]" style={{ ...F_M, color: GOLD }}>Practicing from My Sequence · {drill.step_id}</p>
+        <p className="text-[8px]" style={{ ...F_M, color: GOLD }}>Practicing from Let&apos;s Play · {drill.step_id}</p>
         <p className="text-[13px] font-bold truncate mt-0.5" style={{ color: PAPER }}>{drill.title}</p>
       </div>
       <button onClick={onCancel} title="Cancel" aria-label="Cancel linked session"

@@ -9,7 +9,7 @@
 //     opcional) y, opcional, la cadena.
 // Mismas tres pantallas que el flujo por pieza. Lo nuevo es la entrada.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   getSequenceTraining,
   saveSequenceSession,
@@ -52,7 +52,7 @@ const CRIT_OPTS = [
 
 // Componentes FUERA del render: definidos adentro se remontan con cada
 // cambio de estado (refs muertos, textarea que pierde el foco por tecla).
-function Shell({ step, seqLabel, title, onCancel, children }: { step: 1 | 2 | 3; seqLabel: string; title: string; onCancel: () => void; children: React.ReactNode }) {
+function Shell({ step, seqLabel, title, onCancel, cancelLabel = 'Cancel', children }: { step: 1 | 2 | 3; seqLabel: string; title: string; onCancel: () => void; cancelLabel?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-4 rounded-lg p-3 sm:p-4" style={{ background: INK }}>
       <div className="flex items-center justify-between">
@@ -60,7 +60,7 @@ function Shell({ step, seqLabel, title, onCancel, children }: { step: 1 | 2 | 3;
           <p className="text-[12px] truncate" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Let’s Play · {seqLabel}</p>
           <p className="text-[15px] truncate" style={{ ...F_D, color: PAPER }}>{title}</p>
         </div>
-        <button type="button" onClick={onCancel} className="text-[12px] shrink-0 ml-3 h-11 px-3 -mr-3" style={{ color: 'rgba(247,249,250,.78)' }} aria-label="Cancel">Cancel</button>
+        <button type="button" onClick={onCancel} className="text-[12px] shrink-0 ml-3 h-11 px-3 -mr-3" style={{ color: 'rgba(247,249,250,.78)' }} aria-label={cancelLabel}>{cancelLabel}</button>
       </div>
       <div className="flex gap-1">
         {(['Plan', 'Surf', 'Evaluate'] as const).map((l, i) => (
@@ -185,6 +185,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [data, setData] = useState<SequenceTraining | null>(null);
+  // El objetivo que se autocompletó (para no pisar lo que el alumno escribió a mano).
+  const autoIntentionRef = useRef<string>('');
   const [focusId, setFocusId] = useState<string | null>(openSession?.focusStepId ?? focusStepId);
   const [focusMoment, setFocusMoment] = useState<string | null>(openSession?.focusMoment ?? initialFocusMoment);
 
@@ -300,7 +302,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           if (runHint) {
             // Lo que marcaste en tu último run de la secuencia.
             setHintText(`Your last run · ${runHint.result === 'not_met' ? 'not met' : 'partial'}: ${runHint.text}`);
-            setIntention((c) => c || runHint.text);
+            setIntention((c) => c || runHint.text); autoIntentionRef.current = runHint.text;
           } else if (step?.mission) {
             getLastPracticeHint(portalToken, step.mission.id).then((h) => {
               if (!mounted || !h?.weakest) return;
@@ -328,7 +330,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     return (
       <div className="text-center py-12">
         <p className="text-[#B03A2E] mb-2">{errorMsg || 'Something went wrong'}</p>
-        <button onClick={onCancel} className="text-sm underline text-[#55666E]">← Back to My Sequence</button>
+        <button onClick={onCancel} className="text-sm underline text-[#55666E]">← Back to Let&apos;s Play</button>
       </div>
     );
   }
@@ -354,7 +356,15 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     const canSave = conditionsOk && (isRun || !!focus) && (!twoSided || !!side)
       && (!wantsTime || plannedDuration >= 1) && (!wantsReps || plannedReps >= 1) && !savingPlan;
     const pickWhole = () => { setModeState('sequence_run'); setFocusMoment(null); };
-    const pickStep = (id: string) => { setModeState('step_focus'); setFocusId(id); setFocusMoment(null); };
+    const pickStep = (id: string) => {
+      setModeState('step_focus'); setFocusId(id); setFocusMoment(null);
+      // La pista y el objetivo autocompletado son DEL PASO: al cambiar de paso se recalculan
+      // (auditoría 2026-09-15: quedaban los del paso anterior y se guardaban como objetivo).
+      const h = data?.stepHints?.[id];
+      setHintText(h ? `Your last run · ${h.result === 'not_met' ? 'not met' : 'partial'}: ${h.text}` : null);
+      setIntention((c) => (c && c !== autoIntentionRef.current ? c : (h?.text ?? '')));
+      autoIntentionRef.current = h?.text ?? '';
+    };
     const pickMoment = (id: string, m: Moment) => {
       setModeState('step_focus'); setFocusId(id); setFocusMoment(m.short);
       setIntention(m.short); setObjectiveOpen(true);
@@ -589,7 +599,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // ─── SAVED · andá a surfear ───
   if (phase === 'saved') {
     return (
-      <Shell step={2} seqLabel={seqLabel} title={shellTitle} onCancel={onDone}>
+      <Shell step={2} seqLabel={seqLabel} title={shellTitle} onCancel={onDone} cancelLabel="Close">
         <div className="rounded-lg p-5 text-center" style={{ background: INK }}>
           <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Plan saved</p>
           <p className="text-[24px] mt-1" style={{ ...F_D, color: PAPER }}>Now go surf</p>
@@ -794,7 +804,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <div>
               <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Honest evaluation · {focus.title}</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
-              <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for {focus.title} today (it updates your self-rating in My Sequence), your focus, how it felt.</p>
+              <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for {focus.title} today (it updates your self-rating in Let&apos;s Play), your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={execStars} onChange={setExecStars} size="lg" showLabel /></div>
             </div>
 
@@ -833,7 +843,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         <button type="button" disabled={!canSave} onClick={handleSave}
           className="w-full h-12 rounded-[5px] text-[14px] font-bold disabled:opacity-40 active:scale-[0.99]"
           style={{ background: canSave ? CYAN : '#DCD7C6', color: INK, ...F_D }}>
-          {saving ? 'Saving…' : online ? 'Save & update My Sequence' : 'Save (waiting for signal)'}
+          {saving ? 'Saving…' : online ? 'Save & update Let&apos;s Play' : 'Save (waiting for signal)'}
         </button>
         {!canSave && !saving && (
           <p className="text-[12px] text-[#55666E] text-center -mt-2">
@@ -961,7 +971,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         </div>
 
         <button type="button" onClick={() => onDone('sequence')} className="w-full h-11 rounded-[5px] text-[13px] font-bold" style={{ background: INK, color: PAPER }}>
-          ← Back to My Sequence
+          ← Back to Let&apos;s Play
         </button>
       </div>
     </div>

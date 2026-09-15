@@ -105,7 +105,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
           onClick={onBack}
           className="text-sm text-[#55666E] hover:text-[#10263B] flex items-center gap-1 mb-3"
         >
-          ← Back to My Sequence
+          ← Back to Let&apos;s Play
         </button>
 
         <div className="text-white rounded-lg p-5" style={{ background: INK, borderLeft: `4px solid ${CYAN}` }}>
@@ -307,8 +307,9 @@ function DrillOrMissionCard({
           <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{item.time_estimate || '—'}</div>
         </div>
         <div className="rounded-[5px] p-2.5 text-center" style={{ background: PAPER }}>
-          <div className="text-[12px] text-[#55666E]" style={F_M}>Reps</div>
-          <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{item.reps_recommended || '—'}</div>
+          {/* Una misión es UNA ejecución, sin conteo (doctrina 2026-09-10): solo el drill muestra reps. */}
+          <div className="text-[12px] text-[#55666E]" style={F_M}>{isDrill ? 'Reps' : 'Waves'}</div>
+          <div className="text-sm font-bold mt-0.5" style={{ color: INK }}>{isDrill ? (item.reps_recommended || '—') : 'One execution · then again'}</div>
         </div>
       </div>
 
