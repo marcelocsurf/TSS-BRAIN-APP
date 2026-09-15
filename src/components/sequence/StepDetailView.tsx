@@ -142,7 +142,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
 
         <div className="mt-4 pt-4 border-t border-[#DCD7C6]">
           <h3 className="text-[15px]" style={{ ...F_D, color: INK }}>Assess yourself · no wave needed</h3>
-          <p className="text-[12px] text-[#55666E] mt-1 leading-snug">Read the indicators and be honest. All of them → 4★ · one halfway → 3★ · one not yet → 2★. It maps where you are; you own it in the water, or your coach confirms it.</p>
+          <p className="text-[12px] text-[#55666E] mt-1 leading-snug">Read the indicators and be honest. All of them → 4★ · one halfway → 3★ · one not yet → 2★. This is a map, not the water: a self-assessment counts as 3★ at most until you surf it or your coach confirms it.</p>
           {criteria.length > 0 ? (
             <div className="space-y-2 mt-3">
               {criteria.map((text: string, i: number) => {

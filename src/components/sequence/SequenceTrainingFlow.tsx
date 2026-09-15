@@ -176,9 +176,11 @@ interface Props {
   rehearseHref?: string | null;
   /** A dónde vuelve al terminar: 'home' (plan guardado) o 'sequence' (Let's Play). */
   onDone: (next?: 'home' | 'sequence') => void;
+  /** Nombre de OTRO plan abierto (si existe): guardar este lo reemplaza. Solo aviso. */
+  otherOpenPlan?: string | null;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone, otherOpenPlan = null }: Props) {
   // El modo se elige EN el plan (toda la línea, o un paso/momento como foco).
   const [modeState, setModeState] = useState<TrainingMode>(openSession?.mode ?? mode);
   const isRun = modeState === 'sequence_run';
@@ -447,7 +449,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-[5px] border-[1.5px] text-left active:scale-[0.99]"
             style={isRun ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}>
             <Play size={14} strokeWidth={2.25} className="shrink-0" />
-            <span className="text-[13px] font-semibold">The whole line · no specific focus</span>
+            <span className="text-[13px] font-semibold">The whole sequence · no specific focus</span>
           </button>
           <ol className="space-y-1.5 mt-1.5">
             {steps.map((s, i) => {
@@ -576,12 +578,17 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         <details open={objectiveOpen} onToggle={(e) => setObjectiveOpen((e.currentTarget as HTMLDetailsElement).open)}>
           <summary className="cursor-pointer list-none text-[12px] text-[#55666E]" style={F_M}>Your word for the wave (optional) ▾</summary>
           <textarea value={intention} onChange={(e) => setIntention(e.target.value)} rows={2} aria-label="Your word for the wave (optional)"
-            placeholder={isRun ? 'e.g. Keep the chain flowing — no stop between steps' : 'e.g. Weight on the front foot through the whole ride'}
+            placeholder={isRun ? 'e.g. Keep the sequence flowing — no stop between steps' : 'e.g. Weight on the front foot through the whole ride'}
             className="mt-1.5 w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-[13px]" />
         </details>
 
         {errorMsg && <p className="text-[12px] text-[#B03A2E] bg-[rgba(255,107,107,.12)] rounded-lg px-3 py-2">{errorMsg}</p>}
 
+        {otherOpenPlan && (
+          <p className="text-[13px] rounded-[5px] px-3 py-2.5" style={{ background: 'rgba(255,209,102,.28)', color: INK }}>
+            You have an open plan for <b>{otherOpenPlan}</b>. Saving this one replaces it.
+          </p>
+        )}
         <button type="button" disabled={!canSave} onClick={handlePlan}
           className="w-full h-12 rounded-[5px] text-[14px] font-bold disabled:opacity-40 active:scale-[0.99]"
           style={{ background: canSave ? CYAN : '#DCD7C6', color: INK, ...F_D }}>
@@ -604,7 +611,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Plan saved</p>
           <p className="text-[24px] mt-1" style={{ ...F_D, color: PAPER }}>Now go surf</p>
           <p className="text-[12px] mt-2" style={{ color: 'rgba(247,249,250,.75)' }}>
-            {isRun ? 'Run the whole line, start to finish, every time.' : `Run the line with ${focus?.title} as your focus.`}
+            {isRun ? 'Run the whole sequence, start to finish, every time.' : `Run the sequence with ${focus?.title} as your focus.`}
           </p>
           <div className="flex justify-center gap-6 mt-3">
             {wantsTime && <div><p className="text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Time</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedDuration} min</p></div>}
@@ -664,7 +671,9 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           side: twoSided ? side : null,
           focusStepId: focus?.step_id ?? null,
           intention_text: intention.trim() || undefined,
-          planned_duration_minutes: wantsTime ? plannedDuration : 1,
+          // Sin tiempo elegido, el historial guarda un ESTIMADO: ~15 min por ola
+          // o por run, mínimo 15 (Marcelo 2026-09-15). Antes guardaba "1 min".
+          planned_duration_minutes: wantsTime ? plannedDuration : Math.max(15, (wantsReps ? plannedReps : 1) * 15),
           planned_reps: wantsReps ? plannedReps : 1,
           safety_check: conditionsOk,
           warm_up: null,
@@ -705,7 +714,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             "para refrescarlo y en letras que se distingan"). */}
         <div className="rounded-lg p-4" style={{ background: INK }}>
           <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Your objective today</p>
-          <p className="text-[22px] mt-1.5" style={{ ...F_D, color: PAPER }}>{isRun ? 'The whole line' : focus?.title}</p>
+          <p className="text-[22px] mt-1.5" style={{ ...F_D, color: PAPER }}>{isRun ? 'The whole sequence' : focus?.title}</p>
           {(intention.trim() || focusMoment) && (
             <p className="text-[16px] font-semibold mt-2 leading-snug" style={{ color: GOLD }}>“{intention.trim() || focusMoment}”</p>
           )}
@@ -716,7 +725,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <div>
               <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Honest evaluation</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
-              <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for the whole chain, your focus, how it felt.</p>
+              <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for the whole sequence, your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
             </div>
 
@@ -822,7 +831,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[12px] text-[#55666E]" style={F_M}>And the whole sequence? (optional)</p>
-                    <p className="text-[12px] text-[#55666E]">How the chain ran around your focus.</p>
+                    <p className="text-[12px] text-[#55666E]">How the sequence ran around your focus.</p>
                   </div>
                   <StarRating value={seqStarsOptional} onChange={setSeqStarsOptional} size="md" />
                 </div>

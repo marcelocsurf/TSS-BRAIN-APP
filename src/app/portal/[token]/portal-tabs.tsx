@@ -922,6 +922,7 @@ export function PortalTabs({
                 studentBelt={student.belt_level || 'white_belt'}
                 onCancel={() => setPendingSequence(null)}
                 rehearseHref={seqPageHref(data, pendingSequence.sequenceId, 'feel')}
+                otherOpenPlan={data.openSession && data.openSession.id !== pendingSequence.sessionId ? (data.openSession.sequenceName || data.openSession.sequenceLabel || 'another sequence') : null}
                 onDone={(next) => {
                   // Marcelo (2026-09-11): "cuando termino me manda otra vez a
                   // iniciar en lugar de Home". router.refresh() re-pedía la

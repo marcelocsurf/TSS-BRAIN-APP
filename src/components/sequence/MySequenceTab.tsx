@@ -259,10 +259,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           {/* Por lado: una línea es tuya cuando es tuya de los dos lados. */}
           {(sides.fs != null || sides.bs != null) && (
             <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(6,28,43,.12)' }}>
-              <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
-              <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
-              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#10263B' : INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Gap</span><b>{sides.gap}★</b></span>}
-              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#10263B' }}>{sides.advice.text}</span>}
+              {/* Las notas por lado viven en "Both sides" (auditoría 2026-09-15: salían tres veces). Acá solo el consejo. */}
+              {sides.advice ? <span className="basis-full text-[13px] leading-snug font-semibold" style={{ color: '#10263B' }}>{sides.advice.text}</span> : <span className="text-[12px]" style={{ color: '#55666E' }}>Frontside and backside, side by side, below in Both sides.</span>}
             </div>
           )}
           {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
@@ -305,7 +303,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         <div className="rounded-lg overflow-hidden" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
           <div className="px-4 pt-3.5 pb-2">
             <p className="text-[23px]" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>Both sides</p>
-            <p className="text-[13px] mt-0.5" style={{ color: '#10263B' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
+            <p className="text-[13px] mt-0.5" style={{ color: '#10263B' }}>Each sequence is one side: frontside or backside. Here the same move sits side by side — a move is complete when both sequences are yours.</p>
           </div>
           <div className="px-3 pb-3 space-y-1.5">
             {sides.pairs.map((p) => {
@@ -760,9 +758,16 @@ function StepRow({
             </>
           ) : (
             <>
-              <StarRating value={item.rating} size="sm" readOnly />
+              {/* La estrella que CUENTA (auditoría 2026-09-15): una autoevaluación sin ola
+                  vale hasta 3★ para el camino; si mapeó 4★, se ve el 3★ efectivo y por qué. */}
+              <StarRating value={effectiveStars(item)} size="sm" readOnly />
               {item.rating !== null && (
-                <div className="text-[12px] text-[#55666E]">{item.rating}/5{item.self_source === 'assessed' ? ' · self-assessed' : ''}</div>
+                <div className="text-[12px] text-[#55666E] text-right">
+                  {effectiveStars(item)}/5
+                  {item.self_source === 'assessed' && (item.rating > (effectiveStars(item) ?? 0)
+                    ? <span className="block">mapped {item.rating}/5 · counts as 3★ until you surf it</span>
+                    : ' · self-assessed')}
+                </div>
               )}
             </>
           )}
