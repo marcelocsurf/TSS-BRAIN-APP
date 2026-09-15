@@ -371,10 +371,10 @@ const F_LABEL = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight
 const H_BIG = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.06 } as const;
 const T_CREAM = '#E9E2D2', T_PAPER = '#F7F9FA', T_INK = '#10263B', T_BORDER = '#DCD7C6', T_MUTED = '#55666E', T_NAVY = '#061C2B';
 const T_LABEL = { ...F_LABEL, letterSpacing: '0.08em', fontSize: 12 } as const;
-const creamLabel = (accent: string) => (accent === '#FFD166' ? '#B7791F' : accent === '#06D6A0' ? '#0F8A5F' : '#0A7FA0');
+const creamLabel = (accent: string) => (accent === '#FFD166' ? '#10263B' : accent === '#06D6A0' ? '#0A7C5D' : '#00A8CC');
 const ARCHIVO = 'var(--font-archivo), Archivo, sans-serif';
 const T_MONO_SM = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontSize: 13 } as const;
-const T_LINK = '#0A7FA0';
+const T_LINK = '#00A8CC';
 /** Tarjeta sand del manual v10 con etiqueta mono arriba (mock My Progress 2026-09-15). */
 function SandCard({ label, right, children, className = '' }: { label?: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
@@ -537,7 +537,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
               <p style={{ ...T_LABEL, color: creamLabel(first.accent) }}>{first.label}</p>
               <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>{first.title}</p>
               <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>{first.reason}</p>
-              {first.detail && <p className="text-[14px] mt-1 leading-snug font-semibold" style={{ color: '#B7791F' }}>{first.detail}</p>}
+              {first.detail && <p className="text-[14px] mt-1 leading-snug font-semibold" style={{ color: T_INK, fontStyle: 'italic' }}>{first.detail}</p>}
               {first.side && <p className="text-[14px] mt-1 leading-snug" style={{ color: '#7C4DFF' }}>Both sides · {first.side}</p>}
               {first.onClick && first.action && (
                 <button type="button" onClick={first.onClick}
@@ -587,7 +587,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
                 <p style={{ ...T_LABEL, color: creamLabel(r.accent) }}>{r.label}</p>
                 <p className="text-[18px] font-extrabold leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>{r.title}</p>
                 <p className="text-[14px] mt-0.5 leading-snug" style={{ color: T_INK }}>{r.reason}</p>
-                {r.detail && <p className="text-[13px] mt-1 leading-snug font-semibold" style={{ color: '#B7791F' }}>{r.detail}</p>}
+                {r.detail && <p className="text-[13px] mt-1 leading-snug font-semibold" style={{ color: T_INK, fontStyle: 'italic' }}>{r.detail}</p>}
                 {r.side && <p className="text-[13px] mt-1 leading-snug" style={{ color: '#7C4DFF' }}>Both sides · {r.side}</p>}
                 {r.onClick && r.action && (
                   <button type="button" onClick={r.onClick}

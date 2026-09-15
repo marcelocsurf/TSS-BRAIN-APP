@@ -44,8 +44,8 @@ export function StarRating({
 
   // Color tokens by variant. M45 — official = TSS cyan (brand color);
   // self-rating stays amber so the two are visually distinct.
-  const filledColor = variant === 'official' ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-amber-400';
-  const emptyColor = variant === 'official' ? 'text-[var(--tss-cyan,#5AC3E7)]/25' : 'text-gray-300';
+  const filledColor = variant === 'official' ? 'text-[var(--tss-cyan,#00D2FF)]' : 'text-[#FFD166]';
+  const emptyColor = variant === 'official' ? 'text-[var(--tss-cyan,#00D2FF)]/25' : 'text-[#DCD7C6]';
 
   return (
     <div className="inline-flex flex-col items-start">
@@ -72,18 +72,18 @@ export function StarRating({
           );
         })}
         {value !== null && size !== 'sm' && (
-          <span className="ml-2 text-sm font-medium text-gray-700">
+          <span className="ml-2 text-sm font-medium text-[#10263B]">
             {value}/5
           </span>
         )}
         {variant === 'official' && value !== null && size !== 'sm' && (
-          <span className="ml-1 text-[9px] uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] font-bold">
+          <span className="ml-1 text-[9px] uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)] font-bold">
             Official
           </span>
         )}
       </div>
       {showLabel && (
-        <div className="mt-1 text-[11px] text-gray-500 italic">
+        <div className="mt-1 text-[11px] text-[#55666E] italic">
           {display !== null
             ? RATING_LABELS[display]
             : variant === 'official'

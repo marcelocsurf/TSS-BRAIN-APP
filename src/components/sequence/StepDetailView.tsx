@@ -17,7 +17,7 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 type AssessResult = 'met' | 'partial' | 'not_met';
 const ASSESS_OPTS: { key: AssessResult; label: string; bg: string; fg: string }[] = [
   { key: 'met', label: 'I have it', bg: GREEN, fg: INK },
-  { key: 'partial', label: 'Halfway', bg: GOLD, fg: '#5b4300' },
+  { key: 'partial', label: 'Halfway', bg: GOLD, fg: '#10263B' },
   { key: 'not_met', label: 'Not yet', bg: '#FF6B6B', fg: '#F7F9FA' },
 ];
 
@@ -83,7 +83,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
   if (!data || !data.lesson) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">Step not found</p>
+        <p className="text-[#B03A2E]">Step not found</p>
         <button onClick={onBack} className="mt-4 text-sm underline">← Back</button>
       </div>
     );
@@ -122,7 +122,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
 
       {/* Self-assessment · sin ola (Marcelo 2026-09-10) */}
       <div className="bg-[#F7F9FA] rounded-[5px] shadow-sm border border-[#DCD7C6] p-5">
-        <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
+        <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#00A8CC' }}>
           <Target size={12} strokeWidth={1.75} />
           Where you are on this step
         </div>
@@ -151,7 +151,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                   <div key={i} className="border border-[#DCD7C6] rounded-[5px] p-2.5">
                     <p className="text-[12px] text-[#10263B] mb-1.5 leading-snug"><span className="font-bold mr-1">{i + 1}.</span>{text}</p>
                     {(assessedMap[i] || coachMark[i]) && (
-                      <p className="text-[11px] mb-1.5" style={{ color: '#0A5C70' }}>
+                      <p className="text-[11px] mb-1.5" style={{ color: '#00A8CC' }}>
                         {assessedMap[i] ? `You: ${markWord(assessedMap[i])}` : ''}{assessedMap[i] && coachMark[i] ? ' · ' : ''}{coachMark[i] ? `Your coach: ${markWord(coachMark[i].result)}` : ''}
                       </p>
                     )}
@@ -173,7 +173,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                 style={{ background: INK, color: PAPER }}>
                 {savingRating ? 'Saving…' : preview ? `Save my self-assessment · ${preview}★` : 'Mark the indicators to save'}
               </button>
-              {assessMsg && <p className="text-[12px] text-red-600">{assessMsg}</p>}
+              {assessMsg && <p className="text-[12px] text-[#B03A2E]">{assessMsg}</p>}
             </div>
           ) : (
             <div className="mt-3">
@@ -182,7 +182,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
             </div>
           )}
           {anyNotYet && (
-            <p className="mt-3 text-[12.5px] leading-snug rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.08)', color: '#0A5C70' }}>
+            <p className="mt-3 text-[12.5px] leading-snug rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.08)', color: '#00A8CC' }}>
               The small details that turn a halfway into a yes are what a certified coach sees in one session with you.
             </p>
           )}
@@ -191,7 +191,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
 
       {/* Pedagogy doctrine note (when both drill + mission available) */}
       {drill && mission && (
-        <div className="rounded-lg p-3.5 text-[12.5px] leading-relaxed" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)', color: 'rgba(247,249,250,.85)' }}>
+        <div className="rounded-lg p-3.5 text-[12.5px] leading-relaxed" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.35)', color: 'rgba(247,249,250,.85)' }}>
           <strong>THINK</strong> — the lesson: understand what the movement does and how it works.
           <br />
           <strong>FEEL</strong> — the drill: visualize it and simulate it in a controlled setting (sand, calm water, pool, skateboard).
@@ -221,7 +221,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
       {/* Session history */}
       {sessionHistory && sessionHistory.length > 0 && (
         <div className="bg-[#F7F9FA] rounded-lg shadow-sm border border-[#DCD7C6] p-5">
-          <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0090B0' }}>
+          <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#00A8CC' }}>
             <Waves size={12} strokeWidth={1.75} />
             Recent practice sessions
           </div>
@@ -242,7 +242,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
                   <div className="mt-1 space-y-0.5">
                     {[...s.criteria_evaluation].sort((a: any, b: any) => a.criterion_index - b.criterion_index).map((c: any) => {
                       const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X;
-                      const color = c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#7a5c00' : '#B4232C';
+                      const color = c.result === 'met' ? '#0A7C5D' : c.result === 'partial' ? '#10263B' : '#B03A2E';
                       return (
                         <div key={c.criterion_index} className="flex items-start gap-1.5 text-[12px] leading-snug text-[#55666E]">
                           <Icon size={11} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color }} aria-label={c.result === 'met' ? 'Met' : c.result === 'partial' ? 'Partial' : 'Not met'} />
@@ -285,7 +285,7 @@ function DrillOrMissionCard({
   const TypeIcon = isDrill ? Dumbbell : Waves;
   const typeLabel = isDrill ? 'FEEL — visualize and simulate it, in a controlled setting' : 'DO — execute it in real conditions, in real time';
   const accentHex = isDrill ? GOLD : CYAN;
-  const accentText = isDrill ? '#7a5c00' : '#0090B0';
+  const accentText = isDrill ? '#10263B' : '#00A8CC';
 
   return (
     <div className="bg-[#F7F9FA] rounded-lg shadow-sm p-5" style={{ border: `2px solid ${accentHex}55` }}>
@@ -346,13 +346,13 @@ function DrillOrMissionCard({
       {/* Success criteria */}
       {item.success_criteria && item.success_criteria.length > 0 && (
         <div className="mt-4 p-3.5 rounded-[5px]" style={{ background: 'rgba(6,214,160,.08)', border: '1px solid rgba(6,214,160,.35)' }}>
-          <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0a7c5d' }}>
+          <div className="flex items-center gap-1.5 text-[12px] mb-2" style={{ ...F_M, color: '#0A7C5D' }}>
             <Check size={12} strokeWidth={2} />
             Success criteria
           </div>
           <ul className="space-y-1">
             {item.success_criteria.map((sc: string, i: number) => (
-              <li key={i} className="text-xs flex gap-2" style={{ color: '#085041' }}>
+              <li key={i} className="text-xs flex gap-2" style={{ color: '#0A7C5D' }}>
                 <span className="font-bold">{i + 1}.</span>
                 <span>{sc}</span>
               </li>
@@ -361,7 +361,7 @@ function DrillOrMissionCard({
           {/* Una sola vez, fija, y solo en la misión: la confirmación del coach
               no es un criterio, y el drill no lo confirma nadie en el app. */}
           {!isDrill && (
-            <p className="mt-2 text-[12px]" style={{ color: '#0a7c5d', opacity: .8 }}>
+            <p className="mt-2 text-[12px]" style={{ color: '#0A7C5D', opacity: .8 }}>
               Your coach confirms it when you train together.
             </p>
           )}

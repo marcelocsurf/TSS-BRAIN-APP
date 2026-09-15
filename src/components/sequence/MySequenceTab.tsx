@@ -24,8 +24,8 @@ export function MomentChips({ list, light = false }: { list: Moment[] | undefine
   return (
     <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-1">
       {list.map((m) => (
-        <span key={m.key} className="inline-flex items-center gap-1 text-[12px] leading-tight" style={{ color: light ? 'rgba(247,249,250,.8)' : '#4b5563' }} title={m.title}>
-          <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
+        <span key={m.key} className="inline-flex items-center gap-1 text-[12px] leading-tight" style={{ color: light ? 'rgba(247,249,250,.8)' : '#55666E' }} title={m.title}>
+          <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#55666E' }} />
           {m.short}
         </span>
       ))}
@@ -40,7 +40,7 @@ function SideChip({ side, small = false, dark = false }: { side: SequenceSide | 
   return (
     <span
       className={`inline-flex items-center rounded ${small ? 'px-1 text-[12px]' : 'px-1.5 py-0.5 text-[12px]'} font-bold`}
-      style={{ ...F_M, letterSpacing: '0.08em', background: dark ? 'rgba(0,210,255,.18)' : 'rgba(6,28,43,.08)', color: dark ? '#00D2FF' : '#0A2438' }}
+      style={{ ...F_M, letterSpacing: '0.08em', background: dark ? 'rgba(0,210,255,.18)' : 'rgba(6,28,43,.08)', color: dark ? '#00D2FF' : '#0A2532' }}
       title={side === 'both' ? 'Frontside and backside' : SIDE_WORD[side]}
     >
       {txt}
@@ -185,7 +185,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.overallRating !== null ? `${data.overallRating.toFixed(1)} / 5` : 'Not rated yet'}</span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPct)}%`, background: 'linear-gradient(90deg, #0090B0 0%, #00D2FF 100%)', boxShadow: '0 0 12px rgba(0,210,255,.45)' }} />
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPct)}%`, background: 'linear-gradient(90deg, #00A8CC 0%, #00D2FF 100%)', boxShadow: '0 0 12px rgba(0,210,255,.45)' }} />
             </div>
           </div>
           <span className="leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 34, letterSpacing: '-0.02em', color: CYAN }}>{Math.round(overallPct)}<span style={{ fontSize: 16, marginLeft: 2 }}>%</span></span>
@@ -225,7 +225,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           )}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {levelSeqs.map((sq) => {
-              const st = sq.state === 'owned' ? '#0A7C5D' : sq.state === 'unrated' ? '#55666E' : '#B8860B';
+              const st = sq.state === 'owned' ? '#0A7C5D' : sq.state === 'unrated' ? '#55666E' : '#FFD166';
               const pre = sequencePrefix(sq.id, sq.order);
               return (
                 <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
@@ -242,13 +242,13 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(6,28,43,.12)' }}>
               <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
               <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
-              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#8A5A12' : INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Gap</span><b>{sides.gap}★</b></span>}
-              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#8A5A12' }}>{sides.advice.text}</span>}
+              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#10263B' : INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Gap</span><b>{sides.gap}★</b></span>}
+              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#10263B' }}>{sides.advice.text}</span>}
             </div>
           )}
           {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
               (coach · método · reciente). Acá solo el mapa. */}
-          {!next && <p className="text-[12px] mt-2" style={{ color: '#3E4A50' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
+          {!next && <p className="text-[12px] mt-2" style={{ color: '#55666E' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
         </div>
       )}
 
@@ -274,7 +274,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             {tasks.map((t) => (
               <div key={t.id} className="rounded-[5px] px-3 py-2.5 flex items-center gap-3" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-bold leading-snug" style={{ color: '#10263B' }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#B7791F' }}> · {t.detail}</span> : null}</p>
+                  <p className="text-[14px] font-bold leading-snug" style={{ color: '#10263B' }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#10263B' }}> · {t.detail}</span> : null}</p>
                   <p className="text-[12px]" style={{ color: '#55666E' }}>{t.sequenceLabel}</p>
                 </div>
                 {onTrainSequence && (
@@ -282,7 +282,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                     className="shrink-0 h-11 px-3.5 rounded-[5px] text-[13px] font-black uppercase" style={{ background: CYAN, color: INK, letterSpacing: '0.03em' }}>Train it</button>
                 )}
                 <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); }}
-                  className="shrink-0 h-11 px-2.5 rounded-[5px] text-[12px] font-semibold" style={{ color: '#10263B', border: '1px solid #DCD7C6', background: '#fff' }}>Done</button>
+                  className="shrink-0 h-11 px-2.5 rounded-[5px] text-[12px] font-semibold" style={{ color: '#10263B', border: '1px solid #DCD7C6', background: '#F7F9FA' }}>Done</button>
               </div>
             ))}
           </div>
@@ -305,8 +305,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 const weak = p.gap != null && p.gap >= 1 && (c.value ?? 0) < ((sd === 'fs' ? p.bs?.value : p.fs?.value) ?? 0);
                 const inner = (
                   <>
-                    <span className="block text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: weak ? '#B7791F' : '#55666E' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
-                    <span className="block text-[16px] font-bold" style={{ color: c.value == null ? '#55666E' : weak ? '#B7791F' : '#10263B' }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
+                    <span className="block text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: weak ? '#10263B' : '#55666E' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
+                    <span className="block text-[16px] font-bold" style={{ color: c.value == null ? '#55666E' : weak ? '#10263B' : '#10263B' }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
                   </>
                 );
                 const href = pageHrefOf(c.id);
@@ -317,7 +317,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                   <span className="text-[14px] font-bold" style={{ color: '#10263B' }}>{p.move}{p.both && <span className="block text-[12px] font-normal" style={{ color: '#55666E' }}>one sequence · both sides</span>}</span>
                   {cell('fs', p.fs)}
                   {cell('bs', p.bs)}
-                  <span className="text-[12px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#B7791F' : '#55666E' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
+                  <span className="text-[12px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#10263B' : '#55666E' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
                 </div>
               );
             })}
@@ -332,7 +332,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           va después. La lista completa sigue disponible para buscar algo
           puntual. */}
       {data.sequences.length > 0 && (
-        <div className="flex gap-1 p-1 rounded-full" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
+        <div className="flex gap-1 p-1 rounded-full" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.35)' }}>
           {(['sequence', 'all'] as const).map((v) => (
             <button
               key={v}
@@ -385,7 +385,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
       {/* Las cintas anteriores: siguen entrenables, pero no tapan tu nivel. */}
       {view === 'sequence' && mine.length > 0 && earlier.length > 0 && (
-        <details className="rounded-lg overflow-hidden" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.25)' }}>
+        <details className="rounded-lg overflow-hidden" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
             <span>
               <span className="block text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Your foundations · earlier belts</span>
@@ -535,7 +535,7 @@ function BlockSection({
     >
       {/* Cabecera Ink con el número grande de la secuencia — el mismo lenguaje
           que Course (Marcelo 2026-09-11). El cuerpo sigue en Paper. */}
-      <summary className="px-4 py-4 flex items-center justify-between gap-3 cursor-pointer list-none" style={{ background: '#0A2A3A' }}>
+      <summary className="px-4 py-4 flex items-center justify-between gap-3 cursor-pointer list-none" style={{ background: '#0A2532' }}>
         {prefix?.startsWith('#') ? (
           <span className="shrink-0 w-12 leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', color: CYAN }}>{prefix.slice(1).padStart(2, '0')}</span>
         ) : null}
@@ -585,7 +585,7 @@ function BlockSection({
             <span className="block font-semibold" style={{ color: INK }}>What this sequence is · open it in the course</span>
             <span className="block text-[12px] text-[#55666E]">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
           </span>
-          <span className="font-bold" style={{ color: '#0090B0' }}>→</span>
+          <span className="font-bold" style={{ color: '#00A8CC' }}>→</span>
         </a>
       )}
 
@@ -607,14 +607,14 @@ function BlockSection({
               type="button"
               onClick={() => setPicking((p) => !p)}
               className="h-11 rounded-xl text-[12px] font-bold inline-flex items-center justify-center gap-1.5 border-[1.5px] active:scale-[0.98]"
-              style={picking ? { background: '#FBF0CF', borderColor: '#B7791F', color: '#8A5A12' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}
+              style={picking ? { background: 'rgba(255,209,102,.28)', borderColor: '#FFD166', color: '#10263B' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}
             >
               <Crosshair size={13} strokeWidth={2.25} /> {picking ? 'Cancel' : 'Work on one step'}
             </button>
           </div>
           {picking && (
-            <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#FBF0CF' }}>
-              <p className="text-[12px]" style={{ ...F_M, color: '#8A5A12' }}>Pick your focus</p>
+            <div className="rounded-[5px] px-3 py-2.5" style={{ background: 'rgba(255,209,102,.28)' }}>
+              <p className="text-[12px]" style={{ ...F_M, color: '#10263B' }}>Pick your focus</p>
               <p className="text-[12px] text-[#10263B] leading-snug mt-0.5">
                 Tap the step you want to work on. You still run the whole sequence — that step is your objective.
               </p>
@@ -629,7 +629,7 @@ function BlockSection({
                     type="button"
                     onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'step_focus', focusStepId: sid }); }}
                     className="mt-2 w-full h-11 rounded-lg text-[12px] font-bold"
-                    style={{ background: '#B7791F', color: INK }}
+                    style={{ background: '#FFD166', color: INK }}
                   >
                     Start with {title} → {heldBackStepId ? '(held your last run back)' : ''}
                   </button>
@@ -647,9 +647,9 @@ function BlockSection({
           type="button"
           onClick={() => onOpenStep(weakestStepId)}
           className="w-full text-left px-4 py-2.5 border-b border-[#DCD7C6]"
-          style={{ background: '#FBF0CF' }}
+          style={{ background: 'rgba(255,209,102,.28)' }}
         >
-          <span className="text-[12px]" style={{ ...F_M, color: '#8A5A12' }}>
+          <span className="text-[12px]" style={{ ...F_M, color: '#10263B' }}>
             Start here
           </span>
           <span className="block text-[12.5px] text-[#10263B] leading-snug">
@@ -706,8 +706,8 @@ function StepRow({
   return (
     <button
       onClick={onOpen}
-      className="w-full px-4 py-3 hover:bg-[#EEF3F5] transition-colors text-left"
-      style={highlight ? { background: '#FBF0CF', boxShadow: 'inset 3px 0 0 #E0A62B' } : picking ? { boxShadow: 'inset 3px 0 0 #B7791F55' } : undefined}
+      className="w-full px-4 py-3 hover:bg-[#EDF3F5] transition-colors text-left"
+      style={highlight ? { background: 'rgba(255,209,102,.28)', boxShadow: 'inset 3px 0 0 #FFD166' } : picking ? { boxShadow: 'inset 3px 0 0 #FFD16688' } : undefined}
       aria-label={picking ? `Focus on ${item.step_title}` : undefined}
     >
       <div className="flex items-start justify-between gap-3">
@@ -742,7 +742,7 @@ function StepRow({
             // M4: Coach official rating overrides self-rating visually (gold)
             <>
               <StarRating value={item.coach_rating} size="sm" readOnly variant="official" />
-              <div className="text-[12px] text-[var(--tss-cyan,#5AC3E7)] font-bold uppercase tracking-wider">
+              <div className="text-[12px] text-[var(--tss-cyan,#00D2FF)] font-bold uppercase tracking-wider">
                 Official {item.coach_rating}/5
               </div>
               {item.rating !== null && item.rating !== item.coach_rating && (

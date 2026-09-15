@@ -156,7 +156,7 @@ export function LinkedTrainingFlow({
   if (phase === 'error' || !drill) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-2">{errorMsg || 'Something went wrong'}</p>
+        <p className="text-[#B03A2E] mb-2">{errorMsg || 'Something went wrong'}</p>
         <button onClick={onClearIncoming} className="text-sm underline text-[#55666E]">← Back to Train</button>
       </div>
     );
@@ -206,13 +206,13 @@ export function LinkedTrainingFlow({
                   style={on ? { borderColor: GREEN, background: 'rgba(6,214,160,.08)' } : { borderColor: '#DCD7C6', background: '#F7F9FA' }}
                 >
                   <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold"
-                    style={on ? { background: GREEN, color: INK } : { border: '1.5px solid #d1d5db', color: 'transparent' }}>✓</span>
-                  <span className="text-[13px] leading-snug" style={{ color: on ? '#0a7c5d' : '#374151' }}>{c.label}</span>
+                    style={on ? { background: GREEN, color: INK } : { border: '1.5px solid #DCD7C6', color: 'transparent' }}>✓</span>
+                  <span className="text-[13px] leading-snug" style={{ color: on ? '#0A7C5D' : '#55666E' }}>{c.label}</span>
                 </button>
               );
             })}
             {!checks.level && (
-              <p className="text-[11px] leading-snug rounded-[5px] px-3 py-2" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
+              <p className="text-[11px] leading-snug rounded-[5px] px-3 py-2" style={{ background: 'rgba(255,209,102,.16)', color: '#10263B' }}>
                 If today isn’t safe for your level, it’s not your day — the ocean will be here tomorrow.
               </p>
             )}
@@ -264,17 +264,17 @@ export function LinkedTrainingFlow({
             <div className="rounded-[5px] p-3 border" style={lastHint.weakest.result === 'not_met'
               ? { background: 'rgba(255,107,107,.12)', borderColor: '#FF6B6B99' }
               : { background: 'rgba(255,209,102,.16)', borderColor: `${GOLD}99` }}>
-              <p className="text-[9px]" style={{ ...F_M, color: lastHint.weakest.result === 'not_met' ? '#B4232C' : '#7a5c00' }}>
+              <p className="text-[9px]" style={{ ...F_M, color: lastHint.weakest.result === 'not_met' ? '#B03A2E' : '#10263B' }}>
                 Your last practice · {lastHint.weakest.result === 'not_met' ? 'not met' : 'partial'}
               </p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{lastHint.weakest.text}</p>
               {intention.trim() === lastHint.weakest.text ? (
-                <p className="mt-2 text-[11px] font-bold" style={{ color: '#7a5c00' }}>
+                <p className="mt-2 text-[11px] font-bold" style={{ color: '#10263B' }}>
                   <Check size={11} className="inline mr-1 -mt-0.5" />Today’s objective — edit it below if you want another.
                 </p>
               ) : (
                 <button type="button" onClick={() => { setIntention(lastHint.weakest!.text); setObjectiveOpen(true); }}
-                  className="mt-2 text-[11px] font-bold active:scale-[0.98]" style={{ color: '#7a5c00' }}>
+                  className="mt-2 text-[11px] font-bold active:scale-[0.98]" style={{ color: '#10263B' }}>
                   Make it today’s objective →
                 </button>
               )}
@@ -345,7 +345,7 @@ export function LinkedTrainingFlow({
             <ul className="space-y-1">
               {successCriteria.map((sc, i) => (
                 <li key={i} className="text-[12px] leading-snug flex gap-2" style={{ color: INK }}>
-                  <span className="font-bold shrink-0" style={{ color: '#0090B0' }}>{i + 1}.</span>
+                  <span className="font-bold shrink-0" style={{ color: '#00A8CC' }}>{i + 1}.</span>
                   <span>{sc}</span>
                 </li>
               ))}
@@ -462,7 +462,7 @@ export function LinkedTrainingFlow({
     return (
       <Shell drill={drill} onCancel={onClearIncoming} step={3}>
         <div>
-          <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
+          <p className="text-[9px]" style={{ ...F_M, color: '#00A8CC' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
           <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Ready to take it to the water?'}</h3>
           <p className="text-[12.5px] text-[#55666E] mt-1">
             {isMission
@@ -566,7 +566,7 @@ export function LinkedTrainingFlow({
                   <div className="grid grid-cols-3 gap-1.5">
                     {([
                       { key: 'met', label: 'Met', Icon: Check, bg: GREEN, fg: INK },
-                      { key: 'partial', label: 'Partial', Icon: CircleDot, bg: GOLD, fg: '#5b4300' },
+                      { key: 'partial', label: 'Partial', Icon: CircleDot, bg: GOLD, fg: '#10263B' },
                       { key: 'not_met', label: 'Not met', Icon: X, bg: '#FF6B6B', fg: '#F7F9FA' },
                     ] as const).map((opt) => {
                       const selected = criteriaResults[i] === opt.key;
@@ -593,7 +593,7 @@ export function LinkedTrainingFlow({
             className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm" />
         )}
 
-        {errorMsg && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-[5px]">{errorMsg}</p>}
+        {errorMsg && <p className="text-sm text-[#B03A2E] bg-[rgba(255,107,107,.12)] p-3 rounded-[5px]">{errorMsg}</p>}
 
         <button onClick={handleSave} disabled={!canSave}
           className="w-full py-3.5 rounded-full text-[11px] transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 disabled:opacity-40"
@@ -628,12 +628,12 @@ export function LinkedTrainingFlow({
           <svg width="72" height="72" viewBox="0 0 100 100" className="mx-auto" aria-hidden="true">
             <defs><clipPath id="ltf-yy"><circle cx="50" cy="50" r="48" /></clipPath></defs>
             <g clipPath="url(#ltf-yy)">
-              <rect width="100" height="100" fill="#0a2a4a" />
+              <rect width="100" height="100" fill="#0A2532" />
               <path d="M50 2 a48 48 0 0 1 0 96 a24 24 0 0 1 0 -48 a24 24 0 0 0 0 -48" fill="#00D2FF" />
-              <circle cx="50" cy="26" r="7.5" fill="#0a2a4a" />
+              <circle cx="50" cy="26" r="7.5" fill="#0A2532" />
               <circle cx="50" cy="74" r="7.5" fill="#00D2FF" />
             </g>
-            <circle cx="50" cy="50" r="48" fill="none" stroke="#1f3b57" strokeWidth="2" />
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#55666E" strokeWidth="2" />
           </svg>
           <div>
             <h2 className="text-[22px]" style={{ ...F_D, color: INK }}>Session saved</h2>
@@ -641,7 +641,7 @@ export function LinkedTrainingFlow({
           </div>
 
           {weekCount != null && weekCount > 0 && (
-            <p className="text-[12px] font-bold rounded-full inline-block px-4 py-1.5" style={{ background: 'rgba(0,210,255,.12)', color: '#0090B0' }}>
+            <p className="text-[12px] font-bold rounded-full inline-block px-4 py-1.5" style={{ background: 'rgba(0,210,255,.12)', color: '#00A8CC' }}>
               <Flame size={12} className="inline -mt-0.5 mr-1" /> {weekCount} practice{weekCount === 1 ? '' : 's'} in the last 7 days
             </p>
           )}
@@ -673,7 +673,7 @@ export function LinkedTrainingFlow({
                 </div>
                 {doneEvals.map((c) => {
                   const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X;
-                  const color = c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#7a5c00' : '#B4232C';
+                  const color = c.result === 'met' ? '#0A7C5D' : c.result === 'partial' ? '#10263B' : '#B03A2E';
                   return (
                     <div key={c.criterion_index} className="flex items-start gap-2 text-[11.5px] leading-snug">
                       <Icon size={12} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color }} aria-label={c.result === 'met' ? 'Met' : c.result === 'partial' ? 'Partial' : 'Not met'} />
@@ -687,18 +687,18 @@ export function LinkedTrainingFlow({
 
           {doneWeakest ? (
             <div className="rounded-[5px] p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
-              <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Work on this next</p>
+              <p className="text-[9px]" style={{ ...F_M, color: '#00A8CC' }}>Work on this next</p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>{doneWeakest.criterion_text}</p>
               <p className="text-[11px] text-[#55666E] mt-1">Next time you open this step, it will already be today’s objective.</p>
             </div>
           ) : isMission && executionRating < 4 ? (
             <div className="rounded-[5px] p-3 text-left" style={{ background: 'rgba(0,210,255,.10)' }}>
-              <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Next time</p>
+              <p className="text-[9px]" style={{ ...F_M, color: '#00A8CC' }}>Next time</p>
               <p className="text-[12.5px] mt-1 leading-snug" style={{ color: INK }}>Keep working the whole move. If one part stands out, mark it next time and it becomes your objective.</p>
             </div>
           ) : null}
 
-          <div className="flex items-center justify-center gap-1.5 rounded-[5px] p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#7a5c00' }}>
+          <div className="flex items-center justify-center gap-1.5 rounded-[5px] p-3 text-xs" style={{ background: 'rgba(255,209,102,.16)', color: '#10263B' }}>
             <Check size={13} strokeWidth={2} className="shrink-0" />
             <span>Your self-rating in <strong>My Sequence</strong> is now {executionRating}/5.</span>
           </div>
@@ -760,7 +760,7 @@ function BreathCard({ keyWords, selected, onSelect, kindLabel }: {
             transform: breathing ? undefined : 'scale(.75)',
             transition: 'transform .5s',
           }}>
-          <Play size={18} style={{ color: '#0090B0' }} />
+          <Play size={18} style={{ color: '#00A8CC' }} />
         </span>
         <span className="block text-[14px] font-bold" style={{ color: INK }}>
           {breathing ? breathLabel : 'Breathe · Focus · Play'}
@@ -774,7 +774,7 @@ function BreathCard({ keyWords, selected, onSelect, kindLabel }: {
           className="mt-1.5 w-full rounded-full px-3 py-2 text-[10.5px] transition-colors inline-flex items-center justify-center gap-1.5"
           style={selected === 'key_words'
             ? { background: INK, color: CYAN }
-            : { background: '#F7F9FA', border: '1px solid #e5e7eb', color: '#55666E' }}>
+            : { background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#55666E' }}>
           <Target size={12} className="shrink-0" /> {selected === 'key_words' ? '✓ ' : ''}{kindLabel} key words: {keyWords}
         </button>
       )}
@@ -809,7 +809,7 @@ function Shell({ drill, onCancel, step, children }: {
 function Banner({ drill, onCancel }: { drill: DrillMissionRow; onCancel: () => void }) {
   const TypeIcon = drill.type === 'drill' ? Dumbbell : Waves;
   return (
-    <div className="rounded-lg p-3.5 flex items-start gap-3" style={{ background: '#0A2438', borderLeft: `4px solid ${GOLD}` }}>
+    <div className="rounded-lg p-3.5 flex items-start gap-3" style={{ background: '#0A2532', borderLeft: `4px solid ${GOLD}` }}>
       <TypeIcon size={20} strokeWidth={1.75} className="flex-shrink-0 mt-0.5" style={{ color: GOLD }} />
       <div className="flex-1 min-w-0">
         <p className="text-[8px]" style={{ ...F_M, color: GOLD }}>Practicing from My Sequence · {drill.step_id}</p>
@@ -827,7 +827,7 @@ function Pill({ active, onClick, label }: { active: boolean; onClick: () => void
   return (
     <button onClick={onClick}
       className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-[5px] text-[12.5px] font-semibold border-[1.5px] transition-colors active:scale-[0.98]"
-      style={active ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#374151' }}>
+      style={active ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
       {active && <Check size={13} strokeWidth={2.5} className="flex-shrink-0" />}
       {label}
     </button>
@@ -840,7 +840,7 @@ function Chip({ active, onClick, label, muted }: { active: boolean; onClick: () 
       className="px-3 py-2 rounded-full text-[11.5px] font-semibold transition-colors active:scale-[0.97]"
       style={active
         ? { background: GREEN, color: INK }
-        : { background: '#F7F9FA', border: muted ? '1px dashed #d1d5db' : '1px solid #e5e7eb', color: muted ? '#9ca3af' : '#374151' }}>
+        : { background: '#F7F9FA', border: muted ? '1px dashed #DCD7C6' : '1px solid #DCD7C6', color: muted ? '#55666E' : '#55666E' }}>
       {active ? '✓ ' : ''}{label}
     </button>
   );
@@ -884,7 +884,7 @@ function DrillVideoPlayer({ videos, title }: {
           {videos.map((v, i) => (
             <button key={v.id ?? i} type="button" onClick={() => setActiveIdx(i)}
               className="px-2 py-1 text-[10px] font-medium rounded-full whitespace-nowrap"
-              style={activeIdx === i ? { background: INK, color: PAPER } : { background: '#F7F9FA', border: '1px solid #e5e7eb', color: '#55666E' }}>
+              style={activeIdx === i ? { background: INK, color: PAPER } : { background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#55666E' }}>
               {v.label || `Video ${i + 1}`}
             </button>
           ))}

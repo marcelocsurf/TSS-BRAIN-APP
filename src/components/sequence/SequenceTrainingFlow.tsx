@@ -46,7 +46,7 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 
 const CRIT_OPTS = [
   { key: 'met', label: 'Met', Icon: Check, bg: GREEN, fg: INK },
-  { key: 'partial', label: 'Partial', Icon: CircleDot, bg: GOLD, fg: '#5b4300' },
+  { key: 'partial', label: 'Partial', Icon: CircleDot, bg: GOLD, fg: '#10263B' },
   { key: 'not_met', label: 'Not met', Icon: X, bg: '#FF6B6B', fg: '#F7F9FA' },
 ] as const;
 
@@ -327,7 +327,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   if (phase === 'error' || !data) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-2">{errorMsg || 'Something went wrong'}</p>
+        <p className="text-[#B03A2E] mb-2">{errorMsg || 'Something went wrong'}</p>
         <button onClick={onCancel} className="text-sm underline text-[#55666E]">← Back to My Sequence</button>
       </div>
     );
@@ -406,7 +406,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   <button key={sd} type="button" onClick={() => setSide(sd)}
                     className="h-12 rounded-[5px] text-[12px] font-bold border-[1.5px] active:scale-[0.98]"
                     style={on ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}>
-                    {SIDE_WORD[sd]}{last != null ? <span className="block text-[12px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#55666E' }}>last {last}★</span> : <span className="block text-[12px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#9ca3af' }}>not rated yet</span>}
+                    {SIDE_WORD[sd]}{last != null ? <span className="block text-[12px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#55666E' }}>last {last}★</span> : <span className="block text-[12px] font-normal" style={{ color: on ? 'rgba(247,249,250,.7)' : '#55666E' }}>not rated yet</span>}
                   </button>
                 );
               })}
@@ -425,8 +425,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   <button key={t.id} type="button" aria-pressed={sel}
                     onClick={() => { setModeState('step_focus'); setFocusId(t.stepId); setFocusMoment(t.detail); if (t.detail) { setIntention(t.detail); setObjectiveOpen(true); } }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-[5px] border-[1.5px] text-left active:scale-[0.99]"
-                    style={sel ? { background: '#FBF0CF', borderColor: '#B7791F' } : { background: '#F7F9FA', borderColor: '#F3D48A' }}>
-                    <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>My list</span>
+                    style={sel ? { background: 'rgba(255,209,102,.28)', borderColor: '#FFD166' } : { background: '#F7F9FA', borderColor: '#FFD166' }}>
+                    <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#10263B' }}>My list</span>
                     <span className="text-[13px] font-semibold flex-1" style={{ color: INK }}>{t.stepTitle}{t.detail ? <span className="font-normal text-[#55666E]"> · {t.detail}</span> : null}</span>
                   </button>
                 );
@@ -444,11 +444,11 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               const on = !isRun && focusId === s.step_id;
               const ms = moments[s.step_id] ?? [];
               return (
-                <li key={s.step_id} className="rounded-[5px] border-[1.5px] overflow-hidden" style={on ? { borderColor: '#B7791F', background: '#FBF0CF' } : { borderColor: '#DCD7C6' }}>
+                <li key={s.step_id} className="rounded-[5px] border-[1.5px] overflow-hidden" style={on ? { borderColor: '#FFD166', background: 'rgba(255,209,102,.28)' } : { borderColor: '#DCD7C6' }}>
                   <button type="button" aria-pressed={on} onClick={() => pickStep(s.step_id)} className="w-full flex items-start gap-2.5 px-3 py-3 min-h-[44px] text-left">
-                    <span className="text-[12px] font-bold w-4 shrink-0 mt-0.5" style={{ color: on ? '#9A6A12' : '#9ca3af' }}>{i + 1}</span>
+                    <span className="text-[12px] font-bold w-4 shrink-0 mt-0.5" style={{ color: on ? '#10263B' : '#55666E' }}>{i + 1}</span>
                     <span className="text-[13px] font-semibold leading-tight flex-1" style={{ color: INK }}>{s.title}</span>
-                    {on && !focusMoment && <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>your focus</span>}
+                    {on && !focusMoment && <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#10263B' }}>your focus</span>}
                   </button>
                   {/* Plegado (auditoría 2026-09-10): el plan medía 1777px; los
                       momentos se abren solo en el paso que elegiste. */}
@@ -459,7 +459,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                         return (
                           <button key={m.key} type="button" aria-pressed={sel} onClick={() => pickMoment(s.step_id, m)}
                             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border"
-                            style={sel ? { background: '#B7791F', borderColor: '#B7791F', color: INK } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#4b5563' }}>
+                            style={sel ? { background: '#FFD166', borderColor: '#FFD166', color: INK } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
                             <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#55666E' }} />
                             {m.short}
                           </button>
@@ -471,7 +471,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               );
             })}
           </ol>
-          {hintText && <p className="text-[12px] mt-2 rounded-lg px-2.5 py-1.5" style={{ background: '#FBF0CF', color: '#9A6A12' }}>{hintText}</p>}
+          {hintText && <p className="text-[12px] mt-2 rounded-lg px-2.5 py-1.5" style={{ background: 'rgba(255,209,102,.28)', color: '#10263B' }}>{hintText}</p>}
         </div>
 
         {/* La misión del paso elegido: los indicadores que vas a marcar al volver */}
@@ -513,7 +513,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           <button type="button" aria-pressed={conditionsOk} onClick={() => setConditionsOk((v) => !v)}
             className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-[5px] border-[1.5px] text-left transition-colors active:scale-[0.99]"
             style={conditionsOk ? { background: 'rgba(6,214,160,.12)', borderColor: GREEN } : { background: '#F7F9FA', borderColor: '#DCD7C6' }}>
-            <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={conditionsOk ? { background: GREEN } : { border: '1.5px solid #d1d5db' }}>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={conditionsOk ? { background: GREEN } : { border: '1.5px solid #DCD7C6' }}>
               {conditionsOk && <Check size={12} strokeWidth={3} style={{ color: INK }} />}
             </span>
             <span className="text-[12.5px] leading-snug" style={{ color: conditionsOk ? INK : '#55666E' }}>The conditions fit my level, and my expectations are right for today.</span>
@@ -570,7 +570,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             className="mt-1.5 w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-[13px]" />
         </details>
 
-        {errorMsg && <p className="text-[12px] text-red-600 bg-red-50 rounded-lg px-3 py-2">{errorMsg}</p>}
+        {errorMsg && <p className="text-[12px] text-[#B03A2E] bg-[rgba(255,107,107,.12)] rounded-lg px-3 py-2">{errorMsg}</p>}
 
         <button type="button" disabled={!canSave} onClick={handlePlan}
           className="w-full h-12 rounded-[5px] text-[14px] font-bold disabled:opacity-40 active:scale-[0.99]"
@@ -609,8 +609,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           </div>
         )}
         {(focusMoment || intention.trim()) && (
-          <div className="rounded-[5px] px-3.5 py-2.5" style={{ background: '#FBF0CF' }}>
-            <p className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>Your word for the wave</p>
+          <div className="rounded-[5px] px-3.5 py-2.5" style={{ background: 'rgba(255,209,102,.28)' }}>
+            <p className="text-[12px]" style={{ ...F_M, color: '#10263B' }}>Your word for the wave</p>
             <p className="text-[13px] text-[#10263B]">{intention.trim() || focusMoment}</p>
           </div>
         )}
@@ -687,7 +687,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     return (
       <Shell step={3} seqLabel={seqLabel} title={shellTitle} onCancel={safeCancel}>
         {!online && (
-          <p className="text-[13px] leading-snug rounded-[5px] px-3.5 py-2.5" style={{ background: '#FBF0CF', color: '#7a5c00' }}>
+          <p className="text-[13px] leading-snug rounded-[5px] px-3.5 py-2.5" style={{ background: 'rgba(255,209,102,.28)', color: '#10263B' }}>
             No signal right now. Your answers stay on this phone — tap Save when you are back online.
           </p>
         )}
@@ -704,7 +704,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         {isRun ? (
           <>
             <div>
-              <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation</p>
+              <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Honest evaluation</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
               <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for the whole chain, your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
@@ -721,7 +721,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   const on = !!held[s.step_id];
                   const crit = s.mission?.success_criteria ?? [];
                   return (
-                    <div key={s.step_id} className="rounded-[5px] border" style={on ? { borderColor: '#B7791F', background: '#FBF0CF' } : { borderColor: '#DCD7C6' }}>
+                    <div key={s.step_id} className="rounded-[5px] border" style={on ? { borderColor: '#FFD166', background: 'rgba(255,209,102,.28)' } : { borderColor: '#DCD7C6' }}>
                       <button type="button" aria-pressed={on}
                         onClick={() => {
                           const next = !on;
@@ -736,12 +736,12 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                           }
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left">
-                        <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={on ? { background: '#B7791F' } : { border: '1.5px solid #d1d5db' }}>
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={on ? { background: '#FFD166' } : { border: '1.5px solid #DCD7C6' }}>
                           {on && <X size={12} strokeWidth={3} className="text-white" />}
                         </span>
                         <span className="text-[12px] font-bold text-[#55666E] w-4">{i + 1}</span>
                         <span className="text-[13px] font-semibold flex-1 min-w-0 truncate" style={{ color: INK }}>{s.title}</span>
-                        {on && <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#9A6A12' }}>held it back</span>}
+                        {on && <span className="text-[12px] shrink-0" style={{ ...F_M, color: '#10263B' }}>held it back</span>}
                       </button>
                       {/* ¿En qué MOMENTO de la línea se rompió? Tocar uno marca la
                           lección como la que frenó el run y deja ese momento como
@@ -758,7 +758,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                                   setStepMoment((p) => ({ ...p, [s.step_id]: m.short }));
                                 }}
                                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border"
-                                style={sel ? { background: '#B7791F', borderColor: '#B7791F', color: INK } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#4b5563' }}>
+                                style={sel ? { background: '#FFD166', borderColor: '#FFD166', color: INK } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
                                 <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#55666E' }} />
                                 {m.short}
                               </button>
@@ -792,7 +792,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         ) : focus ? (
           <>
             <div>
-              <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>Honest evaluation · {focus.title}</p>
+              <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Honest evaluation · {focus.title}</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
               <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for {focus.title} today (it updates your self-rating in My Sequence), your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={execStars} onChange={setExecStars} size="lg" showLabel /></div>
@@ -828,7 +828,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-[13px]" />
         )}
 
-        {errorMsg && <p className="text-[12px] text-red-600 bg-red-50 rounded-lg px-3 py-2">{errorMsg}</p>}
+        {errorMsg && <p className="text-[12px] text-[#B03A2E] bg-[rgba(255,107,107,.12)] rounded-lg px-3 py-2">{errorMsg}</p>}
 
         <button type="button" disabled={!canSave} onClick={handleSave}
           className="w-full h-12 rounded-[5px] text-[14px] font-bold disabled:opacity-40 active:scale-[0.99]"
@@ -853,13 +853,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     <div className="space-y-4 rounded-lg p-3 sm:p-4" style={{ background: INK }}>
       <div className="bg-[#F7F9FA] rounded-lg p-7 text-center shadow-sm space-y-4">
         <div>
-          <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>Session saved</p>
+          <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Session saved</p>
           <h2 className="text-[22px] mt-1" style={{ ...F_D, color: INK }}>{isRun ? seq.name : focus?.title}</h2>
           <p className="text-sm text-[#55666E] mt-1">{seqLabel}</p>
         </div>
 
         {weekCount != null && weekCount > 0 && (
-          <p className="text-[12px] font-bold rounded-full inline-block px-4 py-1.5" style={{ background: 'rgba(0,210,255,.12)', color: '#0090B0' }}>
+          <p className="text-[12px] font-bold rounded-full inline-block px-4 py-1.5" style={{ background: 'rgba(0,210,255,.12)', color: '#00A8CC' }}>
             <Flame size={12} className="inline -mt-0.5 mr-1" /> {weekCount} practice{weekCount === 1 ? '' : 's'} in the last 7 days
           </p>
         )}
@@ -895,14 +895,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         </div>
 
         {nf ? (
-          <div className="rounded-[5px] p-4 text-left" style={{ background: '#FBF0CF' }}>
-            <p className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>Work on this next</p>
+          <div className="rounded-[5px] p-4 text-left" style={{ background: 'rgba(255,209,102,.28)' }}>
+            <p className="text-[12px]" style={{ ...F_M, color: '#10263B' }}>Work on this next</p>
             <p className="text-[14px] font-bold mt-0.5" style={{ color: INK }}>{nf.stepTitle}</p>
             {nf.criterionText && <p className="text-[12px] text-[#55666E] mt-0.5">{nf.criterionText}</p>}
             <p className="text-[12px] text-[#55666E] mt-1.5">Next time you open this sequence, it will already be your focus.</p>
           </div>
         ) : (
-          <div className="rounded-[5px] p-4 text-left" style={{ background: isRun && (seqStars ?? 0) < 4 ? '#FBF0CF' : 'rgba(6,214,160,.12)' }}>
+          <div className="rounded-[5px] p-4 text-left" style={{ background: isRun && (seqStars ?? 0) < 4 ? 'rgba(255,209,102,.28)' : 'rgba(6,214,160,.12)' }}>
             {isRun && (seqStars ?? 0) < 4 ? (
               <>
                 <p className="text-[14px] font-bold" style={{ color: INK }}>Nothing marked this time</p>
@@ -919,7 +919,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
         {/* ¿Qué trabajás la próxima? Una tarea (o ninguna). Se ofrece, no se impone. */}
         <div className="rounded-[5px] p-4 text-left border border-[#DCD7C6] space-y-2">
-          <p className="text-[12px]" style={{ ...F_M, color: '#0090B0' }}>What do you work on next?</p>
+          <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>What do you work on next?</p>
           {taskState.saved ? (
             <p className="text-[12.5px] text-[#10263B]"><b>On your list:</b> {taskState.saved}</p>
           ) : (
@@ -931,7 +931,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                     const r = await addTask(portalToken, { sequenceId: seq.id, stepId: nf.stepId, detail: nf.criterionText, belt });
                     setTaskState({ saved: r.ok ? `${r.task.stepTitle}${r.task.detail ? ` · ${r.task.detail}` : ''} (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: false, saving: false });
                   }}
-                  className="w-full text-left px-3.5 py-2.5 rounded-[5px] text-[12.5px] font-semibold active:scale-[0.99]" style={{ background: '#FBF0CF', color: INK }}>
+                  className="w-full text-left px-3.5 py-2.5 rounded-[5px] text-[12.5px] font-semibold active:scale-[0.99]" style={{ background: 'rgba(255,209,102,.28)', color: INK }}>
                   {nf.stepTitle}{nf.criterionText ? <span className="font-normal text-[#55666E]"> · {nf.criterionText}</span> : null} <span className="text-[12px] text-[#55666E]">· suggested</span>
                 </button>
               )}
@@ -954,7 +954,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   )))}
                 </div>
               )}
-              {taskState.error && <p className="text-[12px] text-red-600">{taskState.error}</p>}
+              {taskState.error && <p className="text-[12px] text-[#B03A2E]">{taskState.error}</p>}
               <p className="text-[12px] text-[#55666E]">Or nothing — you always train what you choose. At most {MAX_OPEN_TASKS} on your list.</p>
             </>
           )}
