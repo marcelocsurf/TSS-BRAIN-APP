@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Package, Plus, AlertTriangle, Check, ClipboardList } from 'lucide-react';
 import { getInventory, saveInventoryCount, addInventoryItem, type InventoryItem } from '@/lib/actions/inventory';
 import { createRequisitionFromLowStock } from '@/lib/actions/requisitions';
+import { InventoryCalendar } from './InventoryCalendar';
 
 // The academy's real inventory, countable from the phone — the digital
 // version of the weekly Excel. Grouped by category; each row saves on blur
@@ -32,6 +33,8 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
   }, [items]);
 
   const lowCount = (items ?? []).filter((i) => i.minimum != null && i.qty_in_stock < i.minimum).length;
+  // Cada guardado es "el último inventario": el calendario se refresca solo.
+  const [histKey, setHistKey] = useState(0);
 
   function commit(item: InventoryItem, patch: { qty_in_use?: number; qty_in_stock?: number; notes?: string | null; minimum?: number | null }) {
     setItems((prev) => (prev ?? []).map((x) => (x.id === item.id ? { ...x, ...patch } as InventoryItem : x)));
@@ -39,6 +42,7 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
       const res = await saveInventoryCount(token, item.id, patch);
       if (!res.ok) { alert(res.error || 'Could not save.'); return; }
       setSavedId(item.id);
+      setHistKey((k) => k + 1);
       setTimeout(() => setSavedId((v) => (v === item.id ? null : v)), 1200);
     });
   }
@@ -49,8 +53,10 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
 
   return (
     <div className="space-y-4">
+      {/* Último inventario + calendario de conteos (Daren, 2026-09-15). */}
+      <InventoryCalendar token={token} refreshKey={histKey} />
       <div className="rounded-lg border border-[#DCD7C6] p-4" style={{ background: '#E9E2D2' }}>
-        <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)] inline-flex items-center gap-1.5">
+        <p className="text-[11px] font-mono uppercase tracking-wider inline-flex items-center gap-1.5" style={{ color: '#00A8CC' }}>
           <Package size={13} /> Academy inventory
         </p>
         <p className="text-[12px] text-[#55666E] mt-1.5 leading-relaxed">

@@ -132,3 +132,75 @@ export async function addInventoryItem(
   if (error || !data) return { ok: false, error: error?.message || 'Could not add the item.' };
   return { ok: true, item: { ...data, updated_by_name: ctx.coach.display_name } as InventoryItem };
 }
+
+// ═══ Historial de inventario (Marcelo 2026-09-15, pedido de Daren) ═══
+// "Un calendario donde se vea la última vez que se hizo inventario, que se
+// pueda actualizar y vayan quedando las actualizaciones como último
+// inventario." Cada guardado ya deja una fila en inventory_checks; acá se
+// agrupa por día (hora de El Salvador) con quién contó y cuántos ítems.
+const ES_TZ = 'America/El_Salvador';
+const esDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: ES_TZ });
+
+export interface InventoryDay { date: string; checks: number; items: number; by: string[] }
+export interface InventoryCheckRow { id: string; time: string; item: string; category: string; qty_in_use: number | null; qty_in_stock: number | null; note: string | null; by: string | null }
+
+/** Días con conteo en los últimos `days` días (default 120) + el último inventario. */
+export async function getInventoryHistory(token: string | null, days = 120): Promise<{ last: InventoryDay | null; days: InventoryDay[] }> {
+  const ctx = await resolveMember(token);
+  if (!ctx) return { last: null, days: [] };
+  try {
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { data } = await ctx.admin
+      .from('inventory_checks')
+      .select('id, item_id, created_at, coaches:checked_by(display_name)')
+      .eq('academy_id', ctx.coach.academy_id)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    const byDay = new Map<string, { checks: number; items: Set<string>; by: Set<string> }>();
+    for (const r of data ?? []) {
+      const d = esDate(r.created_at);
+      const row = byDay.get(d) ?? { checks: 0, items: new Set<string>(), by: new Set<string>() };
+      row.checks += 1;
+      if (r.item_id) row.items.add(r.item_id);
+      const who = (Array.isArray((r as any).coaches) ? (r as any).coaches[0] : (r as any).coaches)?.display_name;
+      if (who) row.by.add(who);
+      byDay.set(d, row);
+    }
+    const out = Array.from(byDay.entries())
+      .map(([date, v]) => ({ date, checks: v.checks, items: v.items.size, by: Array.from(v.by) }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return { last: out[0] ?? null, days: out };
+  } catch {
+    return { last: null, days: [] };
+  }
+}
+
+/** Lo que se contó un día: ítem, cantidades guardadas, nota, quién y a qué hora. */
+export async function getInventoryDay(token: string | null, date: string): Promise<InventoryCheckRow[]> {
+  const ctx = await resolveMember(token);
+  if (!ctx || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+  try {
+    const { data } = await ctx.admin
+      .from('inventory_checks')
+      .select('id, qty_in_use, qty_in_stock, note, created_at, coaches:checked_by(display_name), academy_inventory_items:item_id(name, category)')
+      .eq('academy_id', ctx.coach.academy_id)
+      .gte('created_at', `${date}T00:00:00-06:00`)
+      .lte('created_at', `${date}T23:59:59-06:00`)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    return (data ?? []).map((r: any) => {
+      const it = Array.isArray(r.academy_inventory_items) ? r.academy_inventory_items[0] : r.academy_inventory_items;
+      const co = Array.isArray(r.coaches) ? r.coaches[0] : r.coaches;
+      return {
+        id: r.id,
+        time: new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: ES_TZ }),
+        item: it?.name ?? '—', category: it?.category ?? '',
+        qty_in_use: r.qty_in_use ?? null, qty_in_stock: r.qty_in_stock ?? null, note: r.note ?? null,
+        by: co?.display_name ?? null,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
