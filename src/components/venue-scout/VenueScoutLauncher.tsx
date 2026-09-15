@@ -25,10 +25,10 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
             ? 'border border-white/10 hover:border-[var(--tss-cyan)]/40 transition-colors'
             : 'bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow'
         }`}
-        style={dark ? { background: '#0F1E33' } : undefined}
+        style={dark ? { background: '#0A2532' } : undefined}
       >
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          className="w-10 h-10 rounded-[5px] flex items-center justify-center shrink-0"
           style={{ background: dark ? 'rgba(90,195,231,.15)' : 'var(--tss-navy)' }}
         >
           <MapPin size={18} strokeWidth={1.75} className={dark ? 'text-[var(--tss-cyan)]' : 'text-white'} />
@@ -43,21 +43,21 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
 
       {chooser && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-5" onClick={() => setChooser(false)}>
-          <div className="w-full max-w-sm rounded-3xl p-5 space-y-3" style={{ background: '#061C2B' }} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#00D2FF]">What are you here for?</p>
+          <div className="w-full max-w-sm rounded-lg p-5 space-y-3" style={{ background: '#061C2B' }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-[11px] font-mono uppercase tracking-[0.16em] text-[#00D2FF]">What are you here for?</p>
             <button type="button" onClick={() => { setChooser(false); setOpen('check'); }}
-              className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
+              className="w-full text-left rounded-lg p-4 border border-white/10 hover:border-[#00D2FF]/50">
               <p className="text-[15px] font-bold text-white">🌊 Venue Check · simple</p>
               <p className="text-[12px] text-white/50 mt-0.5">For beginners and intermediates — entry/exit, currents, peaks and your zone. All drawn on the map.</p>
             </button>
             <button type="button" onClick={() => { setChooser(false); setOpen('scout'); }}
-              className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#00D2FF]/50">
+              className="w-full text-left rounded-lg p-4 border border-white/10 hover:border-[#00D2FF]/50">
               <p className="text-[15px] font-bold text-white">🏄 Advanced analysis — training or competition</p>
               <p className="text-[12px] text-white/50 mt-0.5">Wave count, ideal zone, hazards and the tactical plan — the tool asks your goal once you're in.</p>
             </button>
             <button type="button" onClick={() => { setChooser(false); setOpen('game'); }}
-              className="w-full text-left rounded-2xl p-4 border border-white/10 hover:border-[#FFD166]/60">
-              <p className="text-[15px] font-bold text-white">🎮 Lineup Game <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFD166] ml-1">code</span></p>
+              className="w-full text-left rounded-lg p-4 border border-white/10 hover:border-[#FFD166]/60">
+              <p className="text-[15px] font-bold text-white">🎮 Lineup Game <span className="text-[11px] font-mono uppercase tracking-widest text-[#FFD166] ml-1">code</span></p>
               <p className="text-[12px] text-white/50 mt-0.5">Positioning game: athletes choose where to sit, the coach marks the real waves. ISA priority.</p>
             </button>
             <button type="button" onClick={() => setChooser(false)} className="w-full py-2 text-[12px] text-white/40">Cancel</button>
@@ -67,7 +67,7 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
 
       {open && (
         <div
-          className="fixed inset-0 z-[100] bg-[#0A1628] flex flex-col"
+          className="fixed inset-0 z-[100] bg-[#0A2532] flex flex-col"
           style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <button

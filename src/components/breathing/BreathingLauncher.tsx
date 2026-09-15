@@ -19,9 +19,9 @@ export function BreathingLauncher({ variant = 'light' }: { variant?: 'light' | '
             ? 'border border-white/10 hover:border-[var(--tss-cyan)]/40 transition-colors'
             : 'bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow'
         }`}
-        style={dark ? { background: '#0F1E33' } : undefined}
+        style={dark ? { background: '#0A2532' } : undefined}
       >
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(90,195,231,.15)' : 'var(--tss-navy)' }}>
+        <div className="w-10 h-10 rounded-[5px] flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(90,195,231,.15)' : 'var(--tss-navy)' }}>
           <Wind size={18} strokeWidth={1.75} className={dark ? 'text-[var(--tss-cyan)]' : 'text-white'} />
         </div>
         <div className="min-w-0">

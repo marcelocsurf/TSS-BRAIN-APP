@@ -58,27 +58,27 @@ export function IncidentReporter({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F7F9FA] transition-colors"
       >
         <span className="text-sm font-semibold text-[var(--tss-navy)]">🚩 Report incident</span>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{open ? 'Close' : 'Open'}</span>
+        <span className="text-[11px] font-mono uppercase tracking-wider text-[#55666E]">{open ? 'Close' : 'Open'}</span>
       </button>
 
       {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-gray-50 space-y-3">
-          <p className="text-[11px] text-gray-500">
+        <div className="px-4 pb-4 pt-1 border-t border-[#DCD7C6] space-y-3">
+          <p className="text-[11px] text-[#55666E]">
             Anything that happened in the session — with a student or general. The coordinator and admin will see it.
           </p>
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Type *</label>
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Type *</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA] focus:outline-none focus:ring-1 focus:ring-red-300"
             >
               <option value="">— Choose —</option>
               {INCIDENT_TYPE_OPTIONS.map((o) => (
@@ -87,11 +87,11 @@ export function IncidentReporter({
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Student involved (optional)</label>
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Student involved (optional)</label>
             <select
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA] focus:outline-none focus:ring-1 focus:ring-red-300"
             >
               <option value="">General — no specific student</option>
               {students.map((s) => (
@@ -101,11 +101,11 @@ export function IncidentReporter({
           </div>
           {boards.length > 0 && (type === 'board' || type === 'equipment') && (
             <div>
-              <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Board affected</label>
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Board affected</label>
               <select
                 value={boardId}
                 onChange={(e) => setBoardId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA] focus:outline-none focus:ring-1 focus:ring-red-300"
               >
                 <option value="">— None / N/A —</option>
                 {boards.map((b) => (
@@ -114,17 +114,17 @@ export function IncidentReporter({
               </select>
               {boardId && (
                 <div className="mt-2">
-                  <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">What happens to this board?</label>
+                  <label className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">What happens to this board?</label>
                   <select
                     value={boardAction}
                     onChange={(e) => setBoardAction(e.target.value as 'repair' | 'retire' | 'keep')}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-300"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA] focus:outline-none focus:ring-1 focus:ring-red-300"
                   >
                     <option value="repair">Send to repair — out of the pool</option>
                     <option value="retire">Retire — broken for good</option>
                     <option value="keep">Keep in service — just log it</option>
                   </select>
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="text-[11px] text-[#55666E] mt-1">
                     {boardAction === 'keep'
                       ? 'The board stays available; the incident is recorded.'
                       : 'The board leaves the assignable inventory and its condition drops to Poor.'}
@@ -134,20 +134,20 @@ export function IncidentReporter({
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">What happened *</label>
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">What happened *</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-300"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-300"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Action taken (optional)</label>
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Action taken (optional)</label>
             <input
               value={action}
               onChange={(e) => setAction(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300"
             />
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
@@ -157,7 +157,7 @@ export function IncidentReporter({
             onClick={submit}
             disabled={pending}
             className="w-full py-2.5 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
-            style={{ background: '#B91C1C' }}
+            style={{ background: '#B03A2E' }}
           >
             {pending ? 'Sending…' : 'Report'}
           </button>

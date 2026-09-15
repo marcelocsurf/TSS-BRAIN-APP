@@ -29,21 +29,21 @@ export function VideoAnalyzerLauncher({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow flex items-center gap-3"
+          className="w-full text-left bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm p-4 hover:shadow-md transition-shadow flex items-center gap-3"
         >
-          <div className="w-10 h-10 rounded-xl bg-[var(--tss-navy)] text-white flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-[5px] bg-[var(--tss-navy)] text-white flex items-center justify-center shrink-0">
             <Video size={18} strokeWidth={1.75} />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--tss-navy)]">{title}</p>
-            <p className="text-[11px] text-gray-500 leading-snug">{subtitle}</p>
+            <p className="text-[11px] text-[#55666E] leading-snug">{subtitle}</p>
           </div>
         </button>
       ) : (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:opacity-90"
+          className="inline-flex items-center gap-2 px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-semibold hover:opacity-90"
         >
           <Video size={16} strokeWidth={1.75} /> Video Analyzer
         </button>
@@ -51,7 +51,7 @@ export function VideoAnalyzerLauncher({
 
       {open && (
         <div
-          className="fixed inset-0 z-[100] bg-[#0B1B2B] flex flex-col"
+          className="fixed inset-0 z-[100] bg-[#0A2532] flex flex-col"
           style={{
             paddingTop: 'env(safe-area-inset-top)',
             paddingBottom: 'env(safe-area-inset-bottom)',

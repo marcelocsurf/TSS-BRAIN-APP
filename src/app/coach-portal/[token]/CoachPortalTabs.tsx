@@ -1757,7 +1757,11 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
 
   return (
     <div className="space-y-4 pb-4">
-      <p className="text-[11px] px-1" style={{ ...F_LABEL, color: '#55666E' }}>Your tools · Coaching toolkit</p>
+      {/* Línea v10.1: título grande + rótulo mono; en iPad las listas van a dos columnas. */}
+      <div className="px-1">
+        <h2 className="text-[23px] leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#10263B' }}>Your tools</h2>
+        <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Coaching toolkit</p>
+      </div>
 
       {/* ── STP LIBRARY (hero) ── */}
       <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-5">
@@ -1769,9 +1773,11 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
         </p>
       </div>
 
-      {sequences.map(([key, g]) => (
-        <SequenceGroup key={key} group={g} token={coach.portal_token} />
-      ))}
+      <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
+        {sequences.map(([key, g]) => (
+          <SequenceGroup key={key} group={g} token={coach.portal_token} />
+        ))}
+      </div>
 
       {stps.length === 0 && (
         <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] p-8 text-center">
@@ -1781,7 +1787,8 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
       )}
 
       {/* ── FIELD TOOLS ── */}
-      <p className="text-[11px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>Field tools</p>
+      <h2 className="text-[23px] px-1 pt-3 leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#10263B' }}>Field tools</h2>
+      <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
       <VideoAnalyzerLauncher variant="card" scope={coach?.id ? `coach:${coach.id}` : undefined} />
       <BoardSelectorLauncher variant="card" />
 
@@ -1804,9 +1811,11 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
       )}
       <VenueScoutLauncher variant="light" />
       <BreathingLauncher variant="light" />
+      </div>
 
       {/* ── SAFETY ── */}
-      <p className="text-[11px] px-1 pt-2" style={{ ...F_LABEL, color: '#FF6B6B' }}>Safety</p>
+      <h2 className="text-[23px] px-1 pt-3 leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#B03A2E' }}>Safety</h2>
+      <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
 
       {/* Emergency plan — coral-bordered, English copy (brand rule) */}
       <details className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm overflow-hidden" style={{ border: '1.5px solid rgba(255,107,107,.55)' }}>
@@ -1852,6 +1861,7 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
         <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-md bg-[#F7F9FA] text-[#55666E]" style={{ ...F_LABEL }}>PDF</span>
         <ChevronRight size={15} className="text-[#DCD7C6] shrink-0" />
       </a>
+      </div>
     </div>
   );
 }
@@ -1864,13 +1874,15 @@ function SequenceGroup({
   token: string;
 }) {
   const [open, setOpen] = useState(true);
-  const beltAccent = group.belt === 'yellow' ? 'border-l-amber-300' : 'border-l-sky-300';
+  // Color de cinta del manual (no los de Tailwind): amarilla #F5C518; la blanca lleva cyan porque #E8E8E8 no se ve.
+  const beltAccent = group.belt === 'yellow' ? '#F5C518' : '#00D2FF';
   return (
     <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`w-full flex items-center justify-between px-4 py-3 border-l-4 ${beltAccent}`}
+        className="w-full flex items-center justify-between px-4 py-3 border-l-4"
+        style={{ borderLeftColor: beltAccent }}
       >
         <div className="text-left min-w-0">
           <p className="text-[11px]" style={{ ...F_LABEL, color: '#55666E' }}>
@@ -1878,10 +1890,10 @@ function SequenceGroup({
           </p>
           <p className="text-[13px] mt-0.5 truncate" style={{ ...F_LABEL, color: '#061C2B', letterSpacing: '0.1em' }}>{group.name}</p>
         </div>
-        <ChevronDown size={14} className={`text-gray-400 transition shrink-0 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-[#55666E] transition shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-[#DCD7C6]">
           {group.items.map((s) => (
             <Link
               key={s.id}

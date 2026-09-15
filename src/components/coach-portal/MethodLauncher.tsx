@@ -12,10 +12,10 @@ export function MethodLauncher() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full text-left rounded-2xl p-4 flex items-center gap-3 border border-white/10 hover:border-[var(--tss-cyan)]/40 transition-colors"
-        style={{ background: '#0F1E33' }}
+        className="w-full text-left rounded-lg p-4 flex items-center gap-3 border border-white/10 hover:border-[var(--tss-cyan)]/40 transition-colors"
+        style={{ background: '#0A2532' }}
       >
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(90,195,231,.15)' }}>
+        <div className="w-10 h-10 rounded-[5px] flex items-center justify-center shrink-0" style={{ background: 'rgba(90,195,231,.15)' }}>
           <BookOpen size={18} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
         </div>
         <div className="min-w-0">
@@ -26,7 +26,7 @@ export function MethodLauncher() {
 
       {open && (
         <div
-          className="fixed inset-0 z-[100] bg-white flex flex-col"
+          className="fixed inset-0 z-[100] bg-[#F7F9FA] flex flex-col"
           style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <button
