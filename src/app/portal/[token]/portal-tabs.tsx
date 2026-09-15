@@ -103,6 +103,7 @@ import {
   type LucideIcon,
   Flame,
   ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 
 // ─── Types ───
@@ -566,23 +567,19 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
 
   // LET'S PLAY: la lista completa, numerada, con la regla. Tarjeta sand con
   // botón cyan por fila (línea aprobada); mismos textos y destinos.
+  // Marcelo (2026-09-15, "que no se repita la misma información"): la tarea de
+  // tu lista NO va acá — la tarjeta "My list" de abajo es su dueña (Done, hasta
+  // tres). Y "You cleared it" es un aviso: vive solo en el Home.
+  const fullRows = rows.filter((r) => r.key !== 'task');
+  if (fullRows.length === 0) return null;
   return (
     <div>
       <h2 className="text-[26px] mb-2.5" style={{ ...H_BIG, color: '#F8F5EC' }}>Your next moves</h2>
       <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
         <div className="px-4 pt-3.5 pb-1">
-          <p className="text-[14px]" style={{ color: T_INK }}>{rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
+          <p className="text-[14px]" style={{ color: T_INK }}>{fullRows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
         </div>
-        {coachCleared && (
-          <div className="mx-3 my-2 rounded-[5px] px-3 py-2.5 flex items-start gap-2.5" style={{ background: '#DDF0E4' }}>
-            <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold" style={{ background: '#0F8A5F', color: '#fff' }}>✓</span>
-            <div>
-              <p className="text-[14px] font-bold leading-snug" style={{ color: '#0F6B4A' }}>You cleared it · You took what your coach left you to 4★ on your own.</p>
-              <p className="text-[13px] mt-0.5 leading-snug" style={{ color: '#0F6B4A' }}>They confirm it next time they see you in the water.</p>
-            </div>
-          </div>
-        )}
-        {rows.map((r, idx) => (
+        {fullRows.map((r, idx) => (
           <div key={r.key} className="px-4 py-3.5" style={{ borderTop: `1px solid ${T_BORDER}` }}>
             <div className="flex items-start gap-3">
               <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-black" style={{ background: T_NAVY, color: BRAND.colors.cyan }} aria-label={`Priority ${idx + 1}`}>{idx + 1}</span>
@@ -608,7 +605,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
             </div>
           </div>
         ))}
-        {rows.length > 0 && (
+        {fullRows.length > 0 && (
           <p className="px-4 py-3 text-[12.5px] leading-snug" style={{ color: T_MUTED, borderTop: `1px solid ${T_BORDER}` }}>
             The order: 1 your coach · 2 your list · 3 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
           </p>
@@ -1249,6 +1246,17 @@ function HomeTab({
 
   // Lector del libro dentro del portal (2026-09-08).
   const [reader, setReader] = useState<{ id: string; title: string } | null>(null);
+  // MY PROGRESS como pantalla propia (mock 2026-09-15 + "que no se repita la
+  // información"): cinta, horas, próxima cinta, flow y camino viven acá, no
+  // duplicados en el Home. Se abre desde "View my progress".
+  const [progressOpen, setProgressOpen] = useState(false);
+  useEffect(() => {
+    if (!progressOpen) return;
+    document.getElementById('progress-view')?.scrollTo(0, 0);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [progressOpen]);
   return (
     <div className="space-y-4">
       {/* ═══ LO ACCIONABLE PRIMERO (auditoría 2026-09-10): a 360px el botón
@@ -1386,9 +1394,9 @@ function HomeTab({
       )}
       {/* "View my progress" (mock de Home): baja al cockpit de progreso. */}
       {data.canTrack !== false && (
-        <a href="#my-progress" className="flex items-center justify-center gap-2 py-1 text-[15px] font-bold" style={{ color: '#00D2FF' }}>
+        <button type="button" onClick={() => setProgressOpen(true)} className="w-full flex items-center justify-center gap-2 py-1 text-[15px] font-bold" style={{ color: '#00D2FF' }}>
           <BarChart3 size={18} strokeWidth={1.75} /> View my progress <ArrowRight size={15} />
-        </a>
+        </button>
       )}
       {/* ── 🏆 Promoción de cinta — celebración 30 días, SIN candados. El copy
           es por cinta (qué dominó / qué desbloquea) desde promotion-copy.ts. ── */}
@@ -1483,71 +1491,7 @@ function HomeTab({
       {/* ── MY PROGRESS: el cockpit de siempre (horas, nivel, camino, agua, HP).
           La identidad y la campana subieron arriba (línea aprobada 2026-09-14). ── */}
       {data.canTrack !== false && (
-      <div id="my-progress" className="rounded-lg overflow-hidden" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.25)' }}>
-        <div className="px-4 pt-4 flex items-center justify-between gap-3">
-          <h2 className="text-[26px]" style={{ ...H_BIG, color: '#F7F9FA' }}>My progress</h2>
-          <BarChart3 size={22} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
-        </div>
-
-        <div className="p-4 space-y-4">
-          {/* YOUR LEVEL · TIME IN THE WATER · YOUR NEXT LEVEL (mock My Progress
-              2026-09-15). Los MISMOS datos del cockpit viejo: cinta y nivel,
-              curso activo, horas con su split training / free surf, la próxima
-              cinta. El anillo pasó a ser la barra del split. */}
-          {(() => {
-            const idx = BELT_HIERARCHY.indexOf(beltLevel);
-            const nextB = idx >= 0 && idx < BELT_HIERARCHY.length - 1 ? BELT_HIERARCHY[idx + 1] : null;
-            const nd = nextB ? BELT_DISPLAY[nextB] : null;
-            const cb = data.courseData?.activeCourseBelt ? String(data.courseData.activeCourseBelt).replace(/_belt$/, '') : null;
-            const courseBelt = cb ? BELT_DISPLAY[`${cb}_belt` as BeltLevel] : null;
-            const pctTrain = surf.totalMinutes > 0 ? (surf.trainingMinutes / surf.totalMinutes) * 100 : 0;
-            return (
-              <>
-                <SandCard label="Your level">
-                  <div className="flex items-center gap-3.5">
-                    <span className="w-12 h-12 rounded-full shrink-0" style={{ background: belt?.color || '#E8E8E8', border: '1px solid rgba(16,38,59,.12)' }} />
-                    <div className="min-w-0">
-                      <p className="text-[22px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{belt?.en}</p>
-                      <p className="mt-0.5" style={{ ...T_MONO_SM, color: T_INK }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</p>
-                    </div>
-                  </div>
-                  {courseBelt && <p className="mt-3 pt-3" style={{ ...T_MONO_SM, color: T_INK, borderTop: `1px solid ${T_BORDER}` }}>Current course: {courseBelt.en} · {courseBelt.levelName}</p>}
-                  <button type="button" onClick={() => onOpenRoadmap?.()} className="inline-flex items-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_LINK }}>What it takes <ArrowRight size={15} /></button>
-                </SandCard>
-                <SandCard label="Time in the water">
-                  <p className="text-[40px] font-black leading-none" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.totalMinutes)}</p>
-                  {/* El split de estas horas (antes el anillo): cyan = training, verde = free surf. */}
-                  <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: '#06D6A0' }}><div className="h-full" style={{ width: `${pctTrain}%`, background: '#00D2FF' }} /></div>
-                  <div className="grid grid-cols-2 mt-3">
-                    <div>
-                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />Training</p>
-                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.trainingMinutes)}</p>
-                    </div>
-                    <div className="pl-4" style={{ borderLeft: `1px solid ${T_BORDER}` }}>
-                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />Free surf</p>
-                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
-                    </div>
-                  </div>
-                  <a href="#my-sessions" className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></a>
-                </SandCard>
-                <SandCard label="Your next level">
-                  {nd ? (
-                    <div className="flex items-center gap-3.5">
-                      <span className="w-12 h-12 rounded-full shrink-0" style={{ background: nd.color, border: '1px solid rgba(16,38,59,.12)' }} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{nd.en}</p>
-                        <p className="mt-0.5" style={{ ...T_MONO_SM, color: T_MUTED }}>{nd.levelName}</p>
-                      </div>
-                      <button type="button" onClick={() => onOpenRoadmap?.()} className="shrink-0 inline-flex items-center gap-1.5 text-[14px] font-bold" style={{ color: T_LINK }}>See what it takes <ArrowRight size={14} /></button>
-                    </div>
-                  ) : (
-                    <p className="text-[15px] font-bold" style={{ color: T_INK }}>Top belt reached</p>
-                  )}
-                </SandCard>
-              </>
-            );
-          })()}
-
+      <div className="space-y-4">
           {/* ORDEN del Home (pedido Marcelo 2026-08-25): primero lo ACCIONABLE
               de hoy (ficha incompleta, citas, lo que el staff dejó), después
               el plan (año → programa → scores → competencia → muro). Cada
@@ -1689,6 +1633,72 @@ function HomeTab({
               Solo aparece cuando tiene qué decir: sin sesiones calificadas era
               la tarjeta más grande y más vacía del Home, y el alumno nuevo
               —que es el que menos tiene— la veía primero. */}
+          {progressOpen && (
+            <div id="progress-view" className="fixed inset-0 z-[100] overflow-y-auto"
+              style={{ background: '#061C2B', margin: 0, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-4 space-y-3">
+                <button type="button" onClick={() => setProgressOpen(false)} className="inline-flex items-center gap-2 text-[15px] font-semibold py-2" style={{ color: '#00D2FF' }}>
+                  <ArrowLeft size={18} /> Home
+                </button>
+                <h1 className="text-[36px]" style={{ ...H_BIG, color: '#F7F9FA' }}>My progress</h1>
+          {/* YOUR LEVEL · TIME IN THE WATER · YOUR NEXT LEVEL (mock My Progress
+              2026-09-15). Los MISMOS datos del cockpit viejo: cinta y nivel,
+              curso activo, horas con su split training / free surf, la próxima
+              cinta. El anillo pasó a ser la barra del split. */}
+          {(() => {
+            const idx = BELT_HIERARCHY.indexOf(beltLevel);
+            const nextB = idx >= 0 && idx < BELT_HIERARCHY.length - 1 ? BELT_HIERARCHY[idx + 1] : null;
+            const nd = nextB ? BELT_DISPLAY[nextB] : null;
+            const cb = data.courseData?.activeCourseBelt ? String(data.courseData.activeCourseBelt).replace(/_belt$/, '') : null;
+            const courseBelt = cb ? BELT_DISPLAY[`${cb}_belt` as BeltLevel] : null;
+            const pctTrain = surf.totalMinutes > 0 ? (surf.trainingMinutes / surf.totalMinutes) * 100 : 0;
+            return (
+              <>
+                <SandCard label="Your level">
+                  <div className="flex items-center gap-3.5">
+                    <span className="w-12 h-12 rounded-full shrink-0" style={{ background: belt?.color || '#E8E8E8', border: '1px solid rgba(16,38,59,.12)' }} />
+                    <div className="min-w-0">
+                      <p className="text-[22px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{belt?.en}</p>
+                      <p className="mt-0.5" style={{ ...T_MONO_SM, color: T_INK }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</p>
+                    </div>
+                  </div>
+                  {courseBelt && <p className="mt-3 pt-3" style={{ ...T_MONO_SM, color: T_INK, borderTop: `1px solid ${T_BORDER}` }}>Current course: {courseBelt.en} · {courseBelt.levelName}</p>}
+                  <button type="button" onClick={() => onOpenRoadmap?.()} className="inline-flex items-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_LINK }}>What it takes <ArrowRight size={15} /></button>
+                </SandCard>
+                <SandCard label="Time in the water">
+                  <p className="text-[40px] font-black leading-none" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.totalMinutes)}</p>
+                  {/* El split de estas horas (antes el anillo): cyan = training, verde = free surf. */}
+                  <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: '#06D6A0' }}><div className="h-full" style={{ width: `${pctTrain}%`, background: '#00D2FF' }} /></div>
+                  <div className="grid grid-cols-2 mt-3">
+                    <div>
+                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />Training</p>
+                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.trainingMinutes)}</p>
+                    </div>
+                    <div className="pl-4" style={{ borderLeft: `1px solid ${T_BORDER}` }}>
+                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />Free surf</p>
+                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => { setProgressOpen(false); setTimeout(() => document.getElementById('my-sessions')?.scrollIntoView({ behavior: 'smooth' }), 50); }} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
+                </SandCard>
+                <SandCard label="Your next level">
+                  {nd ? (
+                    <div className="flex items-center gap-3.5">
+                      <span className="w-12 h-12 rounded-full shrink-0" style={{ background: nd.color, border: '1px solid rgba(16,38,59,.12)' }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{nd.en}</p>
+                        <p className="mt-0.5" style={{ ...T_MONO_SM, color: T_MUTED }}>{nd.levelName}</p>
+                      </div>
+                      <button type="button" onClick={() => onOpenRoadmap?.()} className="shrink-0 inline-flex items-center gap-1.5 text-[14px] font-bold" style={{ color: T_LINK }}>See what it takes <ArrowRight size={14} /></button>
+                    </div>
+                  ) : (
+                    <p className="text-[15px] font-bold" style={{ color: T_INK }}>Top belt reached</p>
+                  )}
+                </SandCard>
+              </>
+            );
+          })()}
+
           {data.flowChannel && data.flowChannel.avg != null && data.flowChannel.count > 0 && (
             <FlowChannelCard flow={data.flowChannel} />
           )}
@@ -1777,10 +1787,21 @@ function HomeTab({
           </button>
           </div>
 
+                <button type="button" onClick={() => onGoTo('sequence')}
+                  className="w-full min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
+                  style={{ background: '#00D2FF', color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
+                  Open Let&apos;s Play <ArrowRight size={18} />
+                </button>
+                <button type="button" onClick={() => setProgressOpen(false)}
+                  className="w-full min-h-[44px] rounded-[5px] text-[15px] font-semibold" style={{ border: '1px solid rgba(0,210,255,.45)', color: '#F7F9FA' }}>
+                  Back to Home
+                </button>
+              </div>
+            </div>
+          )}
           {/* Ficha completa al 100% → acceso de consulta al FONDO del cockpit
               (antes quedaba a mitad del Home — revisión). También es HP. */}
           {data.homeBundle?.hpAccess && <AthleteProfileCard token={data.token} placement="bottom" />}
-        </div>
       </div>
       )}
 

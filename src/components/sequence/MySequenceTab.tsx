@@ -208,7 +208,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       {/* Dónde estás · qué necesitás · cómo entrenarlo */}
       {levelSeqs.length > 0 && (
         <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-          <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>Where you are · {beltWord} Belt</p>
+          <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>Your sequences · {beltWord} Belt</p>
           {levelSeqs.every((sq) => sq.state === 'unrated') ? (
             <>
               {/* Primer uso (auditoría 2026-09-10): "0 of 9" se lee como fracaso. */}
