@@ -84,7 +84,13 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
   // Ya vino antes (intake completo): no repite formularios. Firma el waiver
   // otra vez SOLO si cambió la versión (Marcelo 2026-09-11).
   const waiverStale = !student.waiver_signed || (!!student.waiver_version && student.waiver_version !== WAIVER_VERSION);
-  const returning = student.intake_tier === 'extended' || !!student.intake_completed_at;
+  // Un camp de 2+ días exige el intake COMPLETO (ficha + waiver + quiz v2 +
+  // metas). Si solo llenó la ficha básica y se fue (Nadine Pander, 2026-09-15),
+  // al volver sigue donde quedó — no es "Welcome back", le faltan pasos.
+  const returning = student.intake_tier === 'extended' || (!!student.intake_completed_at && !extendedRequired);
+  // El quiz que cuenta es el V2 (10 escenas /100). Un v1 viejo del sitio web
+  // estampa level_quiz_completed_at pero NO trae level_quiz_v2: se pide el v2.
+  const quizV2Done = !!(student as any).level_quiz_v2;
   const basicDone =
     student.intake_tier === 'basic' ||
     student.intake_tier === 'extended' ||
@@ -94,7 +100,7 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
     : returning ? 'welcome_back'
     : !basicDone ? 'basic'
     : isDropin ? 'basic_done'
-    : student.ocean_quiz_completed_at ? 'extended'
+    : quizV2Done ? 'extended'
     : 'ocean_quiz';
 
   const [stage, setStage] = useState<Stage>(initialStage);
@@ -270,7 +276,7 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
       // re-take it.
       if (isDropin) {
         setStage('basic_done');
-      } else if (student.ocean_quiz_completed_at || student.level_quiz_completed_at) {
+      } else if (quizV2Done) {
         setExtendedStep(0);
         setStage('extended');
       } else {

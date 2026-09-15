@@ -5,6 +5,15 @@ const nextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: '25mb' },
   },
+  // El quiz v1 del sitio (find-your-level.html, /70) quedó sustituido por el
+  // v2 (/quiz). La URL vieja sigue circulando (Nadine Pander la usó el
+  // 2026-09-14): va al oficial.
+  async redirects() {
+    return [
+      { source: '/find-your-level.html', destination: '/quiz', permanent: true },
+      { source: '/find-your-level', destination: '/quiz', permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {
