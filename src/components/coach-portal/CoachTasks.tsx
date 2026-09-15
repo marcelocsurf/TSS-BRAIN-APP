@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { CheckSquare, Check, X, Repeat, ListChecks, Package } from 'lucide-react';
-import { getMyTasks, reportMyTask, type AcademyTask } from '@/lib/actions/tasks';
+import { getMyTasks, reportMyTask, saveMyTaskProcess, type AcademyTask } from '@/lib/actions/tasks';
 
 // Tasks the coordinator assigned to this coach. The assignee reports the
 // outcome: Done (optional comment) or Not done (comment required — why).
@@ -81,6 +81,7 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
                 </button>
               </div>
             )}
+            {openId === t.id && <ProcessNotes token={token} task={t} onSaved={refresh} />}
             {openId === t.id && (
               <TaskReportForm
                 task={t}
@@ -109,6 +110,39 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** "Cómo lo hago, paso a paso": lo escribe quien ejecuta la tarea y queda
+ *  guardado en la tarea para coordinación (data de los procesos reales). */
+function ProcessNotes({ token, task, onSaved }: { token: string; task: AcademyTask; onSaved: () => void }) {
+  const [text, setText] = useState(task.process_notes ?? '');
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const dirty = text.trim() !== (task.process_notes ?? '').trim();
+  return (
+    <div className="border-t border-[#DCD7C6] px-3 py-3">
+      <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5 inline-flex items-center gap-1">
+        <ListChecks size={11} /> How I do it · step by step
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => { setText(e.target.value); setState('idle'); }}
+        rows={4}
+        placeholder={'1. …\n2. …\n3. …\nWrite it the way you actually do it — this is how the academy documents its processes.'}
+        className="w-full rounded-[5px] px-3 py-2 text-sm text-[#10263B] placeholder:text-[#55666E]/70 focus:outline-none border border-[#DCD7C6]"
+        style={{ background: '#F7F9FA' }}
+      />
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <span className="text-[11px] text-[#55666E]">
+          {state === 'saved' ? 'Saved.' : state === 'error' ? 'Could not save.' : task.process_notes_updated_at ? `Last saved ${new Date(task.process_notes_updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'Not written yet.'}
+        </span>
+        <button type="button" disabled={!dirty || state === 'saving'}
+          onClick={async () => { setState('saving'); const r = await saveMyTaskProcess(token, task.id, text); setState(r.ok ? 'saved' : 'error'); if (r.ok) onSaved(); }}
+          className="rounded-[5px] px-3 py-1.5 text-[12px] font-bold disabled:opacity-40" style={{ background: '#00D2FF', color: '#061C2B' }}>
+          {state === 'saving' ? 'Saving…' : 'Save steps'}
+        </button>
+      </div>
     </div>
   );
 }

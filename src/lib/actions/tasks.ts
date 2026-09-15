@@ -21,6 +21,9 @@ export interface AcademyTask {
   recurrence_days?: number[] | null; // solo daily: ISO 1=Lun … 7=Dom
   checklist?: string[] | null;    // ordered steps ("the manual")
   link_url?: string | null;       // in-app tool link ('inventory' opens the academy inventory)
+  /** El paso a paso escrito por quien ejecuta la tarea (Daren, 2026-09-15): data de los procesos reales. */
+  process_notes?: string | null;
+  process_notes_updated_at?: string | null;
 }
 
 export interface TaskReport {
@@ -100,7 +103,7 @@ export async function listAcademyTasks(academyId: string | null): Promise<Academ
   const admin = createAdminClient();
   let q = admin
     .from('academy_tasks')
-    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, recurrence_days, checklist, link_url, coaches:assignee_coach_id(display_name), done_coach:done_by(display_name)')
+    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, recurrence_days, checklist, link_url, process_notes, process_notes_updated_at, coaches:assignee_coach_id(display_name), done_coach:done_by(display_name)')
     .order('status', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
@@ -112,6 +115,7 @@ export async function listAcademyTasks(academyId: string | null): Promise<Academ
     done_by_name: (Array.isArray(r.done_coach) ? r.done_coach[0] : r.done_coach)?.display_name ?? null,
     due_date: r.due_date, status: r.status, created_at: r.created_at, done_at: r.done_at,
     recurrence: r.recurrence ?? null, recurrence_days: r.recurrence_days ?? null, checklist: r.checklist ?? null, link_url: r.link_url ?? null,
+    process_notes: r.process_notes ?? null, process_notes_updated_at: r.process_notes_updated_at ?? null,
   }));
 }
 
@@ -282,12 +286,29 @@ export async function getMyTasks(token: string): Promise<AcademyTask[]> {
   if (!coach) return [];
   const { data } = await admin
     .from('academy_tasks')
-    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, recurrence_days, checklist, link_url')
+    .select('id, title, description, assignee_coach_id, due_date, status, created_at, done_at, recurrence, recurrence_days, checklist, link_url, process_notes, process_notes_updated_at')
     .eq('assignee_coach_id', coach.id)
     .order('status', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
   return (data ?? []).map((r: any) => ({ ...r, assignee_name: null })) as AcademyTask[];
+}
+
+/** El ejecutor escribe CÓMO hace la tarea, paso a paso. Se guarda en la tarea
+ *  (no en el reporte): es documentación del proceso, la lee coordinación.
+ *  Marcelo (2026-09-15): "que Daren pueda escribir el paso a paso de las
+ *  tareas que se le delegan para ir levantando data de los procesos". */
+export async function saveMyTaskProcess(token: string, id: string, notes: string): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).maybeSingle();
+  if (!coach) return { ok: false, error: 'Portal not found.' };
+  const { error } = await admin
+    .from('academy_tasks')
+    .update({ process_notes: notes.trim().slice(0, 4000) || null, process_notes_updated_at: new Date().toISOString(), process_notes_by: coach.id })
+    .eq('id', id)
+    .eq('assignee_coach_id', coach.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 // The assignee reports the outcome of their task: done (optional comment) or

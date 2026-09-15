@@ -105,6 +105,7 @@ export interface CoachPortalData {
   pastServices: any[];
   academyServices: any[];  // all upcoming academy services (sellers only)
   academySchedule: any[];  // next-7-days academy schedule (support members)
+  academySpaceBookings?: any[]; // espacios reservados en esos 7 días (support)
   todayLogistics?: any;    // coach's service running TODAY + its class-day plan (M139)
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
@@ -420,6 +421,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   // and headcount — the operational picture so the whole team knows what's
   // happening and can prepare for each group.
   let academySchedule: any[] = [];
+  let academySpaceBookings: any[] = [];
   if ((coach as any).portal_category === 'support' && coach.academy_id) {
     try {
       const weekOut = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -429,7 +431,8 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           'id, camp_name, start_date, end_date, scheduled_time, status, ' +
             'camp_templates:template_id(template_name, service_kind), ' +
             'head_coach:head_coach_id(display_name), ' +
-            'camp_participants(id, enrollment_status, students:student_id(first_name, last_name))'
+            'camp_participants(id, enrollment_status, students:student_id(first_name, last_name, shirt_size, height, weight, languages, stance, goofy_or_regular, age, nationality, board_type, board_length_feet, board_length_inches, board_volume_liters, allergies)), ' +
+            'service_staff(role, status, coaches:coach_id(display_name), staff_members:staff_member_id(name))'
         )
         .eq('academy_id', coach.academy_id)
         .lte('start_date', weekOut)
@@ -448,6 +451,17 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           service_kind: tpl?.service_kind ?? null,
           template_name: tpl?.template_name ?? null,
           coach_name: hc?.display_name ?? null,
+          // Quién va (Marcelo 2026-09-15): coach y asistentes/filmers del servicio,
+          // aceptados (los pendientes se marcan). Coordinación los asigna en service_staff.
+          staff: (s.service_staff ?? [])
+            .filter((x: any) => x.status !== 'declined' && x.status !== 'cancelled')
+            .map((x: any) => {
+              const co = Array.isArray(x.coaches) ? x.coaches[0] : x.coaches;
+              const sm = Array.isArray(x.staff_members) ? x.staff_members[0] : x.staff_members;
+              const name = co?.display_name ?? sm?.name ?? null;
+              return name ? { role: x.role ?? 'staff', name, pending: x.status === 'pending' } : null;
+            })
+            .filter(Boolean),
           students: (s.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active').length,
           // Nombres de los campistas (pedido de Daren 2026-09-01): el staff
           // de apoyo prepara welcome kits y entrega shots por nombre — el
@@ -460,8 +474,64 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
             })
             .filter(Boolean)
             .sort((a: string, b: string) => a.localeCompare(b)),
+          // Lo que hace falta para el KIT (Marcelo 2026-09-15): talla, altura/peso,
+          // idioma, stance, tabla, alergias — por alumno, sin truncar.
+          student_details: (s.camp_participants ?? [])
+            .filter((p: any) => p.enrollment_status === 'active')
+            .map((p: any) => {
+              const st = Array.isArray(p.students) ? p.students[0] : p.students;
+              if (!st) return null;
+              const boardLen = st.board_length_feet ? `${st.board_length_feet}'${st.board_length_inches ? st.board_length_inches + '"' : ''}` : '';
+              const board = [st.board_type, boardLen, st.board_volume_liters ? `${st.board_volume_liters}L` : ''].filter(Boolean).join(' · ');
+              return {
+                name: `${st.first_name ?? ''} ${st.last_name ?? ''}`.trim(),
+                shirt_size: st.shirt_size ?? null,
+                height: st.height ?? null,
+                weight: st.weight ?? null,
+                languages: st.languages ?? null,
+                stance: st.stance ?? st.goofy_or_regular ?? null,
+                age: st.age ?? null,
+                nationality: st.nationality ?? null,
+                board: board || null,
+                // 'None' / 'No' / 'N/A' no son alergias: no ensucian el kit.
+                allergies: st.allergies && !/^(none|no|n\/a|na|ninguna|nada|-)$/i.test(String(st.allergies).trim()) ? st.allergies : null,
+              };
+            })
+            .filter(Boolean)
+            .sort((a: any, b: any) => a.name.localeCompare(b.name)),
         };
       });
+
+      // Espacios reservados en los próximos 7 días: qué área, cuándo, para qué y
+      // quién — el staff de apoyo los prepara (bebidas en video análisis, toallas).
+      try {
+        const { data: sb } = await admin
+          .from('space_bookings')
+          .select('id, title, starts_at, ends_at, academy_spaces:space_id(name, space_type), coaches:coach_id(display_name), camp_instances:camp_instance_id(camp_name)')
+          .eq('academy_id', coach.academy_id)
+          .eq('status', 'booked')
+          .gte('ends_at', `${today}T00:00:00-06:00`)
+          .lte('starts_at', `${weekOut}T23:59:59-06:00`)
+          .order('starts_at');
+        const tz = 'America/El_Salvador';
+        academySpaceBookings = (sb ?? []).map((b: any) => {
+          const sp = Array.isArray(b.academy_spaces) ? b.academy_spaces[0] : b.academy_spaces;
+          const co = Array.isArray(b.coaches) ? b.coaches[0] : b.coaches;
+          const ci = Array.isArray(b.camp_instances) ? b.camp_instances[0] : b.camp_instances;
+          const st = new Date(b.starts_at), en = new Date(b.ends_at);
+          return {
+            id: b.id,
+            date: st.toLocaleDateString('en-CA', { timeZone: tz }),
+            start: st.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }),
+            end: en.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }),
+            space: sp?.name ?? 'Space',
+            space_type: sp?.space_type ?? null,
+            title: b.title ?? null,
+            who: co?.display_name ?? null,
+            camp_name: ci?.camp_name ?? null,
+          };
+        });
+      } catch { /* sin espacios configurados: el calendario igual se muestra */ }
 
       // Class-day logistics (M133): pull each day's plan so the team also sees
       // start time, beach, and transport — not just which group is running.
@@ -624,6 +694,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     pastServices: pastEnriched,
     academyServices,
     academySchedule,
+    academySpaceBookings,
     todayLogistics,
     // Belt-gated courses: a coach only sees the belt courses up to their
     // max_belt_permission (same ladder used for drills). Non-belt coach

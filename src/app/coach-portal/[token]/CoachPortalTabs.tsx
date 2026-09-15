@@ -30,6 +30,7 @@ import { PortalInventory } from '@/components/coach-portal/PortalInventory';
 import { SessionPlanner } from '@/components/coach-portal/SessionPlanner';
 import { CampPlanReader } from '@/components/camp/CampPlanReader';
 import { IncidentReporter } from '@/components/coach-portal/IncidentReporter';
+import { SupportHome } from './SupportHome';
 import { StpPillarReader } from '@/components/coach-portal/StpPillarReader';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
@@ -160,13 +161,13 @@ export function CoachPortalTabs({
   return (
     <div
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
-      style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses', 'plan'].includes(activeTab) && !isSupport ? '#F7F9FA' : '#000' }}
+      style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses', 'plan'].includes(activeTab) ? '#F7F9FA' : '#000' }}
     >
       {/* iPad (md:): el planner usa lienzo ancho (4xl) y el resto del portal
           uno intermedio (3xl) — en teléfono todo queda igual (max-w-lg). */}
       <div className={`${plannerOpen ? 'max-w-lg md:max-w-4xl' : 'max-w-lg md:max-w-3xl'} mx-auto px-4 py-4`}>
         {activeTab === 'home' && (
-          <div className="rounded-lg p-3 space-y-4" style={{ background: isSupport ? '#000' : 'transparent' }}>
+          <div className="rounded-lg p-3 space-y-4">
             {!(coach as any).waiver_signed && <StaffWaiverCard token={coach.portal_token} />}
             <PendingPromotions token={coach.portal_token} />
             {/* Manual de uso, abierto directo en el capítulo de este rol */}
@@ -191,7 +192,7 @@ export function CoachPortalTabs({
             <PendingStaffInvites invites={(data as any).pendingStaffInvites ?? []} />
 
             {isSupport ? (
-              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} emergencyPlan={data.emergencyPlan} onGoTo={setActiveTab} />
+              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setActiveTab(t as Tab)} />
             ) : (
               <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} />
             )}
@@ -291,180 +292,6 @@ function EmRowLight({ label, value }: { label: string; value: string }) {
 // space prep, coffee, reception. The goal: the WHOLE team knows what's
 // happening. Identity + their tasks + the academy's 7-day schedule (time,
 // group, coach, headcount) + space bookings shortcut + emergency plan.
-function SupportHome({ coach, upcoming, schedule, emergencyPlan, onGoTo }: {
-  coach: any;
-  upcoming: any[];
-  schedule: any[];
-  emergencyPlan?: {
-    emergency_numbers: string | null;
-    nearest_hospital: string | null;
-    lifeguard_contact: string | null;
-    emergency_address: string | null;
-    emergency_protocol: string | null;
-  } | null;
-  onGoTo?: (tab: Tab) => void;
-}) {
-  const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
-  const title = coach.job_title || 'Team member';
-  const hasEmergency = !!emergencyPlan && (
-    emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
-    emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address || emergencyPlan.emergency_protocol
-  );
-
-  // Group the academy schedule by day (Today / Tomorrow / weekday) so the
-  // team can prep per group — a camp spanning several days appears on each
-  // day it runs within the next week.
-  const dayKey = (d: Date) => d.toISOString().slice(0, 10);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const days: Array<{ key: string; label: string; items: any[] }> = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today.getTime() + i * 86400000);
-    const key = dayKey(d);
-    const items = schedule.filter((s) => s.start_date <= key && key <= (s.end_date || s.start_date));
-    if (items.length === 0) continue;
-    const label =
-      i === 0 ? 'Today' : i === 1 ? 'Tomorrow'
-        : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-    items.sort((a, b) => (a.scheduled_time || '99').localeCompare(b.scheduled_time || '99'));
-    days.push({ key, label, items });
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Identity */}
-      <div className="rounded-lg border border-white/10 p-4 flex items-center gap-3" style={{ background: '#0A2532' }}>
-        {coach.photo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coach.photo_url} alt={coach.display_name} className="w-14 h-14 rounded-full object-cover shrink-0" />
-        ) : (
-          <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold shrink-0" style={{ background: '#00D2FF', color: '#0A2532' }}>{initials}</div>
-        )}
-        <div className="min-w-0">
-          <p className="text-white font-semibold text-lg leading-tight truncate">{coach.display_name}</p>
-          <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)]">{title}</p>
-        </div>
-      </div>
-
-      {/* My tasks */}
-      <CoachTasks token={coach.portal_token} onOpenInventory={onGoTo ? () => onGoTo('inventory') : undefined} />
-
-      {/* Academy schedule — the operational picture: every group running in
-          the next 7 days with time, coach, and headcount, so reception /
-          coffee / cleaning can prepare for each one. */}
-      <div className="rounded-lg border border-white/10 p-4" style={{ background: '#0A2532' }}>
-        <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)] mb-3 inline-flex items-center gap-1.5">
-          <CalendarDays size={13} /> Academy schedule · next 7 days
-        </p>
-        {days.length === 0 ? (
-          <p className="text-[13px] text-white/40">Nothing scheduled this week.</p>
-        ) : (
-          <div className="space-y-3">
-            {days.map((d) => (
-              <div key={d.key}>
-                <p className={`text-[10px] font-mono uppercase tracking-wider mb-1.5 ${d.label === 'Today' ? 'text-[var(--tss-cyan,#00D2FF)]' : 'text-white/40'}`}>
-                  {d.label}
-                </p>
-                <div className="space-y-1.5">
-                  {d.items.map((s: any) => {
-                    // Class-day logistics the coach planned for THIS date (M133):
-                    // real start time, beach, transport times.
-                    const dl = (s.day_logistics ?? []).find((x: any) => x.session_date === d.key);
-                    return (
-                      <div key={`${d.key}-${s.id}`} className="rounded-lg bg-[#F7F9FA]/[0.04] px-3 py-2.5 flex items-center gap-3">
-                        <span className="text-[12px] font-bold shrink-0 tabular-nums" style={{ color: '#00D2FF', fontFamily: 'DM Mono, monospace' }}>
-                          {dl?.class_start_time ? dl.class_start_time.slice(0, 5) : s.scheduled_time ? s.scheduled_time.slice(0, 5) : '—'}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm text-white font-medium truncate">{s.camp_name}</span>
-                          <span className="block text-[11px] text-white/40 truncate">
-                            {s.coach_name ? `Coach ${s.coach_name}` : 'No coach assigned'}
-                            {s.template_name ? ` · ${s.template_name}` : ''}
-                          </span>
-                          {dl && (dl.surf_venue || dl.transport_needed) && (
-                            <span className="block text-[11px] truncate" style={{ color: '#00D2FF' }}>
-                              {dl.surf_venue ? `🏖 ${dl.surf_venue}` : ''}
-                              {dl.transport_needed
-                                ? `${dl.surf_venue ? ' · ' : ''}🚐 out ${dl.transport_depart?.slice(0, 5) ?? '—'} / back ${dl.transport_return?.slice(0, 5) ?? '—'}${dl.transport_status === 'cancelled' ? ' (cancelled)' : ''}`
-                                : ''}
-                            </span>
-                          )}
-                          {/* Nombres de los campistas (pedido de Daren): para
-                              welcome kits y shots por nombre. Sin truncate —
-                              un nombre cortado no sirve para un kit. */}
-                          {Array.isArray(s.student_names) && s.student_names.length > 0 && (
-                            <span className="block text-[11px] text-white/60 leading-snug">
-                              👥 {s.student_names.join(' · ')}
-                            </span>
-                          )}
-                        </span>
-                        <span className="shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5" style={{ background: 'rgba(90,195,231,.12)', color: '#00D2FF' }}>
-                          {s.students} student{s.students === 1 ? '' : 's'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Space bookings shortcut — they prepare and clean the rooms */}
-      {onGoTo && (
-        <button
-          type="button"
-          onClick={() => onGoTo('spaces')}
-          className="w-full text-left rounded-lg border border-white/10 p-4 flex items-center justify-between gap-3 hover:border-[var(--tss-cyan)]/40 transition-colors"
-          style={{ background: '#0A2532' }}
-        >
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-white">Espacios — room bookings</span>
-            <span className="block text-[11px] text-white/50">See which spaces are reserved today, to prepare and clean them.</span>
-          </span>
-          <span className="text-[var(--tss-cyan,#00D2FF)] text-lg shrink-0">→</span>
-        </button>
-      )}
-
-      {/* My services */}
-      <div className="rounded-lg border border-white/10 p-4" style={{ background: '#0A2532' }}>
-        <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)] mb-3 inline-flex items-center gap-1.5">
-          <CalendarDays size={13} /> My services {upcoming.length > 0 && <span className="text-white/40">· {upcoming.length}</span>}
-        </p>
-        {upcoming.length === 0 ? (
-          <p className="text-[13px] text-white/40">No upcoming services assigned.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {upcoming.map((s: any) => (
-              <div key={s.id} className="rounded-lg bg-[#F7F9FA]/[0.04] px-3 py-2.5">
-                <p className="text-sm text-white font-medium">{s.camp_name}</p>
-                <p className="text-[11px] text-white/40" style={{ fontFamily: 'DM Mono, monospace' }}>
-                  {new Date(s.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  {s.scheduled_time ? ` · ${s.scheduled_time.slice(0, 5)}` : ''}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Emergency plan */}
-      {hasEmergency && emergencyPlan && (
-        <details className="rounded-lg border border-white/10 p-4" style={{ background: '#0A2532' }}>
-          <summary className="text-sm font-semibold text-white cursor-pointer">Emergency plan</summary>
-          <div className="mt-3 space-y-2">
-            {emergencyPlan.emergency_numbers && <EmRow label="Numbers" value={emergencyPlan.emergency_numbers} />}
-            {emergencyPlan.nearest_hospital && <EmRow label="Hospital" value={emergencyPlan.nearest_hospital} />}
-            {emergencyPlan.lifeguard_contact && <EmRow label="Lifeguard" value={emergencyPlan.lifeguard_contact} />}
-            {emergencyPlan.emergency_address && <EmRow label="Meeting pt" value={emergencyPlan.emergency_address} />}
-            {emergencyPlan.emergency_protocol && <EmRow label="Protocol" value={emergencyPlan.emergency_protocol} />}
-          </div>
-        </details>
-      )}
-    </div>
-  );
-}
-
 // Seller "Sell" tab: goal chart (2A) + selling decks (2B) + reserve-a-spot
 // flow (2C) + the seller's own sales log (2D). Sellers reserve; the
 // coordinator confirms payment.
