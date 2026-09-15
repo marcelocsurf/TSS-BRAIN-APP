@@ -1920,39 +1920,36 @@ function PlanTab({
   // ── Vista de agenda, Brand Manual v10: capítulo en ink + rieles de
   // sección mono sobre regla de 2px + filas tipo ficha técnica. Esquinas
   // rectas (el sistema es rectilíneo), espacios de la escala Fibonacci.
-  const F_DISP: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
-  const F_MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
-  const HAIR = 'rgba(14,32,41,0.16)';
+  // Línea v10.1 (2026-09-15): título grande Archivo + rótulo mono, tarjetas
+  // sand con filas paper, radios 8/5 px; en iPad los días van a dos columnas.
+  const F_DISP: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em' };
+  const F_MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.12em' };
+  const HAIR = '#DCD7C6';
+  const CARD: React.CSSProperties = { background: '#E9E2D2', border: '1px solid #DCD7C6', borderRadius: 8, overflow: 'hidden' };
 
   return (
-    <div className="space-y-[21px] pb-4">
-      {/* Portada de capítulo — ink, numeral cyan delineado, regla cyan */}
-      <div className="relative overflow-hidden px-[21px] py-[21px]" style={{ background: '#061C2B', borderBottom: '3px solid #00D2FF' }}>
-        <span aria-hidden className="absolute -top-3 right-2 select-none text-[89px] leading-none" style={{ ...F_DISP, color: 'transparent', WebkitTextStroke: '1px rgba(0,210,255,0.22)' }}>
-          {String(upcoming.length).padStart(2, '0')}
-        </span>
-        <p className="text-[11px]" style={{ ...F_MONO, color: '#00D2FF' }}>Plan the session</p>
-        <h2 className="text-[21px] mt-[5px]" style={{ ...F_DISP, color: '#F7F9FA' }}>Your classes</h2>
-        <p className="text-[11px] mt-[8px] leading-relaxed" style={{ color: 'rgba(247,249,250,0.7)' }}>
-          Tap a class → read the plan, run the session, close the day.
-        </p>
+    <div className="space-y-4 pb-4">
+      <div className="px-1">
+        <h2 className="text-[23px] leading-tight" style={{ ...F_DISP, color: '#10263B' }}>Your classes</h2>
+        <p className="text-[12px] mt-0.5" style={{ ...F_MONO, color: '#55666E' }}>Plan the session · {upcoming.length} upcoming</p>
+        <p className="text-[12px] mt-1 text-[#55666E]">Tap a class → read the plan, run the session, close the day.</p>
       </div>
 
       {/* Días pasados SIN CIERRE — un toque abre el planner en ese día.
           El cierre es requisito para liberar el pago (candado de nómina). */}
       {unclosed.length > 0 && (
         <div>
-          <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: '2px solid #061C2B' }}>
+          <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: `1px solid ${HAIR}` }}>
             <p className="text-[11px]" style={{ ...F_MONO, color: '#10263B' }}>Needs closing</p>
             <p className="text-[11px]" style={{ ...F_MONO, color: '#10263B' }}>{unclosed.length} · pay on hold</p>
           </div>
-          <div style={{ border: `1px solid ${HAIR}`, borderLeft: '3px solid #FFD166', background: '#fff' }}>
+          <div style={{ ...CARD, borderLeft: '3px solid #FFD166' }}>
             {unclosed.map((u, i) => (
               <button
                 key={`${u.camp_id}-${u.day_number}`}
                 type="button"
                 onClick={() => openPlanner(u.camp_id, u.day_number, 'run')}
-                className="w-full text-left px-[13px] py-[13px] flex items-center justify-between gap-2 hover:bg-[rgba(255,209,102,.25)] transition-colors"
+                className="w-full text-left px-[13px] py-[13px] flex items-center justify-between gap-2 bg-[#F7F9FA] hover:bg-[rgba(255,209,102,.25)] transition-colors"
                 style={i > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
               >
                 <span className="min-w-0 flex items-baseline gap-[8px]">
@@ -1964,7 +1961,7 @@ function PlanTab({
                   </span>
                   <span className="shrink-0 text-[11px] text-[#55666E]" style={F_MONO}>D{u.day_number}</span>
                 </span>
-                <span className="shrink-0 text-[11px] px-[13px] py-[5px]" style={{ ...F_MONO, background: '#FFD166', color: '#061C2B', fontWeight: 700 }}>
+                <span className="shrink-0 text-[11px] px-[13px] py-[5px] rounded-[5px]" style={{ ...F_MONO, background: '#FFD166', color: '#061C2B', fontWeight: 700 }}>
                   Close →
                 </span>
               </button>
@@ -1974,7 +1971,9 @@ function PlanTab({
       )}
 
       {upcoming.length > 0 && (
-        <CoachMiniCalendar services={upcoming} onOpen={openPlanner} token={token} />
+        <div className="md:max-w-[460px]">
+          <CoachMiniCalendar services={upcoming} onOpen={openPlanner} token={token} />
+        </div>
       )}
 
       {upcoming.length > 0 && (
@@ -2004,34 +2003,34 @@ function PlanTab({
               return `${hr % 12 || 12}:${m ?? '00'} ${hr >= 12 ? 'PM' : 'AM'}`;
             };
             return (
-              <div className="space-y-[21px]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {days.map((k) => (
                   <div key={k}>
-                    {/* Riel de sección v10: día + fecha mono sobre regla ink */}
-                    <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: '2px solid #061C2B' }}>
+                    {/* Riel de sección: día + fecha mono sobre regla */}
+                    <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: `1px solid ${HAIR}` }}>
                       <p className="text-[11px]" style={{ ...F_MONO, color: '#061C2B' }}>{dayLabel(k)}</p>
                       <p className="text-[11px] text-[#55666E]" style={F_MONO}>
                         {new Date(k + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
                       </p>
                     </div>
-                    {/* Filas tipo ficha técnica: hora mono cyan · nombre Archivo · datos mono */}
-                    <div style={{ border: `1px solid ${HAIR}`, background: '#fff' }}>
+                    {/* Filas: hora mono cyan · nombre Archivo · datos mono */}
+                    <div style={CARD}>
                       {byDay.get(k)!.map((s: any, i: number) => {
                         const tpl = Array.isArray(s.camp_templates) ? s.camp_templates[0] : s.camp_templates;
                         const multi = s.start_date !== s.end_date;
                         return (
-                          <div key={s.id} style={{ borderLeft: '3px solid #00D2FF', ...(i > 0 ? { borderTop: `1px solid ${HAIR}` } : {}) }}>
+                          <div key={s.id} style={{ background: '#F7F9FA', borderLeft: '3px solid #00D2FF', ...(i > 0 ? { borderTop: `1px solid ${HAIR}` } : {}) }}>
                             <div className="flex items-stretch">
                               <button
                                 type="button"
                                 onClick={() => openPlanner(s.id)}
-                                className="min-w-0 flex-1 text-left px-[13px] py-[13px] flex items-center gap-[13px] hover:bg-[#EDF3F5]/40 transition-colors"
+                                className="min-w-0 flex-1 text-left px-[13px] py-[13px] flex items-center gap-[13px] hover:bg-white transition-colors"
                               >
                                 <span className="shrink-0 w-[55px] text-[11px] leading-tight" style={{ ...F_MONO, color: '#00A8CC', fontWeight: 600 }}>
                               {s.scheduled_time ? fmtTime(s.scheduled_time).replace(' ', ' ') : '—'}
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#061C2B', fontWeight: 800 }}>
+                                  <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#10263B' }}>
                                     {(s.camp_name ?? '').split(' · ')[0]}
                                   </span>
                                   <span className="block text-[11px] mt-[3px] text-[#55666E]" style={F_MONO}>
@@ -2072,7 +2071,7 @@ function PlanTab({
                                         {trInfo.days.map((x: any) => (
                                           <button key={x.session_id} type="button" disabled={x.closed}
                                             onClick={() => pickTrDay(x)}
-                                            className="px-[8px] py-[5px] text-[11px] disabled:opacity-35"
+                                            className="px-[8px] py-[5px] text-[11px] rounded-[5px] disabled:opacity-35"
                                             style={{ ...F_MONO, border: `1px solid ${trDay === x.session_id ? '#00D2FF' : HAIR}`, background: trDay === x.session_id ? 'rgba(0,210,255,.12)' : '#fff', color: trDay === x.session_id ? '#00A8CC' : '#55666E' }}>
                                             {new Date(x.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}{x.needed ? ' 🚐' : ''}{x.closed ? ' ✕' : ''}
                                           </button>
@@ -2086,18 +2085,18 @@ function PlanTab({
                                     <div className="flex items-center gap-[8px] mb-[8px]">
                                       <label className="text-[11px] text-[#55666E] shrink-0" style={F_MONO}>Beach</label>
                                       <select value={trVenue} onChange={(ev) => setTrVenue(ev.target.value)}
-                                        className="min-w-0 flex-1 px-2 py-1.5 border border-[#DCD7C6] text-[12px] bg-[#F7F9FA]">
+                                        className="min-w-0 flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-[5px] text-[12px] bg-white">
                                         <option value="">— pick the beach —</option>
                                         {SURF_SPOT_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
                                       </select>
                                     </div>
                                     <div className="flex items-center gap-[8px] flex-wrap">
                                       <label className="text-[11px] text-[#55666E]" style={F_MONO}>Out</label>
-                                      <input type="time" value={trDep} onChange={(e) => setTrDep(e.target.value)} className="px-2 py-1.5 border border-[#DCD7C6] text-[12px] bg-[#F7F9FA]" />
+                                      <input type="time" value={trDep} onChange={(e) => setTrDep(e.target.value)} className="px-2 py-1.5 border border-[#DCD7C6] rounded-[5px] text-[12px] bg-white" />
                                       <label className="text-[11px] text-[#55666E]" style={F_MONO}>Back</label>
-                                      <input type="time" value={trRet} onChange={(e) => setTrRet(e.target.value)} className="px-2 py-1.5 border border-[#DCD7C6] text-[12px] bg-[#F7F9FA]" />
+                                      <input type="time" value={trRet} onChange={(e) => setTrRet(e.target.value)} className="px-2 py-1.5 border border-[#DCD7C6] rounded-[5px] text-[12px] bg-white" />
                                       <button type="button" disabled={trBusy} onClick={() => saveTransport(s.id, true)}
-                                        className="px-[13px] py-[8px] text-[11px] disabled:opacity-40" style={{ ...F_MONO, background: '#00D2FF', color: '#061C2B', fontWeight: 700 }}>
+                                        className="px-[13px] py-[8px] text-[11px] rounded-[5px] disabled:opacity-40" style={{ ...F_MONO, background: '#00D2FF', color: '#061C2B', fontWeight: 700 }}>
                                         {trBusy ? '…' : 'Request 🚐'}
                                       </button>
                                       {d?.needed && (
@@ -2134,13 +2133,13 @@ function PlanTab({
             </span>
             <span className="text-[11px] text-[#55666E]" style={F_MONO}>{past.length}</span>
           </summary>
-          <div style={{ border: `1px solid ${HAIR}`, background: '#fff' }}>
+          <div style={CARD}>
             {past.map((s: any, i: number) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => openPlanner(s.id)}
-                className="w-full text-left px-[13px] py-[10px] flex items-center justify-between gap-2 hover:bg-[#F7F9FA] transition-colors"
+                className="w-full text-left px-[13px] py-[10px] flex items-center justify-between gap-2 bg-[#F7F9FA] hover:bg-white transition-colors"
                 style={i > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
               >
                 <span className="text-[12px] text-[#55666E] truncate">{(s.camp_name ?? '').split(' · ')[0]}</span>
@@ -2155,7 +2154,7 @@ function PlanTab({
       )}
 
       {upcoming.length === 0 && past.length === 0 && (
-        <div className="text-center px-[21px] py-[34px]" style={{ border: `1px solid ${HAIR}`, background: '#fff' }}>
+        <div className="text-center px-[21px] py-[34px]" style={CARD}>
           <Waves size={34} strokeWidth={1.5} className="mx-auto mb-[8px] text-[#DCD7C6]" />
           <p className="text-[13px] text-[#55666E]">No services assigned yet.</p>
           <p className="text-[11px] mt-[5px] text-[#55666E]" style={F_MONO}>

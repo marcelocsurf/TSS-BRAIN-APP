@@ -85,18 +85,18 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
   const selectedTasks = taskByDay.get(selected) ?? [];
 
   return (
-    <div className="rounded-2xl border border-white/10 p-3" style={{ background: '#0F1E33' }}>
+    <div className="rounded-lg border border-[#DCD7C6] p-3" style={{ background: '#E9E2D2' }}>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-semibold text-white">{monthLabel}</p>
+        <p className="text-[15px]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#10263B' }}>{monthLabel}</p>
         <div className="flex gap-1">
-          <button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} className="p-1.5 rounded-lg text-white/60 hover:bg-white/10"><ChevronLeft size={15} /></button>
-          <button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} className="p-1.5 rounded-lg text-white/60 hover:bg-white/10"><ChevronRight size={15} /></button>
+          <button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} className="p-1.5 rounded-[5px] text-[#55666E] hover:bg-[#F7F9FA]"><ChevronLeft size={15} /></button>
+          <button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} className="p-1.5 rounded-[5px] text-[#55666E] hover:bg-[#F7F9FA]"><ChevronRight size={15} /></button>
         </div>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-          <span key={i} className="text-[9px] font-mono text-white/30">{d}</span>
+          <span key={i} className="text-[10px] font-mono text-[#55666E]">{d}</span>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
@@ -111,17 +111,17 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
             <button
               key={k}
               onClick={() => setSelected(k)}
-              className="aspect-square rounded-lg flex flex-col items-center justify-center text-[11px] transition-colors"
+              className="aspect-square rounded-[5px] flex flex-col items-center justify-center text-[11px] transition-colors"
               style={{
-                background: isSel ? '#5AC3E7' : has ? 'rgba(90,195,231,.12)' : hasTask ? 'rgba(244,114,182,.12)' : 'transparent',
-                color: isSel ? '#0A1628' : inMonth ? '#e5eef5' : '#3a4a5e',
-                border: isToday && !isSel ? '1px solid #5AC3E7' : '1px solid transparent',
+                background: isSel ? '#00D2FF' : has ? 'rgba(0,210,255,.18)' : hasTask ? 'rgba(244,84,162,.14)' : 'transparent',
+                color: isSel ? '#061C2B' : inMonth ? '#10263B' : '#B8B1A0',
+                border: isToday && !isSel ? '1px solid #00A8CC' : '1px solid transparent',
               }}
             >
               {d.getDate()}
               {(has || hasTask) && (
                 <span className="flex gap-0.5 mt-0.5">
-                  {has && <span className="w-1 h-1 rounded-full" style={{ background: isSel ? '#0A1628' : '#5AC3E7' }} />}
+                  {has && <span className="w-1 h-1 rounded-full" style={{ background: isSel ? '#061C2B' : '#00A8CC' }} />}
                   {hasTask && <span className="w-1 h-1 rounded-full" style={{ background: isSel ? '#7A2348' : TASK_PINK }} />}
                 </span>
               )}
@@ -131,12 +131,12 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
       </div>
 
       {/* Selected day's services */}
-      <div className="mt-3 border-t border-white/10 pt-2 space-y-1.5">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">
+      <div className="mt-3 border-t border-[#DCD7C6] pt-2 space-y-1.5">
+        <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>
           {new Date(selected + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
         {selectedServices.length === 0 && selectedTasks.length === 0 ? (
-          <p className="text-[11px] text-white/40">Nada agendado este día.</p>
+          <p className="text-[11px] text-[#55666E]">Nada agendado este día.</p>
         ) : (
           <>
             {selectedServices.map((s: any) => (
@@ -144,9 +144,9 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
                 key={s.id}
                 type="button"
                 onClick={() => onOpen?.(s.id)}
-                className="w-full text-left rounded-lg px-2.5 py-2 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+                className="w-full text-left rounded-[5px] px-2.5 py-2 bg-[#F7F9FA] border border-[#DCD7C6] hover:bg-white transition-colors"
               >
-                <p className="text-[12px] text-white font-medium">
+                <p className="text-[12px] text-[#10263B] font-medium">
                   {s.scheduled_time ? `${fmtTime(s.scheduled_time)} · ` : ''}{s.camp_name}
                 </p>
               </button>
@@ -154,11 +154,11 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
             {selectedTasks.map((t) => (
               <div
                 key={t.id}
-                className="flex items-center gap-2 rounded-lg px-2.5 py-2"
-                style={{ background: 'rgba(244,114,182,.10)' }}
+                className="flex items-center gap-2 rounded-[5px] px-2.5 py-2"
+                style={{ background: 'rgba(244,84,162,.12)' }}
               >
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: TASK_PINK }} />
-                <p className="text-[12px] font-medium" style={{ color: '#F9C6DE' }}>{t.title}</p>
+                <p className="text-[12px] font-medium" style={{ color: '#10263B' }}>{t.title}</p>
                 <span className="ml-auto text-[9px] font-mono uppercase tracking-wider" style={{ color: TASK_PINK }}>Tarea</span>
               </div>
             ))}
@@ -167,8 +167,8 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
       </div>
 
       {/* Legend */}
-      <div className="mt-2 flex items-center gap-3 text-[9px] text-white/40">
-        <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#5AC3E7' }} /> Servicio</span>
+      <div className="mt-2 flex items-center gap-3 text-[10px] text-[#55666E]">
+        <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#00A8CC' }} /> Servicio</span>
         <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ background: TASK_PINK }} /> Tarea</span>
       </div>
     </div>
