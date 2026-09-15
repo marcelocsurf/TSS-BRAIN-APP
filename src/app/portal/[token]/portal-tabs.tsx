@@ -371,6 +371,23 @@ const H_BIG = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStre
 const T_CREAM = '#E9E2D2', T_PAPER = '#F7F9FA', T_INK = '#10263B', T_BORDER = '#DCD7C6', T_MUTED = '#55666E', T_NAVY = '#061C2B';
 const T_LABEL = { ...F_LABEL, letterSpacing: '0.08em', fontSize: 12 } as const;
 const creamLabel = (accent: string) => (accent === '#FFD166' ? '#B7791F' : accent === '#06D6A0' ? '#0F8A5F' : '#0A7FA0');
+const ARCHIVO = 'var(--font-archivo), Archivo, sans-serif';
+const T_MONO_SM = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontSize: 13 } as const;
+const T_LINK = '#0A7FA0';
+/** Tarjeta sand del manual v10 con etiqueta mono arriba (mock My Progress 2026-09-15). */
+function SandCard({ label, right, children, className = '' }: { label?: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-lg p-4 ${className}`} style={{ background: T_CREAM, border: `1px solid ${T_BORDER}`, color: T_INK }}>
+      {(label || right) && (
+        <div className="flex items-center justify-between gap-3 mb-2">
+          {label && <p style={{ ...T_LABEL, color: T_INK }}>{label}</p>}
+          {right}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
 
 // ═══ YOUR NEXT MOVES ═══ (Marcelo 2026-09-04/05)
 // Una sola fuente para las dos puertas: en el HOME sale SOLO la primera (lo
@@ -547,20 +564,56 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
     );
   }
 
-  // LET'S PLAY: la lista completa, numerada, con la regla.
+  // LET'S PLAY: la lista completa, numerada, con la regla. Tarjeta sand con
+  // botón cyan por fila (línea aprobada); mismos textos y destinos.
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
-      <div className="px-4 pt-3.5 pb-2">
-        <p className="text-[12px]" style={{ ...F_LABEL, color: BRAND.colors.cyan }}>Your next moves</p>
-        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,.55)' }}>{rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
+    <div>
+      <h2 className="text-[26px] mb-2.5" style={{ ...H_BIG, color: '#F8F5EC' }}>Your next moves</h2>
+      <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+        <div className="px-4 pt-3.5 pb-1">
+          <p className="text-[14px]" style={{ color: T_INK }}>{rows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
+        </div>
+        {coachCleared && (
+          <div className="mx-3 my-2 rounded-[5px] px-3 py-2.5 flex items-start gap-2.5" style={{ background: '#DDF0E4' }}>
+            <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold" style={{ background: '#0F8A5F', color: '#fff' }}>✓</span>
+            <div>
+              <p className="text-[14px] font-bold leading-snug" style={{ color: '#0F6B4A' }}>You cleared it · You took what your coach left you to 4★ on your own.</p>
+              <p className="text-[13px] mt-0.5 leading-snug" style={{ color: '#0F6B4A' }}>They confirm it next time they see you in the water.</p>
+            </div>
+          </div>
+        )}
+        {rows.map((r, idx) => (
+          <div key={r.key} className="px-4 py-3.5" style={{ borderTop: `1px solid ${T_BORDER}` }}>
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-black" style={{ background: T_NAVY, color: BRAND.colors.cyan }} aria-label={`Priority ${idx + 1}`}>{idx + 1}</span>
+              <div className="min-w-0 flex-1">
+                <p style={{ ...T_LABEL, color: creamLabel(r.accent) }}>{r.label}</p>
+                <p className="text-[18px] font-extrabold leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>{r.title}</p>
+                <p className="text-[14px] mt-0.5 leading-snug" style={{ color: T_INK }}>{r.reason}</p>
+                {r.detail && <p className="text-[13px] mt-1 leading-snug font-semibold" style={{ color: '#B7791F' }}>{r.detail}</p>}
+                {r.side && <p className="text-[13px] mt-1 leading-snug" style={{ color: '#7C4DFF' }}>Both sides · {r.side}</p>}
+                {r.onClick && r.action && (
+                  <button type="button" onClick={r.onClick}
+                    className="mt-2.5 min-h-[44px] px-5 rounded-[5px] inline-flex items-center gap-2 text-[14px] font-black uppercase"
+                    style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                    {r.action.replace(/\s*→\s*$/, '')} <ArrowRight size={16} />
+                  </button>
+                )}
+                {r.pageHref && (
+                  <a href={r.pageHref} className="inline-flex items-center gap-1.5 mt-2 ml-1 text-[13px] font-bold" style={{ color: T_INK }}>
+                    Open the sequence page <ArrowRight size={13} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {rows.length > 0 && (
+          <p className="px-4 py-3 text-[12.5px] leading-snug" style={{ color: T_MUTED, borderTop: `1px solid ${T_BORDER}` }}>
+            The order: 1 your coach · 2 your list · 3 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
+          </p>
+        )}
       </div>
-      {cleared}
-      {rows.map((r, idx) => renderRow(r, idx, true))}
-      {rows.length > 0 && (
-        <p className="px-4 py-2.5 text-[12px] leading-snug" style={{ color: '#b3c4d1', ...rowStyle }}>
-          The order: 1 your coach · 2 your list · 3 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
-        </p>
-      )}
     </div>
   );
 }
@@ -975,16 +1028,17 @@ export function PortalTabs({
               <button
                 type="button"
                 onClick={() => setShowCustomSession(true)}
-                className="w-full bg-gray-50 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-2xl p-4 text-left transition-colors"
+                className="w-full rounded-lg p-4 text-left transition-colors"
+                style={{ background: T_CREAM, border: `1px dashed #9AA6AD` }}
               >
-                <p className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider text-gray-400">
+                <p className="inline-flex items-center gap-1.5" style={{ ...T_LABEL, color: T_MUTED }}>
                   <Waves size={14} strokeWidth={1.75} />
                   Custom Session
                 </p>
-                <p className="text-sm font-semibold text-[var(--tss-navy)] mt-1">
+                <p className="text-[16px] font-bold mt-1" style={{ color: T_INK }}>
                   Free surf, breathing, fun — anything off-script
                 </p>
-                <p className="text-[12px] text-gray-500 mt-1">
+                <p className="text-[13px] mt-1" style={{ color: T_MUTED }}>
                   Logged for the record but does NOT count toward step mastery.
                 </p>
               </button>
@@ -995,10 +1049,7 @@ export function PortalTabs({
                   tarjetas ya se presentan solas (ícono + título + subtítulo):
                   un encabezado y la grilla alcanzan. */}
               <div>
-                <p className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-2">
-                  <Video size={14} strokeWidth={1.75} />
-                  Tools
-                </p>
+                <p className="text-[26px] mb-2.5" style={{ ...H_BIG, color: '#F8F5EC' }}>Tools</p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <VideoAnalyzerLauncher
                     scope={`student:${data.token}`}
@@ -1439,72 +1490,63 @@ function HomeTab({
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Primary ring: total water time + belt progress */}
-          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <div className="relative shrink-0" style={{ width: 104, height: 104 }}>
-              <svg viewBox="0 0 120 120" width="104" height="104">
-                {/* El aro es el SPLIT de estas horas, no otro dato: el arco
-                    verde son las de Free Surf y el cyan las de Training.
-                    Antes dibujaba el progreso de CINTA alrededor de la cifra
-                    de horas — por eso parecía un segundo score (Marcelo,
-                    2026-08-25). El nivel ya tiene su propia barra al lado. */}
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#06D6A0" strokeWidth="10" />
-                <circle
-                  cx="60" cy="60" r="52" fill="none" stroke="#00D2FF" strokeWidth="10"
-                  strokeDasharray="326.7"
-                  strokeDashoffset={326.7 * (1 - (surf.totalMinutes > 0 ? surf.trainingMinutes / surf.totalMinutes : 0))}
-                  transform="rotate(-90 60 60)"
-                />
-              </svg>
-              {/* El texto vive DENTRO del anillo: el hueco libre son ~81px de
-                  diámetro, así que un tamaño fijo se desbordaba apenas la cifra
-                  crecía ("16h 44m" a 22px no entraba). Se achica sola según el
-                  largo y nunca parte en dos líneas. */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-3">
-                <p className="font-bold leading-none whitespace-nowrap" style={{
-                  fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa',
-                  fontSize: ringFontSize(fmtHm(surf.totalMinutes)),
-                }}>
-                  {fmtHm(surf.totalMinutes)}
-                </p>
-                <p className="text-[9px] font-mono uppercase tracking-[0.06em] mt-1 whitespace-nowrap" style={{ color: '#a9bccb' }}>Hours surfed</p>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Level progress</p>
-              <p className="text-sm font-semibold mt-1" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa' }}>
-                Level {BELT_RANK[beltLevel] ?? 1} of 6
-              </p>
-              <div className="h-1.5 rounded-full overflow-hidden mt-2 mb-2" style={{ background: '#1f344a' }}>
-                <div className="h-full rounded-full" style={{ width: `${((BELT_RANK[beltLevel] ?? 1) / 6) * 100}%`, background: '#00D2FF' }} />
-              </div>
-              {/* Desglose de LAS MISMAS horas del anillo — un solo lugar
-                  para el dato (antes eran dos tarjetas sueltas más abajo). */}
-              <div className="flex items-center gap-3 mb-2">
-                <span className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: '#b8cad8' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />
-                  Training <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.trainingMinutes)}</b>
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: '#b8cad8' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />
-                  Free surf <b style={{ color: '#f0f7fa' }}>{fmtHm(surf.freeSurfMinutes)}</b>
-                </span>
-              </div>
-              {(() => {
-                const idx = BELT_HIERARCHY.indexOf(beltLevel);
-                const next = idx >= 0 && idx < BELT_HIERARCHY.length - 1 ? BELT_HIERARCHY[idx + 1] : null;
-                const nd = next ? BELT_DISPLAY[next] : null;
-                return nd ? (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: nd.color }} />
-                    <span className="text-[12px]" style={{ color: '#b3c4d1' }}>Next: {nd.levelName} · {nd.en}</span>
+          {/* YOUR LEVEL · TIME IN THE WATER · YOUR NEXT LEVEL (mock My Progress
+              2026-09-15). Los MISMOS datos del cockpit viejo: cinta y nivel,
+              curso activo, horas con su split training / free surf, la próxima
+              cinta. El anillo pasó a ser la barra del split. */}
+          {(() => {
+            const idx = BELT_HIERARCHY.indexOf(beltLevel);
+            const nextB = idx >= 0 && idx < BELT_HIERARCHY.length - 1 ? BELT_HIERARCHY[idx + 1] : null;
+            const nd = nextB ? BELT_DISPLAY[nextB] : null;
+            const cb = data.courseData?.activeCourseBelt ? String(data.courseData.activeCourseBelt).replace(/_belt$/, '') : null;
+            const courseBelt = cb ? BELT_DISPLAY[`${cb}_belt` as BeltLevel] : null;
+            const pctTrain = surf.totalMinutes > 0 ? (surf.trainingMinutes / surf.totalMinutes) * 100 : 0;
+            return (
+              <>
+                <SandCard label="Your level">
+                  <div className="flex items-center gap-3.5">
+                    <span className="w-12 h-12 rounded-full shrink-0" style={{ background: belt?.color || '#E8E8E8', border: '1px solid rgba(16,38,59,.12)' }} />
+                    <div className="min-w-0">
+                      <p className="text-[22px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{belt?.en}</p>
+                      <p className="mt-0.5" style={{ ...T_MONO_SM, color: T_INK }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</p>
+                    </div>
                   </div>
-                ) : (
-                  <span className="text-[12px]" style={{ color: '#b3c4d1' }}>Top belt reached</span>
-                );
-              })()}
-            </div>
-          </div>
+                  {courseBelt && <p className="mt-3 pt-3" style={{ ...T_MONO_SM, color: T_INK, borderTop: `1px solid ${T_BORDER}` }}>Current course: {courseBelt.en} · {courseBelt.levelName}</p>}
+                  <button type="button" onClick={() => onOpenRoadmap?.()} className="inline-flex items-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_LINK }}>What it takes <ArrowRight size={15} /></button>
+                </SandCard>
+                <SandCard label="Time in the water">
+                  <p className="text-[40px] font-black leading-none" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.totalMinutes)}</p>
+                  {/* El split de estas horas (antes el anillo): cyan = training, verde = free surf. */}
+                  <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: '#06D6A0' }}><div className="h-full" style={{ width: `${pctTrain}%`, background: '#00D2FF' }} /></div>
+                  <div className="grid grid-cols-2 mt-3">
+                    <div>
+                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />Training</p>
+                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.trainingMinutes)}</p>
+                    </div>
+                    <div className="pl-4" style={{ borderLeft: `1px solid ${T_BORDER}` }}>
+                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />Free surf</p>
+                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
+                    </div>
+                  </div>
+                  <a href="#my-sessions" className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></a>
+                </SandCard>
+                <SandCard label="Your next level">
+                  {nd ? (
+                    <div className="flex items-center gap-3.5">
+                      <span className="w-12 h-12 rounded-full shrink-0" style={{ background: nd.color, border: '1px solid rgba(16,38,59,.12)' }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{nd.en}</p>
+                        <p className="mt-0.5" style={{ ...T_MONO_SM, color: T_MUTED }}>{nd.levelName}</p>
+                      </div>
+                      <button type="button" onClick={() => onOpenRoadmap?.()} className="shrink-0 inline-flex items-center gap-1.5 text-[14px] font-bold" style={{ color: T_LINK }}>See what it takes <ArrowRight size={14} /></button>
+                    </div>
+                  ) : (
+                    <p className="text-[15px] font-bold" style={{ color: T_INK }}>Top belt reached</p>
+                  )}
+                </SandCard>
+              </>
+            );
+          })()}
 
           {/* ORDEN del Home (pedido Marcelo 2026-08-25): primero lo ACCIONABLE
               de hoy (ficha incompleta, citas, lo que el staff dejó), después
@@ -1653,22 +1695,22 @@ function HomeTab({
 
           {/* Belt journey strip — es también la puerta a "qué me falta": el
               alumno mira su camino y ahí mismo pregunta cómo se avanza. */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}`, color: T_INK }}>
           <button
             type="button"
             onClick={() => onOpenRoadmap?.()}
             className="block w-full text-left p-4"
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#b3c4d1' }}>
+              <p style={{ ...T_LABEL, color: T_INK }}>
                 Where you are · {String(data.courseData?.activeCourseBelt || beltLevel).replace('_belt', '').toUpperCase()} Belt{data.courseData?.activeCourseBelt && data.courseData.activeCourseBelt !== beltLevel.replace('_belt', '') ? ` · training` : ''}
               </p>
-              <span className="text-[12px] font-semibold shrink-0" style={{ color: BRAND.colors.cyan }}>What it takes →</span>
+              <span className="text-[13px] font-bold shrink-0" style={{ color: T_LINK }}>What it takes →</span>
             </div>
             {/* El ESPEJO del nivel: valida dónde está, no motiva. Vivía a mitad
                 del Home repitiendo la cinta por tercera vez; su lugar es acá,
                 junto al camino. */}
-            <p className="text-[12.5px] leading-relaxed mb-3" style={{ color: '#b8cad8' }}>
+            <p className="text-[14px] leading-relaxed mb-3" style={{ color: T_INK }}>
               {beltMirror}
             </p>
             <div className="flex items-center justify-between">
@@ -1685,14 +1727,14 @@ function HomeTab({
                           width: isCurrent ? 20 : 15,
                           height: isCurrent ? 20 : 15,
                           background: d.color,
-                          border: isCurrent ? '2px solid #5AC3E7' : 'none',
+                          border: isCurrent ? '2px solid #061C2B' : '1px solid rgba(16,38,59,.15)',
                           opacity: passed ? 1 : 0.4,
                         }}
                       />
-                      <span className="text-[12px]" style={{ color: isCurrent ? '#00D2FF' : '#b3c4d1' }}>{d.levelName}</span>
+                      <span className="text-[11px]" style={{ color: isCurrent ? T_INK : T_MUTED, fontWeight: isCurrent ? 700 : 400 }}>{d.levelName}</span>
                     </div>
                     {i < BELT_HIERARCHY.length - 1 && (
-                      <div className="flex-1 mx-1" style={{ height: 2, background: '#1f344a', marginBottom: 14 }} />
+                      <div className="flex-1 mx-1" style={{ height: 2, background: T_BORDER, marginBottom: 14 }} />
                     )}
                   </div>
                 );
@@ -1717,18 +1759,18 @@ function HomeTab({
             type="button"
             onClick={() => onOpenWater?.()}
             className="block w-full text-left px-4 pb-3.5 pt-3"
-            style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}
+            style={{ borderTop: `1px solid ${T_BORDER}` }}
           >
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#b3c4d1' }}>
+              <p style={{ ...T_LABEL, color: T_INK }}>
                 In the water
               </p>
-              <p className="text-[12.5px] font-semibold shrink-0" style={{ color: oceanConfirmed ? '#eaf4fa' : '#b3c4d1' }}>
+              <p className="text-[14px] font-bold shrink-0" style={{ color: oceanConfirmed ? T_INK : T_LINK }}>
                 {oceanConfirmed ? oceanConfirmed.name : 'Your water level →'}
               </p>
             </div>
             {oceanConfirmed && (
-              <p className="text-[12.5px] mt-0.5 leading-snug" style={{ color: '#b3c4d1' }}>
+              <p className="text-[13px] mt-0.5 leading-snug" style={{ color: T_MUTED }}>
                 {oceanConfirmed.cleared}
               </p>
             )}
@@ -1869,7 +1911,7 @@ function HomeTab({
           las busca y mientras tanto no compiten con nada.
           Solo para quien puede registrar (curso o membresía). */}
       {data.canTrack !== false && (
-      <div className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: '1px solid rgba(0,210,255,.18)' }}>
+      <div id="my-sessions" className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: '1px solid rgba(0,210,255,.18)' }}>
         <details className="group">
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
             <span className="inline-flex items-center gap-2 text-[12px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
@@ -1933,63 +1975,53 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
     : zone === 'hard'
     ? 'Too hard lately — lower the challenge.'
     : "You're in the learning zone — keep it here.";
-  const ZONE_COLOR = { easy: '#3E6C97', opt: '#00D2FF', hard: '#A33F4A' } as const;
+  // Tarjeta sand (mock My Progress 2026-09-15): número grande, pastilla con la
+  // zona, tres casillas. Los textos de la doctrina son los de siempre.
+  const ZONES = [
+    { key: 'easy', label: 'Too easy', w: ZONE_EASY_END },
+    { key: 'opt', label: 'Optimal learning', w: ZONE_OPT_END - ZONE_EASY_END },
+    { key: 'hard', label: 'Too hard', w: 100 - ZONE_OPT_END },
+  ] as const;
+  const PILL = { easy: '#DCE8F2', opt: '#BDEFFF', hard: '#F6D9DC' } as const;
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.05)' }} aria-label="Flow Channel">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span style={{ width: 4, height: 18, borderRadius: 3, background: '#00D2FF', display: 'inline-block' }} />
-          <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f4f9fc', fontSize: '20px', letterSpacing: '0.005em' }}>Flow Channel</span>
-        </div>
-        {hasData && <span className="text-[12px]" style={{ color: '#b3c4d1' }}>from your session ratings</span>}
-      </div>
-
+    <SandCard label="Flow Channel" right={hasData ? <span className="text-[12px]" style={{ color: T_MUTED }}>from your session ratings</span> : undefined}>
       {!hasData ? (
-        <p className="text-[13px] leading-relaxed mt-2" style={{ color: '#dbe8f1' }}>
+        <p className="text-[14px] leading-relaxed" style={{ color: T_INK }}>
           Rate your sessions to map where your flow lives.
         </p>
       ) : (
         <>
-          {/* Eyebrow + zonas */}
-          <p className="text-[12px] uppercase tracking-[0.18em] mt-3 pb-2 mb-3 text-center"
-            style={{ fontFamily: 'DM Mono, monospace', color: '#b3c4d1', borderBottom: '1px solid #1f344a' }}>
-            Output · Learning zone
-          </p>
-
-          <div className="relative">
-            <div className="flex rounded-md overflow-hidden" style={{ height: 22 }}>
-              <div style={{ width: `${ZONE_EASY_END}%`, background: ZONE_COLOR.easy, opacity: zone === 'easy' ? 1 : 0.45 }} />
-              <div style={{ width: `${ZONE_OPT_END - ZONE_EASY_END}%`, background: ZONE_COLOR.opt, opacity: zone === 'opt' ? 1 : 0.45 }} />
-              <div style={{ width: `${100 - ZONE_OPT_END}%`, background: ZONE_COLOR.hard, opacity: zone === 'hard' ? 1 : 0.45 }} />
+          <div className="flex items-center gap-3">
+            <span className="font-black leading-none" style={{ fontFamily: ARCHIVO, color: T_INK, fontSize: 44 }}>{avg!.toFixed(1)}</span>
+            <div>
+              <span className="inline-block rounded-full px-3 py-1 text-[15px] font-bold" style={{ background: PILL[zone], color: T_INK }}>{label}</span>
+              <p className="text-[13px] mt-1" style={{ color: T_MUTED }}>{flow!.count} rating{flow!.count === 1 ? '' : 's'}</p>
             </div>
-            {/* Dónde estás (mismo promedio que el número de abajo) */}
-            <div className="absolute" style={{ left: `${pct}%`, top: -4, width: 3, height: 30, borderRadius: 2, background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(255,255,255,.5)' }} />
           </div>
 
-          <div className="flex justify-between mt-1.5">
-            <span className="text-[12px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'easy' ? '#9fd7e8' : '#7BA2B5' }}>Too easy</span>
-            <span className="text-[12px] uppercase tracking-wider font-bold" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'opt' ? '#00D2FF' : '#7BA2B5' }}>Optimal learning</span>
-            <span className="text-[12px] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace', color: zone === 'hard' ? '#E28A93' : '#7BA2B5' }}>Too hard</span>
+          <p className="mt-3 mb-1.5" style={{ ...T_LABEL, color: T_MUTED }}>Output · Learning zone</p>
+          <div className="relative">
+            <div className="flex gap-1.5">
+              {ZONES.map((z) => (
+                <div key={z.key} className="rounded-[5px] py-2.5 text-center text-[13px] font-semibold" style={{ width: `${z.w}%`, background: zone === z.key ? '#BDEFFF' : '#F7F9FA', border: `1px solid ${zone === z.key ? '#00D2FF' : T_BORDER}`, color: T_INK, fontWeight: zone === z.key ? 800 : 500 }}>{z.label}</div>
+              ))}
+            </div>
+            {/* Dónde estás (mismo promedio que el número de arriba) */}
+            <div className="absolute" style={{ left: `${pct}%`, top: -5, width: 3, height: 52, borderRadius: 2, background: T_INK, transform: 'translateX(-50%)' }} />
           </div>
 
           {/* La doctrina, en las palabras de Marcelo */}
-          <p className="text-[12.5px] font-bold mt-3.5 text-center" style={{ color: '#f0f7fa' }}>
+          <p className="text-[14px] font-bold mt-3.5" style={{ color: T_INK }}>
             Challenge matched to capability + conditions
           </p>
-          <p className="text-[12px] mt-1 text-center" style={{ color: '#b3c4d1' }}>
+          <p className="text-[13px] mt-0.5" style={{ color: T_MUTED }}>
             Difficult enough to demand attention · possible enough to produce feedback
           </p>
-
-          <div className="flex items-baseline justify-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #1f344a' }}>
-            <span className="font-bold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#f0f7fa', fontSize: '24px', lineHeight: 1 }}>{avg!.toFixed(1)}</span>
-            <span className="font-semibold" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: ZONE_COLOR[zone], fontSize: '14px' }}>{label}</span>
-            <span className="text-[12px]" style={{ color: '#b3c4d1' }}>· {flow!.count} rating{flow!.count === 1 ? '' : 's'}</span>
-          </div>
-          <p className="text-[12px] mt-2 text-center" style={{ color: '#dbe8f1' }}>{advice}</p>
+          <p className="text-[14px] mt-2 font-semibold" style={{ color: T_INK }}>{advice}</p>
         </>
       )}
-    </div>
+    </SandCard>
   );
 }
 

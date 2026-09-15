@@ -115,7 +115,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
     return (
       <div className="text-center py-16">
         <Target size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan)]" />
-        <p className="text-gray-500 text-sm">Loading your sequence...</p>
+        <p className="text-[#55666E] text-sm">Loading your sequence...</p>
       </div>
     );
   }
@@ -177,9 +177,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>Let&apos;s Play · {data.belt} Belt</span>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/web/img/brand/lockup-wave-white.png" alt="The Surf Sequence — Evolve through play" className="mt-4 w-full max-w-[300px] h-auto object-contain object-left" />
-        <div className="flex items-end gap-4 mt-5">
+        <h1 className="mt-1 text-[26px]" style={{ ...F_D, fontWeight: 900, lineHeight: 1.06, color: PAPER }}>Let&apos;s Play</h1>
+        <div className="flex items-end gap-4 mt-4">
           <div className="flex-1">
             <div className="flex items-baseline justify-between mb-2">
               <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: 'rgba(247,249,250,.55)' }}>Overall execution</span>
@@ -208,28 +207,28 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
       {/* Dónde estás · qué necesitás · cómo entrenarlo */}
       {levelSeqs.length > 0 && (
-        <div className="mx-2 p-4" style={{ background: '#E9E2D2', borderLeft: '4px solid #00D2FF' }}>
-          <p className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: '#005F79' }}>Where you are · {beltWord} Belt</p>
+        <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+          <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>Where you are · {beltWord} Belt</p>
           {levelSeqs.every((sq) => sq.state === 'unrated') ? (
             <>
               {/* Primer uso (auditoría 2026-09-10): "0 of 9" se lee como fracaso. */}
-              <p className="text-[20px] mt-1.5" style={{ ...F_D, color: INK }}>Nothing rated yet — start here</p>
+              <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>Nothing rated yet — start here</p>
               {onTrainSequence && levelSeqs[0] && (
                 <button type="button" onClick={() => onTrainSequence({ sequenceId: levelSeqs[0].id, mode: 'sequence_run' })}
-                  className="mt-2.5 h-11 px-4 text-[11px] font-bold" style={{ ...F_M, background: INK, color: PAPER }}>
+                  className="mt-2.5 h-12 w-full rounded-[5px] text-[15px] font-black uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', letterSpacing: '0.035em', background: CYAN, color: INK }}>
                   Run {sequencePrefix(levelSeqs[0].id, levelSeqs[0].order)?.startsWith('#') ? sequencePrefix(levelSeqs[0].id, levelSeqs[0].order) : levelSeqs[0].name} →
                 </button>
               )}
             </>
           ) : (
-            <p className="text-[20px] mt-1.5" style={{ ...F_D, color: INK }}>{owned} of {levelSeqs.length} sequences are yours</p>
+            <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>{owned} of {levelSeqs.length} sequences are yours</p>
           )}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {levelSeqs.map((sq) => {
               const st = sq.state === 'owned' ? '#0A7C5D' : sq.state === 'unrated' ? '#55666E' : '#B8860B';
               const pre = sequencePrefix(sq.id, sq.order);
               return (
-                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px]" style={{ background: 'rgba(6,28,43,.08)', color: INK }}>
+                <a key={sq.id} href={pageHrefOf(sq.id) ?? '#'} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
                   <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
                   {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}
                   <SideChip side={sq.side} small dark />
@@ -243,8 +242,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(6,28,43,.12)' }}>
               <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Frontside</span><b>{starsOf(sides.fs)}</b></span>
               <span className="text-[12px]" style={{ color: INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Backside</span><b>{starsOf(sides.bs)}</b></span>
-              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#9A6A12' : INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Gap</span><b>{sides.gap}★</b></span>}
-              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#9A6A12' }}>{sides.advice.text}</span>}
+              {sides.gap != null && <span className="text-[12px]" style={{ color: sides.gap >= 1 ? '#8A5A12' : INK }}><span className="text-[11px] mr-1.5" style={{ ...F_M, color: '#55666E' }}>Gap</span><b>{sides.gap}★</b></span>}
+              {sides.advice && <span className="basis-full text-[12px] leading-snug" style={{ color: '#8A5A12' }}>{sides.advice.text}</span>}
             </div>
           )}
           {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
@@ -254,9 +253,9 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       )}
 
       {/* Instructions */}
-      <div className="rounded-2xl p-3.5" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
-        <p className="text-[12px] mb-1" style={{ ...F_M, color: CYAN }}>How it works</p>
-        <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
+      <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+        <p className="text-[23px] mb-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>How it works</p>
+        <p className="text-[14px] leading-snug" style={{ color: '#10263B' }}>
           {onTrainSequence
             ? 'Pick a sequence → plan it (your focus, your measure) → go surf → come back and evaluate. Drills are rehearsal (Feel it, in the course): do them, no need to log them. Your coach validates in the water.'
             : 'Pick the sequence you are working on → tap a step → run its mission → rate yourself honestly. Your coach validates in the water.'}
@@ -266,24 +265,24 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       {/* MY LIST (Marcelo 2026-09-10): las tareas que el alumno se dejó a sí
           mismo — paso + detalle, máximo tres. Se ofrecen, no se imponen. */}
       {tasks.length > 0 && (
-        <div className="rounded-xl overflow-hidden" style={{ background: '#0A2A3A', borderLeft: '3px solid #FFD166' }}>
-          <div className="px-4 pt-3.5 pb-2 flex items-baseline justify-between">
-            <p className="text-[12px]" style={{ ...F_M, color: '#FFD166' }}>My list · {tasks.length} of {MAX_OPEN_TASKS}</p>
-            <p className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>closes itself at 4★ in the water</p>
+        <div className="rounded-lg overflow-hidden" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', borderTop: '4px solid #FFD166' }}>
+          <div className="px-4 pt-3.5 pb-2 flex items-baseline justify-between gap-3">
+            <p className="text-[23px]" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>My list · {tasks.length} of {MAX_OPEN_TASKS}</p>
+            <p className="text-[12px] shrink-0" style={{ color: '#55666E' }}>closes itself at 4★ in the water</p>
           </div>
           <div className="px-3 pb-3 space-y-1.5">
             {tasks.map((t) => (
-              <div key={t.id} className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: 'rgba(255,255,255,.05)' }}>
+              <div key={t.id} className="rounded-[5px] px-3 py-2.5 flex items-center gap-3" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold leading-snug" style={{ color: PAPER }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#FFD166' }}> · {t.detail}</span> : null}</p>
-                  <p className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>{t.sequenceLabel}</p>
+                  <p className="text-[14px] font-bold leading-snug" style={{ color: '#10263B' }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#B7791F' }}> · {t.detail}</span> : null}</p>
+                  <p className="text-[12px]" style={{ color: '#55666E' }}>{t.sequenceLabel}</p>
                 </div>
                 {onTrainSequence && (
                   <button type="button" onClick={() => onTrainSequence({ sequenceId: t.sequenceId, mode: 'step_focus', focusStepId: t.stepId, focusMoment: t.detail, intention: t.detail })}
-                    className="shrink-0 h-11 px-3 rounded-lg text-[12px] font-bold" style={{ background: '#FFD166', color: INK }}>Train it</button>
+                    className="shrink-0 h-11 px-3.5 rounded-[5px] text-[13px] font-black uppercase" style={{ background: CYAN, color: INK, letterSpacing: '0.03em' }}>Train it</button>
                 )}
                 <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); }}
-                  className="shrink-0 h-11 px-2.5 rounded-lg text-[12px]" style={{ color: 'rgba(247,249,250,.7)', border: '1px solid rgba(255,255,255,.15)' }}>Done</button>
+                  className="shrink-0 h-11 px-2.5 rounded-[5px] text-[12px] font-semibold" style={{ color: '#10263B', border: '1px solid #DCD7C6', background: '#fff' }}>Done</button>
               </div>
             ))}
           </div>
@@ -294,31 +293,31 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           Empareja #8↔#9, #10↔#11, #12↔#13 y muestra las de dos lados (#7) con
           sus dos notas. No reemplaza la lista numerada: la resume. */}
       {sides.pairs.length > 0 && (
-        <div className="rounded-xl overflow-hidden" style={{ background: '#0A2A3A' }}>
+        <div className="rounded-lg overflow-hidden" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
           <div className="px-4 pt-3.5 pb-2">
-            <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Both sides</p>
-            <p className="text-[12px] mt-0.5" style={{ color: 'rgba(247,249,250,.78)' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
+            <p className="text-[23px]" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>Both sides</p>
+            <p className="text-[13px] mt-0.5" style={{ color: '#10263B' }}>The same line, frontside and backside. A sequence is yours when you own it on both.</p>
           </div>
           <div className="px-3 pb-3 space-y-1.5">
             {sides.pairs.map((p) => {
               const cell = (sd: 'fs' | 'bs', c: { id: string; label: string; value: number | null } | null) => {
-                if (!c) return <span className="text-[12px]" style={{ color: 'rgba(247,249,250,.78)' }}>—</span>;
+                if (!c) return <span className="text-[12px]" style={{ color: '#55666E' }}>—</span>;
                 const weak = p.gap != null && p.gap >= 1 && (c.value ?? 0) < ((sd === 'fs' ? p.bs?.value : p.fs?.value) ?? 0);
                 const inner = (
                   <>
-                    <span className="block text-[12px]" style={{ ...F_M, color: weak ? '#FFD166' : 'rgba(247,249,250,.78)' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
-                    <span className="block text-[15px] font-bold" style={{ color: c.value == null ? 'rgba(247,249,250,.78)' : weak ? '#FFD166' : PAPER }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
+                    <span className="block text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: weak ? '#B7791F' : '#55666E' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
+                    <span className="block text-[16px] font-bold" style={{ color: c.value == null ? '#55666E' : weak ? '#B7791F' : '#10263B' }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
                   </>
                 );
                 const href = pageHrefOf(c.id);
                 return href ? <a href={href} className="block">{inner}</a> : <span className="block">{inner}</span>;
               };
               return (
-                <div key={p.move} className="grid items-center rounded-xl px-3 py-2" style={{ gridTemplateColumns: '1.2fr 1fr 1fr auto', background: 'rgba(255,255,255,.05)' }}>
-                  <span className="text-[12px] font-semibold" style={{ color: PAPER }}>{p.move}{p.both && <span className="block text-[12px] font-normal" style={{ color: 'rgba(247,249,250,.78)' }}>one sequence · both sides</span>}</span>
+                <div key={p.move} className="grid items-center rounded-[5px] px-3 py-2" style={{ gridTemplateColumns: '1.2fr 1fr 1fr auto', background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                  <span className="text-[14px] font-bold" style={{ color: '#10263B' }}>{p.move}{p.both && <span className="block text-[12px] font-normal" style={{ color: '#55666E' }}>one sequence · both sides</span>}</span>
                   {cell('fs', p.fs)}
                   {cell('bs', p.bs)}
-                  <span className="text-[12px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#FFD166' : 'rgba(247,249,250,.78)' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
+                  <span className="text-[12px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#B7791F' : '#55666E' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
                 </div>
               );
             })}
@@ -333,7 +332,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           va después. La lista completa sigue disponible para buscar algo
           puntual. */}
       {data.sequences.length > 0 && (
-        <div className="flex gap-1 p-1 rounded-full" style={{ background: '#0A2438' }}>
+        <div className="flex gap-1 p-1 rounded-full" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.35)' }}>
           {(['sequence', 'all'] as const).map((v) => (
             <button
               key={v}
@@ -386,7 +385,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
 
       {/* Las cintas anteriores: siguen entrenables, pero no tapan tu nivel. */}
       {view === 'sequence' && mine.length > 0 && earlier.length > 0 && (
-        <details className="rounded-2xl overflow-hidden" style={{ background: '#0A2438' }}>
+        <details className="rounded-lg overflow-hidden" style={{ background: '#0A2438', border: '1px solid rgba(0,210,255,.25)' }}>
           <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
             <span>
               <span className="block text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>Your foundations · earlier belts</span>
@@ -531,8 +530,8 @@ function BlockSection({
   return (
     <details
       open={defaultOpen}
-      className="group bg-white rounded-xl overflow-hidden"
-      style={{ boxShadow: '0 0 0 1px rgba(247,249,250,.10)' }}
+      className="group rounded-lg overflow-hidden"
+      style={{ background: '#F7F9FA', border: '1px solid rgba(0,210,255,.25)' }}
     >
       {/* Cabecera Ink con el número grande de la secuencia — el mismo lenguaje
           que Course (Marcelo 2026-09-11). El cuerpo sigue en Paper. */}
@@ -581,10 +580,10 @@ function BlockSection({
         </div>
       </summary>
       {asSequence && pageHref && (
-        <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 text-[12px]" style={{ background: 'rgba(0,210,255,.06)' }}>
+        <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-[#DCD7C6] text-[12px]" style={{ background: 'rgba(0,210,255,.06)' }}>
           <span>
             <span className="block font-semibold" style={{ color: INK }}>What this sequence is · open it in the course</span>
-            <span className="block text-[12px] text-gray-500">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
+            <span className="block text-[12px] text-[#55666E]">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
           </span>
           <span className="font-bold" style={{ color: '#0090B0' }}>→</span>
         </a>
@@ -594,13 +593,13 @@ function BlockSection({
           foco. Es la unidad de entreno, y la misma forma en que evalúa el
           coach (secuencia → paso → detalle). */}
       {canTrain && (
-        <div className="px-3 py-2.5 border-b border-gray-100 space-y-2" style={{ background: '#F7F9FA' }}>
+        <div className="px-3 py-2.5 border-b border-[#DCD7C6] space-y-2" style={{ background: '#F7F9FA' }}>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'sequence_run' }); }}
-              className="h-11 rounded-xl text-[12px] font-bold inline-flex items-center justify-center gap-1.5 active:scale-[0.98]"
-              style={{ background: INK, color: PAPER }}
+              className="h-11 rounded-[5px] text-[12px] font-black uppercase inline-flex items-center justify-center gap-1.5 active:scale-[0.98]"
+              style={{ background: CYAN, color: INK, letterSpacing: '0.03em' }}
             >
               <Play size={13} strokeWidth={2.25} /> Run the whole sequence
             </button>
@@ -608,15 +607,15 @@ function BlockSection({
               type="button"
               onClick={() => setPicking((p) => !p)}
               className="h-11 rounded-xl text-[12px] font-bold inline-flex items-center justify-center gap-1.5 border-[1.5px] active:scale-[0.98]"
-              style={picking ? { background: '#FFF8E7', borderColor: '#E0A62B', color: '#9A6A12' } : { background: '#fff', borderColor: '#d1d5db', color: INK }}
+              style={picking ? { background: '#FBF0CF', borderColor: '#B7791F', color: '#8A5A12' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}
             >
               <Crosshair size={13} strokeWidth={2.25} /> {picking ? 'Cancel' : 'Work on one step'}
             </button>
           </div>
           {picking && (
-            <div className="rounded-xl px-3 py-2.5" style={{ background: '#FFF8E7' }}>
-              <p className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>Pick your focus</p>
-              <p className="text-[12px] text-gray-800 leading-snug mt-0.5">
+            <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#FBF0CF' }}>
+              <p className="text-[12px]" style={{ ...F_M, color: '#8A5A12' }}>Pick your focus</p>
+              <p className="text-[12px] text-[#10263B] leading-snug mt-0.5">
                 Tap the step you want to work on. You still run the whole sequence — that step is your objective.
               </p>
               {/* Primero el paso que la detuvo en tu último run; si no, el
@@ -630,7 +629,7 @@ function BlockSection({
                     type="button"
                     onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'step_focus', focusStepId: sid }); }}
                     className="mt-2 w-full h-11 rounded-lg text-[12px] font-bold"
-                    style={{ background: '#E0A62B', color: INK }}
+                    style={{ background: '#B7791F', color: INK }}
                   >
                     Start with {title} → {heldBackStepId ? '(held your last run back)' : ''}
                   </button>
@@ -647,13 +646,13 @@ function BlockSection({
         <button
           type="button"
           onClick={() => onOpenStep(weakestStepId)}
-          className="w-full text-left px-4 py-2.5 border-b border-gray-100"
-          style={{ background: '#FFF8E7' }}
+          className="w-full text-left px-4 py-2.5 border-b border-[#DCD7C6]"
+          style={{ background: '#FBF0CF' }}
         >
-          <span className="text-[12px]" style={{ ...F_M, color: '#9A6A12' }}>
+          <span className="text-[12px]" style={{ ...F_M, color: '#8A5A12' }}>
             Start here
           </span>
-          <span className="block text-[12.5px] text-gray-800 leading-snug">
+          <span className="block text-[12.5px] text-[#10263B] leading-snug">
             <b>{weakestTitle}</b> is holding this sequence back
             {minRating !== null && ` — ${minRating}★`}
             {weakestIsOfficial && ' (your coach)'}
@@ -661,7 +660,7 @@ function BlockSection({
         </button>
       )}
 
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-[#DCD7C6]">
         {items.map((item) => (
           <StepRow
             key={item.step_id}
@@ -707,21 +706,21 @@ function StepRow({
   return (
     <button
       onClick={onOpen}
-      className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-      style={highlight ? { background: '#FFFBF0', boxShadow: 'inset 3px 0 0 #E0A62B' } : picking ? { boxShadow: 'inset 3px 0 0 #E0A62B55' } : undefined}
+      className="w-full px-4 py-3 hover:bg-[#EEF3F5] transition-colors text-left"
+      style={highlight ? { background: '#FBF0CF', boxShadow: 'inset 3px 0 0 #E0A62B' } : picking ? { boxShadow: 'inset 3px 0 0 #B7791F55' } : undefined}
       aria-label={picking ? `Focus on ${item.step_title}` : undefined}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-gray-400" style={F_M}>{item.step_id}</span>
+            <span className="text-[12px] text-[#55666E]" style={F_M}>{item.step_id}</span>
           </div>
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
           </div>
           <MomentChips list={moments} />
           {hasSubtitle && (
-            <div className="flex items-center gap-2 text-[12px] text-gray-500 mt-0.5">
+            <div className="flex items-center gap-2 text-[12px] text-[#55666E] mt-0.5">
               {hasDrill && (
                 <span className="inline-flex items-center gap-1">
                   <Dumbbell size={12} strokeWidth={1.75} />
@@ -747,14 +746,14 @@ function StepRow({
                 Official {item.coach_rating}/5
               </div>
               {item.rating !== null && item.rating !== item.coach_rating && (
-                <div className="text-[12px] text-gray-400">self: {item.rating}/5</div>
+                <div className="text-[12px] text-[#55666E]">self: {item.rating}/5</div>
               )}
             </>
           ) : (
             <>
               <StarRating value={item.rating} size="sm" readOnly />
               {item.rating !== null && (
-                <div className="text-[12px] text-gray-400">{item.rating}/5{item.self_source === 'assessed' ? ' · self-assessed' : ''}</div>
+                <div className="text-[12px] text-[#55666E]">{item.rating}/5{item.self_source === 'assessed' ? ' · self-assessed' : ''}</div>
               )}
             </>
           )}
