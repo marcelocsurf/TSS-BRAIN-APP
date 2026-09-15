@@ -10,6 +10,7 @@ import {
 } from '@/lib/actions/course';
 import { CourseQuiz } from './CourseQuiz';
 import { MarkdownContent } from './MarkdownContent';
+import { LessonFigure } from './LessonFigure';
 import {
   BookOpen,
   PlayCircle,
@@ -269,6 +270,8 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
           {lesson.description_md && (
             <div className={cardCls}>
               <SectionLabel icon={BookOpen} text="Theory" />
+              {/* Lámina dibujada en código para esta lección (Paddling angle, wave stages). */}
+              <LessonFigure lessonId={lesson.id} />
               <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.description_md} /></div>
             </div>
           )}
