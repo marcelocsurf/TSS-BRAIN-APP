@@ -102,22 +102,26 @@ export function SequencePage({
           {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? (
             <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} />
           ) : (
-            <ol className="m-0 p-0 list-none">
-              {cfg.stepIds.map((id, i) => (
-                <li key={id} className="flex items-center gap-3 py-2" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
-                  <span className="w-7 shrink-0 font-bold" style={{ ...MONO, fontSize: 15, color: INK }}>{String(i + 1).padStart(2, '0')}</span>
-                  <span className="text-[15px] font-semibold" style={{ color: INK }}>{shortLesson(lessons[id]?.title ?? id)}</span>
-                </li>
-              ))}
-            </ol>
+            <>
+              {/* Sin tablero (secuencias de entrada): las lecciones, en orden, con su título. */}
+              <h2 className="tss-section-title mb-1">The steps, in order</h2>
+              <ol className="m-0 p-0 list-none">
+                {cfg.stepIds.map((id, i) => (
+                  <li key={id} className="flex items-center gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+                    <Num n={i + 1} />
+                    <span className="text-[15px] font-semibold" style={{ color: INK }}>{shortLesson(lessons[id]?.title ?? id)}</span>
+                  </li>
+                ))}
+              </ol>
+            </>
           )}
           {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
-          <h2 className="tss-section-title mt-4 mb-1">The steps that build it</h2>
+          <h2 className="tss-section-title" style={{ marginTop: 26 }}>The steps that build it</h2>
           <ol className="m-0 p-0 list-none">
             {cfg.details.map((d, i) => (
-              <li key={d.key} className="flex items-center gap-3 py-2" style={{ borderTop: `1px solid ${BORDER}` }}>
-                <span className="w-7 shrink-0 font-bold" style={{ ...MONO, fontSize: 15, color: INK }}>{String(i + 1).padStart(2, '0')}</span>
-                {d.command ? <i className="inline-block w-3.5 h-3.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} /> : <i className="inline-block w-3.5 h-3.5 shrink-0" />}
+              <li key={d.key} className="flex items-center gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+                <Num n={i + 1} />
+                {d.command && <i className="inline-block w-3.5 h-3.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
                 <span className="text-[15px] font-semibold" style={{ color: INK }}>{stripStep(d.title)}</span>
               </li>
             ))}
@@ -480,6 +484,11 @@ function Piece({ p, href = null, canTrack }: { p?: PieceRow; href?: string | nul
       </div>
     </div>
   );
+}
+
+/** Número de paso: pastilla navy con cifra cyan (mismo lenguaje que Let's Play y How it works). */
+function Num({ n }: { n: number }) {
+  return <span className="shrink-0 w-8 h-8 rounded-[5px] inline-flex items-center justify-center font-bold" style={{ ...MONO, fontSize: 13, background: NAVY, color: CYAN }}>{String(n).padStart(2, '0')}</span>;
 }
 
 function Chevron() {
