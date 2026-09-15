@@ -11,7 +11,7 @@ import { CalendarRange, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ─── Entrega C: el plan anual desde el portal del coach/especialista ───
 //
-// OJO CON EL FONDO: zona BAJA del Home del coach = fondo CLARO (#F2F6F8) —
+// OJO CON EL FONDO: zona BAJA del Home del coach = fondo CLARO (#F7F9FA) —
 // misma paleta clara que HPFollowCard (ya hubo un blanco-sobre-blanco acá).
 //
 // Head coach: ve las cargas de la semana para ajustar y calibrar.
@@ -22,16 +22,16 @@ const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
 
 const C = {
   cardBg: '#FFFFFF',
-  cardBorder: '#F0C36D',
+  cardBorder: '#FFD166',
   goldStrong: '#B8862B',
   goldText: '#8E6614',
   goldSoft: '#FDF8EC',
   navy: '#0C2231',
   dim: '#55707F',
   faint: '#7A96A4',
-  rowBg: '#F8FAFC',
+  rowBg: '#F7F9FA',
   rowBorder: '#E2E8F0',
-  track: '#E7EFF3',
+  track: '#F7F9FA',
   green: '#1F9D6B',
   cyan: '#0090B8',
   red: '#C0392B',
@@ -60,10 +60,10 @@ export function SeasonCoachCard({ token }: { token: string }) {
 
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-lg p-4"
       style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderLeft: `4px solid ${C.goldStrong}` }}
     >
-      <p className="text-[10px] uppercase tracking-wider font-bold inline-flex items-center gap-1.5" style={{ ...MONO, color: C.goldText }}>
+      <p className="text-[11px] uppercase tracking-wider font-bold inline-flex items-center gap-1.5" style={{ ...MONO, color: C.goldText }}>
         <CalendarRange size={11} /> Plan anual · Temporadas a tu cargo
       </p>
 
@@ -71,13 +71,13 @@ export function SeasonCoachCard({ token }: { token: string }) {
         {seasons.map((s) => {
           const expanded = open === s.season_id;
           return (
-            <div key={s.season_id} className="rounded-xl p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
+            <div key={s.season_id} className="rounded-[5px] p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
               <button type="button" onClick={() => setOpen(expanded ? null : s.season_id)} className="w-full text-left">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-[13px] font-semibold truncate" style={{ color: C.navy }}>
                     {s.student_name}
                     <span
-                      className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide"
+                      className="ml-2 px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide"
                       style={{ background: s.is_head ? C.goldSoft : '#E8F6FB', color: s.is_head ? C.goldText : C.cyan }}
                     >
                       {s.is_head ? 'Head coach' : 'Especialista'}
@@ -85,7 +85,7 @@ export function SeasonCoachCard({ token }: { token: string }) {
                   </p>
                   {expanded ? <ChevronUp size={13} style={{ color: C.faint }} /> : <ChevronDown size={13} style={{ color: C.faint }} />}
                 </div>
-                <p className="text-[10.5px] mt-0.5" style={{ color: C.dim }}>
+                <p className="text-[11px] mt-0.5" style={{ color: C.dim }}>
                   {s.title}
                   {s.phase_now ? ` · fase: ${s.phase_now}` : ''}
                   {s.days_to_peak != null && (
@@ -98,7 +98,7 @@ export function SeasonCoachCard({ token }: { token: string }) {
                 <div className="mt-2.5 pt-2.5 space-y-3" style={{ borderTop: `1px solid ${C.rowBorder}` }}>
                   {/* Cargas de la semana — el monitor del head coach */}
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>Cargas · últimos 7 días</p>
+                    <p className="text-[11px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>Cargas · últimos 7 días</p>
                     {s.load ? (
                       <>
                         <p className="text-[11.5px] mt-1" style={{ color: C.dim }}>
@@ -115,7 +115,7 @@ export function SeasonCoachCard({ token }: { token: string }) {
                             }}
                           />
                         </div>
-                        <p className="text-[10px] mt-0.5" style={{ color: C.faint }}>
+                        <p className="text-[11px] mt-0.5" style={{ color: C.faint }}>
                           {s.load.days_done}/{s.load.days_total} días del programa en total
                         </p>
                       </>
@@ -127,7 +127,7 @@ export function SeasonCoachCard({ token }: { token: string }) {
                   {/* Aportes recientes del equipo — todos alineados */}
                   {s.contributions.length > 0 && (
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>Aportes del equipo</p>
+                      <p className="text-[11px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>Aportes del equipo</p>
                       <div className="mt-1 space-y-0.5">
                         {s.contributions.map((c, i) => (
                           <p key={i} className="text-[11.5px]" style={{ color: C.dim }}>
@@ -177,18 +177,18 @@ function ContributionForm({ token, seasonId, onSaved }: { token: string; seasonI
 
   if (!openForm) {
     return (
-      <button type="button" onClick={() => setOpenForm(true)} className="text-[10px] font-bold" style={{ color: C.goldStrong }}>
+      <button type="button" onClick={() => setOpenForm(true)} className="text-[11px] font-bold" style={{ color: C.goldStrong }}>
         + Dejar aporte (video / tarea / nota)
       </button>
     );
   }
   return (
-    <div className="rounded-lg p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #CBD5E1` }}>
+    <div className="rounded-lg p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #DCD7C6` }}>
       <div className="flex gap-1.5">
         {(['video', 'tarea', 'nota'] as const).map((k) => (
           <button key={k} type="button" onClick={() => setKind(k)}
-            className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
-            style={{ background: kind === k ? C.cyan : '#EEF2F6', color: kind === k ? '#FFFFFF' : C.dim }}>
+            className="px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize"
+            style={{ background: kind === k ? C.cyan : '#F7F9FA', color: kind === k ? '#FFFFFF' : C.dim }}>
             {k}
           </button>
         ))}
@@ -246,18 +246,18 @@ function AppointmentForm({ token, seasonId, studentName, onSaved }: {
 
   if (!openForm) {
     return (
-      <button type="button" onClick={() => setOpenForm(true)} className="text-[10px] font-bold" style={{ color: C.goldStrong }}>
+      <button type="button" onClick={() => setOpenForm(true)} className="text-[11px] font-bold" style={{ color: C.goldStrong }}>
         + Agendar cita con {studentName} (online / presencial)
       </button>
     );
   }
   return (
-    <div className="rounded-lg p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #CBD5E1` }}>
+    <div className="rounded-lg p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #DCD7C6` }}>
       <div className="flex gap-1.5 flex-wrap">
         {(['fisico', 'mental', 'tecnico', 'nutricion', 'evaluacion', 'otro'] as const).map((k) => (
           <button key={k} type="button" onClick={() => setKind(k)}
-            className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
-            style={{ background: kind === k ? C.cyan : '#EEF2F6', color: kind === k ? '#FFFFFF' : C.dim }}>
+            className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
+            style={{ background: kind === k ? C.cyan : '#F7F9FA', color: kind === k ? '#FFFFFF' : C.dim }}>
             {KIND_LABEL[k]}
           </button>
         ))}
@@ -265,8 +265,8 @@ function AppointmentForm({ token, seasonId, studentName, onSaved }: {
       <div className="flex gap-1.5">
         {(['online', 'presencial'] as const).map((m) => (
           <button key={m} type="button" onClick={() => setMode(m)}
-            className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
-            style={{ background: mode === m ? C.goldStrong : '#EEF2F6', color: mode === m ? '#FFFFFF' : C.dim }}>
+            className="px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize"
+            style={{ background: mode === m ? C.goldStrong : '#F7F9FA', color: mode === m ? '#FFFFFF' : C.dim }}>
             {m}
           </button>
         ))}

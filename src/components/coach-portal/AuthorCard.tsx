@@ -22,7 +22,7 @@ import { PenLine, ChevronLeft, X } from 'lucide-react';
 
 // ─── Escalón 2: el coach AUTOR — su editor de programas, recortado a su equipo ───
 //
-// OJO CON EL FONDO: zona BAJA del Home del coach = fondo CLARO (#F2F6F8) —
+// OJO CON EL FONDO: zona BAJA del Home del coach = fondo CLARO (#F7F9FA) —
 // paleta clara (tarjeta blanca, acento dorado, texto navy), la misma de
 // HPFollowCard y SeasonCoachCard. Autocontenida: null sin Escalón 2.
 // El editor calca el del admin (micros → días → ítems con video), con los
@@ -33,14 +33,14 @@ const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
 
 const C = {
   cardBg: '#FFFFFF',
-  cardBorder: '#F0C36D',
+  cardBorder: '#FFD166',
   goldStrong: '#B8862B',
   goldText: '#8E6614',
   goldSoft: '#FDF8EC',
   navy: '#0C2231',
   dim: '#55707F',
   faint: '#7A96A4',
-  rowBg: '#F8FAFC',
+  rowBg: '#F7F9FA',
   rowBorder: '#E2E8F0',
   cyan: '#0090B8',
   red: '#C0392B',
@@ -81,10 +81,10 @@ export function AuthorCard({ token }: { token: string }) {
   return (
     <>
       <div
-        className="rounded-2xl p-4"
+        className="rounded-lg p-4"
         style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderLeft: `4px solid ${C.goldStrong}` }}
       >
-        <p className="text-[10px] uppercase tracking-wider font-bold inline-flex items-center gap-1.5" style={{ ...MONO, color: C.goldText }}>
+        <p className="text-[11px] uppercase tracking-wider font-bold inline-flex items-center gap-1.5" style={{ ...MONO, color: C.goldText }}>
           <PenLine size={11} /> Autor · Escalón 2 — tus programas
         </p>
         <p className="text-[11px] mt-0.5" style={{ color: C.dim }}>
@@ -94,18 +94,18 @@ export function AuthorCard({ token }: { token: string }) {
         <div className="mt-3 space-y-2">
           {programs.map((p) => (
             <button key={p.id} type="button" onClick={() => setOpenId(p.id)}
-              className="w-full text-left rounded-xl p-3 flex items-center justify-between gap-2"
+              className="w-full text-left rounded-[5px] p-3 flex items-center justify-between gap-2"
               style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold truncate" style={{ color: C.navy }}>
                   {p.title}
-                  {!p.active && <span className="ml-2 text-[9px] font-bold uppercase" style={{ color: C.faint }}>inactivo</span>}
+                  {!p.active && <span className="ml-2 text-[11px] font-bold uppercase" style={{ color: C.faint }}>inactivo</span>}
                 </p>
-                <p className="text-[10.5px] mt-0.5" style={{ color: C.dim }}>
+                <p className="text-[11px] mt-0.5" style={{ color: C.dim }}>
                   {p.weeks} micro{p.weeks === 1 ? '' : 's'} · {p.days_count} día{p.days_count === 1 ? '' : 's'} · {p.active_assignments} atleta{p.active_assignments === 1 ? '' : 's'}
                 </p>
               </div>
-              <span className="text-[10px] font-bold shrink-0" style={{ color: C.goldStrong }}>Editar →</span>
+              <span className="text-[11px] font-bold shrink-0" style={{ color: C.goldStrong }}>Editar →</span>
             </button>
           ))}
           {programs.length === 0 && !creating && (
@@ -126,7 +126,7 @@ export function AuthorCard({ token }: { token: string }) {
             <button type="button" onClick={() => { setCreating(false); setErr(null); }} className="px-2 text-[11px]" style={{ color: C.faint }}>✕</button>
           </div>
         ) : (
-          <button type="button" onClick={() => setCreating(true)} className="mt-3 text-[10px] font-bold" style={{ color: C.goldStrong }}>
+          <button type="button" onClick={() => setCreating(true)} className="mt-3 text-[11px] font-bold" style={{ color: C.goldStrong }}>
             + Nuevo programa
           </button>
         )}
@@ -172,7 +172,7 @@ function ProgramEditorOverlay({ token, programId, onClose }: { token: string; pr
 
   if (!p) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ background: '#F2F6F8' }}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ background: '#F7F9FA' }}>
         <p className="text-[12px]" style={{ color: C.dim }}>{err ?? 'Cargando…'}</p>
         <button type="button" onClick={onClose} className="absolute top-4 right-4" aria-label="Cerrar"><X size={20} color={C.dim} /></button>
       </div>
@@ -182,23 +182,23 @@ function ProgramEditorOverlay({ token, programId, onClose }: { token: string; pr
   const days = p.days.filter((d) => d.week_number === micro);
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto" style={{ background: '#F2F6F8', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="fixed inset-0 z-[100] overflow-y-auto" style={{ background: '#F7F9FA', paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
         <div className="flex items-center justify-between">
           <button type="button" onClick={onClose} className="inline-flex items-center gap-1 text-[11px] font-bold" style={{ color: C.dim }}>
             <ChevronLeft size={14} /> Volver
           </button>
-          <span className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: C.goldText }}>Editor · tuyo</span>
+          <span className="text-[11px] uppercase tracking-wider font-bold" style={{ ...MONO, color: C.goldText }}>Editor · tuyo</span>
         </div>
         {err && <p className="text-[11px] rounded-lg px-3 py-2" style={{ background: '#FDF3F2', color: C.red, border: '1px solid #F5C6C0' }}>{err}</p>}
 
         <MetaEditor token={token} p={p} onSaved={load} setErr={setErr} />
 
-        <div className="rounded-2xl p-3" style={{ background: C.cardBg, border: `1px solid ${C.rowBorder}` }}>
+        <div className="rounded-lg p-3" style={{ background: C.cardBg, border: `1px solid ${C.rowBorder}` }}>
           <div className="flex gap-1.5 flex-wrap">
             {Array.from({ length: p.weeks }, (_, i) => i + 1).map((w) => (
               <button key={w} type="button" onClick={() => setMicro(w)}
-                className="px-3 py-1.5 rounded-full text-[10px] font-bold"
+                className="px-3 py-1.5 rounded-full text-[11px] font-bold"
                 style={micro === w
                   ? { background: C.goldStrong, color: '#fff' }
                   : { background: C.rowBg, color: C.dim, border: `1px solid ${C.rowBorder}` }}>
@@ -217,17 +217,17 @@ function ProgramEditorOverlay({ token, programId, onClose }: { token: string; pr
           </div>
         </div>
 
-        <div className="rounded-2xl p-4" style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
+        <div className="rounded-lg p-4" style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: C.goldText }}>
+            <p className="text-[11px] uppercase tracking-wider font-bold" style={{ ...MONO, color: C.goldText }}>
               Asignar a un atleta tuyo
             </p>
-            <p className="text-[10px]" style={{ color: C.faint }}>{p.active_assignments} activo{p.active_assignments === 1 ? '' : 's'}</p>
+            <p className="text-[11px]" style={{ color: C.faint }}>{p.active_assignments} activo{p.active_assignments === 1 ? '' : 's'}</p>
           </div>
           {assigning ? (
             <AssignPicker token={token} programId={p.id} onDone={() => { setAssigning(false); load(); }} setErr={setErr} />
           ) : (
-            <button type="button" onClick={() => setAssigning(true)} className="mt-2 text-[10px] font-bold" style={{ color: C.goldStrong }}>
+            <button type="button" onClick={() => setAssigning(true)} className="mt-2 text-[11px] font-bold" style={{ color: C.goldStrong }}>
               + Elegir atleta (rota su programa actual a este)
             </button>
           )}
@@ -259,14 +259,14 @@ function MetaEditor({ token, p, onSaved, setErr }: {
 
   const Toggle = ({ k, label }: { k: keyof typeof ck; label: string }) => (
     <button type="button" onClick={() => setCk({ ...ck, [k]: !ck[k] })}
-      className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
-      style={ck[k] ? { background: C.cyan, color: '#fff' } : { background: '#EEF2F6', color: C.dim }}>
+      className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
+      style={ck[k] ? { background: C.cyan, color: '#fff' } : { background: '#F7F9FA', color: C.dim }}>
       {label}
     </button>
   );
 
   return (
-    <div className="rounded-2xl p-4 space-y-2" style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderLeft: `4px solid ${C.goldStrong}` }}>
+    <div className="rounded-lg p-4 space-y-2" style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderLeft: `4px solid ${C.goldStrong}` }}>
       <input value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Nombre del programa"
         className="w-full rounded-lg px-2.5 py-2 text-[14px] font-bold" style={inpStyle} />
       <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Subtítulo (inglés, opcional)"
@@ -275,7 +275,7 @@ function MetaEditor({ token, p, onSaved, setErr }: {
         <span className="text-[11px]" style={{ color: C.dim }}>Microciclos</span>
         <input type="number" min={1} max={24} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}
           aria-label="Microciclos" className="w-16 rounded-lg px-2 py-1 text-[12px]" style={inpStyle} />
-        <span className="text-[10px]" style={{ color: C.faint }}>Check-in:</span>
+        <span className="text-[11px]" style={{ color: C.faint }}>Check-in:</span>
         <Toggle k="checkin_water" label="Agua" />
         <Toggle k="checkin_sleep" label="Sueño" />
         <Toggle k="checkin_energy" label="Energía" />
@@ -311,12 +311,12 @@ function MicroLabelInput({ token, p, micro, onSaved, setErr }: {
           placeholder={`Nombre del micro ${micro} (CARGA…)`} aria-label={`Nombre del microciclo ${micro}`}
           className={inp} style={inpStyle} />
         <select value={type} onChange={(e) => setType(e.target.value)} aria-label={`Tipo del micro ${micro}`}
-          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ ...inpStyle, width: 110, color: type ? C.navy : '#9ca3af' }}>
+          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ ...inpStyle, width: 110, color: type ? C.navy : '#55666E' }}>
           <option value="">Tipo…</option>
           {['Load', 'Deload', 'Tapering', 'Competition', 'Recovery'].map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <select value={intensity} onChange={(e) => setIntensity(e.target.value)} aria-label={`Intensidad del micro ${micro}`}
-          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ ...inpStyle, width: 100, color: intensity ? C.navy : '#9ca3af' }}>
+          className="rounded-lg px-2 py-1.5 text-[11px]" style={{ ...inpStyle, width: 100, color: intensity ? C.navy : '#55666E' }}>
           <option value="">Intens…</option>
           {['Low', 'Medium', 'High', 'Peak'].map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
@@ -339,7 +339,7 @@ function MicroLabelInput({ token, p, micro, onSaved, setErr }: {
             if (!r.ok) { setErr(r.error || 'No se pudo guardar.'); return; }
             onSaved();
           }}
-          className="px-3 rounded-full text-[10px] font-bold shrink-0" style={{ background: C.rowBg, color: C.goldText, border: `1px solid ${C.rowBorder}` }}>
+          className="px-3 rounded-full text-[11px] font-bold shrink-0" style={{ background: C.rowBg, color: C.goldText, border: `1px solid ${C.rowBorder}` }}>
           Guardar
         </button>
       </div>
@@ -356,10 +356,10 @@ function NewDayForm({ token, programId, micro, existing, act }: {
   const [focus, setFocus] = useState('');
   const nextNum = existing.length ? Math.max(...existing) + 1 : 1;
   if (!open) {
-    return <button type="button" onClick={() => setOpen(true)} className="text-[10px] font-bold" style={{ color: C.goldStrong }}>+ Agregar día {nextNum}</button>;
+    return <button type="button" onClick={() => setOpen(true)} className="text-[11px] font-bold" style={{ color: C.goldStrong }}>+ Agregar día {nextNum}</button>;
   }
   return (
-    <div className="rounded-xl p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #CBD5E1` }}>
+    <div className="rounded-[5px] p-2.5 space-y-2" style={{ background: '#FFFFFF', border: `1px dashed #DCD7C6` }}>
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`Día ${nextNum} — título (inglés)`}
         aria-label="Título del día" className={inp} style={inpStyle} />
       <input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="Enfoque (inglés, opcional)"
@@ -392,13 +392,13 @@ function DayEditor({ token, programId, day, videos, act }: {
   const [it, setIt] = useState({ title: '', detail: '', video_url: '' });
 
   return (
-    <div className="rounded-xl p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
+    <div className="rounded-[5px] p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
       <button type="button" onClick={() => setExpanded(!expanded)} className="w-full text-left flex items-center justify-between gap-2">
         <p className="text-[12.5px] font-semibold" style={{ color: C.navy }}>
           D{day.day_number} · {day.title}
           <span className="font-normal" style={{ color: C.faint }}> · {day.items.length} ítem{day.items.length === 1 ? '' : 's'}</span>
         </p>
-        <span className="text-[10px]" style={{ color: C.faint }}>{expanded ? '▴' : '▾'}</span>
+        <span className="text-[11px]" style={{ color: C.faint }}>{expanded ? '▴' : '▾'}</span>
       </button>
 
       {expanded && (
@@ -407,23 +407,23 @@ function DayEditor({ token, programId, day, videos, act }: {
             <div key={item.id} className="flex items-start justify-between gap-2 rounded-lg px-2.5 py-2" style={{ background: '#FFFFFF', border: `1px solid ${C.rowBorder}` }}>
               <div className="min-w-0">
                 <p className="text-[12px] font-medium" style={{ color: C.navy }}>{item.title}</p>
-                {item.detail && <p className="text-[10.5px]" style={{ color: C.dim }}>{item.detail}</p>}
-                {item.video_url && <p className="text-[10px] truncate" style={{ color: C.cyan }}>▶ video</p>}
+                {item.detail && <p className="text-[11px]" style={{ color: C.dim }}>{item.detail}</p>}
+                {item.video_url && <p className="text-[11px] truncate" style={{ color: C.cyan }}>▶ video</p>}
               </div>
               <button type="button"
                 onClick={() => { if (confirm(`¿Eliminar "${item.title}"?`)) act(() => coachDeleteItem(token, programId, item.id)); }}
-                className="text-[10px] shrink-0" style={{ color: C.faint }}>✕</button>
+                className="text-[11px] shrink-0" style={{ color: C.faint }}>✕</button>
             </div>
           ))}
 
           {addingItem ? (
-            <div className="rounded-lg p-2.5 space-y-1.5" style={{ background: '#FFFFFF', border: `1px dashed #CBD5E1` }}>
+            <div className="rounded-lg p-2.5 space-y-1.5" style={{ background: '#FFFFFF', border: `1px dashed #DCD7C6` }}>
               <input value={it.title} onChange={(e) => setIt({ ...it, title: e.target.value })} placeholder="Ejercicio (inglés)"
                 aria-label="Título del ítem" className={inp} style={inpStyle} />
               <input value={it.detail} onChange={(e) => setIt({ ...it, detail: e.target.value })} placeholder="Detalle — 3×12 / notas (inglés)"
                 aria-label="Detalle del ítem" className={inp} style={inpStyle} />
               <select value={it.video_url} onChange={(e) => setIt({ ...it, video_url: e.target.value })}
-                aria-label="Video de la biblioteca" className={inp} style={{ ...inpStyle, color: it.video_url ? C.navy : '#9ca3af' }}>
+                aria-label="Video de la biblioteca" className={inp} style={{ ...inpStyle, color: it.video_url ? C.navy : '#55666E' }}>
                 <option value="">Sin video (o elegí de la biblioteca)</option>
                 {videos.map((v) => <option key={v.id} value={v.video_url}>{v.title}</option>)}
               </select>
@@ -449,11 +449,11 @@ function DayEditor({ token, programId, day, videos, act }: {
             </div>
           ) : (
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <button type="button" onClick={() => setAddingItem(true)} className="text-[10px] font-bold" style={{ color: C.goldStrong }}>+ Ítem</button>
+              <button type="button" onClick={() => setAddingItem(true)} className="text-[11px] font-bold" style={{ color: C.goldStrong }}>+ Ítem</button>
               <CoachBlockPicker token={token} programId={programId} dayId={day.id} act={act} />
               <button type="button"
                 onClick={() => { if (confirm(`¿Eliminar el día ${day.day_number} con sus ítems?`)) act(() => coachDeleteDay(token, programId, day.id)); }}
-                className="text-[10px]" style={{ color: C.faint }}>Eliminar día</button>
+                className="text-[11px]" style={{ color: C.faint }}>Eliminar día</button>
             </div>
           )}
         </div>
@@ -493,11 +493,11 @@ function AssignPicker({ token, programId, onDone, setErr }: {
           className="w-full text-left rounded-lg px-3 py-2 flex items-center justify-between"
           style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}`, opacity: busy && busy !== a.student_id ? 0.5 : 1 }}>
           <span className="text-[12px] font-medium" style={{ color: C.navy }}>{a.student_name}</span>
-          <span className="text-[10px]" style={{ color: C.faint }}>{busy === a.student_id ? 'Asignando…' : `hoy: ${a.program_title}`}</span>
+          <span className="text-[11px]" style={{ color: C.faint }}>{busy === a.student_id ? 'Asignando…' : `hoy: ${a.program_title}`}</span>
         </button>
       ))}
       {athletes.length === 0 && <p className="text-[11px]" style={{ color: C.faint }}>No tenés atletas a tu cargo todavía.</p>}
-      <button type="button" onClick={onDone} className="text-[10px]" style={{ color: C.faint }}>Cerrar</button>
+      <button type="button" onClick={onDone} className="text-[11px]" style={{ color: C.faint }}>Cerrar</button>
     </div>
   );
 }
@@ -521,7 +521,7 @@ function CoachBlockPicker({ token, programId, dayId, act }: {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-[10px] font-bold" style={{ color: C.cyan }}>
+      <button type="button" onClick={() => setOpen(true)} className="text-[11px] font-bold" style={{ color: C.cyan }}>
         + Insertar bloque
       </button>
     );
@@ -547,10 +547,10 @@ function CoachBlockPicker({ token, programId, dayId, act }: {
             className="w-full text-left rounded-lg px-2.5 py-1.5"
             style={{ background: '#FFFFFF', border: `1px solid ${C.rowBorder}`, opacity: busy ? 0.5 : 1 }}>
             <span className="text-[11.5px] font-medium" style={{ color: C.navy }}>{t.title}</span>
-            <span className="text-[9.5px] ml-1.5" style={{ color: C.faint }}>{t.pillar ?? ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
+            <span className="text-[11px] ml-1.5" style={{ color: C.faint }}>{t.pillar ?? ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
           </button>
         ))}
-        {list.length === 0 && <p className="text-[10.5px] text-center py-1.5" style={{ color: C.faint }}>{templates.length === 0 ? 'Cargando…' : 'Sin resultados.'}</p>}
+        {list.length === 0 && <p className="text-[11px] text-center py-1.5" style={{ color: C.faint }}>{templates.length === 0 ? 'Cargando…' : 'Sin resultados.'}</p>}
       </div>
     </div>
   );

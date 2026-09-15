@@ -1,0 +1,353 @@
+{
+  "meta": {
+    "brand": "The Surf Sequence®",
+    "manualVersion": "10.1",
+    "date": "2026-09-15",
+    "owner": "Enkrateia SA de CV",
+    "founder": "Marcelo Castellanos"
+  },
+  "statements": {
+    "mission": "Make surfing a sport you can learn — one sequence, one game, one belt at a time; accessible to anyone willing to put in time and effort.",
+    "vision": "Be for surfing what PADI is for diving — the standard.",
+    "tagline": "Evolve through play",
+    "essence": "The ocean has no manual. The Surf Sequence does."
+  },
+  "color": {
+    "official": {
+      "sequenceCyan": "#00D2FF"
+    },
+    "supports": {
+      "abyssNavyInk": "#061C2B",
+      "foamPaper": "#F7F9FA",
+      "tideGrey": "#55666E",
+      "sand": "#E9E2D2"
+    },
+    "derived": {
+      "deepCyan": "#00A8CC",
+      "headingInk": "#0E2029",
+      "band": "#EDF3F5",
+      "panelOnInk": "#0A2532",
+      "error": "#B03A2E",
+      "cardBorder": "#DCD7C6"
+    },
+    "surfaceModes": {
+      "document": {
+        "ratio": {
+          "paper": 0.6,
+          "ink": 0.25,
+          "cyan": 0.1,
+          "grey": 0.05
+        },
+        "use": "dashboards, student records, intake, front desk, email, decks, print, the manual"
+      },
+      "portal": {
+        "ground": "#061C2B",
+        "cards": "#E9E2D2",
+        "innerSurface": "#F7F9FA",
+        "accent": "#00D2FF",
+        "bottomNav": "#FFFFFF",
+        "use": "Course, sequence pages, Let's Play, Home"
+      }
+    },
+    "commandNotation": {
+      "posture": "#FF3B3B",
+      "rotationRail": "#19C567",
+      "projection": "#FFD600",
+      "maneuver": "#2F69FF",
+      "closure": "#F454A2",
+      "hold": "#D9EDF5",
+      "pocket": "#BA69EE",
+      "rules": [
+        "technical notation only — never branding or marketing",
+        "command words are set in Paper or Ink with a coloured dot in front; never rainbow text",
+        "a colour never replaces the word",
+        "hold is drawn beside the line, never as a segment of it",
+        "pocket is a place, not a command"
+      ]
+    },
+    "threeCircles": {
+      "body": "#00D2FF",
+      "board": "#FFDC33",
+      "wave": "#BA69EE",
+      "rule": "own family; Board #FFDC33 is NOT Projection #FFD600"
+    },
+    "footPositions": {
+      "p1Tail": "#FDE353",
+      "p2Neutral": "#FD8DC6",
+      "p3Forward": "#96EA9A",
+      "rule": "pastels; live inside the board figure only"
+    },
+    "belts": {
+      "white": "#E8E8E8",
+      "yellow": "#F5C518",
+      "blue": "#1E6FBF",
+      "purple": "#7B4FBE",
+      "brown": "#7D4E27",
+      "black": "#111111",
+      "rule": "progression identity only; never marketing"
+    },
+    "pop": {
+      "coral": "#FF6B6B",
+      "sunset": "#FF8C42",
+      "golden": "#FFD166",
+      "foam": "#06D6A0",
+      "rule": "UI status feedback only; never branding"
+    },
+    "globalRules": [
+      "no gradients anywhere",
+      "cyan is a precise accent or one large scale moment, never wallpaper",
+      "never cross-map the colour families"
+    ]
+  },
+  "typography": {
+    "display": {
+      "family": "Archivo",
+      "stretch": "118-125%",
+      "weight": "700-900",
+      "case": "uppercase",
+      "tracking": "-0.02em",
+      "leading": "0.92-1.1"
+    },
+    "body": {
+      "family": "Archivo",
+      "weight": "400-700",
+      "case": "sentence",
+      "leading": "1.6-1.7"
+    },
+    "mono": {
+      "family": "IBM Plex Mono",
+      "weight": "400-500",
+      "case": "uppercase",
+      "tracking": "0.18-0.22em",
+      "use": "labels, data, codes, specs"
+    },
+    "tagline": {
+      "family": "Lora",
+      "style": "italic",
+      "text": "Evolve through play",
+      "rules": [
+        "tagline only",
+        "always italic",
+        "sentence case",
+        "min 14px digital / 10pt print"
+      ]
+    },
+    "wordmark": {
+      "family": "Biennale Medium (Latinotype)",
+      "rule": "logo artwork only — never loaded as a UI font"
+    },
+    "scale": [
+      13,
+      21,
+      34,
+      55,
+      89,
+      144
+    ],
+    "screen": {
+      "title": "Archivo 900 expanded uppercase 36px/1.08",
+      "subtitle": "Archivo 600 17px/1.35",
+      "sectionTitle": "Archivo 900 uppercase 23px/1.1",
+      "body": "Archivo 400 14-16px/1.4-1.45",
+      "label": "IBM Plex Mono 500 uppercase 12px",
+      "rule": "reading headings never become full uppercase paragraphs"
+    }
+  },
+  "spacing": {
+    "scale": [
+      5,
+      8,
+      13,
+      21,
+      34,
+      55,
+      89,
+      144,
+      233
+    ],
+    "rule": "Fibonacci only; never invent intermediate values",
+    "sectionPadding": "89px desktop"
+  },
+  "geometry": {
+    "radiusCard": "8px",
+    "radiusControl": "5px",
+    "radiusAppTile": "34px",
+    "radiusPrint": 0,
+    "gutter": "16px",
+    "gutterNarrow": "12px below 360px",
+    "cardPadding": "12px",
+    "contentMax": "480px",
+    "mobileReference": "390px",
+    "touchTarget": "44px",
+    "primaryAction": "48px",
+    "bottomNav": "72px + safe area",
+    "borderLight": "rgba(14,32,41,0.16)",
+    "borderDark": "rgba(247,249,250,0.16)",
+    "rule": "print and editorial are square; the digital product uses 8/5"
+  },
+  "logo": {
+    "files": {
+      "markCyan": "assets/tss-mark.png",
+      "markWhite": "assets/tss-mark-white.png",
+      "markInk": "assets/tss-mark-ink.png",
+      "fullColor": "assets/tss-logo-full.png",
+      "fullWhite": "assets/tss-logo-full-white.png",
+      "stackedOutline": "assets/tss-stacked-outline.png",
+      "horizontalPrimary": "assets/tss-horizontal-primary.png"
+    },
+    "figures": {
+      "boardFootMap": "assets/board-foot-map.png",
+      "bodyForce": "assets/icon-body-force.png (45px native)",
+      "waveForce": "assets/icon-wave-force.png (45px native)"
+    },
+    "approvedVersions": [
+      "full colour on light",
+      "white on dark",
+      "ink on light or cyan",
+      "outline on light",
+      "monochrome for embroidery, single-colour print and legal"
+    ],
+    "clearSpace": "1× the spiral's smallest Fibonacci square, all sides",
+    "minSize": {
+      "fullLogoPrint": "4cm",
+      "markOnlyPrint": "1cm",
+      "markDigital": "24px"
+    },
+    "misuse": [
+      "never stretch or distort",
+      "never recolour",
+      "never flip — wave direction is fixed",
+      "never rotate",
+      "no shadows or effects",
+      "no busy backgrounds",
+      "no square, badge or boxed version",
+      "never recreate from memory",
+      "never scale fixed figure rasters above native size"
+    ],
+    "appTile": "the rounded tile is an operating-system container, not a logo"
+  },
+  "naming": {
+    "public": "The Surf Sequence (never abbreviate externally)",
+    "internal": "TSS",
+    "exceptions": [
+      "TSS Brain",
+      "TSS High Performance",
+      "TSS Certified Coach",
+      "TSS® badge on physical goods"
+    ],
+    "never": [
+      "'surf school'",
+      "interchangeable with Puro Surf",
+      "bare TSS in student-facing copy"
+    ]
+  },
+  "voice": {
+    "language": "English everywhere — student-facing and internal",
+    "traits": [
+      "Expert, not elite",
+      "Precise, not cold",
+      "Playful, not casual"
+    ],
+    "rules": [
+      "direct, one idea per sentence",
+      "second person",
+      "verbs first",
+      "no marketing adjectives",
+      "doctrine words stay exact",
+      "no emoji"
+    ],
+    "messageHierarchy": {
+      "promise": "Clarity changes everything.",
+      "method": "Train with intention. Learn with structure.",
+      "identity": "Evolve through play."
+    },
+    "never": [
+      "stoke",
+      "shred",
+      "hang ten",
+      "overpromising",
+      "passive hedging"
+    ]
+  },
+  "method": {
+    "learningModel": {
+      "drill": "ONE constraint (constraints-led)",
+      "mission": "ONE execution on a real wave (perception-action coupling)",
+      "game": "variability (repetition without repetition)",
+      "criteria": "affordances the surfer learns to see",
+      "coach": "confirms in the water; skill self-organises"
+    },
+    "sequence": [
+      "Think it — understand",
+      "Feel it — rehearse on land",
+      "Do it — the mission, one execution, no counting",
+      "Review — indicators, common mistakes, how it felt"
+    ],
+    "sequenceRules": [
+      "the sequence is the unit of teaching",
+      "the plan is made before the water and is not graded",
+      "opening a card or changing a foot position never records progress or completes a lesson",
+      "the execution and the two-way review ARE recorded",
+      "no level is granted from land work"
+    ],
+    "pillars": [
+      "Physical",
+      "Technical",
+      "Tactical",
+      "Mental"
+    ],
+    "prch": {
+      "P": "Posture",
+      "R": "Rotation",
+      "C": "Compression",
+      "H": "Hold",
+      "rule": "taught in original form; 'Compact' is a coaching alias only; P·R·C·H is the language, colours only solidify it"
+    },
+    "belts": [
+      "White · Beginner",
+      "Yellow · Novice 1-2",
+      "Blue · Foundation 1-2",
+      "Purple · Emerging",
+      "Brown · Pre-Elite",
+      "Black · Elite"
+    ],
+    "zones": {
+      "Z4": "75-100% · high, by the lip",
+      "Z3": "50-75% · upper middle",
+      "Z2": "25-50% · lower middle",
+      "Z1": "0-25% · low, by the flat",
+      "pocket": "marked in the corner where the wave breaks"
+    },
+    "footPositions": {
+      "P1": "tail — manoeuvrability",
+      "P2": "neutral — balance, stability, speed; the default",
+      "P3": "forward — speed"
+    },
+    "beltValues": [
+      "Humility",
+      "Process & Resilience",
+      "Conscious Commitment",
+      "Personal Responsibility",
+      "Gratitude"
+    ],
+    "vibes": {
+      "list": [
+        "Awareness",
+        "Love",
+        "Flow",
+        "Adaptation"
+      ],
+      "rule": "attitude in the water; never tied to a belt, never an evaluation criterion"
+    },
+    "constitutional": [
+      "named expressions (Cruz, Tapaloco, Grenade, Choke, Elbow) are never renamed or translated",
+      "belt names, four pillars and EDPF are constitutional"
+    ]
+  },
+  "openQuestions": [
+    "Card surface drift: implementation ships #F3F0E5 / #F8F5EC, manual specifies #E9E2D2 / #F7F9FA. Follow the manual unless editing existing portal code. Flag, do not silently pick.",
+    "Manual 9.6: whether rail change earns its own marker — undefined.",
+    "Manual 9.6: exact duration of a hold — undefined.",
+    "TSS High Performance identity — unresolved; do not design for it without asking."
+  ]
+}

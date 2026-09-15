@@ -1,9 +1,11 @@
 @import "tailwindcss";
+/* Brand Manual v10.1 (2026-09-15) — fuente única de tokens: brand/tss-tokens.json */
+@import "../styles/tss-tokens.css";
 
 /* ── TSS Brand Design Tokens — Brand Manual v4.2 §3 ── */
 :root {
   /* Core palette */
-  --tss-navy: #0A1628;            /* Ocean Navy — fondo primario / autoridad */
+  --tss-navy: #061C2B;            /* Abyss Navy Ink v10.1 (antes #0A1628) */
   --tss-navy-light: #0D2D5E;      /* Brand Blue — secundario / estructura */
   /* Brand Manual v10 (fuente única, ver BRAND_V10 en src/lib/constants/brand.ts) */
   --tss-ink: #061C2B;             /* Ink v10 — fondo de doctrina / portal oscuro */
@@ -162,7 +164,7 @@ input:focus, select:focus, textarea:focus {
 /* ── Portal body gradient — very subtle lift so navy hero cards
    feel like they're floating. ── */
 .tss-portal-bg {
-  background: linear-gradient(180deg, var(--tss-gray-50) 0%, #FFFFFF 60%);
+  background: linear-gradient(180deg, #EDF3F5 0%, #F7F9FA 60%);
   min-height: 100vh;
 }
 

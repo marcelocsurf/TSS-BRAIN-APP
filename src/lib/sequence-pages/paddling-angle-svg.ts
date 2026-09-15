@@ -15,7 +15,7 @@
 import { layers, crestY, type WaveDirection } from './wave-guide-svg';
 
 const W = 720, H = 300, FLAT_Y = 250;
-export const PADDLE_COLORS = { option1: '#FFD400', option2: '#22C55E', option3: '#FF3B3B', lip: '#FFFFFF', paddle: '#FF5FA2' } as const;
+export const PADDLE_COLORS = { option1: '#FFD600', option2: '#19C567', option3: '#FF3B3B', lip: '#FFFFFF', paddle: '#F454A2' } as const;
 const MONO = "'TSS IBM Plex Mono', 'IBM Plex Mono', Menlo, monospace";
 const f = (n: number) => (Math.round(n * 10) / 10).toString();
 

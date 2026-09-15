@@ -23,13 +23,13 @@ import type { WaveBoardData, Command } from './types';
 
 export const COMMAND_COLORS: Record<Command, string> = {
   posture: '#FF3B3B',
-  rail: '#22C55E',
-  projection: '#FFD400',
-  maneuver: '#2F6BFF',
-  closure: '#FF5FA2',
+  rail: '#19C567',   // --tss-cmd-rotation (manual v10.1)
+  projection: '#FFD600', // --tss-cmd-projection
+  maneuver: '#2F69FF',   // --tss-cmd-maneuver
+  closure: '#F454A2',    // --tss-cmd-closure
 };
 export const HOLD_COLOR = '#7DE3FF';
-export const POCKET_COLOR = '#B388FF';
+export const POCKET_COLOR = '#BA69EE'; // --tss-cmd-pocket (manual v10.1)
 export const COMMAND_LABELS: Record<Command, string> = {
   posture: 'Posture',
   rail: 'Rotation / rail',

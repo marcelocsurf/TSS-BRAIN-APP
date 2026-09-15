@@ -26,19 +26,19 @@ export function BoardMap({ active, compact = false }: { active?: BackFoot[]; com
       <path d={OUTLINE} fill="#F7F9FA" stroke="#0b1b28" strokeWidth="3" strokeLinejoin="round" />
       <g clipPath="url(#bm-clip)">
         <rect x="60" y="372" width="200" height="200" fill="url(#bm-hatch)" />
-        <path d="M60,572 C110,548 210,548 260,572 L260,610 C210,586 110,586 60,610 z" fill="#8EE39A" opacity={on.size && !on.has('P3') ? 0.35 : 1} />
-        <path d="M60,610 C110,586 210,586 260,610 L260,652 C210,628 110,628 60,652 z" fill="#F58AC0" opacity={on.size && !on.has('P2') ? 0.35 : 1} />
-        <path d="M60,652 C110,628 210,628 260,652 L260,730 L60,730 z" fill="#F3E24A" opacity={on.size && !on.has('P1') ? 0.35 : 1} />
+        <path d="M60,572 C110,548 210,548 260,572 L260,610 C210,586 110,586 60,610 z" fill="#96EA9A" opacity={on.size && !on.has('P3') ? 0.35 : 1} />
+        <path d="M60,610 C110,586 210,586 260,610 L260,652 C210,628 110,628 60,652 z" fill="#FD8DC6" opacity={on.size && !on.has('P2') ? 0.35 : 1} />
+        <path d="M60,652 C110,628 210,628 260,652 L260,730 L60,730 z" fill="#FDE353" opacity={on.size && !on.has('P1') ? 0.35 : 1} />
         <path d="M60,572 C110,548 210,548 260,572" fill="none" stroke="#0b1b28" strokeWidth="2" />
         <path d="M60,610 C110,586 210,586 260,610" fill="none" stroke="#0b1b28" strokeWidth="2" />
         <path d="M60,652 C110,628 210,628 260,652" fill="none" stroke="#0b1b28" strokeWidth="2" />
       </g>
       <line x1="160" y1="10" x2="160" y2="710" stroke="#0b1b28" strokeWidth="2" />
       <line x1="72" y1="372" x2="248" y2="372" stroke="#0b1b28" strokeWidth="2.5" />
-      <circle cx="160" cy="372" r="86" fill="#F58AC0" stroke="#0b1b28" strokeWidth="3" />
+      <circle cx="160" cy="372" r="86" fill="#FD8DC6" stroke="#0b1b28" strokeWidth="3" />
       <circle cx="160" cy="372" r="64" fill="#F7F9FA" stroke="#0b1b28" strokeWidth="3" />
-      <circle cx="160" cy="372" r="42" fill="#F3E24A" stroke="#0b1b28" strokeWidth="3" />
-      <circle cx="160" cy="372" r="20" fill="#8EE39A" stroke="#0b1b28" strokeWidth="3" />
+      <circle cx="160" cy="372" r="42" fill="#FDE353" stroke="#0b1b28" strokeWidth="3" />
+      <circle cx="160" cy="372" r="20" fill="#96EA9A" stroke="#0b1b28" strokeWidth="3" />
       <g fontFamily="var(--font-plex), IBM Plex Mono, Menlo, monospace" fontSize="13" fontWeight="700">
         <ellipse cx="160" cy="372" rx="13" ry="25" fill="#061C2B" opacity=".85" transform="rotate(80 160 372)" />
         <text x="153" y="377" fill="#F0F7FA">D</text>

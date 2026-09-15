@@ -1,0 +1,81 @@
+/* The Surf Sequence — Design Tokens v10.1 (Brand Manual v10.1, 2026-09-15)
+   Import first. Never hardcode brand values elsewhere. */
+:root {
+  /* ══ BRAND · the only official colour ══ */
+  --tss-cyan: #00D2FF;          /* Sequence Cyan — the trademark, taken from the logo. Never altered. */
+
+  /* ══ BRAND · supports ══ */
+  --tss-ink: #061C2B;           /* Abyss Navy Ink — dark ground, depth, authority */
+  --tss-paper: #F7F9FA;         /* Foam Paper — light ground, and the inner surface of a Sand card */
+  --tss-grey: #55666E;          /* Tide Grey — working neutral: body text, labels, borders */
+  --tss-sand: #E9E2D2;          /* Sand — CARD & PANEL surface, print AND screen */
+  --tss-cyan-deep: #00A8CC;     /* Deep Cyan — cyan for small text on light grounds */
+  --tss-ink-heading: #0E2029;   /* heading ink on light */
+  --tss-band: #EDF3F5;          /* alternate light band */
+  --tss-panel: #0A2532;         /* raised panel on ink */
+  --tss-error: #B03A2E;         /* "never" / misuse labels on light */
+  /* Document mode ratio: paper 60% · ink 25% · cyan 10% · grey 5%
+     Portal mode: ink ground, Sand cards, cyan accent, white bottom nav. */
+
+  /* ══ COMMAND NOTATION · technical only, never branding ══
+     Defined in manual 2.4. Drawing a sequence on a wave, and sequence pages in the portal. */
+  --tss-cmd-posture:    #FF3B3B;  /* red */
+  --tss-cmd-rotation:   #19C567;  /* green — rotation / rail, one command */
+  --tss-cmd-projection: #FFD600;  /* yellow */
+  --tss-cmd-maneuver:   #2F69FF;  /* blue */
+  --tss-cmd-closure:    #F454A2;  /* pink */
+  --tss-cmd-hold:       #D9EDF5;  /* light blue — drawn BESIDE the line, never a segment of it */
+  --tss-cmd-pocket:     #BA69EE;  /* violet — a place, not a command */
+
+  /* ══ THREE CIRCLES · manual 2.3 / 3.4 · own family, never cross-mapped ══ */
+  --tss-circle-body:  #00D2FF;
+  --tss-circle-board: #FFDC33;   /* near --tss-cmd-projection but a DIFFERENT token */
+  --tss-circle-wave:  #BA69EE;
+
+  /* ══ FOOT POSITIONS · manual 9.5 · pastels, live in the board figure ══ */
+  --tss-foot-p1: #FDE353;  /* tail — manoeuvrability */
+  --tss-foot-p2: #FD8DC6;  /* neutral — balance, the default */
+  --tss-foot-p3: #96EA9A;  /* forward — speed */
+
+  /* ══ BELTS · progression identity only, never marketing ══ */
+  --tss-belt-white: #E8E8E8; --tss-belt-yellow: #F5C518; --tss-belt-blue: #1E6FBF;
+  --tss-belt-purple: #7B4FBE; --tss-belt-brown: #7D4E27; --tss-belt-black: #111111;
+
+  /* ══ POP · UI status feedback only, never branding ══ */
+  --tss-pop-coral: #FF6B6B; --tss-pop-sunset: #FF8C42;
+  --tss-pop-golden: #FFD166; --tss-pop-foam: #06D6A0;
+
+  /* ══ TYPE ══ */
+  --tss-font-display: 'Archivo', sans-serif;   /* font-stretch 118–125%, weight 700–900, UPPERCASE, -0.02em */
+  --tss-font-body: 'Archivo', sans-serif;      /* weight 400–700, sentence case, 1.6–1.7 leading */
+  --tss-font-mono: 'IBM Plex Mono', monospace; /* 400–500, UPPERCASE, +0.18–0.22em tracking */
+  --tss-font-tagline: 'Lora', serif;           /* TAGLINE ONLY, always italic: "Evolve through play" */
+  /* Biennale Medium = wordmark artwork only. Never load it as a UI font. */
+
+  /* ══ FIBONACCI SCALE · all spacing and type sizes come from here ══ */
+  --tss-space-1: 5px;  --tss-space-2: 8px;  --tss-space-3: 13px; --tss-space-4: 21px;
+  --tss-space-5: 34px; --tss-space-6: 55px; --tss-space-7: 89px; --tss-space-8: 144px;
+  --tss-text-1: 13px; --tss-text-2: 21px; --tss-text-3: 34px;
+  --tss-text-4: 55px; --tss-text-5: 89px; --tss-text-6: 144px;
+
+  /* ══ SCREEN TYPE · manual 3.5, mobile reference 390px ══ */
+  --tss-screen-title: 36px/1.08;   /* Archivo 900 expanded uppercase */
+  --tss-screen-subtitle: 17px/1.35;/* Archivo 600 */
+  --tss-screen-section: 23px/1.1;  /* Archivo 900 uppercase */
+  --tss-screen-body: 15px/1.45;    /* Archivo 400, range 14–16 */
+  --tss-screen-label: 12px;        /* IBM Plex Mono 500 uppercase */
+
+  /* ══ GEOMETRY ══ */
+  --tss-radius-card: 8px;     /* digital product only */
+  --tss-radius-control: 5px;  /* digital product only */
+  --tss-radius-app-tile: 34px;
+  --tss-radius-print: 0;      /* editorial and print stay square */
+  --tss-gutter: 16px;         /* 12px below 360px viewport */
+  --tss-card-padding: 12px;
+  --tss-content-max: 480px;
+  --tss-touch: 44px;          /* primary action ≥48px */
+  --tss-footer-height: 72px;  /* + safe area */
+  --tss-border-light: rgba(14,32,41,0.16);
+  --tss-border-dark: rgba(247,249,250,0.16);
+  --tss-border-card: #DCD7C6;
+}

@@ -34,14 +34,14 @@ function QuickRoster({
 }) {
   if (roster.length === 0) {
     return (
-      <p className="text-[11px] text-gray-500">
+      <p className="text-[11px] text-[#55666E]">
         No students enrolled yet — the roster shows up here as they sign up.
       </p>
     );
   }
   return (
     <div className="space-y-1">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+      <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E]">
         {roster.length} student{roster.length === 1 ? '' : 's'} · tap for the full profile
       </p>
       {roster.map((r) => (
@@ -50,7 +50,7 @@ function QuickRoster({
           href={`/coach-portal/${token}/students/${r.student_id}`}
           className="flex items-center gap-2 py-1 group"
         >
-          <span className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-[10px] font-bold shrink-0 bg-gray-400">
+          <span className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-[11px] font-bold shrink-0 bg-gray-400">
             {r.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
@@ -58,17 +58,17 @@ function QuickRoster({
               r.name.split(/\s+/).slice(0, 2).map((p) => p[0] ?? '').join('').toUpperCase()
             )}
           </span>
-          <span className="min-w-0 flex-1 text-[11px] text-gray-700 leading-snug truncate group-hover:underline">
+          <span className="min-w-0 flex-1 text-[11px] text-[#10263B] leading-snug truncate group-hover:underline">
             <b>{r.name}</b>
             {r.belt ? ` · ${r.belt.replace(/_/g, ' ')}` : ''}
             {r.age != null ? ` · ${r.age}y` : ''}
             {r.has_medical ? ' · ⚕️' : ''}
             {r.has_injuries ? ' · 🤕' : ''}
           </span>
-          <span className="shrink-0 text-[11px] text-[#0090B0]">→</span>
+          <span className="shrink-0 text-[11px] text-[#00A8CC]">→</span>
         </Link>
       ))}
-      <p className="text-[10px] text-gray-400 pt-1">
+      <p className="text-[11px] text-[#55666E] pt-1">
         ⚕️ medical note · 🤕 injury — the full profile has emergency contact, allergies and waiver.
       </p>
     </div>
@@ -141,7 +141,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
   if (done) {
     return (
       <div
-        className={`rounded-2xl border p-4 ${
+        className={`rounded-lg border p-4 ${
           done === 'accepted'
             ? 'bg-emerald-50 border-emerald-200'
             : 'bg-rose-50 border-rose-200'
@@ -150,17 +150,17 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
         <p className="text-sm font-semibold text-[var(--tss-navy)]">
           {done === 'accepted' ? 'Accepted ✓' : 'Declined'} — {assignment.camp_name}
         </p>
-        <p className="text-xs text-gray-500 mt-0.5">Your coordinator has been notified.</p>
+        <p className="text-xs text-[#55666E] mt-0.5">Your coordinator has been notified.</p>
 
         {/* Quick view: qué acabás de aceptar. */}
         {done === 'accepted' && quick?.ok && quick.camp && (
-          <div className="mt-3 rounded-xl bg-white border border-emerald-100 p-3 text-left space-y-2">
-            <p className="text-[11px] text-gray-600">
+          <div className="mt-3 rounded-[5px] bg-[#F7F9FA] border border-emerald-100 p-3 text-left space-y-2">
+            <p className="text-[11px] text-[#55666E]">
               📅 {quick.camp.start === quick.camp.end ? quick.camp.start : `${quick.camp.start} → ${quick.camp.end}`}
               {quick.camp.time ? ` · ${quick.camp.time}` : ''} · {quick.camp.days} {quick.camp.days === 1 ? 'day' : 'days'}
             </p>
             <QuickRoster token={token} roster={quick.roster ?? []} />
-            <p className="text-[11px] font-semibold" style={{ color: '#0090B0' }}>Next: open PLAN → 📅 Vista semana to plan the whole camp.</p>
+            <p className="text-[11px] font-semibold" style={{ color: '#00A8CC' }}>Next: open PLAN → 📅 Vista semana to plan the whole camp.</p>
           </div>
         )}
       </div>
@@ -168,20 +168,20 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4" style={{ borderLeft: '4px solid #00D2FF' }}>
+    <div className="rounded-lg bg-[#E9E2D2] border border-[#DCD7C6] border border-[#DCD7C6] shadow-sm p-4" style={{ borderLeft: '4px solid #00D2FF' }}>
       <div className="flex items-start gap-2.5 mb-3">
-        <CalendarClock size={18} className="shrink-0 mt-0.5" style={{ color: '#0090B0' }} />
+        <CalendarClock size={18} className="shrink-0 mt-0.5" style={{ color: '#00A8CC' }} />
         <div className="min-w-0">
-          <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#0090B0]">
+          <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-[#00A8CC]">
             New service — please confirm
           </p>
           <p className="text-sm font-bold text-[var(--tss-navy)] truncate">{assignment.camp_name}</p>
-          <p className="text-xs text-gray-600 mt-0.5">
+          <p className="text-xs text-[#55666E] mt-0.5">
             {dateRange}
             {assignment.scheduled_time ? ` · ${assignment.scheduled_time}` : ''}
           </p>
           {alreadyPast && (
-            <p className="text-[11px] text-amber-700 mt-1">
+            <p className="text-[11px] text-[#10263B] mt-1">
               This service already ran — accept it if you coached it, so your record and payroll stay right.
             </p>
           )}
@@ -190,7 +190,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
 
       {/* Quiénes van — visible ANTES de decidir. */}
       {quick?.ok && (
-        <div className="mb-3 rounded-xl bg-gray-50 border border-gray-100 p-3">
+        <div className="mb-3 rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] p-3">
           <QuickRoster token={token} roster={quick.roster ?? []} />
         </div>
       )}
@@ -202,7 +202,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             onChange={(e) => setNote(e.target.value)}
             placeholder="Reason (optional) — e.g. I'm not available that week"
             rows={2}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#00D2FF]/50"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#00D2FF]/50"
           />
           <div className="flex gap-2">
             <button
@@ -216,7 +216,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             <button
               type="button"
               onClick={() => { setMode('idle'); setError(''); }}
-              className="px-3 py-2.5 text-sm text-gray-500"
+              className="px-3 py-2.5 text-sm text-[#55666E]"
             >
               Back
             </button>
@@ -236,7 +236,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
             type="button"
             onClick={() => setMode('rejecting')}
             disabled={pending}
-            className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-full text-sm font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 py-2.5 border border-[#DCD7C6] text-[#55666E] rounded-full text-sm font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-[#F7F9FA] disabled:opacity-50"
           >
             <X size={16} /> Decline
           </button>

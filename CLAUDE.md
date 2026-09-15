@@ -258,3 +258,7 @@ The official brand system lives in **`brand/`** (added 2026-08-06):
 - **`brand/tokens/tss-tokens.css` + `tss-tokens.json`** — machine-readable design tokens. Import/read these instead of hardcoding values.
 - **`brand/assets/`** — the ONLY approved logo files (never recreate or recolor the mark).
 - **`brand/brand-manual/The Surf Sequence Brand Manual.html`** — the full manual (open in a browser).
+
+
+## Marca v10.1 (2026-09-15)
+Las reglas de marca viven en `brand/BRAND_v10.1.md` (resumen operativo del manual) y los valores en `brand/tss-tokens.json` / `src/styles/tss-tokens.css` (importado en globals.css). Nunca hardcodear un valor de marca que exista como token. Sand #E9E2D2 = tarjetas; Paper #F7F9FA = superficie interna; cyan #00D2FF = acción. Excepciones acordadas con Marcelo: el copy interno del equipo sigue en español (doctrine_rules 2026-09-11) y el Hold se dibuja en #7DE3FF, no #D9EDF5.

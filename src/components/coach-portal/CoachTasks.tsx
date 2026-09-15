@@ -39,42 +39,42 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-[#0090B0] mb-3 inline-flex items-center gap-1.5">
-        <CheckSquare size={13} /> My tasks {open.length > 0 && <span className="text-gray-400">· {open.length}</span>}
+    <div className="rounded-lg bg-[#E9E2D2] border border-[#DCD7C6] border border-[#DCD7C6] shadow-sm p-4">
+      <p className="text-[11px] font-mono uppercase tracking-wider text-[#00A8CC] mb-3 inline-flex items-center gap-1.5">
+        <CheckSquare size={13} /> My tasks {open.length > 0 && <span className="text-[#55666E]">· {open.length}</span>}
       </p>
 
       <ul className="space-y-1.5">
         {open.map((t) => (
-          <li key={t.id} className="rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
+          <li key={t.id} className="rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] overflow-hidden">
             <button
               type="button"
               onClick={() => setOpenId(openId === t.id ? null : t.id)}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left"
             >
-              <span className="w-5 h-5 shrink-0 rounded-md border-2 border-gray-300" />
+              <span className="w-5 h-5 shrink-0 rounded-md border-2 border-[#DCD7C6]" />
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-medium text-[#061C2B] truncate">
                   {t.title}
                   {t.recurrence && (
-                    <span className="ml-1.5 inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#0090B0] bg-[#00D2FF]/10 border border-[#00D2FF]/30 rounded-full px-1.5 py-0.5 align-middle">
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#00A8CC] bg-[#00D2FF]/10 border border-[#00D2FF]/30 rounded-full px-1.5 py-0.5 align-middle">
                       <Repeat size={9} /> {t.recurrence}
                     </span>
                   )}
                 </span>
-                {t.description && <span className="block text-[11px] text-gray-500 truncate">{t.description}</span>}
+                {t.description && <span className="block text-[11px] text-[#55666E] truncate">{t.description}</span>}
                 {t.due_date && (
                   <span className={`block text-[11px] ${isOverdue(t) ? 'text-[#FF6B6B] font-semibold' : 'text-gray-400'}`}>Due {fmtDue(t.due_date)}</span>
                 )}
               </span>
-              <span className="text-[10px] text-gray-400 shrink-0">{openId === t.id ? 'Close' : 'Open'}</span>
+              <span className="text-[11px] text-[#55666E] shrink-0">{openId === t.id ? 'Close' : 'Open'}</span>
             </button>
             {openId === t.id && t.link_url === 'inventory' && onOpenInventory && (
               <div className="px-3 pt-3">
                 <button
                   type="button"
                   onClick={onOpenInventory}
-                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold"
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-[5px] py-2.5 text-sm font-bold"
                   style={{ background: '#00D2FF', color: '#061C2B' }}
                 >
                   <Package size={15} /> Open the academy inventory →
@@ -104,7 +104,7 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
           {done.map((t) => (
             <div key={t.id} className="flex items-center gap-2.5 px-3 py-1.5">
               <span className="w-5 h-5 shrink-0 rounded-md bg-emerald-500 flex items-center justify-center text-white"><Check size={12} /></span>
-              <p className="flex-1 text-sm text-gray-400 line-through truncate">{t.title}</p>
+              <p className="flex-1 text-sm text-[#55666E] line-through truncate">{t.title}</p>
             </div>
           ))}
         </div>
@@ -128,11 +128,11 @@ function TaskReportForm({ task, pending, onSubmit }: {
     : null;
 
   return (
-    <div className="border-t border-gray-100 px-3 py-3 space-y-3">
+    <div className="border-t border-[#DCD7C6] px-3 py-3 space-y-3">
       {/* The manual — tick the steps as you go */}
       {steps.length > 0 && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5 inline-flex items-center gap-1">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5 inline-flex items-center gap-1">
             <ListChecks size={11} /> Steps
           </p>
           <ul className="space-y-1">
@@ -179,7 +179,7 @@ function TaskReportForm({ task, pending, onSubmit }: {
             if (!comment.trim()) return; // highlight the required reason
             onSubmit('not_done', comment, checklistState);
           }}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold bg-white border border-[#FF6B6B]/50 text-[#FF6B6B] disabled:opacity-50"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold bg-[#F7F9FA] border border-[#FF6B6B]/50 text-[#FF6B6B] disabled:opacity-50"
         >
           <X size={15} strokeWidth={2.5} /> Not done
         </button>

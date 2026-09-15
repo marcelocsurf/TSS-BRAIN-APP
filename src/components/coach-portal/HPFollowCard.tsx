@@ -16,7 +16,7 @@ import { coachGetWeeklyRanking } from '@/lib/actions/competitions';
 // ─── Alto Rendimiento · Escalón 1 — la tarjeta de seguimiento del coach ───
 //
 // OJO CON EL FONDO: esta tarjeta vive en la zona BAJA del Home del coach, que
-// es CLARA (#F2F6F8) — la paleta acá es la de la maqueta aprobada (tarjeta
+// es CLARA (#F7F9FA) — la paleta acá es la de la maqueta aprobada (tarjeta
 // blanca, acento dorado, texto navy). La primera versión usó colores de fondo
 // oscuro y Marcelo la vio blanco-sobre-blanco.
 //
@@ -26,15 +26,15 @@ const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
 
 const C = {
   cardBg: '#FFFFFF',
-  cardBorder: '#F0C36D',
+  cardBorder: '#FFD166',
   goldStrong: '#B8862B',
   goldText: '#8E6614',
   navy: '#0C2231',
   dim: '#55707F',
   faint: '#7A96A4',
-  rowBg: '#F8FAFC',
+  rowBg: '#F7F9FA',
   rowBorder: '#E2E8F0',
-  track: '#E7EFF3',
+  track: '#F7F9FA',
   green: '#1F9D6B',
   cyan: '#0090B8',
   red: '#C0392B',
@@ -71,10 +71,10 @@ export function HPFollowCard({ token }: { token: string }) {
 
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-lg p-4"
       style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderLeft: `4px solid ${C.goldStrong}` }}
     >
-      <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: C.goldText }}>
+      <p className="text-[11px] uppercase tracking-wider font-bold" style={{ ...MONO, color: C.goldText }}>
         Alto Rendimiento · Seguimiento
       </p>
       {athletes && (
@@ -84,8 +84,8 @@ export function HPFollowCard({ token }: { token: string }) {
       )}
 
       {citas.length > 0 && (
-        <div className="mt-3 rounded-xl p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
-          <p className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: C.faint }}>
+        <div className="mt-3 rounded-[5px] p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
+          <p className="text-[11px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: C.faint }}>
             <CalendarClock size={11} /> Próximas citas
           </p>
           <div className="mt-1.5 space-y-1">
@@ -114,9 +114,9 @@ export function HPFollowCard({ token }: { token: string }) {
       )}
 
       {ranking.length > 0 && (
-        <div className="mt-3 rounded-xl p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
+        <div className="mt-3 rounded-[5px] p-3" style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}>
           <button type="button" onClick={() => setShowAllRank(!showAllRank)} className="w-full flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: C.faint }}>
+            <p className="text-[11px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: C.faint }}>
               <Trophy size={11} /> Ranking semanal · grupo HP
             </p>
             {showAllRank ? <ChevronUp size={13} style={{ color: C.faint }} /> : <ChevronDown size={13} style={{ color: C.faint }} />}
@@ -135,7 +135,7 @@ export function HPFollowCard({ token }: { token: string }) {
             })}
           </div>
           {!showAllRank && ranking.length > 5 && (
-            <button type="button" onClick={() => setShowAllRank(true)} className="text-[10px] font-bold mt-1.5" style={{ color: C.cyan }}>
+            <button type="button" onClick={() => setShowAllRank(true)} className="text-[11px] font-bold mt-1.5" style={{ color: C.cyan }}>
               Ver los {ranking.length} →
             </button>
           )}
@@ -149,7 +149,7 @@ export function HPFollowCard({ token }: { token: string }) {
           return (
             <div
               key={a.assignment_id}
-              className="rounded-xl p-3"
+              className="rounded-[5px] p-3"
               style={{ background: C.rowBg, border: `1px solid ${C.rowBorder}` }}
             >
               <button
@@ -160,14 +160,14 @@ export function HPFollowCard({ token }: { token: string }) {
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-[13px] font-semibold truncate" style={{ color: C.navy }}>{a.student_name}</p>
                   <span
-                    className="text-[10px] font-bold shrink-0"
+                    className="text-[11px] font-bold shrink-0"
                     style={{ color: a.active_today ? C.green : C.goldStrong }}
                   >
                     {a.active_today ? '✓ activo hoy' : 'sin actividad hoy'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-1">
-                  <p className="text-[10.5px]" style={{ color: C.dim }}>
+                  <p className="text-[11px]" style={{ color: C.dim }}>
                     {a.program_title} ·{' '}
                     {a.position ? `M${a.position.week}·D${a.position.day}` : 'completado ✓'} · {a.days_done}/{a.days_total} días
                   </p>
@@ -186,7 +186,7 @@ export function HPFollowCard({ token }: { token: string }) {
                 <div className="mt-2.5 pt-2.5" style={{ borderTop: `1px solid ${C.rowBorder}` }}>
                   {a.last_checkin ? (
                     <>
-                      <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>
+                      <p className="text-[11px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>
                         Último check-in · {a.last_checkin.date}
                       </p>
                       <p className="text-[11.5px] mt-1" style={{ color: C.dim }}>
@@ -257,11 +257,11 @@ function EvalBlock({ token, studentId }: { token: string; studentId: string }) {
   return (
     <div className="mt-2.5 pt-2.5" style={{ borderTop: `1px solid ${C.rowBorder}` }}>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>
+        <p className="text-[11px] uppercase tracking-wider" style={{ ...MONO, color: C.faint }}>
           Evaluaciones por pilar
         </p>
         {!adding && (
-          <button type="button" onClick={() => setAdding(true)} className="text-[10px] font-bold" style={{ color: C.goldStrong }}>
+          <button type="button" onClick={() => setAdding(true)} className="text-[11px] font-bold" style={{ color: C.goldStrong }}>
             + Evaluar
           </button>
         )}
@@ -290,9 +290,9 @@ function EvalBlock({ token, studentId }: { token: string; studentId: string }) {
                 key={p.key}
                 type="button"
                 onClick={() => setPillar(p.key)}
-                className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
+                className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
                 style={{
-                  background: pillar === p.key ? C.cyan : '#EEF2F6',
+                  background: pillar === p.key ? C.cyan : '#F7F9FA',
                   color: pillar === p.key ? '#FFFFFF' : C.dim,
                 }}
               >
@@ -320,7 +320,7 @@ function EvalBlock({ token, studentId }: { token: string; studentId: string }) {
             aria-label="Nota de la evaluación"
             rows={2}
             className="w-full rounded-lg px-2.5 py-1.5 text-[12px]"
-            style={{ background: '#FFFFFF', border: `1px dashed #CBD5E1`, color: C.navy }}
+            style={{ background: '#FFFFFF', border: `1px dashed #DCD7C6`, color: C.navy }}
           />
           {err && <p className="text-[11px]" style={{ color: C.red }}>{err}</p>}
           <div className="flex gap-2">
