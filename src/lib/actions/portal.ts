@@ -666,27 +666,31 @@ export async function logFreeSurf(
 // la próxima vez que te vea.
 export async function getCoachFocusState(
   portalToken: string,
-): Promise<{ flagged: number; pending: number; clearedByStudent: boolean }> {
+): Promise<{ flagged: number; pending: number; clearedByStudent: boolean; firstPendingStepId: string | null }> {
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
-    if (!studentId) return { flagged: 0, pending: 0, clearedByStudent: false };
+    if (!studentId) return { flagged: 0, pending: 0, clearedByStudent: false, firstPendingStepId: null };
     const admin = createAdminClient();
     const { data } = await admin
       .from('student_step_ratings')
       .select('step_id, coach_rating, current_rating')
       .eq('student_id', studentId)
       .not('coach_rating', 'is', null)
-      .lt('coach_rating', 4);
+      .lt('coach_rating', 4)
+      .order('step_id');
     const rows = data ?? [];
-    const pending = rows.filter((r: any) => (r.current_rating ?? 0) < 4).length;
+    const pendingRows = rows.filter((r: any) => (r.current_rating ?? 0) < 4);
     return {
       flagged: rows.length,
-      pending,
-      clearedByStudent: rows.length > 0 && pending === 0,
+      pending: pendingRows.length,
+      clearedByStudent: rows.length > 0 && pendingRows.length === 0,
+      // El primer paso que el coach dejó bajo 4★ y sigue pendiente: la fila
+      // "From your coach" lo abre en Let's Play (auditoría 2026-09-15).
+      firstPendingStepId: (pendingRows[0] as any)?.step_id ?? null,
     };
   } catch {
     // Es una ayuda, no el contenido: si falla, la nota se muestra como siempre.
-    return { flagged: 0, pending: 0, clearedByStudent: false };
+    return { flagged: 0, pending: 0, clearedByStudent: false, firstPendingStepId: null };
   }
 }
 

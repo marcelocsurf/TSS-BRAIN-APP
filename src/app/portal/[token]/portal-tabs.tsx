@@ -411,10 +411,14 @@ function nextMoveRows(
   const coachCleared = !!coachFocus && !!(data as any).coachFocusState?.clearedByStudent;
   const rows: NextMoveRow[] = [];
   if (coachFocus && !coachCleared) {
+    // Si el coach dejó pasos bajo 4★, la fila abre el primero pendiente en
+    // Let's Play; si solo dejó una nota en texto, queda como aviso.
+    const coachStep: string | null = (data as any).coachFocusState?.firstPendingStepId ?? null;
     rows.push({
       key: 'coach', label: 'From your coach', title: coachFocus, accent: BRAND.colors.cyan,
       reason: (data as any).standaloneEvaluation?.note || 'Stays here until you take it to 4★ on your own.',
-      action: null,
+      action: coachStep ? 'Train it →' : null,
+      onClick: coachStep ? () => onOpenStep?.(coachStep) : undefined,
     });
   }
   // TU LISTA (doctrina 2026-09-10): lo que vos te dejaste, antes del camino
@@ -555,12 +559,22 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
           ) : null}
           {clearedCream}
         </div>
-        {rows.length > 1 && (
-          <button type="button" onClick={() => onGoTo?.('sequence')} className="flex items-center gap-3 w-full text-left rounded-lg px-4 py-3 mt-2.5 text-[15px] font-semibold"
-            style={{ border: '1px solid rgba(0,210,255,.35)', color: '#F7F9FA' }}>
-            <Play size={16} strokeWidth={1.75} /> {rows.length - 1} more waiting in Let&apos;s Play <ArrowRight size={15} />
-          </button>
-        )}
+        {(() => {
+          // Lo que queda en Let's Play, contado como Let's Play lo muestra:
+          // las filas de "Your next moves" (sin la primera) y, aparte, tu lista.
+          const remaining = rows.filter((r) => r !== first && r.key !== 'task').length;
+          const listWaiting = !!rows.find((r) => r.key === 'task' && r !== first);
+          if (!remaining && !listWaiting) return null;
+          const text = remaining
+            ? `${remaining} more waiting in Let's Play${listWaiting ? ' · plus your list' : ''}`
+            : 'Your list is waiting in Let\'s Play';
+          return (
+            <button type="button" onClick={() => onGoTo?.('sequence')} className="flex items-center gap-3 w-full text-left rounded-lg px-4 py-3 mt-2.5 text-[15px] font-semibold"
+              style={{ border: '1px solid rgba(0,210,255,.35)', color: '#F7F9FA' }}>
+              <Play size={16} strokeWidth={1.75} /> {text} <ArrowRight size={15} />
+            </button>
+          );
+        })()}
       </>
     );
   }
