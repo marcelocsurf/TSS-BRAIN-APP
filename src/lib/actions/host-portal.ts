@@ -97,16 +97,23 @@ const STUDENT_COLS = 'id, first_name, last_name, email, phone, belt_level, waive
 export async function hostSearchStudents(token: string, q: string): Promise<HostStudentRow[]> {
   const who = await resolveHost(token);
   if (!who?.academy_id || !q.trim()) return [];
+  // "Julie Lang" antes no aparecía (Kat, 2026-09-15): el término entero no
+  // coincide con nombre NI apellido por separado. Cada palabra se busca en
+  // nombre o apellido y todas deben coincidir; email/teléfono con el término entero.
+  const words = q.trim().split(/\s+/).filter(Boolean).slice(0, 4);
   const term = `%${q.trim()}%`;
   const admin = createAdminClient();
-  const { data } = await admin
+  let query = admin
     .from('students')
     .select(STUDENT_COLS)
     .eq('academy_id', who.academy_id)
-    .eq('status', 'active')
-    .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term},phone.ilike.${term}`)
-    .order('created_at', { ascending: false })
-    .limit(20);
+    .eq('status', 'active');
+  if (words.length <= 1) {
+    query = query.or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term},phone.ilike.${term}`);
+  } else {
+    for (const w of words) query = query.or(`first_name.ilike.%${w}%,last_name.ilike.%${w}%`);
+  }
+  const { data } = await query.order('created_at', { ascending: false }).limit(20);
   return (data ?? []).map((s: any) => toRow(s));
 }
 

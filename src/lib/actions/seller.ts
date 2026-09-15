@@ -31,13 +31,16 @@ export async function sellerSearchStudents(token: string, q: string): Promise<{ 
   if (!coach || q.trim().length < 2) return [];
   const admin = createAdminClient();
   const term = `%${q.trim()}%`;
-  const { data } = await admin
+  const words = q.trim().split(/\s+/).filter(Boolean).slice(0, 4);
+  let query = admin
     .from('students')
     .select('id, first_name, last_name, email')
     .eq('academy_id', coach.academy_id)
-    .eq('status', 'active')
-    .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`)
-    .limit(8);
+    .eq('status', 'active');
+  // Nombre completo: cada palabra contra nombre o apellido (2026-09-15).
+  if (words.length <= 1) query = query.or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`);
+  else for (const w of words) query = query.or(`first_name.ilike.%${w}%,last_name.ilike.%${w}%`);
+  const { data } = await query.limit(8);
   return (data ?? []).map((s: any) => ({
     id: s.id,
     name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Student',

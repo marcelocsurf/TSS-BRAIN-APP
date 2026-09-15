@@ -641,12 +641,14 @@ export async function adminSearchStudents(q: string): Promise<{
       };
     }
     console.error('[program-admin] hp_search_students rpc failed, fallback ilike', rpcErr);
-    const { data, error } = await admin
+    const words = safe.trim().split(/\s+/).filter(Boolean).slice(0, 4);
+    let fq = admin
       .from('students')
       .select('id, first_name, last_name, nickname, email, belt_level')
-      .eq('status', 'active')
-      .or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`)
-      .limit(8);
+      .eq('status', 'active');
+    if (words.length <= 1) fq = fq.or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,nickname.ilike.%${safe}%,email.ilike.%${safe}%`);
+    else for (const w of words) fq = fq.or(`first_name.ilike.%${w}%,last_name.ilike.%${w}%,nickname.ilike.%${w}%`);
+    const { data, error } = await fq.limit(8);
     if (error) throw error;
     return {
       ok: true,

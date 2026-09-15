@@ -400,9 +400,11 @@ export async function listStudents(filters?: StudentFilters): Promise<{ students
     query = query.eq('lifecycle_status', filters.lifecycle_status);
   }
   if (filters?.search) {
-    query = query.or(
-      `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%`
-    );
+    // Nombre completo: cada palabra contra nombre o apellido, todas deben coincidir (2026-09-15).
+    const words = filters.search.trim().split(/\s+/).filter(Boolean).slice(0, 4);
+    for (const w of words.length ? words : [filters.search]) {
+      query = query.or(`first_name.ilike.%${w}%,last_name.ilike.%${w}%`);
+    }
   }
 
   // ── Advanced filters ──
