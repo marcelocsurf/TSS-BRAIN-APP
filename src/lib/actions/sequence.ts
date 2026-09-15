@@ -375,8 +375,11 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       // barra, no el de menos estrellas. Si la postura está floja, el bottom
       // turn va a estar flojo por consecuencia — arreglar la postura arregla
       // los dos. Es la doctrina: no hay atajos, hay que caminar el camino.
+      // Misma regla que "The path" (getNextMove): un paso SIN calificar cuenta
+      // igual que uno bajo la barra (auditoría 2026-09-15: antes esta lista
+      // saltaba los pasos sin calificar y decía otro paso que el Home).
       const weakest =
-        withRating.find((x) => x.v < SEQUENCE_PASS_STARS)?.i ?? null;
+        seqItems.find((i) => { const v = effectiveStars(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
       const state: 'owned' | 'working' | 'partial' | 'unrated' =
         withRating.length === 0
           ? 'unrated'

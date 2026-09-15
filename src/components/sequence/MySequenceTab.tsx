@@ -91,10 +91,18 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const [view, setView] = useState<'sequence' | 'all'>('sequence');
   // La que se abre sola: la primera que todavía tiene pasos sin evaluar. Es
   // "en qué estoy trabajando" sin preguntárselo.
-  const focusSequenceId =
-    data?.sequences.find((s) => s.state !== 'owned')?.id ??
-    data?.sequences[0]?.id ??
-    null;
+  // La misma regla que "The path" del Home (getNextMove): la primera secuencia
+  // NUMERADA de tu cinta que no es tuya; las de entrada/foundation/closing no
+  // frenan el camino (auditoría 2026-09-15: antes se abría "Getting to the
+  // wave" mientras el Home decía "#8").
+  const focusSequenceId = (() => {
+    if (!data) return null;
+    const bk = data.belt.replace(/_belt$/, '');
+    const mine = data.sequences.filter((s) => s.belt === bk);
+    const pool = mine.length ? mine : data.sequences;
+    const isAside = (s: (typeof pool)[number]) => !!SEQUENCE_ROLE[s.id];
+    return pool.find((s) => s.state !== 'owned' && !isAside(s))?.id ?? pool.find((s) => s.state !== 'owned')?.id ?? pool[0]?.id ?? null;
+  })();
 
   useEffect(() => {
     let mounted = true;
@@ -135,14 +143,19 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           refresh();
         }}
         onRatingChange={refresh}
-        onPracticeDrill={onPracticeDrill}
+        // "Practice this mission" entra por el MISMO flujo que la secuencia
+        // (plan guardado, lado, sesión abierta en Home), con este paso como
+        // foco. Auditoría 2026-09-15: antes abría un flujo paralelo con otras
+        // reglas. Si el paso no pertenece a ninguna secuencia (deep link viejo),
+        // cae al flujo ligado de siempre.
+        onPracticeDrill={(drillMissionId) => {
+          const seq = data.sequences.find((sq) => sq.items.some((i) => i.step_id === openStepId));
+          if (seq && onTrainSequence) { setOpenStepId(null); onTrainSequence({ sequenceId: seq.id, mode: 'step_focus', focusStepId: openStepId }); }
+          else onPracticeDrill?.(drillMissionId);
+        }}
       />
     );
   }
-
-  const overallPct = data.overallRating !== null
-    ? Math.round((data.overallRating / 5) * 100)
-    : 0;
 
   const theme = BELT_THEMES[beltLevelFromString(data.belt)];
 
@@ -159,10 +172,6 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const next = levelSeqs.find((sq) => sq.state !== 'owned') ?? null;
   // El paso: el que frenó tu último run · si no, el primero bajo 4★ · si no,
   // el primero que todavía no calificaste · si no, el primero de la cadena.
-  const firstUnrated = next ? next.items.find((i) => effectiveStars(i) == null) ?? null : null;
-  const nextStepId = next ? (next.heldBackStepId ?? next.weakestStepId ?? firstUnrated?.step_id ?? next.items[0]?.step_id ?? null) : null;
-  const nextStepTitle = next ? (next.heldBackStepId ? next.heldBackTitle : next.weakestStepId ? next.weakestTitle : firstUnrated?.step_title ?? next.items[0]?.step_title ?? null) : null;
-  const nextWhy = next ? (next.heldBackStepId ? 'held your last run back' : next.weakestStepId ? 'earliest step below 4★' : firstUnrated ? 'not rated yet' : 'start here') : '';
   const beltWord = beltKey.charAt(0).toUpperCase() + beltKey.slice(1);
   const pageHrefOf = (id: string) => { const c = sequencePageFor(id); return c && ownedBelts.includes(c.belt) ? `/portal/${portalToken}/seq/${id}` : null; };
   // Progreso por lado (Marcelo 2026-09-10): general · frontside · backside.
@@ -180,18 +189,9 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>Let&apos;s Play · {beltWord} Belt</span>
         </div>
         <h1 className="mt-1 text-[26px]" style={{ ...F_D, fontWeight: 900, lineHeight: 1.06, color: PAPER }}>Let&apos;s Play</h1>
-        <div className="flex items-end gap-4 mt-4">
-          <div className="flex-1">
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: 'rgba(247,249,250,.55)' }}>Overall execution</span>
-              <span className="text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: 'rgba(247,249,250,.62)' }}>{data.overallRating !== null ? `${data.overallRating.toFixed(1)} / 5` : 'Not rated yet'}</span>
-            </div>
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(247,249,250,.10)' }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, overallPct)}%`, background: 'linear-gradient(90deg, #00A8CC 0%, #00D2FF 100%)', boxShadow: '0 0 12px rgba(0,210,255,.45)' }} />
-            </div>
-          </div>
-          <span className="leading-none" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, fontSize: 34, letterSpacing: '-0.02em', color: CYAN }}>{Math.round(overallPct)}<span style={{ fontSize: 16, marginLeft: 2 }}>%</span></span>
-        </div>
+        {/* El % general (promedio de todos los pasos de todas las cintas) salió:
+            contradecía "la secuencia vale lo que vale su paso más flojo"
+            (auditoría 2026-09-15). Lo que cuenta está en "Your sequences". */}
         <div className="mt-3">
           <p className="text-[12px] text-white/80">
             {/* La validación OFICIAL del coach manda; el auto-rating complementa. */}
@@ -205,6 +205,23 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             )}
           </p>
         </div>
+      </div>
+
+      {/* HOW IT WORKS — arriba y en tres frases (auditoría 2026-09-15: llegaba
+          después del mapa y con jerga). Misma regla de siempre, dicha simple. */}
+      <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+        <p className="text-[23px] mb-1.5" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>How it works</p>
+        <ol className="m-0 pl-0 list-none space-y-1">
+          {(onTrainSequence
+            ? ['Pick a sequence and save your plan.', 'Go surf.', 'Come back and give it a star.']
+            : ['Pick the sequence you are working on.', 'Tap a step and run its mission.', 'Rate yourself honestly.']
+          ).map((t, i) => (
+            <li key={t} className="flex items-baseline gap-2.5 text-[15px] font-semibold" style={{ color: '#10263B' }}>
+              <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[12px] font-black" style={{ background: '#061C2B', color: '#00D2FF' }}>{i + 1}</span>{t}
+            </li>
+          ))}
+        </ol>
+        <p className="text-[13px] mt-2.5 leading-snug" style={{ color: '#10263B' }}>A sequence is yours when every step is at 4★. Drills are rehearsal: do them in the course, no need to log them. Your coach confirms in the water.</p>
       </div>
 
       {/* Dónde estás · qué necesitás · cómo entrenarlo */}
@@ -253,16 +270,6 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           {!next && <p className="text-[12px] mt-2" style={{ color: '#55666E' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
         </div>
       )}
-
-      {/* Instructions */}
-      <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-        <p className="text-[23px] mb-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>How it works</p>
-        <p className="text-[14px] leading-snug" style={{ color: '#10263B' }}>
-          {onTrainSequence
-            ? 'Pick a sequence → plan it (your focus, your measure) → go surf → come back and evaluate. Drills are rehearsal (Feel it, in the course): do them, no need to log them. Your coach validates in the water.'
-            : 'Pick the sequence you are working on → tap a step → run its mission → rate yourself honestly. Your coach validates in the water.'}
-        </p>
-      </div>
 
       {/* MY LIST (Marcelo 2026-09-10): las tareas que el alumno se dejó a sí
           mismo — paso + detalle, máximo tres. Se ofrecen, no se imponen. */}
