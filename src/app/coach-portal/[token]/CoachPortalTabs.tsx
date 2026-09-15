@@ -161,7 +161,7 @@ export function CoachPortalTabs({
   return (
     <div
       className={`min-h-screen tss-portal-bg ${plannerOpen ? '' : 'pb-20'}`}
-      style={plannerOpen ? undefined : { background: ['home', 'tools', 'courses', 'plan'].includes(activeTab) ? '#F7F9FA' : '#000' }}
+      style={plannerOpen ? undefined : { background: '#F7F9FA' }}
     >
       {/* iPad (md:): el planner usa lienzo ancho (4xl) y el resto del portal
           uno intermedio (3xl) — en teléfono todo queda igual (max-w-lg). */}
@@ -212,9 +212,7 @@ export function CoachPortalTabs({
         {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />}
         {activeTab === 'spaces' && <PortalSpaces token={coach.portal_token} coachId={coach.id} />}
         {activeTab === 'inventory' && (
-          <div className="rounded-lg p-3" style={{ background: '#000' }}>
-            <PortalInventory token={coach.portal_token} />
-          </div>
+          <PortalInventory token={coach.portal_token} />
         )}
         {activeTab === 'plan' && (
           <PlanTab
@@ -226,7 +224,7 @@ export function CoachPortalTabs({
           />
         )}
         {activeTab === 'rating' && (
-          <div className="rounded-lg p-3" style={{ background: '#000' }}>
+          <div className="rounded-lg p-3" style={{ background: 'transparent' }}>
             <RatingTab stats={stats} onBack={() => setActiveTab('home')} />
           </div>
         )}
@@ -326,7 +324,7 @@ function SellTab({ services, token }: { services: any[]; token: string }) {
   const money = (c: number) => `$${(c / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
   return (
-    <div className="rounded-lg p-3 space-y-4" style={{ background: '#000' }}>
+    <div className="rounded-lg p-3 space-y-4" style={{ background: 'transparent' }}>
       {/* Sales goal */}
       <div className="rounded-lg border border-white/10 p-4" style={{ background: '#0A2532' }}>
         <div className="flex items-center justify-between mb-2">

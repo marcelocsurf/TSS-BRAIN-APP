@@ -44,21 +44,21 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
   }
 
   if (items === null) {
-    return <p className="text-sm text-white/40 px-1 py-6 text-center">Loading inventory…</p>;
+    return <p className="text-sm text-[#55666E] px-1 py-6 text-center">Loading inventory…</p>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/10 p-4" style={{ background: '#0F1E33' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] inline-flex items-center gap-1.5">
+      <div className="rounded-lg border border-[#DCD7C6] p-4" style={{ background: '#E9E2D2' }}>
+        <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)] inline-flex items-center gap-1.5">
           <Package size={13} /> Academy inventory
         </p>
-        <p className="text-[12px] text-white/50 mt-1.5 leading-relaxed">
+        <p className="text-[12px] text-[#55666E] mt-1.5 leading-relaxed">
           Count and update each item — changes save on the spot and the check is logged with your name.
         </p>
         {lowCount > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-300 bg-red-500/10 border border-red-400/30 rounded-full px-2.5 py-1">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#B03A2E] bg-[rgba(255,107,107,.12)] border border-[#FF6B6B] rounded-full px-2.5 py-1">
               <AlertTriangle size={11} /> {lowCount} item{lowCount > 1 ? 's' : ''} below minimum
             </span>
             <button
@@ -72,7 +72,7 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
                 });
               }}
               className="inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-3 py-1 disabled:opacity-50"
-              style={{ background: '#5AC3E7', color: '#0A1628' }}
+              style={{ background: '#00D2FF', color: '#061C2B' }}
             >
               <ClipboardList size={12} /> Crear requisición de compra
             </button>
@@ -81,12 +81,12 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
       </div>
 
       {grouped.length === 0 && (
-        <p className="text-[13px] text-white/40 px-1">No inventory items yet. Add the first one below.</p>
+        <p className="text-[13px] text-[#55666E] px-1">No inventory items yet. Add the first one below.</p>
       )}
 
       {grouped.map(([category, rows]) => (
-        <div key={category} className="rounded-2xl border border-white/10 overflow-hidden" style={{ background: '#0F1E33' }}>
-          <p className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-wider text-white/50 border-b border-white/10">
+        <div key={category} className="rounded-lg border border-[#DCD7C6] overflow-hidden" style={{ background: '#E9E2D2' }}>
+          <p className="px-4 py-2.5 text-[11px] font-mono uppercase tracking-wider text-[#55666E] border-b border-[#DCD7C6]">
             {category} · {rows.length}
           </p>
           <div className="divide-y divide-white/[0.06]">
@@ -95,15 +95,15 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
               return (
                 <div key={it.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-white font-medium min-w-0 truncate">
+                    <p className="text-sm text-[#10263B] font-medium min-w-0 truncate">
                       {it.name}
-                      {it.unit && <span className="text-white/40 font-normal"> · {it.unit}</span>}
+                      {it.unit && <span className="text-[#55666E] font-normal"> · {it.unit}</span>}
                     </p>
                     {savedId === it.id && (
-                      <span className="text-[10px] text-emerald-400 inline-flex items-center gap-0.5 shrink-0"><Check size={11} /> saved</span>
+                      <span className="text-[11px] text-emerald-400 inline-flex items-center gap-0.5 shrink-0"><Check size={11} /> saved</span>
                     )}
                     {low && savedId !== it.id && (
-                      <span className="text-[9px] font-semibold uppercase text-red-300 bg-red-500/10 border border-red-400/30 rounded-full px-1.5 py-0.5 shrink-0">
+                      <span className="text-[11px] font-semibold uppercase text-[#B03A2E] bg-[rgba(255,107,107,.12)] border border-[#FF6B6B] rounded-full px-1.5 py-0.5 shrink-0">
                         low · min {it.minimum}
                       </span>
                     )}
@@ -113,7 +113,7 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
                     <QtyField label="In stock" value={it.qty_in_stock} low={low} onCommit={(v) => commit(it, { qty_in_stock: v })} />
                     <MinField value={it.minimum} onCommit={(v) => commit(it, { minimum: v })} />
                   </div>
-                  <p className="mt-1 text-[10px] text-white/30 leading-snug">
+                  <p className="mt-1 text-[11px] text-[#55666E] leading-snug">
                     Set a minimum → you get an alert when In stock drops below it.
                   </p>
                   <NoteField value={it.notes} onCommit={(v) => commit(it, { notes: v })} />
@@ -142,7 +142,7 @@ export function PortalInventory({ token = null }: { token?: string | null }) {
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          className="w-full rounded-2xl border border-dashed border-white/20 py-3 text-[13px] font-semibold text-white/60 hover:text-white hover:border-[var(--tss-cyan)]/50 transition-colors inline-flex items-center justify-center gap-1.5"
+          className="w-full rounded-lg border border-dashed border-[#DCD7C6] py-3 text-[13px] font-semibold text-[#55666E] hover:text-[#10263B] hover:border-[#00D2FF] transition-colors inline-flex items-center justify-center gap-1.5"
         >
           <Plus size={15} /> Add item
         </button>
@@ -156,7 +156,7 @@ function QtyField({ label, value, low, onCommit }: { label: string; value: numbe
   useEffect(() => setLocal(String(value)), [value]);
   return (
     <label className="block">
-      <span className="block text-[9px] font-mono uppercase tracking-wider text-white/40 mb-1">{label}</span>
+      <span className="block text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">{label}</span>
       <input
         type="number"
         inputMode="numeric"
@@ -168,7 +168,7 @@ function QtyField({ label, value, low, onCommit }: { label: string; value: numbe
           if (!Number.isNaN(n) && n !== value) onCommit(Math.max(0, n));
           else setLocal(String(value));
         }}
-        className={`w-full rounded-lg px-3 py-2 text-sm text-white text-center focus:outline-none ${low ? 'border border-red-400/50' : 'border border-white/15'}`}
+        className={`w-full rounded-lg px-3 py-2 text-sm text-[#10263B] text-center focus:outline-none ${low ? 'border border-red-400/50' : 'border border-[#DCD7C6]'}`}
         style={{ background: 'rgba(255,255,255,.06)' }}
       />
     </label>
@@ -182,7 +182,7 @@ function MinField({ value, onCommit }: { value: number | null; onCommit: (v: num
   useEffect(() => setLocal(value == null ? '' : String(value)), [value]);
   return (
     <label className="block">
-      <span className="block text-[9px] font-mono uppercase tracking-wider text-amber-300/70 mb-1">Min ⚠</span>
+      <span className="block text-[11px] font-mono uppercase tracking-wider text-amber-300/70 mb-1">Min ⚠</span>
       <input
         type="number"
         inputMode="numeric"
@@ -197,7 +197,7 @@ function MinField({ value, onCommit }: { value: number | null; onCommit: (v: num
           else setLocal(value == null ? '' : String(value));
         }}
         placeholder="—"
-        className="w-full rounded-lg px-3 py-2 text-sm text-white text-center border border-amber-400/25 focus:outline-none placeholder:text-white/25"
+        className="w-full rounded-lg px-3 py-2 text-sm text-[#10263B] text-center border border-[#FFD166] focus:outline-none placeholder:text-[#55666E]"
         style={{ background: 'rgba(255,255,255,.06)' }}
       />
     </label>
@@ -213,7 +213,7 @@ function NoteField({ value, onCommit }: { value: string | null; onCommit: (v: st
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => { if ((local || '') !== (value ?? '')) onCommit(local); }}
       placeholder="Note (e.g. one board dinged, bought 5 new)…"
-      className="mt-2 w-full rounded-lg px-3 py-2 text-[12px] text-white placeholder:text-white/25 border border-white/10 focus:outline-none"
+      className="mt-2 w-full rounded-lg px-3 py-2 text-[12px] text-[#10263B] placeholder:text-[#55666E] border border-[#DCD7C6] focus:outline-none"
       style={{ background: 'rgba(255,255,255,.04)' }}
     />
   );
@@ -229,29 +229,29 @@ function AddItemForm({ pending, onAdd, onCancel }: {
   const [stock, setStock] = useState('');
   const [minimum, setMinimum] = useState('');
   return (
-    <div className="rounded-2xl border border-white/10 p-4 space-y-2.5" style={{ background: '#0F1E33' }}>
-      <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">New item</p>
+    <div className="rounded-lg border border-[#DCD7C6] p-4 space-y-2.5" style={{ background: '#E9E2D2' }}>
+      <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#00D2FF)]">New item</p>
       <div className="grid grid-cols-2 gap-2">
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-lg px-3 py-2 text-sm text-white border border-white/15 focus:outline-none" style={{ background: '#0A1628' }}>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-lg px-3 py-2 text-sm text-[#10263B] border border-[#DCD7C6] focus:outline-none" style={{ background: '#061C2B' }}>
           {['Surf', 'Gym', 'Skate', 'Tech', 'Misc'].map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 border border-white/15 focus:outline-none" style={{ background: 'rgba(255,255,255,.06)' }} />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="rounded-lg px-3 py-2 text-sm text-[#10263B] placeholder:text-[#55666E] border border-[#DCD7C6] focus:outline-none" style={{ background: 'rgba(255,255,255,.06)' }} />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <input type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Qty in stock" className="rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 border border-white/15 focus:outline-none" style={{ background: 'rgba(255,255,255,.06)' }} />
-        <input type="number" min={0} value={minimum} onChange={(e) => setMinimum(e.target.value)} placeholder="Minimum (optional)" className="rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 border border-white/15 focus:outline-none" style={{ background: 'rgba(255,255,255,.06)' }} />
+        <input type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Qty in stock" className="rounded-lg px-3 py-2 text-sm text-[#10263B] placeholder:text-[#55666E] border border-[#DCD7C6] focus:outline-none" style={{ background: 'rgba(255,255,255,.06)' }} />
+        <input type="number" min={0} value={minimum} onChange={(e) => setMinimum(e.target.value)} placeholder="Minimum (optional)" className="rounded-lg px-3 py-2 text-sm text-[#10263B] placeholder:text-[#55666E] border border-[#DCD7C6] focus:outline-none" style={{ background: 'rgba(255,255,255,.06)' }} />
       </div>
       <div className="flex gap-2">
         <button
           type="button"
           disabled={pending || !name.trim()}
           onClick={() => onAdd({ category, name, qty_in_stock: parseInt(stock, 10) || 0, minimum: minimum ? parseInt(minimum, 10) : null })}
-          className="flex-1 rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
-          style={{ background: '#5AC3E7', color: '#0A1628' }}
+          className="flex-1 rounded-[5px] py-2.5 text-sm font-bold disabled:opacity-50"
+          style={{ background: '#00D2FF', color: '#061C2B' }}
         >
           {pending ? 'Adding…' : 'Add item'}
         </button>
-        <button type="button" onClick={onCancel} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white/60 bg-white/5">Cancel</button>
+        <button type="button" onClick={onCancel} className="rounded-[5px] px-4 py-2.5 text-sm font-semibold text-[#55666E] bg-[#F7F9FA]">Cancel</button>
       </div>
     </div>
   );

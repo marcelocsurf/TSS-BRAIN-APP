@@ -41,16 +41,16 @@ export function PortalSpaces({ token, coachId }: { token: string; coachId: strin
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Espacios</p>
-        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>Reserva de espacios</h2>
-        <p className="text-[11px] text-white/50 mt-1">Reservá los espacios de la academia. Todos ven lo que está libre.</p>
+      <div className="px-1">
+        <p className="text-[11px] font-mono uppercase tracking-wider mb-0.5" style={{ color: '#00A8CC', letterSpacing: '0.12em' }}>Espacios</p>
+        <h2 className="text-[23px] leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#10263B' }}>Reserva de espacios</h2>
+        <p className="text-[13px] text-[#55666E] mt-1">Reservá los espacios de la academia. Todos ven lo que está libre.</p>
       </div>
 
       {spaces === null ? (
-        <p className="text-sm text-white/40 px-1">Cargando…</p>
+        <p className="text-sm text-[#55666E] px-1">Cargando…</p>
       ) : (
-        <div className="rounded-2xl bg-white p-3">
+        <div className="rounded-lg p-3" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
           <SpaceBoard
             spaces={spaces}
             initialDate={today}

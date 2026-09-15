@@ -85,33 +85,33 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
 
   const dayLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  if (spaces.length === 0) return <p className="text-sm text-gray-500">No spaces defined for this academy yet.</p>;
+  if (spaces.length === 0) return <p className="text-sm text-[#55666E]">No spaces defined for this academy yet.</p>;
 
   return (
     <div className="space-y-3">
       {/* Date bar */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1">
-          <button onClick={() => shiftDay(-1)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"><ChevronLeft size={16} /></button>
+          <button onClick={() => shiftDay(-1)} className="p-2 rounded-lg text-[#55666E] hover:bg-[#F7F9FA]"><ChevronLeft size={16} /></button>
           <div className="text-sm font-semibold text-[var(--tss-navy)] min-w-[180px] text-center">{dayLabel}</div>
-          <button onClick={() => shiftDay(1)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"><ChevronRight size={16} /></button>
+          <button onClick={() => shiftDay(1)} className="p-2 rounded-lg text-[#55666E] hover:bg-[#F7F9FA]"><ChevronRight size={16} /></button>
         </div>
         <div className="flex items-center gap-2">
-          <input type="date" value={date} onChange={(e) => pickDate(e.target.value)} className="text-sm px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700" />
-          <button onClick={() => pickDate(todayIso())} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">Today</button>
+          <input type="date" value={date} onChange={(e) => pickDate(e.target.value)} className="text-sm px-2.5 py-1.5 rounded-lg border border-[#DCD7C6] text-[#10263B]" />
+          <button onClick={() => pickDate(todayIso())} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]">Today</button>
         </div>
       </div>
 
       {/* Grid */}
-      <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
+      <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] overflow-hidden">
         <div className="overflow-x-auto">
           <div className="flex min-w-max">
             {/* Time gutter */}
-            <div className="shrink-0 sticky left-0 z-10 bg-white border-r border-gray-100">
-              <div className="h-10 border-b border-gray-100" />
+            <div className="shrink-0 sticky left-0 z-10 bg-[#F7F9FA] border-r border-[#DCD7C6]">
+              <div className="h-10 border-b border-[#DCD7C6]" />
               {HOURS.map((h) => (
-                <div key={h} className="relative border-b border-gray-50" style={{ height: ROW_H, width: 48 }}>
-                  <span className="absolute -top-2 right-2 text-[10px] font-mono text-gray-400">{hourLabel(h)}</span>
+                <div key={h} className="relative border-b border-[#DCD7C6]" style={{ height: ROW_H, width: 48 }}>
+                  <span className="absolute -top-2 right-2 text-[11px] font-mono text-[#55666E]">{hourLabel(h)}</span>
                 </div>
               ))}
             </div>
@@ -120,10 +120,10 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
             {spaces.map((s) => {
               const rows = bookings.filter((b) => b.space_id === s.id);
               return (
-                <div key={s.id} className="shrink-0 border-r border-gray-100" style={{ width: 132 }}>
+                <div key={s.id} className="shrink-0 border-r border-[#DCD7C6]" style={{ width: 132 }}>
                   {/* Header */}
-                  <div className="h-10 px-2 flex items-center gap-1.5 border-b border-gray-100 bg-gray-50/60 sticky top-0">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color || '#5A6B78' }} />
+                  <div className="h-10 px-2 flex items-center gap-1.5 border-b border-[#DCD7C6] bg-[#F7F9FA]/60 sticky top-0">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color || '#55666E' }} />
                     <span className="text-[11px] font-semibold text-[var(--tss-navy)] leading-tight line-clamp-2">{s.name}</span>
                   </div>
                   {/* Track */}
@@ -133,7 +133,7 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                       <button
                         key={h}
                         onClick={() => setForm({ space: s, hour: h })}
-                        className="absolute left-0 right-0 border-b border-gray-50 hover:bg-[var(--tss-cyan,#5AC3E7)]/5 transition-colors"
+                        className="absolute left-0 right-0 border-b border-[#DCD7C6] hover:bg-[var(--tss-cyan,#00D2FF)]/5 transition-colors"
                         style={{ top: (h - START_HOUR) * ROW_H, height: ROW_H }}
                         title={`Reservar ${hourLabel(h)}`}
                       />
@@ -152,19 +152,19 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                         <div
                           key={b.id}
                           className={`absolute left-0.5 right-0.5 rounded-md px-1.5 overflow-hidden ${compact ? "py-0.5" : "py-1"}`}
-                          style={{ top, height, background: (s.color || '#5A6B78') + '22', borderLeft: `3px solid ${s.color || '#5A6B78'}` }}
+                          style={{ top, height, background: (s.color || '#55666E') + '22', borderLeft: `3px solid ${s.color || '#55666E'}` }}
                           title={`${hhmm(b.starts_at)}–${hhmm(b.ends_at)} · ${b.title || 'Reserva'} · Reservado por ${b.coach_name || '—'}`}
                         >
                           <div className="flex items-start justify-between gap-1">
                             {/* From–to range, Google-Calendar style. */}
-                            <p className="text-[10px] font-semibold leading-tight truncate" style={{ color: '#17272F' }}>
+                            <p className="text-[11px] font-semibold leading-tight truncate" style={{ color: '#10263B' }}>
                               {rangeLabel(b.starts_at, b.ends_at)}
-                              {compact && <span className="font-bold" style={{ color: s.color || '#17272F' }}> · {b.coach_name || 'Reserva'}</span>}
+                              {compact && <span className="font-bold" style={{ color: s.color || '#10263B' }}> · {b.coach_name || 'Reserva'}</span>}
                             </p>
                             {(mine || canManage) && (
                               <button
                                 onClick={() => start(async () => { const r = await api.cancel(b.id); if (r.ok) load(date); else alert(r.error); })}
-                                className="text-gray-400 hover:text-red-500 -mt-0.5"
+                                className="text-[#55666E] hover:text-red-500 -mt-0.5"
                                 aria-label="Cancelar"
                               ><X size={11} /></button>
                             )}
@@ -172,12 +172,12 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
                           {/* WHO booked it — the fact the coordinator needs, so it
                               leads and never gets clipped behind the title. */}
                           {!compact && (
-                            <p className="text-[10px] font-bold leading-tight truncate" style={{ color: s.color || '#17272F' }}>
+                            <p className="text-[11px] font-bold leading-tight truncate" style={{ color: s.color || '#10263B' }}>
                               {b.coach_name || 'Reserva'}
                             </p>
                           )}
                           {!compact && b.title && (
-                            <p className="text-[10px] text-gray-600 leading-tight truncate">{b.title}</p>
+                            <p className="text-[11px] text-[#55666E] leading-tight truncate">{b.title}</p>
                           )}
                         </div>
                       );
@@ -190,7 +190,7 @@ export function SpaceBoard({ spaces, initialDate, initialBookings, currentCoachI
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-400">Tocá una franja libre para reservar · bloque de color = reservado · ✕ cancela (la tuya; el coordinador, cualquiera).</p>
+      <p className="text-[11px] text-[#55666E]">Tocá una franja libre para reservar · bloque de color = reservado · ✕ cancela (la tuya; el coordinador, cualquiera).</p>
 
       {form && (
         <BookingModal
@@ -231,28 +231,28 @@ function BookingModal({ space, date, hour, api, onClose, onDone }: {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-white rounded-t-2xl sm:rounded-2xl p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm bg-[#F7F9FA] rounded-t-2xl sm:rounded-lg p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="inline-flex items-center gap-2 text-base font-bold text-[var(--tss-navy)]">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: space.color || '#5A6B78' }} />
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: space.color || '#55666E' }} />
             {space.name}
           </h3>
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100"><X size={18} /></button>
+          <button onClick={onClose} className="p-1 rounded-lg text-[#55666E] hover:bg-[#F7F9FA]"><X size={18} /></button>
         </div>
-        <p className="text-[11px] text-gray-400 mb-3">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        <p className="text-[11px] text-[#55666E] mb-3">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
         <div className="flex flex-wrap items-center gap-2 mb-2.5">
-          <label className="text-xs text-gray-500">De</label>
-          <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" />
-          <label className="text-xs text-gray-500">a</label>
-          <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" />
+          <label className="text-xs text-[#55666E]">De</label>
+          <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-[#DCD7C6]" />
+          <label className="text-xs text-[#55666E]">a</label>
+          <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-[#DCD7C6]" />
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A nombre de… (cliente, clase o coach)" className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 mb-2" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A nombre de… (cliente, clase o coach)" className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] mb-2" />
         {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
         <div className="flex gap-2">
-          <button onClick={submit} disabled={saving} className="flex-1 text-sm font-semibold px-3 py-2.5 rounded-xl bg-[var(--tss-navy)] text-white disabled:opacity-50">
+          <button onClick={submit} disabled={saving} className="flex-1 text-sm font-semibold px-3 py-2.5 rounded-[5px] bg-[var(--tss-navy)] text-[#10263B] disabled:opacity-50">
             {saving ? 'Reservando…' : 'Confirmar reserva'}
           </button>
-          <button onClick={onClose} className="text-sm px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-100">Cancelar</button>
+          <button onClick={onClose} className="text-sm px-3 py-2.5 rounded-[5px] text-[#55666E] hover:bg-[#F7F9FA]">Cancelar</button>
         </div>
       </div>
     </div>
