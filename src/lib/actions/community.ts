@@ -44,7 +44,7 @@ export interface CommunityPostRow {
 async function assertStaff(): Promise<{ me: any } | { error: string }> {
   const { getCurrentCoach, isCoordinatorOrAbove } = await import('@/lib/actions/auth');
   const me = await getCurrentCoach().catch(() => null);
-  if (!me || !(await isCoordinatorOrAbove((me as any).role))) {
+  if (!me || !(await isCoordinatorOrAbove((me as any).role)) || (me as any).ops_only) {
     return { error: 'Solo coordinador o admin.' };
   }
   return { me };

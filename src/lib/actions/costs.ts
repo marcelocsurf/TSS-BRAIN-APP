@@ -14,6 +14,8 @@ import type { CostDriver, CostRate, CoachPayRate, RecipeRow, CostLine, CampCostB
 async function assertStaff() {
   const me = await getCurrentCoach();
   if (!me || !['admin', 'coordinator'].includes(me.role)) throw new Error('Not authorized.');
+  // Cobertura de coordinación (Kat): planificación sí, negocio no (2026-09-15).
+  if (me.ops_only) throw new Error('Not authorized.');
   return me;
 }
 

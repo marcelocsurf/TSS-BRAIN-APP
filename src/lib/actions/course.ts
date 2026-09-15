@@ -619,6 +619,8 @@ export async function generateAccessCodeBatch(
 
   const coach = await getCurrentCoach();
   if (!coach) return { ok: false, error: 'Not authenticated' };
+  // Cobertura de coordinación (Kat): no genera códigos de venta (2026-09-15).
+  if (coach.ops_only) return { ok: false, error: 'Not authorized' };
 
   const admin = createAdminClient();
   const generatedCodes: string[] = [];

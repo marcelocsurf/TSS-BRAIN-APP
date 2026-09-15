@@ -23,6 +23,8 @@ export async function resolveReportScope(academyIdOverride?: string | null): Pro
   if (!me || !(me.is_platform_admin || me.role === 'admin' || me.role === 'coordinator')) {
     return { ok: false };
   }
+  // Cobertura de coordinación (Kat): planificación sí, reportes no (2026-09-15).
+  if (me.ops_only) return { ok: false };
   const scopeAcademyId = me.is_platform_admin
     ? (academyIdOverride || me.academy_id || null)
     : (me.academy_id ?? null);

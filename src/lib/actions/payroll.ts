@@ -42,6 +42,8 @@ export interface PayrollPerson {
 async function requireCoordinator() {
   const me = await getCurrentCoach().catch(() => null);
   if (!me || !(await isCoordinatorOrAbove(me.role))) throw new Error('Solo coordinador o admin.');
+  // Cobertura de coordinación (Kat): planificación sí, negocio no (2026-09-15).
+  if (me.ops_only) throw new Error('Solo coordinador o admin.');
   return me;
 }
 
