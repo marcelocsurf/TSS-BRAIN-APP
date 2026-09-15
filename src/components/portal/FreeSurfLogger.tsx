@@ -40,23 +40,18 @@ export function FreeSurfLogger({ token }: { token: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left"
-        style={{ background: '#0A1628' }}
+        className="w-full min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
+        style={{ background: '#00D2FF', color: '#061C2B', letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}
       >
-        <SurfboardIcon size={16} color="#00D2FF" />
-        <span className="flex-1 min-w-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), DM Mono, monospace', fontWeight: 500, letterSpacing: '0.16em', color: '#dbe8f1' }}>
-          LOG FREE SURF
-        </span>
-        <span className="shrink-0 text-[10.5px] font-semibold" style={{ color: '#00D2FF' }}>
-          Log it →
-        </span>
+        <SurfboardIcon size={18} color="#061C2B" />
+        Log free surf <span aria-hidden="true">+</span>
       </button>
     );
   }
 
   if (done) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center shadow-sm">
+      <div className="rounded-lg p-5 text-center" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
         <ThumbsUp size={24} strokeWidth={1.75} className="mx-auto mb-1 text-[var(--tss-cyan)]" />
         <p className="text-sm font-semibold text-[var(--tss-navy)]">Free surf logged!</p>
       </div>
@@ -64,7 +59,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
+    <div className="rounded-lg p-4 space-y-3" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
       <div className="flex items-center justify-between">
         <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--tss-navy)]">
           <SurfboardIcon size={15} />
@@ -113,7 +108,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
           min={1}
           value={minutes}
           onChange={(e) => setMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))}
-          className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+          className="mt-2 w-full px-3 py-2 border border-[#DCD7C6] bg-[#F7F9FA] rounded-[5px] text-sm"
           placeholder="Minutes"
         />
         <p className="mt-1 text-[10px] text-gray-400">Type any amount in minutes — e.g. 480 for an 8-hour day.</p>
@@ -127,7 +122,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+          className="w-full px-3 py-2 border border-[#DCD7C6] bg-[#F7F9FA] rounded-[5px] text-sm"
         />
       </div>
 
@@ -140,7 +135,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Conditions, who you surfed with, how it felt…"
           rows={2}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+          className="w-full px-3 py-2 border border-[#DCD7C6] bg-[#F7F9FA] rounded-[5px] text-sm resize-none"
         />
       </div>
 
@@ -161,8 +156,8 @@ export function FreeSurfLogger({ token }: { token: string }) {
             }
           });
         }}
-        className="w-full py-3 rounded-xl text-white text-sm font-semibold disabled:opacity-40"
-        style={{ background: BRAND.colors.navy }}
+        className="w-full py-3 rounded-[5px] text-sm font-black uppercase disabled:opacity-40"
+        style={{ background: '#00D2FF', color: '#061C2B', letterSpacing: '0.035em' }}
       >
         {pending ? 'Saving…' : `Log ${minutes}m Free Surf`}
       </button>

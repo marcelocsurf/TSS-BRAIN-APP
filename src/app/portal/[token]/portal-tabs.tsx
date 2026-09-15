@@ -1352,6 +1352,9 @@ function HomeTab({
         </div>
       )}
 
+      {/* Log free surf: acción rápida, botón cyan bajo las casillas (mock Home 2026-09-15). */}
+      {data.canTrack !== false && <FreeSurfLogger token={data.token} />}
+
       {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
           web 2026-09-01). Solo si tiene el grant; abre el PDF inline con el
           mismo mecanismo de materiales. Las DEMÁS presentaciones siguen en
@@ -1679,7 +1682,7 @@ function HomeTab({
                       <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
                     </div>
                   </div>
-                  <button type="button" onClick={() => { setProgressOpen(false); setTimeout(() => document.getElementById('my-sessions')?.scrollIntoView({ behavior: 'smooth' }), 50); }} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
+                  <button type="button" onClick={() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
                 </SandCard>
                 <SandCard label="Your next level">
                   {nd ? (
@@ -1787,10 +1790,39 @@ function HomeTab({
           </button>
           </div>
 
+                {/* Historial (Marcelo 2026-09-15: "My sessions es historial, va con el
+                    progreso"): las mismas dos filas que vivían al pie del Home, en sand. */}
+                <details id="my-sessions" className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+                  <summary className="cursor-pointer list-none px-4 py-3.5 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2" style={{ ...T_LABEL, color: T_INK }}>
+                      <ClipboardList size={16} strokeWidth={1.75} style={{ color: T_LINK }} />
+                      My Sessions
+                    </span>
+                    <ChevronDown size={18} style={{ color: T_MUTED }} />
+                  </summary>
+                  <div className="px-3 pb-3 pt-1" style={{ borderTop: `1px solid ${T_BORDER}` }}>
+                    <SessionsTab data={data} />
+                  </div>
+                </details>
+                <details className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+                  <summary className="cursor-pointer list-none px-4 py-3.5 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2" style={{ ...T_LABEL, color: T_INK }}>
+                      <MessageCircle size={16} strokeWidth={1.75} style={{ color: T_LINK }} />
+                      My Feedback
+                      {(data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
+                        <span className="text-[12px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#FF6B6B', color: '#fff' }}>{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
+                      )}
+                    </span>
+                    <ChevronDown size={18} style={{ color: T_MUTED }} />
+                  </summary>
+                  <div className="px-3 pb-3 pt-1" style={{ borderTop: `1px solid ${T_BORDER}` }}>
+                    <FeedbackTab data={data} />
+                  </div>
+                </details>
                 <button type="button" onClick={() => onGoTo('sequence')}
                   className="w-full min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
                   style={{ background: '#00D2FF', color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
-                  Open Let&apos;s Play <ArrowRight size={18} />
+                  Log a session <ArrowRight size={18} />
                 </button>
                 <button type="button" onClick={() => setProgressOpen(false)}
                   className="w-full min-h-[44px] rounded-[5px] text-[15px] font-semibold" style={{ border: '1px solid rgba(0,210,255,.45)', color: '#F7F9FA' }}>
@@ -1816,8 +1848,6 @@ function HomeTab({
         </div>
       )}
 
-      {/* Free Surf quick-logger */}
-      {data.canTrack !== false && <FreeSurfLogger token={data.token} />}
 
       {/* Latest Session — dark, matches the hero. OJO: fondo oscuro → textos
           CLAROS (antes quedaron en tinta #061C2B y la tarjeta era ilegible). */}
@@ -1926,42 +1956,6 @@ function HomeTab({
         );
       })()}
 
-      {/* ARCHIVO — lo de atrás. Eran dos tarjetas blancas del mismo tamaño que
-          lo accionable, y partían la pantalla en dos mundos (reporte de
-          Marcelo 2026-08-28: "se ve cargada"). Son filas: se abren cuando se
-          las busca y mientras tanto no compiten con nada.
-          Solo para quien puede registrar (curso o membresía). */}
-      {data.canTrack !== false && (
-      <div id="my-sessions" className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: '1px solid rgba(0,210,255,.18)' }}>
-        <details className="group">
-          <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 text-[12px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
-              <ClipboardList size={15} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
-              My Sessions
-            </span>
-            <ChevronDown size={16} style={{ color: '#4e6a80' }} />
-          </summary>
-          <div className="px-3 pb-3 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
-            <SessionsTab data={data} onDark />
-          </div>
-        </details>
-        <details className="group" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
-          <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 text-[12px]" style={{ ...F_LABEL, color: '#dbe8f1' }}>
-              <MessageCircle size={15} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
-              My Feedback
-              {(data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)) > 0 && (
-                <span className="text-[12px] px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#FF6B6B] font-bold">{data.pendingSurveys.length + (data.pendingExperience ? 1 : 0)}</span>
-              )}
-            </span>
-            <ChevronDown size={16} style={{ color: '#4e6a80' }} />
-          </summary>
-          <div className="px-3 pb-3 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
-            <FeedbackTab data={data} onDark />
-          </div>
-        </details>
-      </div>
-      )}
     </div>
   );
 }
