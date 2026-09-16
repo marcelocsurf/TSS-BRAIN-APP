@@ -588,7 +588,7 @@ function BlockSection({
         </div>
       </summary>
       {asSequence && pageHref && (
-        <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-[#DCD7C6] text-[12px]" style={{ background: 'rgba(0,210,255,.06)' }}>
+        <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-[#DCD7C6] text-[12px]" style={{ background: '#E9E2D2' }}>
           <span>
             <span className="block font-semibold" style={{ color: INK }}>What this sequence is · open it in the course</span>
             <span className="block text-[12px] text-[#55666E]">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
@@ -614,7 +614,7 @@ function BlockSection({
             <button
               type="button"
               onClick={() => setPicking((p) => !p)}
-              className="h-11 rounded-xl text-[12px] font-bold inline-flex items-center justify-center gap-1.5 border-[1.5px] active:scale-[0.98]"
+              className="h-11 rounded-[5px] text-[12px] font-bold inline-flex items-center justify-center gap-1.5 border-[1.5px] active:scale-[0.98]"
               style={picking ? { background: 'rgba(255,209,102,.28)', borderColor: '#FFD166', color: '#10263B' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}
             >
               <Crosshair size={13} strokeWidth={2.25} /> {picking ? 'Cancel' : 'Work on one step'}

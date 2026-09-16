@@ -36,7 +36,6 @@ import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzer
 import { BoardSelectorLauncher } from '@/components/board-selector/BoardSelectorLauncher';
 import { BoardInventoryManager } from '@/components/board-inventory/BoardInventoryManager';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
-import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import {
@@ -1637,7 +1636,7 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
         </details>
       )}
       <VenueScoutLauncher variant="light" />
-      <BreathingLauncher variant="light" />
+      {/* Breathwork: fuera por ahora (Marcelo 2026-09-16). */}
       </div>
 
       {/* ── SAFETY ── */}

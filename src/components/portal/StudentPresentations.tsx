@@ -26,32 +26,39 @@ export function StudentPresentations({ token, initial }: { token: string; initia
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-mono uppercase tracking-wider px-1 text-gray-400">
+      <p className="text-[11px] font-mono uppercase tracking-wider px-1" style={{ color: 'rgba(247,249,250,.6)' }}>
         Presentations ({items.length})
       </p>
-      {items.map((r) => (
+      {items.map((r) => {
+        const isBook = r.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333' || /one\s*wave/i.test(r.title ?? '');
+        return (
         <button
           type="button"
           key={r.id}
           onClick={() => setReader({ id: r.id, title: r.title })}
-          className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 flex items-center gap-3 transition-colors hover:border-gray-300 shadow-sm"
-          style={{ borderLeft: '4px solid var(--tss-cyan, #5AC3E7)' }}
+          className="w-full text-left rounded-lg border border-[#DCD7C6] p-4 flex items-center gap-4 transition-colors shadow-sm"
+          style={{ background: '#E9E2D2' }}
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(90,195,231,.12)' }}>
-            {r.sort_order != null ? (
-              <span className="text-[13px] font-bold font-mono text-[var(--tss-cyan,#5AC3E7)]">
-                {String(r.sort_order).padStart(2, '0')}
-              </span>
-            ) : (
-              <Presentation size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
-            )}
-          </div>
+          {/* El libro lleva su PORTADA (Marcelo 2026-09-16); el resto, número o icono. */}
+          {isBook ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/web/img/one-wave-cover.jpg" alt="ONE WAVE" className="w-[56px] h-auto rounded-[4px] shadow-md shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-[5px] flex items-center justify-center shrink-0" style={{ background: '#061C2B' }}>
+              {r.sort_order != null ? (
+                <span className="text-[13px] font-bold font-mono" style={{ color: '#00D2FF' }}>{String(r.sort_order).padStart(2, '0')}</span>
+              ) : (
+                <Presentation size={18} strokeWidth={1.75} style={{ color: '#00D2FF' }} />
+              )}
+            </div>
+          )}
           <div className="min-w-0">
-            <p className="text-sm font-medium text-[var(--tss-navy)] truncate">{r.title}</p>
-            {r.description && <p className="text-[11px] text-gray-500 leading-snug line-clamp-2">{r.description}</p>}
+            <p className="text-[15px] font-bold truncate" style={{ color: '#10263B' }}>{isBook ? 'ONE WAVE' : r.title}</p>
+            {r.description && <p className="text-[12px] leading-snug line-clamp-2" style={{ color: '#55666E' }}>{r.description}</p>}
           </div>
         </button>
-      ))}
+        );
+      })}
       {reader && <MaterialReader token={token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />}
     </div>
   );

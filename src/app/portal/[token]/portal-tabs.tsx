@@ -63,7 +63,6 @@ import { WaterLevel } from '@/components/portal/WaterLevel';
 import { GlossaryTab } from '@/components/portal/GlossaryTab';
 import { VideoAnalyzerLauncher } from '@/components/video-analyzer/VideoAnalyzerLauncher';
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
-import { BreathingLauncher } from '@/components/breathing/BreathingLauncher';
 import { LogoutButton } from '@/components/portal/LogoutButton';
 import { BELT_MIRROR, cueForSession } from '@/lib/constants/mental-cues';
 import {
@@ -891,27 +890,7 @@ export function PortalTabs({
         )}
         {activeTab === 'course' && data.courseData && (
           <div className="space-y-4">
-            {/* Qué hace falta para la próxima cinta: la evaluación del coach
-                dada vuelta. El alumno tenía las estrellas sueltas pero nunca
-                la lista completa ni la regla. */}
-            {data.hasAnyCourse && (
-            <button
-              type="button"
-              onClick={() => setRoadmapOpen(true)}
-              className="block w-full text-left rounded-2xl px-4 py-3.5"
-              style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
-            >
-              <p className="text-[12px] tracking-[.18em] uppercase" style={{ color: BRAND.colors.cyan }}>
-                What it takes
-              </p>
-              <p className="text-[15px] font-semibold text-white mt-1 leading-snug">
-                Everything you need for your next belt
-              </p>
-              <p className="text-[12px] text-white/80 mt-0.5">
-                The same list your coach fills in — sequences, water, course.
-              </p>
-            </button>
-            )}
+            {/* 'What it takes' vive en My Progress (Your next level); acá repetía (Marcelo 2026-09-16). */}
             <CourseTab data={data.courseData} />
             {/* Las presentaciones otorgadas viven en COURSE, no en el Home
                 (pedido de Marcelo 2026-08-25). Es el mismo lugar que ya usa
@@ -1088,7 +1067,7 @@ export function PortalTabs({
                     subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
                   />
                   <VenueScoutLauncher variant="light" />
-                  <BreathingLauncher variant="light" />
+                  {/* Breathwork: fuera por ahora (Marcelo 2026-09-16, 'no está bien hecha todavía'). */}
                 </div>
               </div>
             </div>
